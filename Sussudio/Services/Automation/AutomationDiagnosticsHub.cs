@@ -1250,6 +1250,12 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackEncodedFrames = health.FlashbackEncodedFrames,
             FlashbackDroppedFrames = health.FlashbackDroppedFrames,
             FlashbackGpuEncoding = health.FlashbackGpuEncoding,
+            FlashbackBackendSettingsStale = health.FlashbackBackendSettingsStale,
+            FlashbackBackendSettingsStaleReason = health.FlashbackBackendSettingsStaleReason,
+            FlashbackBackendActiveFormat = health.FlashbackBackendActiveFormat,
+            FlashbackBackendRequestedFormat = health.FlashbackBackendRequestedFormat,
+            FlashbackBackendActivePreset = health.FlashbackBackendActivePreset,
+            FlashbackBackendRequestedPreset = health.FlashbackBackendRequestedPreset,
             EncoderCodecName = health.EncoderCodecName,
             EncoderTargetBitRate = health.EncoderTargetBitRate,
             EncoderWidth = health.EncoderWidth,
@@ -1303,6 +1309,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs = health.FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs,
             FlashbackPlaybackLastPtsCadenceDeltaMs = health.FlashbackPlaybackLastPtsCadenceDeltaMs,
             FlashbackPlaybackLastPtsCadenceExpectedMs = health.FlashbackPlaybackLastPtsCadenceExpectedMs,
+            FlashbackPlaybackSeekForwardDecodeCapHits = health.FlashbackPlaybackSeekForwardDecodeCapHits,
+            FlashbackPlaybackLastSeekHitForwardDecodeCap = health.FlashbackPlaybackLastSeekHitForwardDecodeCap,
             FlashbackPlaybackDecodeSampleCount = health.FlashbackPlaybackDecodeSampleCount,
             FlashbackPlaybackDecodeAvgMs = health.FlashbackPlaybackDecodeAvgMs,
             FlashbackPlaybackDecodeP95Ms = health.FlashbackPlaybackDecodeP95Ms,
@@ -1330,6 +1338,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackPlaybackMaxPendingCommands = health.FlashbackPlaybackMaxPendingCommands,
             FlashbackPlaybackLastCommandQueueLatencyMs = health.FlashbackPlaybackLastCommandQueueLatencyMs,
             FlashbackPlaybackMaxCommandQueueLatencyMs = health.FlashbackPlaybackMaxCommandQueueLatencyMs,
+            FlashbackPlaybackMaxCommandQueueLatencyCommand = health.FlashbackPlaybackMaxCommandQueueLatencyCommand,
             FlashbackPlaybackLastCommandQueued = health.FlashbackPlaybackLastCommandQueued,
             FlashbackPlaybackLastCommandProcessed = health.FlashbackPlaybackLastCommandProcessed,
             FlashbackPlaybackLastCommandQueuedUtcUnixMs = health.FlashbackPlaybackLastCommandQueuedUtcUnixMs,
@@ -1354,6 +1363,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackExportOutPointMs = health.FlashbackExportOutPointMs,
             FlashbackExportMessage = health.FlashbackExportMessage,
             FlashbackExportFailureKind = health.FlashbackExportFailureKind,
+            FlashbackExportForceRotateFallbacks = health.FlashbackExportForceRotateFallbacks,
+            FlashbackExportLastForceRotateFallbackUtcUnixMs = health.FlashbackExportLastForceRotateFallbackUtcUnixMs,
+            FlashbackExportLastForceRotateFallbackSegments = health.FlashbackExportLastForceRotateFallbackSegments,
+            FlashbackExportLastForceRotateFallbackInPointMs = health.FlashbackExportLastForceRotateFallbackInPointMs,
+            FlashbackExportLastForceRotateFallbackOutPointMs = health.FlashbackExportLastForceRotateFallbackOutPointMs,
             LastExportId = health.LastExportId,
             LastExportPath = health.LastExportPath,
             LastExportSuccess = health.LastExportSuccess,
@@ -1453,6 +1467,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 FlashbackPlaybackMaxDecodeConvertMs = snapshot.FlashbackPlaybackMaxDecodeConvertMs,
                 FlashbackPlaybackMaxDecodeUtcUnixMs = snapshot.FlashbackPlaybackMaxDecodeUtcUnixMs,
                 FlashbackPlaybackMaxDecodePositionMs = snapshot.FlashbackPlaybackMaxDecodePositionMs,
+                FlashbackPlaybackSeekForwardDecodeCapHits = snapshot.FlashbackPlaybackSeekForwardDecodeCapHits,
+                FlashbackPlaybackLastSeekHitForwardDecodeCap = snapshot.FlashbackPlaybackLastSeekHitForwardDecodeCap,
                 FlashbackPlaybackPendingCommands = snapshot.FlashbackPlaybackPendingCommands,
                 FlashbackPlaybackMaxPendingCommands = snapshot.FlashbackPlaybackMaxPendingCommands,
                 FlashbackPlaybackCommandsEnqueued = snapshot.FlashbackPlaybackCommandsEnqueued,
@@ -1464,6 +1480,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 FlashbackPlaybackLastCommandQueued = snapshot.FlashbackPlaybackLastCommandQueued,
                 FlashbackPlaybackLastCommandProcessed = snapshot.FlashbackPlaybackLastCommandProcessed,
                 FlashbackPlaybackMaxCommandQueueLatencyMs = snapshot.FlashbackPlaybackMaxCommandQueueLatencyMs,
+                FlashbackPlaybackMaxCommandQueueLatencyCommand = snapshot.FlashbackPlaybackMaxCommandQueueLatencyCommand,
                 FlashbackPlaybackSubmitFailures = snapshot.FlashbackPlaybackSubmitFailures,
                 FlashbackPlaybackLastDropUtcUnixMs = snapshot.FlashbackPlaybackLastDropUtcUnixMs,
                 FlashbackPlaybackLastDropReason = snapshot.FlashbackPlaybackLastDropReason,
@@ -1486,6 +1503,12 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 FlashbackPlaybackLastWriteHeadWaitGapMs = snapshot.FlashbackPlaybackLastWriteHeadWaitGapMs,
                 FlashbackPlaybackLastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs,
                 FlashbackPlaybackLastCommandFailure = snapshot.FlashbackPlaybackLastCommandFailure,
+                FlashbackBackendSettingsStale = snapshot.FlashbackBackendSettingsStale,
+                FlashbackBackendSettingsStaleReason = snapshot.FlashbackBackendSettingsStaleReason,
+                FlashbackBackendActiveFormat = snapshot.FlashbackBackendActiveFormat,
+                FlashbackBackendRequestedFormat = snapshot.FlashbackBackendRequestedFormat,
+                FlashbackBackendActivePreset = snapshot.FlashbackBackendActivePreset,
+                FlashbackBackendRequestedPreset = snapshot.FlashbackBackendRequestedPreset,
                 FlashbackVideoQueueRejectedFrames = snapshot.FlashbackVideoQueueRejectedFrames,
                 FlashbackVideoQueueLastRejectReason = snapshot.FlashbackVideoQueueLastRejectReason,
                 FlashbackGpuQueueRejectedFrames = snapshot.FlashbackGpuQueueRejectedFrames,
@@ -1507,6 +1530,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 FlashbackExportInPointMs = snapshot.FlashbackExportInPointMs,
                 FlashbackExportOutPointMs = snapshot.FlashbackExportOutPointMs,
                 FlashbackExportMessage = snapshot.FlashbackExportMessage,
+                FlashbackExportForceRotateFallbacks = snapshot.FlashbackExportForceRotateFallbacks,
+                FlashbackExportLastForceRotateFallbackUtcUnixMs = snapshot.FlashbackExportLastForceRotateFallbackUtcUnixMs,
+                FlashbackExportLastForceRotateFallbackSegments = snapshot.FlashbackExportLastForceRotateFallbackSegments,
+                FlashbackExportLastForceRotateFallbackInPointMs = snapshot.FlashbackExportLastForceRotateFallbackInPointMs,
+                FlashbackExportLastForceRotateFallbackOutPointMs = snapshot.FlashbackExportLastForceRotateFallbackOutPointMs,
                 PipelineLatencyMs = snapshot.EstimatedPipelineLatencyMs,
                 ProcessCpuPercent = snapshot.ProcessCpuPercent,
                 MemoryWorkingSetMb = snapshot.MemoryWorkingSetMb,
@@ -1962,7 +1990,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             DiagnosticsCategory.Flashback,
             $"Flashback playback command queue has not drained for {playbackCommandQueueAgeMs}ms " +
             $"(pending={snapshot.FlashbackPlaybackPendingCommands}/{snapshot.FlashbackPlaybackCommandQueueCapacity}, maxPending={snapshot.FlashbackPlaybackMaxPendingCommands}, " +
-            $"lastLatency={snapshot.FlashbackPlaybackLastCommandQueueLatencyMs}ms, maxLatency={snapshot.FlashbackPlaybackMaxCommandQueueLatencyMs}ms, " +
+            $"lastLatency={snapshot.FlashbackPlaybackLastCommandQueueLatencyMs}ms, maxLatency={snapshot.FlashbackPlaybackMaxCommandQueueLatencyMs}ms maxLatencyCommand={snapshot.FlashbackPlaybackMaxCommandQueueLatencyCommand}, " +
             $"lastQueued={snapshot.FlashbackPlaybackLastCommandQueued}, lastProcessed={snapshot.FlashbackPlaybackLastCommandProcessed}, " +
             $"lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs}, threadAlive={snapshot.FlashbackPlaybackThreadAlive}).",
             "Flashback playback command queue drained.",
@@ -2024,7 +2052,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             DiagnosticsCategory.Flashback,
             $"Flashback playback frametime degraded: onePercentLow={snapshot.FlashbackPlaybackOnePercentLowFps:0.##}fps target={playbackTargetFps:0.##}fps " +
             $"p99={snapshot.FlashbackPlaybackP99FrameMs:0.##}ms max={snapshot.FlashbackPlaybackMaxFrameMs:0.##}ms slow={snapshot.FlashbackPlaybackSlowFramePercent:0.##}% " +
-            $"ptsMismatch={snapshot.FlashbackPlaybackPtsCadenceMismatchCount} ptsDelta={snapshot.FlashbackPlaybackLastPtsCadenceDeltaMs:0.##}/{snapshot.FlashbackPlaybackLastPtsCadenceExpectedMs:0.##}ms " +
+            $"ptsMismatch={snapshot.FlashbackPlaybackPtsCadenceMismatchCount} ptsDelta={snapshot.FlashbackPlaybackLastPtsCadenceDeltaMs:0.##}/{snapshot.FlashbackPlaybackLastPtsCadenceExpectedMs:0.##}ms seekCapHits={snapshot.FlashbackPlaybackSeekForwardDecodeCapHits} lastSeekCap={snapshot.FlashbackPlaybackLastSeekHitForwardDecodeCap} " +
             $"decodeP99={snapshot.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={snapshot.FlashbackPlaybackDecodeMaxMs:0.##}ms " +
             $"decodePhase={snapshot.FlashbackPlaybackMaxDecodePhase} decodeReceive={snapshot.FlashbackPlaybackMaxDecodeReceiveMs:0.##}ms " +
             $"decodeFeed={snapshot.FlashbackPlaybackMaxDecodeFeedMs:0.##}ms decodeRead={snapshot.FlashbackPlaybackMaxDecodeReadMs:0.##}ms decodeSend={snapshot.FlashbackPlaybackMaxDecodeSendMs:0.##}ms " +
@@ -2367,6 +2395,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"flashback recording active={health.FlashbackActive} failed={health.FlashbackEncodingFailed} type={health.FlashbackEncodingFailureType ?? "None"} " +
             $"dropped={health.FlashbackDroppedFrames} encoderDrops={health.FlashbackVideoEncoderDroppedFrames} seqGaps={health.FlashbackVideoSequenceGaps} " +
             $"queueRejects={health.FlashbackVideoQueueRejectedFrames} lastReject={health.FlashbackVideoQueueLastRejectReason ?? "None"} " +
+            $"backendStale={health.FlashbackBackendSettingsStale} staleReason={health.FlashbackBackendSettingsStaleReason} activeFormat={health.FlashbackBackendActiveFormat} requestedFormat={health.FlashbackBackendRequestedFormat} activePreset={health.FlashbackBackendActivePreset} requestedPreset={health.FlashbackBackendRequestedPreset} " +
             $"gpuOverloads={health.FlashbackGpuFramesDropped} forceRotate={health.FlashbackForceRotateActive} requested={health.FlashbackForceRotateRequested} draining={health.FlashbackForceRotateDraining} queue={health.FlashbackVideoQueueDepth}/{health.FlashbackVideoQueueCapacity} maxQueue={health.FlashbackVideoQueueMaxDepth} " +
             $"audioQueue={health.FlashbackAudioQueueDepth}/{health.FlashbackAudioQueueCapacity} " +
             $"queueAgeMs={health.FlashbackVideoQueueOldestFrameAgeMs} backpressure={health.FlashbackVideoBackpressureWaitMs}ms/{health.FlashbackVideoBackpressureEvents} maxBackpressure={health.FlashbackVideoBackpressureMaxWaitMs}ms " +
@@ -2398,10 +2427,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             health.FlashbackPlaybackTargetFps,
             health.ExpectedFrameRate);
         var playbackCommandLane =
-            $"playback commands pending={health.FlashbackPlaybackPendingCommands}/{health.FlashbackPlaybackCommandQueueCapacity} maxPending={health.FlashbackPlaybackMaxPendingCommands} lastLatency={health.FlashbackPlaybackLastCommandQueueLatencyMs}ms maxLatency={health.FlashbackPlaybackMaxCommandQueueLatencyMs}ms lastQueued={health.FlashbackPlaybackLastCommandQueued} lastProcessed={health.FlashbackPlaybackLastCommandProcessed} queuedAge={playbackCommandQueueAgeMs}ms lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs} threadAlive={health.FlashbackPlaybackThreadAlive}";
+            $"playback commands pending={health.FlashbackPlaybackPendingCommands}/{health.FlashbackPlaybackCommandQueueCapacity} maxPending={health.FlashbackPlaybackMaxPendingCommands} lastLatency={health.FlashbackPlaybackLastCommandQueueLatencyMs}ms maxLatency={health.FlashbackPlaybackMaxCommandQueueLatencyMs}ms maxLatencyCommand={health.FlashbackPlaybackMaxCommandQueueLatencyCommand} lastQueued={health.FlashbackPlaybackLastCommandQueued} lastProcessed={health.FlashbackPlaybackLastCommandProcessed} queuedAge={playbackCommandQueueAgeMs}ms lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs} threadAlive={health.FlashbackPlaybackThreadAlive}";
         var playbackPerfLane =
             $"playback perf state={health.FlashbackPlaybackState} fps={health.FlashbackPlaybackObservedFps:0.##}/{playbackTargetFps:0.##} target={health.FlashbackPlaybackTargetFps:0.##} encoder={health.EncoderFrameRate:0.##} source={(health.SourceFrameRateExact ?? 0):0.##} present={previewRuntime.DisplayCadenceObservedFps:0.##} " +
-            $"1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps p99={health.FlashbackPlaybackP99FrameMs:0.##}ms max={health.FlashbackPlaybackMaxFrameMs:0.##}ms slow={health.FlashbackPlaybackSlowFramePercent:0.##}% ptsMismatch={health.FlashbackPlaybackPtsCadenceMismatchCount} ptsDelta={health.FlashbackPlaybackLastPtsCadenceDeltaMs:0.##}/{health.FlashbackPlaybackLastPtsCadenceExpectedMs:0.##}ms decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={health.FlashbackPlaybackDecodeMaxMs:0.##}ms decodePhase={health.FlashbackPlaybackMaxDecodePhase} decodeReceive={health.FlashbackPlaybackMaxDecodeReceiveMs:0.##}ms decodeFeed={health.FlashbackPlaybackMaxDecodeFeedMs:0.##}ms decodeRead={health.FlashbackPlaybackMaxDecodeReadMs:0.##}ms decodeSend={health.FlashbackPlaybackMaxDecodeSendMs:0.##}ms decodeAudio={health.FlashbackPlaybackMaxDecodeAudioMs:0.##}ms decodeConvert={health.FlashbackPlaybackMaxDecodeConvertMs:0.##}ms decodeMaxPos={health.FlashbackPlaybackMaxDecodePositionMs}ms samples={health.FlashbackPlaybackCadenceSampleCount} frames={health.FlashbackPlaybackFrameCount} late={health.FlashbackPlaybackLateFrames} dropped={health.FlashbackPlaybackDroppedFrames} audioMasterDouble={health.FlashbackPlaybackAudioMasterDelayDoubles} audioMasterShrink={health.FlashbackPlaybackAudioMasterDelayShrinks} audioMasterFallback={health.FlashbackPlaybackAudioMasterFallbacks} submitFailures={health.FlashbackPlaybackSubmitFailures} switches={health.FlashbackPlaybackSegmentSwitches} fmp4Reopens={health.FlashbackPlaybackFmp4Reopens} writeHeadWaits={health.FlashbackPlaybackWriteHeadWaits} nearLiveSnaps={health.FlashbackPlaybackNearLiveSnaps} decodeErrorSnaps={health.FlashbackPlaybackDecodeErrorSnaps}";
+            $"1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps p99={health.FlashbackPlaybackP99FrameMs:0.##}ms max={health.FlashbackPlaybackMaxFrameMs:0.##}ms slow={health.FlashbackPlaybackSlowFramePercent:0.##}% ptsMismatch={health.FlashbackPlaybackPtsCadenceMismatchCount} ptsDelta={health.FlashbackPlaybackLastPtsCadenceDeltaMs:0.##}/{health.FlashbackPlaybackLastPtsCadenceExpectedMs:0.##}ms seekCapHits={health.FlashbackPlaybackSeekForwardDecodeCapHits} lastSeekCap={health.FlashbackPlaybackLastSeekHitForwardDecodeCap} decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={health.FlashbackPlaybackDecodeMaxMs:0.##}ms decodePhase={health.FlashbackPlaybackMaxDecodePhase} decodeReceive={health.FlashbackPlaybackMaxDecodeReceiveMs:0.##}ms decodeFeed={health.FlashbackPlaybackMaxDecodeFeedMs:0.##}ms decodeRead={health.FlashbackPlaybackMaxDecodeReadMs:0.##}ms decodeSend={health.FlashbackPlaybackMaxDecodeSendMs:0.##}ms decodeAudio={health.FlashbackPlaybackMaxDecodeAudioMs:0.##}ms decodeConvert={health.FlashbackPlaybackMaxDecodeConvertMs:0.##}ms decodeMaxPos={health.FlashbackPlaybackMaxDecodePositionMs}ms samples={health.FlashbackPlaybackCadenceSampleCount} frames={health.FlashbackPlaybackFrameCount} late={health.FlashbackPlaybackLateFrames} dropped={health.FlashbackPlaybackDroppedFrames} audioMasterDouble={health.FlashbackPlaybackAudioMasterDelayDoubles} audioMasterShrink={health.FlashbackPlaybackAudioMasterDelayShrinks} audioMasterFallback={health.FlashbackPlaybackAudioMasterFallbacks} submitFailures={health.FlashbackPlaybackSubmitFailures} switches={health.FlashbackPlaybackSegmentSwitches} fmp4Reopens={health.FlashbackPlaybackFmp4Reopens} writeHeadWaits={health.FlashbackPlaybackWriteHeadWaits} nearLiveSnaps={health.FlashbackPlaybackNearLiveSnaps} decodeErrorSnaps={health.FlashbackPlaybackDecodeErrorSnaps}";
         var playbackSlow =
             string.Equals(health.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
             playbackTargetFps > 0 &&

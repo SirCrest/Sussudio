@@ -108,6 +108,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private long _flashbackExportOutPointMs;
     private string _flashbackExportMessage = string.Empty;
     private string _flashbackExportFailureKind = string.Empty;
+    private long _flashbackExportForceRotateFallbacks;
+    private long _flashbackExportLastForceRotateFallbackUtcUnixMs;
+    private int _flashbackExportLastForceRotateFallbackSegments;
+    private long _flashbackExportLastForceRotateFallbackInPointMs;
+    private long _flashbackExportLastForceRotateFallbackOutPointMs;
     private string? _audioDeviceId;
     private string? _audioDeviceName;
     private bool _mfConvertersDisabled;
@@ -813,6 +818,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     segmentPaths = bufferManager?.GetValidSegmentPaths(inPoint, outPoint);
                     if (segmentPaths is { Count: > 0 })
                     {
+                        RecordFlashbackExportForceRotateFallback(exportId, segmentPaths.Count, inPoint, outPoint);
                         Logger.Log($"FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout segments={segmentPaths.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)outPoint.TotalMilliseconds}");
                     }
                     else
@@ -1135,6 +1141,34 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _flashbackExportTotalSegments = totalSegments;
             _flashbackExportPercent = percent;
             _flashbackExportLastProgressUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        }
+    }
+
+    private void RecordFlashbackExportForceRotateFallback(
+        long exportId,
+        int segmentCount,
+        TimeSpan inPoint,
+        TimeSpan outPoint)
+    {
+        if (Volatile.Read(ref _flashbackExportId) != exportId)
+        {
+            return;
+        }
+
+        lock (_flashbackExportDiagnosticsLock)
+        {
+            if (_flashbackExportId != exportId)
+            {
+                return;
+            }
+
+            _flashbackExportForceRotateFallbacks++;
+            _flashbackExportLastForceRotateFallbackUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _flashbackExportLastForceRotateFallbackSegments = Math.Max(0, segmentCount);
+            _flashbackExportLastForceRotateFallbackInPointMs = (long)inPoint.TotalMilliseconds;
+            _flashbackExportLastForceRotateFallbackOutPointMs = outPoint == TimeSpan.MaxValue
+                ? -1
+                : (long)outPoint.TotalMilliseconds;
         }
     }
 

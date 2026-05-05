@@ -181,11 +181,18 @@ static partial class Program
                 "FlashbackStartupCacheDeletedSessionCount": 1,
                 "FlashbackStartupCacheFreedBytes": 26214400,
                 "FlashbackStartupCacheOverBudget": false,
+                "FlashbackBackendSettingsStale": true,
+                "FlashbackBackendSettingsStaleReason": "preset:P1->P5",
+                "FlashbackBackendActiveFormat": "HevcMp4",
+                "FlashbackBackendRequestedFormat": "HevcMp4",
+                "FlashbackBackendActivePreset": "P1",
+                "FlashbackBackendRequestedPreset": "P5",
                 "FlashbackPlaybackCommandQueueCapacity": 256,
                 "FlashbackPlaybackPendingCommands": 1,
                 "FlashbackPlaybackMaxPendingCommands": 4,
                 "FlashbackPlaybackLastCommandQueueLatencyMs": 12,
                 "FlashbackPlaybackMaxCommandQueueLatencyMs": 87,
+                "FlashbackPlaybackMaxCommandQueueLatencyCommand": "Play",
                 "FlashbackPlaybackCommandsEnqueued": 12,
                 "FlashbackPlaybackCommandsProcessed": 11,
                 "FlashbackPlaybackCommandsDropped": 0,
@@ -214,6 +221,8 @@ static partial class Program
                 "FlashbackPlaybackMaxDecodeAudioMs": 3.25,
                 "FlashbackPlaybackMaxDecodeConvertMs": 0.25,
                 "FlashbackPlaybackMaxDecodePositionMs": 2345,
+                "FlashbackPlaybackSeekForwardDecodeCapHits": 2,
+                "FlashbackPlaybackLastSeekHitForwardDecodeCap": true,
                 "FlashbackExportActive": true,
                 "FlashbackExportStatus": "Running",
                 "FlashbackExportId": 7,
@@ -231,6 +240,11 @@ static partial class Program
                 "FlashbackExportOutputPath": "C:/tmp/flashback.mp4",
                 "FlashbackExportMessage": "copying packets",
                 "FlashbackExportFailureKind": "NoMediaWritten",
+                "FlashbackExportForceRotateFallbacks": 1,
+                "FlashbackExportLastForceRotateFallbackUtcUnixMs": 12345,
+                "FlashbackExportLastForceRotateFallbackSegments": 2,
+                "FlashbackExportLastForceRotateFallbackInPointMs": 1000,
+                "FlashbackExportLastForceRotateFallbackOutPointMs": 9000,
                 "LastExportId": 7,
                 "MjpegDecodeSampleCount": 1,
                 "MjpegDecoderCount": 1,
@@ -315,13 +329,15 @@ static partial class Program
         AssertContains(formatted, "Encoder: hevc_nvenc");
         AssertContains(formatted, "Written: 2 MB");
         AssertContains(formatted, "Temp Cache: cache=50 MB budget=100 MB free=2 GB sessions=2 deleted=1 freed=25 MB overBudget=false");
+        AssertContains(formatted, "backendStale=true staleReason=preset:P1->P5 active=HevcMp4/P1 requested=HevcMp4/P5");
         AssertContains(formatted, "submitFailures=3");
-        AssertContains(formatted, "Playback Commands: pending=1/256 maxPending=4 lastLatency=12ms maxLatency=87ms enq=12 proc=11 drop=0 skip=2 coalescedScrub=9 coalescedSeek=5 threadAlive=true lastQueued=UpdateScrub lastProcessed=BeginScrub failure=not_ready:Pause failureUtc=123456789");
+        AssertContains(formatted, "Playback Commands: pending=1/256 maxPending=4 lastLatency=12ms maxLatency=87ms maxLatencyCommand=Play enq=12 proc=11 drop=0 skip=2 coalescedScrub=9 coalescedSeek=5 threadAlive=true lastQueued=UpdateScrub lastProcessed=BeginScrub failure=not_ready:Pause failureUtc=123456789");
         AssertContains(formatted, "Target: 120 fps");
         AssertContains(formatted, "5% Low: 118 fps");
-        AssertContains(formatted, "Playback Decode: avg=1.25ms P95=2.5ms P99=3.5ms max=4.5ms phase=audio receive=0.5ms feed=4.0ms read=0.75ms send=3.5ms audio=3.25ms convert=0.25ms maxPos=2345ms samples=120");
+        AssertContains(formatted, "Playback Decode: avg=1.25ms P95=2.5ms P99=3.5ms max=4.5ms phase=audio receive=0.5ms feed=4.0ms read=0.75ms send=3.5ms audio=3.25ms convert=0.25ms maxPos=2345ms samples=120 seekCapHits=2 lastSeekCap=true");
         AssertContains(formatted, "Export: active=true status=Running id=7 lastResultId=7 kind=NoMediaWritten progress=37.5% segments=3/8");
         AssertContains(formatted, "elapsed=2500ms progressAge=150ms bytes=1 MB throughput=409.6 KB/s");
+        AssertContains(formatted, "forceRotateFallbacks=1 lastForceRotateFallbackSegments=2 lastForceRotateFallbackUtc=12345");
         AssertContains(formatted, "== MJPEG Pipeline Timing ==");
         AssertContains(formatted, "Decoder[0]: avg=2.1ms");
         AssertContains(formatted, "== Preview ==");

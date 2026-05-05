@@ -203,15 +203,21 @@ static partial class Program
         AssertEqual(1, source.Split("_emitSignal.Set();", StringSplitOptions.None).Length - 1, "All MJPEG emit wakeups go through SignalEmitter");
         AssertContains(source, "seqNo != _nextEmitSeq");
         AssertContains(source, "MarkKnownMissing");
-        AssertContains(source, "MJPEG_PIPELINE_FATAL_MISSING");
+        AssertContains(source, "MJPEG_PIPELINE_KNOWN_MISSING");
+        AssertContains(source, "ConsumeKnownMissingFrames");
+        AssertContains(source, "MJPEG_PIPELINE_KNOWN_MISSING_SKIP");
         AssertEqual(false, source.Contains("_reorderRing", StringComparison.Ordinal), "shared reorder must not use a fixed modulo ring");
         AssertEqual(false, source.Contains("_reorderFlags", StringComparison.Ordinal), "shared reorder must not use fixed slot flags");
         AssertEqual(false, source.Contains("reorder_collision", StringComparison.Ordinal), "slow decoded frames must not fatal via modulo slot collision");
-        AssertEqual(false, source.Contains("TryConsumeKnownMissing", StringComparison.Ordinal), "known MJPEG loss must not be consumed as a strict skip");
         AssertEqual(false, source.Contains("SkipFrameCallback", StringComparison.Ordinal), "strict MJPEG path must not expose skip callbacks");
         AssertEqual(false, source.Contains("NotifySkippedFrame", StringComparison.Ordinal), "strict MJPEG path must not synthesize skip callbacks");
         AssertEqual(false, source.Contains("reorder_missing", StringComparison.Ordinal), "shared reorder skip reason removed");
-        AssertEqual(false, source.Contains("skippedSeq = _nextEmitSeq++", StringComparison.Ordinal), "shared reorder must not synthesize timeout skips");
+        AssertContains(source, "skippedSeq = _nextEmitSeq++");
+        var duplicateBlock = ExtractTextBetween(
+            source,
+            "if (_reorderFrames.ContainsKey(seqNo))",
+            "_reorderFrames.Add(seqNo, new DecodedFrame(seqNo, frame, decodedTick));");
+        AssertDoesNotContain(duplicateBlock, "MarkKnownMissing");
 
         return Task.CompletedTask;
     }
@@ -231,7 +237,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task ParallelMjpegDecodePipeline_KnownLossSignalsFatalInsteadOfSkipping()
+    private static Task ParallelMjpegDecodePipeline_KnownLossSkipsInsteadOfSignalingFatal()
     {
         var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var pipeline = RuntimeHelpers.GetUninitializedObject(pipelineType);
@@ -242,6 +248,7 @@ static partial class Program
         SetPrivateField(pipeline, "_workQueue", CreateUnboundedChannelFieldValue(pipelineType, "_workQueue"));
         SetPrivateField(pipeline, "_emitSignal", emitSignal);
         SetPrivateField(pipeline, "_reorderLock", new object());
+        SetPrivateField(pipeline, "_knownMissingSequences", new SortedSet<long>());
         SetPrivateField(pipeline, "_fatalErrorCallback", new Action<Exception>(ex =>
         {
             fatalException = ex;
@@ -250,11 +257,17 @@ static partial class Program
         SetPrivateField(pipeline, "_nextEmitSeq", 0L);
 
         InvokeNonPublicInstanceMethod(pipeline, "MarkKnownMissing", new object?[] { 0L, "compressed_queue_full" });
-        AssertEqual(true, fatalSignaled.Wait(TimeSpan.FromSeconds(2)), "known MJPEG loss fatal callback signaled");
-        AssertNotNull(fatalException, "known MJPEG loss fatal exception");
-        AssertContains(fatalException!.Message, "CPU MJPEG pipeline lost delivered frame 0: compressed_queue_full");
-        AssertEqual(1, GetIntPrivateField(pipeline, "_stopRequested"), "known loss stops pipeline");
-        AssertEqual(1, GetIntPrivateField(pipeline, "_fatalErrorSignaled"), "known loss signals fatal once");
+        AssertEqual(true, emitSignal.WaitOne(TimeSpan.FromSeconds(2)), "known MJPEG loss wakes emitter");
+
+        var consumed = (bool)(InvokeNonPublicInstanceMethod(pipeline, "ConsumeKnownMissingFrames", Array.Empty<object?>())
+            ?? throw new InvalidOperationException("ConsumeKnownMissingFrames returned null."));
+        AssertEqual(true, consumed, "known MJPEG loss was consumed");
+        AssertEqual(false, fatalSignaled.Wait(TimeSpan.FromMilliseconds(50)), "known MJPEG loss must not signal fatal");
+        AssertEqual(null, fatalException, "known MJPEG loss fatal exception");
+        AssertEqual(0, (int)(GetPrivateField(pipeline, "_stopRequested") ?? -1), "known loss keeps pipeline running");
+        AssertEqual(0, (int)(GetPrivateField(pipeline, "_fatalErrorSignaled") ?? -1), "known loss does not signal fatal");
+        AssertEqual(1L, (long)(GetPrivateField(pipeline, "_nextEmitSeq") ?? -1L), "known loss advances next emit sequence");
+        AssertEqual(1L, (long)(GetPrivateField(pipeline, "_reorderSkips") ?? -1L), "known loss is counted as a reorder skip");
 
         return Task.CompletedTask;
     }

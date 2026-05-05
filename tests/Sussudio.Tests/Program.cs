@@ -588,8 +588,8 @@ static partial class Program
                 "MJPEG startup non-JPEG samples drop before sequencing",
                 ParallelMjpegDecodePipeline_DropsStartupNonJpegBeforeSequencing),
             await RunCheckAsync(
-                "MJPEG known losses signal fatal instead of strict skips",
-                ParallelMjpegDecodePipeline_KnownLossSignalsFatalInsteadOfSkipping),
+                "MJPEG known losses skip instead of fataling capture",
+                ParallelMjpegDecodePipeline_KnownLossSkipsInsteadOfSignalingFatal),
             await RunCheckAsync(
                 "MJPEG packet hash current duplicate run lowers unique FPS",
                 FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps),
@@ -1840,6 +1840,12 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoFramesSubmittedToEncoder"), "AutomationSnapshot.FlashbackVideoFramesSubmittedToEncoder");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoEncoderPacketsWritten"), "AutomationSnapshot.FlashbackVideoEncoderPacketsWritten");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoSequenceGaps"), "AutomationSnapshot.FlashbackVideoSequenceGaps");
+        AssertNotNull(snapshotType.GetProperty("FlashbackBackendSettingsStale"), "AutomationSnapshot.FlashbackBackendSettingsStale");
+        AssertNotNull(snapshotType.GetProperty("FlashbackBackendSettingsStaleReason"), "AutomationSnapshot.FlashbackBackendSettingsStaleReason");
+        AssertNotNull(snapshotType.GetProperty("FlashbackBackendActiveFormat"), "AutomationSnapshot.FlashbackBackendActiveFormat");
+        AssertNotNull(snapshotType.GetProperty("FlashbackBackendRequestedFormat"), "AutomationSnapshot.FlashbackBackendRequestedFormat");
+        AssertNotNull(snapshotType.GetProperty("FlashbackBackendActivePreset"), "AutomationSnapshot.FlashbackBackendActivePreset");
+        AssertNotNull(snapshotType.GetProperty("FlashbackBackendRequestedPreset"), "AutomationSnapshot.FlashbackBackendRequestedPreset");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoQueueOldestFrameAgeMs"), "AutomationSnapshot.FlashbackVideoQueueOldestFrameAgeMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoQueueLatencyP95Ms"), "AutomationSnapshot.FlashbackVideoQueueLatencyP95Ms");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoQueueLatencyP99Ms"), "AutomationSnapshot.FlashbackVideoQueueLatencyP99Ms");
@@ -1874,6 +1880,8 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackPtsCadenceMismatchCount"), "AutomationSnapshot.FlashbackPlaybackPtsCadenceMismatchCount");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastPtsCadenceDeltaMs"), "AutomationSnapshot.FlashbackPlaybackLastPtsCadenceDeltaMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastPtsCadenceExpectedMs"), "AutomationSnapshot.FlashbackPlaybackLastPtsCadenceExpectedMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSeekForwardDecodeCapHits"), "AutomationSnapshot.FlashbackPlaybackSeekForwardDecodeCapHits");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastSeekHitForwardDecodeCap"), "AutomationSnapshot.FlashbackPlaybackLastSeekHitForwardDecodeCap");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeSampleCount"), "AutomationSnapshot.FlashbackPlaybackDecodeSampleCount");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeAvgMs"), "AutomationSnapshot.FlashbackPlaybackDecodeAvgMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeP95Ms"), "AutomationSnapshot.FlashbackPlaybackDecodeP95Ms");
@@ -1901,6 +1909,7 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxPendingCommands"), "AutomationSnapshot.FlashbackPlaybackMaxPendingCommands");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandQueueLatencyMs"), "AutomationSnapshot.FlashbackPlaybackLastCommandQueueLatencyMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxCommandQueueLatencyMs"), "AutomationSnapshot.FlashbackPlaybackMaxCommandQueueLatencyMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxCommandQueueLatencyCommand"), "AutomationSnapshot.FlashbackPlaybackMaxCommandQueueLatencyCommand");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandQueued"), "AutomationSnapshot.FlashbackPlaybackLastCommandQueued");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandProcessed"), "AutomationSnapshot.FlashbackPlaybackLastCommandProcessed");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandQueuedUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs");
@@ -1930,6 +1939,11 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackExportOutPointMs"), "AutomationSnapshot.FlashbackExportOutPointMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportMessage"), "AutomationSnapshot.FlashbackExportMessage");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportFailureKind"), "AutomationSnapshot.FlashbackExportFailureKind");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportForceRotateFallbacks"), "AutomationSnapshot.FlashbackExportForceRotateFallbacks");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportLastForceRotateFallbackUtcUnixMs"), "AutomationSnapshot.FlashbackExportLastForceRotateFallbackUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportLastForceRotateFallbackSegments"), "AutomationSnapshot.FlashbackExportLastForceRotateFallbackSegments");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportLastForceRotateFallbackInPointMs"), "AutomationSnapshot.FlashbackExportLastForceRotateFallbackInPointMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportLastForceRotateFallbackOutPointMs"), "AutomationSnapshot.FlashbackExportLastForceRotateFallbackOutPointMs");
         AssertNotNull(snapshotType.GetProperty("LastExportId"), "AutomationSnapshot.LastExportId");
         AssertNotNull(snapshotType.GetProperty("MjpegPacketHashSampleCount"), "AutomationSnapshot.MjpegPacketHashSampleCount");
         AssertNotNull(snapshotType.GetProperty("MjpegPacketHashInputObservedFps"), "AutomationSnapshot.MjpegPacketHashInputObservedFps");
@@ -5452,6 +5466,7 @@ static partial class Program
         SetPrivateField(pipeline, "_reorderFrames", Activator.CreateInstance(typeof(SortedDictionary<,>).MakeGenericType(
             typeof(long),
             RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+DecodedFrame")))!);
+        SetPrivateField(pipeline, "_knownMissingSequences", new SortedSet<long>());
         SetPrivateField(pipeline, "_reorderLock", new object());
         SetPrivateField(pipeline, "_emitSignal", new AutoResetEvent(false));
     }

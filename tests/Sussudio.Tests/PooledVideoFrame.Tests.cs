@@ -184,7 +184,7 @@ static partial class Program
         AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MIN_TARGET_DEPTH");
         AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MAX_TARGET_DEPTH");
         AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MAX_DEPTH");
-        AssertContains(source, "SUSSUDIO_PREVIEW_DISPLAY_CLOCK_PACING\", 0");
+        AssertContains(source, "SUSSUDIO_PREVIEW_DISPLAY_CLOCK_PACING\", 1");
         AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MMCSS_TASK\") ?? \"Playback\"");
         AssertContains(pipelineSource, "PreviewFrameCallback");
         AssertContains(pipelineSource, "NotifyPreviewFrameDecoded");

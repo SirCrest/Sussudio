@@ -862,6 +862,12 @@ public sealed class AutomationSnapshot
     public long FlashbackEncodedFrames { get; init; }
     public long FlashbackDroppedFrames { get; init; }
     public bool FlashbackGpuEncoding { get; init; }
+    public bool FlashbackBackendSettingsStale { get; init; }
+    public string FlashbackBackendSettingsStaleReason { get; init; } = string.Empty;
+    public string FlashbackBackendActiveFormat { get; init; } = string.Empty;
+    public string FlashbackBackendRequestedFormat { get; init; } = string.Empty;
+    public string FlashbackBackendActivePreset { get; init; } = string.Empty;
+    public string FlashbackBackendRequestedPreset { get; init; } = string.Empty;
     public string? EncoderCodecName { get; init; }
     public uint EncoderTargetBitRate { get; init; }
     public int EncoderWidth { get; init; }
@@ -915,6 +921,8 @@ public sealed class AutomationSnapshot
     public long FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs { get; init; }
     public double FlashbackPlaybackLastPtsCadenceDeltaMs { get; init; }
     public double FlashbackPlaybackLastPtsCadenceExpectedMs { get; init; }
+    public long FlashbackPlaybackSeekForwardDecodeCapHits { get; init; }
+    public bool FlashbackPlaybackLastSeekHitForwardDecodeCap { get; init; }
     public int FlashbackPlaybackDecodeSampleCount { get; init; }
     public double FlashbackPlaybackDecodeAvgMs { get; init; }
     public double FlashbackPlaybackDecodeP95Ms { get; init; }
@@ -942,6 +950,7 @@ public sealed class AutomationSnapshot
     public int FlashbackPlaybackMaxPendingCommands { get; init; }
     public long FlashbackPlaybackLastCommandQueueLatencyMs { get; init; }
     public long FlashbackPlaybackMaxCommandQueueLatencyMs { get; init; }
+    public string FlashbackPlaybackMaxCommandQueueLatencyCommand { get; init; } = "None";
     public string FlashbackPlaybackLastCommandQueued { get; init; } = "None";
     public string FlashbackPlaybackLastCommandProcessed { get; init; } = "None";
     public long FlashbackPlaybackLastCommandQueuedUtcUnixMs { get; init; }
@@ -966,6 +975,11 @@ public sealed class AutomationSnapshot
     public long FlashbackExportOutPointMs { get; init; }
     public string FlashbackExportMessage { get; init; } = string.Empty;
     public string FlashbackExportFailureKind { get; init; } = string.Empty;
+    public long FlashbackExportForceRotateFallbacks { get; init; }
+    public long FlashbackExportLastForceRotateFallbackUtcUnixMs { get; init; }
+    public int FlashbackExportLastForceRotateFallbackSegments { get; init; }
+    public long FlashbackExportLastForceRotateFallbackInPointMs { get; init; }
+    public long FlashbackExportLastForceRotateFallbackOutPointMs { get; init; }
     public long LastExportId { get; init; }
     public string? LastExportPath { get; init; }
     public bool? LastExportSuccess { get; init; }
@@ -1062,6 +1076,8 @@ public sealed class PerformanceTimelineEntry
     public double FlashbackPlaybackMaxDecodeConvertMs { get; init; }
     public long FlashbackPlaybackMaxDecodeUtcUnixMs { get; init; }
     public long FlashbackPlaybackMaxDecodePositionMs { get; init; }
+    public long FlashbackPlaybackSeekForwardDecodeCapHits { get; init; }
+    public bool FlashbackPlaybackLastSeekHitForwardDecodeCap { get; init; }
     public int FlashbackPlaybackPendingCommands { get; init; }
     public int FlashbackPlaybackMaxPendingCommands { get; init; }
     public long FlashbackPlaybackCommandsEnqueued { get; init; }
@@ -1073,6 +1089,7 @@ public sealed class PerformanceTimelineEntry
     public string FlashbackPlaybackLastCommandQueued { get; init; } = string.Empty;
     public string FlashbackPlaybackLastCommandProcessed { get; init; } = string.Empty;
     public long FlashbackPlaybackMaxCommandQueueLatencyMs { get; init; }
+    public string FlashbackPlaybackMaxCommandQueueLatencyCommand { get; init; } = string.Empty;
     public long FlashbackPlaybackSubmitFailures { get; init; }
     public long FlashbackPlaybackLastDropUtcUnixMs { get; init; }
     public string FlashbackPlaybackLastDropReason { get; init; } = string.Empty;
@@ -1095,6 +1112,12 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackPlaybackLastWriteHeadWaitGapMs { get; init; }
     public long FlashbackPlaybackLastCommandFailureUtcUnixMs { get; init; }
     public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;
+    public bool FlashbackBackendSettingsStale { get; init; }
+    public string FlashbackBackendSettingsStaleReason { get; init; } = string.Empty;
+    public string FlashbackBackendActiveFormat { get; init; } = string.Empty;
+    public string FlashbackBackendRequestedFormat { get; init; } = string.Empty;
+    public string FlashbackBackendActivePreset { get; init; } = string.Empty;
+    public string FlashbackBackendRequestedPreset { get; init; } = string.Empty;
     public long FlashbackVideoQueueRejectedFrames { get; init; }
     public string FlashbackVideoQueueLastRejectReason { get; init; } = string.Empty;
     public long FlashbackGpuQueueRejectedFrames { get; init; }
@@ -1116,6 +1139,11 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackExportInPointMs { get; init; }
     public long FlashbackExportOutPointMs { get; init; }
     public string FlashbackExportMessage { get; init; } = string.Empty;
+    public long FlashbackExportForceRotateFallbacks { get; init; }
+    public long FlashbackExportLastForceRotateFallbackUtcUnixMs { get; init; }
+    public int FlashbackExportLastForceRotateFallbackSegments { get; init; }
+    public long FlashbackExportLastForceRotateFallbackInPointMs { get; init; }
+    public long FlashbackExportLastForceRotateFallbackOutPointMs { get; init; }
     public long PipelineLatencyMs { get; init; }
     public double ProcessCpuPercent { get; init; }
     public double MemoryWorkingSetMb { get; init; }

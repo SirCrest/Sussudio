@@ -58,6 +58,7 @@ public sealed class DiagnosticSessionResult
     public int FlashbackPlaybackPendingCommandsAtEnd { get; init; }
     public int FlashbackPlaybackMaxPendingCommandsObserved { get; init; }
     public int FlashbackPlaybackMaxCommandQueueLatencyMsObserved { get; init; }
+    public string FlashbackPlaybackMaxCommandQueueLatencyCommandObserved { get; init; } = string.Empty;
     public long FlashbackPlaybackCommandsDroppedAtEnd { get; init; }
     public long FlashbackPlaybackCommandsSkippedNotReadyAtEnd { get; init; }
     public long FlashbackPlaybackScrubUpdatesCoalescedAtEnd { get; init; }
@@ -134,6 +135,9 @@ public sealed class DiagnosticSessionResult
     public long FlashbackPlaybackNearLiveSnapsAtEnd { get; init; }
     public long FlashbackPlaybackDecodeErrorSnapsAtEnd { get; init; }
     public long FlashbackPlaybackLastWriteHeadWaitGapMsAtEnd { get; init; }
+    public long FlashbackPlaybackSeekForwardDecodeCapHitsAtEnd { get; init; }
+    public long FlashbackPlaybackSeekForwardDecodeCapHitsDelta { get; init; }
+    public bool FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd { get; init; }
     public bool FlashbackRecordingBackendObserved { get; init; }
     public bool FlashbackRecordingFileGrowthObserved { get; init; }
     public long FlashbackRecordingVideoFramesSubmittedDelta { get; init; }
@@ -148,6 +152,9 @@ public sealed class DiagnosticSessionResult
     public string FlashbackExportMessageAtEnd { get; init; } = string.Empty;
     public string FlashbackExportFailureKindAtEnd { get; init; } = string.Empty;
     public string FlashbackExportOutputPathAtEnd { get; init; } = string.Empty;
+    public long FlashbackExportForceRotateFallbacksAtEnd { get; init; }
+    public long FlashbackExportForceRotateFallbacksDelta { get; init; }
+    public int FlashbackExportLastForceRotateFallbackSegmentsAtEnd { get; init; }
     public long LastExportIdAtEnd { get; init; }
     public string LastExportSuccessAtEnd { get; init; } = string.Empty;
     public string LastExportMessageAtEnd { get; init; } = string.Empty;
@@ -295,6 +302,7 @@ public static class DiagnosticSessionRunner
         var runFlashbackExportPlayback = scenario == "flashback-export-playback";
         var runFlashbackSegmentPlayback = scenario == "flashback-segment-playback";
         var runFlashbackRangeExport = scenario == "flashback-range-export";
+        var runFlashbackRangeExportAudioSwitch = scenario == "flashback-range-export-audio-switch";
         var runFlashbackLifecycle = scenario == "flashback-lifecycle";
         var runFlashbackExportConcurrent = scenario == "flashback-export-concurrent";
         var runFlashbackDisableDuringExport = scenario == "flashback-disable-during-export";
@@ -318,6 +326,7 @@ public static class DiagnosticSessionRunner
         Task? flashbackExportPlaybackTask = null;
         Task? flashbackSegmentPlaybackTask = null;
         Task? flashbackRangeExportTask = null;
+        Task? flashbackRangeExportAudioSwitchTask = null;
         Task? flashbackExportConcurrentTask = null;
         Task? flashbackDisableDuringExportTask = null;
         Task? flashbackRotatedExportTask = null;
@@ -514,6 +523,21 @@ public static class DiagnosticSessionRunner
                 actions.Add("flashback range export started");
             }
 
+            if (runFlashbackRangeExportAudioSwitch)
+            {
+                flashbackRangeExportAudioSwitchTask = RunFlashbackRangeExportAsync(
+                    outputDirectory,
+                    actions,
+                    warnings,
+                    SendRawWithConnectRetryAsync,
+                    scenarioCancellationToken,
+                    scenarioLabel: "flashback range export audio switch",
+                    exportFileName: "flashback-range-export-audio-switch.mp4",
+                    outPointMs: 15_000,
+                    switchAudioDuringExport: true);
+                actions.Add("flashback range export audio switch started");
+            }
+
             if (runFlashbackLifecycle)
             {
                 flashbackLifecycleTask = RunFlashbackLifecycleAsync(
@@ -674,6 +698,11 @@ public static class DiagnosticSessionRunner
                 await flashbackRangeExportTask.ConfigureAwait(false);
             }
 
+            if (flashbackRangeExportAudioSwitchTask is not null)
+            {
+                await flashbackRangeExportAudioSwitchTask.ConfigureAwait(false);
+            }
+
             if (flashbackExportConcurrentTask is not null)
             {
                 await flashbackExportConcurrentTask.ConfigureAwait(false);
@@ -745,27 +774,30 @@ public static class DiagnosticSessionRunner
         }
         finally
         {
-            if (!options.LeaveRunning)
+            var shouldStopRecordingForVerification = startedRecording && options.VerifyRecording;
+            if (startedRecording && (shouldStopRecordingForVerification || !options.LeaveRunning))
             {
-                if (startedRecording)
+                try
                 {
-                    try
+                    SetStage("cleanup-stop-recording");
+                    using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(45));
+                    var stopResponse = await SendWithTokenAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = false }, 45_000, false, cleanupCts.Token).ConfigureAwait(false);
+                    actions.Add(shouldStopRecordingForVerification && options.LeaveRunning
+                        ? "recording stopped for verification"
+                        : "recording stopped");
+                    if (AutomationSnapshotFormatter.IsSuccess(stopResponse))
                     {
-                        SetStage("cleanup-stop-recording");
-                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(45));
-                        var stopResponse = await SendWithTokenAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = false }, 45_000, false, cleanupCts.Token).ConfigureAwait(false);
-                        actions.Add("recording stopped");
-                        if (AutomationSnapshotFormatter.IsSuccess(stopResponse))
-                        {
-                            await TryWaitWithTokenAsync("RecordingStopped", 30_000, cleanupCts.Token).ConfigureAwait(false);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        RecordTerminalException(ex, "cleanup-stop-recording");
+                        await TryWaitWithTokenAsync("RecordingStopped", 30_000, cleanupCts.Token).ConfigureAwait(false);
                     }
                 }
+                catch (Exception ex)
+                {
+                    RecordTerminalException(ex, "cleanup-stop-recording");
+                }
+            }
 
+            if (!options.LeaveRunning)
+            {
                 if (startedFlashbackPlayback)
                 {
                     try
@@ -954,6 +986,7 @@ public static class DiagnosticSessionRunner
             : 0;
         var playbackMaxPendingObserved = playbackSessionMetrics.MaxPendingCommandsObserved;
         var playbackMaxLatencyObserved = playbackSessionMetrics.MaxCommandQueueLatencyMsObserved;
+        var playbackMaxLatencyCommandObserved = playbackSessionMetrics.MaxCommandQueueLatencyCommandObserved;
         var playbackDroppedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackCommandsDropped") ?? 0 : 0;
         var playbackSkippedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0 : 0;
         var playbackScrubCoalescedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackScrubUpdatesCoalesced") ?? 0 : 0;
@@ -998,6 +1031,28 @@ public static class DiagnosticSessionRunner
         var playbackNearLiveSnapsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackNearLiveSnaps") ?? 0 : 0;
         var playbackDecodeErrorSnapsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackDecodeErrorSnaps") ?? 0 : 0;
         var playbackLastWriteHeadWaitGapMsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs") ?? 0 : 0;
+        var playbackSeekForwardDecodeCapHitsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSeekForwardDecodeCapHits") ?? 0 : 0;
+        var playbackSeekForwardDecodeCapHitsDelta = playbackSessionMetrics.Observed
+            ? GetCounterDelta(playbackEndSnapshot, initialSnapshot, "FlashbackPlaybackSeekForwardDecodeCapHits")
+            : 0;
+        var playbackLastSeekHitForwardDecodeCapAtEnd = playbackSessionMetrics.Observed &&
+                                                      GetBool(playbackEndSnapshot, "FlashbackPlaybackLastSeekHitForwardDecodeCap");
+        if (playbackSeekForwardDecodeCapHitsDelta > 0)
+        {
+            warnings.Add(
+                "flashback playback seek forward-decode cap hit during session " +
+                $"delta={playbackSeekForwardDecodeCapHitsDelta} total={playbackSeekForwardDecodeCapHitsAtEnd}");
+        }
+        var flashbackExportForceRotateFallbacksAtEnd = GetNullableLong(lastSnapshot, "FlashbackExportForceRotateFallbacks") ?? 0;
+        var flashbackExportForceRotateFallbacksDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "FlashbackExportForceRotateFallbacks");
+        var flashbackExportLastForceRotateFallbackSegmentsAtEnd = GetInt(lastSnapshot, "FlashbackExportLastForceRotateFallbackSegments");
+        if (flashbackExportForceRotateFallbacksDelta > 0)
+        {
+            warnings.Add(
+                "flashback export used force-rotate partial fallback " +
+                $"delta={flashbackExportForceRotateFallbacksDelta} total={flashbackExportForceRotateFallbacksAtEnd} " +
+                $"segments={flashbackExportLastForceRotateFallbackSegmentsAtEnd}");
+        }
         if (runFlashbackPlayback)
         {
             ValidateFlashbackPlaybackSession(playbackSessionMetrics.Observed ? playbackEndSnapshot : lastSnapshot, playbackSessionMetrics, durationSeconds, warnings);
@@ -1033,6 +1088,7 @@ public static class DiagnosticSessionRunner
             runFlashbackExportPlayback ||
             runFlashbackSegmentPlayback ||
             runFlashbackRangeExport ||
+            runFlashbackRangeExportAudioSwitch ||
             runFlashbackLifecycle ||
             runFlashbackExportConcurrent ||
             runFlashbackDisableDuringExport ||
@@ -1043,6 +1099,13 @@ public static class DiagnosticSessionRunner
             runFlashbackRecordingSettingsDeferred ||
             runFlashbackRecordingExportRejected ||
             runFlashbackExportRejected;
+        var toleratesSourceSignalHealthWarning =
+            runFlashbackRangeExport ||
+            runFlashbackRangeExportAudioSwitch ||
+            runFlashbackExportConcurrent ||
+            runFlashbackDisableDuringExport ||
+            runFlashbackRotatedExport ||
+            runFlashbackPreviewCycle;
         if (isFlashbackScenario)
         {
             var previewTargetFps = GetDouble(lastSnapshot, "ExpectedCaptureFrameRate");
@@ -1066,7 +1129,11 @@ public static class DiagnosticSessionRunner
             samples,
             healthSnapshot,
             isFlashbackScenario);
-        var diagnosticHealthSucceeded = !IsFailingDiagnosticHealthSeverity(diagnosticHealthObservation.Severity);
+        var diagnosticHealthTolerated = toleratesSourceSignalHealthWarning &&
+                                        IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation);
+        var diagnosticHealthSucceeded =
+            !IsFailingDiagnosticHealthSeverity(diagnosticHealthObservation.Severity) ||
+            diagnosticHealthTolerated;
         if (!diagnosticHealthSucceeded)
         {
             warnings.Add(
@@ -1076,6 +1143,20 @@ public static class DiagnosticSessionRunner
                 $"offsetMs={diagnosticHealthObservation.OffsetMs} " +
                 $"evidence={FormatOptional(diagnosticHealthObservation.Evidence)}");
         }
+        else if (diagnosticHealthTolerated)
+        {
+            warnings.Add(
+                "diagnostic health source-signal warning tolerated for export reliability scenario: " +
+                $"health={diagnosticHealthObservation.HealthStatus} " +
+                $"stage={diagnosticHealthObservation.LikelyStage} " +
+                $"offsetMs={diagnosticHealthObservation.OffsetMs} " +
+                $"evidence={FormatOptional(diagnosticHealthObservation.Evidence)}");
+        }
+
+        var flashbackWarningsSucceeded = !isFlashbackScenario ||
+                                         warnings.All(warning => IsToleratedFlashbackScenarioWarning(
+                                             warning,
+                                             toleratesSourceSignalHealthWarning));
 
         var processCpuMaxPercentObserved = samples
             .Select(sample => GetDouble(sample.Snapshot, "ProcessCpuPercent"))
@@ -1107,7 +1188,7 @@ public static class DiagnosticSessionRunner
                       diagnosticHealthSucceeded &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!isFlashbackScenario || warnings.Count == 0),
+                      flashbackWarningsSucceeded,
             StartedUtc = startedUtc,
             CompletedUtc = completedUtc,
             TerminalState = terminalState,
@@ -1143,6 +1224,7 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackPendingCommandsAtEnd = playbackPendingAtEnd,
             FlashbackPlaybackMaxPendingCommandsObserved = playbackMaxPendingObserved,
             FlashbackPlaybackMaxCommandQueueLatencyMsObserved = playbackMaxLatencyObserved,
+            FlashbackPlaybackMaxCommandQueueLatencyCommandObserved = playbackMaxLatencyCommandObserved,
             FlashbackPlaybackCommandsDroppedAtEnd = playbackDroppedAtEnd,
             FlashbackPlaybackCommandsSkippedNotReadyAtEnd = playbackSkippedAtEnd,
             FlashbackPlaybackScrubUpdatesCoalescedAtEnd = playbackScrubCoalescedAtEnd,
@@ -1219,6 +1301,9 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackNearLiveSnapsAtEnd = playbackNearLiveSnapsAtEnd,
             FlashbackPlaybackDecodeErrorSnapsAtEnd = playbackDecodeErrorSnapsAtEnd,
             FlashbackPlaybackLastWriteHeadWaitGapMsAtEnd = playbackLastWriteHeadWaitGapMsAtEnd,
+            FlashbackPlaybackSeekForwardDecodeCapHitsAtEnd = playbackSeekForwardDecodeCapHitsAtEnd,
+            FlashbackPlaybackSeekForwardDecodeCapHitsDelta = playbackSeekForwardDecodeCapHitsDelta,
+            FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd = playbackLastSeekHitForwardDecodeCapAtEnd,
             FlashbackRecordingBackendObserved = recordingMetrics.BackendObserved,
             FlashbackRecordingFileGrowthObserved = recordingMetrics.FileGrowthObserved,
             FlashbackRecordingVideoFramesSubmittedDelta = recordingMetrics.VideoFramesSubmittedDelta,
@@ -1233,6 +1318,9 @@ public static class DiagnosticSessionRunner
             FlashbackExportMessageAtEnd = exportMetrics.MessageAtEnd,
             FlashbackExportFailureKindAtEnd = exportMetrics.FailureKindAtEnd,
             FlashbackExportOutputPathAtEnd = exportMetrics.OutputPathAtEnd,
+            FlashbackExportForceRotateFallbacksAtEnd = flashbackExportForceRotateFallbacksAtEnd,
+            FlashbackExportForceRotateFallbacksDelta = flashbackExportForceRotateFallbacksDelta,
+            FlashbackExportLastForceRotateFallbackSegmentsAtEnd = flashbackExportLastForceRotateFallbackSegmentsAtEnd,
             LastExportIdAtEnd = exportMetrics.LastExportIdAtEnd,
             LastExportSuccessAtEnd = exportMetrics.LastSuccessAtEnd,
             LastExportMessageAtEnd = exportMetrics.LastMessageAtEnd,
@@ -1432,6 +1520,7 @@ public static class DiagnosticSessionRunner
             await ObserveTaskAfterFaultAsync(flashbackExportPlaybackTask, "flashback-export-playback-task").ConfigureAwait(false);
             await ObserveTaskAfterFaultAsync(flashbackSegmentPlaybackTask, "flashback-segment-playback-task").ConfigureAwait(false);
             await ObserveTaskAfterFaultAsync(flashbackRangeExportTask, "flashback-range-export-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackRangeExportAudioSwitchTask, "flashback-range-export-audio-switch-task").ConfigureAwait(false);
             await ObserveTaskAfterFaultAsync(flashbackExportConcurrentTask, "flashback-export-concurrent-task").ConfigureAwait(false);
             await ObserveTaskAfterFaultAsync(flashbackDisableDuringExportTask, "flashback-disable-during-export-task").ConfigureAwait(false);
             await ObserveTaskAfterFaultAsync(flashbackRotatedExportTask, "flashback-rotated-export-task").ConfigureAwait(false);
@@ -1638,6 +1727,7 @@ public static class DiagnosticSessionRunner
             $"pendingEnd={result.FlashbackPlaybackPendingCommandsAtEnd} " +
             $"maxPending={result.FlashbackPlaybackMaxPendingCommandsObserved} " +
             $"maxLatencyMs={result.FlashbackPlaybackMaxCommandQueueLatencyMsObserved} " +
+            $"maxLatencyCommand={FormatOptional(result.FlashbackPlaybackMaxCommandQueueLatencyCommandObserved)} " +
             $"droppedEnd={result.FlashbackPlaybackCommandsDroppedAtEnd} " +
             $"skippedEnd={result.FlashbackPlaybackCommandsSkippedNotReadyAtEnd} " +
             $"coalescedScrubEnd={result.FlashbackPlaybackScrubUpdatesCoalescedAtEnd} " +
@@ -1717,6 +1807,9 @@ public static class DiagnosticSessionRunner
             $"writeHeadWaitsEnd={result.FlashbackPlaybackWriteHeadWaitsAtEnd} " +
             $"nearLiveSnapsEnd={result.FlashbackPlaybackNearLiveSnapsAtEnd} " +
             $"decodeErrorSnapsEnd={result.FlashbackPlaybackDecodeErrorSnapsAtEnd} " +
+            $"seekCapHitsEnd={result.FlashbackPlaybackSeekForwardDecodeCapHitsAtEnd} " +
+            $"seekCapHitsDelta={result.FlashbackPlaybackSeekForwardDecodeCapHitsDelta} " +
+            $"lastSeekCapEnd={result.FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd} " +
             $"lastWriteHeadGapMsEnd={result.FlashbackPlaybackLastWriteHeadWaitGapMsAtEnd}");
         builder.AppendLine(
             "Flashback Recording: " +
@@ -1735,6 +1828,9 @@ public static class DiagnosticSessionRunner
             $"statusEnd={FormatOptional(result.FlashbackExportStatusAtEnd)} " +
             $"failureKindEnd={FormatOptional(result.FlashbackExportFailureKindAtEnd)} " +
             $"messageEnd={FormatOptional(result.FlashbackExportMessageAtEnd)} " +
+            $"forceRotateFallbacksEnd={result.FlashbackExportForceRotateFallbacksAtEnd} " +
+            $"forceRotateFallbacksDelta={result.FlashbackExportForceRotateFallbacksDelta} " +
+            $"lastForceRotateFallbackSegmentsEnd={result.FlashbackExportLastForceRotateFallbackSegmentsAtEnd} " +
             $"lastResultIdEnd={result.LastExportIdAtEnd} " +
             $"lastSuccessEnd={FormatOptional(result.LastExportSuccessAtEnd)} " +
             $"lastMessageEnd={FormatOptional(result.LastExportMessageAtEnd)} " +
@@ -3183,7 +3279,8 @@ public static class DiagnosticSessionRunner
                 $"threadAlive={GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive")} " +
                 $"maxPending={GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands")} " +
                 $"lastLatencyMs={GetInt(lastSnapshot, "FlashbackPlaybackLastCommandQueueLatencyMs")} " +
-                $"maxLatencyMs={GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs")}");
+                $"maxLatencyMs={GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs")} " +
+                $"maxLatencyCommand={FormatOptional(GetString(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyCommand") ?? string.Empty)}");
             return;
         }
 
@@ -3192,6 +3289,7 @@ public static class DiagnosticSessionRunner
         var threadAlive = GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive");
         var maxPending = GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands");
         var maxLatencyMs = GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
+        var maxLatencyCommand = GetString(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyCommand") ?? string.Empty;
 
         if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || commandHealth.SubmitFailures > 0)
         {
@@ -3208,7 +3306,8 @@ public static class DiagnosticSessionRunner
             warnings.Add(
                 "flashback scrub stress: playback command latency exceeded threshold " +
                 $"maxPending={maxPending}/{FlashbackScrubStressMaxPlaybackPendingCommands} " +
-                $"maxLatencyMs={maxLatencyMs}/{FlashbackStressMaxPlaybackCommandLatencyMs}");
+                $"maxLatencyMs={maxLatencyMs}/{FlashbackStressMaxPlaybackCommandLatencyMs} " +
+                $"maxLatencyCommand={FormatOptional(maxLatencyCommand)}");
         }
 
         if (!string.Equals(state, "Live", StringComparison.OrdinalIgnoreCase))
@@ -3969,11 +4068,24 @@ public static class DiagnosticSessionRunner
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string scenarioLabel = "flashback range export",
+        string exportFileName = "flashback-range-export.mp4",
+        int outPointMs = 5_000,
+        bool switchAudioDuringExport = false)
     {
-        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+        var requiredBufferedDurationMs = Math.Max(8_000, outPointMs + 2_000);
+        var requiredEncodedFrames = Math.Max(240, (long)Math.Ceiling(requiredBufferedDurationMs / 1000.0 * 60.0));
+        if (!await WaitForFlashbackStressBufferReadyAsync(
+                sendCommandAsync,
+                cancellationToken,
+                requiredBufferedDurationMs,
+                requiredEncodedFrames,
+                TimeSpan.FromSeconds(45)).ConfigureAwait(false))
         {
-            warnings.Add("flashback range export: Flashback buffer did not become range-ready within 30s");
+            warnings.Add(
+                $"{scenarioLabel}: Flashback buffer did not become range-ready " +
+                $"within 45s bufferedMs>={requiredBufferedDurationMs} encodedFrames>={requiredEncodedFrames}");
             return;
         }
 
@@ -3991,29 +4103,29 @@ public static class DiagnosticSessionRunner
             .ConfigureAwait(false);
         if (!await WaitForFlashbackPlaybackPositionAsync(sendCommandAsync, 0, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false))
         {
-            warnings.Add("flashback range export: playback did not reach in-point seek before marking range");
+            warnings.Add($"{scenarioLabel}: playback did not reach in-point seek before marking range");
         }
 
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "set-in-point" }, null)
             .ConfigureAwait(false);
-        actions.Add("flashback range export in point set");
+        actions.Add($"{scenarioLabel} in point set");
 
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 5_000 },
+                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = outPointMs },
                 null)
             .ConfigureAwait(false);
-        if (!await WaitForFlashbackPlaybackPositionAsync(sendCommandAsync, 5_000, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false))
+        if (!await WaitForFlashbackPlaybackPositionAsync(sendCommandAsync, outPointMs, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false))
         {
-            warnings.Add("flashback range export: playback did not reach out-point seek before marking range");
+            warnings.Add($"{scenarioLabel}: playback did not reach out-point seek before marking range");
         }
 
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "set-out-point" }, null)
             .ConfigureAwait(false);
-        actions.Add("flashback range export out point set");
+        actions.Add($"{scenarioLabel} out point set");
 
-        var exportPath = Path.Combine(outputDirectory, "flashback-range-export.mp4");
-        var exportResponse = await sendCommandAsync(
+        var exportPath = Path.Combine(outputDirectory, exportFileName);
+        var exportTask = sendCommandAsync(
                 "FlashbackExport",
                 new Dictionary<string, object?>
                 {
@@ -4022,11 +4134,29 @@ public static class DiagnosticSessionRunner
                     ["useSelectionRange"] = true
                 },
                 60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback selected range export requested");
+            ;
+        Task? audioSwitchTask = null;
+        if (switchAudioDuringExport)
+        {
+            audioSwitchTask = ToggleAudioEnabledDuringFlashbackExportAsync(
+                exportTask,
+                baselineSnapshot,
+                actions,
+                warnings,
+                sendCommandAsync,
+                cancellationToken);
+        }
+
+        var exportResponse = await exportTask.ConfigureAwait(false);
+        if (audioSwitchTask is not null)
+        {
+            await audioSwitchTask.ConfigureAwait(false);
+        }
+
+        actions.Add($"{scenarioLabel} requested");
         if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
         {
-            warnings.Add($"flashback range export: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
+            warnings.Add($"{scenarioLabel}: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
             await CleanupFlashbackSelectionAsync(sendCommandAsync).ConfigureAwait(false);
             return;
         }
@@ -4039,45 +4169,48 @@ public static class DiagnosticSessionRunner
         if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
         {
             warnings.Add(
-                $"flashback range export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
+                $"{scenarioLabel} verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
         }
         else
         {
-            actions.Add("flashback selected range export verified");
+            actions.Add($"{scenarioLabel} verified");
         }
 
         var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
         if (!TryGetSnapshot(snapshotResponse, out var snapshot))
         {
-            warnings.Add("flashback range export: no snapshot returned after export");
+            warnings.Add($"{scenarioLabel}: no snapshot returned after export");
             await CleanupFlashbackSelectionAsync(sendCommandAsync).ConfigureAwait(false);
             return;
         }
 
         var inPointMs = GetNullableLong(snapshot, "FlashbackExportInPointMs") ?? 0;
-        var outPointMs = GetNullableLong(snapshot, "FlashbackExportOutPointMs") ?? 0;
-        var exportedDurationMs = outPointMs - inPointMs;
-        if (exportedDurationMs < 4_000 || exportedDurationMs > 7_000)
+        var markedOutPointMs = GetNullableLong(snapshot, "FlashbackExportOutPointMs") ?? 0;
+        var exportedDurationMs = markedOutPointMs - inPointMs;
+        var expectedDurationMinMs = Math.Max(0, outPointMs - 1_000);
+        var expectedDurationMaxMs = outPointMs + 2_000;
+        if (exportedDurationMs < expectedDurationMinMs || exportedDurationMs > expectedDurationMaxMs)
         {
             warnings.Add(
-                "flashback range export: selected export duration outside expected range " +
-                $"in={inPointMs} out={outPointMs} duration={exportedDurationMs}");
+                $"{scenarioLabel}: selected export duration outside expected range " +
+                $"in={inPointMs} out={markedOutPointMs} duration={exportedDurationMs} " +
+                $"expected={expectedDurationMinMs}-{expectedDurationMaxMs}");
         }
 
         var status = GetString(snapshot, "FlashbackExportStatus") ?? "Unknown";
         if (!string.Equals(status, "Succeeded", StringComparison.OrdinalIgnoreCase))
         {
-            warnings.Add($"flashback range export: expected Succeeded status, got {status}");
+            warnings.Add($"{scenarioLabel}: expected Succeeded status, got {status}");
         }
 
         await CleanupFlashbackSelectionAsync(sendCommandAsync).ConfigureAwait(false);
-        actions.Add("flashback range export cleared range and went live");
+        actions.Add($"{scenarioLabel} cleared range and went live");
 
         await Task.Delay(250, cancellationToken).ConfigureAwait(false);
         var finalSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
         if (!TryGetSnapshot(finalSnapshotResponse, out var finalSnapshot))
         {
-            warnings.Add("flashback range export: no final snapshot returned");
+            warnings.Add($"{scenarioLabel}: no final snapshot returned");
             return;
         }
 
@@ -4086,13 +4219,13 @@ public static class DiagnosticSessionRunner
         var state = GetString(finalSnapshot, "FlashbackPlaybackState") ?? "Unknown";
         if (pending > 0)
         {
-            warnings.Add($"flashback range export: pending commands remained after go-live pending={pending}");
+            warnings.Add($"{scenarioLabel}: pending commands remained after go-live pending={pending}");
         }
 
         if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || commandHealth.SubmitFailures > 0)
         {
             warnings.Add(
-                "flashback range export: " +
+                $"{scenarioLabel}: " +
                 $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
                 $"coalescedScrub={commandHealth.CoalescedScrub} coalescedSeek={commandHealth.CoalescedSeek} skipped={commandHealth.Skipped} " +
                 $"submitFailures={commandHealth.SubmitFailures}");
@@ -4100,7 +4233,87 @@ public static class DiagnosticSessionRunner
 
         if (!string.Equals(state, "Live", StringComparison.OrdinalIgnoreCase))
         {
-            warnings.Add($"flashback range export: playback ended in state {state}");
+            warnings.Add($"{scenarioLabel}: playback ended in state {state}");
+        }
+    }
+
+    private static async Task ToggleAudioEnabledDuringFlashbackExportAsync(
+        Task<JsonElement> exportTask,
+        JsonElement baselineSnapshot,
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        var baselineAudioEnabled = GetBool(baselineSnapshot, "IsAudioEnabled");
+        var toggledAudioEnabled = !baselineAudioEnabled;
+        var exportRequestOutstandingBeforeToggle = false;
+
+        try
+        {
+            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+            exportRequestOutstandingBeforeToggle = !exportTask.IsCompleted;
+            if (exportRequestOutstandingBeforeToggle)
+            {
+                actions.Add("flashback range export audio switch confirmed export command outstanding before audio toggle");
+            }
+            else
+            {
+                warnings.Add("flashback range export audio switch: export completed before audio toggle");
+            }
+
+            var toggleResponse = await sendCommandAsync(
+                    "SetAudioEnabled",
+                    new Dictionary<string, object?> { ["enabled"] = toggledAudioEnabled },
+                    10_000)
+                .ConfigureAwait(false);
+            if (AutomationSnapshotFormatter.IsSuccess(toggleResponse))
+            {
+                actions.Add($"flashback range export audio switch toggled audio enabled to {toggledAudioEnabled}");
+            }
+            else
+            {
+                warnings.Add(
+                    "flashback range export audio switch: audio toggle failed - " +
+                    AutomationSnapshotFormatter.Get(toggleResponse, "Message", "unknown error"));
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            warnings.Add($"flashback range export audio switch: audio toggle threw {ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            try
+            {
+                var restoreResponse = await sendCommandAsync(
+                        "SetAudioEnabled",
+                        new Dictionary<string, object?> { ["enabled"] = baselineAudioEnabled },
+                        10_000)
+                    .ConfigureAwait(false);
+                if (AutomationSnapshotFormatter.IsSuccess(restoreResponse))
+                {
+                    actions.Add($"flashback range export audio switch restored audio enabled to {baselineAudioEnabled}");
+                }
+                else
+                {
+                    warnings.Add(
+                        "flashback range export audio switch: audio restore failed - " +
+                        AutomationSnapshotFormatter.Get(restoreResponse, "Message", "unknown error"));
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                warnings.Add($"flashback range export audio switch: audio restore threw {ex.GetType().Name}: {ex.Message}");
+            }
         }
     }
 
@@ -4298,17 +4511,21 @@ public static class DiagnosticSessionRunner
 
     private static async Task<bool> WaitForFlashbackStressBufferReadyAsync(
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int requiredBufferedDurationMs = 8_000,
+        long requiredEncodedFrames = 240,
+        TimeSpan? timeout = null)
     {
         var started = Stopwatch.GetTimestamp();
-        while (Stopwatch.GetElapsedTime(started) < TimeSpan.FromSeconds(30))
+        var waitTimeout = timeout ?? TimeSpan.FromSeconds(30);
+        while (Stopwatch.GetElapsedTime(started) < waitTimeout)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
             if (TryGetSnapshot(response, out var snapshot) &&
                 GetBool(snapshot, "FlashbackActive") &&
-                GetInt(snapshot, "FlashbackBufferedDurationMs") >= 8_000 &&
-                GetInt(snapshot, "FlashbackEncodedFrames") >= 240)
+                GetInt(snapshot, "FlashbackBufferedDurationMs") >= requiredBufferedDurationMs &&
+                (GetNullableLong(snapshot, "FlashbackEncodedFrames") ?? 0) >= requiredEncodedFrames)
             {
                 return true;
             }
@@ -4699,9 +4916,12 @@ public static class DiagnosticSessionRunner
         metrics.MaxPendingCommandsObserved = Math.Max(
             metrics.MaxPendingCommandsObserved,
             GetInt(snapshot, "FlashbackPlaybackMaxPendingCommands"));
-        metrics.MaxCommandQueueLatencyMsObserved = Math.Max(
-            metrics.MaxCommandQueueLatencyMsObserved,
-            GetInt(snapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs"));
+        var maxCommandQueueLatencyMs = GetInt(snapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
+        if (maxCommandQueueLatencyMs > metrics.MaxCommandQueueLatencyMsObserved)
+        {
+            metrics.MaxCommandQueueLatencyMsObserved = maxCommandQueueLatencyMs;
+            metrics.MaxCommandQueueLatencyCommandObserved = GetString(snapshot, "FlashbackPlaybackMaxCommandQueueLatencyCommand") ?? string.Empty;
+        }
 
         var observedFps = GetDouble(snapshot, "FlashbackPlaybackObservedFps");
         if (observedFps > 0)
@@ -4776,6 +4996,7 @@ public static class DiagnosticSessionRunner
         public long EndSessionFrameCount { get; set; }
         public int MaxPendingCommandsObserved { get; set; }
         public int MaxCommandQueueLatencyMsObserved { get; set; }
+        public string MaxCommandQueueLatencyCommandObserved { get; set; } = string.Empty;
         public double MinObservedFpsObserved { get; set; } = double.PositiveInfinity;
         public double MinOnePercentLowFpsObserved { get; set; } = double.PositiveInfinity;
         public long MinOnePercentLowOffsetMs { get; set; }
@@ -5228,6 +5449,22 @@ public static class DiagnosticSessionRunner
     private static bool IsFailingDiagnosticHealthSeverity(int severity)
         => severity >= 2;
 
+    private static bool IsSourceSignalDiagnosticHealthObservation(DiagnosticHealthObservation observation)
+        => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
+           string.Equals(observation.LikelyStage, "source_signal", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsToleratedFlashbackScenarioWarning(string warning, bool toleratesSourceSignalHealthWarning)
+    {
+        if (!toleratesSourceSignalHealthWarning)
+        {
+            return false;
+        }
+
+        return warning.StartsWith(
+            "diagnostic health source-signal warning tolerated for export reliability scenario:",
+            StringComparison.Ordinal);
+    }
+
     private static int GetDiagnosticHealthSeverity(string? healthStatus)
     {
         return (healthStatus ?? string.Empty).Trim().ToLowerInvariant() switch
@@ -5391,6 +5628,7 @@ public static class DiagnosticSessionRunner
             "flashback-encoder-cycle" => Path.Combine(outputDirectory, "flashback-encoder-cycle-export.mp4"),
             "flashback-export-playback" => Path.Combine(outputDirectory, "flashback-export-playback.mp4"),
             "flashback-range-export" => Path.Combine(outputDirectory, "flashback-range-export.mp4"),
+            "flashback-range-export-audio-switch" => Path.Combine(outputDirectory, "flashback-range-export-audio-switch.mp4"),
             "flashback-disable-during-export" => Path.Combine(outputDirectory, "flashback-disable-during-export.mp4"),
             "flashback-rotated-export" => Path.Combine(outputDirectory, "flashback-rotated-export.mp4"),
             "flashback-preview-cycle" => Path.Combine(outputDirectory, "flashback-preview-off-export.mp4"),
@@ -5407,18 +5645,18 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "flashback-export-rejected" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-range-export-audio-switch" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "flashback-export-rejected" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
 
     private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
+        => scenario is "preview-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-range-export-audio-switch" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
     private static bool ScenarioNeedsRecording(string scenario)
         => scenario is "recording-only" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
     private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
+        => scenario is "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-range-export-audio-switch" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
 }

@@ -285,6 +285,8 @@ static partial class Program
         AssertContains(diagnosticsText, "status.Equals(\"Succeeded\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(diagnosticsText, "status.Equals(\"Cancelled\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(diagnosticsText, "snapshot.FlashbackExportFailureKind");
+        AssertContains(diagnosticsText, "FlashbackBackendSettingsStale = health.FlashbackBackendSettingsStale");
+        AssertContains(diagnosticsText, "backendStale={health.FlashbackBackendSettingsStale}");
         AssertContains(diagnosticsText, "kind={failureKind}");
         AssertContains(diagnosticsText, "Flashback export completed: status={status}");
         AssertContains(diagnosticsText, "\"flashback-playback-command-stalled\"");
@@ -544,6 +546,7 @@ static partial class Program
             "if (segmentPaths.Count == 0)",
             "// Fallback: single-file export if no segments available");
         AssertContains(forceRotateFallbackBlock, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
+        AssertContains(forceRotateFallbackBlock, "RecordFlashbackExportForceRotateFallback(exportId, segmentPaths.Count, inPoint, outPoint);");
         AssertDoesNotContain(forceRotateFallbackBlock, "force_rotate_failed");
         AssertDoesNotContain(forceRotateFallbackBlock, "Flashback export failed: live-edge segment rotation failed.");
         AssertContains(captureServiceText, "evictionPaused = true;");
@@ -661,6 +664,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var runFlashbackExportPlayback = scenario == \"flashback-export-playback\";");
         AssertContains(diagnosticSessionText, "var runFlashbackSegmentPlayback = scenario == \"flashback-segment-playback\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRangeExport = scenario == \"flashback-range-export\";");
+        AssertContains(diagnosticSessionText, "var runFlashbackRangeExportAudioSwitch = scenario == \"flashback-range-export-audio-switch\";");
         AssertContains(diagnosticSessionText, "var runFlashbackLifecycle = scenario == \"flashback-lifecycle\";");
         AssertContains(diagnosticSessionText, "var runFlashbackExportConcurrent = scenario == \"flashback-export-concurrent\";");
         AssertContains(diagnosticSessionText, "var runFlashbackDisableDuringExport = scenario == \"flashback-disable-during-export\";");
@@ -680,6 +684,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "skipped state-mutating scenario");
         AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromSeconds(45))");
         AssertContains(diagnosticSessionText, "SetRecordingEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, 45_000");
+        AssertContains(diagnosticSessionText, "var shouldStopRecordingForVerification = startedRecording && options.VerifyRecording;");
+        AssertContains(diagnosticSessionText, "if (startedRecording && (shouldStopRecordingForVerification || !options.LeaveRunning))");
+        AssertContains(diagnosticSessionText, "recording stopped for verification");
         AssertContains(diagnosticSessionText, ".WaitAsync(cancellationToken)");
         AssertContains(diagnosticSessionText, "scenarioCts.Cancel();");
         AssertContains(diagnosticSessionText, "WriteSamplingLiveStateBestEffortAsync");
@@ -738,6 +745,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackPlaybackSegmentSwitchesAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackFmp4ReopensAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackWriteHeadWaitsAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackSeekForwardDecodeCapHitsAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta");
+        AssertContains(diagnosticSessionText, "flashback playback seek forward-decode cap hit during session");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd");
         AssertContains(diagnosticSessionText, "Flashback Playback Commands:");
         AssertContains(diagnosticSessionText, "coalescedScrubEnd={result.FlashbackPlaybackScrubUpdatesCoalescedAtEnd}");
@@ -797,6 +807,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "sendMsObserved={result.FlashbackPlaybackMaxDecodeSendMsObserved:0.##}");
         AssertContains(diagnosticSessionText, "audioMsObserved={result.FlashbackPlaybackMaxDecodeAudioMsObserved:0.##}");
         AssertContains(diagnosticSessionText, "Flashback Playback Stages:");
+        AssertContains(diagnosticSessionText, "seekCapHitsDelta={result.FlashbackPlaybackSeekForwardDecodeCapHitsDelta}");
         AssertContains(diagnosticSessionText, "FlashbackRecordingBackendObserved");
         AssertContains(diagnosticSessionText, "PreviewD3DFrameStatsMissedRefreshDelta");
         AssertContains(diagnosticSessionText, "PreviewD3DFrameStatsFailureDelta");
@@ -893,6 +904,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackExportMessageAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackExportFailureKindAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackExportOutputPathAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackExportForceRotateFallbacksAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackExportForceRotateFallbacksDelta");
+        AssertContains(diagnosticSessionText, "FlashbackExportLastForceRotateFallbackSegmentsAtEnd");
         AssertContains(diagnosticSessionText, "LastExportIdAtEnd");
         AssertContains(diagnosticSessionText, "LastExportSuccessAtEnd");
         AssertContains(diagnosticSessionText, "LastExportMessageAtEnd");
@@ -911,6 +925,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "verificationCommand = \"VerifyFile\"");
         AssertContains(diagnosticSessionText, "[\"verificationProfile\"] = \"flashback-export\"");
         AssertContains(diagnosticSessionText, "\"flashback-range-export\" => Path.Combine(outputDirectory, \"flashback-range-export.mp4\")");
+        AssertContains(diagnosticSessionText, "\"flashback-range-export-audio-switch\" => Path.Combine(outputDirectory, \"flashback-range-export-audio-switch.mp4\")");
         AssertContains(diagnosticSessionText, "\"flashback-rotated-export\" => Path.Combine(outputDirectory, \"flashback-rotated-export.mp4\")");
         AssertContains(diagnosticSessionText, "expected BufferInactive failure kind");
         AssertContains(diagnosticSessionText, "expected UnavailableDuringRecording failure kind");
@@ -919,6 +934,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "Flashback Export:");
         AssertContains(diagnosticSessionText, "failureKindEnd={FormatOptional(result.FlashbackExportFailureKindAtEnd)}");
         AssertContains(diagnosticSessionText, "messageEnd={FormatOptional(result.FlashbackExportMessageAtEnd)}");
+        AssertContains(diagnosticSessionText, "forceRotateFallbacksDelta={result.FlashbackExportForceRotateFallbacksDelta}");
         AssertContains(diagnosticSessionText, "lastResultIdEnd={result.LastExportIdAtEnd}");
         AssertContains(diagnosticSessionText, "lastSuccessEnd={FormatOptional(result.LastExportSuccessAtEnd)}");
         AssertContains(diagnosticSessionText, "lastMessageEnd={FormatOptional(result.LastExportMessageAtEnd)}");
@@ -930,7 +946,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "Flashback video sequence gaps increased delta={metrics.IntegritySequenceGapsDelta}");
         AssertContains(diagnosticSessionText, "Flashback dropped frames increased delta={metrics.IntegrityQueueDroppedFramesDelta}");
         AssertContains(diagnosticSessionText, "metrics.MaxPendingCommandsObserved = Math.Max(");
-        AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyMsObserved = Math.Max(");
+        AssertContains(diagnosticSessionText, "if (maxCommandQueueLatencyMs > metrics.MaxCommandQueueLatencyMsObserved)");
+        AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyMsObserved = maxCommandQueueLatencyMs;");
+        AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyCommandObserved = GetString(snapshot, \"FlashbackPlaybackMaxCommandQueueLatencyCommand\") ?? string.Empty;");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackStressAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackScrubStressAsync(");
         AssertContains(diagnosticSessionText, "flashback scrub stress begin requested");
@@ -956,8 +974,12 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback segment playback started near boundary");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRangeExportAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-range-export.mp4\"");
+        AssertContains(diagnosticSessionText, "\"flashback-range-export-audio-switch.mp4\"");
+        AssertContains(diagnosticSessionText, "ToggleAudioEnabledDuringFlashbackExportAsync(");
+        AssertContains(diagnosticSessionText, "\"SetAudioEnabled\"");
+        AssertContains(diagnosticSessionText, "FlashbackExportActive");
         AssertContains(diagnosticSessionText, "[\"useSelectionRange\"] = true");
-        AssertContains(diagnosticSessionText, "flashback selected range export verified");
+        AssertContains(diagnosticSessionText, "actions.Add($\"{scenarioLabel} verified\")");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackLifecycleAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportConcurrentAsync(");
         AssertContains(diagnosticSessionText, "async Task<JsonElement> SendRawWithConnectRetryAsync(");
@@ -1001,8 +1023,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "packetsDelta");
         AssertContains(diagnosticSessionText, "RecordingIntegritySequenceGaps");
         AssertContains(diagnosticSessionText, "RecordingIntegrityQueueDroppedFrames");
-        AssertContains(diagnosticSessionText, "GetInt(snapshot, \"FlashbackBufferedDurationMs\") >= 8_000");
-        AssertContains(diagnosticSessionText, "GetInt(snapshot, \"FlashbackEncodedFrames\") >= 240");
+        AssertContains(diagnosticSessionText, "GetInt(snapshot, \"FlashbackBufferedDurationMs\") >= requiredBufferedDurationMs");
+        AssertContains(diagnosticSessionText, "(GetNullableLong(snapshot, \"FlashbackEncodedFrames\") ?? 0) >= requiredEncodedFrames");
+        AssertContains(diagnosticSessionText, "var requiredBufferedDurationMs = Math.Max(8_000, outPointMs + 2_000);");
         AssertContains(diagnosticSessionText, "\"flashback stress: Flashback buffer did not become export-ready within 30s\"");
         AssertContains(diagnosticSessionText, "\"FlashbackAction\", new Dictionary<string, object?> { [\"action\"] = \"pause\" }");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"seek\", [\"positionMs\"] = 500 }");
@@ -1015,7 +1038,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "CreateFlashbackExportVerifyPayload(exportPath)");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s \"");
         AssertContains(diagnosticSessionText, "$\"maxPending={GetInt(lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")} \"");
-        AssertContains(diagnosticSessionText, "$\"maxLatencyMs={GetInt(lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")}\"");
+        AssertContains(diagnosticSessionText, "$\"maxLatencyMs={GetInt(lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")} \"");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxCommandQueueLatencyCommand");
         AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackPendingCommands = 4;");
         AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
         AssertContains(diagnosticSessionText, "private const double FlashbackStressPlaybackWarmSeconds = 10.0;");
@@ -1048,7 +1072,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "latestSlowPresentCallMs={previewD3DMetrics.LatestSlowFramePresentCallMs:0.##}");
         AssertContains(diagnosticSessionText, "latestSlowPending={previewD3DMetrics.LatestSlowFramePendingFrameCount}");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command latency exceeded threshold \"");
-        AssertContains(diagnosticSessionText, "$\"maxLatencyMs={maxLatencyMs}/{FlashbackStressMaxPlaybackCommandLatencyMs}\"");
+        AssertContains(diagnosticSessionText, "$\"maxLatencyMs={maxLatencyMs}/{FlashbackStressMaxPlaybackCommandLatencyMs} \"");
+        AssertContains(diagnosticSessionText, "$\"maxLatencyCommand={FormatOptional(maxLatencyCommand)}\"");
         AssertContains(diagnosticSessionText, "\"flashback-rejected-export.mp4\"");
         AssertContains(diagnosticSessionText, "$\"flashback export rejected: expected Failed status, got {status}\"");
         AssertContains(diagnosticSessionText, "message.Contains(\"Flashback buffer not active\", StringComparison.OrdinalIgnoreCase)");
@@ -1061,8 +1086,14 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackDiagnosticMaxWarmupMs");
         AssertContains(diagnosticSessionText, "private static DiagnosticHealthObservation BuildWorstDiagnosticHealthObservationAfterOffset(");
         AssertContains(diagnosticSessionText, "diagnosticHealthSucceeded &&");
-        AssertContains(diagnosticSessionText, "(!isFlashbackScenario || warnings.Count == 0)");
-        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-playback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-encoder-cycle\" or \"flashback-export-playback\" or \"flashback-segment-playback\" or \"flashback-range-export\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-rotated-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-settings-deferred\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");
+        AssertContains(diagnosticSessionText, "var toleratesSourceSignalHealthWarning =");
+        AssertContains(diagnosticSessionText, "runFlashbackRangeExportAudioSwitch");
+        AssertContains(diagnosticSessionText, "IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)");
+        AssertContains(diagnosticSessionText, "diagnostic health source-signal warning tolerated for export reliability scenario");
+        AssertContains(diagnosticSessionText, "var flashbackWarningsSucceeded = !isFlashbackScenario ||");
+        AssertContains(diagnosticSessionText, "IsToleratedFlashbackScenarioWarning(");
+        AssertContains(diagnosticSessionText, "flashbackWarningsSucceeded,");
+        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-playback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-encoder-cycle\" or \"flashback-export-playback\" or \"flashback-segment-playback\" or \"flashback-range-export\" or \"flashback-range-export-audio-switch\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-rotated-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-settings-deferred\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");
 
         var ssctlProgramText = ReadRepoFile("tools/ssctl/Program.cs")
             .Replace("\r\n", "\n");
@@ -1085,6 +1116,9 @@ static partial class Program
         AssertContains(ssctlProgramText, "flashback-range-export");
         AssertContains(ssctlCommandHandlersText, "flashback-range-export");
         AssertContains(mcpDiagnosticSessionText, "flashback-range-export");
+        AssertContains(ssctlProgramText, "flashback-range-export-audio-switch");
+        AssertContains(ssctlCommandHandlersText, "flashback-range-export-audio-switch");
+        AssertContains(mcpDiagnosticSessionText, "flashback-range-export-audio-switch");
         AssertContains(ssctlProgramText, "flashback-disable-during-export");
         AssertContains(ssctlCommandHandlersText, "flashback-disable-during-export");
         AssertContains(mcpDiagnosticSessionText, "flashback-disable-during-export");

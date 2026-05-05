@@ -76,6 +76,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private readonly Thread[] _workers;
     private readonly Channel<MjpegWorkItem> _workQueue;
     private readonly SortedDictionary<long, DecodedFrame> _reorderFrames = new();
+    private readonly SortedSet<long> _knownMissingSequences = new();
     private readonly object _reorderLock = new();
     private readonly int _decodedReorderCapacity;
     private int _reorderBufferDepth;
@@ -560,6 +561,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         while (true)
         {
             DiscardStaleReorderFrames();
+            emittedAny = ConsumeKnownMissingFrames() || emittedAny;
             if (!TryTakeNextDecodedFrame(out var frame))
             {
                 break;
@@ -647,15 +649,42 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
     private void MarkKnownMissing(long seqNo, string reason)
     {
-        if (seqNo < Volatile.Read(ref _nextEmitSeq))
+        lock (_reorderLock)
         {
-            return;
+            if (seqNo < _nextEmitSeq)
+            {
+                return;
+            }
+
+            _knownMissingSequences.Add(seqNo);
+            Monitor.PulseAll(_reorderLock);
         }
 
-        var ex = new InvalidOperationException(
-            $"CPU MJPEG pipeline lost delivered frame {seqNo}: {reason}");
-        Logger.Log($"MJPEG_PIPELINE_FATAL_MISSING seq={seqNo} reason={reason}");
-        SignalFatalError(ex);
+        Logger.Log($"MJPEG_PIPELINE_KNOWN_MISSING seq={seqNo} reason={reason}");
+        SignalEmitter("known_missing");
+    }
+
+    private bool ConsumeKnownMissingFrames()
+    {
+        var consumedAny = false;
+        while (true)
+        {
+            long skippedSeq;
+            lock (_reorderLock)
+            {
+                if (!_knownMissingSequences.Remove(_nextEmitSeq))
+                {
+                    return consumedAny;
+                }
+
+                skippedSeq = _nextEmitSeq++;
+                Monitor.PulseAll(_reorderLock);
+            }
+
+            consumedAny = true;
+            Interlocked.Increment(ref _reorderSkips);
+            Logger.Log($"MJPEG_PIPELINE_KNOWN_MISSING_SKIP seq={skippedSeq} nextEmit={Volatile.Read(ref _nextEmitSeq)}");
+        }
     }
 
     private void NotifyPreviewFrameDecoded(PooledVideoFrame frame)
@@ -740,7 +769,6 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             {
                 Interlocked.Increment(ref _reorderCollisions);
                 var collisions = Interlocked.Increment(ref _totalFramesDropped);
-                MarkKnownMissing(seqNo, "reorder_duplicate");
                 if (collisions == 1 || collisions % 120 == 0)
                 {
                     Logger.Log(
@@ -798,6 +826,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         {
             remaining = _reorderFrames.Values.ToList();
             _reorderFrames.Clear();
+            _knownMissingSequences.Clear();
             Volatile.Write(ref _reorderBufferDepth, 0);
             Monitor.PulseAll(_reorderLock);
         }
@@ -1016,6 +1045,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         {
             remaining = _reorderFrames.Values.ToList();
             _reorderFrames.Clear();
+            _knownMissingSequences.Clear();
             Volatile.Write(ref _reorderBufferDepth, 0);
             Monitor.PulseAll(_reorderLock);
         }
@@ -1042,6 +1072,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         {
             remaining = _reorderFrames.Values.ToList();
             _reorderFrames.Clear();
+            _knownMissingSequences.Clear();
             Volatile.Write(ref _reorderBufferDepth, 0);
             Monitor.PulseAll(_reorderLock);
         }

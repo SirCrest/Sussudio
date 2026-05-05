@@ -1409,6 +1409,7 @@ static partial class Program
         AssertContains(source, "FlashbackPlaybackCommandsSkippedNotReady");
         AssertContains(source, "FlashbackPlaybackScrubUpdatesCoalesced");
         AssertContains(source, "FlashbackPlaybackSeekCommandsCoalesced");
+        AssertContains(source, "FlashbackPlaybackMaxCommandQueueLatencyCommand");
         AssertContains(source, "FlashbackPlaybackLastCommandQueued");
         AssertContains(source, "FlashbackPlaybackLastCommandProcessed");
         AssertContains(source, "FlashbackPlaybackSubmitFailures");
@@ -1479,6 +1480,7 @@ static partial class Program
         AssertContains(source, "send={last.FlashbackPlaybackMaxDecodeSendMs:F1}ms");
         AssertContains(source, "audio={last.FlashbackPlaybackMaxDecodeAudioMs:F1}ms");
         AssertContains(source, "Flashback Cmds:");
+        AssertContains(source, "maxLatencyCommand={FormatOptional(last.FlashbackPlaybackMaxCommandQueueLatencyCommand)}");
         AssertContains(source, "Flashback Cmd Counters:");
         AssertContains(source, "lastQueued={FormatOptional(last.FlashbackPlaybackLastCommandQueued)}");
         AssertContains(source, "lastProcessed={FormatOptional(last.FlashbackPlaybackLastCommandProcessed)}");

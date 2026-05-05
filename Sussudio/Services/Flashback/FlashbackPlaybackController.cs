@@ -157,6 +157,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private long _lastPlaybackPtsCadenceMismatchUtcUnixMs;
     private double _lastPlaybackPtsCadenceDeltaMs;
     private double _lastPlaybackPtsCadenceExpectedMs;
+    private long _playbackSeekForwardDecodeCapHits;
+    private int _lastPlaybackSeekHitForwardDecodeCap;
     private readonly Stopwatch _playbackFpsClock = new();
     private const int PlaybackCadenceSampleCapacity = 240;
     private readonly object _playbackCadenceLock = new();
@@ -186,6 +188,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private int _maxPendingCommands;
     private long _lastCommandQueueLatencyMs;
     private long _maxCommandQueueLatencyMs;
+    private string _maxCommandQueueLatencyCommand = "None";
     private long _lastCommandQueuedUtcUnixMs;
     private long _lastCommandProcessedUtcUnixMs;
     private long _lastCommandFailureUtcUnixMs;
@@ -1882,7 +1885,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (decoder.SeekTo(seekTarget, cancellationToken))
+        if (SeekToWithCapTelemetry(decoder, seekTarget, reason, cancellationToken))
         {
             return true;
         }
@@ -1962,7 +1965,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             _currentOpenFilePath = nextPath;
             _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
             cancellationToken.ThrowIfCancellationRequested();
-            if (decoder.SeekTo(effectiveSeekTarget, cancellationToken))
+            if (SeekToWithCapTelemetry(decoder, effectiveSeekTarget, reason, cancellationToken))
             {
                 Interlocked.Increment(ref _playbackSegmentSwitches);
                 Interlocked.Exchange(ref _lastSegmentSwitchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
@@ -2018,7 +2021,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             _currentOpenFilePath = currentPath;
             _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
             cancellationToken.ThrowIfCancellationRequested();
-            if (decoder.SeekTo(seekTarget, cancellationToken))
+            if (SeekToWithCapTelemetry(decoder, seekTarget, reason, cancellationToken))
             {
                 return true;
             }
@@ -2616,7 +2619,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);
                         decoder.AudioChunkCallback = null;
                         cancellationToken.ThrowIfCancellationRequested();
-                        if (decoder.SeekTo(lastFrameAbsPts, cancellationToken))
+                        if (SeekToWithCapTelemetry(decoder, lastFrameAbsPts, "fmp4_reopen_before_segment_switch", cancellationToken))
                         {
                             // Gate audio at the post-seek video PTS (seek target), not at
                             // _lastAudioPtsTicks. _lastAudioPtsTicks reflects pre-seek state;
@@ -2659,7 +2662,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)
                         segSwitchTarget = nextSegmentStart.Value;
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (!decoder.SeekTo(segSwitchTarget, cancellationToken))
+                    if (!SeekToWithCapTelemetry(decoder, segSwitchTarget, "segment_switch", cancellationToken))
                     {
                         SetReopenFailure("segment_switch", "seek_failed", segSwitchTarget);
                         Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH_SEEK_FAIL path='{nextFile}' offset_ms={(long)segSwitchTarget.TotalMilliseconds}");
@@ -2706,7 +2709,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);
                     decoder.AudioChunkCallback = null;
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (!decoder.SeekTo(resumeTarget, cancellationToken))
+                    if (!SeekToWithCapTelemetry(decoder, resumeTarget, "fmp4_reopen", cancellationToken))
                     {
                         SetReopenFailure("fmp4_reopen", "seek_failed", resumeTarget);
                         Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN_SEEK_FAIL path='{currentOpenFilePath}' offset_ms={(long)resumeTarget.TotalMilliseconds}");
@@ -3459,6 +3462,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long LastPlaybackPtsCadenceMismatchUtcUnixMs => Interlocked.Read(ref _lastPlaybackPtsCadenceMismatchUtcUnixMs);
     public double LastPlaybackPtsCadenceDeltaMs => _lastPlaybackPtsCadenceDeltaMs;
     public double LastPlaybackPtsCadenceExpectedMs => _lastPlaybackPtsCadenceExpectedMs;
+    public long PlaybackSeekForwardDecodeCapHits => Interlocked.Read(ref _playbackSeekForwardDecodeCapHits);
+    public bool LastPlaybackSeekHitForwardDecodeCap => Volatile.Read(ref _lastPlaybackSeekHitForwardDecodeCap) != 0;
     public string PlaybackMaxDecodePhase => Volatile.Read(ref _playbackMaxDecodePhase);
     public double PlaybackMaxDecodeReceiveMs => _playbackMaxDecodeReceiveMs;
     public double PlaybackMaxDecodeFeedMs => _playbackMaxDecodeFeedMs;
@@ -3479,6 +3484,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public int MaxPendingCommands => Volatile.Read(ref _maxPendingCommands);
     public long LastCommandQueueLatencyMs => Interlocked.Read(ref _lastCommandQueueLatencyMs);
     public long MaxCommandQueueLatencyMs => Interlocked.Read(ref _maxCommandQueueLatencyMs);
+    public string MaxCommandQueueLatencyCommand => Volatile.Read(ref _maxCommandQueueLatencyCommand);
     public long LastCommandQueuedUtcUnixMs => Interlocked.Read(ref _lastCommandQueuedUtcUnixMs);
     public long LastCommandProcessedUtcUnixMs => Interlocked.Read(ref _lastCommandProcessedUtcUnixMs);
     public long LastCommandFailureUtcUnixMs => Interlocked.Read(ref _lastCommandFailureUtcUnixMs);
@@ -3619,6 +3625,26 @@ internal sealed class FlashbackPlaybackController : IDisposable
         SetLastCommandFailure($"no_file:{kind}{FormatCommandDetail(position: position)}");
     }
 
+    private bool SeekToWithCapTelemetry(
+        FlashbackDecoder decoder,
+        TimeSpan seekTarget,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        Volatile.Write(ref _lastPlaybackSeekHitForwardDecodeCap, 0);
+        var succeeded = decoder.SeekTo(seekTarget, cancellationToken);
+        if (decoder.LastSeekHitForwardDecodeCap)
+        {
+            Volatile.Write(ref _lastPlaybackSeekHitForwardDecodeCap, 1);
+            Interlocked.Increment(ref _playbackSeekForwardDecodeCapHits);
+            Logger.Log(
+                $"FLASHBACK_PLAYBACK_SEEK_FORWARD_DECODE_CAP reason={reason} " +
+                $"target_ms={(long)seekTarget.TotalMilliseconds} success={succeeded}");
+        }
+
+        return succeeded;
+    }
+
     private void SetReopenFailure(string reason, string detail, TimeSpan position)
     {
         SetLastCommandFailure($"reopen_failed:{reason}:{detail}{FormatCommandDetail(position: position)}");
@@ -3729,7 +3755,25 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var elapsedTicks = Stopwatch.GetTimestamp() - command.QueuedTimestamp;
         var latencyMs = Math.Max(0, (long)(elapsedTicks * 1000.0 / Stopwatch.Frequency));
         Interlocked.Exchange(ref _lastCommandQueueLatencyMs, latencyMs);
-        UpdateMaxLong(ref _maxCommandQueueLatencyMs, latencyMs);
+        UpdateMaxCommandQueueLatency(command.Kind, latencyMs);
+    }
+
+    private void UpdateMaxCommandQueueLatency(CommandKind commandKind, long latencyMs)
+    {
+        while (true)
+        {
+            var current = Interlocked.Read(ref _maxCommandQueueLatencyMs);
+            if (latencyMs <= current)
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _maxCommandQueueLatencyMs, latencyMs, current) == current)
+            {
+                Volatile.Write(ref _maxCommandQueueLatencyCommand, commandKind.ToString());
+                return;
+            }
+        }
     }
 
     private void UpdateMaxPendingCommands(int value)
@@ -3912,6 +3956,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Exchange(ref _lastPlaybackPtsCadenceMismatchUtcUnixMs, 0);
         _lastPlaybackPtsCadenceDeltaMs = 0;
         _lastPlaybackPtsCadenceExpectedMs = 0;
+        Interlocked.Exchange(ref _playbackSeekForwardDecodeCapHits, 0);
+        Volatile.Write(ref _lastPlaybackSeekHitForwardDecodeCap, 0);
         _playbackFpsClock.Reset();
         Interlocked.Exchange(ref _playbackSlowFrameCount, 0);
         lock (_playbackCadenceLock)

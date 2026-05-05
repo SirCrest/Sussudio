@@ -78,6 +78,66 @@ public partial class CaptureService
     private static string? ResolveEncoderCodecName(CaptureSettings? settings)
         => settings == null ? null : MediaFormat.MapNvencCodecName(settings.Format);
 
+    private static string ResolveFlashbackBackendSettingsStaleReason(
+        CaptureSettings? backendSettings,
+        CaptureSettings? requestedSettings)
+    {
+        if (backendSettings == null || requestedSettings == null)
+        {
+            return string.Empty;
+        }
+
+        var reasons = new List<string>();
+        if (backendSettings.Format != requestedSettings.Format)
+        {
+            reasons.Add($"format:{backendSettings.Format}->{requestedSettings.Format}");
+        }
+
+        if (backendSettings.Quality != requestedSettings.Quality)
+        {
+            reasons.Add($"quality:{backendSettings.Quality}->{requestedSettings.Quality}");
+        }
+
+        if (Math.Abs(backendSettings.CustomBitrateMbps - requestedSettings.CustomBitrateMbps) >= 0.01)
+        {
+            reasons.Add($"bitrate:{backendSettings.CustomBitrateMbps:0.##}->{requestedSettings.CustomBitrateMbps:0.##}");
+        }
+
+        if (!string.Equals(backendSettings.NvencPreset, requestedSettings.NvencPreset, StringComparison.OrdinalIgnoreCase))
+        {
+            reasons.Add($"preset:{backendSettings.NvencPreset}->{requestedSettings.NvencPreset}");
+        }
+
+        if (backendSettings.AudioEnabled != requestedSettings.AudioEnabled)
+        {
+            reasons.Add($"audio:{backendSettings.AudioEnabled}->{requestedSettings.AudioEnabled}");
+        }
+
+        if (backendSettings.MicrophoneEnabled != requestedSettings.MicrophoneEnabled)
+        {
+            reasons.Add($"microphone:{backendSettings.MicrophoneEnabled}->{requestedSettings.MicrophoneEnabled}");
+        }
+
+        if (backendSettings.FlashbackBufferMinutes != requestedSettings.FlashbackBufferMinutes)
+        {
+            reasons.Add($"bufferMinutes:{backendSettings.FlashbackBufferMinutes}->{requestedSettings.FlashbackBufferMinutes}");
+        }
+
+        if (backendSettings.FlashbackGpuDecode != requestedSettings.FlashbackGpuDecode)
+        {
+            reasons.Add($"gpuDecode:{backendSettings.FlashbackGpuDecode}->{requestedSettings.FlashbackGpuDecode}");
+        }
+
+        var backendHdr = HdrOutputPolicy.IsEnabled(backendSettings);
+        var requestedHdr = HdrOutputPolicy.IsEnabled(requestedSettings);
+        if (backendHdr != requestedHdr)
+        {
+            reasons.Add($"hdr:{backendHdr}->{requestedHdr}");
+        }
+
+        return reasons.Count == 0 ? string.Empty : string.Join(",", reasons);
+    }
+
     private static string? ResolveEncoderOutputPixelFormat(RecordingContext? context, CaptureSettings? settings)
     {
         if (context?.HdrPipelineActive == true)
@@ -1368,6 +1428,12 @@ public partial class CaptureService
         long flashbackExportOutPointMs;
         string flashbackExportMessage;
         string flashbackExportFailureKind;
+        long flashbackExportForceRotateFallbacks;
+        long flashbackExportLastForceRotateFallbackUtcUnixMs;
+        int flashbackExportLastForceRotateFallbackSegments;
+        long flashbackExportLastForceRotateFallbackInPointMs;
+        long flashbackExportLastForceRotateFallbackOutPointMs;
+        CaptureSettings? flashbackBackendSettings;
         long lastFlashbackExportResultId;
         FinalizeResult? lastExportResult;
         lock (_flashbackExportDiagnosticsLock)
@@ -1386,9 +1452,15 @@ public partial class CaptureService
             flashbackExportOutPointMs = _flashbackExportOutPointMs;
             flashbackExportMessage = _flashbackExportMessage;
             flashbackExportFailureKind = _flashbackExportFailureKind;
+            flashbackExportForceRotateFallbacks = _flashbackExportForceRotateFallbacks;
+            flashbackExportLastForceRotateFallbackUtcUnixMs = _flashbackExportLastForceRotateFallbackUtcUnixMs;
+            flashbackExportLastForceRotateFallbackSegments = _flashbackExportLastForceRotateFallbackSegments;
+            flashbackExportLastForceRotateFallbackInPointMs = _flashbackExportLastForceRotateFallbackInPointMs;
+            flashbackExportLastForceRotateFallbackOutPointMs = _flashbackExportLastForceRotateFallbackOutPointMs;
             lastFlashbackExportResultId = _lastFlashbackExportResultId;
             lastExportResult = _lastExportResult;
         }
+        flashbackBackendSettings = _flashbackBackendSettings;
 
         var snapshotUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var flashbackExportElapsedMs = ComputeFlashbackExportElapsedMs(
@@ -1408,6 +1480,9 @@ public partial class CaptureService
         var flashbackExportThroughputBytesPerSec = flashbackExportElapsedMs > 0
             ? flashbackExportOutputBytes / (flashbackExportElapsedMs / 1000.0)
             : 0;
+        var flashbackBackendSettingsStaleReason = fbSink == null
+            ? string.Empty
+            : ResolveFlashbackBackendSettingsStaleReason(flashbackBackendSettings, _currentSettings);
         var playbackCadence = fbPlayback?.GetPlaybackCadenceMetrics() ?? default;
         var playbackDecode = fbPlayback?.GetPlaybackDecodeMetrics() ?? default;
 
@@ -1434,6 +1509,12 @@ public partial class CaptureService
             FlashbackEncodedFrames = fbSink?.EncodedVideoFrames ?? 0,
             FlashbackDroppedFrames = fbSink?.DroppedVideoFrames ?? 0,
             FlashbackGpuEncoding = fbSink?.GpuEncodingEnabled ?? false,
+            FlashbackBackendSettingsStale = !string.IsNullOrEmpty(flashbackBackendSettingsStaleReason),
+            FlashbackBackendSettingsStaleReason = flashbackBackendSettingsStaleReason,
+            FlashbackBackendActiveFormat = flashbackBackendSettings?.Format.ToString() ?? string.Empty,
+            FlashbackBackendRequestedFormat = _currentSettings?.Format.ToString() ?? string.Empty,
+            FlashbackBackendActivePreset = flashbackBackendSettings?.NvencPreset ?? string.Empty,
+            FlashbackBackendRequestedPreset = _currentSettings?.NvencPreset ?? string.Empty,
             EncoderCodecName = fbSink?.CodecName,
             EncoderTargetBitRate = fbSink?.TargetBitRate ?? 0,
             EncoderWidth = fbSink?.EncoderWidth ?? 0,
@@ -1487,6 +1568,8 @@ public partial class CaptureService
             FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs = fbPlayback?.LastPlaybackPtsCadenceMismatchUtcUnixMs ?? 0,
             FlashbackPlaybackLastPtsCadenceDeltaMs = fbPlayback?.LastPlaybackPtsCadenceDeltaMs ?? 0,
             FlashbackPlaybackLastPtsCadenceExpectedMs = fbPlayback?.LastPlaybackPtsCadenceExpectedMs ?? 0,
+            FlashbackPlaybackSeekForwardDecodeCapHits = fbPlayback?.PlaybackSeekForwardDecodeCapHits ?? 0,
+            FlashbackPlaybackLastSeekHitForwardDecodeCap = fbPlayback?.LastPlaybackSeekHitForwardDecodeCap ?? false,
             FlashbackPlaybackDecodeSampleCount = playbackDecode.SampleCount,
             FlashbackPlaybackDecodeAvgMs = playbackDecode.AvgMs,
             FlashbackPlaybackDecodeP95Ms = playbackDecode.P95Ms,
@@ -1514,6 +1597,7 @@ public partial class CaptureService
             FlashbackPlaybackMaxPendingCommands = fbPlayback?.MaxPendingCommands ?? 0,
             FlashbackPlaybackLastCommandQueueLatencyMs = fbPlayback?.LastCommandQueueLatencyMs ?? 0,
             FlashbackPlaybackMaxCommandQueueLatencyMs = fbPlayback?.MaxCommandQueueLatencyMs ?? 0,
+            FlashbackPlaybackMaxCommandQueueLatencyCommand = fbPlayback?.MaxCommandQueueLatencyCommand ?? "None",
             FlashbackPlaybackLastCommandQueued = fbPlayback?.LastCommandQueued ?? "None",
             FlashbackPlaybackLastCommandProcessed = fbPlayback?.LastCommandProcessed ?? "None",
             FlashbackPlaybackLastCommandQueuedUtcUnixMs = fbPlayback?.LastCommandQueuedUtcUnixMs ?? 0,
@@ -1538,6 +1622,11 @@ public partial class CaptureService
             FlashbackExportOutPointMs = flashbackExportOutPointMs,
             FlashbackExportMessage = flashbackExportMessage,
             FlashbackExportFailureKind = flashbackExportFailureKind,
+            FlashbackExportForceRotateFallbacks = flashbackExportForceRotateFallbacks,
+            FlashbackExportLastForceRotateFallbackUtcUnixMs = flashbackExportLastForceRotateFallbackUtcUnixMs,
+            FlashbackExportLastForceRotateFallbackSegments = flashbackExportLastForceRotateFallbackSegments,
+            FlashbackExportLastForceRotateFallbackInPointMs = flashbackExportLastForceRotateFallbackInPointMs,
+            FlashbackExportLastForceRotateFallbackOutPointMs = flashbackExportLastForceRotateFallbackOutPointMs,
             // Surface the silent codec/preset substitution alongside the existing
             // export status so automation, the verifier, and (eventually) the UI
             // can show what was actually encoded vs what the user requested.

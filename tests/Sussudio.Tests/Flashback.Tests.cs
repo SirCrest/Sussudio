@@ -2713,10 +2713,13 @@ static partial class Program
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Paused &&\n                            IsSamePlaybackPath(prevFile, _currentOpenFilePath) &&\n                            !requireExactResumeSeek)");
         AssertContains(sourceText, "fileOpen = false;\n            _currentOpenFilePath = null;\n            return false;");
         AssertContains(sourceText, "private bool TrySeekWithActiveFmp4Reopen(");
-        AssertContains(sourceText, "if (decoder.SeekTo(seekTarget, cancellationToken))\n        {\n            return true;\n        }");
+        AssertContains(sourceText, "if (SeekToWithCapTelemetry(decoder, seekTarget, reason, cancellationToken))\n        {\n            return true;\n        }");
+        AssertContains(sourceText, "private bool SeekToWithCapTelemetry(");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_SEEK_FORWARD_DECODE_CAP");
+        AssertContains(sourceText, "Interlocked.Increment(ref _playbackSeekForwardDecodeCapHits)");
         AssertContains(sourceText, "if (ShouldSkipActiveFmp4ReopenNearLive(seekTarget, reason))\n            {\n                SetReopenFailure(reason, \"near_live\", seekTarget);\n                return false;\n            }\n\n            return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason, cancellationToken);");
         AssertContains(sourceText, "if (TrySeekAdjacentSegmentStart(decoder, ref fileOpen, seekTarget, reason, out _, cancellationToken))\n        {\n            return true;\n        }\n\n        SetReopenFailure(reason, \"seek_failed\", seekTarget);");
-        AssertContains(sourceText, "if (decoder.SeekTo(seekTarget, cancellationToken))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"seek_failed\", seekTarget);");
+        AssertContains(sourceText, "if (SeekToWithCapTelemetry(decoder, seekTarget, reason, cancellationToken))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"seek_failed\", seekTarget);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_SEEK_FAIL");
         AssertContains(sourceText, "if (decoder.SeekToKeyframe(seekTarget, cancellationToken))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"keyframe_seek_failed\", seekTarget);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_SEEK_FAIL");

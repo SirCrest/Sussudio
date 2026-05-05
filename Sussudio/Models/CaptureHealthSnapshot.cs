@@ -22,6 +22,12 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackEncodedFrames { get; init; }
     public long FlashbackDroppedFrames { get; init; }
     public bool FlashbackGpuEncoding { get; init; }
+    public bool FlashbackBackendSettingsStale { get; init; }
+    public string FlashbackBackendSettingsStaleReason { get; init; } = string.Empty;
+    public string FlashbackBackendActiveFormat { get; init; } = string.Empty;
+    public string FlashbackBackendRequestedFormat { get; init; } = string.Empty;
+    public string FlashbackBackendActivePreset { get; init; } = string.Empty;
+    public string FlashbackBackendRequestedPreset { get; init; } = string.Empty;
     public string? EncoderCodecName { get; init; }
     public uint EncoderTargetBitRate { get; init; }
     public int EncoderWidth { get; init; }
@@ -75,6 +81,8 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs { get; init; }
     public double FlashbackPlaybackLastPtsCadenceDeltaMs { get; init; }
     public double FlashbackPlaybackLastPtsCadenceExpectedMs { get; init; }
+    public long FlashbackPlaybackSeekForwardDecodeCapHits { get; init; }
+    public bool FlashbackPlaybackLastSeekHitForwardDecodeCap { get; init; }
     public int FlashbackPlaybackDecodeSampleCount { get; init; }
     public double FlashbackPlaybackDecodeAvgMs { get; init; }
     public double FlashbackPlaybackDecodeP95Ms { get; init; }
@@ -102,6 +110,7 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public int FlashbackPlaybackMaxPendingCommands { get; init; }
     public long FlashbackPlaybackLastCommandQueueLatencyMs { get; init; }
     public long FlashbackPlaybackMaxCommandQueueLatencyMs { get; init; }
+    public string FlashbackPlaybackMaxCommandQueueLatencyCommand { get; init; } = "None";
     public string FlashbackPlaybackLastCommandQueued { get; init; } = "None";
     public string FlashbackPlaybackLastCommandProcessed { get; init; } = "None";
     public long FlashbackPlaybackLastCommandQueuedUtcUnixMs { get; init; }
@@ -128,6 +137,11 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackExportOutPointMs { get; init; }
     public string FlashbackExportMessage { get; init; } = string.Empty;
     public string FlashbackExportFailureKind { get; init; } = string.Empty;
+    public long FlashbackExportForceRotateFallbacks { get; init; }
+    public long FlashbackExportLastForceRotateFallbackUtcUnixMs { get; init; }
+    public int FlashbackExportLastForceRotateFallbackSegments { get; init; }
+    public long FlashbackExportLastForceRotateFallbackInPointMs { get; init; }
+    public long FlashbackExportLastForceRotateFallbackOutPointMs { get; init; }
     /// <summary>
     /// The actual codec/container the next flashback export will produce. Differs
     /// from the user-requested <c>SelectedRecordingFormat</c> when the runtime
