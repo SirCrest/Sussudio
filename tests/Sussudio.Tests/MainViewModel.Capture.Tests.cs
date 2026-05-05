@@ -85,6 +85,31 @@ static partial class Program
         AssertContains(exportCore, "if (forceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
         AssertContains(exportCore, "RecordLastFlashbackExportResult(exportId, result);\n            CompleteFlashbackExportDiagnostics(exportId, result);");
 
+        var backendCleanup = ExtractTextBetween(
+            captureServiceText,
+            "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync",
+            "    private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+        AssertContains(backendCleanup, "bool exportOperationLockAlreadyHeld = false)");
+        AssertContains(backendCleanup, "var lockAcquired = exportOperationLockAlreadyHeld;");
+        AssertContains(backendCleanup, "if (!exportOperationLockAlreadyHeld)");
+        AssertContains(backendCleanup, "FLASHBACK_BACKEND_CLEANUP_LOCK_REUSED");
+        AssertContains(backendCleanup, "if (lockAcquired && releaseLockOnExit)");
+
+        var disposeBackend = ExtractTextBetween(
+            captureServiceText,
+            "private async Task DisposeFlashbackPreviewBackendAsync",
+            "    private async Task DisposeFlashbackPreviewBackendCoreAsync");
+        AssertContains(disposeBackend, "await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(disposeBackend, "exportOperationLockAlreadyHeld: true");
+        AssertContains(disposeBackend, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
+
+        var disposeBackendCore = ExtractTextBetween(
+            captureServiceText,
+            "private async Task DisposeFlashbackPreviewBackendCoreAsync",
+            "    /// <summary>\n    /// Cycles the flashback encoder sink after recording stops.");
+        AssertContains(disposeBackendCore, "bool exportOperationLockAlreadyHeld = false)");
+        AssertContains(disposeBackendCore, "\"preview_backend_dispose\",\n                exportOperationLockAlreadyHeld)");
+
         return Task.CompletedTask;
     }
 
@@ -647,6 +672,9 @@ static partial class Program
             captureServiceText,
             "private async Task CycleFlashbackBufferAsync",
             "    private void OnFlashbackFrameEncoded");
+        AssertContains(cycleBuffer, "await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(cycleBuffer, "exportOperationLockAlreadyHeld: true");
+        AssertContains(cycleBuffer, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
         AssertContains(cycleBuffer, "var preservedInPoint = !effectivePurgeSegments ? oldPlaybackController?.InPoint : null;");
         AssertContains(cycleBuffer, "var preservedOutPoint = !effectivePurgeSegments ? oldPlaybackController?.OutPoint : null;");
         AssertDoesNotContain(cycleBuffer, "var preservedInPoint = oldPlaybackController?.InPoint;");

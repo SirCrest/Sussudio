@@ -1398,7 +1398,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         SafeResumePreviewSubmission("go_live");
                         SetState(FlashbackPlaybackState.Live);
                         Logger.Log("FLASHBACK_PLAYBACK_GO_LIVE");
-                        return;
+                        break;
 
                     case CommandKind.Nudge:
                         pendingExactResumeTarget = null;

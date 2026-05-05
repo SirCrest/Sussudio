@@ -1431,30 +1431,40 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         FlashbackExporter? flashbackExporter,
         string reason,
         bool purgeSegments,
-        string mode)
+        string mode,
+        bool exportOperationLockAlreadyHeld = false)
     {
         if (bufferManager == null && flashbackExporter == null)
         {
             return true;
         }
 
-        var lockAcquired = false;
+        var lockAcquired = exportOperationLockAlreadyHeld;
+        var releaseLockOnExit = false;
         try
         {
-            Logger.Log($"FLASHBACK_BACKEND_CLEANUP_AWAITING_EXPORT_LOCK mode={mode} reason='{reason}'");
-            var lockSw = System.Diagnostics.Stopwatch.StartNew();
-            lockAcquired = await _flashbackExportOperationLock
-                .WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)
-                .ConfigureAwait(false);
-            lockSw.Stop();
-
-            if (!lockAcquired)
+            if (!exportOperationLockAlreadyHeld)
             {
-                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_EXPORT_LOCK_TIMEOUT mode={mode} reason='{reason}' preserve_segments=true");
-                return false;
-            }
+                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_AWAITING_EXPORT_LOCK mode={mode} reason='{reason}'");
+                var lockSw = System.Diagnostics.Stopwatch.StartNew();
+                lockAcquired = await _flashbackExportOperationLock
+                    .WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)
+                    .ConfigureAwait(false);
+                lockSw.Stop();
 
-            Logger.Log($"FLASHBACK_BACKEND_CLEANUP_LOCK_ACQUIRED mode={mode} elapsed_ms={lockSw.ElapsedMilliseconds} reason='{reason}'");
+                if (!lockAcquired)
+                {
+                    Logger.Log($"FLASHBACK_BACKEND_CLEANUP_EXPORT_LOCK_TIMEOUT mode={mode} reason='{reason}' preserve_segments=true");
+                    return false;
+                }
+
+                releaseLockOnExit = true;
+                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_LOCK_ACQUIRED mode={mode} elapsed_ms={lockSw.ElapsedMilliseconds} reason='{reason}'");
+            }
+            else
+            {
+                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_LOCK_REUSED mode={mode} reason='{reason}'");
+            }
 
             if (flashbackExporter != null)
             {
@@ -1483,7 +1493,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         finally
         {
-            if (lockAcquired)
+            if (lockAcquired && releaseLockOnExit)
             {
                 ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, $"flashback_backend_cleanup_{mode}");
             }
@@ -2154,19 +2164,25 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         bool detachMicrophoneWriter = true)
     {
         await _flashbackBackendLeaseLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var exportOperationLockHeld = false;
         try
         {
+            await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            exportOperationLockHeld = true;
+
             var effectivePurgeSegments = ResolveFlashbackSegmentPurge(
                 purgeSegments,
                 "preview_backend_dispose");
             await DisposeFlashbackPreviewBackendCoreAsync(
                     cancellationToken,
                     effectivePurgeSegments,
-                    detachMicrophoneWriter)
+                    detachMicrophoneWriter,
+                    exportOperationLockAlreadyHeld: true)
                 .ConfigureAwait(false);
         }
         finally
         {
+            ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);
             ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_preview_backend_dispose");
         }
     }
@@ -2174,7 +2190,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private async Task DisposeFlashbackPreviewBackendCoreAsync(
         CancellationToken cancellationToken,
         bool purgeSegments = true,
-        bool detachMicrophoneWriter = true)
+        bool detachMicrophoneWriter = true,
+        bool exportOperationLockAlreadyHeld = false)
     {
         var flashbackSink = _flashbackSink;
         var flashbackBufferManager = _flashbackBufferManager;
@@ -2269,7 +2286,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 flashbackExporter,
                 purgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
                 purgeSegments,
-                "preview_backend_dispose")
+                "preview_backend_dispose",
+                exportOperationLockAlreadyHeld)
             .ConfigureAwait(false);
 
         if (!cleanupCompleted)
@@ -2295,8 +2313,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private async Task CycleFlashbackBufferAsync(CancellationToken cancellationToken, bool purgeSegments = false)
     {
         await _flashbackBackendLeaseLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var exportOperationLockHeld = false;
         try
         {
+            await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            exportOperationLockHeld = true;
+
         var unifiedVideoCapture = _unifiedVideoCapture;
         var bufferManager = _flashbackBufferManager;
         var oldSink = _flashbackSink;
@@ -2306,7 +2328,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         if (purgeSegments && !effectivePurgeSegments)
         {
-            await DisposeFlashbackPreviewBackendCoreAsync(cancellationToken, purgeSegments: false).ConfigureAwait(false);
+            await DisposeFlashbackPreviewBackendCoreAsync(cancellationToken, purgeSegments: false, exportOperationLockAlreadyHeld: true).ConfigureAwait(false);
             if (_flashbackEnabled && unifiedVideoCapture != null && _currentSettings != null)
             {
                 await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
@@ -2322,7 +2344,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // If prerequisites are missing, fall back to full teardown
         if (!_flashbackEnabled || unifiedVideoCapture == null || _currentSettings == null || bufferManager == null || oldSink == null)
         {
-            await DisposeFlashbackPreviewBackendCoreAsync(cancellationToken, purgeSegments: effectivePurgeSegments).ConfigureAwait(false);
+            await DisposeFlashbackPreviewBackendCoreAsync(cancellationToken, purgeSegments: effectivePurgeSegments, exportOperationLockAlreadyHeld: true).ConfigureAwait(false);
             if (_flashbackEnabled && unifiedVideoCapture != null && _currentSettings != null)
             {
                 await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
@@ -2430,7 +2452,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (bufferManager.SegmentCount > 0)
             {
                 Logger.Log($"FLASHBACK_CYCLE_PURGE_INCOMPLETE remaining={bufferManager.SegmentCount} — falling back to full teardown");
-                await DisposeFlashbackPreviewBackendCoreAsync(committedCycleToken, purgeSegments: effectivePurgeSegments).ConfigureAwait(false);
+                await DisposeFlashbackPreviewBackendCoreAsync(committedCycleToken, purgeSegments: effectivePurgeSegments, exportOperationLockAlreadyHeld: true).ConfigureAwait(false);
                 await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, committedCycleToken).ConfigureAwait(false);
                 Logger.Log("FLASHBACK_BUFFER_CYCLE_OK mode=purge_fallback_rebuild");
                 cancellationToken.ThrowIfCancellationRequested();
@@ -2497,7 +2519,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _flashbackBackendSettings = null;
 
             // Full teardown and rebuild
-            await DisposeFlashbackPreviewBackendCoreAsync(committedCycleToken, purgeSegments: effectivePurgeSegments).ConfigureAwait(false);
+            await DisposeFlashbackPreviewBackendCoreAsync(committedCycleToken, purgeSegments: effectivePurgeSegments, exportOperationLockAlreadyHeld: true).ConfigureAwait(false);
             await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, committedCycleToken).ConfigureAwait(false);
             Logger.Log("FLASHBACK_BUFFER_CYCLE_OK mode=fallback_full_rebuild");
         }
@@ -2510,6 +2532,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         finally
         {
+            ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);
             ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_buffer_cycle");
         }
     }
