@@ -1006,6 +1006,9 @@ static partial class Program
                 "Flashback decoder unreferences discarded audio frames",
                 FlashbackDecoder_DiscardedAudioFramesAreUnreffed),
             await RunCheckAsync(
+                "Flashback decoder MJPEG playback uses low-latency single-thread decode",
+                FlashbackDecoder_MjpegPlaybackUsesSingleThreadLowLatencyDecode),
+            await RunCheckAsync(
                 "Flashback decoder rejects invalid timestamps",
                 FlashbackDecoder_PtsConversionRejectsInvalidTimestamps),
             await RunCheckAsync(

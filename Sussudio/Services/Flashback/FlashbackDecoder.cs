@@ -632,6 +632,13 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             ffmpeg.avcodec_parameters_to_context(_videoCodecCtx, codecPar),
             "avcodec_parameters_to_context(video)");
 
+        // MJPEG frames are independently decodable; FFmpeg auto-threading can add
+        // avoidable per-frame latency spikes at 4K120 playback.
+        if (codecPar->codec_id == AVCodecID.AV_CODEC_ID_MJPEG)
+        {
+            _videoCodecCtx->thread_count = 1;
+        }
+
         ThrowIfError(
             ffmpeg.avcodec_open2(_videoCodecCtx, codec, null),
             "avcodec_open2(video)");

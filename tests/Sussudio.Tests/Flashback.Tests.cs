@@ -2321,6 +2321,11 @@ static partial class Program
         AssertContains(sourceText, "return cts.Token.WaitHandle.WaitOne(timeout);");
         AssertContains(sourceText, "catch (ObjectDisposedException)\n        {\n            return true;\n        }");
         AssertEqual(2, sourceText.Split("if (WaitForBackpressureRetryCancellation())", StringSplitOptions.None).Length - 1, "Video and GPU enqueue backpressure waits are cancellation-aware");
+        AssertContains(sourceText, "FLASHBACK_SINK_VIDEO_BACKPRESSURE_DROP");
+        AssertContains(sourceText, "FLASHBACK_SINK_GPU_BACKPRESSURE_DROP");
+        AssertDoesNotContain(sourceText, "FailEncoding(overloadFailure);");
+        AssertDoesNotContain(sourceText, "Flashback recording video queue overloaded after");
+        AssertDoesNotContain(sourceText, "Flashback GPU recording queue overloaded after");
         AssertContains(sourceText, "if (WaitForCancellation(TimeSpan.FromMilliseconds(10)))\n            {\n                return false;\n            }");
         AssertDoesNotContain(sourceText, "var depth = Interlocked.Decrement(ref target);");
         AssertDoesNotContain(sourceText, "Interlocked.Exchange(ref target, 0);\n        Logger.Log($\"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW");
@@ -3405,6 +3410,20 @@ static partial class Program
             "private void DecodeAndDeliverAudioPacket",
             "// ── Private: Frame Conversion");
         AssertContains(audioDecodeBlock, "if (callback == null)\n            {\n                ffmpeg.av_frame_unref(_audioFrame);\n                continue; // Codec advanced, but no delivery during seek/scrub\n            }");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackDecoder_MjpegPlaybackUsesSingleThreadLowLatencyDecode()
+    {
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+
+        var softwareInitBlock = ExtractTextBetween(
+            sourceText,
+            "// Software fallback",
+            "ThrowIfError(\n            ffmpeg.avcodec_open2(_videoCodecCtx, codec, null),");
+        AssertContains(softwareInitBlock, "if (codecPar->codec_id == AVCodecID.AV_CODEC_ID_MJPEG)\n        {\n            _videoCodecCtx->thread_count = 1;\n        }");
 
         return Task.CompletedTask;
     }

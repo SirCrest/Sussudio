@@ -1056,6 +1056,7 @@ public static class DiagnosticSessionRunner
                 previewSchedulerUnderflowsDelta,
                 previewD3DMetrics.StatsFailureDelta,
                 previewCadenceMetrics,
+                visualCadenceMetrics,
                 previewD3DMetrics,
                 previewTargetFps,
                 warnings);
@@ -4486,6 +4487,7 @@ public static class DiagnosticSessionRunner
         long underflowsDelta,
         long d3dStatsFailureDelta,
         PreviewCadenceSessionMetrics previewCadenceMetrics,
+        VisualCadenceSessionMetrics visualCadenceMetrics,
         PreviewD3DMetrics previewD3DMetrics,
         double targetFps,
         List<string> warnings)
@@ -4517,17 +4519,24 @@ public static class DiagnosticSessionRunner
         var onePercentLowMiss =
             previewCadenceMetrics.MinOnePercentLowFpsObserved > 0 &&
             previewCadenceMetrics.MinOnePercentLowFpsObserved < onePercentLowFloor;
+        var visualCadenceHealthy =
+            visualCadenceMetrics.MinChangeFpsObserved >= targetFps * 0.98 &&
+            visualCadenceMetrics.MaxRepeatPercentObserved <= 1.0 &&
+            visualCadenceMetrics.LongestRepeatRunAtEnd <= 1;
         var presentP99Miss =
             previewD3DMetrics.PresentCallP99MsAtEnd > presentP99BudgetMs;
         var totalP99Miss =
             previewD3DMetrics.TotalFrameCpuP99MsAtEnd > totalP99BudgetMs;
 
-        if (onePercentLowMiss || presentP99Miss || totalP99Miss)
+        if ((onePercentLowMiss && !visualCadenceHealthy) || presentP99Miss || totalP99Miss)
         {
             warnings.Add(
                 "flashback preview: present/display pressure " +
                 $"targetFps={targetFps:0.##} " +
                 $"onePercentLowFpsMin={previewCadenceMetrics.MinOnePercentLowFpsObserved:0.##}/{onePercentLowFloor:0.##} " +
+                $"visualChangeFpsMin={visualCadenceMetrics.MinChangeFpsObserved:0.##} " +
+                $"visualRepeatPctMax={visualCadenceMetrics.MaxRepeatPercentObserved:0.###} " +
+                $"visualLongestRepeatRun={visualCadenceMetrics.LongestRepeatRunAtEnd} " +
                 $"presentCallP99Ms={previewD3DMetrics.PresentCallP99MsAtEnd:0.##}/{presentP99BudgetMs:0.##} " +
                 $"totalFrameCpuP99Ms={previewD3DMetrics.TotalFrameCpuP99MsAtEnd:0.##}/{totalP99BudgetMs:0.##} " +
                 $"missedRefreshDelta={previewD3DMetrics.MissedRefreshDelta} " +

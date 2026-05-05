@@ -1038,6 +1038,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback preview: D3D frame stats failures increased delta=");
         AssertContains(diagnosticSessionText, "\"flashback preview: present/display pressure \"");
         AssertContains(diagnosticSessionText, "var onePercentLowFloor = targetFps * 0.80;");
+        AssertContains(diagnosticSessionText, "var visualCadenceHealthy =");
+        AssertContains(diagnosticSessionText, "visualCadenceMetrics.MinChangeFpsObserved >= targetFps * 0.98");
+        AssertContains(diagnosticSessionText, "if ((onePercentLowMiss && !visualCadenceHealthy) || presentP99Miss || totalP99Miss)");
+        AssertContains(diagnosticSessionText, "visualChangeFpsMin={visualCadenceMetrics.MinChangeFpsObserved:0.##}");
         AssertContains(diagnosticSessionText, "var presentP99BudgetMs = targetFrameMs * 1.25;");
         AssertContains(diagnosticSessionText, "var totalP99BudgetMs = targetFrameMs * 1.35;");
         AssertContains(diagnosticSessionText, "latestSlowReason={FormatOptional(previewD3DMetrics.LatestSlowFrameReason)}");

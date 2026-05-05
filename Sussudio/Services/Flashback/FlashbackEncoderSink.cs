@@ -2177,7 +2177,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         long backpressureStartTick = 0;
         while (true)
         {
-            Exception? overloadFailure = null;
+            bool overloaded = false;
             lock (_videoQueueSync)
             {
                 var rejectReason = GetVideoEnqueueRejectReason(isGpu: false);
@@ -2208,21 +2208,21 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 if (Environment.TickCount64 < deadlineTick)
                 {
                     backpressureStartTick = backpressureStartTick == 0 ? Environment.TickCount64 : backpressureStartTick;
-                    overloadFailure = null;
                 }
                 else
                 {
                     RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
                     Interlocked.Increment(ref _droppedVideoFrames);
-                    overloadFailure = new InvalidOperationException(
-                        $"Flashback recording video queue overloaded after {QueueBackpressureTimeoutMs}ms backpressure: capacity={VideoQueueCapacity} depth={Volatile.Read(ref _videoQueueDepth)}");
+                    overloaded = true;
                     ReturnVideoPacket(packet);
                 }
             }
 
-            if (overloadFailure != null)
+            if (overloaded)
             {
-                FailEncoding(overloadFailure);
+                Logger.Log(
+                    $"FLASHBACK_SINK_VIDEO_BACKPRESSURE_DROP timeout_ms={QueueBackpressureTimeoutMs} " +
+                    $"capacity={VideoQueueCapacity} depth={Volatile.Read(ref _videoQueueDepth)}");
                 return VideoEnqueueResult.Overloaded;
             }
 
@@ -2240,7 +2240,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         long backpressureStartTick = 0;
         while (true)
         {
-            Exception? overloadFailure = null;
+            bool overloaded = false;
             lock (_videoQueueSync)
             {
                 var rejectReason = GetVideoEnqueueRejectReason(isGpu: true);
@@ -2270,20 +2270,20 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 if (Environment.TickCount64 < deadlineTick)
                 {
                     backpressureStartTick = backpressureStartTick == 0 ? Environment.TickCount64 : backpressureStartTick;
-                    overloadFailure = null;
                 }
                 else
                 {
                     RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
                     ReleaseGpuTextureBestEffort(packet.Texture);
-                    overloadFailure = new InvalidOperationException(
-                        $"Flashback GPU recording queue overloaded after {QueueBackpressureTimeoutMs}ms backpressure: capacity={GpuQueueCapacity} depth={Volatile.Read(ref _gpuQueueDepth)}");
+                    overloaded = true;
                 }
             }
 
-            if (overloadFailure != null)
+            if (overloaded)
             {
-                FailEncoding(overloadFailure);
+                Logger.Log(
+                    $"FLASHBACK_SINK_GPU_BACKPRESSURE_DROP timeout_ms={QueueBackpressureTimeoutMs} " +
+                    $"capacity={GpuQueueCapacity} depth={Volatile.Read(ref _gpuQueueDepth)}");
                 return VideoEnqueueResult.Overloaded;
             }
 
