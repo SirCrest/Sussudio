@@ -779,7 +779,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "GetResetAwareCounterDelta(");
         AssertContains(diagnosticSessionText, "public JsonElement BaselineSnapshot { get; init; }");
         AssertContains(diagnosticSessionText, "public long EndSessionFrameCount { get; set; }");
-        AssertContains(diagnosticSessionText, "flashback playback: observed FPS dipped below floor");
+        AssertDoesNotContain(diagnosticSessionText, "flashback playback: observed FPS dipped below floor");
         AssertContains(diagnosticSessionText, "flashback playback: 1% low dipped below floor");
         AssertContains(diagnosticSessionText, "flashback playback: dropped frames increased delta={metrics.DroppedFramesDelta}");
         AssertContains(diagnosticSessionText, "flashback playback: submit failures increased delta={metrics.SubmitFailuresDelta}");

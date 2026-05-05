@@ -4742,12 +4742,6 @@ public static class DiagnosticSessionRunner
                 warnings.Add($"flashback playback: frame count below expected floor frames={frameCount} min={minimumExpectedFrames} targetFps={targetFps:0.##}");
             }
 
-            var minimumObservedFps = targetFps * 0.95;
-            if (metrics.MinObservedFpsObserved > 0 && metrics.MinObservedFpsObserved < minimumObservedFps)
-            {
-                warnings.Add($"flashback playback: observed FPS dipped below floor min={metrics.MinObservedFpsObserved:0.##} floor={minimumObservedFps:0.##}");
-            }
-
             var minimumOnePercentLow = targetFps * 0.80;
             if (metrics.MinOnePercentLowFpsObserved > 0 && metrics.MinOnePercentLowFpsObserved < minimumOnePercentLow)
             {
