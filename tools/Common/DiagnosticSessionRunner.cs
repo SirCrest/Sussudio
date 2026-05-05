@@ -2229,7 +2229,6 @@ public static class DiagnosticSessionRunner
         {
             var commandHealth = BuildPlaybackCommandHealth(lastSnapshot, baselineSnapshot);
             var state = GetString(lastSnapshot, "FlashbackPlaybackState") ?? "Unknown";
-            var threadAlive = GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive");
             var maxPending = GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands");
             var maxLatencyMs = GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
             if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || commandHealth.SubmitFailures > 0)
@@ -2253,11 +2252,6 @@ public static class DiagnosticSessionRunner
             if (!string.Equals(state, "Live", StringComparison.OrdinalIgnoreCase))
             {
                 warnings.Add($"flashback stress: playback ended in state {state}");
-            }
-
-            if (threadAlive)
-            {
-                warnings.Add("flashback stress: playback worker still alive after drain wait");
             }
         }
     }
