@@ -1108,7 +1108,8 @@ public static class DiagnosticSessionRunner
             runFlashbackRecordingPreviewCycle ||
             runFlashbackRecordingSettingsDeferred ||
             runFlashbackRecordingExportRejected ||
-            runFlashbackExportRejected;
+            runFlashbackExportRejected ||
+            scenario == "combined";
         var toleratesSourceSignalHealthWarning =
             runFlashbackRangeExport ||
             runFlashbackRangeExportAudioSwitch ||
