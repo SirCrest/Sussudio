@@ -938,6 +938,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "[\"verificationProfile\"] = \"flashback-export\"");
         AssertContains(diagnosticSessionText, "\"flashback-range-export\" => Path.Combine(outputDirectory, \"flashback-range-export.mp4\")");
         AssertContains(diagnosticSessionText, "\"flashback-range-export-audio-switch\" => Path.Combine(outputDirectory, \"flashback-range-export-audio-switch.mp4\")");
+        AssertContains(diagnosticSessionText, "\"flashback-export-concurrent\" => Path.Combine(outputDirectory, \"flashback-concurrent-a.mp4\")");
         AssertContains(diagnosticSessionText, "\"flashback-rotated-export\" => Path.Combine(outputDirectory, \"flashback-rotated-export.mp4\")");
         AssertContains(diagnosticSessionText, "expected BufferInactive failure kind");
         AssertContains(diagnosticSessionText, "expected UnavailableDuringRecording failure kind");

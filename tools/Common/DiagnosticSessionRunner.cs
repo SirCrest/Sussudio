@@ -5803,6 +5803,7 @@ public static class DiagnosticSessionRunner
             "flashback-export-playback" => Path.Combine(outputDirectory, "flashback-export-playback.mp4"),
             "flashback-range-export" => Path.Combine(outputDirectory, "flashback-range-export.mp4"),
             "flashback-range-export-audio-switch" => Path.Combine(outputDirectory, "flashback-range-export-audio-switch.mp4"),
+            "flashback-export-concurrent" => Path.Combine(outputDirectory, "flashback-concurrent-a.mp4"),
             "flashback-disable-during-export" => Path.Combine(outputDirectory, "flashback-disable-during-export.mp4"),
             "flashback-rotated-export" => Path.Combine(outputDirectory, "flashback-rotated-export.mp4"),
             "flashback-preview-cycle" => Path.Combine(outputDirectory, "flashback-preview-off-export.mp4"),
