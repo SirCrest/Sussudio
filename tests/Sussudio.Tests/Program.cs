@@ -270,6 +270,9 @@ static partial class Program
                 "Automation dispatcher window close waits for completion",
                 AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion),
             await RunCheckAsync(
+                "Automation dispatcher preview health waits for first visual",
+                AutomationCommandDispatcher_PreviewRendererHealthy_RequiresFirstVisual),
+            await RunCheckAsync(
                 "Automation dispatcher authorization contract is token-gated",
                 AutomationCommandDispatcher_AuthorizesConfiguredTokens),
             await RunCheckAsync(
@@ -1812,6 +1815,10 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameLatencyWaitMaxMs"), "AutomationSnapshot.PreviewD3DFrameLatencyWaitMaxMs");
         AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameStatsRecentMissedRefreshCount"), "AutomationSnapshot.PreviewD3DFrameStatsRecentMissedRefreshCount");
         AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameStatsRecentFailureCount"), "AutomationSnapshot.PreviewD3DFrameStatsRecentFailureCount");
+        AssertNotNull(snapshotType.GetProperty("PreviewD3DRenderThreadFailureCount"), "AutomationSnapshot.PreviewD3DRenderThreadFailureCount");
+        AssertNotNull(snapshotType.GetProperty("PreviewD3DLastRenderThreadFailureType"), "AutomationSnapshot.PreviewD3DLastRenderThreadFailureType");
+        AssertNotNull(snapshotType.GetProperty("PreviewD3DLastRenderThreadFailureMessage"), "AutomationSnapshot.PreviewD3DLastRenderThreadFailureMessage");
+        AssertNotNull(snapshotType.GetProperty("PreviewD3DLastRenderThreadFailureHResult"), "AutomationSnapshot.PreviewD3DLastRenderThreadFailureHResult");
         AssertNotNull(snapshotType.GetProperty("DiagnosticHealthStatus"), "AutomationSnapshot.DiagnosticHealthStatus");
         AssertNotNull(snapshotType.GetProperty("DiagnosticLikelyStage"), "AutomationSnapshot.DiagnosticLikelyStage");
         AssertNotNull(snapshotType.GetProperty("DiagnosticSummary"), "AutomationSnapshot.DiagnosticSummary");

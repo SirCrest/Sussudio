@@ -752,6 +752,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         FlashbackExporter? snapshotExporter = null,
         bool requireCompleteLiveEdge = false,
         bool exportOperationLockAlreadyHeld = false,
+        bool throttleHighResolutionBaseline = true,
         Func<FlashbackBufferManager, (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)>? resolveRangeAfterEvictionPaused = null)
     {
         var flashbackSink = snapshotSink ?? _flashbackSink;
@@ -922,7 +923,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 OutPoint = outPoint,
                 OutputPath = outputPath,
                 FastStart = false,
-                AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(flashbackSink),
+                AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(
+                    flashbackSink,
+                    throttleHighResolutionBaseline),
             };
             result = await exporter.ExportAsync(request, diagnosticProgress, ct).ConfigureAwait(false);
             if (forceRotateFallbackUsed && result.Succeeded)
@@ -1015,7 +1018,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         return segments;
     }
 
-    private static Func<int>? CreateFlashbackExportThrottleDelayProvider(FlashbackEncoderSink? flashbackSink)
+    private static Func<int>? CreateFlashbackExportThrottleDelayProvider(
+        FlashbackEncoderSink? flashbackSink,
+        bool throttleHighResolutionBaseline = true)
     {
         if (flashbackSink == null)
         {
@@ -1037,7 +1042,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             var delayMs = ResolveFlashbackExportThrottleDelayMs(
                 queueRatio,
                 oldestFrameAgeMs,
-                IsHighResolutionFlashbackExport(flashbackSink));
+                throttleHighResolutionBaseline && IsHighResolutionFlashbackExport(flashbackSink));
             if (delayMs <= 0)
             {
                 return 0;
@@ -2772,7 +2777,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     outputPath,
                     progress: null,
                     ct: cancellationToken,
-                    requireCompleteLiveEdge: true)
+                    requireCompleteLiveEdge: true,
+                    throttleHighResolutionBaseline: false)
                 .ConfigureAwait(false);
 
             exportResult = PreserveFlashbackEndArtifactsOnFailure(exportResult, endResult);

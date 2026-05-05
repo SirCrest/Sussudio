@@ -507,6 +507,10 @@ public sealed class AutomationSnapshot
     public long PreviewD3DFramesSubmitted { get; init; }
     public long PreviewD3DFramesRendered { get; init; }
     public long PreviewD3DFramesDropped { get; init; }
+    public long PreviewD3DRenderThreadFailureCount { get; init; }
+    public string PreviewD3DLastRenderThreadFailureType { get; init; } = string.Empty;
+    public string PreviewD3DLastRenderThreadFailureMessage { get; init; } = string.Empty;
+    public int PreviewD3DLastRenderThreadFailureHResult { get; init; }
     public int PreviewD3DPendingFrameCount { get; init; }
     public string PreviewD3DInputColorSpace { get; init; } = "None";
     public string PreviewD3DOutputColorSpace { get; init; } = "None";
@@ -1308,6 +1312,10 @@ public sealed class PreviewRuntimeSnapshot
     public long D3DFramesSubmitted { get; init; }
     public long D3DFramesRendered { get; init; }
     public long D3DFramesDropped { get; init; }
+    public long D3DRenderThreadFailureCount { get; init; }
+    public string D3DLastRenderThreadFailureType { get; init; } = string.Empty;
+    public string D3DLastRenderThreadFailureMessage { get; init; } = string.Empty;
+    public int D3DLastRenderThreadFailureHResult { get; init; }
     public int D3DPendingFrameCount { get; init; }
     public string D3DInputColorSpace { get; init; } = "None";
     public string D3DOutputColorSpace { get; init; } = "None";

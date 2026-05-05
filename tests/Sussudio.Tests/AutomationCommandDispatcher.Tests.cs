@@ -167,6 +167,22 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task AutomationCommandDispatcher_PreviewRendererHealthy_RequiresFirstVisual()
+    {
+        var sourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
+            .Replace("\r\n", "\n");
+        var conditionBlock = ExtractTextBetween(
+            sourceText,
+            "AutomationWaitCondition.PreviewRendererHealthy =>",
+            "AutomationWaitCondition.AudioSignalPresent =>");
+
+        AssertContains(conditionBlock, "snapshot.PreviewFirstVisualConfirmed");
+        AssertContains(conditionBlock, "snapshot.PreviewGpuActive || snapshot.PreviewFramesDisplayed > 0");
+        AssertDoesNotContain(conditionBlock, "snapshot.PreviewGpuActive || snapshot.PreviewRendererAttached");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task AutomationCommandDispatcher_AuthorizesConfiguredTokens()
     {
         var noTokenDispatcher = CreateAutomationCommandDispatcher(authToken: null);

@@ -40,6 +40,22 @@ public sealed partial class MainWindow
         Logger.Log($"PREVIEW_D3D_FIRST_FRAME attempt={_previewStartupAttemptId ?? "none"}");
         ConfirmPreviewFirstVisual("D3D11FirstFrame");
     }
+    private void OnD3DRendererRenderThreadFailed(string reason)
+    {
+        Logger.Log($"PREVIEW_D3D_RENDER_THREAD_FAILED attempt={_previewStartupAttemptId ?? "none"} reason={reason}");
+        if (!ViewModel.IsPreviewing || _previewFirstVisualConfirmed)
+        {
+            return;
+        }
+
+        var failureReason = $"d3d-render-thread-failed:{reason}";
+        SetPreviewStartupState(PreviewStartupState.Failed, failureReason);
+        StopPreviewStartupWatchdog();
+        StopPreviewStartupOverlay();
+        ResetPreviewContentTransform();
+        FadeInElement(NoDevicePlaceholder);
+        SchedulePreviewStartupFailureStop(failureReason);
+    }
     private void OnPreviewSwapChainPanelSizeChanged(object sender, Microsoft.UI.Xaml.SizeChangedEventArgs e)
     {
         // Composition transform only — overlay sizing is driven by the container.
@@ -279,6 +295,10 @@ public sealed partial class MainWindow
             D3DFramesSubmitted = d3dFramesSubmitted,
             D3DFramesRendered = d3dFramesRendered,
             D3DFramesDropped = d3dFramesDropped,
+            D3DRenderThreadFailureCount = d3d?.RenderThreadFailureCount ?? 0,
+            D3DLastRenderThreadFailureType = d3d?.LastRenderThreadFailureType ?? string.Empty,
+            D3DLastRenderThreadFailureMessage = d3d?.LastRenderThreadFailureMessage ?? string.Empty,
+            D3DLastRenderThreadFailureHResult = d3d?.LastRenderThreadFailureHResult ?? 0,
             D3DPendingFrameCount = d3d?.PendingFrameCount ?? 0,
             D3DInputColorSpace = _d3dRenderer?.InputColorSpaceLabel ?? "None",
             D3DOutputColorSpace = _d3dRenderer?.OutputColorSpaceLabel ?? "None",
@@ -370,6 +390,7 @@ public sealed partial class MainWindow
         {
             PreviewSwapChainPanel.SizeChanged -= OnPreviewSwapChainPanelSizeChanged;
             renderer.FirstFrameRendered -= OnD3DRendererFirstFrameRendered;
+            renderer.RenderThreadFailed -= OnD3DRendererRenderThreadFailed;
             renderer.Stop();
             renderer.Dispose();
         }
@@ -445,6 +466,7 @@ public sealed partial class MainWindow
             {
                 renderer = new D3D11PreviewRenderer(PreviewSwapChainPanel, _dispatcherQueue);
                 renderer.FirstFrameRendered += OnD3DRendererFirstFrameRendered;
+                renderer.RenderThreadFailed += OnD3DRendererRenderThreadFailed;
                 _d3dRenderer = renderer;
             }
 

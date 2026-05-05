@@ -172,6 +172,11 @@ static partial class Program
         AssertContains(source, "frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter");
         AssertContains(source, "private int _pendingFrameCount;");
         AssertContains(source, "public int PendingFrameCount => Math.Max(0, Volatile.Read(ref _pendingFrameCount));");
+        AssertContains(source, "public event Action<string>? RenderThreadFailed;");
+        AssertContains(source, "public long RenderThreadFailureCount => Interlocked.Read(ref _renderThreadFailureCount);");
+        AssertContains(source, "public string LastRenderThreadFailureMessage => Volatile.Read(ref _lastRenderThreadFailureMessage);");
+        AssertContains(renderSource, "NotifyRenderThreadFailed(ex);");
+        AssertContains(renderSource, "RenderThreadFailed?.Invoke(reason)");
         AssertContains(source, "IPreviewFrameQueueControl");
         AssertContains(source, "public int DropPendingFrames(string reason)");
         AssertContains(source, "Interlocked.Increment(ref _submissionGeneration);");
@@ -337,6 +342,10 @@ static partial class Program
                      "D3DFrameStatsLastPresentRefreshDelta",
                      "D3DFrameStatsLastSyncRefreshDelta",
                      "D3DFrameStatsMissedRefreshCount",
+                     "D3DRenderThreadFailureCount",
+                     "D3DLastRenderThreadFailureType",
+                     "D3DLastRenderThreadFailureMessage",
+                     "D3DLastRenderThreadFailureHResult",
                      "D3DLastSubmittedPreviewPresentId",
                      "D3DLastSubmittedSourceSequenceNumber",
                      "D3DLastSubmittedSourcePtsTicks",

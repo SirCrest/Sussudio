@@ -511,6 +511,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private string _inputColorSpaceLabel = "Unknown";
     private string _outputColorSpaceLabel = "Unknown";
     private string _rendererMode = RendererModeNone;
+    private string _lastRenderThreadFailureType = string.Empty;
+    private string _lastRenderThreadFailureMessage = string.Empty;
+    private int _lastRenderThreadFailureHResult;
+    private long _renderThreadFailureCount;
 
     private ID3D11Device? _device;
     private ID3D11DeviceContext? _deviceContext;
@@ -593,14 +597,19 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     }
 
     public event Action? FirstFrameRendered;
+    public event Action<string>? RenderThreadFailed;
 
     public long FramesSubmitted => Interlocked.Read(ref _framesSubmitted);
     public long FramesRendered => Interlocked.Read(ref _framesRendered);
     public long FramesDropped => Interlocked.Read(ref _framesDropped);
+    public long RenderThreadFailureCount => Interlocked.Read(ref _renderThreadFailureCount);
     public int PendingFrameCount => Math.Max(0, Volatile.Read(ref _pendingFrameCount));
     public bool IsRendering => Volatile.Read(ref _isRendering) != 0;
     public bool IsHdrCapableSwapChain => _hdrCapableSwapChain;
     public string RendererMode => Volatile.Read(ref _rendererMode);
+    public string LastRenderThreadFailureType => Volatile.Read(ref _lastRenderThreadFailureType);
+    public string LastRenderThreadFailureMessage => Volatile.Read(ref _lastRenderThreadFailureMessage);
+    public int LastRenderThreadFailureHResult => Volatile.Read(ref _lastRenderThreadFailureHResult);
     public string InputColorSpaceLabel => _inputColorSpaceLabel;
     public string OutputColorSpaceLabel => _outputColorSpaceLabel;
     public int PresentSyncInterval => _presentSyncInterval;

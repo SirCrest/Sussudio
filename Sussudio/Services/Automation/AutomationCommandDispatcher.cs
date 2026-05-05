@@ -883,7 +883,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 snapshot.IsPreviewing &&
                 !snapshot.PreviewBlankSuspected &&
                 !snapshot.PreviewStalled &&
-                (snapshot.PreviewGpuActive || snapshot.PreviewRendererAttached),
+                snapshot.PreviewFirstVisualConfirmed &&
+                (snapshot.PreviewGpuActive || snapshot.PreviewFramesDisplayed > 0),
             AutomationWaitCondition.AudioSignalPresent =>
                 snapshot.AudioSignalPresent,
             AutomationWaitCondition.RecordingFileGrowing =>

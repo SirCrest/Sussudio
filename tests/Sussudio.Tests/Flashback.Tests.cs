@@ -206,9 +206,10 @@ static partial class Program
         AssertEqual(20, (int)resolve.Invoke(null, new object[] { 0.0, 50L, false })!, "Flashback export throttle medium frame age");
         AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.85, 0L, false })!, "Flashback export throttle severe queue pressure");
         AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.0, 90L, false })!, "Flashback export throttle severe frame age");
-        AssertContains(sourceText, "IsHighResolutionFlashbackExport(flashbackSink)");
+        AssertContains(sourceText, "throttleHighResolutionBaseline && IsHighResolutionFlashbackExport(flashbackSink)");
         AssertContains(sourceText, "FastStart = false");
-        AssertContains(sourceText, "AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(flashbackSink)");
+        AssertContains(sourceText, "AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(\n                    flashbackSink,\n                    throttleHighResolutionBaseline)");
+        AssertContains(sourceText, "requireCompleteLiveEdge: true,\n                    throttleHighResolutionBaseline: false");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LIVE_THROTTLE");
 
         return Task.CompletedTask;

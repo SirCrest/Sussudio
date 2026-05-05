@@ -152,6 +152,7 @@ internal sealed partial class D3D11PreviewRenderer
         catch (Exception ex)
         {
             Logger.Log($"D3D11 preview renderer thread failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            NotifyRenderThreadFailed(ex);
         }
         finally
         {
@@ -165,6 +166,20 @@ internal sealed partial class D3D11PreviewRenderer
             CleanupD3DResources();
             Interlocked.Exchange(ref _isRendering, 0);
             Volatile.Write(ref _rendererMode, RendererModeNone);
+        }
+    }
+
+    private void NotifyRenderThreadFailed(Exception ex)
+    {
+        Interlocked.Increment(ref _renderThreadFailureCount);
+        Volatile.Write(ref _lastRenderThreadFailureType, ex.GetType().Name);
+        Volatile.Write(ref _lastRenderThreadFailureMessage, ex.Message);
+        Volatile.Write(ref _lastRenderThreadFailureHResult, ex.HResult);
+
+        var reason = $"{ex.GetType().Name}: {ex.Message}";
+        if (!_dispatcherQueue.TryEnqueue(() => RenderThreadFailed?.Invoke(reason)))
+        {
+            Logger.Log("D3D_RENDER_THREAD_FAILURE_UI_ENQUEUE_FAILED");
         }
     }
 
