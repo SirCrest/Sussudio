@@ -19,6 +19,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
 {
     private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);
     private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);
 
     // --- Command types marshalled to the playback thread ---
     private enum CommandKind
@@ -380,7 +382,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_DETACH state={_state} thread_alive={PlaybackThreadAlive}");
-        if (!StopPlaybackThread())
+        if (!StopPlaybackThread(PreviewDetachThreadStopTimeout, "preview_detach"))
         {
             Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_DETACH_ABORT reason=thread_stop_failed");
             RestoreLiveAudio();
@@ -689,7 +691,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (Interlocked.CompareExchange(ref _disposedFlag, 1, 0) != 0) return;
 
         Logger.Log($"FLASHBACK_PLAYBACK_DISPOSE_REQUEST state={_state} initialized={_initialized}");
-        StopPlaybackThread();
+        StopPlaybackThread(PlaybackThreadStopTimeout, "dispose");
         _initialized = false;
         Logger.Log("FLASHBACK_PLAYBACK_DISPOSED");
     }
@@ -823,7 +825,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
-    private bool StopPlaybackThread()
+    private bool StopPlaybackThread(TimeSpan timeout, string operation)
     {
         lock (_playbackThreadSync)
         {
@@ -857,17 +859,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     SetLastCommandFailure("thread_join_skipped:self");
                     threadExited = false;
                 }
-                else if (!thread.Join(TimeSpan.FromSeconds(3)))
+                else if (!thread.Join(timeout))
                 {
-                    Logger.Log("FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT");
-                    SetLastCommandFailure("thread_join_timeout");
+                    Logger.Log($"FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT op={operation} timeout_ms={timeout.TotalMilliseconds:0}");
+                    SetLastCommandFailure($"thread_join_timeout:{operation}");
                     threadExited = false;
                 }
             }
 
             var stopElapsedMs = Stopwatch.GetElapsedTime(stopStarted).TotalMilliseconds;
             Logger.Log(
-                $"FLASHBACK_PLAYBACK_STOP_THREAD_COMPLETE duration_ms={stopElapsedMs:0.###} " +
+                $"FLASHBACK_PLAYBACK_STOP_THREAD_COMPLETE op={operation} duration_ms={stopElapsedMs:0.###} " +
                 $"thread_was_alive={threadWasAlive} thread_exited={threadExited} " +
                 $"active_at_request={activeKindAtRequest} active_ms_at_request={activeElapsedMsAtRequest:0.###} " +
                 $"pending={Volatile.Read(ref _pendingCommands)}");
