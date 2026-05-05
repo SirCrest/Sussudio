@@ -1018,6 +1018,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
                         var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);
+                        if (ShouldYieldSeekToQueuedPlay(commandChannel))
+                        {
+                            PlaybackPosition = cmd.Position;
+                            pendingExactResumeTarget = seekResumeTarget;
+                            MarkCommandNoOp(CommandKind.Seek, "superseded_by_play", cmd.Position);
+                            SetState(FlashbackPlaybackState.Paused);
+                            break;
+                        }
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, seekResumeTarget);
                         cts.Token.ThrowIfCancellationRequested();
@@ -1336,6 +1344,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             frozenValidStart = _bufferManager.ValidStartPts;
                             var pauseTarget = ResolvePauseFromLiveTarget(frozenValidStart);
                             var pausePos = ClampPosition(SaturatingSubtract(pauseTarget, frozenValidStart), frozenValidStart);
+                            if (ShouldYieldPauseFromLiveToQueuedSeekOrPlay(commandChannel))
+                            {
+                                PlaybackPosition = pausePos;
+                                pendingExactResumeTarget = SaturatingAdd(pausePos, frozenValidStart);
+                                SetState(FlashbackPlaybackState.Paused);
+                                Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_DEFER_DISPLAY pos_ms={(long)pausePos.TotalMilliseconds}");
+                                break;
+                            }
                             decoder ??= CreateDecoder();
                             EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(pausePos, frozenValidStart));
                             cts.Token.ThrowIfCancellationRequested();
@@ -1679,6 +1695,26 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         return next.Kind is CommandKind.EndScrub or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;
+    }
+
+    private static bool ShouldYieldSeekToQueuedPlay(Channel<PlaybackCommand> commandChannel)
+    {
+        if (!commandChannel.Reader.TryPeek(out var next))
+        {
+            return false;
+        }
+
+        return next.Kind is CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;
+    }
+
+    private static bool ShouldYieldPauseFromLiveToQueuedSeekOrPlay(Channel<PlaybackCommand> commandChannel)
+    {
+        if (!commandChannel.Reader.TryPeek(out var next))
+        {
+            return false;
+        }
+
+        return next.Kind is CommandKind.Seek or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;
     }
 
     private void ClearQueuedSeekSlotUnsafe(SeekIntentSlot slot)

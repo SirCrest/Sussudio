@@ -3857,6 +3857,12 @@ static partial class Program
             SetPrivateField(manager, "_validStartPtsTicks", TimeSpan.FromSeconds(1).Ticks);
             InvokeNonPublicInstanceMethod(manager, "EvictOldestSegments", null);
 
+            var deleteDeadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+            while (File.Exists(firstSegment) && DateTime.UtcNow < deleteDeadline)
+            {
+                Thread.Sleep(25);
+            }
+
             AssertEqual(false, File.Exists(firstSegment), "Eviction should delete the expired completed segment");
             AssertEqual(true, File.Exists(secondSegment), "Eviction should retain overlapping completed segment");
             AssertEqual(250L, GetLongProperty(manager, "TotalDiskBytes"), "Eviction subtracts deleted completed segment bytes");

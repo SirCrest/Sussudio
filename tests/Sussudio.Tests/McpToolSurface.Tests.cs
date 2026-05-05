@@ -62,7 +62,9 @@ static partial class Program
         var assemblyPath = Path.Combine("tools", "McpServer", "bin", "Debug", "net8.0", "McpServer.dll");
         LoadToolAssemblyIsolated(assemblyPath);
 
-        using var process = StartMcpServerProcess(assemblyPath);
+        using var process = StartMcpServerProcess(
+            assemblyPath,
+            NewMcpToolPipeName("host-pipe-failure"));
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         _ = Task.Run(async () =>
         {
@@ -148,7 +150,9 @@ static partial class Program
         var assemblyPath = Path.Combine("tools", "McpServer", "bin", "Debug", "net8.0", "McpServer.dll");
         LoadToolAssemblyIsolated(assemblyPath);
 
-        using var process = StartMcpServerProcess(assemblyPath);
+        using var process = StartMcpServerProcess(
+            assemblyPath,
+            NewMcpToolPipeName("host-pipe-failure"));
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         _ = Task.Run(async () =>
         {
@@ -2253,7 +2257,7 @@ static partial class Program
         return result;
     }
 
-    private static Process StartMcpServerProcess(string assemblyPath)
+    private static Process StartMcpServerProcess(string assemblyPath, string? pipeName = null)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -2266,6 +2270,10 @@ static partial class Program
             CreateNoWindow = true
         };
         startInfo.ArgumentList.Add(Path.GetFullPath(assemblyPath));
+        if (!string.IsNullOrWhiteSpace(pipeName))
+        {
+            startInfo.Environment["SUSSUDIO_AUTOMATION_PIPE"] = pipeName;
+        }
 
         var process = new Process { StartInfo = startInfo };
         if (!process.Start())

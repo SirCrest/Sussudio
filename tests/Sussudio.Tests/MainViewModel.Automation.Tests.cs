@@ -1075,6 +1075,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback preview: present/display pressure \"");
         AssertContains(diagnosticSessionText, "var toleratesPreviewCycleSchedulerSettling =");
         AssertContains(diagnosticSessionText, "runFlashbackPreviewCycle || runFlashbackRecordingPreviewCycle");
+        AssertContains(diagnosticSessionText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
+        AssertContains(diagnosticSessionText, "IsSparsePreviewSchedulerDeadlineDropRun(");
+        AssertContains(diagnosticSessionText, "private static bool IsSparsePreviewSchedulerDeadlineDropRun(");
+        AssertContains(diagnosticSessionText, "var allowedDrops = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 60.0));");
         AssertContains(diagnosticSessionText, "bool tolerateDeadlineDropsWithHealthyVisualCadence");
         AssertContains(diagnosticSessionText, "deadlineDropsDelta > 0 && !tolerateDeadlineDropsWithHealthyVisualCadence");
         AssertContains(diagnosticSessionText, "var onePercentLowFloor = targetFps * 0.80;");

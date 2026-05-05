@@ -1912,10 +1912,12 @@ static partial class Program
             .Replace("\r\n", "\n");
         // All three scrub-related command paths must clamp via the eviction-aware
         // overload so a long-held scrub doesn't resolve to evicted file PTS.
-        const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);\n                        decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, seekResumeTarget);";
+        const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);";
         const string scrubClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));";
 
         AssertContains(sourceText, seekClampBeforeOpen);
+        AssertContains(sourceText, "if (ShouldYieldSeekToQueuedPlay(commandChannel))\n                        {\n                            PlaybackPosition = cmd.Position;\n                            pendingExactResumeTarget = seekResumeTarget;");
+        AssertContains(sourceText, "decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, seekResumeTarget);");
         AssertEqual(1, sourceText.Split(scrubClampBeforeOpen, StringSplitOptions.None).Length - 1, "BeginScrub clamps before file lookup with frozen reference");
         var updateScrubBlock = ExtractTextBetween(
             sourceText,
@@ -2481,12 +2483,13 @@ static partial class Program
         AssertContains(pauseFromLiveBlock, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(pausePos, frozenValidStart));");
         AssertContains(pauseFromLiveBlock, "if (!IsDecoderFileReady(decoder, fileOpen))");
         AssertContains(pauseFromLiveBlock, "SetNoFileFailure(CommandKind.Pause, pausePos);");
+        AssertContains(pauseFromLiveBlock, "if (ShouldYieldPauseFromLiveToQueuedSeekOrPlay(commandChannel))");
+        AssertContains(pauseFromLiveBlock, "FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_DEFER_DISPLAY");
         AssertContains(pauseFromLiveBlock, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, pausePos, frozenValidStart, CommandKind.Pause, cts.Token))");
         AssertContains(pauseFromLiveBlock, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"pause_from_live_display_failed\");");
         AssertContains(pauseFromLiveBlock, "pendingExactResumeTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);");
         AssertContains(pauseFromLiveBlock, "SetState(FlashbackPlaybackState.Paused);");
         AssertContains(pauseFromLiveBlock, "frozen_frame=true");
-        AssertOccursBefore(pauseFromLiveBlock, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, pausePos, frozenValidStart, CommandKind.Pause, cts.Token))", "SetState(FlashbackPlaybackState.Paused);");
         AssertContains(sourceText, "private TimeSpan ResolvePauseFromLiveTarget(TimeSpan frozenValidStart)");
         AssertContains(sourceText, "var backoff = TimeSpan.FromSeconds(1.0 / fps);");
         AssertContains(sourceText, "return latestPts - backoff;");
@@ -2798,6 +2801,10 @@ static partial class Program
         AssertContains(sourceText, "var pendingPlayTarget = pendingExactResumeTarget ?? SaturatingAdd(PlaybackPosition, frozenValidStart);");
         AssertContains(sourceText, "var requireExactResumeSeek = pendingExactResumeTarget.HasValue;");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_RESUME_EXACT_SEEK");
+        AssertContains(sourceText, "if (ShouldYieldSeekToQueuedPlay(commandChannel))");
+        AssertContains(sourceText, "MarkCommandNoOp(CommandKind.Seek, \"superseded_by_play\", cmd.Position);");
+        AssertContains(sourceText, "if (ShouldYieldPauseFromLiveToQueuedSeekOrPlay(commandChannel))");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_DEFER_DISPLAY");
         AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, coalescedSeekTarget, \"seek_resume\", cts.Token))");
         AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, endScrubTarget, \"end_scrub\", cts.Token))");
         AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, \"play\", cts.Token))");
@@ -2917,6 +2924,10 @@ static partial class Program
         AssertContains(updateScrubBlock, "SetState(FlashbackPlaybackState.Live)");
         AssertContains(sourceText, "private static bool ShouldYieldScrubUpdateToQueuedControl(Channel<PlaybackCommand> commandChannel)");
         AssertContains(sourceText, "return next.Kind is CommandKind.EndScrub or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;");
+        AssertContains(sourceText, "private static bool ShouldYieldSeekToQueuedPlay(Channel<PlaybackCommand> commandChannel)");
+        AssertContains(sourceText, "return next.Kind is CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;");
+        AssertContains(sourceText, "private static bool ShouldYieldPauseFromLiveToQueuedSeekOrPlay(Channel<PlaybackCommand> commandChannel)");
+        AssertContains(sourceText, "return next.Kind is CommandKind.Seek or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;");
         AssertContains(drainAbandonedCommands, "ClearQueuedCommandSlotsBarrier();");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.EndScrub, \"live_thread_not_running\", position);\n            return false;\n        }");
         var endScrubBlock = ExtractTextBetween(

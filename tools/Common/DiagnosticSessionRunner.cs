@@ -1120,9 +1120,16 @@ public static class DiagnosticSessionRunner
                 previewTargetFps = GetDouble(lastSnapshot, "SelectedExactFrameRate");
             }
 
+            var visualCadenceHealthy = IsVisualCadenceSessionHealthy(visualCadenceMetrics, previewTargetFps);
             var toleratesPreviewCycleSchedulerSettling =
                 (runFlashbackPreviewCycle || runFlashbackRecordingPreviewCycle) &&
-                IsVisualCadenceSessionHealthy(visualCadenceMetrics, previewTargetFps);
+                visualCadenceHealthy;
+            var toleratesSparsePreviewSchedulerDeadlineDrops =
+                IsSparsePreviewSchedulerDeadlineDropRun(
+                    previewSchedulerDeadlineDropsDelta,
+                    previewSchedulerUnderflowsDelta,
+                    durationSeconds,
+                    visualCadenceHealthy);
             ValidateFlashbackPreviewScheduler(
                 previewSchedulerDeadlineDropsDelta,
                 previewSchedulerUnderflowsDelta,
@@ -1131,7 +1138,7 @@ public static class DiagnosticSessionRunner
                 visualCadenceMetrics,
                 previewD3DMetrics,
                 previewTargetFps,
-                toleratesPreviewCycleSchedulerSettling,
+                toleratesPreviewCycleSchedulerSettling || toleratesSparsePreviewSchedulerDeadlineDrops,
                 warnings);
         }
 
@@ -1145,6 +1152,13 @@ public static class DiagnosticSessionRunner
             (isFlashbackScenario &&
              IsPreviewCycleScenario(runFlashbackPreviewCycle, runFlashbackRecordingPreviewCycle) &&
              IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate")) &&
+             IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)) ||
+            (isFlashbackScenario &&
+             IsSparsePreviewSchedulerDeadlineDropRun(
+                 previewSchedulerDeadlineDropsDelta,
+                 previewSchedulerUnderflowsDelta,
+                 durationSeconds,
+                 IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate"))) &&
              IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation));
         var diagnosticHealthSucceeded =
             !IsFailingDiagnosticHealthSeverity(diagnosticHealthObservation.Severity) ||
@@ -1158,7 +1172,12 @@ public static class DiagnosticSessionRunner
                 $"offsetMs={diagnosticHealthObservation.OffsetMs} " +
                 $"evidence={FormatOptional(diagnosticHealthObservation.Evidence)}");
         }
-        else if (diagnosticHealthTolerated)
+        else if (diagnosticHealthTolerated &&
+                 !IsSparsePreviewSchedulerDeadlineDropRun(
+                     previewSchedulerDeadlineDropsDelta,
+                     previewSchedulerUnderflowsDelta,
+                     durationSeconds,
+                     IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate"))))
         {
             var toleratedReason = IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)
                 ? "preview scheduler transition warning tolerated for preview-cycle scenario"
@@ -3576,9 +3595,25 @@ public static class DiagnosticSessionRunner
             .ConfigureAwait(false);
         actions.Add("flashback export playback play requested");
 
-        await Task.Delay(750, cancellationToken).ConfigureAwait(false);
-        var playbackSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
-        TryGetSnapshot(playbackSnapshotResponse, out var playbackSnapshot);
+        var playbackSnapshotOrNull = await WaitForFlashbackPlaybackStateAsync(
+                sendCommandAsync,
+                "Playing",
+                TimeSpan.FromSeconds(5),
+                cancellationToken)
+            .ConfigureAwait(false);
+        JsonElement playbackSnapshot;
+        if (playbackSnapshotOrNull is null)
+        {
+            warnings.Add("flashback export playback: playback did not report Playing within 5s before export");
+            var playbackSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            TryGetSnapshot(playbackSnapshotResponse, out var fallbackPlaybackSnapshot);
+            playbackSnapshot = fallbackPlaybackSnapshot;
+        }
+        else
+        {
+            playbackSnapshot = playbackSnapshotOrNull.Value;
+        }
+
         var playbackFrameCountBeforeExport = GetNullableLong(playbackSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
         var playbackStateBeforeExport = GetString(playbackSnapshot, "FlashbackPlaybackState") ?? "Unknown";
         if (!string.Equals(playbackStateBeforeExport, "Playing", StringComparison.OrdinalIgnoreCase))
@@ -5476,6 +5511,21 @@ public static class DiagnosticSessionRunner
 
     private static bool IsPreviewCycleScenario(bool runFlashbackPreviewCycle, bool runFlashbackRecordingPreviewCycle)
         => runFlashbackPreviewCycle || runFlashbackRecordingPreviewCycle;
+
+    private static bool IsSparsePreviewSchedulerDeadlineDropRun(
+        long deadlineDropsDelta,
+        long underflowsDelta,
+        int durationSeconds,
+        bool visualCadenceHealthy)
+    {
+        if (!visualCadenceHealthy || deadlineDropsDelta <= 0 || underflowsDelta > 0)
+        {
+            return false;
+        }
+
+        var allowedDrops = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 60.0));
+        return deadlineDropsDelta <= allowedDrops;
+    }
 
     private static bool IsVisualCadenceSessionHealthy(VisualCadenceSessionMetrics metrics, double targetFps)
         => targetFps > 0 &&

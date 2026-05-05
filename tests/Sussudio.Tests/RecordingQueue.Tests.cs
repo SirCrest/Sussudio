@@ -202,6 +202,11 @@ static partial class Program
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY");
         AssertContains(flashbackBufferSource, "FLASHBACK_STALE_SESSION_PRESERVE_SKIP");
         AssertContains(flashbackBufferSource, "File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName))");
+        AssertContains(flashbackBufferSource, "private static readonly SemaphoreSlim AsyncSegmentDeleteGate = new(1, 1);");
+        AssertContains(flashbackBufferSource, "QueueDeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"valid_window\")");
+        AssertContains(flashbackBufferSource, "QueueDeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"disk_budget\")");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_SEGMENT_EVICT_QUEUED");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_SEGMENT_EVICT_DELETED");
         var flashbackVideoEnqueue = ExtractSourceBlock(
             flashbackSource,
             "private VideoEnqueueResult TryEnqueueVideoPacket",
