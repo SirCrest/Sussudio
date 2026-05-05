@@ -507,6 +507,9 @@ static partial class Program
                 "Diagnostic session runner ignores transient flashback warmup warnings",
                 DiagnosticSessionRunner_IgnoresTransientFlashbackWarmupWarnings),
             await RunCheckAsync(
+                "Diagnostic session runner tolerates sparse source cadence warnings only without source drops",
+                DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops),
+            await RunCheckAsync(
                 "Diagnostic session runner fails unknown initial snapshot without mutating state",
                 DiagnosticSessionRunner_UnknownInitialSnapshotFailsWithoutMutatingState),
             await RunCheckAsync(

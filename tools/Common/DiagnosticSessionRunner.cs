@@ -1067,9 +1067,12 @@ public static class DiagnosticSessionRunner
 
         var recordingMetrics = BuildFlashbackRecordingMetrics(initialSnapshot, samples);
         var exportMetrics = BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot);
+        var sourceCadenceMetrics = BuildSourceCadenceSessionMetrics(samples, lastSnapshot);
         var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
         var visualCadenceMetrics = BuildVisualCadenceSessionMetrics(samples, lastSnapshot);
+        var sourceReaderFramesDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MfSourceReaderFramesDropped");
+        var videoIngestErrorsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "VideoIngestErrorCount");
         var previewSchedulerDroppedAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterTotalDropped") ?? 0;
         var previewSchedulerDeadlineDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterDeadlineDropCount") ?? 0;
         var previewSchedulerClearedDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterClearedDropCount") ?? 0;
@@ -1147,9 +1150,19 @@ public static class DiagnosticSessionRunner
             samples,
             diagnosticHealthSnapshot,
             isFlashbackScenario);
+        var sparseSourceCaptureCadenceWarning =
+            isFlashbackScenario &&
+            IsSparseSourceCaptureCadenceWarningRun(
+                diagnosticHealthObservation,
+                sourceCadenceMetrics,
+                sourceReaderFramesDroppedDelta,
+                videoIngestErrorsDelta,
+                durationSeconds,
+                IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate")));
         var diagnosticHealthTolerated =
             (toleratesSourceSignalHealthWarning &&
              IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)) ||
+            sparseSourceCaptureCadenceWarning ||
             (isFlashbackScenario &&
              IsPreviewCycleScenario(runFlashbackPreviewCycle, runFlashbackRecordingPreviewCycle) &&
              IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate")) &&
@@ -1174,6 +1187,7 @@ public static class DiagnosticSessionRunner
                 $"evidence={FormatOptional(diagnosticHealthObservation.Evidence)}");
         }
         else if (diagnosticHealthTolerated &&
+                 !sparseSourceCaptureCadenceWarning &&
                  !IsSparsePreviewSchedulerDeadlineDropRun(
                      previewSchedulerDeadlineDropsDelta,
                      previewSchedulerUnderflowsDelta,
@@ -5183,6 +5197,40 @@ public static class DiagnosticSessionRunner
         public double MaxThroughputBytesPerSecObserved { get; set; }
     }
 
+    private static SourceCadenceSessionMetrics BuildSourceCadenceSessionMetrics(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement lastSnapshot)
+    {
+        var metrics = new SourceCadenceSessionMetrics();
+        ObserveSourceCadenceSnapshot(metrics, lastSnapshot);
+        foreach (var sample in samples)
+        {
+            ObserveSourceCadenceSnapshot(metrics, sample.Snapshot);
+        }
+
+        return metrics;
+    }
+
+    private static void ObserveSourceCadenceSnapshot(SourceCadenceSessionMetrics metrics, JsonElement snapshot)
+    {
+        metrics.MaxSevereGapCountObserved = Math.Max(
+            metrics.MaxSevereGapCountObserved,
+            GetNullableLong(snapshot, "CaptureCadenceSevereGapCount") ?? 0);
+        metrics.MaxEstimatedDroppedFramesObserved = Math.Max(
+            metrics.MaxEstimatedDroppedFramesObserved,
+            GetNullableLong(snapshot, "CaptureCadenceEstimatedDroppedFrames") ?? 0);
+        metrics.MaxDropPercentObserved = Math.Max(
+            metrics.MaxDropPercentObserved,
+            GetDouble(snapshot, "CaptureCadenceEstimatedDropPercent"));
+    }
+
+    private sealed class SourceCadenceSessionMetrics
+    {
+        public long MaxSevereGapCountObserved { get; set; }
+        public long MaxEstimatedDroppedFramesObserved { get; set; }
+        public double MaxDropPercentObserved { get; set; }
+    }
+
     private static PreviewCadenceSessionMetrics BuildPreviewCadenceSessionMetrics(
         IReadOnlyList<DiagnosticSessionSample> samples,
         JsonElement lastSnapshot)
@@ -5518,12 +5566,38 @@ public static class DiagnosticSessionRunner
         => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
            string.Equals(observation.LikelyStage, "source_signal", StringComparison.OrdinalIgnoreCase);
 
+    private static bool IsSourceCaptureDiagnosticHealthObservation(DiagnosticHealthObservation observation)
+        => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
+           string.Equals(observation.LikelyStage, "source_capture", StringComparison.OrdinalIgnoreCase);
+
     private static bool IsPreviewSchedulerDiagnosticHealthObservation(DiagnosticHealthObservation observation)
         => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
            string.Equals(observation.LikelyStage, "preview_scheduler", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsPreviewCycleScenario(bool runFlashbackPreviewCycle, bool runFlashbackRecordingPreviewCycle)
         => runFlashbackPreviewCycle || runFlashbackRecordingPreviewCycle;
+
+    private static bool IsSparseSourceCaptureCadenceWarningRun(
+        DiagnosticHealthObservation observation,
+        SourceCadenceSessionMetrics sourceCadenceMetrics,
+        long sourceReaderFramesDroppedDelta,
+        long videoIngestErrorsDelta,
+        int durationSeconds,
+        bool visualCadenceHealthy)
+    {
+        if (!visualCadenceHealthy ||
+            !IsSourceCaptureDiagnosticHealthObservation(observation) ||
+            sourceReaderFramesDroppedDelta > 0 ||
+            videoIngestErrorsDelta > 0 ||
+            sourceCadenceMetrics.MaxDropPercentObserved > 0.1)
+        {
+            return false;
+        }
+
+        var allowedSparseEvents = Math.Max(1, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 180.0));
+        return sourceCadenceMetrics.MaxEstimatedDroppedFramesObserved <= allowedSparseEvents &&
+               sourceCadenceMetrics.MaxSevereGapCountObserved <= allowedSparseEvents;
+    }
 
     private static bool IsSparsePreviewSchedulerDeadlineDropRun(
         long deadlineDropsDelta,

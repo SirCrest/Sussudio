@@ -1106,6 +1106,15 @@ static partial class Program
         AssertContains(diagnosticSessionText, "actions.Add(\n            \"flashback segment playback observed \"");
         AssertDoesNotContain(diagnosticSessionText, "flashback segment playback: excessive late frames");
         AssertContains(diagnosticSessionText, "var diagnosticHealthObservation = BuildSessionDiagnosticHealthObservation(");
+        AssertContains(diagnosticSessionText, "BuildSourceCadenceSessionMetrics(samples, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "var sourceReaderFramesDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, \"MfSourceReaderFramesDropped\")");
+        AssertContains(diagnosticSessionText, "var videoIngestErrorsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, \"VideoIngestErrorCount\")");
+        AssertContains(diagnosticSessionText, "var sparseSourceCaptureCadenceWarning =");
+        AssertContains(diagnosticSessionText, "IsSparseSourceCaptureCadenceWarningRun(");
+        AssertContains(diagnosticSessionText, "private static bool IsSparseSourceCaptureCadenceWarningRun(");
+        AssertContains(diagnosticSessionText, "sourceReaderFramesDroppedDelta > 0");
+        AssertContains(diagnosticSessionText, "videoIngestErrorsDelta > 0");
+        AssertContains(diagnosticSessionText, "var allowedSparseEvents = Math.Max(1, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 180.0));");
         AssertContains(diagnosticSessionText, "FlashbackDiagnosticWarmupFraction");
         AssertContains(diagnosticSessionText, "FlashbackDiagnosticMaxWarmupMs");
         AssertContains(diagnosticSessionText, "private static DiagnosticHealthObservation BuildWorstDiagnosticHealthObservationAfterOffset(");
