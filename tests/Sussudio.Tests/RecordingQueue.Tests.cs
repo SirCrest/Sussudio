@@ -426,6 +426,12 @@ static partial class Program
             "private void ScheduleDeferredFlashbackBackendCleanup",
             "private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
         AssertContains(deferredFlashbackBackendCleanup, "CleanupFlashbackBackendArtifactsAfterExportAsync(");
+        AssertContains(deferredFlashbackBackendCleanup, "if (cleanupCompleted)");
+        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_OK reason='{reason}' attempt={attempt}");
+        AssertContains(deferredFlashbackBackendCleanup, "else if (attempt < 3)");
+        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_RETRY reason='{reason}' attempt={attempt} next_attempt={nextAttempt}");
+        AssertContains(deferredFlashbackBackendCleanup, "Task.Delay(TimeSpan.FromSeconds(5))");
+        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_GIVE_UP reason='{reason}' attempt={attempt} preserve_segments=true");
         var flashbackBackendArtifactCleanup = ExtractSourceBlock(
             captureServiceSource,
             "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync",

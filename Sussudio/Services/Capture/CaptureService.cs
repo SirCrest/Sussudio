@@ -1420,7 +1420,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         FlashbackBufferManager? bufferManager,
         FlashbackExporter? flashbackExporter,
         string reason,
-        bool purgeSegments)
+        bool purgeSegments,
+        int attempt = 0)
     {
         _ = Task.Run(async () =>
         {
@@ -1434,7 +1435,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             finally
             {
-                _ = await CleanupFlashbackBackendArtifactsAfterExportAsync(
+                var cleanupCompleted = await CleanupFlashbackBackendArtifactsAfterExportAsync(
                         bufferManager,
                         flashbackExporter,
                         reason,
@@ -1442,8 +1443,27 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                         "deferred")
                     .ConfigureAwait(false);
 
+                if (cleanupCompleted)
+                {
+                    Logger.Log($"FLASHBACK_BACKEND_DEFERRED_CLEANUP_OK reason='{reason}' attempt={attempt}");
+                }
+                else if (attempt < 3)
+                {
+                    var nextAttempt = attempt + 1;
+                    Logger.Log($"FLASHBACK_BACKEND_DEFERRED_CLEANUP_RETRY reason='{reason}' attempt={attempt} next_attempt={nextAttempt}");
+                    ScheduleDeferredFlashbackBackendCleanup(
+                        Task.Delay(TimeSpan.FromSeconds(5)),
+                        bufferManager,
+                        flashbackExporter,
+                        reason,
+                        purgeSegments,
+                        nextAttempt);
+                }
+                else
+                {
+                    Logger.Log($"FLASHBACK_BACKEND_DEFERRED_CLEANUP_GIVE_UP reason='{reason}' attempt={attempt} preserve_segments=true");
+                }
 
-                Logger.Log($"FLASHBACK_BACKEND_DEFERRED_CLEANUP_OK reason='{reason}'");
             }
         });
     }
