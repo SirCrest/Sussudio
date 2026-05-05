@@ -701,8 +701,10 @@ static partial class Program
         AssertContains(createFlashbackSessionContext, "frameRate = frameRateParts.EffectiveFrameRate;");
         AssertContains(createFlashbackSessionContext, "FrameRateNumerator = fpsNum");
         AssertContains(captureServiceText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(");
+        AssertContains(captureServiceText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) InferFlashbackSessionFrameRateParts(double deliveryFrameRate)");
         AssertContains(captureServiceText, "FLASHBACK_FRAME_RATE_RATIONAL_ACCEPT");
         AssertContains(captureServiceText, "FLASHBACK_FRAME_RATE_RATIONAL_REJECT");
+        AssertContains(captureServiceText, "FLASHBACK_FRAME_RATE_RATIONAL_INFER");
         AssertContains(captureServiceText, "deltaFps > toleranceFps");
         AssertContains(createFlashbackSessionContext, "? \"hevc_nvenc\"");
         AssertContains(captureServiceText, "private static bool UseTransportStreamFlashbackCodec(");
@@ -772,10 +774,16 @@ static partial class Program
         AssertFlashbackFrameRateParts(ntscResult, 120000, 1001, ntscDelivery, "matching NTSC delivered cadence");
 
         var mismatchedResult = method.Invoke(null, new[] { BuildFrameRateSettings(120000u, 1001u), 120.0 })!;
-        AssertFlashbackFrameRateParts(mismatchedResult, null, null, 120.0, "source NTSC rejected for integer USB cadence");
+        AssertFlashbackFrameRateParts(mismatchedResult, 120, 1, 120.0, "source NTSC rejected then inferred from integer USB cadence");
 
         var missingResult = method.Invoke(null, new[] { BuildFrameRateSettings(null, null), 120.0 })!;
-        AssertFlashbackFrameRateParts(missingResult, null, null, 120.0, "missing rational falls back to delivered cadence");
+        AssertFlashbackFrameRateParts(missingResult, 120, 1, 120.0, "missing rational infers integer delivered cadence");
+
+        var measuredIntegerResult = method.Invoke(null, new[] { BuildFrameRateSettings(null, null), 120.00048 })!;
+        AssertFlashbackFrameRateParts(measuredIntegerResult, 120, 1, 120.0, "measured integer delivered cadence infers exact rational");
+
+        var measuredNtscResult = method.Invoke(null, new[] { BuildFrameRateSettings(null, null), 120000d / 1001d })!;
+        AssertFlashbackFrameRateParts(measuredNtscResult, 120000, 1001, 120000d / 1001d, "missing rational infers NTSC delivered cadence");
 
         return Task.CompletedTask;
     }
