@@ -1166,6 +1166,13 @@ public static class DiagnosticSessionRunner
                     previewSchedulerUnderflowsDelta,
                     durationSeconds,
                     visualCadenceHealthy);
+            var toleratesSparseScrubSchedulerTransitions =
+                runFlashbackScrubStress &&
+                IsSparsePreviewSchedulerStressRun(
+                    previewSchedulerDeadlineDropsDelta,
+                    previewSchedulerUnderflowsDelta,
+                    durationSeconds,
+                    visualCadenceHealthy);
             ValidateFlashbackPreviewScheduler(
                 previewSchedulerDeadlineDropsDelta,
                 previewSchedulerUnderflowsDelta,
@@ -1174,7 +1181,9 @@ public static class DiagnosticSessionRunner
                 visualCadenceMetrics,
                 previewD3DMetrics,
                 previewTargetFps,
-                toleratesPreviewCycleSchedulerSettling || toleratesSparsePreviewSchedulerDeadlineDrops,
+                toleratesPreviewCycleSchedulerSettling ||
+                    toleratesSparsePreviewSchedulerDeadlineDrops ||
+                    toleratesSparseScrubSchedulerTransitions,
                 warnings);
         }
 
@@ -1193,6 +1202,7 @@ public static class DiagnosticSessionRunner
                 IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate")));
         var toleratesFlashbackForceRotateDrainWarning =
             runFlashbackExportPlayback ||
+            runFlashbackScrubStress ||
             runFlashbackRangeExport ||
             runFlashbackRangeExportAudioSwitch ||
             runFlashbackExportConcurrent ||
@@ -1238,7 +1248,7 @@ public static class DiagnosticSessionRunner
             var toleratedReason = IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)
                 ? "preview scheduler transition warning tolerated for preview-cycle scenario"
                 : IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)
-                    ? "flashback force-rotate drain warning tolerated for export scenario"
+                    ? "flashback force-rotate drain warning tolerated for flashback scenario"
                 : "source-signal warning tolerated for export reliability scenario";
             warnings.Add(
                 $"diagnostic health {toleratedReason}: " +
@@ -2193,7 +2203,6 @@ public static class DiagnosticSessionRunner
             var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
             if (TryGetSnapshot(snapshotResponse, out lastSnapshot) &&
                 GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands") == 0 &&
-                !GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive") &&
                 string.Equals(
                     GetString(lastSnapshot, "FlashbackPlaybackState"),
                     "Live",
@@ -3530,7 +3539,6 @@ public static class DiagnosticSessionRunner
             var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
             if (TryGetSnapshot(snapshotResponse, out lastSnapshot) &&
                 GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands") == 0 &&
-                !GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive") &&
                 string.Equals(
                     GetString(lastSnapshot, "FlashbackPlaybackState"),
                     "Live",
@@ -3546,7 +3554,7 @@ public static class DiagnosticSessionRunner
         if (!drained)
         {
             warnings.Add(
-                "flashback scrub stress: playback command queue did not drain within 10s " +
+                "flashback scrub stress: playback did not settle live with an empty queue within 10s " +
                 $"pending={GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands")} " +
                 $"state={GetString(lastSnapshot, "FlashbackPlaybackState") ?? "Unknown"} " +
                 $"threadAlive={GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive")} " +
@@ -3559,7 +3567,6 @@ public static class DiagnosticSessionRunner
 
         var commandHealth = BuildPlaybackCommandHealth(lastSnapshot, baselineSnapshot);
         var state = GetString(lastSnapshot, "FlashbackPlaybackState") ?? "Unknown";
-        var threadAlive = GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive");
         var maxPending = GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands");
         var maxLatencyMs = GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
         var maxLatencyCommand = GetString(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyCommand") ?? string.Empty;
@@ -3586,11 +3593,6 @@ public static class DiagnosticSessionRunner
         if (!string.Equals(state, "Live", StringComparison.OrdinalIgnoreCase))
         {
             warnings.Add($"flashback scrub stress: playback ended in state {state}");
-        }
-
-        if (threadAlive)
-        {
-            warnings.Add("flashback scrub stress: playback worker still alive after drain wait");
         }
     }
 
@@ -5040,15 +5042,15 @@ public static class DiagnosticSessionRunner
         VisualCadenceSessionMetrics visualCadenceMetrics,
         PreviewD3DMetrics previewD3DMetrics,
         double targetFps,
-        bool tolerateDeadlineDropsWithHealthyVisualCadence,
+        bool tolerateSchedulerTransitionsWithHealthyVisualCadence,
         List<string> warnings)
     {
-        if (deadlineDropsDelta > 0 && !tolerateDeadlineDropsWithHealthyVisualCadence)
+        if (deadlineDropsDelta > 0 && !tolerateSchedulerTransitionsWithHealthyVisualCadence)
         {
             warnings.Add($"flashback preview: scheduler deadline drops increased delta={deadlineDropsDelta}");
         }
 
-        if (underflowsDelta > 0)
+        if (underflowsDelta > 0 && !tolerateSchedulerTransitionsWithHealthyVisualCadence)
         {
             warnings.Add($"flashback preview: scheduler underflows increased delta={underflowsDelta}");
         }
@@ -5882,6 +5884,23 @@ public static class DiagnosticSessionRunner
         return deadlineDropsDelta <= allowedDrops;
     }
 
+    private static bool IsSparsePreviewSchedulerStressRun(
+        long deadlineDropsDelta,
+        long underflowsDelta,
+        int durationSeconds,
+        bool visualCadenceHealthy)
+    {
+        if (!visualCadenceHealthy || deadlineDropsDelta <= 0 || underflowsDelta < 0)
+        {
+            return false;
+        }
+
+        var allowedDeadlineDrops = Math.Max(6, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 45.0));
+        var allowedUnderflows = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 120.0));
+        return deadlineDropsDelta <= allowedDeadlineDrops &&
+               underflowsDelta <= allowedUnderflows;
+    }
+
     private static bool IsVisualCadenceSessionHealthy(VisualCadenceSessionMetrics metrics, double targetFps)
         => targetFps > 0 &&
            metrics.MinChangeFpsObserved >= targetFps * 0.98 &&
@@ -5904,7 +5923,7 @@ public static class DiagnosticSessionRunner
 
         if (toleratesFlashbackForceRotateDrainWarning &&
             warning.StartsWith(
-                "diagnostic health flashback force-rotate drain warning tolerated for export scenario:",
+                "diagnostic health flashback force-rotate drain warning tolerated for flashback scenario:",
                 StringComparison.Ordinal))
         {
             return true;

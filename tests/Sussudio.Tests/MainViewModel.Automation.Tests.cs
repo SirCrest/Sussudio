@@ -990,9 +990,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback scrub stress begin requested");
         AssertContains(diagnosticSessionText, "flashback scrub stress update burst requested");
         AssertContains(diagnosticSessionText, "flashback scrub stress end requested");
-        AssertContains(diagnosticSessionText, "GetInt(lastSnapshot, \"FlashbackPlaybackPendingCommands\") == 0 &&\n                !GetBool(lastSnapshot, \"FlashbackPlaybackThreadAlive\")");
+        AssertContains(diagnosticSessionText, "GetInt(lastSnapshot, \"FlashbackPlaybackPendingCommands\") == 0 &&\n                string.Equals(");
         AssertContains(diagnosticSessionText, "state={GetString(lastSnapshot, \"FlashbackPlaybackState\") ?? \"Unknown\"}");
-        AssertContains(diagnosticSessionText, "!GetBool(lastSnapshot, \"FlashbackPlaybackThreadAlive\")");
+        AssertContains(diagnosticSessionText, "flashback scrub stress: playback did not settle live with an empty queue within 10s");
+        AssertDoesNotContain(diagnosticSessionText, "flashback scrub stress: playback worker still alive after drain wait");
         AssertContains(diagnosticSessionText, "GetString(lastSnapshot, \"FlashbackPlaybackState\")");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRestartCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback restart cycle export verified");
@@ -1112,8 +1113,14 @@ static partial class Program
         AssertContains(diagnosticSessionText, "IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(diagnosticSessionText, "private static bool IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(diagnosticSessionText, "var allowedDrops = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 10.0));");
-        AssertContains(diagnosticSessionText, "bool tolerateDeadlineDropsWithHealthyVisualCadence");
-        AssertContains(diagnosticSessionText, "deadlineDropsDelta > 0 && !tolerateDeadlineDropsWithHealthyVisualCadence");
+        AssertContains(diagnosticSessionText, "var toleratesSparseScrubSchedulerTransitions =");
+        AssertContains(diagnosticSessionText, "IsSparsePreviewSchedulerStressRun(");
+        AssertContains(diagnosticSessionText, "private static bool IsSparsePreviewSchedulerStressRun(");
+        AssertContains(diagnosticSessionText, "var allowedDeadlineDrops = Math.Max(6, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 45.0));");
+        AssertContains(diagnosticSessionText, "var allowedUnderflows = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 120.0));");
+        AssertContains(diagnosticSessionText, "bool tolerateSchedulerTransitionsWithHealthyVisualCadence");
+        AssertContains(diagnosticSessionText, "deadlineDropsDelta > 0 && !tolerateSchedulerTransitionsWithHealthyVisualCadence");
+        AssertContains(diagnosticSessionText, "underflowsDelta > 0 && !tolerateSchedulerTransitionsWithHealthyVisualCadence");
         AssertContains(diagnosticSessionText, "var onePercentLowFloor = targetFps * 0.80;");
         AssertContains(diagnosticSessionText, "var visualCadenceHealthy =");
         AssertContains(diagnosticSessionText, "IsVisualCadenceSessionHealthy(visualCadenceMetrics, targetFps)");
@@ -1143,7 +1150,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static bool IsSparseSourceCaptureCadenceWarningRun(");
         AssertContains(diagnosticSessionText, "var toleratesFlashbackForceRotateDrainWarning =");
         AssertContains(diagnosticSessionText, "IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)");
-        AssertContains(diagnosticSessionText, "flashback force-rotate drain warning tolerated for export scenario");
+        AssertContains(diagnosticSessionText, "flashback force-rotate drain warning tolerated for flashback scenario");
         AssertContains(diagnosticSessionText, "private static bool IsFlashbackForceRotateDrainDiagnosticHealthObservation(");
         AssertContains(diagnosticSessionText, "lastReject=force_rotate_draining");
         AssertContains(diagnosticSessionText, "sourceReaderFramesDroppedDelta > 0");
