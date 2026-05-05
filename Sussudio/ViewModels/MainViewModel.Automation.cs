@@ -299,7 +299,14 @@ public partial class MainViewModel
         var outPoint = playback.OutPoint;
 
         var (result, errorMessage, isCurrent) = await ExportFlashbackCoreAsync(async (progress, ct) =>
-            await _sessionCoordinator.ExportFlashbackRangeAsync(inPoint, outPoint, file.Path, progress, ct));
+            await _sessionCoordinator.ExportFlashbackRangeAsync(
+                inPoint,
+                outPoint,
+                file.Path,
+                progress,
+                ct,
+                playback.InPointFilePts,
+                playback.OutPointFilePts));
         if (!isCurrent) return;
 
         if (errorMessage != null)
@@ -486,7 +493,13 @@ public partial class MainViewModel
             {
                 var playback = _sessionCoordinator.GetFlashbackPlaybackSnapshot();
                 return await _sessionCoordinator.ExportFlashbackRangeAsync(
-                    playback.InPoint, playback.OutPoint, outputPath, progress, exportCts.Token);
+                    playback.InPoint,
+                    playback.OutPoint,
+                    outputPath,
+                    progress,
+                    exportCts.Token,
+                    playback.InPointFilePts,
+                    playback.OutPointFilePts);
             }
 
             return await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(

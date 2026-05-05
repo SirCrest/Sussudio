@@ -69,6 +69,8 @@ internal readonly record struct FlashbackPlaybackSnapshot(
     TimeSpan GapFromLive,
     TimeSpan? InPoint,
     TimeSpan? OutPoint,
+    TimeSpan? InPointFilePts,
+    TimeSpan? OutPointFilePts,
     bool ThreadAlive,
     int PendingCommands,
     string LastCommandFailure,
@@ -79,6 +81,8 @@ internal readonly record struct FlashbackPlaybackSnapshot(
         FlashbackPlaybackState.Disabled,
         TimeSpan.Zero,
         TimeSpan.Zero,
+        null,
+        null,
         null,
         null,
         false,
@@ -93,6 +97,8 @@ internal readonly record struct FlashbackPlaybackSnapshot(
         FlashbackPlaybackState.Disabled,
         TimeSpan.Zero,
         TimeSpan.Zero,
+        null,
+        null,
         null,
         null,
         false,
@@ -346,6 +352,8 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                 controller.GapFromLive,
                 controller.InPoint,
                 controller.OutPoint,
+                controller.InPointFilePts,
+                controller.OutPointFilePts,
                 controller.PlaybackThreadAlive,
                 controller.PendingCommands,
                 controller.LastCommandFailure,
@@ -446,10 +454,19 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         TimeSpan? outPoint,
         string outputPath,
         IProgress<ExportProgress>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        TimeSpan? inPointFilePts = null,
+        TimeSpan? outPointFilePts = null)
     {
         ThrowIfDisposed();
-        return _captureService.ExportFlashbackRangeAsync(inPoint, outPoint, outputPath, progress, cancellationToken);
+        return _captureService.ExportFlashbackRangeAsync(
+            inPoint,
+            outPoint,
+            outputPath,
+            progress,
+            cancellationToken,
+            inPointFilePts,
+            outPointFilePts);
     }
 
     internal Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(

@@ -200,6 +200,10 @@ static partial class Program
         AssertContains(coordinatorText, "Volatile.Write(ref _isDisposed, true);");
         AssertContains(coordinatorText, "Exception failure = Volatile.Read(ref _isDisposed)");
         AssertMemberContains(automationText, "ExportFlashbackAsync", "_sessionCoordinator.ExportFlashbackRangeAsync(");
+        AssertMemberContains(automationText, "ExportFlashbackAsync", "playback.InPointFilePts");
+        AssertMemberContains(automationText, "ExportFlashbackAsync", "playback.OutPointFilePts");
+        AssertContains(coordinatorText, "TimeSpan? InPointFilePts,");
+        AssertContains(coordinatorText, "TimeSpan? OutPointFilePts,");
         AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
         AssertContains(rawAutomationText, "EnsureFlashbackActiveForExport(\"export\")");
         AssertContains(rawAutomationText, "EnsureFlashbackActiveForExport(\"save_last_5m\")");

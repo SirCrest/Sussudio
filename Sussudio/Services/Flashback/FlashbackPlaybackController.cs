@@ -218,6 +218,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     // --- In/Out points ---
     private long _inPointTicks = long.MinValue;
     private long _outPointTicks = long.MinValue;
+    private long _inPointFilePtsTicks = long.MinValue;
+    private long _outPointFilePtsTicks = long.MinValue;
 
     public TimeSpan? InPoint
     {
@@ -226,7 +228,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
             var t = Interlocked.Read(ref _inPointTicks);
             return t == long.MinValue ? null : TimeSpan.FromTicks(t);
         }
-        set => Interlocked.Exchange(ref _inPointTicks, value.HasValue ? NormalizeMarkerPosition(value.Value).Ticks : long.MinValue);
+        set
+        {
+            var normalized = value.HasValue ? NormalizeMarkerPosition(value.Value) : (TimeSpan?)null;
+            Interlocked.Exchange(ref _inPointTicks, normalized?.Ticks ?? long.MinValue);
+            Interlocked.Exchange(ref _inPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);
+        }
     }
 
     public TimeSpan? OutPoint
@@ -236,7 +243,30 @@ internal sealed class FlashbackPlaybackController : IDisposable
             var t = Interlocked.Read(ref _outPointTicks);
             return t == long.MinValue ? null : TimeSpan.FromTicks(t);
         }
-        set => Interlocked.Exchange(ref _outPointTicks, value.HasValue ? NormalizeMarkerPosition(value.Value).Ticks : long.MinValue);
+        set
+        {
+            var normalized = value.HasValue ? NormalizeMarkerPosition(value.Value) : (TimeSpan?)null;
+            Interlocked.Exchange(ref _outPointTicks, normalized?.Ticks ?? long.MinValue);
+            Interlocked.Exchange(ref _outPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);
+        }
+    }
+
+    public TimeSpan? InPointFilePts
+    {
+        get
+        {
+            var t = Interlocked.Read(ref _inPointFilePtsTicks);
+            return t == long.MinValue ? null : TimeSpan.FromTicks(t);
+        }
+    }
+
+    public TimeSpan? OutPointFilePts
+    {
+        get
+        {
+            var t = Interlocked.Read(ref _outPointFilePtsTicks);
+            return t == long.MinValue ? null : TimeSpan.FromTicks(t);
+        }
     }
 
     // --- Playback thread ---

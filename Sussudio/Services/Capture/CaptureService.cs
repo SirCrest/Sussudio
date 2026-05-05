@@ -512,7 +512,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     internal async Task<FinalizeResult> ExportFlashbackRangeAsync(
         TimeSpan? inPoint, TimeSpan? outPoint, string outputPath,
-        IProgress<ExportProgress>? progress, CancellationToken ct)
+        IProgress<ExportProgress>? progress,
+        CancellationToken ct,
+        TimeSpan? inPointFilePts = null,
+        TimeSpan? outPointFilePts = null)
     {
         // Snapshot buffer state under the session lock, then release it.
         // PauseEviction (inside ExportFlashbackCoreAsync) protects segment files
@@ -581,6 +584,25 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 resolveRangeAfterEvictionPaused: manager =>
                 {
                     var validStart = manager.ValidStartPts;
+                    if (inPointFilePts.HasValue || outPointFilePts.HasValue)
+                    {
+                        var absoluteInPoint = inPointFilePts ?? validStart;
+                        var absoluteOutPoint = outPointFilePts ?? TimeSpan.MaxValue;
+                        if (absoluteInPoint < validStart)
+                        {
+                            return (false, absoluteInPoint, absoluteOutPoint, "Flashback export in point has been evicted from the buffer.");
+                        }
+
+                        if (absoluteOutPoint != TimeSpan.MaxValue && absoluteOutPoint <= validStart)
+                        {
+                            return (false, absoluteInPoint, absoluteOutPoint, "Flashback export out point has been evicted from the buffer.");
+                        }
+
+                        return absoluteOutPoint != TimeSpan.MaxValue && absoluteOutPoint <= absoluteInPoint
+                            ? (false, absoluteInPoint, absoluteOutPoint, "Flashback export range is empty or invalid.")
+                            : (true, absoluteInPoint, absoluteOutPoint, null);
+                    }
+
                     var bufferedDuration = manager.BufferedDuration;
                     var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);
                     var bufferOutPoint = outPoint.HasValue

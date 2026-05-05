@@ -911,6 +911,11 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "resolveRangeAfterEvictionPaused: manager =>");
+        AssertContains(captureServiceText, "if (inPointFilePts.HasValue || outPointFilePts.HasValue)");
+        AssertContains(captureServiceText, "var absoluteInPoint = inPointFilePts ?? validStart;");
+        AssertContains(captureServiceText, "var absoluteOutPoint = outPointFilePts ?? TimeSpan.MaxValue;");
+        AssertContains(captureServiceText, "\"Flashback export in point has been evicted from the buffer.\"");
+        AssertContains(captureServiceText, "\"Flashback export out point has been evicted from the buffer.\"");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", inPoint, outPoint);");
         AssertContains(captureServiceText, "resolvedRange.FailureMessage ?? \"Flashback export range is empty or invalid.\"");
         AssertContains(captureServiceText, "fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint");
@@ -1853,8 +1858,12 @@ static partial class Program
         var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(sourceText, "set => Interlocked.Exchange(ref _inPointTicks, value.HasValue ? NormalizeMarkerPosition(value.Value).Ticks : long.MinValue);");
-        AssertContains(sourceText, "set => Interlocked.Exchange(ref _outPointTicks, value.HasValue ? NormalizeMarkerPosition(value.Value).Ticks : long.MinValue);");
+        AssertContains(sourceText, "private long _inPointFilePtsTicks = long.MinValue;");
+        AssertContains(sourceText, "private long _outPointFilePtsTicks = long.MinValue;");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _inPointTicks, normalized?.Ticks ?? long.MinValue);\n            Interlocked.Exchange(ref _inPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _outPointTicks, normalized?.Ticks ?? long.MinValue);\n            Interlocked.Exchange(ref _outPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);");
+        AssertContains(sourceText, "public TimeSpan? InPointFilePts");
+        AssertContains(sourceText, "public TimeSpan? OutPointFilePts");
         AssertContains(sourceText, "private TimeSpan NormalizeMarkerPosition(TimeSpan position)\n    {\n        if (position <= TimeSpan.Zero)\n        {\n            return TimeSpan.Zero;\n        }\n\n        var bufferDuration = _bufferManager.BufferedDuration;\n        return position > bufferDuration ? bufferDuration : position;\n    }");
 
         return Task.CompletedTask;
