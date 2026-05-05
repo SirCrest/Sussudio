@@ -947,6 +947,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback-range-export-audio-switch\" => Path.Combine(outputDirectory, \"flashback-range-export-audio-switch.mp4\")");
         AssertContains(diagnosticSessionText, "\"flashback-export-concurrent\" => Path.Combine(outputDirectory, \"flashback-concurrent-a.mp4\")");
         AssertContains(diagnosticSessionText, "\"flashback-rotated-export\" => Path.Combine(outputDirectory, \"flashback-rotated-export.mp4\")");
+        AssertContains(diagnosticSessionText, "return exportPath.Length > 0;");
+        AssertDoesNotContain(diagnosticSessionText, "return exportPath.Length > 0 && File.Exists(exportPath);");
         AssertContains(diagnosticSessionText, "expected BufferInactive failure kind");
         AssertContains(diagnosticSessionText, "expected UnavailableDuringRecording failure kind");
         AssertContains(diagnosticSessionText, "flashback rejected export observed status={status} kind={failureKind}");
@@ -965,6 +967,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "queueDropsDelta={result.FlashbackRecordingIntegrityQueueDroppedFramesDelta}");
         AssertContains(diagnosticSessionText, "Flashback video sequence gaps increased delta={metrics.IntegritySequenceGapsDelta}");
         AssertContains(diagnosticSessionText, "Flashback dropped frames increased delta={metrics.IntegrityQueueDroppedFramesDelta}");
+        AssertContains(diagnosticSessionText, "ValidateCleanupLifecycleRestored(");
+        AssertContains(diagnosticSessionText, "cleanup: preview remained active after restore");
+        AssertContains(diagnosticSessionText, "cleanup: Flashback remained active after restore");
+        AssertContains(diagnosticSessionText, "cleanup: playback did not return live state={state}");
         AssertContains(diagnosticSessionText, "metrics.MaxPendingCommandsObserved = Math.Max(");
         AssertContains(diagnosticSessionText, "if (maxCommandQueueLatencyMs > metrics.MaxCommandQueueLatencyMsObserved)");
         AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyMsObserved = maxCommandQueueLatencyMs;");

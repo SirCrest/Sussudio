@@ -383,6 +383,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (!StopPlaybackThread())
         {
             Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_DETACH_ABORT reason=thread_stop_failed");
+            RestoreLiveAudio();
+            SafeResumePreviewSubmission("preview_detach_timeout");
             DetachPreviewComponentsAfterStopTimeout();
             return;
         }

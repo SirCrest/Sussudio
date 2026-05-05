@@ -1110,6 +1110,14 @@ public static class DiagnosticSessionRunner
             runFlashbackRecordingExportRejected ||
             runFlashbackExportRejected ||
             scenario == "combined";
+        ValidateCleanupLifecycleRestored(
+            options.LeaveRunning,
+            startedPreview,
+            enabledFlashback,
+            startedFlashbackPlayback,
+            initialSnapshot,
+            healthSnapshot,
+            warnings);
         var toleratesSourceSignalHealthWarning =
             runFlashbackRangeExport ||
             runFlashbackRangeExportAudioSwitch ||
@@ -4716,6 +4724,44 @@ public static class DiagnosticSessionRunner
         }
     }
 
+    private static void ValidateCleanupLifecycleRestored(
+        bool leaveRunning,
+        bool startedPreview,
+        bool enabledFlashback,
+        bool startedFlashbackPlayback,
+        JsonElement initialSnapshot,
+        JsonElement finalSnapshot,
+        List<string> warnings)
+    {
+        if (leaveRunning)
+        {
+            return;
+        }
+
+        if (startedPreview &&
+            !GetBool(initialSnapshot, "IsPreviewing") &&
+            GetBool(finalSnapshot, "IsPreviewing"))
+        {
+            warnings.Add("cleanup: preview remained active after restore");
+        }
+
+        if (enabledFlashback &&
+            !GetBool(initialSnapshot, "FlashbackActive") &&
+            GetBool(finalSnapshot, "FlashbackActive"))
+        {
+            warnings.Add("cleanup: Flashback remained active after restore");
+        }
+
+        if (startedFlashbackPlayback)
+        {
+            var state = GetString(finalSnapshot, "FlashbackPlaybackState") ?? "Unknown";
+            if (!string.Equals(state, "Live", StringComparison.OrdinalIgnoreCase))
+            {
+                warnings.Add($"cleanup: playback did not return live state={state}");
+            }
+        }
+    }
+
     private static void ValidateFlashbackPlaybackSession(
         JsonElement lastSnapshot,
         FlashbackPlaybackSessionMetrics metrics,
@@ -5805,7 +5851,7 @@ public static class DiagnosticSessionRunner
             _ => string.Empty
         };
 
-        return exportPath.Length > 0 && File.Exists(exportPath);
+        return exportPath.Length > 0;
     }
 
     private static string NormalizeScenario(string? scenario)
