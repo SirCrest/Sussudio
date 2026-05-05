@@ -873,6 +873,8 @@ public sealed class AutomationSnapshot
     public int EncoderWidth { get; init; }
     public int EncoderHeight { get; init; }
     public double EncoderFrameRate { get; init; }
+    public int? EncoderFrameRateNumerator { get; init; }
+    public int? EncoderFrameRateDenominator { get; init; }
     public int FlashbackVideoQueueDepth { get; init; }
     public int FlashbackAudioQueueDepth { get; init; }
     public int FlashbackAudioQueueCapacity { get; init; }

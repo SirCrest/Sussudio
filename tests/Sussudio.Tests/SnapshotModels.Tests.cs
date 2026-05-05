@@ -230,6 +230,8 @@ static partial class Program
                 new("EncoderWidth", typeof(int)),
                 new("EncoderHeight", typeof(int)),
                 new("EncoderFrameRate", typeof(double)),
+                new("EncoderFrameRateNumerator", typeof(int?)),
+                new("EncoderFrameRateDenominator", typeof(int?)),
                 new("FlashbackVideoQueueDepth", typeof(int)),
                 new("FlashbackAudioQueueDepth", typeof(int)),
                 new("FlashbackAudioQueueCapacity", typeof(int)),

@@ -340,8 +340,15 @@ internal static class AutomationSnapshotFormatter
             var encW = Get(snapshot, "EncoderWidth", "0");
             var encH = Get(snapshot, "EncoderHeight", "0");
             var encFps = Get(snapshot, "EncoderFrameRate", "0");
+            var encFpsNum = Get(snapshot, "EncoderFrameRateNumerator", "");
+            var encFpsDen = Get(snapshot, "EncoderFrameRateDenominator", "");
+            var encFpsDetail = !string.IsNullOrWhiteSpace(encFpsNum) &&
+                               !string.IsNullOrWhiteSpace(encFpsDen) &&
+                               encFpsDen != "0"
+                ? $"{encFps} fps ({encFpsNum}/{encFpsDen})"
+                : $"{encFps} fps";
             var encBitrate = uint.TryParse(Get(snapshot, "EncoderTargetBitRate", "0"), out var br) ? br / 1_000_000.0 : 0;
-            builder.AppendLine($"Encoder: {codec} {encW}x{encH} @ {encFps} fps | Target: {encBitrate:0.#} Mbps");
+            builder.AppendLine($"Encoder: {codec} {encW}x{encH} @ {encFpsDetail} | Target: {encBitrate:0.#} Mbps");
         }
         var bufferedDurationMs = long.TryParse(Get(snapshot, "FlashbackBufferedDurationMs", "0"), out var durationMs)
             ? durationMs

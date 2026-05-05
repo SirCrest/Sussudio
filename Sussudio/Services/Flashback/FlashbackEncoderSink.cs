@@ -275,6 +275,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public int EncoderWidth => _width;
     public int EncoderHeight => _height;
     public double EncoderFrameRate => _sessionContext?.FrameRate ?? 0;
+    public int? EncoderFrameRateNumerator => _sessionContext?.FrameRateNumerator;
+    public int? EncoderFrameRateDenominator => _sessionContext?.FrameRateDenominator;
     /// <summary>
     /// True when this sink was started with a P010 (HDR) session context.
     /// Used by CaptureService to detect pixel-format drift between UVC re-negotiations.

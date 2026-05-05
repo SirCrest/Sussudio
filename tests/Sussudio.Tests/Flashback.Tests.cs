@@ -641,8 +641,9 @@ static partial class Program
         AssertContains(sourceText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
         AssertContains(sourceText, "const string message = \"Flashback exporter is disposed.\";");
         AssertContains(sourceText, "private const int ExportLockWaitTimeoutSeconds = 30;");
-        AssertContains(sourceText, "private const int ExportWriterThrottlePacketInterval = 1;");
-        AssertContains(sourceText, "private const int ExportWriterThrottleSleepMs = 2;");
+        AssertContains(sourceText, "private const int ExportWriterYieldPacketInterval = 256;");
+        AssertContains(sourceText, "private const int ExportWriterThrottlePacketInterval = 4096;");
+        AssertContains(sourceText, "private const int ExportWriterThrottleSleepMs = 1;");
         AssertContains(sourceText, "_exportLock.Wait(TimeSpan.FromSeconds(ExportLockWaitTimeoutSeconds), ct)");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_WAIT_TIMEOUT");
         AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
@@ -651,6 +652,7 @@ static partial class Program
         AssertContains(sourceText, "thread.Priority = previousPriority;");
         AssertContains(sourceText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
         AssertContains(sourceText, "Thread.Sleep(ExportWriterThrottleSleepMs);");
+        AssertContains(sourceText, "Thread.Yield();");
         AssertContains(sourceText, "ThrottleExportWriterIfNeeded(totalPackets);");
         AssertContains(sourceText, "ThrottleExportWriterIfNeeded(written);");
         AssertContains(sourceText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");

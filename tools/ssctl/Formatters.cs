@@ -119,8 +119,15 @@ internal static class Formatters
                 var encW = AutomationSnapshotFormatter.Get(snapshot, "EncoderWidth", "0");
                 var encH = AutomationSnapshotFormatter.Get(snapshot, "EncoderHeight", "0");
                 var encFps = AutomationSnapshotFormatter.Get(snapshot, "EncoderFrameRate", "0");
+                var encFpsNum = AutomationSnapshotFormatter.Get(snapshot, "EncoderFrameRateNumerator", "");
+                var encFpsDen = AutomationSnapshotFormatter.Get(snapshot, "EncoderFrameRateDenominator", "");
+                var encFpsDetail = !string.IsNullOrWhiteSpace(encFpsNum) &&
+                                   !string.IsNullOrWhiteSpace(encFpsDen) &&
+                                   encFpsDen != "0"
+                    ? $"{encFps} fps ({encFpsNum}/{encFpsDen})"
+                    : $"{encFps} fps";
                 var encBr = uint.TryParse(AutomationSnapshotFormatter.Get(snapshot, "EncoderTargetBitRate", "0"), out var br) ? br / 1_000_000.0 : 0;
-                builder.AppendLine($"Encoder: {encCodec} {encW}x{encH} @ {encFps} fps | Target: {encBr:0.#} Mbps");
+                builder.AppendLine($"Encoder: {encCodec} {encW}x{encH} @ {encFpsDetail} | Target: {encBr:0.#} Mbps");
             }
             var fbDurationMs = long.TryParse(AutomationSnapshotFormatter.Get(snapshot, "FlashbackBufferedDurationMs", "0"), out var durMs) ? durMs : 0;
             var fbDiskMb = long.TryParse(AutomationSnapshotFormatter.Get(snapshot, "FlashbackDiskBytes", "0"), out var diskBytes) ? diskBytes / (1024.0 * 1024.0) : 0;

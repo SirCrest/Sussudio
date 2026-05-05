@@ -1523,6 +1523,8 @@ public partial class CaptureService
             EncoderWidth = fbSink?.EncoderWidth ?? 0,
             EncoderHeight = fbSink?.EncoderHeight ?? 0,
             EncoderFrameRate = fbSink?.EncoderFrameRate ?? 0,
+            EncoderFrameRateNumerator = fbSink?.EncoderFrameRateNumerator,
+            EncoderFrameRateDenominator = fbSink?.EncoderFrameRateDenominator,
             FlashbackVideoQueueDepth = fbSink?.VideoQueueCount ?? 0,
             FlashbackAudioQueueDepth = fbSink?.AudioQueueCount ?? 0,
             FlashbackAudioQueueCapacity = fbSink?.AudioQueueCapacityPackets ?? 0,

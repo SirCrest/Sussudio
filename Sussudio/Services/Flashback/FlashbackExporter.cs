@@ -25,8 +25,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     private const int MaxSupportedInputStreams = 64;
     private const int ProgressHeartbeatIntervalMs = 1_000;
     private const int ExportLockWaitTimeoutSeconds = 30;
-    private const int ExportWriterThrottlePacketInterval = 1;
-    private const int ExportWriterThrottleSleepMs = 2;
+    private const int ExportWriterYieldPacketInterval = 256;
+    private const int ExportWriterThrottlePacketInterval = 4096;
+    private const int ExportWriterThrottleSleepMs = 1;
     private static readonly TimeSpan OrphanTempFileMinimumAge = TimeSpan.FromMinutes(15);
 
     private readonly SemaphoreSlim _exportLock = new(1, 1);
@@ -1935,9 +1936,20 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
     private static void ThrottleExportWriterIfNeeded(long packetsWritten)
     {
-        if (packetsWritten > 0 && packetsWritten % ExportWriterThrottlePacketInterval == 0)
+        if (packetsWritten <= 0)
+        {
+            return;
+        }
+
+        if (packetsWritten % ExportWriterThrottlePacketInterval == 0)
         {
             Thread.Sleep(ExportWriterThrottleSleepMs);
+            return;
+        }
+
+        if (packetsWritten % ExportWriterYieldPacketInterval == 0)
+        {
+            Thread.Yield();
         }
     }
 
