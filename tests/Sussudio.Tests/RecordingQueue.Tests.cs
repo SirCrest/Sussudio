@@ -340,6 +340,9 @@ static partial class Program
         AssertContains(stopRecordingBackend, "flashbackCancellationException ??= new OperationCanceledException(cancellationToken);");
         AssertContains(stopRecordingBackend, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(stopRecordingBackend, "FLASHBACK_BUFFER_CYCLE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+        AssertContains(stopRecordingBackend, "RecordLastFlashbackFailure(ex);");
+        AssertContains(stopRecordingBackend, "PreserveFlashbackRecoverySegments(\"buffer_cycle_failed\");");
+        AssertContains(stopRecordingBackend, "BeginFlashbackBackendCleanup(ex);");
         AssertContains(stopRecordingBackend, "FLASHBACK_MIC_RESTART_WARN type={ex.GetType().Name} error='{ex.Message}'");
         AssertOccursBefore(
             stopRecordingBackend,
@@ -366,6 +369,14 @@ static partial class Program
             postFinalizeCycle,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
             "FLASHBACK_BUFFER_CYCLE_FAIL");
+        AssertOccursBefore(
+            postFinalizeCycle,
+            "FLASHBACK_BUFFER_CYCLE_FAIL",
+            "RecordLastFlashbackFailure(ex);");
+        AssertOccursBefore(
+            postFinalizeCycle,
+            "RecordLastFlashbackFailure(ex);",
+            "BeginFlashbackBackendCleanup(ex);");
         var flashbackMicMonitorRestart = ExtractSourceBlock(
             stopRecordingBackend,
             "// Restart mic monitoring if preview is still active",

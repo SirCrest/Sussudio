@@ -4748,6 +4748,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             catch (Exception ex)
             {
                 Logger.Log($"FLASHBACK_BUFFER_CYCLE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+                RecordLastFlashbackFailure(ex);
+                PreserveFlashbackRecoverySegments("buffer_cycle_failed");
+                BeginFlashbackBackendCleanup(ex);
             }
 
             _recordingStopwatch.Stop();
