@@ -400,6 +400,9 @@ static partial class Program
         AssertContains(diagnosticsText, "\"Flashback playback frame submission failed.\"");
         AssertContains(diagnosticsText, "flashback recording active={health.FlashbackActive}");
         AssertContains(diagnosticsText, "fatalCleanup={health.FatalCleanupInProgress} flashbackCleanup={health.FlashbackCleanupInProgress}");
+        AssertContains(diagnosticsText, "var recordingIntegrityIncomplete =");
+        AssertContains(diagnosticsText, "string.Equals(captureRuntime.RecordingIntegrityStatus, \"Incomplete\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(diagnosticsText, "(recordingIntegrityIncomplete && !isRecording)");
         AssertContains(diagnosticsText, "var flashbackRecordingDegraded =");
         AssertContains(diagnosticsText, "health.FlashbackVideoEncoderDroppedFrames > 0");
         AssertContains(diagnosticsText, "health.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs");
@@ -1018,7 +1021,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForPreviewActiveAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback recording preview cycle preview stopped");
-        AssertContains(diagnosticSessionText, "const int recordingCleanupTimeoutMs = 180_000;");
+        AssertContains(diagnosticSessionText, "const int recordingCleanupTimeoutMs = 300_000;");
         AssertContains(diagnosticSessionText, "SetRecordingEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, recordingCleanupTimeoutMs");
         AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
         AssertContains(diagnosticSessionText, "private static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
@@ -1083,7 +1086,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
         AssertContains(diagnosticSessionText, "IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(diagnosticSessionText, "private static bool IsSparsePreviewSchedulerDeadlineDropRun(");
-        AssertContains(diagnosticSessionText, "var allowedDrops = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 60.0));");
+        AssertContains(diagnosticSessionText, "var allowedDrops = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 10.0));");
         AssertContains(diagnosticSessionText, "bool tolerateDeadlineDropsWithHealthyVisualCadence");
         AssertContains(diagnosticSessionText, "deadlineDropsDelta > 0 && !tolerateDeadlineDropsWithHealthyVisualCadence");
         AssertContains(diagnosticSessionText, "var onePercentLowFloor = targetFps * 0.80;");

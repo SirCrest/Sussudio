@@ -2757,8 +2757,13 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 audioLane);
         }
 
-        if (health.RecordingEncodingFailed ||
-            string.Equals(captureRuntime.RecordingIntegrityStatus, "Incomplete", StringComparison.OrdinalIgnoreCase))
+        var recordingIntegrityIncomplete =
+            string.Equals(captureRuntime.RecordingIntegrityStatus, "Incomplete", StringComparison.OrdinalIgnoreCase);
+        var recordingIntegrityFailed =
+            health.RecordingEncodingFailed ||
+            (recordingIntegrityIncomplete && !isRecording);
+
+        if (recordingIntegrityFailed)
         {
             return new DiagnosticEvaluation(
                 "Critical",

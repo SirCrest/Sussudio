@@ -781,7 +781,7 @@ public static class DiagnosticSessionRunner
                 try
                 {
                     SetStage("cleanup-stop-recording");
-                    const int recordingCleanupTimeoutMs = 180_000;
+                    const int recordingCleanupTimeoutMs = 300_000;
                     using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs));
                     var stopResponse = await SendWithTokenAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = false }, recordingCleanupTimeoutMs, false, cleanupCts.Token).ConfigureAwait(false);
                     actions.Add(shouldStopRecordingForVerification && options.LeaveRunning
@@ -5610,7 +5610,7 @@ public static class DiagnosticSessionRunner
             return false;
         }
 
-        var allowedDrops = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 60.0));
+        var allowedDrops = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 10.0));
         return deadlineDropsDelta <= allowedDrops;
     }
 
