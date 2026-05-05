@@ -355,6 +355,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     {
         await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
 
+        var committedRestartToken = CancellationToken.None;
         var unifiedVideoCapture = _unifiedVideoCapture;
         var settings = _currentSettings;
         if (!_flashbackEnabled || unifiedVideoCapture == null || settings == null)
@@ -363,8 +364,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             return;
         }
 
-        await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, cancellationToken).ConfigureAwait(false);
+        await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, committedRestartToken).ConfigureAwait(false);
         Logger.Log("FLASHBACK_RESTART_OK");
+        cancellationToken.ThrowIfCancellationRequested();
     }
 
     /// <summary>

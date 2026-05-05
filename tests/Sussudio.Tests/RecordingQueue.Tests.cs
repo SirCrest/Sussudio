@@ -256,6 +256,13 @@ static partial class Program
             restartFlashbackWithSettings,
             "if (_isRecording && IsFlashbackRecordingBackendActive())",
             "UpdateEncodingSettings(settings);");
+        var restartFlashbackCore = ExtractSourceBlock(
+            captureServiceSource,
+            "private async Task RestartFlashbackCoreAsync",
+            "/// <summary>\n    /// Updates the recording format");
+        AssertContains(restartFlashbackCore, "var committedRestartToken = CancellationToken.None;");
+        AssertContains(restartFlashbackCore, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, committedRestartToken).ConfigureAwait(false);");
+        AssertContains(restartFlashbackCore, "Logger.Log(\"FLASHBACK_RESTART_OK\");\n        cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(captureServiceSource, "_preserveFlashbackSegmentsAfterFailedRecordingFinalize");
         AssertContains(captureServiceSource, "PreserveFlashbackRecoverySegments");
         AssertContains(captureServiceSource, "MarkSessionPreservedForRecovery");
