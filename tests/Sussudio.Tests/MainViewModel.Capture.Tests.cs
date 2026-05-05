@@ -69,6 +69,11 @@ static partial class Program
         AssertContains(exportCore, "FlashbackExporter? snapshotExporter = null,");
         AssertOccursBefore(exportCore, "if (bufferManager == null)", "var exporter = snapshotExporter;");
         AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackExporter ??= new FlashbackExporter();\n            }");
+        AssertContains(exportCore, "var forceRotateFallbackUsed = false;");
+        AssertContains(exportCore, "forceRotateFallbackUsed = true;");
+        AssertContains(exportCore, "live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames");
+        AssertContains(exportCore, "if (forceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
+        AssertContains(exportCore, "RecordLastFlashbackExportResult(exportId, result);\n            CompleteFlashbackExportDiagnostics(exportId, result);");
 
         return Task.CompletedTask;
     }

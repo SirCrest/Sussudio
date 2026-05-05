@@ -748,6 +748,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             FinalizeResult result;
             IReadOnlyList<string>? segmentPaths = null;
             string? tsPath = null;
+            var forceRotateFallbackUsed = false;
 
             if (flashbackSink != null)
             {
@@ -818,6 +819,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     segmentPaths = bufferManager?.GetValidSegmentPaths(inPoint, outPoint);
                     if (segmentPaths is { Count: > 0 })
                     {
+                        forceRotateFallbackUsed = true;
                         RecordFlashbackExportForceRotateFallback(exportId, segmentPaths.Count, inPoint, outPoint);
                         Logger.Log($"FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout segments={segmentPaths.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)outPoint.TotalMilliseconds}");
                     }
@@ -856,6 +858,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 OutputPath = outputPath,
             };
             result = await exporter.ExportAsync(request, diagnosticProgress, ct).ConfigureAwait(false);
+            if (forceRotateFallbackUsed && result.Succeeded)
+            {
+                result = FinalizeResult.Success(
+                    result.OutputPath,
+                    $"{result.StatusMessage} (live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames)");
+            }
+
             RecordLastFlashbackExportResult(exportId, result);
             CompleteFlashbackExportDiagnostics(exportId, result);
             return result;
