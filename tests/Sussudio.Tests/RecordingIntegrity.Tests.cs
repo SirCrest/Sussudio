@@ -91,6 +91,23 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task RecordingIntegritySummary_ToleratesSingleActiveInFlightFrame()
+    {
+        var summary = InvokeBuildRecordingIntegritySummary(
+            audioDiscontinuities: 0,
+            avSyncDriftMs: 0.0,
+            encoderAvSyncDriftMs: 0.0,
+            recordingActive: true,
+            sourceFrames: 121,
+            acceptedFrames: 120);
+
+        AssertEqual("Active", GetStringProperty(summary, "Status"), "Recording integrity should tolerate one active in-flight frame.");
+        AssertEqual(0L, GetLongProperty(summary, "PipelineDroppedFrames"), "Active in-flight frame should not count as a pipeline drop.");
+        AssertContains(GetStringProperty(summary, "Reason"), "Recording active; all delivered source frames have reached the recording boundary so far.");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps()
     {
         var unifiedText = System.IO.File.ReadAllText(System.IO.Path.Combine(
@@ -159,7 +176,10 @@ static partial class Program
     private static object InvokeBuildRecordingIntegritySummary(
         long audioDiscontinuities,
         double avSyncDriftMs,
-        double encoderAvSyncDriftMs)
+        double encoderAvSyncDriftMs,
+        bool recordingActive = false,
+        long sourceFrames = 120,
+        long acceptedFrames = 120)
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var counterType = serviceType.GetNestedType("RecordingIntegrityCounterSnapshot", BindingFlags.NonPublic)
@@ -223,12 +243,12 @@ static partial class Program
             new object?[]
             {
                 "LibAv",
-                false,
+                recordingActive,
                 true,
-                "Stopped",
-                DateTimeOffset.UtcNow,
-                120L,
-                120L,
+                recordingActive ? "Recording" : "Stopped",
+                recordingActive ? null : DateTimeOffset.UtcNow,
+                sourceFrames,
+                acceptedFrames,
                 counters,
                 audioCounters
             })

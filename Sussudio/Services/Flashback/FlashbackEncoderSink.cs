@@ -17,7 +17,8 @@ namespace Sussudio.Services.Flashback;
 
 internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder
 {
-    private const int VideoQueueCapacity = 180;
+    private const int DefaultVideoQueueCapacity = 180;
+    private const int HighResolutionCpuVideoQueueCapacity = 64;
     private const int AudioQueueCapacity = 1800;
     private const int GpuQueueCapacity = 8;
     private const int VideoDrainBatchLimit = 24;
@@ -88,6 +89,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private bool _forceRotateDraining;
     private int _videoQueueDepth;
     private int _videoQueueMaxDepth;
+    private int _videoQueueCapacity = DefaultVideoQueueCapacity;
     private int _audioQueueDepth;
     private int _microphoneQueueDepth;
     private int _gpuQueueDepth;
@@ -203,7 +205,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public long TotalBytesWritten => _bufferManager.TotalBytesWritten;
 
     public int VideoQueueCount => Volatile.Read(ref _videoQueueDepth);
-    public int VideoQueueCapacityFrames => VideoQueueCapacity;
+    public int VideoQueueCapacityFrames => Volatile.Read(ref _videoQueueCapacity);
     public int VideoQueueMaxDepth => Volatile.Read(ref _videoQueueMaxDepth);
 
     public int AudioQueueCount => Volatile.Read(ref _audioQueueDepth);
@@ -329,7 +331,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             // TryWrite returns false immediately when full regardless of FullMode,
             // allowing our manual eviction paths to handle resource cleanup (COM Release,
             // ArrayPool Return) before dropping the packet.
-            if (!_encoder.UseHardwareFrames && (sessionContext.Width >= 2560 || sessionContext.Height >= 1440))
+            var videoQueueCapacity = ResolveVideoQueueCapacity(sessionContext, _encoder.UseHardwareFrames);
+            Volatile.Write(ref _videoQueueCapacity, videoQueueCapacity);
+            if (!_encoder.UseHardwareFrames && IsHighResolutionFrame(sessionContext))
             {
                 Logger.Log($"FLASHBACK_SINK_WARN_CPU_ENCODING width={sessionContext.Width} height={sessionContext.Height} — GPU encoding unavailable, performance will be severely degraded");
             }
@@ -346,7 +350,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 Logger.Log($"FLASHBACK_SINK_GPU_QUEUE_INIT capacity={GpuQueueCapacity}");
             }
 
-            _videoQueue = Channel.CreateBounded<VideoFramePacket>(new BoundedChannelOptions(VideoQueueCapacity)
+            _videoQueue = Channel.CreateBounded<VideoFramePacket>(new BoundedChannelOptions(videoQueueCapacity)
             {
                 SingleReader = true,
                 SingleWriter = false,
@@ -882,6 +886,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         if (_disposed) return;
         DisposeAsync().AsTask().GetAwaiter().GetResult();
     }
+
+    private static int ResolveVideoQueueCapacity(FlashbackSessionContext context, bool useHardwareFrames)
+        => !useHardwareFrames && IsHighResolutionFrame(context)
+            ? HighResolutionCpuVideoQueueCapacity
+            : DefaultVideoQueueCapacity;
+
+    private static bool IsHighResolutionFrame(FlashbackSessionContext context)
+        => context.Width >= 2560 || context.Height >= 1440;
 
     public async ValueTask DisposeAsync()
     {
@@ -2222,7 +2234,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 Logger.Log(
                     $"FLASHBACK_SINK_VIDEO_BACKPRESSURE_DROP timeout_ms={QueueBackpressureTimeoutMs} " +
-                    $"capacity={VideoQueueCapacity} depth={Volatile.Read(ref _videoQueueDepth)}");
+                    $"capacity={VideoQueueCapacityFrames} depth={Volatile.Read(ref _videoQueueDepth)}");
                 return VideoEnqueueResult.Overloaded;
             }
 
@@ -2398,7 +2410,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         if (total == 1 || total % 30 == 0)
         {
             Logger.Log(
-                $"FLASHBACK_SINK_VIDEO_QUEUE_REJECT reason={reason} total={total} depth={Volatile.Read(ref _videoQueueDepth)} capacity={VideoQueueCapacity}");
+                $"FLASHBACK_SINK_VIDEO_QUEUE_REJECT reason={reason} total={total} depth={Volatile.Read(ref _videoQueueDepth)} capacity={VideoQueueCapacityFrames}");
         }
     }
 

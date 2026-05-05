@@ -943,7 +943,10 @@ public partial class CaptureService
         var audioDiscontinuities = Math.Max(0, audioCounters.AudioDiscontinuities);
         var audioTimestampErrors = Math.Max(0, audioCounters.AudioTimestampErrors);
         var audioCallbackGaps = Math.Max(0, audioCounters.AudioCallbackGaps);
-        var pipelineDroppedFrames = Math.Max(0, sourceFrames - acceptedFrames);
+        var rawPipelineDroppedFrames = Math.Max(0, sourceFrames - acceptedFrames);
+        var pipelineDroppedFrames = recordingActive
+            ? Math.Max(0, rawPipelineDroppedFrames - 1)
+            : rawPipelineDroppedFrames;
 
         var reasons = new List<string>();
         if (!recordingActive && !finalizeSucceeded)

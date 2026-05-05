@@ -169,6 +169,27 @@ static partial class Program
 
     // ── FlashbackExporter ──
 
+    private static Task FlashbackEncoderSink_HighResolutionCpuQueueCapacityIsBounded()
+    {
+        var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
+        var contextType = RequireType("Sussudio.Models.FlashbackSessionContext");
+        var resolve = sinkType.GetMethod("ResolveVideoQueueCapacity", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ResolveVideoQueueCapacity not found.");
+
+        var fourKContext = RuntimeHelpers.GetUninitializedObject(contextType);
+        SetPropertyBackingField(fourKContext, "Width", 3840);
+        SetPropertyBackingField(fourKContext, "Height", 2160);
+        var normalContext = RuntimeHelpers.GetUninitializedObject(contextType);
+        SetPropertyBackingField(normalContext, "Width", 1920);
+        SetPropertyBackingField(normalContext, "Height", 1080);
+
+        AssertEqual(64, (int)resolve.Invoke(null, new[] { fourKContext, false })!, "4K CPU Flashback queue capacity");
+        AssertEqual(180, (int)resolve.Invoke(null, new[] { fourKContext, true })!, "4K GPU Flashback queue capacity");
+        AssertEqual(180, (int)resolve.Invoke(null, new[] { normalContext, false })!, "1080p CPU Flashback queue capacity");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackEncoderSink_ForceRotateDrainingRejectsVideoAndGpuEnqueues()
     {
         var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");

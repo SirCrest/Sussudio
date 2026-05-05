@@ -114,6 +114,9 @@ static partial class Program
                 "Recording integrity flags audio discontinuity and drift",
                 RecordingIntegritySummary_FlagsAudioDiscontinuityAndDrift),
             await RunCheckAsync(
+                "Recording integrity tolerates active in-flight frame",
+                RecordingIntegritySummary_ToleratesSingleActiveInFlightFrame),
+            await RunCheckAsync(
                 "Recording verifier fails when output file is missing",
                 RecordingVerifier_ReturnsFailure_WhenFileDoesNotExist),
             await RunCheckAsync(
@@ -918,6 +921,9 @@ static partial class Program
             await RunCheckAsync(
                 "Flashback encoder counters default to zero",
                 FlashbackEncoderSink_CountersDefaultToZero),
+            await RunCheckAsync(
+                "Flashback encoder bounds high-resolution CPU queue capacity",
+                FlashbackEncoderSink_HighResolutionCpuQueueCapacityIsBounded),
             await RunCheckAsync(
                 "Flashback encoder force-rotate drain rejects video enqueues",
                 FlashbackEncoderSink_ForceRotateDrainingRejectsVideoAndGpuEnqueues),
