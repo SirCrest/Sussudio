@@ -4,6 +4,16 @@ This log tracks small, reviewable landing points for
 `docs/realtime-capture-engine-rewrite-plan.md`. Large runtime outputs belong
 under `temp/`, not in git.
 
+> **Project rename — 2026-05-02.** The project was renamed from `ElgatoCapture`
+> to `Sussudio` (code identity) / `Simple Sussudio` (display name). Entries in
+> this log dated before 2026-05-02 reference the old paths and namespaces
+> (`ElgatoCapture/`, `tests/ElgatoCapture.*`, `tools/ecctl/`,
+> `ElgatoCapture_Debug.log`). Read those as the historical equivalent of the
+> current `Sussudio/`, `tests/Sussudio.*`, `tools/ssctl/`, `Sussudio_Debug.log`.
+> The forward-looking plan in `docs/realtime-capture-engine-rewrite-plan.md`
+> uses the new names. Full rename context: see the `2026-05-02 — Renamed
+> project to Simple Sussudio` entry in `docs/experiment_log.md`.
+
 ## 2026-04-26 - Phase 0 baseline and guardrails
 
 Starting point:
