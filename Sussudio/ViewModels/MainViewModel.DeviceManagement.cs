@@ -83,9 +83,12 @@ public partial class MainViewModel
             var previousAudioId = SelectedAudioInputDevice?.Id;
             var previousMicrophoneId = SelectedMicrophoneDevice?.Id;
             var previousDeviceId = SelectedDevice?.Id;
-            var audioDevices = (await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync()).ToList();
+            var audioDevicesTask = MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();
+            var devicesTask = _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
+            await Task.WhenAll(audioDevicesTask, devicesTask).ConfigureAwait(true);
             cancellationToken.ThrowIfCancellationRequested();
-            var devices = await _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
+            var audioDevices = audioDevicesTask.Result.ToList();
+            var devices = devicesTask.Result;
             cancellationToken.ThrowIfCancellationRequested();
             discoveryStopwatch.Stop();
 
@@ -553,6 +556,7 @@ public partial class MainViewModel
             AutoResolvedFrameRate = selected?.Value ?? value;
         }
 
+        RebuildVideoFormatOptions();
         UpdateSelectedFormat();
         UpdateTargetSummary();
     }
@@ -606,11 +610,93 @@ public partial class MainViewModel
             .ToList();
         if (rateCandidates.Count == 0)
         {
-            rateCandidates = candidates;
+            SelectedFormat = null;
+            return;
+        }
+
+        if (!string.Equals(SelectedVideoFormat, "Auto", StringComparison.OrdinalIgnoreCase))
+        {
+            rateCandidates = rateCandidates
+                .Where(format => string.Equals(format.PixelFormat, SelectedVideoFormat, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (rateCandidates.Count == 0)
+            {
+                SelectedFormat = null;
+                return;
+            }
         }
 
         SelectedFormat = SelectPreferredFrameRateFormat(rateCandidates, friendlyBucket, timingFamily);
     }
+
+    private void RebuildVideoFormatOptions()
+    {
+        // Source-reader pixel formats are not global device capabilities. A card can expose
+        // MJPG at 4K120 SDR while exposing only P010 at the HDR retarget mode, so keep this
+        // list scoped to the currently selected resolution+fps tuple.
+        var formats = GetFormatsForSelectedModeTuple();
+        var pixelFormats = formats
+            .Select(format => NormalizeVideoFormatName(format.PixelFormat))
+            .Where(format => !string.IsNullOrWhiteSpace(format))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(MediaFormat.GetPixelFormatPriority)
+            .ThenBy(format => format, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var nextFormats = new List<string> { "Auto" };
+        nextFormats.AddRange(pixelFormats);
+
+        AvailableVideoFormats.Clear();
+        foreach (var format in nextFormats)
+        {
+            AvailableVideoFormats.Add(format);
+        }
+
+        if (!AvailableVideoFormats.Any(format => string.Equals(format, SelectedVideoFormat, StringComparison.OrdinalIgnoreCase)))
+        {
+            var previousSuppress = _suppressFormatChangeReinitialize;
+            _suppressFormatChangeReinitialize = true;
+            try
+            {
+                SelectedVideoFormat = "Auto";
+            }
+            finally
+            {
+                _suppressFormatChangeReinitialize = previousSuppress;
+            }
+        }
+    }
+
+    private List<MediaFormat> GetFormatsForSelectedModeTuple()
+    {
+        if (!TryGetEffectiveResolutionSelection(out _, out var width, out var height))
+        {
+            return new List<MediaFormat>();
+        }
+
+        // The UI groups 119.88/120.00-style variants under a friendly bucket. We still
+        // select the exact rational later, but format availability should follow the same
+        // bucket the user sees in the frame-rate picker.
+        var selectedRateOption = AvailableFrameRates
+            .FirstOrDefault(option => IsFrameRateMatch(option.Value, SelectedFrameRate))
+            ?? AvailableFrameRates.FirstOrDefault(option => IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
+        var friendlyBucket = selectedRateOption != null
+            ? (int)Math.Round(selectedRateOption.FriendlyValue, MidpointRounding.AwayFromZero)
+            : GetFriendlyFrameRateBucket(SelectedFrameRate);
+
+        return AvailableFormats
+            .Where(format =>
+                format.Width == width &&
+                format.Height == height &&
+                GetFriendlyFrameRateBucket(format.FrameRateExact) == friendlyBucket &&
+                (IsHdrEnabled ? IsHdrModeCandidate(format) : !IsHdrModeCandidate(format)))
+            .ToList();
+    }
+
+    private static string NormalizeVideoFormatName(string? pixelFormat)
+        => string.IsNullOrWhiteSpace(pixelFormat)
+            ? string.Empty
+            : pixelFormat.Trim().ToUpperInvariant();
 
     /// <summary>
     /// H.264 is intentionally excluded from HDR recording: the nvenc H.264
@@ -903,8 +989,9 @@ public partial class MainViewModel
             // The capture card (e.g. 4K X) cannot deliver HDR at every resolution+FPS
             // combination due to USB bandwidth limits. When HDR is enabled, we pick the
             // highest resolution that still supports the user's chosen frame rate in HDR
-            // mode, which may be lower than the source resolution. This is an intentional
-            // hardware-driven trade-off: preserve frame rate, drop resolution.
+            // mode, which may be lower than the source resolution. Fluidity wins over
+            // resolution here: drop resolution first, and only drop FPS if no HDR mode can
+            // keep the current frame-rate bucket.
             selected = IsHdrEnabled
                 ? SelectHdrResolutionOption(options, desiredSelection, previousRate, out hdrHint)
                 : options.FirstOrDefault(option =>
@@ -1276,6 +1363,7 @@ public partial class MainViewModel
             _isRebuildingModeOptions = false;
         }
 
+        RebuildVideoFormatOptions();
         UpdateSelectedFormat();
         UpdateTargetSummary();
         _forceSourceAutoRetarget = false;
@@ -1726,6 +1814,9 @@ public partial class MainViewModel
                 ResolutionSupportsFrameRate(option.Value, preferredFrameRate, hdrOnly: true))
             .ToList();
 
+        // Prefer an HDR-capable mode in the same friendly FPS bucket before considering
+        // any other HDR mode. SelectNearestResolution intentionally favors the nearest
+        // lower resolution, so 4K120 SDR retargets to 1080p120 HDR before falling to 4K60.
         var selected = SelectNearestResolution(previousSelection, sameFpsCandidates)
             ?? SelectNearestResolution(previousSelection, options.Where(option => option.IsEnabled).ToList())
             ?? options.FirstOrDefault(option => option.IsEnabled)
@@ -2242,7 +2333,21 @@ public partial class MainViewModel
 
     partial void OnSelectedVideoFormatChanged(string value)
     {
-        if (!_isChangingDevice && IsPreviewing && IsInitialized)
+        if (!_isRebuildingModeOptions)
+        {
+            var previousSuppress = _suppressFormatChangeReinitialize;
+            _suppressFormatChangeReinitialize = true;
+            try
+            {
+                UpdateSelectedFormat();
+            }
+            finally
+            {
+                _suppressFormatChangeReinitialize = previousSuppress;
+            }
+        }
+
+        if (!_isChangingDevice && !_suppressFormatChangeReinitialize && IsPreviewing && IsInitialized)
         {
             Logger.Log($"=== Video format override changed to {value} - reinitializing device ===");
             EnqueueUiOperation(() => ReinitializeDeviceAsync("video format override"), "video format override reinitialize");

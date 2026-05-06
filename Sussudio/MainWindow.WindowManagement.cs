@@ -50,19 +50,14 @@ public sealed partial class MainWindow
             try
             {
                 await ViewModel.InitializeAsync();
-                // LoadSettings just pushed saved volume to CaptureService — capture it, reset to 0
-                // so WASAPI playback starts silent. The entrance animation will ramp the slider.
-                // NOTE: Do NOT toggle SuppressVolumeSave here — PlaySplashAndEntrance already
-                // set it to true, and setting it to false would allow intermediate animation
-                // ticks and unrelated SaveSettings() calls to persist PreviewVolume = 0.
-                // VolumeSaveOverride ensures any save during the fade writes the real value.
-                if (_isVolumeFadingIn)
-                {
-                    _savedPreviewVolume = ViewModel.PreviewVolume;
-                    ViewModel.VolumeSaveOverride = _savedPreviewVolume;
-                    ViewModel.PreviewVolume = 0;
-                }
+                // LoadSettings just pushed saved volume to CaptureService; re-prime it
+                // so WASAPI playback starts silent and fades in only after live frames render.
+                PrimePreviewAudioFadeIn();
                 await ViewModel.RefreshDevicesAsync();
+                if (!ViewModel.IsPreviewing && !_previewFirstVisualConfirmed)
+                {
+                    RevealPreviewUnavailablePlaceholder();
+                }
             }
             finally
             {

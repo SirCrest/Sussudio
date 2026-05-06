@@ -68,7 +68,9 @@ public sealed partial class MainWindow
             {
                 _previewStopRequestedByUser = true;
                 StopPreviewFadeInTimer();
-                await AnimatePreviewOutAsync();
+                var audioFadeOutTask = StartPreviewAudioFadeOutAsync();
+                var previewFadeOutTask = AnimatePreviewOutAsync();
+                await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);
                 try
                 {
                     await ViewModel.StopPreviewAsync(userInitiated: true);
@@ -84,6 +86,10 @@ public sealed partial class MainWindow
             {
                 _previewStopRequestedByUser = false;
                 await ViewModel.StartPreviewAsync(userInitiated: true);
+                if (!ViewModel.IsPreviewing)
+                {
+                    RevealPreviewUnavailablePlaceholder();
+                }
             }
         }, nameof(PreviewButton_Click));
     }

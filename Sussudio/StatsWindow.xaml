@@ -146,7 +146,7 @@
                     </StackPanel>
 
                     <StackPanel Spacing="6">
-                        <TextBlock Text="Source Frame Time" Style="{StaticResource StatsSectionHeaderStyle}" />
+                        <TextBlock Text="Capture Frame Time" Style="{StaticResource StatsSectionHeaderStyle}" />
                         <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
 
                         <Grid>

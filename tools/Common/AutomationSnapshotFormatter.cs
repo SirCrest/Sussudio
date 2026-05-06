@@ -128,7 +128,7 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine("== Performance ==");
         builder.AppendLine($"Legacy Score: {Get(snapshot, "PerformanceScore")} | Perfection: {Get(snapshot, "PerformancePerfectionMet")}");
         builder.AppendLine($"Legacy Summary: {Get(snapshot, "PerformanceSummary")}");
-        builder.AppendLine($"Pipeline Latency: {Get(snapshot, "EstimatedPipelineLatencyMs")}ms (source reader -> present)");
+        builder.AppendLine($"Pipeline Latency: {Get(snapshot, "EstimatedPipelineLatencyMs")}ms (app receive -> estimated visible)");
         builder.AppendLine();
         builder.AppendLine("== Memory & GC ==");
         builder.AppendLine($"Process CPU: {Get(snapshot, "ProcessCpuPercent")}% | CPU Time: {Get(snapshot, "ProcessCpuTotalProcessorTimeMs")}ms");

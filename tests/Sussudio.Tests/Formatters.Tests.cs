@@ -29,6 +29,7 @@ static partial class Program
         AssertContains(output, "Process CPU:");
         AssertContains(output, "Legacy Score:");
         AssertContains(output, "Frame Time:");
+        AssertContains(output, "Pipeline Latency: 1ms (app receive -> estimated visible)");
         AssertContains(output, "Average Rate:");
         AssertContains(output, "== MJPEG Pipeline Timing ==");
         AssertContains(output, "== Preview ==");

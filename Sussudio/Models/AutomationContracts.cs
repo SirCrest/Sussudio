@@ -872,6 +872,8 @@ public sealed class AutomationSnapshot
     public string FlashbackBackendRequestedFormat { get; init; } = string.Empty;
     public string FlashbackBackendActivePreset { get; init; } = string.Empty;
     public string FlashbackBackendRequestedPreset { get; init; } = string.Empty;
+    public string? FlashbackExportVerificationFormat { get; init; }
+    public string? FlashbackCodecDowngradeReason { get; init; }
     public string? EncoderCodecName { get; init; }
     public uint EncoderTargetBitRate { get; init; }
     public int EncoderWidth { get; init; }
@@ -1449,6 +1451,11 @@ public sealed class CaptureRuntimeSnapshot
     public double WasapiPlaybackBufferedDurationMs { get; init; }
     public double WasapiPlaybackStreamLatencyMs { get; init; }
     public long WasapiPlaybackLastRenderTickMs { get; init; }
+    public double WasapiPlaybackTargetVolumePercent { get; init; }
+    public double WasapiPlaybackCurrentVolumePercent { get; init; }
+    public double WasapiPlaybackOutputPeak { get; init; }
+    public double WasapiPlaybackOutputRms { get; init; }
+    public long WasapiPlaybackOutputLevelLastTickMs { get; init; }
 
     public string? CurrentDeviceId { get; init; }
     public string? CurrentDeviceName { get; init; }

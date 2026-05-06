@@ -37,6 +37,146 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewStartup_BeginsDeviceDiscoveryBeforeRecordingCapabilityProbesFinish()
+    {
+        var settingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Settings.cs")
+            .Replace("\r\n", "\n");
+        var deviceManagementText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceManagement.cs")
+            .Replace("\r\n", "\n");
+
+        var initialize = ExtractMemberCode(settingsText, "InitializeAsync");
+        AssertContains(initialize, "LoadSettings();");
+        AssertContains(initialize, "StartRecordingOptionsRefresh();");
+        AssertContains(initialize, "return Task.CompletedTask;");
+        AssertDoesNotContain(initialize, "await Task.WhenAll");
+        AssertOccursBefore(initialize, "LoadSettings();", "StartRecordingOptionsRefresh();");
+
+        var startupRefresh = ExtractMemberCode(settingsText, "StartRecordingOptionsRefresh");
+        AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshRecordingFormatsAsync(), \"recording formats\");");
+        AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshSplitEncodeModesAsync(), \"split encode modes\");");
+
+        var refreshDevices = ExtractMemberCode(deviceManagementText, "RefreshDevicesAsync");
+        AssertContains(refreshDevices, "var audioDevicesTask = MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();");
+        AssertContains(refreshDevices, "var devicesTask = _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);");
+        AssertOccursBefore(refreshDevices, "var audioDevicesTask = MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();", "await Task.WhenAll(audioDevicesTask, devicesTask).ConfigureAwait(true);");
+        AssertOccursBefore(refreshDevices, "var devicesTask = _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);", "await Task.WhenAll(audioDevicesTask, devicesTask).ConfigureAwait(true);");
+        AssertOccursBefore(refreshDevices, "await Task.WhenAll(audioDevicesTask, devicesTask).ConfigureAwait(true);", "await StartPreviewAsync(userInitiated: false, cancellationToken);");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewStartup_PrimesUiAndAudioBeforePreviewReveal()
+    {
+        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs")
+            .Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs")
+            .Replace("\r\n", "\n");
+        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs")
+            .Replace("\r\n", "\n");
+        var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
+            .Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
+            .Replace("\r\n", "\n");
+        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
+            .Replace("\r\n", "\n");
+        var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
+            .Replace("\r\n", "\n");
+
+        var previewStartRequested = ExtractMemberCode(propertyChangedText, "ViewModel_PreviewStartRequested");
+        AssertContains(previewStartRequested, "BeginPreviewStartupAttempt();");
+        AssertContains(previewStartRequested, "PrimePreviewAudioFadeIn();");
+        AssertContains(previewStartRequested, "PreparePreviewStartupPresentation();");
+        AssertOccursBefore(previewStartRequested, "PrimePreviewAudioFadeIn();", "PreparePreviewStartupPresentation();");
+
+        var playEntranceAnimation = ExtractMemberCode(animationsText, "PlayEntranceAnimation");
+        AssertContains(playEntranceAnimation, "LAUNCH_PREVIEW_REVEAL_DEFERRED");
+        AssertContains(playEntranceAnimation, "AddPreviewShellEntranceAnimations(storyboard, easing, beginMs: 900, durationMs: 400);");
+        AssertDoesNotContain(playEntranceAnimation, "Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);");
+
+        var animatePreviewIn = ExtractMemberCode(animationsText, "AnimatePreviewInAsync");
+        AssertContains(animatePreviewIn, "AnimatePreviewShellInAsync(350)");
+        AssertContains(animatePreviewIn, "AnimatePreviewTransitionAsync(1.0, 1.0, 250, EasingMode.EaseOut)");
+
+        var preparePresentation = ExtractMemberCode(animationsText, "PreparePreviewStartupPresentation");
+        AssertContains(preparePresentation, "FadeOutElement(NoDevicePlaceholder);");
+        AssertContains(preparePresentation, "StartPreviewStartupOverlay();");
+        AssertContains(preparePresentation, "PreviewContentGrid.Opacity = 0.0;");
+
+        var revealUnavailable = ExtractMemberCode(animationsText, "RevealPreviewUnavailablePlaceholder");
+        AssertContains(revealUnavailable, "AnimatePreviewShellInAsync(300)");
+        AssertContains(revealUnavailable, "FadeInElement(NoDevicePlaceholder);");
+
+        var primeAudio = ExtractMemberCode(animationsText, "PrimePreviewAudioFadeIn");
+        AssertContains(primeAudio, "ViewModel.VolumeSaveOverride = volumeTarget;");
+        AssertContains(primeAudio, "ViewModel.PreviewVolume = 0;");
+        AssertContains(primeAudio, "PreviewVolumeSlider.Value = 0;");
+
+        var startAudioFade = ExtractMemberCode(animationsText, "StartPreviewAudioFadeIn");
+        AssertContains(startAudioFade, "Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);");
+        AssertContains(startAudioFade, "CompletePreviewAudioFadeIn(applyTarget: true)");
+
+        var schedulePreviewFadeIn = ExtractMemberCode(previewStartupText, "SchedulePreviewFadeIn");
+        AssertContains(schedulePreviewFadeIn, "StartPreviewAudioFadeIn();");
+        AssertOccursBefore(schedulePreviewFadeIn, "_ = AnimatePreviewInAsync();", "StartPreviewAudioFadeIn();");
+
+        var setupBindings = ExtractMemberCode(bindingsText, "SetupBindings");
+        AssertContains(setupBindings, "PrimePreviewAudioFadeIn();");
+        AssertContains(setupBindings, "CancelPreviewAudioFadeInForUser();");
+
+        var previewButtonClick = ExtractMemberCode(eventHandlersText, "PreviewButton_Click");
+        AssertContains(previewButtonClick, "if (!ViewModel.IsPreviewing)\n                {\n                    RevealPreviewUnavailablePlaceholder();\n                }");
+
+        var mainWindowLoaded = ExtractMemberCode(windowManagementText, "MainWindow_Loaded");
+        AssertOccursBefore(mainWindowLoaded, "PrimePreviewAudioFadeIn();", "await ViewModel.RefreshDevicesAsync();");
+        AssertContains(mainWindowLoaded, "RevealPreviewUnavailablePlaceholder();");
+
+        AssertDoesNotContain(xamlText, "No preview available");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewStop_RampsAudioDownBeforePreviewTeardown()
+    {
+        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs")
+            .Replace("\r\n", "\n");
+        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs")
+            .Replace("\r\n", "\n");
+        var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs")
+            .Replace("\r\n", "\n");
+        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
+            .Replace("\r\n", "\n");
+
+        var previewButtonClick = ExtractMemberCode(eventHandlersText, "PreviewButton_Click");
+        AssertContains(previewButtonClick, "var audioFadeOutTask = StartPreviewAudioFadeOutAsync();");
+        AssertContains(previewButtonClick, "var previewFadeOutTask = AnimatePreviewOutAsync();");
+        AssertContains(previewButtonClick, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);");
+        AssertOccursBefore(previewButtonClick, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);", "await ViewModel.StopPreviewAsync(userInitiated: true);");
+
+        var uiFadeOut = ExtractMemberCode(animationsText, "StartPreviewAudioFadeOutAsync");
+        AssertContains(uiFadeOut, "ViewModel.VolumeSaveOverride = volumeTarget;");
+        AssertContains(uiFadeOut, "To = 0,");
+        AssertContains(uiFadeOut, "ViewModel.PreviewVolume = 0;");
+        AssertContains(uiFadeOut, "PREVIEW_AUDIO_FADE_OUT_STARTED");
+
+        var vmStopRamp = ExtractMemberCode(audioControlsText, "RampPreviewVolumeDownForStopAsync");
+        AssertContains(vmStopRamp, "RampPreviewVolumeDownForAudioTransitionAsync(\"preview_stop\", cancellationToken)");
+
+        var vmRampDown = ExtractMemberCode(audioControlsText, "RampPreviewVolumeDownForAudioTransitionAsync");
+        AssertContains(vmRampDown, "VolumeSaveOverride = persistedVolume;");
+        AssertContains(vmRampDown, "PreviewVolume = startingVolume * eased;");
+        AssertContains(vmRampDown, "PreviewVolume = 0;");
+
+        var stopPreview = ExtractTextBetween(
+            captureText,
+            "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
+            "\n\n    public Task ToggleRecordingAsync()");
+        AssertContains(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);");
+        AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "PreviewStopRequested?.Invoke(this, EventArgs.Empty);");
+        AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _sessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport()
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
@@ -287,9 +427,14 @@ static partial class Program
         AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "else if (t.IsCanceled)");
         AssertContains(rawSettingsText, "CycleFlashbackEncoder({description}) failed");
         AssertContains(rawSettingsText, "CycleFlashbackEncoder({description}) canceled");
-        AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "_sessionCoordinator.RestartFlashbackAsync(BuildCaptureSettings())");
+        AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "var settings = BuildCaptureSettings();");
+        AssertMemberContains(rawViewModelText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(\n                        true,\n                        \"audio_capture_enable\",");
+        AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "afterMonitoringStarted: () => _sessionCoordinator.RestartFlashbackAsync(settings)");
+        AssertMemberContains(rawViewModelText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(false, \"audio_capture_disable\", teardownCapture: true)");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _audioEnabledChangeGeneration;");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "private bool _suppressAudioPreviewEnabledChangeOperation;");
         AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "var changeGeneration = Interlocked.Increment(ref _audioEnabledChangeGeneration);");
+        AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "_suppressAudioPreviewEnabledChangeOperation = true;");
         AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || !IsAudioEnabled");
         AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || IsAudioEnabled");
         AssertMemberContains(rawViewModelText, "OnIsAudioEnabledChanged", "AUDIO_TOGGLE_SKIP op=enable");
@@ -739,7 +884,14 @@ static partial class Program
         AssertContains(snapshotsText, "FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),");
         var contractsText = ReadRepoFile("Sussudio/Models/AutomationContracts.cs")
             .Replace("\r\n", "\n");
+        AssertContains(contractsText, "public string? FlashbackExportVerificationFormat { get; init; }");
         AssertContains(contractsText, "public string? FlashbackCodecDowngradeReason { get; init; }");
+        var automationDiagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
+        AssertContains(automationDiagnosticsHubText, "FlashbackCodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason,");
+        AssertContains(captureServiceText, "var fbFileNameFormatOverride =");
+        AssertContains(captureServiceText, "FileNameFormatOverride = fbFileNameFormatOverride");
         AssertContains(ensureFlashbackPreviewBackend, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
         AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_CANCELLED");
         AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_FAIL");

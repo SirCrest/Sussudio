@@ -447,6 +447,7 @@ public sealed partial class MainWindow
             {
                 StopPreviewFadeInTimer();
                 _ = AnimatePreviewInAsync();
+                StartPreviewAudioFadeIn();
             };
             _previewFadeInTimer.Start();
             return;
@@ -466,6 +467,7 @@ public sealed partial class MainWindow
                 // Renderer changed or gone — fade in now to avoid being stuck invisible
                 StopPreviewFadeInTimer();
                 _ = AnimatePreviewInAsync();
+                StartPreviewAudioFadeIn();
                 return;
             }
 
@@ -475,6 +477,7 @@ public sealed partial class MainWindow
                 StopPreviewFadeInTimer();
                 Logger.Log($"PREVIEW_FADE_IN_READY framesRendered={rendered} baseline={baselineFrames}");
                 _ = AnimatePreviewInAsync();
+                StartPreviewAudioFadeIn();
             }
         };
         _previewFadeInTimer.Start();

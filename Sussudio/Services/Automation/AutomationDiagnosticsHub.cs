@@ -1270,6 +1270,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackBackendRequestedFormat = health.FlashbackBackendRequestedFormat,
             FlashbackBackendActivePreset = health.FlashbackBackendActivePreset,
             FlashbackBackendRequestedPreset = health.FlashbackBackendRequestedPreset,
+            FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,
+            FlashbackCodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason,
             EncoderCodecName = health.EncoderCodecName,
             EncoderTargetBitRate = health.EncoderTargetBitRate,
             EncoderWidth = health.EncoderWidth,

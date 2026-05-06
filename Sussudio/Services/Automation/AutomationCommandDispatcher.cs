@@ -597,6 +597,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     return CreateResponse(correlationId, "Performance timeline retrieved.", data: timeline);
                 }
 
+                case AutomationCommandKind.GetAudioRampTrace:
+                {
+                    var maxEntries = GetInt(payload, "maxEntries") ?? 512;
+                    var trace = await _viewModel.GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken).ConfigureAwait(false);
+                    return CreateResponse(correlationId, "Audio ramp trace retrieved.", data: trace);
+                }
+
                 case AutomationCommandKind.RestartFlashback:
                 {
                     await _viewModel.RestartFlashbackAsync(cancellationToken).ConfigureAwait(false);

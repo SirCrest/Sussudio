@@ -2484,9 +2484,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 }
                 else
                 {
-                    // No frame decoded — use requested position as fallback
                     PlaybackPosition = bufferPosition;
-                    SetSeekDisplayFailure(kind, "no_frame", bufferPosition);
+                    RecordSeekDisplayDecodeFailure(kind, bufferPosition, filePts);
                 }
             }
             finally
@@ -2512,6 +2511,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_ERROR type={ex.GetType().Name} error='{ex.Message}'");
             return false;
         }
+    }
+
+    private void RecordSeekDisplayDecodeFailure(CommandKind kind, TimeSpan bufferPosition, TimeSpan filePts)
+    {
+        Interlocked.Increment(ref _playbackDecodeErrorSnaps);
+        RecordPlaybackDroppedFrame("seek_display_no_frame");
+        SetSeekDisplayFailure(kind, "no_frame", bufferPosition);
+        Logger.Log(
+            $"FLASHBACK_PLAYBACK_SEEK_NO_FRAME_SNAP_TO_LIVE kind={kind} pos_ms={(long)bufferPosition.TotalMilliseconds} file_pts_ms={(long)filePts.TotalMilliseconds}");
     }
 
     private bool ShouldSkipActiveFmp4ReopenNearLive(TimeSpan seekTarget, string reason)

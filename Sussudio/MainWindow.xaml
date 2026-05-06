@@ -198,7 +198,7 @@
                                 Spacing="8">
                         <FontIcon Glyph="&#xE714;" FontSize="48"
                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
-                        <TextBlock Text="No preview available"
+                        <TextBlock Text="Preview is off"
                                    Style="{ThemeResource SubtitleTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    HorizontalAlignment="Center"/>
@@ -314,8 +314,8 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Preview P95" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_SummaryRendererFpsValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    <TextBlock Text="Preview Cadence" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_SummaryRendererFpsValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" TextAlignment="Right" TextWrapping="NoWrap" MaxLines="1" />
                                 </Grid>
                             </Border>
                             <Border Style="{StaticResource DockStatsRowStyle}">

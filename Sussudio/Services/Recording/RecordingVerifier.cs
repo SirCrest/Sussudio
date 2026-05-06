@@ -608,8 +608,24 @@ public sealed class RecordingVerifier : IRecordingVerifier
             return runtimeSnapshot.FlashbackExportVerificationFormat;
         }
 
+        if (!string.IsNullOrWhiteSpace(outputPath) &&
+            !string.IsNullOrWhiteSpace(runtimeSnapshot.LastOutputPath) &&
+            !string.IsNullOrWhiteSpace(runtimeSnapshot.FlashbackExportVerificationFormat) &&
+            IsFlashbackRecording(runtimeSnapshot) &&
+            string.Equals(
+                Path.GetFullPath(outputPath),
+                Path.GetFullPath(runtimeSnapshot.LastOutputPath),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return runtimeSnapshot.FlashbackExportVerificationFormat;
+        }
+
         return runtimeSnapshot.RequestedFormat ?? string.Empty;
     }
+
+    private static bool IsFlashbackRecording(CaptureRuntimeSnapshot runtimeSnapshot)
+        => string.Equals(runtimeSnapshot.RecordingBackend, "Flashback", StringComparison.OrdinalIgnoreCase) ||
+           string.Equals(runtimeSnapshot.RecordingIntegrityBackend, "Flashback", StringComparison.OrdinalIgnoreCase);
 
     private static void ValidateDimensions(
         CaptureRuntimeSnapshot runtimeSnapshot,

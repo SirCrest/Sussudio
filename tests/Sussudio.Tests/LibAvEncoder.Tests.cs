@@ -345,6 +345,14 @@ static partial class Program
         AssertContains(sourceText, "ffmpeg.av_opt_set_int(codecContext->priv_data, \"forced-idr\", 1, 0)");
         AssertContains(sourceText, "av_opt_set_int(forced-idr)");
         AssertDoesNotContain(sourceText, "\"repeat_headers\"");
+        AssertContains(sourceText, "internal static IDisposable SuppressRecoverableSeekFfmpegLogs()");
+        AssertContains(sourceText, "private static bool ShouldSuppressRecoverableSeekFfmpegLog(string message)");
+        AssertContains(sourceText, "[ThreadStatic]\n    private static int _recoverableSeekLogSuppressionDepth;");
+        AssertContains(sourceText, "message.Contains(\"Could not find ref with POC\", StringComparison.Ordinal)");
+        AssertContains(sourceText, "message.Contains(\"Error constructing the frame RPS\", StringComparison.Ordinal)");
+        AssertContains(sourceText, "message.Contains(\"First slice in a frame missing\", StringComparison.Ordinal)");
+        AssertContains(sourceText, "message.Contains(\"PPS id out of range\", StringComparison.Ordinal)");
+        AssertContains(sourceText, "FFMPEG_LOG_RECOVERABLE_SEEK_SUPPRESSED");
 
         return Task.CompletedTask;
     }

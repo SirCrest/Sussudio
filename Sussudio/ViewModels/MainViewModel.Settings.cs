@@ -20,12 +20,24 @@ namespace Sussudio.ViewModels;
 
 public partial class MainViewModel
 {
-    public async Task InitializeAsync()
+    public Task InitializeAsync()
     {
-        var formatsTask = RefreshRecordingFormatsAsync();
-        var splitTask = RefreshSplitEncodeModesAsync();
-        await Task.WhenAll(formatsTask, splitTask);
         LoadSettings();
+        StartRecordingOptionsRefresh();
+        return Task.CompletedTask;
+    }
+
+    private void StartRecordingOptionsRefresh()
+    {
+        TrackStartupRefreshTask(RefreshRecordingFormatsAsync(), "recording formats");
+        TrackStartupRefreshTask(RefreshSplitEncodeModesAsync(), "split encode modes");
+    }
+
+    private static void TrackStartupRefreshTask(Task task, string description)
+    {
+        _ = task.ContinueWith(
+            t => Logger.Log($"Startup {description} refresh failed: {t.Exception!.InnerException?.Message}"),
+            TaskContinuationOptions.OnlyOnFaulted);
     }
 
     partial void OnOutputPathChanged(string value)

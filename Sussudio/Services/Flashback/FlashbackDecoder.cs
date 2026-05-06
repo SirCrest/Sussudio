@@ -60,6 +60,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     // not discard it — stash it so the next TryDecodeNextVideoFrame() returns it.
     private DecodedVideoFrame _pendingVideoFrame;
     private bool _hasPendingVideoFrame;
+    private bool _suppressRecoverableSeekLogsForNextVideoFrame;
 
     // SeekTo forward-decode cap observability
     private long _seekToCapHits;
@@ -335,15 +336,30 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         ThrowIfNotOpen();
         cancellationToken.ThrowIfCancellationRequested();
 
-        var timestampUs = ToAvTimeBaseTimestamp(target);
+        var streamTimestamp = ToStreamTimestamp(target, _videoTimeBase);
         var result = ffmpeg.av_seek_frame(
-            _formatCtx, -1, timestampUs, ffmpeg.AVSEEK_FLAG_BACKWARD);
+            _formatCtx, _videoStreamIndex, streamTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (result < 0)
         {
-            Logger.Log($"FLASHBACK_DECODER_SEEK_WARN keyframe_seek_failed code={result} target_ms={(long)target.TotalMilliseconds}");
-            return false;
+            var streamSeekResult = result;
+            var timestampUs = ToAvTimeBaseTimestamp(target);
+            result = ffmpeg.av_seek_frame(
+                _formatCtx, -1, timestampUs, ffmpeg.AVSEEK_FLAG_BACKWARD);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (result < 0)
+            {
+                Logger.Log(
+                    $"FLASHBACK_DECODER_SEEK_WARN keyframe_seek_failed code={result} " +
+                    $"stream_code={streamSeekResult} target_ms={(long)target.TotalMilliseconds} stream_ts={streamTimestamp}");
+                return false;
+            }
+
+            Logger.Log(
+                $"FLASHBACK_DECODER_SEEK_FALLBACK_OK target_ms={(long)target.TotalMilliseconds} " +
+                $"stream_ts={streamTimestamp} us_ts={timestampUs}");
         }
 
         if (_videoCodecCtx != null)
@@ -364,7 +380,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             _hasPendingVideoFrame = false;
         }
 
-        Logger.Log($"FLASHBACK_DECODER_SEEK_OK target_ms={(long)target.TotalMilliseconds}");
+        _suppressRecoverableSeekLogsForNextVideoFrame = true;
+
+        Logger.Log(
+            $"FLASHBACK_DECODER_SEEK_OK target_ms={(long)target.TotalMilliseconds} " +
+            $"stream_index={_videoStreamIndex} stream_ts={streamTimestamp}");
         return true;
     }
 
@@ -483,6 +503,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             _hasPendingVideoFrame = false;
             return true;
         }
+
+        using var recoverableSeekLogScope = BeginRecoverableSeekLogSuppressionIfNeeded();
 
         while (true)
         {
@@ -1531,6 +1553,33 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         return (long)microseconds;
     }
 
+    private static long ToStreamTimestamp(TimeSpan value, AVRational timeBase)
+    {
+        if (value <= TimeSpan.Zero || timeBase.num <= 0 || timeBase.den <= 0)
+        {
+            return 0;
+        }
+
+        var timestamp = value.TotalSeconds * timeBase.den / timeBase.num;
+        if (!double.IsFinite(timestamp) || timestamp >= long.MaxValue)
+        {
+            return long.MaxValue;
+        }
+
+        return (long)timestamp;
+    }
+
+    private IDisposable? BeginRecoverableSeekLogSuppressionIfNeeded()
+    {
+        if (!_suppressRecoverableSeekLogsForNextVideoFrame)
+        {
+            return null;
+        }
+
+        _suppressRecoverableSeekLogsForNextVideoFrame = false;
+        return LibAvEncoder.SuppressRecoverableSeekFfmpegLogs();
+    }
+
     // ── Private: Audio Conversion ───────────────────────────────────────────
 
     private DecodedAudioChunk ConvertAndOutputAudioFrame()
@@ -1642,6 +1691,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     {
         Logger.Log($"FLASHBACK_DECODER_CLOSE_CORE path='{_currentFilePath}' had_swr={_swrCtx != null} had_video={_videoCodecCtx != null} had_audio={_audioCodecCtx != null}");
         _isOpen = false;
+        _suppressRecoverableSeekLogsForNextVideoFrame = false;
 
         // Clear any stashed pending frame (free held D3D11VA surface if present)
         if (_hasPendingVideoFrame)

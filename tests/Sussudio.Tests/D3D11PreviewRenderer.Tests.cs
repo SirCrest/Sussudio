@@ -164,6 +164,9 @@ static partial class Program
         AssertContains(source, "public PipelineLatencyMetrics GetPipelineLatencyMetrics()");
         AssertContains(source, "public double GetEstimatedPipelineLatencyMs()\n    {\n        lock (_pipelineLatencyLock)");
         AssertDoesNotContain(source, "public double GetEstimatedPipelineLatencyMs()\n    {\n        return GetPipelineLatencyMetrics().AverageMs;\n    }");
+        AssertContains(source, "private long EstimateVisibleTick(long presentReturnTick)");
+        AssertContains(renderSource, "var estimatedVisibleTick = EstimateVisibleTick(presentEnd);");
+        AssertContains(renderSource, "TrackPipelineLatency(frame.ArrivalTick, estimatedVisibleTick);");
         AssertContains(source, "var sorted = (double[])samples.Clone();");
         AssertContains(source, "Array.Sort(sorted);");
         AssertContains(source, "var frameCounter = Interlocked.Increment(ref _dxgiFrameStatisticsFrameCounter);");

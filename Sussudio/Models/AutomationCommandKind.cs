@@ -49,5 +49,6 @@ public enum AutomationCommandKind
     VerifyFile = 44,
     RestartFlashback = 45,
     SetMicrophoneEnabled = 46,
-    SetFlashbackEnabled = 47
+    SetFlashbackEnabled = 47,
+    GetAudioRampTrace = 48
 }

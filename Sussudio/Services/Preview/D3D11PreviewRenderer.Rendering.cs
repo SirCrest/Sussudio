@@ -44,6 +44,21 @@ internal sealed partial class D3D11PreviewRenderer
 
                     try
                     {
+                        // The capture backend can hand us its shared D3D device
+                        // after the render thread has already created a startup
+                        // swap chain. Rebuilding directly would leave the first
+                        // chain attached to SwapChainPanel while the fields point
+                        // at the second chain, which later corrupts WinUI's native
+                        // panel state. Unbind while the old chain is still alive,
+                        // then dispose it before InitializeD3D builds the shared
+                        // device-backed chain.
+                        if (Interlocked.CompareExchange(ref _swapChainBound, 0, 1) == 1)
+                        {
+                            Interlocked.Exchange(ref _swapChainAddress, 0);
+                            UnbindSwapChainFromPanel();
+                        }
+
+                        CleanupD3DResources();
                         InitializeD3D();
                         Interlocked.Exchange(ref _compositionTransformDirty, 1);
                     }
@@ -566,13 +581,14 @@ internal sealed partial class D3D11PreviewRenderer
         }
 
         Interlocked.Increment(ref _framesRendered);
-        TrackFramePresented(frame, presentEnd);
         var presentIntervalMs = TrackPresentCadence();
         TrackDxgiFrameStatistics();
-        TrackPipelineLatency(frame.ArrivalTick, presentEnd);
+        var estimatedVisibleTick = EstimateVisibleTick(presentEnd);
+        TrackFramePresented(frame, presentEnd, estimatedVisibleTick);
+        TrackPipelineLatency(frame.ArrivalTick, estimatedVisibleTick);
         var totalTicks = Stopwatch.GetTimestamp() - totalStart;
         TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, totalTicks);
-        RecordSlowFrameDiagnostic(frame, presentIntervalMs, inputUploadTicks, renderTicks, presentTicks, totalTicks, presentEnd);
+        RecordSlowFrameDiagnostic(frame, presentIntervalMs, inputUploadTicks, renderTicks, presentTicks, totalTicks, presentEnd, estimatedVisibleTick);
     }
 
     private bool TryEnsureNv12ShaderResources(PendingFrame frame)
@@ -2635,39 +2651,19 @@ internal sealed partial class D3D11PreviewRenderer
         _inputTexture?.Dispose();
         _inputTexture = null;
 
-        // Swap chain unbind is handled by Stop()/Dispose() after the render
-        // thread exits to avoid deadlock (render thread dispatching to UI
-        // thread while UI thread is blocked on Join).
-        // CAS(1→0) atomically claims the flag so Stop() cannot race us —
-        // whoever loses the CAS skips the native SetSwapChain call.
-        // BindSwapChainToPanel re-sets this to 1 when a new chain is bound.
+        // Stop() unbinds the panel before waking the render thread, while the
+        // swap chain is still alive. Cleanup can then release the DXGI objects
+        // without leaving SwapChainPanel holding a stale native reference.
         Interlocked.CompareExchange(ref _swapChainBound, 0, 1);
         Interlocked.Exchange(ref _swapChainAddress, 0);
 
-        // When StopRenderThread() is used (reinit path), the swap chain must
-        // NOT be disposed — the XAML panel still holds a native reference to it.
-        // Disposing it causes an AccessViolationException when the new renderer
-        // calls SetSwapChain(newPtr) on the same panel. The old chain is leaked
-        // intentionally; the new renderer overwrites the panel binding.
-        if (Volatile.Read(ref _skipSwapChainDisposal) == 0)
-        {
-            _swapChain3?.Dispose();
-            _swapChain3 = null;
-            _swapChain2?.Dispose();
-            _swapChain2 = null;
-            _frameLatencyWaitHandle = IntPtr.Zero;
-            _swapChain?.Dispose();
-            _swapChain = null;
-        }
-        else
-        {
-            // Detach references without disposing — let the COM ref from the
-            // panel prevent the chain from being freed prematurely.
-            _swapChain3 = null;
-            _swapChain2 = null;
-            _frameLatencyWaitHandle = IntPtr.Zero;
-            _swapChain = null;
-        }
+        _swapChain3?.Dispose();
+        _swapChain3 = null;
+        _swapChain2?.Dispose();
+        _swapChain2 = null;
+        _frameLatencyWaitHandle = IntPtr.Zero;
+        _swapChain?.Dispose();
+        _swapChain = null;
         _factory?.Dispose();
         _factory = null;
         _videoContext1?.Dispose();

@@ -34,6 +34,7 @@ public sealed class RecordingContextRequest
     public string VideoInputPixelFormat { get; init; } = "nv12";
     public bool IsFullRangeInput { get; init; }
     public GpuPipelineHandles GpuHandles { get; init; }
+    public RecordingFormat? FileNameFormatOverride { get; init; }
 }
 
 public sealed class RecordingContext

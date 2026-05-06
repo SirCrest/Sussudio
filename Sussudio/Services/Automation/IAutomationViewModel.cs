@@ -30,6 +30,7 @@ public interface IAutomationViewModel
     Task<CaptureHealthSnapshot> GetCaptureHealthSnapshotAsync(CancellationToken cancellationToken = default);
     Task<RecordingStats> GetRecordingStatsSnapshotAsync(CancellationToken cancellationToken = default);
     Task<AutomationOptionsSnapshot> GetAutomationOptionsSnapshotAsync(CancellationToken cancellationToken = default);
+    Task<AudioRampTraceSnapshot> GetAudioRampTraceSnapshotAsync(int maxEntries = 512, CancellationToken cancellationToken = default);
 
     // ── Device selection ────────────────────────────────────────────
 

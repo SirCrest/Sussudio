@@ -161,6 +161,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private CancellationTokenSource? _exportCts;
     private int _flashbackExportOperationId;
     private int _audioEnabledChangeGeneration;
+    private bool _suppressAudioPreviewEnabledChangeOperation;
     private int _flashbackSettingsRestartGeneration;
     private bool _suppressMicrophoneMonitorUpdate;
     [ObservableProperty]
@@ -1142,7 +1143,19 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (value)
         {
             // Re-enable audio preview and start it if we're already previewing
-            IsAudioPreviewEnabled = true;
+            if (!IsAudioPreviewEnabled)
+            {
+                _suppressAudioPreviewEnabledChangeOperation = true;
+                try
+                {
+                    IsAudioPreviewEnabled = true;
+                }
+                finally
+                {
+                    _suppressAudioPreviewEnabledChangeOperation = false;
+                }
+            }
+
             if (IsPreviewing && IsInitialized)
             {
                 EnqueueUiOperation(async () =>
@@ -1153,11 +1166,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                         return;
                     }
 
-                    await _sessionCoordinator.StartAudioPreviewAsync();
                     // Cycle the flashback encoder so it reconnects its audio feed.
                     // Without this, the first recording after audio off->on produces
                     // an empty file because the flashback sink's audio path is stale.
-                    await _sessionCoordinator.RestartFlashbackAsync(BuildCaptureSettings());
+                    var settings = BuildCaptureSettings();
+                    await SetAudioMonitoringEnabledWithVolumeTransitionAsync(
+                        true,
+                        "audio_capture_enable",
+                        teardownCapture: false,
+                        afterMonitoringStarted: () => _sessionCoordinator.RestartFlashbackAsync(settings));
                 }, "audio preview restart + flashback cycle");
             }
         }
@@ -1165,20 +1182,26 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             if (IsAudioPreviewEnabled)
             {
-                IsAudioPreviewEnabled = false;
+                _suppressAudioPreviewEnabledChangeOperation = true;
+                try
+                {
+                    IsAudioPreviewEnabled = false;
+                }
+                finally
+                {
+                    _suppressAudioPreviewEnabledChangeOperation = false;
+                }
             }
 
-            // Delay teardown so the 300ms WASAPI volume ramp to silence completes first
             EnqueueUiOperation(async () =>
             {
-                await Task.Delay(350);
                 if (changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || IsAudioEnabled)
                 {
                     Logger.Log($"AUDIO_TOGGLE_SKIP op=disable stale_generation={changeGeneration}");
                     return;
                 }
 
-                await _sessionCoordinator.StopAudioPreviewWithTeardownAsync();
+                await SetAudioMonitoringEnabledWithVolumeTransitionAsync(false, "audio_capture_disable", teardownCapture: true);
             }, "audio capture teardown");
 
             ResetAudioMeter();

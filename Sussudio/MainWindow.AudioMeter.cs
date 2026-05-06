@@ -196,17 +196,33 @@ public sealed partial class MainWindow
     {
         if (_audioMeterColorBrush == null) return;
 
-        // Color layer visible only when monitoring; grey raw layer always shows through
-        AudioMeterFill.Opacity = isMonitoring ? 1.0 : 0.0;
+        _audioMeterMonitoringStoryboard?.Stop();
+
+        // Color layer visible only when monitoring; grey raw layer always shows through.
         AudioPeakHoldIndicator.Background = isMonitoring
             ? new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255))
             : new SolidColorBrush(Windows.UI.Color.FromArgb(255, 160, 160, 160));
-        AudioPeakHoldIndicator.Opacity = isMonitoring ? 0.9 : 0.4;
-        AudioRangeMinMarker.Opacity = isMonitoring ? 0.5 : 0.2;
-        AudioRangeMaxMarker.Opacity = isMonitoring ? 0.7 : 0.3;
+
+        var duration = TimeSpan.FromMilliseconds(isMonitoring ? 260 : 220);
+        var easing = new CubicEase { EasingMode = isMonitoring ? EasingMode.EaseOut : EasingMode.EaseIn };
+        var storyboard = new Storyboard();
+
+        AddOpacityAnimation(storyboard, AudioMeterFill, isMonitoring ? 1.0 : 0.0, duration, easing);
+        AddOpacityAnimation(storyboard, AudioPeakHoldIndicator, isMonitoring ? 0.9 : 0.4, duration, easing);
+        AddOpacityAnimation(storyboard, AudioRangeMinMarker, isMonitoring ? 0.5 : 0.2, duration, easing);
+        AddOpacityAnimation(storyboard, AudioRangeMaxMarker, isMonitoring ? 0.7 : 0.3, duration, easing);
+
+        _audioMeterMonitoringStoryboard = storyboard;
+        storyboard.Completed += (_, _) =>
+        {
+            _audioMeterMonitoringStoryboard = null;
+        };
+        storyboard.Begin();
     }
     private void AnimateAudioMeterDisabled(bool isDisabled)
     {
+        _audioMeterMonitoringStoryboard?.Stop();
+        _audioMeterMonitoringStoryboard = null;
         var targetOpacity = isDisabled ? 0.0 : 1.0;
         var duration = TimeSpan.FromMilliseconds(300);
         var easing = new CubicEase { EasingMode = isDisabled ? EasingMode.EaseIn : EasingMode.EaseOut };
@@ -236,6 +252,24 @@ public sealed partial class MainWindow
         }
 
         storyboard.Begin();
+    }
+    private static void AddOpacityAnimation(
+        Storyboard storyboard,
+        UIElement element,
+        double targetOpacity,
+        TimeSpan duration,
+        EasingFunctionBase easing)
+    {
+        var anim = new DoubleAnimation
+        {
+            To = targetOpacity,
+            Duration = new Duration(duration),
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(anim, element);
+        Storyboard.SetTargetProperty(anim, "Opacity");
+        storyboard.Children.Add(anim);
     }
     private static double TranslateMarker(double trackWidth, double level, double markerWidth)
     {

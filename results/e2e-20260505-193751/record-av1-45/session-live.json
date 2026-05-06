@@ -1,0 +1,19 @@
+{
+  "SessionId": "20260506_023917",
+  "Scenario": "recording-only",
+  "StartedUtc": "2026-05-06T02:39:17.4178877+00:00",
+  "UpdatedUtc": "2026-05-06T02:40:06.5150241+00:00",
+  "CompletedUtc": "2026-05-06T02:40:06.4884428+00:00",
+  "TerminalState": "completed",
+  "LastStage": "summary-written",
+  "RunnerProcessId": 29052,
+  "OutputDirectory": "C:\\Users\\crest\\source\\repos\\ElgatoCapture\\results\\e2e-20260505-193751\\record-av1-45",
+  "SummaryPath": "C:\\Users\\crest\\source\\repos\\ElgatoCapture\\results\\e2e-20260505-193751\\record-av1-45\\summary.json",
+  "SampleCount": 5,
+  "HealthStatus": "Healthy",
+  "LikelyStage": "none",
+  "CommandFailureCount": 0,
+  "WarningCount": 0,
+  "LastWarning": "",
+  "UnhandledException": null
+}

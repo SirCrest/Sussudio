@@ -147,6 +147,9 @@ static partial class Program
                 "Recording verifier uses flashback export verification format",
                 RecordingVerifier_UsesFlashbackExportVerificationFormat),
             await RunCheckAsync(
+                "Recording verifier uses flashback recording verification format",
+                RecordingVerifier_UsesFlashbackRecordingVerificationFormat),
+            await RunCheckAsync(
                 "Recording verifier detects resolution mismatch",
                 RecordingVerifier_DetectsResolutionMismatch),
             await RunCheckAsync(
@@ -405,6 +408,15 @@ static partial class Program
                 "Preview startup tolerates missing audio capture devices",
                 PreviewStartup_ToleratesMissingAudioCaptureDevices),
             await RunCheckAsync(
+                "Preview startup begins device discovery before recording capability probes finish",
+                PreviewStartup_BeginsDeviceDiscoveryBeforeRecordingCapabilityProbesFinish),
+            await RunCheckAsync(
+                "Preview startup primes UI and audio before preview reveal",
+                PreviewStartup_PrimesUiAndAudioBeforePreviewReveal),
+            await RunCheckAsync(
+                "Preview stop ramps audio down before preview teardown",
+                PreviewStop_RampsAudioDownBeforePreviewTeardown),
+            await RunCheckAsync(
                 "Audio preview stays inactive when no audio capture device exists",
                 AudioPreview_RemainsInactive_WhenNoAudioCaptureDeviceExists),
             await RunCheckAsync(
@@ -426,11 +438,17 @@ static partial class Program
                 "MainViewModel audio controls preserve routing persistence and device guards",
                 MainViewModelAudioControls_PreserveRoutingPersistenceAndDeviceGuards),
             await RunCheckAsync(
+                "Audio ramp trace exposes control and render-side envelope telemetry",
+                AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry),
+            await RunCheckAsync(
                 "Live pixel format surfaces prefer source subtype over decoded output",
                 LivePixelFormatSurfaces_PreferReaderSourceSubtype),
             await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
+            await RunCheckAsync(
+                "Stats live summary shows current preview frame time and 1 percent low",
+                StatsLiveSummary_ShowsCurrentPreviewFrameTimeAndOnePercentLow),
             await RunCheckAsync(
                 "Frame-time overlay uses detected-FPS bounded millisecond range",
                 FrameTimeOverlay_UsesDetectedFpsBoundedRange),
@@ -851,8 +869,8 @@ static partial class Program
 
             // --- AutomationContracts ---
             await RunCheckAsync(
-                "AutomationCommandKind has sequential values 0 through 47",
-                AutomationCommandKind_HasSequentialValues_0Through47),
+                "AutomationCommandKind has sequential values 0 through 48",
+                AutomationCommandKind_HasSequentialValues_0Through48),
             await RunCheckAsync(
                 "AutomationWindowAction has expected values",
                 AutomationWindowAction_HasExpectedValues),
@@ -2355,10 +2373,64 @@ static partial class Program
     {
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var audioMeterText = ReadRepoFile("Sussudio/MainWindow.AudioMeter.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "IsAudioPreviewActive");
         AssertContains(propertyChangedText, "case nameof(MainViewModel.IsAudioPreviewActive):");
         AssertContains(propertyChangedText, "SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);");
+        AssertContains(mainWindowText, "private Storyboard? _audioMeterMonitoringStoryboard;");
+        AssertContains(audioMeterText, "_audioMeterMonitoringStoryboard?.Stop();");
+        AssertContains(audioMeterText, "AddOpacityAnimation(storyboard, AudioMeterFill, isMonitoring ? 1.0 : 0.0");
+        AssertContains(audioMeterText, "AddOpacityAnimation(storyboard, AudioPeakHoldIndicator, isMonitoring ? 0.9 : 0.4");
+        AssertContains(audioMeterText, "AddOpacityAnimation(storyboard, AudioRangeMinMarker, isMonitoring ? 0.5 : 0.2");
+        AssertContains(audioMeterText, "AddOpacityAnimation(storyboard, AudioRangeMaxMarker, isMonitoring ? 0.7 : 0.3");
+        AssertContains(audioMeterText, "private static void AddOpacityAnimation(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry()
+    {
+        var traceModelsText = ReadRepoFile("Sussudio/Models/AudioRampTraceModels.cs").Replace("\r\n", "\n");
+        var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs").Replace("\r\n", "\n");
+        var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
+        var runtimeContractsText = ReadRepoFile("Sussudio/Models/AutomationContracts.cs").Replace("\r\n", "\n");
+        var runtimeSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs").Replace("\r\n", "\n");
+        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs").Replace("\r\n", "\n");
+        var automationInterfaceText = ReadRepoFile("Sussudio/Services/Automation/IAutomationViewModel.cs").Replace("\r\n", "\n");
+
+        AssertContains(traceModelsText, "public sealed class AudioRampTraceSnapshot");
+        AssertContains(traceModelsText, "public sealed class AudioRampTraceEntry");
+        AssertContains(traceModelsText, "public double PlaybackOutputPeak { get; init; }");
+        AssertContains(traceModelsText, "public double PlaybackOutputRms { get; init; }");
+        AssertContains(traceModelsText, "public double PlaybackCurrentVolumePercent { get; init; }");
+        AssertContains(traceModelsText, "public long PlaybackOutputAgeMs { get; init; }");
+
+        AssertContains(audioControlsText, "private const int AudioRampTraceSampleIntervalMs = 10;");
+        AssertContains(audioControlsText, "BeginAudioRampTraceSession(");
+        AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"volume-set\")");
+        AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"primed\"");
+        AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"monitoring-started\"");
+        AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"monitoring-stopped\"");
+        AssertContains(audioControlsText, "RunAudioRampTraceSamplerAsync");
+        AssertContains(audioControlsText, "Task.Delay(AudioRampTraceSampleIntervalMs");
+        AssertContains(audioControlsText, "GetAudioRampTraceSnapshotAsync");
+
+        AssertContains(playbackText, "UpdateOutputLevel(destinationSpan);");
+        AssertContains(playbackText, "public float TargetVolume => _targetVolume;");
+        AssertContains(playbackText, "public float CurrentVolume => _currentVolume;");
+        AssertContains(playbackText, "public float LastOutputPeak => _lastOutputPeak;");
+        AssertContains(playbackText, "public float LastOutputRms => _lastOutputRms;");
+
+        AssertContains(runtimeContractsText, "public double WasapiPlaybackTargetVolumePercent { get; init; }");
+        AssertContains(runtimeContractsText, "public double WasapiPlaybackCurrentVolumePercent { get; init; }");
+        AssertContains(runtimeContractsText, "public double WasapiPlaybackOutputPeak { get; init; }");
+        AssertContains(runtimeContractsText, "public double WasapiPlaybackOutputRms { get; init; }");
+        AssertContains(runtimeSnapshotText, "WasapiPlaybackTargetVolumePercent = (wasapiPlayback?.TargetVolume ?? 0) * 100.0,");
+        AssertContains(runtimeSnapshotText, "WasapiPlaybackOutputPeak = wasapiPlayback?.LastOutputPeak ?? 0,");
+        AssertContains(dispatcherText, "case AutomationCommandKind.GetAudioRampTrace:");
+        AssertContains(automationInterfaceText, "Task<AudioRampTraceSnapshot> GetAudioRampTraceSnapshotAsync");
 
         return Task.CompletedTask;
     }
@@ -2411,6 +2483,26 @@ static partial class Program
         AssertContains(nativeXuText, "Colorimetry = aviInfo.Colorimetry,");
         AssertContains(nativeXuText, "Quantization = aviInfo.Quantization,");
         AssertContains(nativeXuText, "HdrTransferFunction = ResolveHdrTransferFunction(hdrInfo.Eotf),");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task StatsLiveSummary_ShowsCurrentPreviewFrameTimeAndOnePercentLow()
+    {
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
+        var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
+
+        AssertContains(statsOverlayText, "PreviewOnePercentLowFps: Sanitize(presentCadence?.OnePercentLowFps ?? 0)");
+        AssertContains(statsOverlayText, "ResolveCurrentPreviewFrameTimeMs(snapshot)");
+        AssertContains(statsOverlayText, "1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps");
+        AssertContains(statsOverlayText, "return $\"{currentFrameTime} | {onePercentLow}\";");
+        AssertContains(statsOverlayText, "SetMetricBrush(Stats_SummaryRendererFpsValue, ResolvePreviewFrameLaneStatus(snapshot));");
+        AssertContains(statsWindowText, "double PreviewOnePercentLowFps");
+        AssertDoesNotContain(statsWindowText, "double PreviewFivePercentLowFps");
+        AssertContains(mainWindowXaml, "x:Name=\"Stats_SummaryRendererFpsValue\"");
+        AssertContains(mainWindowXaml, "TextWrapping=\"NoWrap\"");
+        AssertContains(mainWindowXaml, "MaxLines=\"1\"");
 
         return Task.CompletedTask;
     }
@@ -4579,7 +4671,7 @@ static partial class Program
 
     // --- AutomationContracts tests ---
 
-    private static Task AutomationCommandKind_HasSequentialValues_0Through47()
+    private static Task AutomationCommandKind_HasSequentialValues_0Through48()
     {
         var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
         var expectedCommands = ExpectedAutomationCommands();
@@ -4649,7 +4741,8 @@ static partial class Program
         ("VerifyFile", 44),
         ("RestartFlashback", 45),
         ("SetMicrophoneEnabled", 46),
-        ("SetFlashbackEnabled", 47)
+        ("SetFlashbackEnabled", 47),
+        ("GetAudioRampTrace", 48)
     ];
 
     private static Task AutomationWindowAction_HasExpectedValues()

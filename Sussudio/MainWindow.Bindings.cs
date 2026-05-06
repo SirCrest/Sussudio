@@ -395,15 +395,8 @@ public sealed partial class MainWindow
         AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
         AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled;
         SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);
-        // Save the user's preferred volume, start at 0 for fade-in
-        _savedPreviewVolume = ViewModel.PreviewVolume;
-        _isVolumeFadingIn = true;
-        ViewModel.VolumeSaveOverride = _savedPreviewVolume;
-        ViewModel.SuppressVolumeSave = true;
-        ViewModel.PreviewVolume = 0;
-        ViewModel.SuppressVolumeSave = false;
-        PreviewVolumeSlider.Value = 0;
-        PreviewVolumeLabel.Text = "0%";
+        // Save the user's preferred volume, start at 0 for hidden audio priming.
+        PrimePreviewAudioFadeIn();
         PreviewVolumeSlider.ValueChanged += (s, e) =>
         {
             ViewModel.PreviewVolume = e.NewValue / 100.0;
@@ -411,17 +404,12 @@ public sealed partial class MainWindow
         };
         PreviewVolumeSlider.PointerCaptureLost += (s, e) =>
         {
-            if (_isVolumeFadingIn)
+            if (_isVolumeFadingIn || _previewVolumeFadeStoryboard != null)
             {
-                // User explicitly grabbed the slider during entrance fade-in.
-                // Pause the animation so it doesn't overwrite their choice
+                // User explicitly grabbed the slider during a preview volume fade.
+                // Pause the volume animation so it doesn't overwrite their choice
                 // (Stop() would snap properties back to base values).
-                _entranceStoryboard?.Pause();
-                _entranceStoryboard = null;
-                _isVolumeFadingIn = false;
-                ViewModel.SuppressVolumeSave = false;
-                ViewModel.VolumeSaveOverride = null;
-                _savedPreviewVolume = ViewModel.PreviewVolume;
+                CancelPreviewAudioFadeInForUser();
             }
             ViewModel.SavePreviewVolume();
         };

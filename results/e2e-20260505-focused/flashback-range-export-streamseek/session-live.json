@@ -1,0 +1,19 @@
+{
+  "SessionId": "20260506_031755",
+  "Scenario": "flashback-range-export",
+  "StartedUtc": "2026-05-06T03:17:55.6432924+00:00",
+  "UpdatedUtc": "2026-05-06T03:18:30.6808427+00:00",
+  "CompletedUtc": "2026-05-06T03:18:30.6452781+00:00",
+  "TerminalState": "completed",
+  "LastStage": "summary-written",
+  "RunnerProcessId": 90596,
+  "OutputDirectory": "C:\\Users\\crest\\source\\repos\\ElgatoCapture\\results\\e2e-20260505-focused\\flashback-range-export-streamseek",
+  "SummaryPath": "C:\\Users\\crest\\source\\repos\\ElgatoCapture\\results\\e2e-20260505-focused\\flashback-range-export-streamseek\\summary.json",
+  "SampleCount": 10,
+  "HealthStatus": "Healthy",
+  "LikelyStage": "none",
+  "CommandFailureCount": 0,
+  "WarningCount": 0,
+  "LastWarning": "",
+  "UnhandledException": null
+}

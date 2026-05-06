@@ -51,9 +51,7 @@ public sealed partial class MainWindow
         var failureReason = $"d3d-render-thread-failed:{reason}";
         SetPreviewStartupState(PreviewStartupState.Failed, failureReason);
         StopPreviewStartupWatchdog();
-        StopPreviewStartupOverlay();
-        ResetPreviewContentTransform();
-        FadeInElement(NoDevicePlaceholder);
+        RevealPreviewUnavailablePlaceholder();
         SchedulePreviewStartupFailureStop(failureReason);
     }
     private void OnPreviewSwapChainPanelSizeChanged(object sender, Microsoft.UI.Xaml.SizeChangedEventArgs e)
@@ -176,6 +174,80 @@ public sealed partial class MainWindow
         // PreviewLetterboxBackground stays Collapsed — letterbox areas must be
         // transparent so the Composition DropShadow is visible around the video.
         PreviewSwapChainPanel.Visibility = visibility;
+    }
+    private D3D11PreviewRenderer CreateFreshD3DPreviewRenderer(bool replaceSwapChainSurface)
+    {
+        if (replaceSwapChainSurface)
+        {
+            ReplacePreviewSwapChainPanelSurface();
+        }
+
+        var renderer = new D3D11PreviewRenderer(PreviewSwapChainPanel, _dispatcherQueue);
+        renderer.FirstFrameRendered += OnD3DRendererFirstFrameRendered;
+        renderer.RenderThreadFailed += OnD3DRendererRenderThreadFailed;
+        _d3dRenderer = renderer;
+        return renderer;
+    }
+    private void DisposeD3DPreviewRendererForReinit()
+    {
+        var renderer = _d3dRenderer;
+        if (renderer == null)
+        {
+            return;
+        }
+
+        ViewModel.SetPreviewFrameSink(null);
+        renderer.FirstFrameRendered -= OnD3DRendererFirstFrameRendered;
+        renderer.RenderThreadFailed -= OnD3DRendererRenderThreadFailed;
+        renderer.Stop();
+        renderer.RetireSharedDeviceReferenceForReinit();
+        // Do not call Dispose() on the retired renderer in the reinit path.
+        // Stop() has already unbound the panel and released the render-thread
+        // D3D resources. Disposing the remaining shared-device COM wrapper while
+        // WinUI/capture are also crossing native teardown can raise a corrupted
+        // AccessViolationException. The old managed wrapper is intentionally
+        // abandoned during mode switches; shutdown still disposes the active
+        // renderer normally.
+        _d3dRenderer = null;
+    }
+    private void ReplacePreviewSwapChainPanelSurface()
+    {
+        var oldPanel = PreviewSwapChainPanel;
+        oldPanel.SizeChanged -= OnPreviewSwapChainPanelSizeChanged;
+
+        var automationId = Microsoft.UI.Xaml.Automation.AutomationProperties.GetAutomationId(oldPanel);
+        var freshPanel = new SwapChainPanel
+        {
+            Width = oldPanel.Width,
+            Height = oldPanel.Height,
+            MinWidth = oldPanel.MinWidth,
+            MinHeight = oldPanel.MinHeight,
+            MaxWidth = oldPanel.MaxWidth,
+            MaxHeight = oldPanel.MaxHeight,
+            Visibility = oldPanel.Visibility,
+            HorizontalAlignment = oldPanel.HorizontalAlignment,
+            VerticalAlignment = oldPanel.VerticalAlignment,
+            Margin = oldPanel.Margin,
+            Opacity = oldPanel.Opacity,
+            RenderTransform = oldPanel.RenderTransform,
+            RenderTransformOrigin = oldPanel.RenderTransformOrigin,
+            IsHitTestVisible = oldPanel.IsHitTestVisible
+        };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(freshPanel, automationId);
+
+        var childIndex = PreviewContentGrid.Children.IndexOf(oldPanel);
+        if (childIndex >= 0)
+        {
+            PreviewContentGrid.Children.RemoveAt(childIndex);
+            PreviewContentGrid.Children.Insert(childIndex, freshPanel);
+        }
+        else
+        {
+            PreviewContentGrid.Children.Add(freshPanel);
+        }
+
+        PreviewSwapChainPanel = freshPanel;
+        Logger.Log("PREVIEW_REINIT_SWAPCHAIN_PANEL_REPLACED: created fresh WinUI SwapChainPanel surface");
     }
     private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()
     {
@@ -450,36 +522,28 @@ public sealed partial class MainWindow
             var rendererFps = negotiatedFps > 0 ? negotiatedFps : fps;
             _previewMinPresentationIntervalMs = Math.Max(1.0, 1000.0 / rendererFps);
 
-            // Reuse the existing renderer during reinit to avoid recreating the
-            // ISwapChainPanelNative COM wrapper. WinUI 3 corrupts the panel's
-            // native backing when SetSwapChain is called from a different renderer
-            // instance — even with proper unbind/rebind ordering. Reusing the same
-            // instance keeps the COM wrapper stable across Stop→Start cycles.
-            var reusingRenderer = _d3dRenderer != null && _isPreviewReinitAnimating;
-            D3D11PreviewRenderer renderer;
-            if (reusingRenderer)
+            var replacingReinitSurface = _d3dRenderer != null && _isPreviewReinitAnimating;
+            if (replacingReinitSurface)
             {
-                renderer = _d3dRenderer!;
-                Logger.Log("PREVIEW_REINIT_RENDERER_REUSE: reusing existing renderer instance");
+                // Reinit can switch SDR/HDR format, resolution, or frame cadence.
+                // A previously bound WinUI SwapChainPanel can keep native DXGI/COM
+                // state tied to the old swap chain, so pair the fresh renderer with
+                // a fresh panel surface instead of rebinding to the old one.
+                DisposeD3DPreviewRendererForReinit();
             }
-            else
-            {
-                renderer = new D3D11PreviewRenderer(PreviewSwapChainPanel, _dispatcherQueue);
-                renderer.FirstFrameRendered += OnD3DRendererFirstFrameRendered;
-                renderer.RenderThreadFailed += OnD3DRendererRenderThreadFailed;
-                _d3dRenderer = renderer;
-            }
+
+            var renderer = CreateFreshD3DPreviewRenderer(replacingReinitSurface);
 
             renderer.SetExpectedFrameRate(rendererFps);
 
-            if (!reusingRenderer)
+            if (!replacingReinitSurface)
             {
                 // Wire SizeChanged and make panel visible BEFORE starting the render
                 // thread so the renderer has the panel's pixel dimensions from the start.
                 SetupVideoFrameShadow();
-                PreviewSwapChainPanel.SizeChanged += OnPreviewSwapChainPanelSizeChanged;
                 PreviewContentGrid.SizeChanged += OnPreviewContentGridSizeChanged;
             }
+            PreviewSwapChainPanel.SizeChanged += OnPreviewSwapChainPanelSizeChanged;
             SetGpuPreviewVisibility(Visibility.Visible);
             PreviewImage.Visibility = Visibility.Collapsed;
 

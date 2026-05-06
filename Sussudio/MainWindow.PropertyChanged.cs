@@ -44,6 +44,18 @@ public sealed partial class MainWindow
     private void ViewModel_PreviewStartRequested(object? sender, EventArgs e)
     {
         _previewStopRequestedByUser = false;
+        if (string.IsNullOrWhiteSpace(_previewStartupAttemptId) ||
+            IsPreviewStartupFailedState(_previewStartupState) ||
+            _previewStartupState == PreviewStartupState.Idle)
+        {
+            BeginPreviewStartupAttempt();
+        }
+
+        PrimePreviewAudioFadeIn();
+        if (!ViewModel.IsPreviewReinitializing && !_isPreviewReinitAnimating)
+        {
+            PreparePreviewStartupPresentation();
+        }
     }
     private async Task ViewModel_PreviewReinitRequested(string reason)
     {
@@ -63,14 +75,11 @@ public sealed partial class MainWindow
         // no native D3D calls (VideoProcessorBlt/Present) are in flight when
         // UnifiedVideoCapture disposes the shared D3D11 device and DXGI manager.
         //
-        // IMPORTANT: Do NOT dispose or recreate the renderer. Keep the same instance
-        // alive so that Start() can reuse it during reinit. Creating a new renderer
-        // and calling SetSwapChain on the same SwapChainPanel triggers an
-        // AccessViolationException in WinUI 3's native ISwapChainPanelNative — the
-        // panel's COM backing gets corrupted across QI calls from different objects.
-        // Reusing the same renderer avoids this because Start() internally calls
-        // Stop() then reinitializes D3D, performing the unbind→rebind within the
-        // same COM wrapper lifetime.
+        // IMPORTANT: this only drains and detaches the active renderer. The later
+        // attach step may replace the SwapChainPanel surface for HDR/SDR or mode
+        // changes because WinUI can keep native DXGI state behind a panel even
+        // after SetSwapChain(null). Replacing the surface happens after capture
+        // teardown so the old renderer is no longer receiving frames.
         var renderer = _d3dRenderer;
         if (renderer != null)
         {
@@ -119,11 +128,7 @@ public sealed partial class MainWindow
                     Logger.Log($"PREVIEW_SESSION_STARTED attempt={_previewStartupAttemptId ?? "none"}");
                     if (!ViewModel.IsPreviewReinitializing && !_isPreviewReinitAnimating)
                     {
-                        FadeOutElement(NoDevicePlaceholder);
-                        StartPreviewStartupOverlay();
-                        PreviewContentGrid.Opacity = 0.0;
-                        PreviewContentScale.ScaleX = 0.97;
-                        PreviewContentScale.ScaleY = 0.97;
+                        PreparePreviewStartupPresentation();
                     }
                     SetPreviewStartupState(PreviewStartupState.RendererAttaching);
                     try
@@ -135,9 +140,7 @@ public sealed partial class MainWindow
                         var attachFailureReason = $"renderer-attach-failed:{ex.Message}";
                         SetPreviewStartupState(PreviewStartupState.Failed, attachFailureReason);
                         StopPreviewStartupWatchdog();
-                        StopPreviewStartupOverlay();
-                        ResetPreviewContentTransform();
-                        FadeInElement(NoDevicePlaceholder);
+                        RevealPreviewUnavailablePlaceholder();
                         Logger.Log($"PREVIEW_RENDERER_ATTACH_FAILED attempt={_previewStartupAttemptId ?? "none"} reason={attachFailureReason}");
                         SchedulePreviewStartupFailureStop(attachFailureReason);
                         throw;
@@ -164,8 +167,7 @@ public sealed partial class MainWindow
                     }
                     if (!ViewModel.IsPreviewReinitializing && !_isPreviewReinitAnimating)
                     {
-                        ResetPreviewContentTransform();
-                        FadeInElement(NoDevicePlaceholder);
+                        RevealPreviewUnavailablePlaceholder();
                     }
                     if (ViewModel.IsPreviewReinitializing)
                     {
@@ -189,9 +191,7 @@ public sealed partial class MainWindow
                     {
                         _isPreviewReinitAnimating = false;
                         Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(HandleViewModelPropertyChangedAsync)}");
-                        StopPreviewStartupOverlay();
-                        ResetPreviewContentTransform();
-                        FadeInElement(NoDevicePlaceholder);
+                        RevealPreviewUnavailablePlaceholder();
                     }
                     else if (_previewFirstVisualConfirmed)
                     {

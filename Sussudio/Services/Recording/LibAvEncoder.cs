@@ -36,6 +36,10 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     private static bool _ffmpegInitialized;
     // Must be a static field to prevent GC collection while FFmpeg holds the delegate pointer.
     private static av_log_set_callback_callback? _ffmpegLogCallback;
+    [ThreadStatic]
+    private static int _recoverableSeekLogSuppressionDepth;
+    [ThreadStatic]
+    private static int _recoverableSeekLogSuppressedCount;
 
     private static unsafe void FfmpegLogCallbackImpl(void* avcl, int level, string fmt, byte* vl)
     {
@@ -48,12 +52,75 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             var msg = fmt?.TrimEnd('\n', '\r');
             if (!string.IsNullOrEmpty(msg))
             {
+                if (ShouldSuppressRecoverableSeekFfmpegLog(msg))
+                {
+                    return;
+                }
+
                 Logger.Log($"FFMPEG_LOG [{level}] {msg}");
             }
         }
         catch
         {
             // Best effort — never crash in a log callback
+        }
+    }
+
+    internal static IDisposable SuppressRecoverableSeekFfmpegLogs()
+    {
+        _recoverableSeekLogSuppressionDepth++;
+        return new RecoverableSeekLogSuppressionScope(_recoverableSeekLogSuppressedCount);
+    }
+
+    private static bool ShouldSuppressRecoverableSeekFfmpegLog(string message)
+    {
+        if (_recoverableSeekLogSuppressionDepth <= 0)
+        {
+            return false;
+        }
+
+        var recoverable =
+            message.Contains("Could not find ref with POC", StringComparison.Ordinal) ||
+            message.Contains("Error constructing the frame RPS", StringComparison.Ordinal) ||
+            message.Contains("First slice in a frame missing", StringComparison.Ordinal) ||
+            message.Contains("PPS id out of range", StringComparison.Ordinal);
+
+        if (recoverable)
+        {
+            _recoverableSeekLogSuppressedCount++;
+        }
+
+        return recoverable;
+    }
+
+    private sealed class RecoverableSeekLogSuppressionScope : IDisposable
+    {
+        private readonly int _initialSuppressedCount;
+        private bool _disposed;
+
+        public RecoverableSeekLogSuppressionScope(int initialSuppressedCount)
+        {
+            _initialSuppressedCount = initialSuppressedCount;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            if (_recoverableSeekLogSuppressionDepth > 0)
+            {
+                _recoverableSeekLogSuppressionDepth--;
+            }
+
+            var suppressed = _recoverableSeekLogSuppressedCount - _initialSuppressedCount;
+            if (suppressed > 0)
+            {
+                Logger.Log($"FFMPEG_LOG_RECOVERABLE_SEEK_SUPPRESSED count={suppressed}");
+            }
         }
     }
 

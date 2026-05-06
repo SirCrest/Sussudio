@@ -91,12 +91,13 @@ public sealed partial class MainWindow
         var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
         var easingIn = new CubicEase { EasingMode = EasingMode.EaseIn };
 
-        // Phase 1: Splash holds for 600ms, then scales down + fades out over 400ms
+        // Phase 1: keep the splash up long enough for hidden device priming to begin,
+        // then ease into the chrome while the preview shell waits for real frames.
         var splashFade = new DoubleAnimation
         {
             From = 1, To = 0,
-            BeginTime = TimeSpan.FromMilliseconds(600),
-            Duration = TimeSpan.FromMilliseconds(400),
+            BeginTime = TimeSpan.FromMilliseconds(1400),
+            Duration = TimeSpan.FromMilliseconds(500),
             EasingFunction = easingIn
         };
         Storyboard.SetTarget(splashFade, SplashOverlay);
@@ -105,8 +106,8 @@ public sealed partial class MainWindow
         var splashScaleX = new DoubleAnimation
         {
             From = 1.0, To = 0.95,
-            BeginTime = TimeSpan.FromMilliseconds(600),
-            Duration = TimeSpan.FromMilliseconds(400),
+            BeginTime = TimeSpan.FromMilliseconds(1400),
+            Duration = TimeSpan.FromMilliseconds(500),
             EasingFunction = easingIn,
             EnableDependentAnimation = true
         };
@@ -116,8 +117,8 @@ public sealed partial class MainWindow
         var splashScaleY = new DoubleAnimation
         {
             From = 1.0, To = 0.95,
-            BeginTime = TimeSpan.FromMilliseconds(600),
-            Duration = TimeSpan.FromMilliseconds(400),
+            BeginTime = TimeSpan.FromMilliseconds(1400),
+            Duration = TimeSpan.FromMilliseconds(500),
             EasingFunction = easingIn,
             EnableDependentAnimation = true
         };
@@ -227,12 +228,38 @@ public sealed partial class MainWindow
         Storyboard.SetTargetProperty(statsSlide, "Y");
         storyboard.Children.Add(statsSlide);
 
-        // 4. Preview area: scale 0.97→1.0 + fade in (900ms begin, 400ms duration)
+        // 4. Preview shell: only reveal it if the first visual is already confirmed.
+        if (_previewFirstVisualConfirmed)
+        {
+            AddPreviewShellEntranceAnimations(storyboard, easing, beginMs: 900, durationMs: 400);
+        }
+        else
+        {
+            Logger.Log("LAUNCH_PREVIEW_REVEAL_DEFERRED reason=waiting-for-first-visual");
+        }
+
+        storyboard.Completed += (_, _) =>
+        {
+            _entranceStoryboard = null;
+        };
+
+        _entranceStoryboard = storyboard;
+        storyboard.Begin();
+
+        // 5. Control bar shadow depth fade-in (Composition animation, compositor thread)
+        // Delayed so the bar appears first, then gains depth.
+        FadeInShadow(_controlBarShadowVisual, delayMs: 400, durationMs: 500);
+    }
+    private void AddPreviewShellEntranceAnimations(Storyboard storyboard, EasingFunctionBase easing, int beginMs, int durationMs)
+    {
+        var beginTime = TimeSpan.FromMilliseconds(beginMs);
+        var duration = TimeSpan.FromMilliseconds(durationMs);
+
         var previewFade = new DoubleAnimation
         {
-            From = 0, To = 1,
-            BeginTime = TimeSpan.FromMilliseconds(900),
-            Duration = TimeSpan.FromMilliseconds(400),
+            To = 1,
+            BeginTime = beginTime,
+            Duration = duration,
             EasingFunction = easing
         };
         Storyboard.SetTarget(previewFade, PreviewBorder);
@@ -241,10 +268,11 @@ public sealed partial class MainWindow
 
         var previewScaleX = new DoubleAnimation
         {
-            From = 0.97, To = 1.0,
-            BeginTime = TimeSpan.FromMilliseconds(900),
-            Duration = TimeSpan.FromMilliseconds(400),
-            EasingFunction = easing, EnableDependentAnimation = true
+            To = 1.0,
+            BeginTime = beginTime,
+            Duration = duration,
+            EasingFunction = easing,
+            EnableDependentAnimation = true
         };
         Storyboard.SetTarget(previewScaleX, PreviewBorderScale);
         Storyboard.SetTargetProperty(previewScaleX, "ScaleX");
@@ -252,61 +280,15 @@ public sealed partial class MainWindow
 
         var previewScaleY = new DoubleAnimation
         {
-            From = 0.97, To = 1.0,
-            BeginTime = TimeSpan.FromMilliseconds(900),
-            Duration = TimeSpan.FromMilliseconds(400),
-            EasingFunction = easing, EnableDependentAnimation = true
+            To = 1.0,
+            BeginTime = beginTime,
+            Duration = duration,
+            EasingFunction = easing,
+            EnableDependentAnimation = true
         };
         Storyboard.SetTarget(previewScaleY, PreviewBorderScale);
         Storyboard.SetTargetProperty(previewScaleY, "ScaleY");
         storyboard.Children.Add(previewScaleY);
-
-        // 5. Volume slider: fade in audio after everything else has settled (1500ms begin, 800ms ramp)
-        if (_savedPreviewVolume > 0 || ViewModel.PreviewVolume > 0)
-        {
-            var volumeTarget = ViewModel.PreviewVolume > 0 ? ViewModel.PreviewVolume : _savedPreviewVolume;
-            _savedPreviewVolume = volumeTarget;
-            var volumeAnim = new DoubleAnimation
-            {
-                From = 0,
-                To = volumeTarget * 100,
-                BeginTime = TimeSpan.FromMilliseconds(1500),
-                Duration = TimeSpan.FromMilliseconds(800),
-                EasingFunction = easing,
-                EnableDependentAnimation = true
-            };
-            Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);
-            Storyboard.SetTargetProperty(volumeAnim, "Value");
-            storyboard.Children.Add(volumeAnim);
-            ViewModel.SuppressVolumeSave = true;
-        }
-
-        storyboard.Completed += (_, _) =>
-        {
-            _entranceStoryboard = null;
-            if (!_isVolumeFadingIn)
-            {
-                // User already cancelled the fade-in via slider interaction.
-                // Just clean up suppression flags; don't overwrite their choice.
-                ViewModel.SuppressVolumeSave = false;
-                ViewModel.VolumeSaveOverride = null;
-                return;
-            }
-            _isVolumeFadingIn = false;
-            ViewModel.SuppressVolumeSave = false;
-            ViewModel.VolumeSaveOverride = null;
-            if (_savedPreviewVolume > 0)
-            {
-                ViewModel.PreviewVolume = _savedPreviewVolume;
-            }
-        };
-
-        _entranceStoryboard = storyboard;
-        storyboard.Begin();
-
-        // 6. Control bar shadow depth fade-in (Composition animation, compositor thread)
-        // Delayed so the bar appears first, then gains depth.
-        FadeInShadow(_controlBarShadowVisual, delayMs: 400, durationMs: 500);
     }
     private static void FadeInShadow(SpriteVisual? visual, int delayMs, int durationMs)
     {
@@ -416,6 +398,23 @@ public sealed partial class MainWindow
         storyboard.Children.Add(scaleY);
         return BeginStoryboardAsync(storyboard);
     }
+    private Task AnimatePreviewShellInAsync(int durationMs)
+    {
+        if (PreviewBorder.Opacity >= 0.999 &&
+            Math.Abs(PreviewBorderScale.ScaleX - 1.0) < 0.001 &&
+            Math.Abs(PreviewBorderScale.ScaleY - 1.0) < 0.001)
+        {
+            return Task.CompletedTask;
+        }
+
+        var storyboard = new Storyboard();
+        AddPreviewShellEntranceAnimations(
+            storyboard,
+            new CubicEase { EasingMode = EasingMode.EaseOut },
+            beginMs: 0,
+            durationMs: durationMs);
+        return BeginStoryboardAsync(storyboard);
+    }
     private Task AnimatePreviewOutAsync()
     {
         FadeOutShadow(_videoShadowVisual, durationMs: 150);
@@ -424,7 +423,160 @@ public sealed partial class MainWindow
     private Task AnimatePreviewInAsync()
     {
         FadeInShadow(_videoShadowVisual, delayMs: 0, durationMs: 400);
-        return AnimatePreviewTransitionAsync(1.0, 1.0, 250, EasingMode.EaseOut);
+        return Task.WhenAll(
+            AnimatePreviewShellInAsync(350),
+            AnimatePreviewTransitionAsync(1.0, 1.0, 250, EasingMode.EaseOut));
+    }
+    private void PreparePreviewStartupPresentation()
+    {
+        StopPreviewFadeInTimer();
+        FadeOutElement(NoDevicePlaceholder);
+        StartPreviewStartupOverlay();
+        PreviewContentGrid.Opacity = 0.0;
+        PreviewContentScale.ScaleX = 0.97;
+        PreviewContentScale.ScaleY = 0.97;
+    }
+    private void RevealPreviewUnavailablePlaceholder()
+    {
+        StopPreviewStartupOverlay();
+        StopPreviewFadeInTimer();
+        ResetPreviewContentTransform();
+        _ = AnimatePreviewShellInAsync(300);
+        FadeInElement(NoDevicePlaceholder);
+    }
+    private void PrimePreviewAudioFadeIn()
+    {
+        var volumeTarget = ViewModel.PreviewVolume > 0 ? ViewModel.PreviewVolume : _savedPreviewVolume;
+        volumeTarget = Math.Clamp(volumeTarget, 0.0, 1.0);
+        if (volumeTarget <= 0)
+        {
+            _savedPreviewVolume = 0;
+            _isVolumeFadingIn = false;
+            ViewModel.VolumeSaveOverride = null;
+            PreviewVolumeSlider.Value = 0;
+            PreviewVolumeLabel.Text = "0%";
+            return;
+        }
+
+        _savedPreviewVolume = volumeTarget;
+        _isVolumeFadingIn = true;
+        ViewModel.VolumeSaveOverride = volumeTarget;
+        ViewModel.SuppressVolumeSave = true;
+        try
+        {
+            ViewModel.PreviewVolume = 0;
+            PreviewVolumeSlider.Value = 0;
+            PreviewVolumeLabel.Text = "0%";
+        }
+        finally
+        {
+            ViewModel.SuppressVolumeSave = false;
+        }
+
+        Logger.Log($"PREVIEW_AUDIO_FADE_PRIMED targetPct={volumeTarget * 100:0}");
+    }
+    private void StartPreviewAudioFadeIn(int durationMs = 900)
+    {
+        if (!_isVolumeFadingIn)
+        {
+            return;
+        }
+
+        var volumeTarget = Math.Clamp(_savedPreviewVolume, 0.0, 1.0);
+        if (volumeTarget <= 0)
+        {
+            CompletePreviewAudioFadeIn(applyTarget: false);
+            return;
+        }
+
+        _previewVolumeFadeStoryboard?.Stop();
+        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var volumeAnim = new DoubleAnimation
+        {
+            From = PreviewVolumeSlider.Value,
+            To = volumeTarget * 100,
+            Duration = TimeSpan.FromMilliseconds(durationMs),
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);
+        Storyboard.SetTargetProperty(volumeAnim, "Value");
+
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(volumeAnim);
+        storyboard.Completed += (_, _) => CompletePreviewAudioFadeIn(applyTarget: true);
+        _previewVolumeFadeStoryboard = storyboard;
+        ViewModel.SuppressVolumeSave = true;
+        ViewModel.VolumeSaveOverride = volumeTarget;
+        Logger.Log($"PREVIEW_AUDIO_FADE_IN_STARTED targetPct={volumeTarget * 100:0} durationMs={durationMs}");
+        storyboard.Begin();
+    }
+    private void CompletePreviewAudioFadeIn(bool applyTarget)
+    {
+        _previewVolumeFadeStoryboard = null;
+        _isVolumeFadingIn = false;
+        ViewModel.SuppressVolumeSave = false;
+        ViewModel.VolumeSaveOverride = null;
+        if (applyTarget && _savedPreviewVolume > 0)
+        {
+            ViewModel.PreviewVolume = _savedPreviewVolume;
+            PreviewVolumeSlider.Value = _savedPreviewVolume * 100;
+            PreviewVolumeLabel.Text = $"{(int)(_savedPreviewVolume * 100)}%";
+        }
+    }
+    private async Task StartPreviewAudioFadeOutAsync(int durationMs = 450)
+    {
+        var volumeTarget = ViewModel.PreviewVolume > 0 ? ViewModel.PreviewVolume : _savedPreviewVolume;
+        volumeTarget = Math.Clamp(volumeTarget, 0.0, 1.0);
+        if (volumeTarget > 0)
+        {
+            _savedPreviewVolume = volumeTarget;
+            ViewModel.VolumeSaveOverride = volumeTarget;
+        }
+
+        _isVolumeFadingIn = false;
+        _previewVolumeFadeStoryboard?.Stop();
+        if (PreviewVolumeSlider.Value <= 0.001 && ViewModel.PreviewVolume <= 0.001)
+        {
+            ViewModel.PreviewVolume = 0;
+            PreviewVolumeSlider.Value = 0;
+            PreviewVolumeLabel.Text = "0%";
+            return;
+        }
+
+        var easing = new CubicEase { EasingMode = EasingMode.EaseIn };
+        var volumeAnim = new DoubleAnimation
+        {
+            From = PreviewVolumeSlider.Value,
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(durationMs),
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);
+        Storyboard.SetTargetProperty(volumeAnim, "Value");
+
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(volumeAnim);
+        _previewVolumeFadeStoryboard = storyboard;
+        ViewModel.SuppressVolumeSave = true;
+        Logger.Log($"PREVIEW_AUDIO_FADE_OUT_STARTED fromPct={PreviewVolumeSlider.Value:0} durationMs={durationMs}");
+        await BeginStoryboardAsync(storyboard);
+        _previewVolumeFadeStoryboard = null;
+        ViewModel.PreviewVolume = 0;
+        PreviewVolumeSlider.Value = 0;
+        PreviewVolumeLabel.Text = "0%";
+        ViewModel.SuppressVolumeSave = false;
+        Logger.Log("PREVIEW_AUDIO_FADE_OUT_COMPLETED");
+    }
+    private void CancelPreviewAudioFadeInForUser()
+    {
+        _previewVolumeFadeStoryboard?.Pause();
+        _previewVolumeFadeStoryboard = null;
+        _isVolumeFadingIn = false;
+        ViewModel.SuppressVolumeSave = false;
+        ViewModel.VolumeSaveOverride = null;
+        _savedPreviewVolume = ViewModel.PreviewVolume;
     }
     private void UpdateLiveSignalInfoVisibility()
     {

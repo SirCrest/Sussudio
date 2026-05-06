@@ -1,0 +1,19 @@
+{
+  "SessionId": "20260506_024318",
+  "Scenario": "flashback-playback",
+  "StartedUtc": "2026-05-06T02:43:18.3543014+00:00",
+  "UpdatedUtc": "2026-05-06T02:43:48.9333344+00:00",
+  "CompletedUtc": "2026-05-06T02:43:48.9062793+00:00",
+  "TerminalState": "completed",
+  "LastStage": "summary-written",
+  "RunnerProcessId": 58796,
+  "OutputDirectory": "C:\\Users\\crest\\source\\repos\\ElgatoCapture\\results\\e2e-20260505-193751\\flashback-playback-30s",
+  "SummaryPath": "C:\\Users\\crest\\source\\repos\\ElgatoCapture\\results\\e2e-20260505-193751\\flashback-playback-30s\\summary.json",
+  "SampleCount": 16,
+  "HealthStatus": "Healthy",
+  "LikelyStage": "none",
+  "CommandFailureCount": 0,
+  "WarningCount": 0,
+  "LastWarning": "",
+  "UnhandledException": null
+}

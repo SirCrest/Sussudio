@@ -23,8 +23,11 @@ public sealed class RecordingArtifactManager
         cancellationToken.ThrowIfCancellationRequested();
 
         var settings = request.Settings;
+        var outputFileName = request.FileNameFormatOverride is { } fileNameFormatOverride
+            ? settings.GetOutputFileNameForFormat(fileNameFormatOverride)
+            : settings.GetOutputFileName();
         var finalOutputFile = await outputFolder.CreateFileAsync(
-            settings.GetOutputFileName(),
+            outputFileName,
             CreationCollisionOption.GenerateUniqueName);
 
         var hdrPipelineActive = string.Equals(request.VideoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);

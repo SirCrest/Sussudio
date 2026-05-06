@@ -419,7 +419,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private int _inNativeCall; // 1 while render thread is between guard-check and Present return
     private int _compositionTransformDirty;
     private int _firstFrameRaised;
-    private int _skipSwapChainDisposal; // 1 = CleanupD3DResources should not dispose the swap chain
 
     private int _panelPixelWidth;
     private int _panelPixelHeight;
@@ -732,11 +731,32 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         previous?.Dispose();
         Interlocked.Exchange(ref _sharedDeviceActive, 0);
 
-        if (Volatile.Read(ref _isRendering) != 0)
+        // The render thread flips _isRendering before its first InitializeD3D().
+        // If the capture service applies the shared device in that startup
+        // window, the initial InitializeD3D() will already consume _sharedDevice;
+        // queuing a reset would immediately unbind/dispose/recreate the freshly
+        // bound swap chain. Only reset once D3D resources actually exist.
+        if (Volatile.Read(ref _isRendering) != 0 &&
+            (_device != null || _swapChain != null))
         {
             Interlocked.Exchange(ref _sharedDeviceResetPending, 1);
             SignalFrameReady("shared_device_reset");
         }
+    }
+
+    public void RetireSharedDeviceReferenceForReinit()
+    {
+        // Mode reinit retires this renderer after Stop() has already released
+        // the render-thread resources. The remaining shared-device wrapper is a
+        // duplicate COM reference obtained from the capture backend's
+        // SharedD3DDeviceManager. Disposing that wrapper while the old capture
+        // pipeline is also disposing its manager has produced corrupted-state
+        // AccessViolationException crashes in SharpGen/Vortice. Abandon the
+        // duplicate reference for this rare mode-switch path; the active
+        // renderer gets a fresh shared device from the new capture pipeline.
+        _sharedDevice = null;
+        Interlocked.Exchange(ref _sharedDeviceActive, 0);
+        Interlocked.Exchange(ref _sharedDeviceResetPending, 0);
     }
 
     public void Start(int width, int height, double fps, bool isHdr)
@@ -769,7 +789,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             Volatile.Write(ref _rendererMode, RendererModeNone);
 
             Interlocked.Exchange(ref _stopRequested, 0);
-            Interlocked.Exchange(ref _skipSwapChainDisposal, 0);
             Interlocked.Exchange(ref _compositionTransformDirty, 1);
             Interlocked.Exchange(ref _firstFrameRaised, 0);
             Interlocked.Exchange(ref _sharedDeviceResetPending, 0);
@@ -788,65 +807,18 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     }
 
     /// <summary>
-    /// Stops the render thread and waits for it to exit, but does NOT unbind
-    /// the swap chain from the XAML panel. Use this when the renderer will be
-    /// replaced by a new instance on the same SwapChainPanel during reinit —
-    /// the new renderer's BindSwapChainToPanel will overwrite the binding.
-    /// Calling SetSwapChain(null) then SetSwapChain(newPtr) in quick succession
-    /// on the same panel triggers an AccessViolationException in WinUI 3.
+    /// Stops the render thread before capture pipeline teardown.
     /// </summary>
     public void StopRenderThread()
     {
-        Thread? renderThread;
-        lock (_lifecycleLock)
-        {
-            renderThread = _renderThread;
-            if (renderThread == null)
-            {
-                FailPendingFrameCapture("Preview renderer is not running.");
-                Volatile.Write(ref _rendererMode, RendererModeNone);
-                ResetPresentCadence();
-                return;
-            }
-            Interlocked.Exchange(ref _stopRequested, 1);
-        }
-
-        WaitForNativeCallToDrainOrThrow("render-thread-only stop");
-
-        // Do NOT unbind or dispose the swap chain — the new renderer will
-        // overwrite the panel binding with its own chain. Disposing the old
-        // chain while the panel still holds a native reference triggers an
-        // AccessViolationException in WinUI 3's ISwapChainPanelNative.
-        Interlocked.Exchange(ref _skipSwapChainDisposal, 1);
-
-        SignalFrameReady("stop_render_thread");
-        if (Thread.CurrentThread != renderThread)
-        {
-            if (!renderThread.Join(TimeSpan.FromMilliseconds(_renderThreadStopTimeoutMs)))
-            {
-                Logger.Log($"D3D11 preview renderer stop (render-thread-only) timed out after {_renderThreadStopTimeoutMs}ms; aborting reinit to keep UI responsive.");
-                throw new TimeoutException("D3D11 preview render thread did not stop before timeout.");
-            }
-        }
-
-        lock (_lifecycleLock)
-        {
-            if (ReferenceEquals(_renderThread, renderThread))
-            {
-                _renderThread = null;
-            }
-        }
-
-        while (TryDequeuePendingFrame(out var stale))
-        {
-            TrackFrameDropped(stale, "renderer-stop");
-            stale.Dispose();
-        }
-
-        FailPendingFrameCapture("Preview renderer stopped before frame capture completed.");
-        Volatile.Write(ref _rendererMode, RendererModeNone);
-        ResetPresentCadence();
-        Logger.Log("D3D11 preview renderer render thread stopped (swap chain still bound).");
+        // Reinit has two native lifetime constraints that have to be ordered:
+        // stop rendering before UnifiedVideoCapture tears down the shared D3D
+        // device, and detach SwapChainPanel while the old swap chain is still
+        // alive. HDR<->SDR or resolution changes can alter swap-chain format
+        // and size; replacing a still-attached stale chain later lets WinUI call
+        // through a released native reference during SetSwapChain(newPtr).
+        Stop();
+        Logger.Log("D3D11 preview renderer render thread stopped for reinit.");
     }
 
     public void Stop()
@@ -1675,7 +1647,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Interlocked.Exchange(ref _lastSubmittedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
     }
 
-    private void TrackFramePresented(PendingFrame frame, long presentReturnTick)
+    private void TrackFramePresented(PendingFrame frame, long presentReturnTick, long estimatedVisibleTick)
     {
         Interlocked.Exchange(ref _lastRenderedPreviewPresentId, frame.PreviewPresentId);
         Interlocked.Exchange(ref _lastRenderedSourceSequenceNumber, frame.SourceSequenceNumber);
@@ -1685,8 +1657,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         var schedulerToPresentTicks = frame.SchedulerSubmitTick > 0 && presentReturnTick > frame.SchedulerSubmitTick
             ? presentReturnTick - frame.SchedulerSubmitTick
             : 0;
-        var pipelineLatencyTicks = frame.ArrivalTick > 0 && presentReturnTick > frame.ArrivalTick
-            ? presentReturnTick - frame.ArrivalTick
+        var pipelineLatencyTicks = frame.ArrivalTick > 0 && estimatedVisibleTick > frame.ArrivalTick
+            ? estimatedVisibleTick - frame.ArrivalTick
             : 0;
         Interlocked.Exchange(ref _lastRenderedSchedulerToPresentTicks, schedulerToPresentTicks);
         Interlocked.Exchange(ref _lastRenderedPipelineLatencyTicks, pipelineLatencyTicks);
@@ -1844,14 +1816,14 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
-    private void TrackPipelineLatency(long arrivalTick, long presentEndTick)
+    private void TrackPipelineLatency(long arrivalTick, long estimatedVisibleTick)
     {
-        if (arrivalTick <= 0 || presentEndTick <= arrivalTick)
+        if (arrivalTick <= 0 || estimatedVisibleTick <= arrivalTick)
         {
             return;
         }
 
-        var latencyMs = (presentEndTick - arrivalTick) * 1000.0 / Stopwatch.Frequency;
+        var latencyMs = (estimatedVisibleTick - arrivalTick) * 1000.0 / Stopwatch.Frequency;
         if (latencyMs < 0 || latencyMs > 10000)
         {
             return;
@@ -1898,6 +1870,42 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
+    private long EstimateVisibleTick(long presentReturnTick)
+    {
+        var frameIntervalTicks = GetEstimatedDisplayFrameIntervalTicks();
+        long displayClockTick;
+        lock (_dxgiFrameStatisticsLock)
+        {
+            displayClockTick = _dxgiFrameStatisticsSyncQpcTime;
+        }
+
+        if (displayClockTick <= 0)
+        {
+            return presentReturnTick + frameIntervalTicks;
+        }
+
+        var visibleTick = displayClockTick;
+        if (visibleTick <= presentReturnTick)
+        {
+            var intervalsBehind = ((presentReturnTick - visibleTick) / frameIntervalTicks) + 1;
+            visibleTick += intervalsBehind * frameIntervalTicks;
+        }
+
+        var maxLeadTicks = frameIntervalTicks * Math.Max(1, Math.Min(3, _dxgiMaxFrameLatency + 1));
+        if (visibleTick - presentReturnTick > maxLeadTicks)
+        {
+            return presentReturnTick + frameIntervalTicks;
+        }
+
+        return visibleTick;
+    }
+
+    private long GetEstimatedDisplayFrameIntervalTicks()
+    {
+        var fps = Math.Max(1.0, _startupFps);
+        return Math.Max(1, (long)Math.Round(Stopwatch.Frequency / fps));
+    }
+
     private void TrackFrameLatencyWait(uint result, long waitTicks)
     {
         Interlocked.Increment(ref _frameLatencyWaitCallCount);
@@ -1940,7 +1948,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         long renderSubmitTicks,
         long presentCallTicks,
         long totalTicks,
-        long presentEndTick)
+        long presentEndTick,
+        long estimatedVisibleTick)
     {
         var inputUploadMs = TicksToMs(inputUploadTicks);
         var renderSubmitMs = TicksToMs(renderSubmitTicks);
@@ -1986,8 +1995,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         var schedulerToPresentMs = frame.SchedulerSubmitTick > 0 && presentEndTick > frame.SchedulerSubmitTick
             ? TicksToMs(presentEndTick - frame.SchedulerSubmitTick)
             : 0;
-        var pipelineLatencyMs = frame.ArrivalTick > 0 && presentEndTick > frame.ArrivalTick
-            ? TicksToMs(presentEndTick - frame.ArrivalTick)
+        var pipelineLatencyMs = frame.ArrivalTick > 0 && estimatedVisibleTick > frame.ArrivalTick
+            ? TicksToMs(estimatedVisibleTick - frame.ArrivalTick)
             : 0;
         var worstObservedMs = Math.Max(
             Math.Max(presentIntervalMs > 0 ? presentIntervalMs : 0, totalMs),
@@ -2117,7 +2126,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)
     {
         var fps = Math.Max(1.0, _startupFps);
-        var intervalTicks = Math.Max(1, (long)Math.Round(Stopwatch.Frequency / fps));
+        var intervalTicks = GetEstimatedDisplayFrameIntervalTicks();
         long lastPresentTick;
         int sampleCount;
         lock (_dxgiFrameStatisticsLock)

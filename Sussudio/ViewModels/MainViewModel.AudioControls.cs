@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -20,18 +21,481 @@ namespace Sussudio.ViewModels;
 /// </summary>
 public partial class MainViewModel
 {
+    private const int PreviewAudioRampDownSteps = 18;
+    private const int PreviewAudioRampDownDelayMs = 25;
+    private const int PreviewAudioRampUpSteps = 30;
+    private const int PreviewAudioRampUpDelayMs = 30;
+    private const int AudioRampTraceCapacity = 2048;
+    private const int AudioRampTraceSampleIntervalMs = 10;
+    private const int AudioRampTracePostCompleteSampleMs = 250;
+
     internal bool SuppressVolumeSave { get; set; }
 
     /// <summary>
     /// When non-null, SaveSettings writes this value for PreviewVolume instead of the
-    /// current (animation-transient) property value. Set during the entrance volume
-    /// fade-in to prevent intermediate 0 values from corrupting persisted settings.
+    /// current (animation-transient) property value. Set during preview volume
+    /// fade-in/out to prevent intermediate 0 values from corrupting persisted settings.
     /// </summary>
     internal double? VolumeSaveOverride { get; set; }
 
+    private readonly object _audioRampTraceLock = new();
+    private readonly AudioRampTraceEntry[] _audioRampTraceBuffer = new AudioRampTraceEntry[AudioRampTraceCapacity];
+    private CancellationTokenSource? _audioRampTraceSamplerCts;
+    private int _audioRampTraceHead;
+    private int _audioRampTraceCount;
+    private long _audioRampTraceSequence;
+    private long _audioRampTraceActiveSessionId;
+    private long _audioRampTraceSessionStartTimestamp;
+    private string _audioRampTraceActiveReason = string.Empty;
+    private double _audioRampTraceTargetVolume = double.NaN;
+    private bool _audioRampTraceSamplingActive;
+
     partial void OnPreviewVolumeChanged(double value)
     {
+        if (!SuppressVolumeSave)
+        {
+            VolumeSaveOverride = null;
+        }
+
         _sessionCoordinator.SetPreviewVolume((float)Math.Clamp(value, 0.0, 1.0));
+        RecordAudioRampTracePoint("volume-set");
+    }
+
+    private async Task RampPreviewVolumeDownForStopAsync(CancellationToken cancellationToken)
+        => await RampPreviewVolumeDownForAudioTransitionAsync("preview_stop", cancellationToken);
+
+    private async Task RampPreviewVolumeDownForAudioTransitionAsync(
+        string reason,
+        CancellationToken cancellationToken = default,
+        bool traceSession = true)
+    {
+        var persistedVolume = Math.Clamp(VolumeSaveOverride ?? PreviewVolume, 0.0, 1.0);
+        var startingVolume = Math.Clamp(PreviewVolume, 0.0, 1.0);
+        var traceSessionId = traceSession ? BeginAudioRampTraceSession(reason, targetVolume: 0) : 0;
+        if (persistedVolume > 0.001)
+        {
+            VolumeSaveOverride = persistedVolume;
+        }
+
+        try
+        {
+            if (startingVolume <= 0.001)
+            {
+                SuppressVolumeSave = true;
+                try
+                {
+                    PreviewVolume = 0;
+                }
+                finally
+                {
+                    SuppressVolumeSave = false;
+                }
+
+                RecordAudioRampTracePoint("ramp-down-skipped", reason, targetVolume: 0, note: "already-zero");
+                return;
+            }
+
+            SuppressVolumeSave = true;
+            var startLog = string.Equals(reason, "preview_stop", StringComparison.Ordinal)
+                ? $"PREVIEW_AUDIO_STOP_RAMP_STARTED fromPct={startingVolume * 100:0}"
+                : $"PREVIEW_AUDIO_RAMP_DOWN_STARTED reason={reason} fromPct={startingVolume * 100:0}";
+            Logger.Log(startLog);
+            RecordAudioRampTracePoint("ramp-down-start", reason, targetVolume: 0);
+            try
+            {
+                for (var step = 1; step <= PreviewAudioRampDownSteps; step++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var t = step / (double)PreviewAudioRampDownSteps;
+                    var eased = Math.Pow(1.0 - t, 2.0);
+                    PreviewVolume = startingVolume * eased;
+                    await Task.Delay(PreviewAudioRampDownDelayMs, cancellationToken);
+                }
+
+                PreviewVolume = 0;
+                RecordAudioRampTracePoint("ramp-down-complete", reason, targetVolume: 0);
+                Logger.Log(
+                    string.Equals(reason, "preview_stop", StringComparison.Ordinal)
+                        ? "PREVIEW_AUDIO_STOP_RAMP_COMPLETED"
+                        : $"PREVIEW_AUDIO_RAMP_DOWN_COMPLETED reason={reason}");
+            }
+            finally
+            {
+                SuppressVolumeSave = false;
+            }
+        }
+        finally
+        {
+            if (traceSession)
+            {
+                CompleteAudioRampTraceSession(traceSessionId, reason);
+            }
+        }
+    }
+
+    private double PrimePreviewVolumeForAudioTransition(string reason)
+    {
+        var volumeTarget = Math.Clamp(VolumeSaveOverride ?? PreviewVolume, 0.0, 1.0);
+        if (volumeTarget <= 0.001)
+        {
+            PreviewVolume = 0;
+            VolumeSaveOverride = null;
+            return 0;
+        }
+
+        VolumeSaveOverride = volumeTarget;
+        SuppressVolumeSave = true;
+        try
+        {
+            PreviewVolume = 0;
+        }
+        finally
+        {
+            SuppressVolumeSave = false;
+        }
+
+        Logger.Log($"PREVIEW_AUDIO_MONITOR_PRIMED reason={reason} targetPct={volumeTarget * 100:0}");
+        RecordAudioRampTracePoint("primed", reason, volumeTarget);
+        return volumeTarget;
+    }
+
+    private async Task RampPreviewVolumeUpForAudioTransitionAsync(
+        double volumeTarget,
+        string reason,
+        CancellationToken cancellationToken = default,
+        bool traceSession = true)
+    {
+        volumeTarget = Math.Clamp(volumeTarget, 0.0, 1.0);
+        var traceSessionId = traceSession ? BeginAudioRampTraceSession(reason, volumeTarget) : 0;
+        if (volumeTarget <= 0.001)
+        {
+            try
+            {
+                PreviewVolume = 0;
+                VolumeSaveOverride = null;
+                RecordAudioRampTracePoint("ramp-up-skipped", reason, volumeTarget, "target-zero");
+            }
+            finally
+            {
+                if (traceSession)
+                {
+                    CompleteAudioRampTraceSession(traceSessionId, reason);
+                }
+            }
+
+            return;
+        }
+
+        VolumeSaveOverride = volumeTarget;
+        SuppressVolumeSave = true;
+        Logger.Log($"PREVIEW_AUDIO_RAMP_UP_STARTED reason={reason} targetPct={volumeTarget * 100:0}");
+        RecordAudioRampTracePoint("ramp-up-start", reason, volumeTarget);
+        try
+        {
+            for (var step = 1; step <= PreviewAudioRampUpSteps; step++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var t = step / (double)PreviewAudioRampUpSteps;
+                var eased = 1.0 - Math.Pow(1.0 - t, 3.0);
+                PreviewVolume = volumeTarget * eased;
+                await Task.Delay(PreviewAudioRampUpDelayMs, cancellationToken);
+            }
+
+            PreviewVolume = volumeTarget;
+            RecordAudioRampTracePoint("ramp-up-complete", reason, volumeTarget);
+            Logger.Log($"PREVIEW_AUDIO_RAMP_UP_COMPLETED reason={reason}");
+        }
+        finally
+        {
+            SuppressVolumeSave = false;
+            VolumeSaveOverride = null;
+            if (traceSession)
+            {
+                CompleteAudioRampTraceSession(traceSessionId, reason);
+            }
+        }
+    }
+
+    private void RestorePreviewVolumeAfterUnavailableAudio(double volumeTarget, string reason)
+    {
+        volumeTarget = Math.Clamp(volumeTarget, 0.0, 1.0);
+        SuppressVolumeSave = true;
+        try
+        {
+            PreviewVolume = volumeTarget;
+        }
+        finally
+        {
+            SuppressVolumeSave = false;
+            VolumeSaveOverride = null;
+        }
+
+        Logger.Log($"PREVIEW_AUDIO_MONITOR_RESTORE reason={reason} targetPct={volumeTarget * 100:0}");
+        RecordAudioRampTracePoint("restore", reason, volumeTarget, "audio-preview-unavailable");
+    }
+
+    private async Task SetAudioMonitoringEnabledWithVolumeTransitionAsync(
+        bool enabled,
+        string reason,
+        bool teardownCapture = false,
+        Func<Task>? afterMonitoringStarted = null,
+        CancellationToken cancellationToken = default)
+    {
+        var traceSessionId = BeginAudioRampTraceSession(
+            reason,
+            enabled ? Math.Clamp(VolumeSaveOverride ?? PreviewVolume, 0.0, 1.0) : 0);
+        try
+        {
+            if (enabled)
+            {
+                var volumeTarget = PrimePreviewVolumeForAudioTransition(reason);
+                await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);
+                RecordAudioRampTracePoint("monitoring-started", reason, volumeTarget);
+                Exception? afterMonitoringStartedFailure = null;
+                if (afterMonitoringStarted != null)
+                {
+                    try
+                    {
+                        await afterMonitoringStarted();
+                    }
+                    catch (Exception ex)
+                    {
+                        afterMonitoringStartedFailure = ex;
+                        Logger.Log($"PREVIEW_AUDIO_MONITOR_PRIME_CALLBACK_FAIL reason={reason} type={ex.GetType().Name} msg='{ex.Message}'");
+                    }
+                }
+
+                if (_captureService.IsAudioPreviewActive)
+                {
+                    await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, cancellationToken, traceSession: false);
+                }
+                else
+                {
+                    RestorePreviewVolumeAfterUnavailableAudio(volumeTarget, reason);
+                }
+
+                if (afterMonitoringStartedFailure != null)
+                {
+                    throw afterMonitoringStartedFailure;
+                }
+
+                return;
+            }
+
+            await RampPreviewVolumeDownForAudioTransitionAsync(reason, cancellationToken, traceSession: false);
+            if (teardownCapture)
+            {
+                await _sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);
+                RecordAudioRampTracePoint("monitoring-stopped", reason, targetVolume: 0, note: "teardown");
+            }
+            else
+            {
+                await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);
+                RecordAudioRampTracePoint("monitoring-stopped", reason, targetVolume: 0, note: "muted");
+            }
+        }
+        finally
+        {
+            CompleteAudioRampTraceSession(traceSessionId, reason);
+        }
+    }
+
+    public AudioRampTraceSnapshot GetAudioRampTraceSnapshot(int maxEntries = 512)
+    {
+        lock (_audioRampTraceLock)
+        {
+            var count = Math.Min(_audioRampTraceCount, Math.Clamp(maxEntries, 0, AudioRampTraceCapacity));
+            var entries = count == 0
+                ? Array.Empty<AudioRampTraceEntry>()
+                : new AudioRampTraceEntry[count];
+
+            if (count > 0)
+            {
+                var oldest = (_audioRampTraceHead - _audioRampTraceCount + AudioRampTraceCapacity) % AudioRampTraceCapacity;
+                var skip = _audioRampTraceCount - count;
+                var readIndex = (oldest + skip) % AudioRampTraceCapacity;
+                for (var i = 0; i < count; i++)
+                {
+                    entries[i] = _audioRampTraceBuffer[readIndex];
+                    readIndex = (readIndex + 1) % AudioRampTraceCapacity;
+                }
+            }
+
+            return new AudioRampTraceSnapshot
+            {
+                TimestampUtc = DateTimeOffset.UtcNow,
+                SampleIntervalMs = AudioRampTraceSampleIntervalMs,
+                Capacity = AudioRampTraceCapacity,
+                EntryCount = _audioRampTraceCount,
+                IsSamplingActive = _audioRampTraceSamplingActive,
+                ActiveSessionId = _audioRampTraceActiveSessionId,
+                ActiveReason = _audioRampTraceActiveReason,
+                Entries = entries
+            };
+        }
+    }
+
+    public Task<AudioRampTraceSnapshot> GetAudioRampTraceSnapshotAsync(
+        int maxEntries = 512,
+        CancellationToken cancellationToken = default)
+        => FromSynchronousSnapshot(() => GetAudioRampTraceSnapshot(maxEntries), cancellationToken);
+
+    private long BeginAudioRampTraceSession(string reason, double targetVolume)
+    {
+        CancellationTokenSource? previousCts = null;
+        var cts = new CancellationTokenSource();
+        long sessionId;
+        lock (_audioRampTraceLock)
+        {
+            previousCts = _audioRampTraceSamplerCts;
+            previousCts?.Cancel();
+            _audioRampTraceSamplerCts = cts;
+            sessionId = _audioRampTraceActiveSessionId + 1;
+            _audioRampTraceActiveSessionId = sessionId;
+            _audioRampTraceSessionStartTimestamp = Stopwatch.GetTimestamp();
+            _audioRampTraceActiveReason = reason;
+            _audioRampTraceTargetVolume = Math.Clamp(targetVolume, 0.0, 1.0);
+            _audioRampTraceSamplingActive = true;
+        }
+
+        RecordAudioRampTracePoint("session-start", reason, targetVolume);
+        _ = RunAudioRampTraceSamplerAsync(sessionId, cts);
+        return sessionId;
+    }
+
+    private void CompleteAudioRampTraceSession(long sessionId, string reason)
+    {
+        if (sessionId <= 0)
+        {
+            return;
+        }
+
+        RecordAudioRampTracePoint("session-complete", reason);
+        _ = StopAudioRampTraceSamplerAfterDelayAsync(sessionId, AudioRampTracePostCompleteSampleMs);
+    }
+
+    private async Task RunAudioRampTraceSamplerAsync(long sessionId, CancellationTokenSource cts)
+    {
+        try
+        {
+            while (!cts.IsCancellationRequested)
+            {
+                RecordAudioRampTracePoint("sample", sessionId: sessionId);
+                await Task.Delay(AudioRampTraceSampleIntervalMs, cts.Token);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when a trace session completes or is superseded.
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"AUDIO_RAMP_TRACE_SAMPLER_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+        finally
+        {
+            cts.Dispose();
+        }
+    }
+
+    private async Task StopAudioRampTraceSamplerAfterDelayAsync(long sessionId, int delayMs)
+    {
+        try
+        {
+            await Task.Delay(delayMs);
+        }
+        catch
+        {
+            return;
+        }
+
+        CancellationTokenSource? cts = null;
+        lock (_audioRampTraceLock)
+        {
+            if (_audioRampTraceActiveSessionId != sessionId)
+            {
+                return;
+            }
+
+            cts = _audioRampTraceSamplerCts;
+            _audioRampTraceSamplerCts = null;
+            _audioRampTraceSamplingActive = false;
+        }
+
+        cts?.Cancel();
+    }
+
+    private void RecordAudioRampTracePoint(
+        string kind,
+        string? reason = null,
+        double? targetVolume = null,
+        string? note = null,
+        long? sessionId = null)
+    {
+        long activeSessionId;
+        long sessionStartTimestamp;
+        string activeReason;
+        double activeTargetVolume;
+        bool shouldRecord;
+        lock (_audioRampTraceLock)
+        {
+            activeSessionId = sessionId ?? _audioRampTraceActiveSessionId;
+            sessionStartTimestamp = _audioRampTraceSessionStartTimestamp;
+            activeReason = reason ?? _audioRampTraceActiveReason;
+            activeTargetVolume = targetVolume ?? _audioRampTraceTargetVolume;
+            shouldRecord = _audioRampTraceSamplingActive || !string.Equals(kind, "volume-set", StringComparison.Ordinal);
+        }
+
+        if (!shouldRecord)
+        {
+            return;
+        }
+
+        var nowUtc = DateTimeOffset.UtcNow;
+        var nowTimestamp = Stopwatch.GetTimestamp();
+        var elapsedMs = sessionStartTimestamp > 0
+            ? Stopwatch.GetElapsedTime(sessionStartTimestamp, nowTimestamp).TotalMilliseconds
+            : 0;
+        var runtime = _captureService.GetRuntimeSnapshot();
+        var outputAgeMs = runtime.WasapiPlaybackOutputLevelLastTickMs > 0
+            ? Math.Max(0, Environment.TickCount64 - runtime.WasapiPlaybackOutputLevelLastTickMs)
+            : 0;
+
+        var entry = new AudioRampTraceEntry
+        {
+            Sequence = Interlocked.Increment(ref _audioRampTraceSequence),
+            SessionId = activeSessionId,
+            Kind = kind,
+            Reason = activeReason,
+            Note = note ?? string.Empty,
+            TimestampUtc = nowUtc,
+            ElapsedMs = elapsedMs,
+            PreviewVolumePercent = Math.Clamp(PreviewVolume, 0.0, 1.0) * 100.0,
+            TargetVolumePercent = double.IsNaN(activeTargetVolume) ? 0 : Math.Clamp(activeTargetVolume, 0.0, 1.0) * 100.0,
+            PlaybackTargetVolumePercent = runtime.WasapiPlaybackTargetVolumePercent,
+            PlaybackCurrentVolumePercent = runtime.WasapiPlaybackCurrentVolumePercent,
+            PlaybackOutputPeak = runtime.WasapiPlaybackOutputPeak,
+            PlaybackOutputRms = runtime.WasapiPlaybackOutputRms,
+            PlaybackOutputAgeMs = outputAgeMs,
+            PlaybackRenderCallbackCount = runtime.WasapiPlaybackRenderCallbackCount,
+            PlaybackQueueDepth = runtime.WasapiPlaybackQueueDepth,
+            IsAudioEnabled = IsAudioEnabled,
+            IsAudioPreviewEnabled = IsAudioPreviewEnabled,
+            IsAudioPreviewActive = runtime.IsAudioPreviewActive,
+            AudioReaderActive = runtime.AudioReaderActive,
+            CaptureAudioPeak = AudioPeak,
+            AudioFramesArrived = runtime.AudioFramesArrived
+        };
+
+        lock (_audioRampTraceLock)
+        {
+            _audioRampTraceBuffer[_audioRampTraceHead] = entry;
+            _audioRampTraceHead = (_audioRampTraceHead + 1) % AudioRampTraceCapacity;
+            if (_audioRampTraceCount < AudioRampTraceCapacity)
+            {
+                _audioRampTraceCount++;
+            }
+        }
     }
 
     partial void OnMicrophoneVolumeChanged(double value)
@@ -96,6 +560,12 @@ public partial class MainViewModel
             return;
         }
 
+        if (_suppressAudioPreviewEnabledChangeOperation)
+        {
+            SaveSettings();
+            return;
+        }
+
         if (!value && !IsRecording)
         {
             ResetAudioMeter();
@@ -104,7 +574,9 @@ public partial class MainViewModel
         if (IsPreviewing && IsInitialized)
         {
             var description = value ? "audio monitoring enable" : "audio monitoring mute";
-            EnqueueUiOperation(() => _sessionCoordinator.UpdateAudioMonitoringAsync(value), description);
+            EnqueueUiOperation(
+                () => SetAudioMonitoringEnabledWithVolumeTransitionAsync(value, description, teardownCapture: false),
+                description);
         }
 
         SaveSettings();
@@ -134,7 +606,40 @@ public partial class MainViewModel
         Logger.Log($"=== Updating audio input ({reason}) ===");
         Logger.Log($"  Audio device: {audioDeviceName ?? "(none)"}");
 
-        await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);
+        var shouldRampMonitoring = IsPreviewing && _captureService.IsAudioPreviewActive;
+        var volumeTarget = Math.Clamp(VolumeSaveOverride ?? PreviewVolume, 0.0, 1.0);
+        var traceSessionId = shouldRampMonitoring
+            ? BeginAudioRampTraceSession(reason, volumeTarget)
+            : 0;
+        try
+        {
+            if (shouldRampMonitoring)
+            {
+                await RampPreviewVolumeDownForAudioTransitionAsync(reason, traceSession: false);
+            }
+
+            await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);
+            RecordAudioRampTracePoint("audio-input-updated", reason, volumeTarget);
+
+            if (shouldRampMonitoring)
+            {
+                if (_captureService.IsAudioPreviewActive && IsAudioEnabled && IsAudioPreviewEnabled)
+                {
+                    await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, traceSession: false);
+                }
+                else
+                {
+                    RestorePreviewVolumeAfterUnavailableAudio(volumeTarget, reason);
+                }
+            }
+        }
+        finally
+        {
+            if (shouldRampMonitoring)
+            {
+                CompleteAudioRampTraceSession(traceSessionId, reason);
+            }
+        }
     }
 
     private async Task RefreshDeviceAudioControlsAsync(

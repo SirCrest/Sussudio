@@ -4030,6 +4030,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     transitionToken.ThrowIfCancellationRequested();
 
                     var fbEffectiveFrameRate = _unifiedVideoCapture?.Fps > 0 ? _unifiedVideoCapture.Fps : settings.FrameRate;
+                    var fbFileNameFormatOverride =
+                        _unifiedVideoCapture != null &&
+                        UseTransportStreamFlashbackCodec(_unifiedVideoCapture, settings, fbEffectiveFrameRate)
+                            ? RecordingFormat.HevcMp4
+                            : (RecordingFormat?)null;
                     var fbRecordingContext = await _artifactManager.CreateContextAsync(
                         fbOutputFolder,
                         new RecordingContextRequest
@@ -4046,7 +4051,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                             EffectiveHeight = _actualHeight ?? settings.Height,
                             VideoInputPixelFormat = _unifiedVideoCapture?.IsP010 == true ? "p010le" : "nv12",
                             IsFullRangeInput = _unifiedVideoCapture?.IsSoftwareMjpegPipelineActive == true,
-                            GpuHandles = GpuPipelineHandles.None
+                            GpuHandles = GpuPipelineHandles.None,
+                            FileNameFormatOverride = fbFileNameFormatOverride
                         }).ConfigureAwait(false);
                     recordingContext = fbRecordingContext;
 
@@ -4673,6 +4679,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 _audioDeviceId = audioDeviceId;
                 _audioDeviceName = audioDeviceName;
+                _isAudioPreviewActive = false;
                 _wasapiAudioCapture = null;
                 DetachWasapiAudioCapture(oldCapture);
                 try

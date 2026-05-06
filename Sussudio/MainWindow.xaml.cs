@@ -70,6 +70,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private Storyboard? _micMeterRowStoryboard;
     private Storyboard? _showMicMeterRowStoryboard;
     private Storyboard? _hideMicMeterRowStoryboard;
+    private Storyboard? _audioMeterMonitoringStoryboard;
     private const double MicMeterRowHeight = 14;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
@@ -132,6 +133,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private double _savedPreviewVolume;
     private bool _isVolumeFadingIn;
     private Storyboard? _entranceStoryboard;
+    private Storyboard? _previewVolumeFadeStoryboard;
     private bool _isSettingsShelfAnimating;
     private bool _isFlashbackTimelineAnimating;
     private bool _isFlashbackScrubbing;

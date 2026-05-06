@@ -296,12 +296,9 @@ public sealed partial class MainWindow
             ? $"{snapshot.SourceWidth} x {snapshot.SourceHeight}"
             : "\u2014";
         var previewResolution = ResolvePreviewResolutionText(snapshot);
-        var sourceFrameBudget = FormatFrameBudget(snapshot.SourceExpectedFps);
-        var previewFrameTimeSummary = FormatPreviewLowSummary(snapshot);
+        var previewFrameTimeSummary = FormatPreviewCadenceSummary(snapshot);
         var visualFpsSummary = FormatVisualRepeatSummary(snapshot);
-        var captureSummary = sourceResolution == "\u2014"
-            ? "\u2014"
-            : $"{sourceResolution} | {sourceFrameBudget}";
+        var captureSummary = ResolveCaptureSummaryText(snapshot);
         var latencySummary = $"{FormatMs(snapshot.PipelineLatencyMs)} avg";
 
         var sourceFrameRate = snapshot.SourceFrameRateExact.HasValue
@@ -331,7 +328,7 @@ public sealed partial class MainWindow
         SetTextIfChanged(Stats_SummaryVisualFpsValue, visualFpsSummary);
         SetTextIfChanged(Stats_SummaryLatencyValue, latencySummary);
         SetMetricBrush(Stats_SummaryCaptureValue, ResolveFrameLaneStatus(snapshot.SourceP95IntervalMs, snapshot.SourceExpectedFps, snapshot.SourceEstDropPct));
-        SetMetricBrush(Stats_SummaryRendererFpsValue, ResolvePreviewFrameLaneStatus(snapshot.PreviewP95IntervalMs, snapshot.SourceExpectedFps, snapshot.PreviewSlowPct));
+        SetMetricBrush(Stats_SummaryRendererFpsValue, ResolvePreviewFrameLaneStatus(snapshot));
         SetMetricBrush(Stats_SummaryVisualFpsValue, ResolveDecodedVisualStatus(snapshot));
         SetMetricBrush(Stats_SummaryLatencyValue, ResolveLatencyStatus(snapshot.PipelineLatencyMs));
         SetTextIfChanged(Stats_SourceResolutionValue, sourceResolution);
@@ -555,7 +552,7 @@ public sealed partial class MainWindow
                 : $"Crop {FormatVisualCadenceSummary(snapshot)}");
         SetTextIfChanged(
             FrameTime_PreviewValue,
-            $"Preview: {FormatPreviewLowSummary(snapshot)}");
+            $"Preview: {FormatPreviewCadenceSummary(snapshot)}");
         SetTextIfChanged(FrameTime_LatencyValue, $"Lat {FormatMs(snapshot.PipelineLatencyMs)}");
         var frameTimeRange = ResolveFrameTimeRange(snapshot.SourceExpectedFps);
         SetTextIfChanged(
@@ -632,12 +629,34 @@ public sealed partial class MainWindow
             return $"{snapshot.PreviewNaturalWidth} x {snapshot.PreviewNaturalHeight}";
         }
 
+        // The renderer's natural size is the best live-preview answer. If it has not
+        // reported yet, the negotiated capture mode is closer than HDMI source timing:
+        // a 4K input can legitimately be captured and previewed through a 1080p path.
+        if (snapshot.CaptureWidth is > 0 && snapshot.CaptureHeight is > 0)
+        {
+            return $"{snapshot.CaptureWidth.Value} x {snapshot.CaptureHeight.Value}";
+        }
+
         if (snapshot.SourceWidth.HasValue && snapshot.SourceHeight.HasValue)
         {
             return $"{snapshot.SourceWidth} x {snapshot.SourceHeight}";
         }
 
         return "\u2014";
+    }
+
+    private static string ResolveCaptureSummaryText(StatsSnapshot snapshot)
+    {
+        // Source telemetry is the HDMI signal entering the card; the compact Capture
+        // row should show the negotiated UVC/SourceReader mode the app is consuming.
+        if (snapshot.CaptureWidth is not > 0 || snapshot.CaptureHeight is not > 0)
+        {
+            return "\u2014";
+        }
+
+        var frameRate = Sanitize(snapshot.CaptureFrameRate ?? 0);
+        var frameRateText = frameRate > 0 ? $" @ {frameRate:0.##} fps" : string.Empty;
+        return $"{snapshot.CaptureWidth.Value} x {snapshot.CaptureHeight.Value}{frameRateText}";
     }
 
     private enum MetricStatus
@@ -702,18 +721,17 @@ public sealed partial class MainWindow
         return ResolveWorstStatus(timingStatus, issueStatus);
     }
 
-    private static MetricStatus ResolvePreviewFrameLaneStatus(double p95IntervalMs, double expectedFps, double slowFramePercent)
+    private static MetricStatus ResolvePreviewFrameLaneStatus(StatsSnapshot snapshot)
     {
-        if (p95IntervalMs <= 0 && slowFramePercent <= 0.1)
+        var currentFrameTimeMs = ResolveCurrentPreviewFrameTimeMs(snapshot);
+        if (currentFrameTimeMs <= 0 && snapshot.PreviewOnePercentLowFps <= 0)
         {
             return MetricStatus.Neutral;
         }
 
-        var timingStatus = ResolveFrameTimeStatus(p95IntervalMs, expectedFps);
-        var slowStatus = slowFramePercent <= 0.1 ? MetricStatus.Good :
-                         slowFramePercent <= 1.0 ? MetricStatus.Warning :
-                         MetricStatus.Bad;
-        return ResolveWorstStatus(timingStatus, slowStatus);
+        var timingStatus = ResolveFrameTimeStatus(currentFrameTimeMs, snapshot.SourceExpectedFps);
+        var lowFpsStatus = ResolveFpsStatus(snapshot.PreviewOnePercentLowFps, snapshot.SourceExpectedFps);
+        return ResolveWorstStatus(timingStatus, lowFpsStatus);
     }
 
     private static MetricStatus ResolveWorstStatus(MetricStatus first, MetricStatus second)
@@ -956,26 +974,31 @@ public sealed partial class MainWindow
         expectedFps = Sanitize(expectedFps);
         return expectedFps > 0 ? $"{1000.0 / expectedFps:0.00}ms" : "\u2014";
     }
-    private static string FormatPreviewLowSummary(StatsSnapshot snapshot)
+    private static string FormatPreviewCadenceSummary(StatsSnapshot snapshot)
     {
-        if (Sanitize(snapshot.PreviewP95IntervalMs) <= 0)
+        if (snapshot.PreviewCadenceSamples <= 0)
         {
             return "\u2014";
         }
 
-        var fivePercentLow = FormatLowFps(snapshot.PreviewP95IntervalMs);
-        var onePercentLow = FormatLowFps(snapshot.PreviewP99IntervalMs);
-        return $"5% {fivePercentLow} | 1% {onePercentLow}";
+        var currentFrameTimeMs = ResolveCurrentPreviewFrameTimeMs(snapshot);
+        var currentFrameTime = currentFrameTimeMs > 0
+            ? FormatMs(currentFrameTimeMs)
+            : "\u2014";
+        var onePercentLow = Sanitize(snapshot.PreviewOnePercentLowFps) > 0
+            ? $"1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps"
+            : "1% low \u2014";
+        return $"{currentFrameTime} | {onePercentLow}";
     }
-    private static string FormatLowFps(double frameTimeMs)
+    private static double ResolveCurrentPreviewFrameTimeMs(StatsSnapshot snapshot)
     {
-        frameTimeMs = Sanitize(frameTimeMs);
-        if (frameTimeMs <= 0)
+        var samples = snapshot.PreviewRecentPresentIntervalsMs;
+        if (samples is { Count: > 0 })
         {
-            return "\u2014";
+            return Sanitize(samples[samples.Count - 1]);
         }
 
-        return $"{1000.0 / frameTimeMs:0}fps";
+        return Sanitize(snapshot.PreviewAvgIntervalMs);
     }
     private static string FormatVisualRepeatSummary(StatsSnapshot snapshot)
     {
@@ -1061,6 +1084,15 @@ public sealed partial class MainWindow
 
         return value;
     }
+    private static int? ToPositiveInt(uint? value)
+    {
+        if (!value.HasValue || value.Value == 0 || value.Value > int.MaxValue)
+        {
+            return null;
+        }
+
+        return (int)value.Value;
+    }
 
     private const double VisualRepeatTolerancePercent = 0.25;
 
@@ -1134,6 +1166,7 @@ public sealed partial class MainWindow
             PreviewAvgIntervalMs: Sanitize(presentCadence?.AverageIntervalMs ?? 0),
             PreviewP95IntervalMs: Sanitize(presentCadence?.P95IntervalMs ?? 0),
             PreviewP99IntervalMs: Sanitize(presentCadence?.P99IntervalMs ?? 0),
+            PreviewOnePercentLowFps: Sanitize(presentCadence?.OnePercentLowFps ?? 0),
             PreviewSlowFrames: presentCadence?.SlowFrameCount ?? 0,
             PreviewSlowPct: previewSlowPercent,
             MjpegPacketHashSamples: health.MjpegPacketHashSampleCount,
@@ -1168,6 +1201,9 @@ public sealed partial class MainWindow
             Recording: ViewModel.IsRecording,
             PreviewNaturalWidth: d3d?.NaturalWidth ?? 0,
             PreviewNaturalHeight: d3d?.NaturalHeight ?? 0,
+            CaptureWidth: ToPositiveInt(health.NegotiatedWidth),
+            CaptureHeight: ToPositiveInt(health.NegotiatedHeight),
+            CaptureFrameRate: health.NegotiatedFrameRate,
             SourceWidth: health.SourceWidth,
             SourceHeight: health.SourceHeight,
             SourceFrameRateExact: health.SourceFrameRateExact,

@@ -47,6 +47,9 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private volatile bool _resumeRequested;
     private volatile float _targetVolume = 1.0f;
     private float _currentVolume;
+    private volatile float _lastOutputPeak;
+    private volatile float _lastOutputRms;
+    private long _lastOutputLevelTickMs;
     private const float VolumeRampPerFrame = 1.0f / (0.3f * OutputSampleRate); // 300ms ramp at 48kHz
     private long _renderCallbackCount;
     private int _renderSilenceCount;
@@ -77,6 +80,16 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
     public double PlaybackBufferedDurationMs =>
         PlaybackQueueDurationMs + PlaybackActiveChunkDurationMs + PlaybackEndpointQueuedDurationMs;
+
+    public float TargetVolume => _targetVolume;
+
+    public float CurrentVolume => _currentVolume;
+
+    public float LastOutputPeak => _lastOutputPeak;
+
+    public float LastOutputRms => _lastOutputRms;
+
+    public long LastOutputLevelTickMs => Interlocked.Read(ref _lastOutputLevelTickMs);
 
     public long LastRenderCallbackTickMs => Interlocked.Read(ref _lastRenderCallbackTickMs);
 
@@ -505,6 +518,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 FillRenderBuffer(destinationSpan);
             }
             ApplyVolume(destinationSpan);
+            UpdateOutputLevel(destinationSpan);
             Volatile.Write(ref _endpointQueuedFrames, checked((int)Math.Min(int.MaxValue, paddingFrames + framesToWrite)));
         }
         finally
@@ -690,6 +704,36 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 return;
             }
         }
+    }
+
+    private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)
+    {
+        var floats = MemoryMarshal.Cast<byte, float>(buffer);
+        if (floats.Length == 0)
+        {
+            _lastOutputPeak = 0;
+            _lastOutputRms = 0;
+            Interlocked.Exchange(ref _lastOutputLevelTickMs, Environment.TickCount64);
+            return;
+        }
+
+        var peak = 0f;
+        var sumSquares = 0.0;
+        for (var i = 0; i < floats.Length; i++)
+        {
+            var sample = floats[i];
+            var abs = MathF.Abs(sample);
+            if (abs > peak)
+            {
+                peak = abs;
+            }
+
+            sumSquares += sample * sample;
+        }
+
+        _lastOutputPeak = peak;
+        _lastOutputRms = (float)Math.Sqrt(sumSquares / floats.Length);
+        Interlocked.Exchange(ref _lastOutputLevelTickMs, Environment.TickCount64);
     }
 
     private void ReturnActiveChunk()

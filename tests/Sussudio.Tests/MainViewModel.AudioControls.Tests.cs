@@ -38,6 +38,9 @@ static partial class Program
 
         var audioCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioControls.cs");
         var previewChanged = ExtractMemberCode(audioCode, "OnPreviewVolumeChanged");
+        var rampDown = ExtractMemberCode(audioCode, "RampPreviewVolumeDownForAudioTransitionAsync");
+        var rampUp = ExtractMemberCode(audioCode, "RampPreviewVolumeUpForAudioTransitionAsync");
+        var monitoringTransition = ExtractMemberCode(audioCode, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
         var setMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "SetMicrophoneEndpointVolume");
         var getMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "GetMicrophoneEndpointVolume");
         var audioPreviewChanged = ExtractMemberCode(audioCode, "OnIsAudioPreviewEnabledChanged");
@@ -49,9 +52,30 @@ static partial class Program
         var suppressedRefresh = ExtractMemberCode(audioCode, "WithAudioControlRefreshSuppressed");
         var normalizeDeviceAudioMode = ExtractMemberCode(audioCode, "NormalizeDeviceAudioMode");
 
+        AssertContains(previewChanged, "if (!SuppressVolumeSave)");
+        AssertContains(previewChanged, "VolumeSaveOverride = null;");
         AssertContains(previewChanged, "_sessionCoordinator.SetPreviewVolume((float)Math.Clamp(value, 0.0, 1.0));");
+        AssertOccursBefore(previewChanged, "VolumeSaveOverride = null;", "_sessionCoordinator.SetPreviewVolume");
         AssertContains(audioCode, "internal void SavePreviewVolume() => SaveSettings();");
         AssertContains(audioCode, "internal void SaveMicrophoneVolume() => SaveSettings();");
+
+        AssertContains(rampDown, "var persistedVolume = Math.Clamp(VolumeSaveOverride ?? PreviewVolume, 0.0, 1.0);");
+        AssertContains(rampDown, "VolumeSaveOverride = persistedVolume;");
+        AssertContains(rampDown, "PreviewVolume = startingVolume * eased;");
+        AssertContains(rampDown, "PreviewVolume = 0;");
+        AssertContains(rampUp, "VolumeSaveOverride = volumeTarget;");
+        AssertContains(rampUp, "PreviewVolume = volumeTarget * eased;");
+        AssertContains(rampUp, "VolumeSaveOverride = null;");
+
+        AssertContains(monitoringTransition, "var volumeTarget = PrimePreviewVolumeForAudioTransition(reason);");
+        AssertContains(monitoringTransition, "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);");
+        AssertContains(monitoringTransition, "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, cancellationToken, traceSession: false);");
+        AssertContains(monitoringTransition, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, cancellationToken, traceSession: false);");
+        AssertContains(monitoringTransition, "await _sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);");
+        AssertContains(monitoringTransition, "await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);");
+        AssertOccursBefore(monitoringTransition, "var volumeTarget = PrimePreviewVolumeForAudioTransition(reason);", "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);");
+        AssertOccursBefore(monitoringTransition, "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, cancellationToken, traceSession: false);");
+        AssertOccursBefore(monitoringTransition, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, cancellationToken, traceSession: false);", "await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);");
 
         AssertContains(setMicrophoneEndpointVolume, "string.IsNullOrWhiteSpace(deviceId)");
         AssertContains(setMicrophoneEndpointVolume, "WasapiComInterop.SetEndpointVolume(deviceId, (float)(Math.Clamp(volumePercent, 0.0, 100.0) / 100.0));");
@@ -62,18 +86,25 @@ static partial class Program
         AssertOccursBefore(getMicrophoneEndpointVolume, "string.IsNullOrWhiteSpace(deviceId)", "WasapiComInterop.GetEndpointVolume");
 
         AssertContains(audioPreviewChanged, "if (value && !IsAudioEnabled)");
+        AssertContains(audioPreviewChanged, "if (_suppressAudioPreviewEnabledChangeOperation)");
         AssertContains(audioPreviewChanged, "if (!value && !IsRecording)");
         AssertContains(audioPreviewChanged, "if (IsPreviewing && IsInitialized)");
+        AssertContains(audioPreviewChanged, "SetAudioMonitoringEnabledWithVolumeTransitionAsync(value, description, teardownCapture: false)");
         AssertOccursBefore(audioPreviewChanged, "if (value && !IsAudioEnabled)", "IsAudioPreviewEnabled = false;");
+        AssertOccursBefore(audioPreviewChanged, "if (_suppressAudioPreviewEnabledChangeOperation)", "if (!value && !IsRecording)");
         AssertOccursBefore(audioPreviewChanged, "if (!value && !IsRecording)", "ResetAudioMeter();");
-        AssertOccursBefore(audioPreviewChanged, "if (IsPreviewing && IsInitialized)", "EnqueueUiOperation(() => _sessionCoordinator.UpdateAudioMonitoringAsync(value), description);");
-        AssertOccursBefore(audioPreviewChanged, "EnqueueUiOperation(() => _sessionCoordinator.UpdateAudioMonitoringAsync(value), description);", "SaveSettings();");
+        AssertOccursBefore(audioPreviewChanged, "if (IsPreviewing && IsInitialized)", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(value, description, teardownCapture: false)");
 
         AssertContains(applyAudioInputSelection, "if (IsCustomAudioInputEnabled)");
         AssertContains(applyAudioInputSelection, "audioDeviceId = SelectedAudioInputDevice?.Id;");
         AssertContains(applyAudioInputSelection, "audioDeviceId = SelectedDevice?.AudioDeviceId;");
+        AssertContains(applyAudioInputSelection, "var shouldRampMonitoring = IsPreviewing && _captureService.IsAudioPreviewActive;");
+        AssertContains(applyAudioInputSelection, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, traceSession: false);");
         AssertContains(applyAudioInputSelection, "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);");
+        AssertContains(applyAudioInputSelection, "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, traceSession: false);");
         AssertOccursBefore(applyAudioInputSelection, "if (IsCustomAudioInputEnabled)", "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);");
+        AssertOccursBefore(applyAudioInputSelection, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, traceSession: false);", "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);");
+        AssertOccursBefore(applyAudioInputSelection, "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, traceSession: false);");
 
         AssertContains(refreshDeviceAudioControls, "IsDeviceAudioControlSupported = false;");
         AssertContains(refreshDeviceAudioControls, "SelectedDeviceAudioMode = DeviceAudioMode.Hdmi;");

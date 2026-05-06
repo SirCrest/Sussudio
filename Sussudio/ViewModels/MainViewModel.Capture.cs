@@ -115,6 +115,11 @@ public partial class MainViewModel
             _cancelPreviewRestartAfterReinitialize = true;
         }
 
+        if (userInitiated && !IsPreviewReinitializing && _captureService.IsAudioPreviewActive)
+        {
+            await RampPreviewVolumeDownForStopAsync(cancellationToken);
+        }
+
         PreviewStopRequested?.Invoke(this, EventArgs.Empty);
         var commitStoppedState = false;
         try

@@ -142,11 +142,13 @@ public class CaptureSettings
         return (uint)(finalMbps * 1_000_000);
     }
 
-    public string GetOutputFileName()
+    public string GetOutputFileName() => GetOutputFileNameForFormat(Format);
+
+    public string GetOutputFileNameForFormat(RecordingFormat format)
     {
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
         const string extension = "mp4";
-        var formatSuffix = Format switch
+        var formatSuffix = format switch
         {
             RecordingFormat.H264Mp4 => "H264",
             RecordingFormat.HevcMp4 => "HEVC",
