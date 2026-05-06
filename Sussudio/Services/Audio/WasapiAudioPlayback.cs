@@ -708,6 +708,9 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
     private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)
     {
+        // Measure after volume application. This is the signal actually handed
+        // to IAudioRenderClient, so automation traces can distinguish source
+        // silence from a render-side dropout or an over-aggressive ramp.
         var floats = MemoryMarshal.Cast<byte, float>(buffer);
         if (floats.Length == 0)
         {

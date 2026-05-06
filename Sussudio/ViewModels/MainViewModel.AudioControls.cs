@@ -38,6 +38,9 @@ public partial class MainViewModel
     /// </summary>
     internal double? VolumeSaveOverride { get; set; }
 
+    // Short-lived ring buffer for audible transition forensics. It captures the
+    // control target and actual WASAPI render envelope so a reported pop, mute,
+    // or stutter can be correlated with the playback thread rather than guessed.
     private readonly object _audioRampTraceLock = new();
     private readonly AudioRampTraceEntry[] _audioRampTraceBuffer = new AudioRampTraceEntry[AudioRampTraceCapacity];
     private CancellationTokenSource? _audioRampTraceSamplerCts;
