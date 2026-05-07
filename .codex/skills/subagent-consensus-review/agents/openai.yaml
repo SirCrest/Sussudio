@@ -1,4 +1,0 @@
-interface:
-  display_name: "Subagent Consensus Review"
-  short_description: "Parallel optioning + consensus + verification swarm"
-  default_prompt: "Use $subagent-consensus-review to design options with parallel subagents, pick a consensus implementation, and run a full review swarm before sign-off."

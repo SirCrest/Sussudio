@@ -1,4 +1,4 @@
-﻿# HDR Experiment Log (Append-Only)
+# HDR Experiment Log (Append-Only)
 
 Do not rewrite or delete prior entries. Append new entries only.
 
@@ -510,8 +510,8 @@ Do not rewrite or delete prior entries. Append new entries only.
 - Commit Hash: 8d6b5471db44ba2c9d3d36da1a1a409a6fbec76c
 - What Changed (single change): Added `KsXuSourceSignalTelemetryProvider` for direct 4K X KS/XU HDR-state reads (selector 3 fingerprint), added `CompositeSourceSignalTelemetryProvider`, switched `CaptureService` to the composite default, and surfaced the new `KsXu` origin through runtime snapshot mapping.
 - How To Run:
-  1. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
-  2. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  1. `$env:DOTNET_CLI_HOME='<repo>\temp\dotnet_cli_home'; dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `$env:DOTNET_CLI_HOME='<repo>\temp\dotnet_cli_home'; dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
   3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
 - Validator Output:
   - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
@@ -602,8 +602,8 @@ Do not rewrite or delete prior entries. Append new entries only.
 - Commit Hash: uncommitted
 - What Changed (single change): Removed the HDR-only gates around telemetry-driven mode rebuilds and the existing source-aware frame-rate picker in `MainViewModel`, so SDR now uses the same timing-family-aware auto-selection path as HDR while preserving the no-telemetry fallback.
 - How To Run:
-  1. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
-  2. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  1. `$env:DOTNET_CLI_HOME='<repo>\temp\dotnet_cli_home'; dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `$env:DOTNET_CLI_HOME='<repo>\temp\dotnet_cli_home'; dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
   3. With a live 59.94 fps SDR source, inspect the frame-rate dropdown and confirm the requested preview mode tracks the 60000/1001 variant instead of the 60/1 variant.
 - Validator Output:
   - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded and rebuilt `ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll`; staging `latest-build` emitted `MSB3231`/`MSB3026`/`MSB3027`/`MSB3021` warnings because `ElgatoCapture (203576)` held files open under `latest-build`.
@@ -618,8 +618,8 @@ Do not rewrite or delete prior entries. Append new entries only.
 - Commit Hash: uncommitted
 - What Changed (single change): Updated `MainWindow` HDR-toggle enablement to require `SourceIsHdr != false`, added `SourceIsHdr` to the window property-change bridge, and made `MainViewModel` clear `IsHdrEnabled` from source telemetry only when the app is not recording so the toggle follows confirmed SDR input without desynchronizing the active recording pipeline.
 - How To Run:
-  1. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
-  2. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  1. `$env:DOTNET_CLI_HOME='<repo>\temp\dotnet_cli_home'; dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `$env:DOTNET_CLI_HOME='<repo>\temp\dotnet_cli_home'; dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
   3. With a live source that transitions HDR -> SDR while idle or previewing, confirm the HDR toggle becomes unchecked/disabled when telemetry reports `SourceIsHdr = false`, stays enabled when the source HDR state is still unknown, and retains the existing `AutomationProperties.AutomationId="HdrToggle"` contract.
 - Validator Output:
   - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded and rebuilt `ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll`; staging `latest-build` emitted `MSB3231`/`MSB3026`/`MSB3027`/`MSB3021` warnings because `ElgatoCapture (203576)` held files open under `latest-build`.
@@ -1919,7 +1919,7 @@ Do not rewrite or delete prior entries. Append new entries only.
   1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
   2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
   3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
-  4. `dotnet publish ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64 -p:PublishProfile=win-x64 -p:PublishDir=C:\Users\crest\source\repos\ElgatoCapture\artifacts\portable-win-x64\publish\`
+  4. `dotnet publish ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64 -p:PublishProfile=win-x64 -p:PublishDir=<repo>\artifacts\portable-win-x64\publish\`
 - Validator Output:
   - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` first hit a transient WinUI XAML compiler lock on `obj\...\intermediatexaml\ElgatoCapture.dll`; the repo's single-threaded debug gate build then succeeded with `0 Warning(s)` and `0 Error(s)`.
   - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: NativeXu telemetry accepts known 4K X product revisions` and `All runtime snapshot regression checks passed.`
@@ -3379,7 +3379,7 @@ These reference paths and names that were correct at the time. Pre-2026-05-02 en
 
 **Worktree directory** (`ElgatoCapture-Flashback/`) intentionally not renamed. The Flashback branch will eventually merge to main and replace it; the worktree-level rename will happen at that point to avoid double git plumbing churn.
 
-**Verification.** Full solution build (Sussudio + 3 tests + 4 standalone tools) — 0 warnings / 0 errors. Test runner — every PASS, including `ServiceNamespace.Tests` which asserts every renamed path and namespace. Runtime smoke: app launched, created `temp/logs/Sussudio_Debug.log` with new header `=== Sussudio Debug Log ===`, detected Elgato 4K X via NATIVEXU_AT, encoded 3063 Flashback frames to `C:\Users\crest\AppData\Local\Sussudio\Flashback\...`, closed cleanly with full subsystem teardown.
+**Verification.** Full solution build (Sussudio + 3 tests + 4 standalone tools) — 0 warnings / 0 errors. Test runner — every PASS, including `ServiceNamespace.Tests` which asserts every renamed path and namespace. Runtime smoke: app launched, created `temp/logs/Sussudio_Debug.log` with new header `=== Sussudio Debug Log ===`, detected Elgato 4K X via NATIVEXU_AT, encoded 3063 Flashback frames to `%LocalAppData%\Sussudio\Flashback\...`, closed cleanly with full subsystem teardown.
 
 **Safety net** (kept after rename): tag `pre-sussudio-rename` at commit `10b78b2`, branch `backup/pre-sussudio-rename` at same commit, zip backup at `../ElgatoCapture-Flashback-backup-2026-05-02-152452.zip`. Rollback: `git reset --hard pre-sussudio-rename`.
 
@@ -3526,7 +3526,7 @@ Each re-anchor (except state edges and SizeChanged) starts the new animation wit
 
 **Scope.** Verification-only pass closing the older static-only audit note for Flashback buffer dispose cleanup. The app was launched with Flashback active, allowed to create a non-empty live session, then closed through automation so `CaptureService` and `FlashbackBufferManager` disposed normally.
 
-**Verification.** Before close, `state --json` reported active segment `C:\Users\crest\AppData\Local\Sussudio\Flashback\bfc1c059e77e43d38b8cbd46bff2b132\fb_bfc1c059e77e43d38b8cbd46bff2b132_0000.ts`, `FlashbackDiskBytes=463865657`, `FlashbackEncodedFrames=1925`, and both the segment file and session directory existed. The automation close returned `Request canceled` because the pipe was torn down during shutdown, but process inspection immediately afterward showed no running `Sussudio` process. Filesystem inspection then showed `FileExistsAfter=false`, `SessionDirExistsAfter=false`, and `RemainingFiles=0` for that session directory. This confirms the dispose purge removes the active segment files and session directory instead of leaving multi-GB leftovers for stale-cache cleanup.
+**Verification.** Before close, `state --json` reported active segment `%LocalAppData%\Sussudio\Flashback\bfc1c059e77e43d38b8cbd46bff2b132\fb_bfc1c059e77e43d38b8cbd46bff2b132_0000.ts`, `FlashbackDiskBytes=463865657`, `FlashbackEncodedFrames=1925`, and both the segment file and session directory existed. The automation close returned `Request canceled` because the pipe was torn down during shutdown, but process inspection immediately afterward showed no running `Sussudio` process. Filesystem inspection then showed `FileExistsAfter=false`, `SessionDirExistsAfter=false`, and `RemainingFiles=0` for that session directory. This confirms the dispose purge removes the active segment files and session directory instead of leaving multi-GB leftovers for stale-cache cleanup.
 
 ## 2026-05-03 — HFR Flashback export-during-playback verification
 

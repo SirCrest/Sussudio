@@ -50,11 +50,9 @@ rules exist because past fixes on surface symptoms papered over deeper issues.
   `SetupBindings`). No x:Bind.
 - Append to `docs/experiment_log.md` when making investigative changes so
   future sessions see what was tried and why.
-- Working directory is already the repo root. Do not `cd` into it — triggers
-  unnecessary permission prompts.
-- Before editing, confirm worktree with `git rev-parse --show-toplevel`. This
-  is the **Flashback** worktree; the codebase is complex and worktree-specific
-  state matters.
+- Confirm the worktree with `git rev-parse --show-toplevel` before editing; this
+  repository has had multiple sibling worktrees and stale path assumptions are
+  easy to make.
 
 ## Tools
 
@@ -92,10 +90,6 @@ Logs: `temp/logs/Sussudio_Debug.log`
 
 ## Workflows
 
-- **"architect-team"** -> act as team lead yourself. Do NOT delegate the lead
-  role to a sub-agent. You create the team,
-  spawn teammates, coordinate phases, run builds, shut down the team. Primary
-  workflow for large implementation, refactor, and diagnostic tasks.
-- **Agent teams (general)** — use the latest Opus 1M on Max Effort for large
-  refactors. During research, overlapping agents are fine. During
-  implementation, ensure agents don't share files.
+- For large implementation, refactor, or diagnostic work, define the execution
+  contract first, keep file ownership clear, and run build/test validation before
+  handing work back.

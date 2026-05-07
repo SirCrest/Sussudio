@@ -263,8 +263,8 @@ Results:
 
 ## 2026-04-26 15:24 - Phase 0.5 live baseline run
 
-- Output directory: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_151540
-- Summary report: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_151540\summary.md
+- Output directory: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_151540
+- Summary report: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_151540\summary.md
 - App process: 81344
 - Scenario preview-only: captured
 - Scenario flashback-retention: captured
@@ -273,71 +273,71 @@ Results:
 
 ## 2026-04-26 15:38 - Phase 0.5 live baseline run
 
-- Output directory: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_153702
-- Summary report: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_153702\summary.md
+- Output directory: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_153702
+- Summary report: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_153702\summary.md
 - App process: 10500
 - Scenario flashback-recording: captured
 
 ## 2026-04-26 15:47 - Phase 0.5 live baseline run
 
-- Output directory: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_154626
-- Summary report: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_154626\summary.md
+- Output directory: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_154626
+- Summary report: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_154626\summary.md
 - App process: 71184
 - Scenario flashback-recording: captured
 
 ## 2026-04-26 16:06 - Phase 0.5 live baseline run
 
-- Output directory: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_160541
-- Summary report: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_160541\summary.md
+- Output directory: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_160541
+- Summary report: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_160541\summary.md
 - App process: 151352
 - Scenario flashback-recording: captured
 
 ## 2026-04-26 16:09 - Phase 0.5 live baseline run
 
-- Output directory: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_160832
-- Summary report: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_160832\summary.md
+- Output directory: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_160832
+- Summary report: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_160832\summary.md
 - App process: 67620
 - Scenario flashback-recording: captured
 
 ## 2026-04-26 16:14 - Phase 0.5 live baseline run
 
-- Output directory: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_161334
-- Summary report: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_161334\summary.md
+- Output directory: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_161334
+- Summary report: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_161334\summary.md
 - App process: 143712
 - Scenario flashback-recording: captured
 
 ## 2026-04-26 16:15 - Phase 0.5 live baseline run
 
-- Output directory: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_161451
-- Summary report: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_161451\summary.md
+- Output directory: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_161451
+- Summary report: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_161451\summary.md
 - App process: 28856
 - Scenario dedicated-libav-recording: captured
 
 ## 2026-04-26 16:18 - Phase 0.5 live baseline run
 
-- Output directory: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_161711
-- Summary report: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_161711\summary.md
+- Output directory: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_161711
+- Summary report: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_161711\summary.md
 - App process: 12540
 - Scenario dedicated-libav-recording: captured
 
 ## 2026-04-26 16:31 - Phase 0.5 live baseline run
 
-- Output directory: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_163053
-- Summary report: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_163053\summary.md
+- Output directory: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_163053
+- Summary report: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_163053\summary.md
 - App process: 20120
 - Scenario preview-only: captured
 
 ## 2026-04-26 16:40 - Phase 0.5 live baseline run
 
-- Output directory: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_164036
-- Summary report: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_164036\summary.md
+- Output directory: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_164036
+- Summary report: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_164036\summary.md
 - App process: 130400
 - Scenario preview-only: captured
 
 ## 2026-04-26 16:43 - Phase 0.5 live baseline run
 
-- Output directory: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_164311
-- Summary report: C:\Users\crest\source\repos\ElgatoCapture-Flashback\temp\capture-rewrite-baselines\20260426_164311\summary.md
+- Output directory: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_164311
+- Summary report: <repo>-Flashback\temp\capture-rewrite-baselines\20260426_164311\summary.md
 - App process: 50780
 - Scenario preview-only: captured
 

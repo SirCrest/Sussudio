@@ -31,6 +31,7 @@ Desktop.ini
 
 # Project specific
 *.log
+*.pcap
 
 # App packages (generated build artifacts)
 AppPackages/
@@ -44,20 +45,33 @@ latest-build/
 .claude/
 .claude-profile
 
+# Local agent/tooling state
+.agents/
+.codex/
+
 # All experimental/diagnostic artifacts (regenerable)
 artifacts/
+results/
+scorecard.png
 
 # Local temp artifacts from ad-hoc reliability/automation work
 .tmp*
 .dotnet/
+.dotnet-cli/
 .dotnet-cli-home/
+.dotnet_cli/
+.dotnet_cli_home/
 .tmp_dotnet_home/
 
 # Repo-local temp dumping ground (keep folder, ignore contents)
 temp/*
 !temp/.gitkeep
 Sussudio/ffmpeg/*.dll
+tools/PresentMon/*.exe
+tools/RtkIoShim/*.dll
+tools/RtkIoShim/*.exp
+tools/RtkIoShim/*.lib
+tools/RtkIoShim/*.obj
 .desloppify/
 .duat/
-.codex/skills/duat/
-presentmon-*.json
+presentmon*.json
