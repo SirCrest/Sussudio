@@ -344,6 +344,10 @@ static partial class Program
         AssertContains(sourceText, "options.CodecName.Contains(\"hevc\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(sourceText, "ffmpeg.av_opt_set_int(codecContext->priv_data, \"forced-idr\", 1, 0)");
         AssertContains(sourceText, "av_opt_set_int(forced-idr)");
+        AssertContains(sourceText, "TryMapSplitEncodeMode(options.SplitEncodeMode, out var splitEncodeMode)");
+        AssertContains(sourceText, "ffmpeg.av_opt_set_int(codecContext->priv_data, \"split_encode_mode\", splitEncodeMode, 0)");
+        AssertContains(sourceText, "splitEncodeMode is 2 or 3");
+        AssertContains(sourceText, "public string SplitEncodeMode { get; init; } = \"Auto\";");
         AssertDoesNotContain(sourceText, "\"repeat_headers\"");
         AssertContains(sourceText, "internal static IDisposable SuppressRecoverableSeekFfmpegLogs()");
         AssertContains(sourceText, "private static bool ShouldSuppressRecoverableSeekFfmpegLog(string message)");

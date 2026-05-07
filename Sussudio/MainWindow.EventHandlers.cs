@@ -54,6 +54,26 @@ public sealed partial class MainWindow
             }
         }, nameof(RefreshButton_Click));
     }
+    private void ApplyDeviceButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(async () =>
+        {
+            if (DeviceComboBox.SelectedItem is not CaptureDevice selectedDevice)
+            {
+                return;
+            }
+
+            ApplyDeviceButton.IsEnabled = false;
+            try
+            {
+                await ViewModel.ApplySelectedDeviceAsync(selectedDevice);
+            }
+            finally
+            {
+                UpdateDeviceApplyButtonState();
+            }
+        }, nameof(ApplyDeviceButton_Click));
+    }
     private void PreviewButton_Click(object sender, RoutedEventArgs e)
     {
         _ = RunUiEventHandlerAsync(async () =>

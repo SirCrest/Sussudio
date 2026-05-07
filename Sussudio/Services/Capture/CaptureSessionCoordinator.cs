@@ -307,10 +307,11 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         VideoQuality? quality = null,
         double? customBitrateMbps = null,
         string? nvencPreset = null,
+        string? splitEncodeMode = null,
         CancellationToken cancellationToken = default)
         => EnqueueAsync(
             CaptureCommandKind.CycleFlashbackEncoderSettings,
-            ct => _captureService.CycleFlashbackEncoderSettingsAsync(quality, customBitrateMbps, nvencPreset, ct),
+            ct => _captureService.CycleFlashbackEncoderSettingsAsync(quality, customBitrateMbps, nvencPreset, splitEncodeMode, ct),
             cancellationToken,
             coalesceLatest: true);
 

@@ -136,10 +136,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private bool _isVolumeFadingIn;
     private Storyboard? _entranceStoryboard;
     private Storyboard? _previewVolumeFadeStoryboard;
+    private Storyboard? _flashbackTimelineStoryboard;
     private bool _isSettingsShelfAnimating;
     private bool _isFlashbackTimelineAnimating;
     private bool _isFlashbackScrubbing;
     private TimeSpan? _lastScrubPointerPosition;
+    private bool _suppressFlashbackTimelineToggle;
     private bool _suppressFlashbackEnabledToggle;
     private bool _isFullScreen;
     private bool _isFullScreenTransitioning;
@@ -150,6 +152,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private bool _fullScreenControlsVisible;
     private DispatcherQueueTimer? _fullScreenAutoHideTimer;
     private bool _fullScreenPointerOverControls;
+    private Brush? _preFullScreenControlBarBackground;
+    private Brush? _preFullScreenFlashbackTimelineBackground;
     private const int FullScreenAutoHideDelayMs = 3000;
     private const double FullScreenHotZoneHeight = 150;
     private bool _captureSettingsNarrow;

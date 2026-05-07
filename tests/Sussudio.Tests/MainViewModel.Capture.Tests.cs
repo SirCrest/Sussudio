@@ -55,6 +55,19 @@ static partial class Program
         AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshRecordingFormatsAsync(), \"recording formats\");");
         AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshSplitEncodeModesAsync(), \"split encode modes\");");
 
+        var recordingFormatRefresh = ExtractMemberCode(settingsText, "RefreshRecordingFormatsAsync");
+        AssertContains(recordingFormatRefresh, "support.HasH264Nvenc");
+        AssertContains(recordingFormatRefresh, "support.HasHevcNvenc");
+        AssertContains(recordingFormatRefresh, "support.HasAv1Nvenc");
+        AssertDoesNotContain(recordingFormatRefresh, "support.HasAv1)");
+
+        var splitEncodeRefresh = ExtractMemberCode(settingsText, "RefreshSplitEncodeModesAsync");
+        AssertContains(splitEncodeRefresh, "if (!support.Supports2Way)");
+        AssertContains(splitEncodeRefresh, "modes.Remove(\"2-way\");");
+        AssertContains(splitEncodeRefresh, "if (!support.Supports3Way)");
+        AssertContains(splitEncodeRefresh, "modes.Remove(\"3-way\");");
+        AssertContains(splitEncodeRefresh, "SelectedSplitEncodeMode = \"Auto\";");
+
         var refreshDevices = ExtractMemberCode(deviceManagementText, "RefreshDevicesAsync");
         AssertContains(refreshDevices, "var audioDevicesTask = MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();");
         AssertContains(refreshDevices, "var devicesTask = _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);");
@@ -400,7 +413,12 @@ static partial class Program
         AssertMemberContains(automationText, "RestartFlashbackAsync", "_sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken)");
 
         AssertMemberContains(settingsText, "OnSelectedRecordingFormatChanged", "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),");
+        AssertMemberContains(settingsText, "OnSelectedRecordingFormatChanged", "_suppressFlashbackFormatCycle is false");
         AssertContains(rawSettingsText, "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),\n                \"recording format\");");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "private bool _suppressFlashbackFormatCycle;");
+        AssertMemberContains(automationText, "SetRecordingFormatAsync", "_suppressFlashbackFormatCycle = true;");
+        AssertMemberContains(automationText, "SetRecordingFormatAsync", "RecordingFormat.Av1Mp4");
+        AssertMemberContains(automationText, "SetRecordingFormatAsync", "await _sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
         AssertMemberContains(settingsText, "OnCustomBitrateMbpsChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(settingsText, "OnFlashbackBufferMinutesChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
         AssertMemberContains(settingsText, "OnFlashbackGpuDecodeChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
@@ -416,10 +434,15 @@ static partial class Program
         AssertContains(rawSettingsText, "RestartFlashbackAfterSettingsUpdate canceled");
         AssertMemberContains(settingsText, "OnSelectedQualityChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(settingsText, "OnSelectedPresetChanged", "TrackFlashbackEncoderSettingsCycle(");
+        AssertMemberContains(settingsText, "OnSelectedSplitEncodeModeChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "quality: ParseVideoQuality(SelectedQuality)");
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "customBitrateMbps: CustomBitrateMbps");
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "nvencPreset: SelectedPreset");
+        AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "splitEncodeMode: SelectedSplitEncodeMode");
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "TrackPendingFlashbackCycleTask(task, description);");
+        AssertMemberContains(automationText, "SetSplitEncodeModeAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
+        AssertMemberContains(automationText, "SetSplitEncodeModeAsync", "SplitEncodeMode: SelectedSplitEncodeMode");
+        AssertMemberContains(automationText, "SetSplitEncodeModeAsync", "splitEncodeMode: settings.SplitEncodeMode");
         AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "_pendingFlashbackCycleTask = task;");
         AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "if (ReferenceEquals(_pendingFlashbackCycleTask, t))");
         AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "_pendingFlashbackCycleTask = null;");
@@ -538,8 +561,12 @@ static partial class Program
         AssertContains(flashbackWindowText, "if (!IsUsableFlashbackTrackDimension(width) || !double.IsFinite(x))");
         AssertContains(flashbackWindowText, "private static bool IsUsableFlashbackTrackDimension(double value)\n        => double.IsFinite(value) && value > 0;");
         AssertContains(flashbackWindowText, "private static bool IsUsableFlashbackDuration(TimeSpan value)\n        => double.IsFinite(value.TotalSeconds) && value > TimeSpan.Zero;");
+        AssertContains(fullScreenWindowText, "if (ViewModel.IsFlashbackEnabled && FlashbackTimelinePanel.Visibility == Visibility.Visible)");
         AssertContains(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\")");
         AssertContains(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\")");
+        AssertContains(fullScreenWindowText, "var timelineVisibleAtExit = ShouldShowFlashbackTimeline();");
+        AssertContains(fullScreenWindowText, "private bool ShouldShowFlashbackTimeline()");
+        AssertContains(fullScreenWindowText, "return ViewModel.IsFlashbackEnabled && ViewModel.IsFlashbackTimelineVisible;");
         AssertContains(fullScreenWindowText, "var carriedPosition = _lastScrubPointerPosition;\n            Logger.Log($\"FLASHBACK_SCRUB_END_FULLSCREEN carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}\");");
         AssertContains(fullScreenWindowText, "var ended = carriedPosition.HasValue\n                ? ViewModel?.FlashbackEndScrubAt(carriedPosition.Value) ?? false\n                : ViewModel?.FlashbackEndScrub() ?? false;\n            if (!ended)");
         AssertContains(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"scrub end (fullscreen_enter)\", \"FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter\")");
@@ -555,8 +582,31 @@ static partial class Program
             .Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
+            .Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs")
+            .Replace("\r\n", "\n");
+        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
 
+        AssertContains(mainWindowText, "private bool _suppressFlashbackTimelineToggle;");
         AssertContains(mainWindowText, "private bool _suppressFlashbackEnabledToggle;");
+        AssertContains(mainWindowText, "private Storyboard? _flashbackTimelineStoryboard;");
+        AssertContains(viewModelText, "partial void OnIsFlashbackEnabledChanged(bool value)");
+        AssertContains(viewModelText, "IsFlashbackTimelineVisible = false;");
+        AssertContains(bindingsText, "FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;");
+        AssertContains(bindingsText, "ApplyFlashbackTimelineLockout();");
+        AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackEnabled):\n                ApplyFlashbackTimelineLockout();");
+        AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):\n                ApplyFlashbackTimelineVisibility(ViewModel.IsFlashbackTimelineVisible);");
+        AssertContains(flashbackWindowText, "if (!ViewModel.IsFlashbackEnabled)\n        {\n            ApplyFlashbackTimelineLockout();\n            return;\n        }");
+        AssertContains(flashbackWindowText, "ViewModel.IsFlashbackTimelineVisible = true;");
+        AssertContains(flashbackWindowText, "ViewModel.IsFlashbackTimelineVisible = false;");
+        AssertContains(flashbackWindowText, "private void ApplyFlashbackTimelineLockout()");
+        AssertContains(flashbackWindowText, "FlashbackToggle.IsEnabled = flashbackEnabled;");
+        AssertContains(flashbackWindowText, "FlashbackTimelinePanel.IsHitTestVisible = flashbackEnabled;");
+        AssertContains(flashbackWindowText, "SyncFlashbackTimelineToggle(isVisible: false);");
+        AssertContains(flashbackWindowText, "CollapseFlashbackTimelineImmediately();");
+        AssertContains(flashbackWindowText, "_flashbackTimelineStoryboard?.Stop();");
         AssertContains(flashbackWindowText, "if (_suppressFlashbackEnabledToggle)");
         AssertContains(flashbackWindowText, "var requestedEnabled = FlashbackEnabledToggle.IsOn;");
         AssertContains(flashbackWindowText, "ApplyFlashbackEnabledToggleAsync(requestedEnabled)");
@@ -802,9 +852,11 @@ static partial class Program
         AssertContains(encoderSettingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK");
         AssertContains(encoderSettingsChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
         AssertContains(encoderSettingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED");
+        AssertContains(encoderSettingsChange, "string? splitEncodeMode = null");
+        AssertContains(encoderSettingsChange, "_currentSettings.SplitEncodeMode = splitEncodeMode;");
         AssertContains(
             encoderSettingsChange,
-            "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} type={ex.GetType().Name} error='{ex.Message}'");
+            "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
 
         var formatChange = ExtractTextBetween(
             captureServiceText,
@@ -842,7 +894,6 @@ static partial class Program
             captureServiceText,
             "private FlashbackSessionContext CreateFlashbackSessionContext",
             "    private async Task EnsureFlashbackPreviewBackendAsync");
-        AssertContains(createFlashbackSessionContext, "var forceTransportStreamFlashback = UseTransportStreamFlashbackCodec(unifiedVideoCapture, settings, frameRate)");
         AssertContains(createFlashbackSessionContext, "var frameRateParts = ResolveFlashbackSessionFrameRateParts(settings, frameRate);");
         AssertContains(createFlashbackSessionContext, "frameRate = frameRateParts.EffectiveFrameRate;");
         AssertContains(createFlashbackSessionContext, "FrameRateNumerator = fpsNum");
@@ -852,8 +903,9 @@ static partial class Program
         AssertContains(captureServiceText, "FLASHBACK_FRAME_RATE_RATIONAL_REJECT");
         AssertContains(captureServiceText, "FLASHBACK_FRAME_RATE_RATIONAL_INFER");
         AssertContains(captureServiceText, "deltaFps > toleranceFps");
-        AssertContains(createFlashbackSessionContext, "? \"hevc_nvenc\"");
-        AssertContains(captureServiceText, "private static bool UseTransportStreamFlashbackCodec(");
+        AssertContains(createFlashbackSessionContext, "RecordingFormat.Av1Mp4 => \"av1_nvenc\"");
+        AssertContains(createFlashbackSessionContext, "AV1 recording requires the av1_nvenc encoder");
+        AssertDoesNotContain(createFlashbackSessionContext, "UseTransportStreamFlashbackCodec");
         AssertContains(captureServiceText, "settings.Format == RecordingFormat.Av1Mp4");
         AssertContains(captureServiceText, "private static string? ResolveFlashbackExportVerificationFormat(");
         AssertContains(captureServiceText, "forceRotateResult.Status == FlashbackForceRotateStatus.Failed");
@@ -866,20 +918,19 @@ static partial class Program
                 "if (segmentPaths.Count == 0)",
                 "// Fallback: single-file export if no segments available"),
             "force_rotate_failed");
-        AssertContains(captureServiceText, "? RecordingFormat.HevcMp4.ToString()");
-        AssertContains(createFlashbackSessionContext, "var flashbackNvencPreset = unifiedVideoCapture.IsSoftwareMjpegPipelineActive && frameRate >= 100");
-        AssertContains(createFlashbackSessionContext, "? \"Fast\"");
+        AssertDoesNotContain(captureServiceText, "? RecordingFormat.HevcMp4.ToString()");
+        AssertContains(createFlashbackSessionContext, "var flashbackNvencPreset = settings.NvencPreset;");
         AssertContains(createFlashbackSessionContext, "NvencPreset = flashbackNvencPreset");
-        // Silent codec/preset substitutions are surfaced via a one-shot log line and the
-        // automation snapshot. The log line must include enough context to reproduce.
-        AssertContains(createFlashbackSessionContext, "var downgradeReason = ResolveFlashbackCodecDowngradeReason(settings, unifiedVideoCapture);");
-        AssertContains(createFlashbackSessionContext, "FLASHBACK_CODEC_DOWNGRADE requested_format={settings.Format}");
-        AssertContains(createFlashbackSessionContext, "FLASHBACK_CODEC_DOWNGRADE_CLEARED");
+        AssertContains(createFlashbackSessionContext, "SplitEncodeMode = settings.SplitEncodeMode");
+        // Flashback must honor user codec/preset settings directly. The legacy snapshot
+        // field remains for compatibility, but the old silent AV1->HEVC path must stay gone.
+        AssertDoesNotContain(createFlashbackSessionContext, "FLASHBACK_CODEC_DOWNGRADE");
         AssertContains(captureServiceText, "private static string? ResolveFlashbackCodecDowngradeReason(");
-        AssertContains(captureServiceText, "AV1->HEVC: software MJPEG pipeline at");
-        AssertContains(captureServiceText, "NVENC preset '");
-        // Snapshot field must be populated from the resolver so downstream consumers
-        // (verifier, automation, UI) all observe the same downgrade state.
+        AssertContains(captureServiceText, "=> null;");
+        AssertDoesNotContain(captureServiceText, "AV1->HEVC: software MJPEG pipeline at");
+        AssertDoesNotContain(captureServiceText, "NVENC preset '");
+        // Snapshot field remains populated from the compatibility resolver so
+        // downstream consumers share the same no-downgrade contract.
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
         AssertContains(snapshotsText, "FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),");
@@ -891,8 +942,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
         AssertContains(automationDiagnosticsHubText, "FlashbackCodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason,");
-        AssertContains(captureServiceText, "var fbFileNameFormatOverride =");
-        AssertContains(captureServiceText, "FileNameFormatOverride = fbFileNameFormatOverride");
+        AssertDoesNotContain(captureServiceText, "var fbFileNameFormatOverride =");
+        AssertDoesNotContain(captureServiceText, "FileNameFormatOverride = fbFileNameFormatOverride");
         AssertContains(ensureFlashbackPreviewBackend, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
         AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_CANCELLED");
         AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_FAIL");

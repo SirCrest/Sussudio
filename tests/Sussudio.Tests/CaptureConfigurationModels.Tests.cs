@@ -361,6 +361,7 @@ static partial class Program
                 RequiredConfigProperty("IsP010", typeof(bool), ConfigSetterExpectation.InitOnly),
                 RequiredConfigString("CodecName", ConfigSetterExpectation.InitOnly),
                 ConfigString("NvencPreset", ConfigSetterExpectation.InitOnly, ConfigNullability.Nullable),
+                ConfigString("SplitEncodeMode", ConfigSetterExpectation.InitOnly, ConfigNullability.NotNull),
                 ConfigProperty("HdrEnabled", typeof(bool), ConfigSetterExpectation.InitOnly),
                 ConfigProperty("IsFullRangeInput", typeof(bool), ConfigSetterExpectation.InitOnly),
                 ConfigString("HdrMasterDisplayMetadata", ConfigSetterExpectation.InitOnly, ConfigNullability.Nullable),
@@ -428,6 +429,7 @@ static partial class Program
         SetPropertyOrBackingField(sessionContext, "IsP010", true);
         SetPropertyOrBackingField(sessionContext, "CodecName", "hevc_nvenc");
         SetPropertyOrBackingField(sessionContext, "NvencPreset", "P5");
+        SetPropertyOrBackingField(sessionContext, "SplitEncodeMode", "2-way");
         SetPropertyOrBackingField(sessionContext, "HdrEnabled", true);
         SetPropertyOrBackingField(sessionContext, "IsFullRangeInput", true);
         SetPropertyOrBackingField(sessionContext, "HdrMasterDisplayMetadata", "G(13250,34500)");
@@ -439,6 +441,7 @@ static partial class Program
         SetPropertyOrBackingField(sessionContext, "MicrophoneEnabled", true);
         AssertEqual(3840, GetIntProperty(sessionContext, "Width"), "FlashbackSessionContext.Width");
         AssertEqual("hevc_nvenc", GetStringProperty(sessionContext, "CodecName"), "FlashbackSessionContext.CodecName");
+        AssertEqual("2-way", GetStringProperty(sessionContext, "SplitEncodeMode"), "FlashbackSessionContext.SplitEncodeMode");
         AssertEqual(new IntPtr(456), (IntPtr)GetPropertyValue(sessionContext, "D3D11DeviceContextPtr")!, "FlashbackSessionContext.D3D11DeviceContextPtr");
 
         var progress = Activator.CreateInstance(exportProgressType, 3, 10, 30d)

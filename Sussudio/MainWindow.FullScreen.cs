@@ -48,7 +48,7 @@ public sealed partial class MainWindow
         }
 
         // Flashback keyboard shortcuts (only when timeline is visible)
-        if (FlashbackTimelinePanel.Visibility == Visibility.Visible)
+        if (ViewModel.IsFlashbackEnabled && FlashbackTimelinePanel.Visibility == Visibility.Visible)
         {
             switch (e.Key)
             {
@@ -147,6 +147,8 @@ public sealed partial class MainWindow
         // Move controls to the fullscreen overlay for VLC-style slide-up behavior.
         // The overlay floats above the preview at the bottom of the screen.
         var mainGrid = (Grid)Content;
+        PrepareFullScreenChromeForOverlay();
+        ApplyFullScreenChromeMaterials();
 
         // Always move the timeline to the overlay so the flashback toggle works in fullscreen.
         // Insert at index 0 so it stacks above the control bar.
@@ -233,7 +235,8 @@ public sealed partial class MainWindow
 
         // Move controls back to main grid (collapsed to avoid layout glitch during transition)
         var mainGrid = (Grid)Content;
-        var timelineVisibleAtExit = FlashbackTimelinePanel.Visibility == Visibility.Visible;
+        var timelineVisibleAtExit = ShouldShowFlashbackTimeline();
+        PrepareFullScreenChromeForOverlay();
         FullScreenControlsOverlay.Children.Remove(FlashbackTimelinePanel);
         FlashbackTimelinePanel.Visibility = Visibility.Collapsed;
         mainGrid.Children.Add(FlashbackTimelinePanel);
@@ -264,6 +267,7 @@ public sealed partial class MainWindow
 
         ControlBarBorder.Visibility = Visibility.Visible;
         ControlBarShadowHost.Visibility = Visibility.Visible;
+        RestoreWindowedChromeMaterials();
         if (_preFullScreenSettingsVisible)
         {
             SettingsOverlayPanel.Visibility = Visibility.Visible;
@@ -311,6 +315,58 @@ public sealed partial class MainWindow
             FadeInShadow(_videoShadowVisual, delayMs: 0, durationMs: 400);
         }
     }
+
+    private bool ShouldShowFlashbackTimeline()
+    {
+        return ViewModel.IsFlashbackEnabled && ViewModel.IsFlashbackTimelineVisible;
+    }
+
+    private void PrepareFullScreenChromeForOverlay()
+    {
+        _flashbackTimelineStoryboard?.Stop();
+        _flashbackTimelineStoryboard = null;
+        _isFlashbackTimelineAnimating = false;
+
+        ControlBarBorder.Opacity = 1;
+        if (ControlBarBorder.RenderTransform is TranslateTransform controlBarTranslate)
+        {
+            controlBarTranslate.Y = 0;
+        }
+
+        var showTimeline = ShouldShowFlashbackTimeline();
+        FlashbackTimelinePanel.Visibility = showTimeline ? Visibility.Visible : Visibility.Collapsed;
+        FlashbackTimelinePanel.Height = double.NaN;
+        FlashbackTimelinePanel.Opacity = 1;
+        FlashbackTimelinePanel.IsHitTestVisible = ViewModel.IsFlashbackEnabled;
+        SyncFlashbackTimelineToggle(showTimeline);
+    }
+
+    private void ApplyFullScreenChromeMaterials()
+    {
+        _preFullScreenControlBarBackground ??= ControlBarBorder.Background;
+        _preFullScreenFlashbackTimelineBackground ??= FlashbackTimelinePanel.Background;
+
+        ControlBarBorder.Background = new SolidColorBrush(
+            Windows.UI.Color.FromArgb(0xF2, 0x14, 0x14, 0x14));
+        FlashbackTimelinePanel.Background = new SolidColorBrush(
+            Windows.UI.Color.FromArgb(0xF2, 0x20, 0x20, 0x20));
+    }
+
+    private void RestoreWindowedChromeMaterials()
+    {
+        if (_preFullScreenControlBarBackground != null)
+        {
+            ControlBarBorder.Background = _preFullScreenControlBarBackground;
+            _preFullScreenControlBarBackground = null;
+        }
+
+        if (_preFullScreenFlashbackTimelineBackground != null)
+        {
+            FlashbackTimelinePanel.Background = _preFullScreenFlashbackTimelineBackground;
+            _preFullScreenFlashbackTimelineBackground = null;
+        }
+    }
+
     private void AnimateFullScreenRect(
         Windows.Foundation.Point prePos, double preW, double preH,
         Windows.Foundation.Point postPos, double postW, double postH,
@@ -486,6 +542,7 @@ public sealed partial class MainWindow
         var position = e.GetCurrentPoint((UIElement)Content).Position;
         var contentHeight = ((FrameworkElement)Content).ActualHeight;
         var inHotZone = position.Y >= contentHeight - FullScreenHotZoneHeight;
+        _fullScreenPointerOverControls = IsPointerWithinFullScreenControlsBand(position, contentHeight);
 
         if (!_fullScreenControlsVisible && inHotZone)
         {
@@ -503,15 +560,36 @@ public sealed partial class MainWindow
     private void OnFullScreenControlsPointerEntered(object sender, PointerRoutedEventArgs e)
     {
         _fullScreenPointerOverControls = true;
+        ResetFullScreenAutoHideTimer();
     }
 
     private void OnFullScreenControlsPointerExited(object sender, PointerRoutedEventArgs e)
     {
-        _fullScreenPointerOverControls = false;
+        var position = e.GetCurrentPoint((UIElement)Content).Position;
+        _fullScreenPointerOverControls = IsPointerWithinFullScreenControlsBand(position);
         if (!_isWindowClosing && _isFullScreen && _fullScreenControlsVisible)
         {
             ResetFullScreenAutoHideTimer();
         }
+    }
+
+    private bool IsPointerWithinFullScreenControlsBand(
+        Windows.Foundation.Point position,
+        double? contentHeight = null)
+    {
+        if (FullScreenControlsOverlay.Visibility != Visibility.Visible)
+        {
+            return false;
+        }
+
+        var height = FullScreenControlsOverlay.ActualHeight;
+        if (height <= 0)
+        {
+            return false;
+        }
+
+        var visibleContentHeight = contentHeight ?? ((FrameworkElement)Content).ActualHeight;
+        return position.Y >= visibleContentHeight - height - 8;
     }
 
     private void StartFullScreenAutoHideTimer()

@@ -27,11 +27,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);
-    private const double PlaybackAudioPrebufferTargetMs = 600.0;
-    private const double PlaybackAudioPrebufferDiscardThresholdMs = 900.0;
+    private const double PlaybackAudioPrebufferTargetMs = 180.0;
+    private const double PlaybackAudioPrebufferDiscardThresholdMs = 250.0;
     private const int PlaybackAudioPrebufferTimeoutMs = 1000;
     private const int PlaybackAudioPrebufferRetryDelayMs = 20;
-    private const int PlaybackAudioPrebufferMaxFrames = 96;
+    private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;
 
     // --- Command types marshalled to the playback thread ---
     private enum CommandKind
@@ -962,7 +962,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var fileOpen = false;
         var frozenValidStart = TimeSpan.Zero; // captured when leaving Live, used for position mapping
         TimeSpan? pendingExactResumeTarget = null;
-        var prebufferedFrames = new Queue<DecodedVideoFrame>(PlaybackAudioPrebufferMaxFrames);
+        var prebufferedFrames = new Queue<DecodedVideoFrame>();
 
         // Set 1ms timer resolution for accurate Thread.Sleep pacing.
         // Without this, Sleep(8) at 120fps sleeps ~15ms (default granularity) → half-speed.
@@ -2583,8 +2583,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var skippedForSoftwareBudget = false;
         var discarded = false;
         var rewound = false;
+        var prebufferReleasedFrames = 0;
 
-        while (prebufferedFrames.Count < PlaybackAudioPrebufferMaxFrames)
+        while (decodedFrames < PlaybackAudioPrebufferDecodeFrameBudget)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (audioPlayback.PlaybackBufferedDurationMs >= PlaybackAudioPrebufferTargetMs)
@@ -2620,8 +2621,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 continue;
             }
 
-            prebufferedFrames.Enqueue(frame);
             decodedFrames++;
+            ReleaseHeldFrameBestEffort(frame, $"audio_prebuffer_{operation}");
+            prebufferReleasedFrames++;
 
             if (Stopwatch.GetElapsedTime(start).TotalMilliseconds >= PlaybackAudioPrebufferTimeoutMs)
             {
@@ -2645,13 +2647,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
             bufferedMs = audioPlayback.PlaybackBufferedDurationMs;
             discarded = true;
+        }
+
+        if (decodedFrames > 0)
+        {
             rewound = TryRewindPlaybackAudioPrebuffer(decoder, ref fileOpen, resumeTarget, operation, cancellationToken);
         }
 
         if (logResult || timedOut || reachedEnd || skippedForSoftwareBudget)
         {
             Logger.Log(
-                $"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER operation={operation} frames={decodedFrames} buffered_ms={bufferedMs:F1} target_ms={PlaybackAudioPrebufferTargetMs:F1} discard_threshold_ms={PlaybackAudioPrebufferDiscardThresholdMs:F1} elapsed_ms={Stopwatch.GetElapsedTime(start).TotalMilliseconds:F1} timed_out={timedOut} eos={reachedEnd} eof_retries={eofRetries} software_budget={skippedForSoftwareBudget} discarded={discarded} rewound={rewound}");
+                $"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER operation={operation} frames={decodedFrames} released_frames={prebufferReleasedFrames} buffered_ms={bufferedMs:F1} target_ms={PlaybackAudioPrebufferTargetMs:F1} discard_threshold_ms={PlaybackAudioPrebufferDiscardThresholdMs:F1} elapsed_ms={Stopwatch.GetElapsedTime(start).TotalMilliseconds:F1} timed_out={timedOut} eos={reachedEnd} eof_retries={eofRetries} software_budget={skippedForSoftwareBudget} discarded={discarded} rewound={rewound}");
         }
     }
 

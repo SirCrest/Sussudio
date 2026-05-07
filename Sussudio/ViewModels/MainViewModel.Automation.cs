@@ -847,9 +847,9 @@ public partial class MainViewModel
         }, cancellationToken);
     }
 
-    public Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)
+    public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        var recordingFormat = await InvokeOnUiThreadAsync(() =>
         {
             var matched = AvailableRecordingFormats.FirstOrDefault(value =>
                 string.Equals(value, format, StringComparison.OrdinalIgnoreCase));
@@ -862,9 +862,26 @@ public partial class MainViewModel
                 throw new InvalidOperationException("HDR recording requires HEVC or AV1 (10-bit).");
             }
 
-            SelectedRecordingFormat = matched;
-            return Task.CompletedTask;
-        }, cancellationToken);
+            _suppressFlashbackFormatCycle = true;
+            try
+            {
+                SelectedRecordingFormat = matched;
+            }
+            finally
+            {
+                _suppressFlashbackFormatCycle = false;
+            }
+
+            return matched switch
+            {
+                "HEVC" => RecordingFormat.HevcMp4,
+                "AV1" => RecordingFormat.Av1Mp4,
+                _ => RecordingFormat.H264Mp4
+            };
+        }, cancellationToken).ConfigureAwait(false);
+
+        await _sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public async Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)
@@ -895,13 +912,13 @@ public partial class MainViewModel
                 quality: settings.Quality,
                 customBitrateMbps: settings.Bitrate,
                 nvencPreset: settings.Preset,
-                cancellationToken)
+                cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 
-    public Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)
+    public async Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        var settings = await InvokeOnUiThreadAsync(() =>
         {
             var matched = AvailableSplitEncodeModes.FirstOrDefault(value =>
                 string.Equals(value, splitEncodeMode, StringComparison.OrdinalIgnoreCase));
@@ -910,9 +927,26 @@ public partial class MainViewModel
                 throw new InvalidOperationException($"Split encode mode '{splitEncodeMode}' is not available.");
             }
 
-            SelectedSplitEncodeMode = matched;
-            return Task.CompletedTask;
-        }, cancellationToken);
+            _suppressFlashbackEncoderSettingsCycle = true;
+            try
+            {
+                SelectedSplitEncodeMode = matched;
+            }
+            finally
+            {
+                _suppressFlashbackEncoderSettingsCycle = false;
+            }
+
+            return (Quality: ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset, SplitEncodeMode: SelectedSplitEncodeMode);
+        }, cancellationToken).ConfigureAwait(false);
+
+        await _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
+                quality: settings.Quality,
+                customBitrateMbps: settings.Bitrate,
+                nvencPreset: settings.Preset,
+                splitEncodeMode: settings.SplitEncodeMode,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)
@@ -1037,7 +1071,7 @@ public partial class MainViewModel
                 quality: settings.Quality,
                 customBitrateMbps: settings.Bitrate,
                 nvencPreset: settings.Preset,
-                cancellationToken)
+                cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -1062,7 +1096,7 @@ public partial class MainViewModel
                 quality: settings.Quality,
                 customBitrateMbps: settings.Bitrate,
                 nvencPreset: settings.Preset,
-                cancellationToken)
+                cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 

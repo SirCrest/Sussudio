@@ -59,7 +59,7 @@ public partial class MainViewModel
         // a rapid codec→resolution change sequence can race: the codec cycle
         // holds the session transition lock while the reinit tries to acquire it,
         // causing the reinit to read stale settings or fail silently.
-        if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
+        if (IsPreviewing && !IsRecording && _isLoadingSettings is false && _suppressFlashbackFormatCycle is false)
         {
             var format = value switch
             {
@@ -263,17 +263,17 @@ public partial class MainViewModel
         var support = await FfmpegRuntimeLocator.GetEncoderSupportAsync();
         var formats = new List<string>();
 
-        if (support.HasH264)
+        if (support.HasH264Nvenc)
         {
             formats.Add("H.264");
         }
 
-        if (support.HasHevc)
+        if (support.HasHevcNvenc)
         {
             formats.Add("HEVC");
         }
 
-        if (support.HasAv1)
+        if (support.HasAv1Nvenc)
         {
             formats.Add("AV1");
         }
@@ -307,8 +307,16 @@ public partial class MainViewModel
 
     private async Task RefreshSplitEncodeModesAsync()
     {
-        var support = await FfmpegRuntimeLocator.GetSplitEncodeSupportAsync();
         var modes = new List<string> { "Auto", "Disabled", "2-way", "3-way" };
+        var support = await FfmpegRuntimeLocator.GetSplitEncodeSupportAsync();
+        if (!support.Supports2Way)
+        {
+            modes.Remove("2-way");
+        }
+        if (!support.Supports3Way)
+        {
+            modes.Remove("3-way");
+        }
 
         void ApplyModes()
         {
@@ -317,6 +325,13 @@ public partial class MainViewModel
             {
                 AvailableSplitEncodeModes.Add(mode);
             }
+
+            if (!AvailableSplitEncodeModes.Contains(SelectedSplitEncodeMode))
+            {
+                SelectedSplitEncodeMode = "Auto";
+            }
+
+            Logger.Log($"Split encode modes refreshed: {string.Join(", ", AvailableSplitEncodeModes)}");
         }
 
         if (_dispatcherQueue.HasThreadAccess)
@@ -425,7 +440,8 @@ public partial class MainViewModel
         var task = _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
             quality: ParseVideoQuality(SelectedQuality),
             customBitrateMbps: CustomBitrateMbps,
-            nvencPreset: SelectedPreset);
+            nvencPreset: SelectedPreset,
+            splitEncodeMode: SelectedSplitEncodeMode);
         TrackPendingFlashbackCycleTask(task, description);
     }
 
@@ -492,5 +508,11 @@ public partial class MainViewModel
     partial void OnSelectedSplitEncodeModeChanged(string value)
     {
         SaveSettings();
+
+        // Cycle the flashback encoder so the buffer uses the new split mode.
+        if (IsPreviewing && !IsRecording && _isLoadingSettings is false && _suppressFlashbackEncoderSettingsCycle is false)
+        {
+            TrackFlashbackEncoderSettingsCycle("split encode");
+        }
     }
 }

@@ -131,10 +131,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private long _flashbackExportId;
     private string _flashbackExportStatus = "NotStarted";
     private string _flashbackExportOutputPath = string.Empty;
-    // Tracks the most recent codec-downgrade reason logged so we don't spam the
-    // FLASHBACK_CODEC_DOWNGRADE message every time CreateFlashbackSessionContext
-    // is rebuilt with the same inputs. Reset to null when conditions clear.
-    private string? _lastLoggedFlashbackDowngradeReason;
     private long _flashbackExportStartedUtcUnixMs;
     private long _flashbackExportLastProgressUtcUnixMs;
     private long _flashbackExportCompletedUtcUnixMs;
@@ -460,7 +456,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     /// <summary>
     /// Cycles the flashback encoder when encoder-affecting settings change
-    /// (bitrate, quality, preset). Updates <see cref="_currentSettings"/> and
+    /// (bitrate, quality, preset, split encode). Updates <see cref="_currentSettings"/> and
     /// restarts the flashback buffer so new recordings use the updated params.
     /// No-op if not previewing or recording is active.
     /// </summary>
@@ -468,6 +464,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         VideoQuality? quality = null,
         double? customBitrateMbps = null,
         string? nvencPreset = null,
+        string? splitEncodeMode = null,
         CancellationToken cancellationToken = default)
         => RunTransitionAsync(_sessionState, async transitionToken =>
         {
@@ -488,6 +485,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (nvencPreset != null && !string.Equals(nvencPreset, _currentSettings.NvencPreset, StringComparison.OrdinalIgnoreCase))
             {
                 _currentSettings.NvencPreset = nvencPreset;
+                changed = true;
+            }
+            if (splitEncodeMode != null && !string.Equals(splitEncodeMode, _currentSettings.SplitEncodeMode, StringComparison.OrdinalIgnoreCase))
+            {
+                _currentSettings.SplitEncodeMode = splitEncodeMode;
                 changed = true;
             }
 
@@ -511,24 +513,24 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 }
                 catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
                 {
-                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} type={ex.GetType().Name} error='{ex.Message}'");
+                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
                     throw;
                 }
                 catch (Exception ex)
                 {
                     cycleFailed = true;
-                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} type={ex.GetType().Name} error='{ex.Message}'");
+                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
                 }
             }
 
             if (!cycleFailed)
             {
-                Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_OK quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} cycled={cycledBuffer}");
+                Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_OK quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} cycled={cycledBuffer}");
             }
             else
             {
                 _currentSettings = previousSettings;
-                Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset}");
+                Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode}");
             }
         }, cancellationToken);
 
@@ -1956,18 +1958,22 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         CaptureSettings settings)
     {
         var isP010 = unifiedVideoCapture.IsP010;
-        // Flashback requires real-time hardware encoding. For AV1, fall back to
-        // HEVC NVENC if av1_nvenc isn't available (the UI enables AV1 when any
-        // AV1 encoder is present, including software-only like libsvtav1).
         var frameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
-        var forceTransportStreamFlashback = UseTransportStreamFlashbackCodec(unifiedVideoCapture, settings, frameRate);
-        var codecName = forceTransportStreamFlashback
-            ? "hevc_nvenc"
-            : settings.Format switch
+        if (isP010 && settings.Format == RecordingFormat.H264Mp4)
+        {
+            throw new InvalidOperationException("HDR/P010 recording requires HEVC or AV1; H.264 cannot encode this pipeline.");
+        }
+
+        if (settings.Format == RecordingFormat.Av1Mp4 && !_hasAv1Nvenc)
+        {
+            throw new InvalidOperationException("AV1 recording requires the av1_nvenc encoder, but it is not available.");
+        }
+
+        var codecName = settings.Format switch
         {
             RecordingFormat.HevcMp4 => "hevc_nvenc",
-            RecordingFormat.Av1Mp4 => _hasAv1Nvenc ? "av1_nvenc" : "hevc_nvenc",
-            _ => isP010 ? "hevc_nvenc" : "h264_nvenc" // H264 can't encode P010
+            RecordingFormat.Av1Mp4 => "av1_nvenc",
+            _ => "h264_nvenc"
         };
         var audioDeviceId = settings.AudioEnabled
             ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice?.AudioDeviceId))
@@ -1984,9 +1990,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         var fpsNum = frameRateParts.Numerator;
         var fpsDen = frameRateParts.Denominator;
 
-        var flashbackNvencPreset = unifiedVideoCapture.IsSoftwareMjpegPipelineActive && frameRate >= 100
-            ? "Fast"
-            : settings.NvencPreset;
+        var flashbackNvencPreset = settings.NvencPreset;
 
         // Hard rail: HDR must never silently degrade. If the user requested HDR
         // but UVC negotiation did not land on P010, fail the operation rather than
@@ -2001,30 +2005,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 "Operation aborted to prevent silent HDR degradation.");
         }
 
-        // One-shot downgrade visibility. The codec/preset substitutions above happen
-        // silently inside the encoder pipeline; without a log line the user has no
-        // way to know they did not get the AV1/quality preset they configured. Emit
-        // when the resolved reason changes so we don't spam every flashback restart
-        // with the identical message.
-        var downgradeReason = ResolveFlashbackCodecDowngradeReason(settings, unifiedVideoCapture);
-        if (!string.IsNullOrEmpty(downgradeReason) &&
-            !string.Equals(downgradeReason, _lastLoggedFlashbackDowngradeReason, StringComparison.Ordinal))
-        {
-            Logger.Log(
-                $"FLASHBACK_CODEC_DOWNGRADE requested_format={settings.Format} resolved_codec={codecName} requested_preset={settings.NvencPreset} resolved_preset={flashbackNvencPreset} frame_rate={frameRate:0.###} software_mjpeg={unifiedVideoCapture.IsSoftwareMjpegPipelineActive} reason='{downgradeReason}'");
-            _lastLoggedFlashbackDowngradeReason = downgradeReason;
-        }
-        else if (string.IsNullOrEmpty(downgradeReason) &&
-                 !string.IsNullOrEmpty(_lastLoggedFlashbackDowngradeReason))
-        {
-            // Capture conditions changed — e.g. user dropped from 120fps to 60fps —
-            // and the prior downgrade no longer applies. Surface that too so the log
-            // tells a coherent story across reinit cycles.
-            Logger.Log(
-                $"FLASHBACK_CODEC_DOWNGRADE_CLEARED requested_format={settings.Format} resolved_codec={codecName} resolved_preset={flashbackNvencPreset} frame_rate={frameRate:0.###}");
-            _lastLoggedFlashbackDowngradeReason = null;
-        }
-
         return new FlashbackSessionContext
         {
             Width = Math.Max(1, unifiedVideoCapture.Width),
@@ -2034,6 +2014,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             FrameRateDenominator = fpsDen,
             CodecName = codecName,
             NvencPreset = flashbackNvencPreset,
+            SplitEncodeMode = settings.SplitEncodeMode,
             IsP010 = isP010,
             BitRate = settings.GetTargetBitrate(),
             HdrEnabled = hdrRequested,
@@ -2047,15 +2028,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             MicrophoneEnabled = settings.MicrophoneEnabled && !string.IsNullOrWhiteSpace(settings.MicrophoneDeviceId)
         };
     }
-
-    private static bool UseTransportStreamFlashbackCodec(
-        UnifiedVideoCapture unifiedVideoCapture,
-        CaptureSettings settings,
-        double frameRate)
-        =>
-            unifiedVideoCapture.IsSoftwareMjpegPipelineActive &&
-            frameRate >= 100 &&
-            settings.Format == RecordingFormat.Av1Mp4;
 
     private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(
         CaptureSettings settings,
@@ -2141,54 +2113,17 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private static string? ResolveFlashbackExportVerificationFormat(
         CaptureSettings? settings,
         UnifiedVideoCapture? unifiedVideoCapture)
-    {
-        if (settings == null || unifiedVideoCapture == null)
-        {
-            return settings?.Format.ToString();
-        }
-
-        var frameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
-        return UseTransportStreamFlashbackCodec(unifiedVideoCapture, settings, frameRate)
-            ? RecordingFormat.HevcMp4.ToString()
-            : settings.Format.ToString();
-    }
+        => settings?.Format.ToString();
 
     /// <summary>
-    /// Surfaces silent flashback codec/encoder substitutions so the verifier, automation
-    /// snapshot, and (eventually) the UI can show what was actually encoded vs what the
-    /// user requested. Returns null when user settings are honored as-is.
+    /// Flashback recording honors the requested codec and preset directly. This legacy
+    /// snapshot field remains for compatibility and should stay null unless a future
+    /// explicit, user-visible substitution is introduced.
     /// </summary>
     private static string? ResolveFlashbackCodecDowngradeReason(
         CaptureSettings? settings,
         UnifiedVideoCapture? unifiedVideoCapture)
-    {
-        if (settings == null || unifiedVideoCapture == null)
-        {
-            return null;
-        }
-
-        var frameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
-        var codecDowngraded = UseTransportStreamFlashbackCodec(unifiedVideoCapture, settings, frameRate);
-        var presetCoerced = unifiedVideoCapture.IsSoftwareMjpegPipelineActive
-            && frameRate >= 100
-            && !string.Equals(settings.NvencPreset, "Fast", StringComparison.OrdinalIgnoreCase);
-
-        if (!codecDowngraded && !presetCoerced)
-        {
-            return null;
-        }
-
-        var parts = new List<string>(2);
-        if (codecDowngraded)
-        {
-            parts.Add($"AV1->HEVC: software MJPEG pipeline at {frameRate:0.#}fps cannot encode AV1 in real time");
-        }
-        if (presetCoerced)
-        {
-            parts.Add($"NVENC preset '{settings.NvencPreset}'->'Fast' to keep up with software MJPEG decode at {frameRate:0.#}fps");
-        }
-        return string.Join("; ", parts);
-    }
+        => null;
 
     private async Task EnsureFlashbackPreviewBackendAsync(
         UnifiedVideoCapture unifiedVideoCapture,
@@ -3820,6 +3755,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                current.Quality == next.Quality &&
                Math.Abs(current.CustomBitrateMbps - next.CustomBitrateMbps) < 0.01 &&
                string.Equals(current.NvencPreset, next.NvencPreset, StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(current.SplitEncodeMode, next.SplitEncodeMode, StringComparison.OrdinalIgnoreCase) &&
                current.AudioEnabled == next.AudioEnabled &&
                current.MicrophoneEnabled == next.MicrophoneEnabled &&
                current.FlashbackBufferMinutes == next.FlashbackBufferMinutes &&
@@ -3989,11 +3925,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     transitionToken.ThrowIfCancellationRequested();
 
                     var fbEffectiveFrameRate = _unifiedVideoCapture?.Fps > 0 ? _unifiedVideoCapture.Fps : settings.FrameRate;
-                    var fbFileNameFormatOverride =
-                        _unifiedVideoCapture != null &&
-                        UseTransportStreamFlashbackCodec(_unifiedVideoCapture, settings, fbEffectiveFrameRate)
-                            ? RecordingFormat.HevcMp4
-                            : (RecordingFormat?)null;
                     var fbRecordingContext = await _artifactManager.CreateContextAsync(
                         fbOutputFolder,
                         new RecordingContextRequest
@@ -4010,8 +3941,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                             EffectiveHeight = _actualHeight ?? settings.Height,
                             VideoInputPixelFormat = _unifiedVideoCapture?.IsP010 == true ? "p010le" : "nv12",
                             IsFullRangeInput = _unifiedVideoCapture?.IsSoftwareMjpegPipelineActive == true,
-                            GpuHandles = GpuPipelineHandles.None,
-                            FileNameFormatOverride = fbFileNameFormatOverride
+                            GpuHandles = GpuPipelineHandles.None
                         }).ConfigureAwait(false);
                     recordingContext = fbRecordingContext;
 

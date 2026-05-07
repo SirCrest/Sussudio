@@ -790,10 +790,13 @@ static partial class Program
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"play\", [\"positionMs\"] = 1000 }");
         AssertContains(diagnosticSessionText, "flashback playback started at 1000ms");
         AssertContains(diagnosticSessionText, "flashback playback returned live");
-        AssertContains(diagnosticSessionText, "ValidateFlashbackPlaybackSession(playbackSessionMetrics.Observed ? playbackEndSnapshot : lastSnapshot, playbackSessionMetrics, durationSeconds, warnings);");
+        AssertContains(diagnosticSessionText, "ValidateFlashbackPlaybackSession(");
+        AssertContains(diagnosticSessionText, "visualCadenceMetrics,");
         AssertContains(diagnosticSessionText, "private static void ValidateFlashbackPlaybackSession(");
         AssertContains(diagnosticSessionText, "flashback playback: no playback frames were observed");
-        AssertContains(diagnosticSessionText, "var frameCount = metrics.EndSessionFrameCount;");
+        AssertContains(diagnosticSessionText, "var frameCount = Math.Max(metrics.EndSessionFrameCount, metrics.MaxSessionFrameCountObserved);");
+        AssertContains(diagnosticSessionText, "var visualCadenceHealthy = IsVisualCadenceSessionHealthy(visualCadenceMetrics, targetFps);");
+        AssertContains(diagnosticSessionText, "if (!visualCadenceHealthy &&");
         AssertContains(diagnosticSessionText, "GetResetAwareCounterDelta(");
         AssertContains(diagnosticSessionText, "public JsonElement BaselineSnapshot { get; init; }");
         AssertContains(diagnosticSessionText, "public long EndSessionFrameCount { get; set; }");

@@ -188,6 +188,7 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.IsPreviewReinitializing):
+                UpdateDeviceApplyButtonState();
                 if (!ViewModel.IsPreviewReinitializing && _isPreviewReinitAnimating)
                 {
                     if (!ViewModel.IsPreviewing)
@@ -267,6 +268,7 @@ public sealed partial class MainWindow
                 TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
                 // Stats panel always visible — shows "--" when not recording
                 RefreshHdrHintText();
+                UpdateDeviceApplyButtonState();
                 if (ViewModel.IsRecording)
                     RecPulseStoryboard.Begin();
                 else
@@ -310,6 +312,7 @@ public sealed partial class MainWindow
                         $"DEVICE_SELECTION_SYNC viewModel='{ViewModel.SelectedDevice?.Name ?? "NULL"}' combo='{selectedDevice?.Name ?? "NULL"}' devices={ViewModel.Devices.Count} comboItems={DeviceComboBox.Items.Count}");
                 }
                 EnsureDeviceSelection();
+                UpdateDeviceApplyButtonState();
                 break;
 
             case nameof(MainViewModel.SelectedResolution):
@@ -553,10 +556,11 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.IsFlashbackTimelineVisible):
-                if (ViewModel.IsFlashbackTimelineVisible)
-                    AnimateFlashbackTimeline(show: true);
-                else
-                    AnimateFlashbackTimeline(show: false);
+                ApplyFlashbackTimelineVisibility(ViewModel.IsFlashbackTimelineVisible);
+                break;
+
+            case nameof(MainViewModel.IsFlashbackEnabled):
+                ApplyFlashbackTimelineLockout();
                 break;
 
             case nameof(MainViewModel.FlashbackState):

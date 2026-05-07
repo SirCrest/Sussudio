@@ -64,6 +64,8 @@ public sealed partial class MainWindow
         {
             DeviceComboBox.SelectedItem = matchingDevice;
         }
+
+        UpdateDeviceApplyButtonState();
     }
     private void EnsureAudioInputSelection()
     {
@@ -346,8 +348,9 @@ public sealed partial class MainWindow
         ViewModel.MicrophoneMeterActivated += EnsureAudioMeterTimerRunning;
 
         // Flashback defaults (set in code-behind to avoid XAML parse issues with Toggled handler)
-        FlashbackEnabledToggle.IsOn = true;
+        FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;
         FlashbackGpuDecodeToggle.IsOn = ViewModel.FlashbackGpuDecode;
+        ApplyFlashbackTimelineLockout();
         // Sync buffer duration combo to saved setting
         foreach (ComboBoxItem item in FlashbackBufferDurationCombo.Items)
         {
@@ -522,11 +525,7 @@ public sealed partial class MainWindow
         // Wire up selection changes with loop prevention
         DeviceComboBox.SelectionChanged += (s, e) =>
         {
-            if (DeviceComboBox.SelectedItem != null &&
-                DeviceComboBox.SelectedItem != ViewModel.SelectedDevice)
-            {
-                ViewModel.SelectedDevice = (Sussudio.Models.CaptureDevice)DeviceComboBox.SelectedItem;
-            }
+            UpdateDeviceApplyButtonState();
         };
 
         AudioInputComboBox.SelectionChanged += (s, e) =>
@@ -930,6 +929,30 @@ public sealed partial class MainWindow
 
         return ViewModel.SelectedFrameRate;
     }
+
+    private bool HasPendingDeviceSelection()
+    {
+        if (DeviceComboBox.SelectedItem is not CaptureDevice selectedDevice)
+        {
+            return false;
+        }
+
+        return !string.Equals(selectedDevice.Id, ViewModel.SelectedDevice?.Id, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void UpdateDeviceApplyButtonState()
+    {
+        if (ApplyDeviceButton == null)
+        {
+            return;
+        }
+
+        ApplyDeviceButton.IsEnabled =
+            HasPendingDeviceSelection() &&
+            !ViewModel.IsRecording &&
+            !ViewModel.IsPreviewReinitializing;
+    }
+
     private void DecoderCountComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (DecoderCountComboBox.SelectedItem is int count)

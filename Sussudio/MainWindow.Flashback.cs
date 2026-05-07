@@ -40,6 +40,8 @@ public sealed partial class MainWindow
     #region Flashback Timeline
     private void AnimateFlashbackTimeline(bool show)
     {
+        _flashbackTimelineStoryboard?.Stop();
+        _flashbackTimelineStoryboard = null;
         _isFlashbackTimelineAnimating = true;
         if (show)
         {
@@ -92,7 +94,15 @@ public sealed partial class MainWindow
         storyboard.Children.Add(fade);
         storyboard.Completed += (_, _) =>
         {
-            if (show)
+            if (!ReferenceEquals(_flashbackTimelineStoryboard, storyboard))
+            {
+                return;
+            }
+
+            var shouldRemainVisible = show &&
+                                      ViewModel.IsFlashbackEnabled &&
+                                      ViewModel.IsFlashbackTimelineVisible;
+            if (shouldRemainVisible)
             {
                 FlashbackTimelinePanel.Height = double.NaN;
                 FlashbackTimelinePanel.Opacity = 1;
@@ -103,23 +113,117 @@ public sealed partial class MainWindow
                 FlashbackTimelinePanel.Height = double.NaN;
                 FlashbackTimelinePanel.Opacity = 1;
             }
+            _flashbackTimelineStoryboard = null;
             _isFlashbackTimelineAnimating = false;
         };
+        _flashbackTimelineStoryboard = storyboard;
         storyboard.Begin();
     }
     private DispatcherQueueTimer? _flashbackStatusTimer;
     private DispatcherQueueTimer? _flashbackPlaybackTimer; // 30Hz position poll for smooth CTI during playback
     private void FlashbackToggle_Checked(object sender, RoutedEventArgs e)
     {
-        if (!_isFlashbackTimelineAnimating)
-            AnimateFlashbackTimeline(show: true);
-        StartFlashbackStatusPolling();
+        if (_suppressFlashbackTimelineToggle)
+        {
+            return;
+        }
+
+        if (!ViewModel.IsFlashbackEnabled)
+        {
+            ApplyFlashbackTimelineLockout();
+            return;
+        }
+
+        ViewModel.IsFlashbackTimelineVisible = true;
     }
     private void FlashbackToggle_Unchecked(object sender, RoutedEventArgs e)
     {
-        if (!_isFlashbackTimelineAnimating)
-            AnimateFlashbackTimeline(show: false);
+        if (_suppressFlashbackTimelineToggle)
+        {
+            return;
+        }
+
+        ViewModel.IsFlashbackTimelineVisible = false;
+    }
+
+    private void ApplyFlashbackTimelineVisibility(bool show)
+    {
+        if (show && !ViewModel.IsFlashbackEnabled)
+        {
+            ViewModel.IsFlashbackTimelineVisible = false;
+            show = false;
+        }
+
+        SyncFlashbackTimelineToggle(show);
+        FlashbackToggle.IsEnabled = ViewModel.IsFlashbackEnabled;
+        FlashbackTimelinePanel.IsHitTestVisible = ViewModel.IsFlashbackEnabled;
+
+        if (show)
+        {
+            if (!_isFlashbackTimelineAnimating && FlashbackTimelinePanel.Visibility != Visibility.Visible)
+            {
+                AnimateFlashbackTimeline(show: true);
+            }
+            StartFlashbackStatusPolling();
+            return;
+        }
+
         StopFlashbackStatusPolling();
+        if (!_isFlashbackTimelineAnimating && FlashbackTimelinePanel.Visibility != Visibility.Collapsed)
+        {
+            AnimateFlashbackTimeline(show: false);
+        }
+    }
+
+    private void ApplyFlashbackTimelineLockout()
+    {
+        var flashbackEnabled = ViewModel.IsFlashbackEnabled;
+        FlashbackToggle.IsEnabled = flashbackEnabled;
+        FlashbackTimelinePanel.IsHitTestVisible = flashbackEnabled;
+        if (flashbackEnabled)
+        {
+            return;
+        }
+
+        if (ViewModel.IsFlashbackTimelineVisible)
+        {
+            ViewModel.IsFlashbackTimelineVisible = false;
+        }
+
+        SyncFlashbackTimelineToggle(isVisible: false);
+        StopFlashbackStatusPolling();
+        _isFlashbackScrubbing = false;
+        _lastScrubUpdateTick = 0;
+        _lastScrubPointerPosition = null;
+        CollapseFlashbackTimelineImmediately();
+    }
+
+    private void SyncFlashbackTimelineToggle(bool isVisible)
+    {
+        if (FlashbackToggle.IsChecked == isVisible)
+        {
+            return;
+        }
+
+        _suppressFlashbackTimelineToggle = true;
+        try
+        {
+            FlashbackToggle.IsChecked = isVisible;
+        }
+        finally
+        {
+            _suppressFlashbackTimelineToggle = false;
+        }
+    }
+
+    private void CollapseFlashbackTimelineImmediately()
+    {
+        _flashbackTimelineStoryboard?.Stop();
+        _flashbackTimelineStoryboard = null;
+        _isFlashbackTimelineAnimating = false;
+        FlashbackTimelinePanel.Visibility = Visibility.Collapsed;
+        FlashbackTimelinePanel.Height = double.NaN;
+        FlashbackTimelinePanel.Opacity = 1;
     }
     private void StartFlashbackStatusPolling()
     {

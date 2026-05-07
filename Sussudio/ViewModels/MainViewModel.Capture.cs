@@ -107,6 +107,34 @@ public partial class MainViewModel
     public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline)
         => StopPreviewAsync(userInitiated, teardownPipeline, CancellationToken.None);
 
+    public async Task ApplySelectedDeviceAsync(CaptureDevice device, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (IsRecording)
+        {
+            StatusText = "Stop recording before switching capture devices.";
+            return;
+        }
+
+        if (SelectedDevice != null &&
+            string.Equals(SelectedDevice.Id, device.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        Logger.Log($"DEVICE_APPLY_REQUEST device='{device.Name}' id='{device.Id}' preview={IsPreviewing} initialized={IsInitialized}");
+        SelectedDevice = device;
+
+        if (IsPreviewing)
+        {
+            await ReinitializeDeviceAsync("device selection apply").ConfigureAwait(true);
+            return;
+        }
+
+        IsInitialized = false;
+        StatusText = $"Selected device: {device.Name}";
+    }
+
     public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

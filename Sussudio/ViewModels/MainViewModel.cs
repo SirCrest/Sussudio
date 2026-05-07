@@ -150,6 +150,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private volatile Task? _activeRecordingToggleTask;
     private int _activeRecordingTransitionTarget = -1;
     private bool _isLoadingSettings;
+    private bool _suppressFlashbackFormatCycle;
     private bool _suppressFlashbackEncoderSettingsCycle;
     private string? _pendingSavedDeviceId;
     private string? _pendingSavedAudioDeviceId;
@@ -426,6 +427,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     [ObservableProperty]
     public partial bool IsDiskWarningActive { get; set; }
+
+    partial void OnIsFlashbackEnabledChanged(bool value)
+    {
+        if (!value)
+        {
+            IsFlashbackTimelineVisible = false;
+        }
+    }
 
     /// <summary>
     /// Written by WASAPI callback thread via Volatile.Write, read by UI timer.

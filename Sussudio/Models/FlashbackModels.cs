@@ -47,6 +47,7 @@ internal sealed record FlashbackSessionContext
     public required bool IsP010 { get; init; }
     public required string CodecName { get; init; }
     public string? NvencPreset { get; init; }
+    public string SplitEncodeMode { get; init; } = "Auto";
     public bool HdrEnabled { get; init; }
     public bool IsFullRangeInput { get; init; }
     public string? HdrMasterDisplayMetadata { get; init; }

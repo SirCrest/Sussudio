@@ -2603,6 +2603,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             BitRate = context.BitRate,
             IsP010 = context.IsP010,
             NvencPreset = context.NvencPreset,
+            SplitEncodeMode = context.SplitEncodeMode,
             // 1-second GOP for fast interactive seeking. The default (2x frame rate)
             // means up to 2 seconds of decode-forward on every pause/scrub.
             // 1x frame rate halves worst-case seek latency with minimal bitrate impact.
@@ -2655,6 +2656,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             IsP010 = context.HdrPipelineActive,
             CodecName = MapCodecName(context.Settings.Format),
             NvencPreset = context.Settings.NvencPreset,
+            SplitEncodeMode = context.Settings.SplitEncodeMode,
             HdrEnabled = context.HdrPipelineActive,
             IsFullRangeInput = context.IsFullRangeInput,
             HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,

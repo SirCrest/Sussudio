@@ -870,6 +870,7 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <ComboBox x:Name="DeviceComboBox"
                                       AutomationProperties.AutomationId="DeviceComboBox"
@@ -878,6 +879,15 @@
                                       DisplayMemberPath="Name"
                                       PlaceholderText="Select a capture device"/>
                             <Button Grid.Column="1"
+                                    x:Name="ApplyDeviceButton"
+                                    AutomationProperties.AutomationId="ApplyDeviceButton"
+                                    Click="ApplyDeviceButton_Click"
+                                    ToolTipService.ToolTip="Apply selected capture device"
+                                    IsEnabled="False"
+                                    VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE73E;" FontSize="14"/>
+                            </Button>
+                            <Button Grid.Column="2"
                                     x:Name="RefreshButton"
                                     AutomationProperties.AutomationId="RefreshButton"
                                     Click="RefreshButton_Click"
@@ -1914,6 +1924,7 @@
                     Grid.RowSpan="4" Grid.ColumnSpan="2"
                     Visibility="Collapsed"
                     VerticalAlignment="Bottom"
+                    Background="Transparent"
                     Canvas.ZIndex="10"/>
 
         <!-- Startup Splash Overlay -->

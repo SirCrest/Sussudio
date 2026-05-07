@@ -448,7 +448,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             Logger.Log(
                 $"LIBAV_ENCODER_OPEN codec='{options.CodecName}' output='{options.OutputPath}' " +
                 $"width={options.Width} height={options.Height} fps={options.FrameRate.ToString("0.###", CultureInfo.InvariantCulture)} " +
-                $"bitrate={options.BitRate} pix_fmt='{(options.IsP010 ? "p010le" : "nv12")}' hdr={options.HdrEnabled} " +
+                $"bitrate={options.BitRate} pix_fmt='{(options.IsP010 ? "p010le" : "nv12")}' hdr={options.HdrEnabled} split_encode='{options.SplitEncodeMode}' " +
                 $"audio={options.AudioEnabled} audio_rate={options.AudioSampleRate} audio_channels={options.AudioChannels} audio_bitrate={options.AudioBitRate} " +
                 $"microphone={options.MicrophoneEnabled} mic_rate={options.MicrophoneSampleRate} mic_channels={options.MicrophoneChannels} mic_bitrate={options.MicrophoneBitRate} " +
                 $"hw_frames={_useHardwareFrames}");
@@ -999,6 +999,23 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
         var preset = MapNvencPreset(options.NvencPreset);
         ThrowIfError(ffmpeg.av_opt_set(codecContext->priv_data, "preset", preset, 0), "av_opt_set(preset)");
+
+        if (!TryMapSplitEncodeMode(options.SplitEncodeMode, out var splitEncodeMode))
+        {
+            throw new InvalidOperationException($"Unknown split encode mode '{options.SplitEncodeMode}'.");
+        }
+
+        if (SupportsSplitEncodeMode(options.CodecName))
+        {
+            ThrowIfError(
+                ffmpeg.av_opt_set_int(codecContext->priv_data, "split_encode_mode", splitEncodeMode, 0),
+                "av_opt_set_int(split_encode_mode)");
+        }
+        else if (splitEncodeMode is 2 or 3)
+        {
+            throw new InvalidOperationException(
+                $"Split encode mode '{options.SplitEncodeMode}' is not supported by codec '{options.CodecName}'.");
+        }
 
         if (IsMpegTsParameterSetFilterCandidate(options))
         {
@@ -3019,6 +3036,43 @@ ValidateHdrOptions:
         return preset.ToLowerInvariant();
     }
 
+    private static bool SupportsSplitEncodeMode(string codecName)
+        => codecName.Contains("hevc", StringComparison.OrdinalIgnoreCase) ||
+           codecName.Contains("265", StringComparison.OrdinalIgnoreCase) ||
+           codecName.Contains("av1", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryMapSplitEncodeMode(string? splitEncodeMode, out long value)
+    {
+        value = 0;
+        if (string.IsNullOrWhiteSpace(splitEncodeMode) ||
+            splitEncodeMode.Equals("Auto", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (splitEncodeMode.Equals("Disabled", StringComparison.OrdinalIgnoreCase))
+        {
+            value = 15;
+            return true;
+        }
+
+        if (splitEncodeMode.Equals("2-way", StringComparison.OrdinalIgnoreCase) ||
+            splitEncodeMode.Equals("2", StringComparison.OrdinalIgnoreCase))
+        {
+            value = 2;
+            return true;
+        }
+
+        if (splitEncodeMode.Equals("3-way", StringComparison.OrdinalIgnoreCase) ||
+            splitEncodeMode.Equals("3", StringComparison.OrdinalIgnoreCase))
+        {
+            value = 3;
+            return true;
+        }
+
+        return false;
+    }
+
     private static bool IsSampleFormatSupported(AVCodec* codec, AVSampleFormat sampleFormat)
     {
         void* supportedFormats = null;
@@ -3279,6 +3333,7 @@ internal sealed record LibAvEncoderOptions
     public required uint BitRate { get; init; }
     public required bool IsP010 { get; init; }
     public string? NvencPreset { get; init; }
+    public string SplitEncodeMode { get; init; } = "Auto";
     public int GopSize { get; init; } = -1;
     /// <summary>
     /// Use frag_keyframe+empty_moov instead of faststart for MP4.

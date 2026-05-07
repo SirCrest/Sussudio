@@ -145,15 +145,14 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackExportLastForceRotateFallbackInPointMs { get; init; }
     public long FlashbackExportLastForceRotateFallbackOutPointMs { get; init; }
     /// <summary>
-    /// The actual codec/container the next flashback export will produce. Differs
-    /// from the user-requested <c>SelectedRecordingFormat</c> when the runtime
-    /// silently downgrades (e.g. AV1->HEVC at 4K120 software MJPEG).
+    /// The actual codec/container the next flashback export will produce. This
+    /// should match the user-requested <c>SelectedRecordingFormat</c>; mismatches
+    /// are reserved for future explicit, user-visible substitutions.
     /// </summary>
     public string? FlashbackExportVerificationFormat { get; init; }
     /// <summary>
-    /// Non-null when the flashback codec/preset was substituted at session start
-    /// because the requested combination cannot be encoded in real time.
-    /// Composed string describes both what was changed and why.
+    /// Legacy compatibility field for recording settings substitutions. It should
+    /// remain null while Flashback honors the selected codec and preset directly.
     /// </summary>
     public string? FlashbackCodecDowngradeReason { get; init; }
     public long LastExportId { get; init; }

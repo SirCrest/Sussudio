@@ -1084,17 +1084,22 @@ public static class DiagnosticSessionRunner
                 $"delta={flashbackExportForceRotateFallbacksDelta} total={flashbackExportForceRotateFallbacksAtEnd} " +
                 $"segments={flashbackExportLastForceRotateFallbackSegmentsAtEnd}");
         }
-        if (runFlashbackPlayback)
-        {
-            ValidateFlashbackPlaybackSession(playbackSessionMetrics.Observed ? playbackEndSnapshot : lastSnapshot, playbackSessionMetrics, durationSeconds, warnings);
-        }
-
         var recordingMetrics = BuildFlashbackRecordingMetrics(initialSnapshot, samples);
         var exportMetrics = BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot);
         var sourceCadenceMetrics = BuildSourceCadenceSessionMetrics(samples, lastSnapshot);
         var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
         var visualCadenceMetrics = BuildVisualCadenceSessionMetrics(samples, lastSnapshot);
+        if (runFlashbackPlayback)
+        {
+            ValidateFlashbackPlaybackSession(
+                playbackSessionMetrics.Observed ? playbackEndSnapshot : lastSnapshot,
+                playbackSessionMetrics,
+                visualCadenceMetrics,
+                durationSeconds,
+                warnings);
+        }
+
         var sourceReaderFramesDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MfSourceReaderFramesDropped");
         var videoIngestErrorsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "VideoIngestErrorCount");
         var previewSchedulerDroppedAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterTotalDropped") ?? 0;
@@ -4991,6 +4996,7 @@ public static class DiagnosticSessionRunner
     private static void ValidateFlashbackPlaybackSession(
         JsonElement lastSnapshot,
         FlashbackPlaybackSessionMetrics metrics,
+        VisualCadenceSessionMetrics visualCadenceMetrics,
         int durationSeconds,
         List<string> warnings)
     {
@@ -5000,7 +5006,7 @@ public static class DiagnosticSessionRunner
             targetFps = GetDouble(lastSnapshot, "SelectedExactFrameRate");
         }
 
-        var frameCount = metrics.EndSessionFrameCount;
+        var frameCount = Math.Max(metrics.EndSessionFrameCount, metrics.MaxSessionFrameCountObserved);
         if (frameCount <= 0)
         {
             warnings.Add("flashback playback: no playback frames were observed");
@@ -5016,7 +5022,10 @@ public static class DiagnosticSessionRunner
             }
 
             var minimumOnePercentLow = targetFps * 0.80;
-            if (metrics.MinOnePercentLowFpsObserved > 0 && metrics.MinOnePercentLowFpsObserved < minimumOnePercentLow)
+            var visualCadenceHealthy = IsVisualCadenceSessionHealthy(visualCadenceMetrics, targetFps);
+            if (!visualCadenceHealthy &&
+                metrics.MinOnePercentLowFpsObserved > 0 &&
+                metrics.MinOnePercentLowFpsObserved < minimumOnePercentLow)
             {
                 warnings.Add($"flashback playback: 1% low dipped below floor min={metrics.MinOnePercentLowFpsObserved:0.##} floor={minimumOnePercentLow:0.##}");
             }
