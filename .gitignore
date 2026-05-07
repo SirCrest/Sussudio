@@ -75,3 +75,7 @@ tools/RtkIoShim/*.obj
 .desloppify/
 .duat/
 presentmon*.json
+
+# Local Codex/session accounting exports
+docs/codex-token-audit/
+tools/codex_token_audit.py

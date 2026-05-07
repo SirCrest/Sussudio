@@ -896,8 +896,8 @@ static partial class Program
 
             // --- AutomationContracts ---
             await RunCheckAsync(
-                "AutomationCommandKind has sequential values 0 through 48",
-                AutomationCommandKind_HasSequentialValues_0Through48),
+                "AutomationCommandKind has sequential values 0 through 50",
+                AutomationCommandKind_HasSequentialValues_0Through50),
             await RunCheckAsync(
                 "AutomationWindowAction has expected values",
                 AutomationWindowAction_HasExpectedValues),
@@ -4740,7 +4740,7 @@ static partial class Program
 
     // --- AutomationContracts tests ---
 
-    private static Task AutomationCommandKind_HasSequentialValues_0Through48()
+    private static Task AutomationCommandKind_HasSequentialValues_0Through50()
     {
         var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
         var expectedCommands = ExpectedAutomationCommands();
@@ -4811,7 +4811,9 @@ static partial class Program
         ("RestartFlashback", 45),
         ("SetMicrophoneEnabled", 46),
         ("SetFlashbackEnabled", 47),
-        ("GetAudioRampTrace", 48)
+        ("GetAudioRampTrace", 48),
+        ("SetFrameTimeOverlayVisible", 49),
+        ("SetFlashbackTimelineVisible", 50)
     ];
 
     private static Task AutomationWindowAction_HasExpectedValues()
