@@ -13,9 +13,6 @@ marketing page and it is not a finished public release.
 - Primary hardware target today is Elgato 4K X, with broader UVC support treated
   as future work.
 - Main app source lives under `Sussudio/`.
-- Historical documents and older log entries may still use the former
-  `ElgatoCapture` name. Treat those as old-path references unless the current
-  source or README says otherwise.
 - Generated diagnostics, local agent state, build outputs, captures, and other
   large artifacts are intentionally ignored.
 
@@ -130,17 +127,6 @@ The automation smoke test requires the app to be running.
 | `tools/EgavdsAudioProbe/` | Elgato audio virtual-device diagnostic probe |
 | `temp/`, `artifacts/`, `results/`, `latest-build/` | Local generated state; ignored |
 
-## Important Docs
-
-- `docs/project-plan.md` - current architecture map, goals, feature status.
-- `docs/constraints.md` - non-negotiable HDR rules.
-- `docs/cfr_policy.md` - constant-frame-rate policy.
-- `docs/automation.md` - automation snapshot contract and diagnostic-session
-  guidance.
-- `docs/hfr_mjpeg.md` - 4K120 MJPEG pipeline design.
-- `docs/stream-deck-plugin-scope.md` - intended app/plugin automation boundary.
-- `docs/experiment_log.md` - append-only development and validation log.
-
 ## Automation Notes
 
 The app exposes a JSON automation protocol over a named pipe. The default pipe
@@ -191,7 +177,6 @@ build folders, local MCP/Codex/Claude state, and FFmpeg DLLs are ignored by Git.
 - Flashback playback/scrubbing should not contaminate live preview cadence
   metrics.
 - Keep `GetSnapshot` and `GetCaptureOptions` separate in automation payloads.
-- Prefer repo docs and current source over older experiment-log command paths.
 
 ## License
 
