@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -45,6 +46,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private int _renderingPaused; // 0 = active, 1 = paused
     private volatile bool _pauseRequested;
     private volatile bool _resumeRequested;
+    private int _resumePrebufferFrames;
+    private int _resumePrebufferTimeoutMs;
     private volatile float _targetVolume = 1.0f;
     private float _currentVolume;
     private volatile float _lastOutputPeak;
@@ -282,11 +285,16 @@ internal sealed class WasapiAudioPlayback : IDisposable
         _renderEvent?.Set();
     }
 
-    public void ResumeRendering()
+    public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)
     {
         if (Volatile.Read(ref _started) == 0) return;
         if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested) return;
 
+        var prebufferFrames = prebufferMs > 0
+            ? (int)Math.Ceiling(prebufferMs * OutputSampleRate / 1000.0)
+            : 0;
+        Volatile.Write(ref _resumePrebufferFrames, Math.Max(0, prebufferFrames));
+        Volatile.Write(ref _resumePrebufferTimeoutMs, Math.Max(0, prebufferTimeoutMs));
         _resumeRequested = true;
         _renderEvent?.Set();
     }
@@ -307,6 +315,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             }
             _activeChunkOffset = 0;
             Volatile.Write(ref _activeChunkRemainingFrames, 0);
+            Volatile.Write(ref _endpointQueuedFrames, 0);
         }
         Interlocked.Exchange(ref _renderingPtsTicks, 0);
     }
@@ -460,6 +469,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                     continue;
                 }
 
+                WaitForResumePrebuffer();
                 try { _audioClient?.Start(); }
                 catch (Exception ex) { Logger.Log($"WASAPI_RESUME_RENDER_WARN: {ex.Message}"); }
                 Interlocked.Exchange(ref _renderingPaused, 0);
@@ -476,6 +486,47 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 Logger.Log($"WASAPI playback render error: {ex.Message}");
             }
         }
+    }
+
+    private void WaitForResumePrebuffer()
+    {
+        var targetFrames = Volatile.Read(ref _resumePrebufferFrames);
+        var timeoutMs = Volatile.Read(ref _resumePrebufferTimeoutMs);
+        Volatile.Write(ref _resumePrebufferFrames, 0);
+        Volatile.Write(ref _resumePrebufferTimeoutMs, 0);
+        if (targetFrames <= 0)
+        {
+            return;
+        }
+
+        var start = Stopwatch.GetTimestamp();
+        var timedOut = false;
+        var bufferedFrames = PlaybackBufferedFramesForResume();
+        while (bufferedFrames < targetFrames &&
+               Volatile.Read(ref _started) != 0 &&
+               Volatile.Read(ref _disposed) == 0)
+        {
+            var elapsedMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+            if (timeoutMs <= 0 || elapsedMs >= timeoutMs)
+            {
+                timedOut = true;
+                break;
+            }
+
+            Thread.Sleep(Math.Min(5, Math.Max(1, timeoutMs - (int)elapsedMs)));
+            bufferedFrames = PlaybackBufferedFramesForResume();
+        }
+
+        var waitedMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+        Logger.Log(
+            $"WASAPI_PLAYBACK_RENDER_PREBUFFER target_ms={FramesToMilliseconds(targetFrames):F1} actual_ms={FramesToMilliseconds(bufferedFrames):F1} waited_ms={waitedMs:F1} timed_out={timedOut}");
+    }
+
+    private int PlaybackBufferedFramesForResume()
+    {
+        var queuedFrames = Volatile.Read(ref _playbackQueueFrames);
+        var activeFrames = Volatile.Read(ref _activeChunkRemainingFrames);
+        return Math.Max(0, queuedFrames) + Math.Max(0, activeFrames);
     }
 
     private unsafe void RenderAvailableFrames()

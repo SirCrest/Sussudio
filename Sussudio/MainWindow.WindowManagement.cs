@@ -39,9 +39,17 @@ public sealed partial class MainWindow
     {
         ((FrameworkElement)this.Content).Loaded -= MainWindow_Loaded;
 
-        // Uncloak the window — XAML content is now rendered (splash overlay covers everything)
-        int cloakFalse = 0;
-        DwmSetWindowAttribute(_hwnd, DWMWA_CLOAK, ref cloakFalse, sizeof(int));
+        // Defer uncloak until the first frame is actually composed. Loaded fires
+        // after layout but before the first paint, so uncloaking here would expose
+        // an unrendered (black) frame before the splash background paints.
+        EventHandler<object>? uncloakOnFirstFrame = null;
+        uncloakOnFirstFrame = (_, _) =>
+        {
+            Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= uncloakOnFirstFrame;
+            int cloakFalse = 0;
+            DwmSetWindowAttribute(_hwnd, DWMWA_CLOAK, ref cloakFalse, sizeof(int));
+        };
+        Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += uncloakOnFirstFrame;
 
         // Start device init immediately — runs behind the splash
         _ = RunUiEventHandlerAsync(async () =>

@@ -465,6 +465,9 @@ static partial class Program
                 "D3D preview present cadence metrics expose expected properties",
                 D3D11PreviewRenderer_PresentCadenceMetrics_HasExpectedProperties),
             await RunCheckAsync(
+                "D3D preview present cadence ignores suppressed frames",
+                D3D11PreviewRenderer_PresentCadenceSuppression_SkipsSamplesAndResetsBaseline),
+            await RunCheckAsync(
                 "D3D preview PNG CRC table generates 256 entries",
                 D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries),
             await RunCheckAsync(

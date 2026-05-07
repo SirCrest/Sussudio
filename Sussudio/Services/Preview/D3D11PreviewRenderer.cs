@@ -225,7 +225,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             IntPtr d3dTextureY = default,
             IntPtr d3dTextureUV = default,
             ID3D11Texture2D? d3dTextureYObject = null,
-            ID3D11Texture2D? d3dTextureUVObject = null)
+            ID3D11Texture2D? d3dTextureUVObject = null,
+            bool countForPresentCadence = true)
         {
             D3DTexture = d3dTexture;
             D3DSubresourceIndex = Math.Max(0, d3dSubresourceIndex);
@@ -244,6 +245,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             D3DTextureUV = d3dTextureUV;
             D3DTextureYObject = d3dTextureYObject;
             D3DTextureUVObject = d3dTextureUVObject;
+            CountForPresentCadence = countForPresentCadence;
         }
 
         public ID3D11Texture2D? D3DTexture { get; private set; }
@@ -263,6 +265,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         public long PreviewPresentId { get; }
         public long SourcePtsTicks { get; }
         public long SchedulerSubmitTick { get; }
+        public bool CountForPresentCadence { get; }
         public long SubmissionGeneration { get; set; }
 
         public void Dispose()
@@ -441,6 +444,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private int _presentIntervalCount;
     private int _presentIntervalIndex;
     private long _lastPresentTick;
+    private int _presentCadenceBaselinePending;
     private readonly object _pipelineLatencyLock = new();
     private double[] _pipelineLatencyWindowMs = new double[1200];
     private int _pipelineLatencyCount;
@@ -973,7 +977,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         long sourceSequenceNumber = -1,
         long previewPresentId = 0,
         long schedulerSubmitTick = 0,
-        long sourcePtsTicks = 0)
+        long sourcePtsTicks = 0,
+        bool countForPresentCadence = true)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1008,7 +1013,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             sourceSequenceNumber,
             previewPresentId,
             schedulerSubmitTick,
-            sourcePtsTicks);
+            sourcePtsTicks,
+            countForPresentCadence: countForPresentCadence);
         EnqueuePendingFrame(frame);
     }
 
@@ -1016,7 +1022,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         PooledVideoFrameLease frame,
         bool isHdr,
         long previewPresentId = 0,
-        long schedulerSubmitTick = 0)
+        long schedulerSubmitTick = 0,
+        bool countForPresentCadence = true)
     {
         ArgumentNullException.ThrowIfNull(frame);
 
@@ -1045,7 +1052,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             previewPresentId,
             schedulerSubmitTick,
             sourcePtsTicks: 0,
-            frameLease: frame));
+            frameLease: frame,
+            countForPresentCadence: countForPresentCadence));
     }
 
     public void SubmitTexture(
@@ -1058,7 +1066,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         long schedulerSubmitTick = 0,
         long sourceSequenceNumber = -1,
         long previewPresentId = 0,
-        long sourcePtsTicks = 0)
+        long sourcePtsTicks = 0,
+        bool countForPresentCadence = true)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1106,7 +1115,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             sourceSequenceNumber,
             previewPresentId,
             schedulerSubmitTick,
-            sourcePtsTicks);
+            sourcePtsTicks,
+            countForPresentCadence: countForPresentCadence);
         EnqueuePendingFrame(frame);
     }
 
@@ -1120,7 +1130,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         long schedulerSubmitTick = 0,
         long sourceSequenceNumber = -1,
         long previewPresentId = 0,
-        long sourcePtsTicks = 0)
+        long sourcePtsTicks = 0,
+        bool countForPresentCadence = true)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1183,7 +1194,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 schedulerSubmitTick,
                 sourceSequenceNumber,
                 previewPresentId,
-                sourcePtsTicks);
+                sourcePtsTicks,
+                countForPresentCadence);
         }
         catch
         {
@@ -1215,7 +1227,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         long schedulerSubmitTick,
         long sourceSequenceNumber,
         long previewPresentId,
-        long sourcePtsTicks)
+        long sourcePtsTicks,
+        bool countForPresentCadence)
     {
         var frame = new PendingFrame(
             d3dTexture: null,
@@ -1233,7 +1246,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             d3dTextureY: yTexturePtr,
             d3dTextureUV: uvTexturePtr,
             d3dTextureYObject: yTexture,
-            d3dTextureUVObject: uvTexture);
+            d3dTextureUVObject: uvTexture,
+            countForPresentCadence: countForPresentCadence);
         EnqueuePendingFrame(frame);
     }
 
@@ -1693,11 +1707,22 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         return result;
     }
 
-    private double TrackPresentCadence()
+    private double TrackPresentCadence(bool countSample)
     {
         var nowTick = Stopwatch.GetTimestamp();
         var previousTick = Interlocked.Exchange(ref _lastPresentTick, nowTick);
+        if (!countSample)
+        {
+            Interlocked.Exchange(ref _presentCadenceBaselinePending, 1);
+            return 0;
+        }
+
         if (previousTick <= 0)
+        {
+            return 0;
+        }
+
+        if (Interlocked.Exchange(ref _presentCadenceBaselinePending, 0) != 0)
         {
             return 0;
         }
@@ -2150,6 +2175,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private void ResetPresentCadence()
     {
         Interlocked.Exchange(ref _lastPresentTick, 0);
+        Interlocked.Exchange(ref _presentCadenceBaselinePending, 0);
         lock (_presentCadenceLock)
         {
             Array.Clear(_presentIntervalWindowMs, 0, _presentIntervalWindowMs.Length);

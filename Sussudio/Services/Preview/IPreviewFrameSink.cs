@@ -35,7 +35,8 @@ internal interface IPreviewFrameSink
         long sourceSequenceNumber = -1,
         long previewPresentId = 0,
         long schedulerSubmitTick = 0,
-        long sourcePtsTicks = 0);
+        long sourcePtsTicks = 0,
+        bool countForPresentCadence = true);
 
     /// <summary>
     /// Submit a leased CPU-resident frame. Callee owns and disposes the lease.
@@ -44,7 +45,8 @@ internal interface IPreviewFrameSink
         PooledVideoFrameLease frame,
         bool isHdr,
         long previewPresentId = 0,
-        long schedulerSubmitTick = 0);
+        long schedulerSubmitTick = 0,
+        bool countForPresentCadence = true);
 
     /// <summary>
     /// Submit a D3D11 texture. Callee calls AddRef on the COM pointer;
@@ -60,7 +62,8 @@ internal interface IPreviewFrameSink
         long schedulerSubmitTick = 0,
         long sourceSequenceNumber = -1,
         long previewPresentId = 0,
-        long sourcePtsTicks = 0);
+        long sourcePtsTicks = 0,
+        bool countForPresentCadence = true);
 
     /// <summary>
     /// Submit split NV12 plane textures (Y + UV). Callee calls AddRef on
@@ -79,5 +82,6 @@ internal interface IPreviewFrameSink
         long schedulerSubmitTick = 0,
         long sourceSequenceNumber = -1,
         long previewPresentId = 0,
-        long sourcePtsTicks = 0);
+        long sourcePtsTicks = 0,
+        bool countForPresentCadence = true);
 }

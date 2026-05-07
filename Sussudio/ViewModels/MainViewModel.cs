@@ -35,7 +35,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private IntPtr _windowHandle;
     private readonly Queue<(long Tick, long Bytes)> _bitrateSamples = new();
     private readonly Queue<(long Tick, long Bytes)> _flashbackBitrateSamples = new();
-    private const int BitrateWindowMs = 5000;
+    private const int BitrateWindowMs = 10000;
     private const string DefaultRecordingFormat = "H.264";
     private const string HevcRecordingFormat = "HEVC";
     private const string Av1RecordingFormat = "AV1";
@@ -1301,19 +1301,26 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             _bitrateSamples.Dequeue();
         }
 
-        if (_bitrateSamples.Count >= 2)
+        var smoothed = ComputeAverageBitrate(_bitrateSamples);
+        RecordingBitrateInfo = smoothed.HasValue ? FormatBitrate(smoothed.Value) : "--";
+    }
+
+    private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)
+    {
+        if (samples.Count < 2)
         {
-            var first = _bitrateSamples.Peek();
-            var last = _bitrateSamples.Last();
-            var deltaBytes = Math.Max(0, last.Bytes - first.Bytes);
-            var deltaSeconds = Math.Max(0.001, (last.Tick - first.Tick) / 1000.0);
-            var bitsPerSecond = (deltaBytes * 8.0) / deltaSeconds;
-            RecordingBitrateInfo = FormatBitrate(bitsPerSecond);
+            return null;
         }
-        else
+
+        var first = samples.Peek();
+        var last = samples.Last();
+        var deltaMs = last.Tick - first.Tick;
+        if (deltaMs <= 0)
         {
-            RecordingBitrateInfo = "--";
+            return null;
         }
+        var deltaBytes = Math.Max(0, last.Bytes - first.Bytes);
+        return (deltaBytes * 8.0) / (deltaMs / 1000.0);
     }
 
     private static string FormatBytes(long bytes)

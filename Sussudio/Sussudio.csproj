@@ -49,6 +49,7 @@
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
     <Content Include="Assets\AppIcon.ico" />
+    <Content Include="SplashPhrases.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- FFmpeg shared libraries (downloaded separately, gitignored) -->

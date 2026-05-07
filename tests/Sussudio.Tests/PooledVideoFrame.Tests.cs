@@ -139,9 +139,9 @@ static partial class Program
             "SubmitRawFrameLease",
             BindingFlags.Public | BindingFlags.Instance,
             binder: null,
-            types: new[] { leaseType, typeof(bool), typeof(long), typeof(long) },
+            types: new[] { leaseType, typeof(bool), typeof(long), typeof(long), typeof(bool) },
             modifiers: null);
-        AssertNotNull(rendererLeaseSubmit, "IPreviewFrameSink.SubmitRawFrameLease(PooledVideoFrameLease, bool, long, long)");
+        AssertNotNull(rendererLeaseSubmit, "IPreviewFrameSink.SubmitRawFrameLease(PooledVideoFrameLease, bool, long, long, bool)");
         AssertEqual(true, previewSinkType.IsAssignableFrom(rendererType), "D3D11PreviewRenderer implements preview lease sink");
         AssertEqual(true, leaseEncoderType.IsAssignableFrom(libAvSinkType), "LibAvRecordingSink implements lease encoder");
         AssertEqual(true, leaseEncoderType.IsAssignableFrom(flashbackSinkType), "FlashbackEncoderSink implements lease encoder");

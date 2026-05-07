@@ -68,6 +68,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private TimeSpan _forceRotateOutPoint;
 
     private long _segmentStartBytes;
+    private long _lastDiskBytesUpdateMs;
     private long _segmentRotationFailures;
     private long _droppedVideoFrames;
     private long _encodedVideoFrames;
@@ -1588,9 +1589,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
         }
 
-        // Periodically update disk bytes
-        if (encoded % 300 == 0)
+        // Refresh disk bytes ~4 Hz so the monotonic counter stays current for UI
+        // bitrate sampling; the prior frame-count gate plateaued for ~5 s at 60 fps.
+        var nowMs = Environment.TickCount64;
+        if (nowMs - _lastDiskBytesUpdateMs >= 250)
         {
+            _lastDiskBytesUpdateMs = nowMs;
             _bufferManager.UpdateDiskBytes(_encoder.TotalBytesWritten);
         }
 
@@ -1738,6 +1742,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             // Update disk bytes tracking
             _bufferManager.UpdateDiskBytes(_encoder.TotalBytesWritten);
+            _lastDiskBytesUpdateMs = Environment.TickCount64;
 
             Logger.Log(
                 $"FLASHBACK_SINK_ROTATE new_segment='{Path.GetFileName(newPath)}' " +

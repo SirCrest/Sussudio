@@ -269,19 +269,8 @@ public partial class MainViewModel
             _flashbackBitrateSamples.Dequeue();
         }
 
-        if (_flashbackBitrateSamples.Count >= 2)
-        {
-            var first = _flashbackBitrateSamples.Peek();
-            var last = _flashbackBitrateSamples.Last();
-            var deltaBytes = Math.Max(0, last.Bytes - first.Bytes);
-            var deltaSeconds = Math.Max(0.001, (last.Tick - first.Tick) / 1000.0);
-            var bitsPerSecond = (deltaBytes * 8.0) / deltaSeconds;
-            FlashbackBitrateInfo = FormatBitrate(bitsPerSecond);
-        }
-        else
-        {
-            FlashbackBitrateInfo = "";
-        }
+        var smoothed = ComputeAverageBitrate(_flashbackBitrateSamples);
+        FlashbackBitrateInfo = smoothed.HasValue ? FormatBitrate(smoothed.Value) : "";
     }
 
     public async Task ExportFlashbackAsync()

@@ -129,6 +129,51 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task D3D11PreviewRenderer_PresentCadenceSuppression_SkipsSamplesAndResetsBaseline()
+    {
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
+        var renderer = System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(rendererType);
+        SetPrivateField(renderer, "_presentCadenceLock", new object());
+        SetPrivateField(renderer, "_presentIntervalWindowMs", new double[8]);
+
+        var getMetrics = rendererType.GetMethod("GetPresentCadenceMetrics", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("GetPresentCadenceMetrics not found.");
+
+        InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true });
+        System.Threading.Thread.Sleep(2);
+        var firstInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true }));
+        AssertEqual(true, firstInterval > 0, "first measured cadence interval is recorded");
+
+        var metrics = getMetrics.Invoke(renderer, new object[] { 8.333 })
+            ?? throw new InvalidOperationException("GetPresentCadenceMetrics returned null.");
+        AssertEqual(1, Convert.ToInt32(GetPropertyValue(metrics, "SampleCount")), "sample count after first measured interval");
+
+        System.Threading.Thread.Sleep(2);
+        var suppressedInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { false }));
+        AssertEqual(0.0, suppressedInterval, "suppressed present does not report interval");
+        metrics = getMetrics.Invoke(renderer, new object[] { 8.333 })
+            ?? throw new InvalidOperationException("GetPresentCadenceMetrics returned null after suppressed present.");
+        AssertEqual(1, Convert.ToInt32(GetPropertyValue(metrics, "SampleCount")), "suppressed present does not add a sample");
+        AssertEqual(1L, GetLongPrivateField(renderer, "_presentCadenceBaselinePending"), "suppressed present marks baseline pending");
+
+        System.Threading.Thread.Sleep(2);
+        var baselineInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true }));
+        AssertEqual(0.0, baselineInterval, "first measured present after suppression resets baseline");
+        metrics = getMetrics.Invoke(renderer, new object[] { 8.333 })
+            ?? throw new InvalidOperationException("GetPresentCadenceMetrics returned null after baseline present.");
+        AssertEqual(1, Convert.ToInt32(GetPropertyValue(metrics, "SampleCount")), "baseline reset does not add transition gap sample");
+        AssertEqual(0L, GetLongPrivateField(renderer, "_presentCadenceBaselinePending"), "baseline pending flag clears after measured present");
+
+        System.Threading.Thread.Sleep(2);
+        var resumedInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true }));
+        AssertEqual(true, resumedInterval > 0, "second measured present after suppression records interval");
+        metrics = getMetrics.Invoke(renderer, new object[] { 8.333 })
+            ?? throw new InvalidOperationException("GetPresentCadenceMetrics returned null after resumed present.");
+        AssertEqual(2, Convert.ToInt32(GetPropertyValue(metrics, "SampleCount")), "measured cadence resumes after suppression baseline");
+
+        return Task.CompletedTask;
+    }
+
     // ── D3D11PreviewRenderer: InitPngCrc32Table ──
 
     private static Task D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries()

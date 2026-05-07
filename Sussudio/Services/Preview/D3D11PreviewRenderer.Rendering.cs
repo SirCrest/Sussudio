@@ -581,7 +581,7 @@ internal sealed partial class D3D11PreviewRenderer
         }
 
         Interlocked.Increment(ref _framesRendered);
-        var presentIntervalMs = TrackPresentCadence();
+        var presentIntervalMs = TrackPresentCadence(frame.CountForPresentCadence);
         TrackDxgiFrameStatistics();
         var estimatedVisibleTick = EstimateVisibleTick(presentEnd);
         TrackFramePresented(frame, presentEnd, estimatedVisibleTick);
