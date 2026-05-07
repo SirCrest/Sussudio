@@ -44,6 +44,8 @@ latest-build/
 # Claude Code local settings
 .claude/
 .claude-profile
+CLAUDE.md
+.claudeignore
 
 # Local agent/tooling state
 .agents/
