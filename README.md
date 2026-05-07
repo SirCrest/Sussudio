@@ -51,8 +51,10 @@ marketing page and it is not a finished public release.
   should be validated with diagnostic sessions before treating results as final.
 - The current encoder path is NVIDIA NVENC-oriented. There is no software encode
   fallback for the main recording pipeline.
-- FFmpeg runtime DLLs are not checked into the repo. The project expects local
-  FFmpeg binaries under `Sussudio/ffmpeg/` for runtime scenarios that need them.
+- `FFmpeg.AutoGen` is the managed P/Invoke binding layer; it does not embed the
+  native FFmpeg/libav runtime. Native FFmpeg DLLs are not checked into the repo.
+  The app prefers app-local DLLs under `Sussudio/ffmpeg/` when running recording,
+  playback, or decode paths that call libav directly.
 - The Stream Deck plugin is a companion effort, not part of this app repository.
   This repo contains the app automation surface that a plugin can call.
 
@@ -64,8 +66,9 @@ marketing page and it is not a finished public release.
 - Visual Studio / Build Tools with Windows desktop and WinUI/Windows App SDK
   support.
 - Windows App SDK runtime for unpackaged debug runs.
-- FFmpeg runtime binaries available locally when testing recording, verification,
-  or playback paths that load libav.
+- Native FFmpeg/libav DLLs available locally when testing recording, playback,
+  or decode paths that call libav directly. `ffmpeg.exe` / `ffprobe.exe` are also
+  used by some probes and validation scripts.
 
 The app targets:
 
