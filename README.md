@@ -125,7 +125,6 @@ The automation smoke test requires the app to be running.
 | `tools/CoreAudioEndpointProbe/` | WASAPI endpoint diagnostic probe |
 | `tools/KsAudioNodeProbe/` | Kernel streaming audio topology probe |
 | `tools/EgavdsAudioProbe/` | Elgato audio virtual-device diagnostic probe |
-| `docs/` | Architecture notes, constraints, automation docs, design notes, experiment log |
 | `temp/`, `artifacts/`, `results/`, `latest-build/` | Local generated state; ignored |
 
 ## Important Docs
