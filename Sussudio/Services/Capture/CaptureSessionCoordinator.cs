@@ -565,7 +565,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 
         var pending = Interlocked.Increment(ref _pendingCommands);
         Interlocked.Increment(ref _commandsEnqueued);
-        UpdateMaxInt(ref _maxPendingCommands, pending);
+        AtomicMax.Update(ref _maxPendingCommands, pending);
         TrackPendingCommandEnqueued(command.EnqueuedAtUtc);
         if (!_queue.Writer.TryWrite(workItem))
         {
@@ -769,37 +769,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     {
         var latencyMs = Math.Max(0L, (long)(DateTimeOffset.UtcNow - enqueuedAtUtc).TotalMilliseconds);
         Volatile.Write(ref _lastCommandQueueLatencyMs, latencyMs);
-        UpdateMaxLong(ref _maxCommandQueueLatencyMs, latencyMs);
-    }
-
-    private static void UpdateMaxInt(ref int target, int candidate)
-    {
-        var current = Volatile.Read(ref target);
-        while (candidate > current)
-        {
-            var observed = Interlocked.CompareExchange(ref target, candidate, current);
-            if (observed == current)
-            {
-                return;
-            }
-
-            current = observed;
-        }
-    }
-
-    private static void UpdateMaxLong(ref long target, long candidate)
-    {
-        var current = Volatile.Read(ref target);
-        while (candidate > current)
-        {
-            var observed = Interlocked.CompareExchange(ref target, candidate, current);
-            if (observed == current)
-            {
-                return;
-            }
-
-            current = observed;
-        }
+        AtomicMax.Update(ref _maxCommandQueueLatencyMs, latencyMs);
     }
 
     // REVIEWED 2026-04-07: IDisposable fallback only — MainViewModel.DisposeAsync

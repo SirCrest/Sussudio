@@ -1,6 +1,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
 
@@ -143,8 +144,8 @@ internal sealed class FrameFingerprintCadenceTracker
                 return Empty;
             }
 
-            var inputIntervals = CopyRing(_inputIntervalsMs, _inputIntervalCount, _inputIntervalIndex, maxRecentSamples);
-            var duplicateFlags = CopyRing(_duplicateFlags, _duplicateFlagCount, _duplicateFlagIndex, maxRecentSamples);
+            var inputIntervals = RingBufferHelpers.Copy(_inputIntervalsMs, _inputIntervalCount, _inputIntervalIndex, maxRecentSamples);
+            var duplicateFlags = RingBufferHelpers.Copy(_duplicateFlags, _duplicateFlagCount, _duplicateFlagIndex, maxRecentSamples);
             var uniqueIntervals = BuildRecentUniqueIntervals(inputIntervals, duplicateFlags);
             var inputStats = ComputeStats(inputIntervals);
             var uniqueStats = ComputeStats(uniqueIntervals);
@@ -203,15 +204,8 @@ internal sealed class FrameFingerprintCadenceTracker
         return hash;
     }
 
-    private void AddFlagSample(int value)
-    {
-        _duplicateFlags[_duplicateFlagIndex] = value;
-        _duplicateFlagIndex = (_duplicateFlagIndex + 1) % _duplicateFlags.Length;
-        if (_duplicateFlagCount < _duplicateFlags.Length)
-        {
-            _duplicateFlagCount++;
-        }
-    }
+    private void AddFlagSample(int value) =>
+        RingBufferHelpers.Add(_duplicateFlags, ref _duplicateFlagCount, ref _duplicateFlagIndex, value);
 
     private static void AddTimingSample(double[] window, ref int count, ref int index, double value)
     {
@@ -220,48 +214,7 @@ internal sealed class FrameFingerprintCadenceTracker
             return;
         }
 
-        window[index] = value;
-        index = (index + 1) % window.Length;
-        if (count < window.Length)
-        {
-            count++;
-        }
-    }
-
-    private static double[] CopyRing(double[] window, int count, int index, int maxCount)
-    {
-        var take = Math.Min(Math.Max(0, maxCount), count);
-        if (take <= 0)
-        {
-            return Array.Empty<double>();
-        }
-
-        var result = new double[take];
-        var start = (index - take + window.Length) % window.Length;
-        for (var i = 0; i < take; i++)
-        {
-            result[i] = window[(start + i) % window.Length];
-        }
-
-        return result;
-    }
-
-    private static int[] CopyRing(int[] window, int count, int index, int maxCount)
-    {
-        var take = Math.Min(Math.Max(0, maxCount), count);
-        if (take <= 0)
-        {
-            return Array.Empty<int>();
-        }
-
-        var result = new int[take];
-        var start = (index - take + window.Length) % window.Length;
-        for (var i = 0; i < take; i++)
-        {
-            result[i] = window[(start + i) % window.Length];
-        }
-
-        return result;
+        RingBufferHelpers.Add(window, ref count, ref index, value);
     }
 
     private static (double Average, double P95) ComputeStats(double[] values)

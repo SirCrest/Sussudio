@@ -350,9 +350,9 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         lock (_sync)
         {
             depth = _frames.Count;
-            input = CopyRing(_inputIntervalsMs, _inputIntervalCount, _inputIntervalIndex);
-            output = CopyRing(_outputIntervalsMs, _outputIntervalCount, _outputIntervalIndex);
-            latency = CopyRing(_queueLatencyMs, _queueLatencyCount, _queueLatencyIndex);
+            input = RingBufferHelpers.Copy(_inputIntervalsMs, _inputIntervalCount, _inputIntervalIndex);
+            output = RingBufferHelpers.Copy(_outputIntervalsMs, _outputIntervalCount, _outputIntervalIndex);
+            latency = RingBufferHelpers.Copy(_queueLatencyMs, _queueLatencyCount, _queueLatencyIndex);
         }
 
         var inputMetrics = ComputeTimingMetrics(input);
@@ -1183,25 +1183,8 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
 
         lock (_sync)
         {
-            window[index] = valueMs;
-            index = (index + 1) % window.Length;
-            if (count < window.Length)
-            {
-                count++;
-            }
+            RingBufferHelpers.Add(window, ref count, ref index, valueMs);
         }
-    }
-
-    private static double[] CopyRing(double[] window, int count, int index)
-    {
-        var samples = new double[count];
-        for (var i = 0; i < count; i++)
-        {
-            var ringIndex = (index - count + i + window.Length) % window.Length;
-            samples[i] = window[ringIndex];
-        }
-
-        return samples;
     }
 
     private static (int SampleCount, double AverageMs, double P95Ms, double MaxMs) ComputeTimingMetrics(double[] samples)

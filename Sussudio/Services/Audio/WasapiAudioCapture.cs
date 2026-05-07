@@ -73,9 +73,18 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
     public long CaptureCallbackCount => Interlocked.Read(ref _captureCallbackCount);
 
+    // Snapshot getter — both fields read together drove the lock-and-walk twice per
+    // diagnostics poll. Callers should prefer GetCaptureCallbackIntervalSnapshot()
+    // when they need both values.
     public double CaptureCallbackAvgIntervalMs => GetCaptureCallbackIntervalMetrics().AverageIntervalMs;
 
     public double CaptureCallbackMaxIntervalMs => GetCaptureCallbackIntervalMetrics().MaxIntervalMs;
+
+    public (double AvgIntervalMs, double MaxIntervalMs) GetCaptureCallbackIntervalSnapshot()
+    {
+        var metrics = GetCaptureCallbackIntervalMetrics();
+        return (metrics.AverageIntervalMs, metrics.MaxIntervalMs);
+    }
 
     public long CaptureCallbackSevereGapCount => Interlocked.Read(ref _captureCallbackSevereGapCount);
 

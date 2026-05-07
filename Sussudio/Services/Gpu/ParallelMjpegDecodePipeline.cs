@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Gpu;
 
@@ -345,11 +346,16 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         }
 
         var perDecoder = new PerDecoderMetrics[_decoderCount];
-        var allDecodeSamples = new double[decoderCounts.Sum()];
+        var totalDecodeSamples = 0;
+        for (var i = 0; i < decoderCounts.Length; i++)
+        {
+            totalDecodeSamples += decoderCounts[i];
+        }
+        var allDecodeSamples = new double[totalDecodeSamples];
         var decodeOffset = 0;
         for (var i = 0; i < _decoderCount; i++)
         {
-            var copied = CopyRing(decoderSamples[i], decoderCounts[i], decoderIndexes[i]);
+            var copied = RingBufferHelpers.Copy(decoderSamples[i], decoderCounts[i], decoderIndexes[i]);
             Array.Copy(copied, 0, allDecodeSamples, decodeOffset, copied.Length);
             decodeOffset += copied.Length;
 
@@ -363,8 +369,8 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         }
 
         var aggregateDecode = ComputeTimingMetrics(allDecodeSamples);
-        var reorderMetrics = ComputeTimingMetrics(CopyRing(reorderSamples, reorderCount, reorderIndex));
-        var pipelineMetrics = ComputeTimingMetrics(CopyRing(pipelineSamples, pipelineCount, pipelineIndex));
+        var reorderMetrics = ComputeTimingMetrics(RingBufferHelpers.Copy(reorderSamples, reorderCount, reorderIndex));
+        var pipelineMetrics = ComputeTimingMetrics(RingBufferHelpers.Copy(pipelineSamples, pipelineCount, pipelineIndex));
 
         return new PipelineTimingMetrics(
             DecoderCount: _decoderCount,
@@ -690,8 +696,13 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             }
 
             consumedAny = true;
-            Interlocked.Increment(ref _reorderSkips);
-            Logger.Log($"MJPEG_PIPELINE_KNOWN_MISSING_SKIP seq={skippedSeq} nextEmit={Volatile.Read(ref _nextEmitSeq)}");
+            var skips = Interlocked.Increment(ref _reorderSkips);
+            if (skips == 1 || skips % 30 == 0)
+            {
+                Logger.Log(
+                    $"MJPEG_PIPELINE_KNOWN_MISSING_SKIP seq={skippedSeq} " +
+                    $"nextEmit={Volatile.Read(ref _nextEmitSeq)} totalSkips={skips}");
+            }
         }
     }
 
@@ -735,9 +746,19 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                 return 0;
             }
 
-            var seqNo = _reorderFrames.Keys.First();
+            var seqNo = PeekFirstSequenceUnderLock();
             return seqNo < _nextEmitSeq ? -1 : 2;
         }
+    }
+
+    // SortedDictionary keys are sorted, but Keys.First() goes through Enumerable.First
+    // which boxes the struct enumerator. The struct GetEnumerator on the dictionary
+    // itself avoids that, and we only need the smallest key.
+    private long PeekFirstSequenceUnderLock()
+    {
+        using var e = _reorderFrames.GetEnumerator();
+        e.MoveNext();
+        return e.Current.Key;
     }
 
     private bool TryTakeNextDecodedFrame(out DecodedFrame frame)
@@ -807,7 +828,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                     return;
                 }
 
-                var seqNo = _reorderFrames.Keys.First();
+                var seqNo = PeekFirstSequenceUnderLock();
                 if (seqNo >= _nextEmitSeq)
                 {
                     return;
@@ -894,25 +915,8 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     {
         lock (_timingLock)
         {
-            window[index] = valueMs;
-            index = (index + 1) % window.Length;
-            if (count < window.Length)
-            {
-                count++;
-            }
+            RingBufferHelpers.Add(window, ref count, ref index, valueMs);
         }
-    }
-
-    private static double[] CopyRing(double[] window, int count, int index)
-    {
-        var samples = new double[count];
-        for (var i = 0; i < count; i++)
-        {
-            var ringIndex = (index - count + i + window.Length) % window.Length;
-            samples[i] = window[ringIndex];
-        }
-
-        return samples;
     }
 
     private static (int SampleCount, double AverageMs, double P95Ms, double MaxMs) ComputeTimingMetrics(double[] samples)

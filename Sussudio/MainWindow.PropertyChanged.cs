@@ -153,7 +153,7 @@ public sealed partial class MainWindow
                     }
                     PreviewButtonIcon.Glyph = "\uE71A";
                     ToolTipService.SetToolTip(PreviewButton, "Stop Preview");
-                    TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
+                    ApplyHdrToggleEnabledState();
                 }
                 else
                 {
@@ -180,7 +180,7 @@ public sealed partial class MainWindow
                         PreviewButtonIcon.Glyph = "\uE768";
                         ToolTipService.SetToolTip(PreviewButton, "Start Preview");
                     }
-                    TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
+                    ApplyHdrToggleEnabledState();
                     ResetPreviewStartupTracking(preserveReinitAnimation: ViewModel.IsPreviewReinitializing || _isPreviewReinitAnimating);
                 }
                 break;
@@ -260,10 +260,7 @@ public sealed partial class MainWindow
                 AnalogAudioGainSlider.IsEnabled = ViewModel.IsDeviceAudioControlSupported &&
                                                   string.Equals(ViewModel.SelectedDeviceAudioMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase) &&
                                                   !ViewModel.IsRecording;
-                HdrToggle.IsEnabled = ViewModel.IsHdrAvailable &&
-                                      !ViewModel.IsRecording &&
-                                      ViewModel.SourceIsHdr != false;
-                TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
+                ApplyHdrToggleEnabledState();
                 // Stats panel always visible — shows "--" when not recording
                 RefreshHdrHintText();
                 UpdateDeviceApplyButtonState();
@@ -299,7 +296,7 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.AudioClipping):
-                AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
+                ApplyAudioClipVisibility();
                 break;
 
             case nameof(MainViewModel.SelectedDevice):
@@ -337,9 +334,7 @@ public sealed partial class MainWindow
 
             case nameof(MainViewModel.IsHdrAvailable):
             case nameof(MainViewModel.SourceIsHdr):
-                HdrToggle.IsEnabled = ViewModel.IsHdrAvailable &&
-                                      !ViewModel.IsRecording &&
-                                      ViewModel.SourceIsHdr != false;
+                ApplyHdrToggleEnabledState();
                 break;
 
             case nameof(MainViewModel.IsHdrEnabled):
@@ -348,7 +343,7 @@ public sealed partial class MainWindow
                     HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
                 }
 
-                TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
+                ApplyHdrToggleEnabledState();
                 break;
 
             case nameof(MainViewModel.IsTrueHdrPreviewEnabled):
@@ -377,8 +372,7 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.IsCustomBitrateVisible):
-                CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
-                PresetPanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Collapsed : Visibility.Visible;
+                ApplyBitrateVisibility();
                 break;
 
             case nameof(MainViewModel.CustomBitrateMbps):

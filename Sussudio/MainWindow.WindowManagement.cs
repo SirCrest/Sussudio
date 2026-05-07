@@ -661,45 +661,10 @@ public sealed partial class MainWindow
             ViewModel.StatusText = $"{operationName} failed: {ex.Message}";
         }
     }
-    #region Minimum window size (Win32 interop)
-    private const int GWLP_WNDPROC = -4;
-    private const uint WM_GETMINMAXINFO = 0x0024;
-    private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-    private struct POINT { public int X, Y; }
-#pragma warning disable CS0649 // Populated by Marshal.PtrToStructure for WM_GETMINMAXINFO.
-    private struct MINMAXINFO
-    {
-        public POINT ptReserved;
-        public POINT ptMaxSize;
-        public POINT ptMaxPosition;
-        public POINT ptMinTrackSize;
-        public POINT ptMaxTrackSize;
-    }
-#pragma warning restore CS0649
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
-    private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
-    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
-    private static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
-    [DllImport("user32.dll")]
-    private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-    [DllImport("user32.dll")]
-    private static extern uint GetDpiForWindow(IntPtr hwnd);
+    #region Win32 interop (DWM only — min-size subclass moved to MinSizeWindowSubclass)
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
     private const int DWMWA_CLOAK = 13;
-    private IntPtr MinSizeWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
-    {
-        if (msg == WM_GETMINMAXINFO)
-        {
-            var dpi = GetDpiForWindow(hWnd);
-            var scale = dpi / 96.0;
-            var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
-            mmi.ptMinTrackSize.X = (int)(MinWindowWidth * scale);
-            mmi.ptMinTrackSize.Y = (int)(MinWindowHeight * scale);
-            Marshal.StructureToPtr(mmi, lParam, false);
-        }
-        return CallWindowProc(_originalWndProc, hWnd, msg, wParam, lParam);
-    }
     #endregion
 }

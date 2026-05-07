@@ -54,7 +54,7 @@ public sealed partial class StatsWindow : Window
 
     private const int MinWidth = 340;
     private const int MinHeight = 520;
-    private IntPtr _originalWndProc;
+    private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
 
     private void ConfigureWindow()
     {
@@ -74,51 +74,11 @@ public sealed partial class StatsWindow : Window
             presenter.IsAlwaysOnTop = AlwaysOnTopToggle.IsOn;
         }
 
-        _originalWndProc = SetWindowLongPtr(hwnd, GWLP_WNDPROC,
-            Marshal.GetFunctionPointerForDelegate(_minSizeProc = new WndProcDelegate(MinSizeWndProc)));
+        _minSizeHandle = MinSizeWindowSubclass.Install(hwnd, MinWidth, MinHeight);
     }
-
-    private WndProcDelegate? _minSizeProc;
-
-    private IntPtr MinSizeWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
-    {
-        if (msg == 0x0024) // WM_GETMINMAXINFO
-        {
-            var dpi = GetDpiForWindow(hWnd);
-            var scale = dpi / 96.0;
-            var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
-            mmi.ptMinTrackSize.X = (int)(MinWidth * scale);
-            mmi.ptMinTrackSize.Y = (int)(MinHeight * scale);
-            Marshal.StructureToPtr(mmi, lParam, false);
-        }
-        return CallWindowProc(_originalWndProc, hWnd, msg, wParam, lParam);
-    }
-
-    private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hwnd);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
-    private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
-
-    private const int GWLP_WNDPROC = -4;
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct POINT { public int X; public int Y; }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MINMAXINFO
-    {
-        public POINT ptReserved;
-        public POINT ptMaxSize;
-        public POINT ptMaxPosition;
-        public POINT ptMinTrackSize;
-        public POINT ptMaxTrackSize;
-    }
 
     private void PollTimer_Tick(DispatcherQueueTimer sender, object args)
     {

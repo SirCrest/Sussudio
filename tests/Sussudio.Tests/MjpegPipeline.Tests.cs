@@ -63,14 +63,18 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // ── ParallelMjpegDecodePipeline: CopyRing ──
+    // ── RingBufferHelpers.Copy (used by ParallelMjpegDecodePipeline and friends) ──
 
     private static Task ParallelMjpegDecodePipeline_CopyRing_ExtractsCorrectWindow()
     {
-        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
-        var method = pipelineType.GetMethod("CopyRing",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("CopyRing not found.");
+        var helperType = RequireType("Sussudio.Services.Runtime.RingBufferHelpers");
+        var method = helperType.GetMethod(
+            "Copy",
+            BindingFlags.Static | BindingFlags.Public,
+            binder: null,
+            types: new[] { typeof(double[]), typeof(int), typeof(int), typeof(int?) },
+            modifiers: null)
+            ?? throw new InvalidOperationException("RingBufferHelpers.Copy(double[], int, int, int?) not found.");
 
         // Ring buffer: [3, 4, 5, 1, 2] with index pointing at position 2 (value 5)
         // Count = 5, meaning the ring is full
@@ -78,7 +82,7 @@ static partial class Program
         var count = 5;
         var index = 3; // next-write index, so last-written is at 2
 
-        var result = (double[])method.Invoke(null, new object[] { window, count, index })!;
+        var result = (double[])method.Invoke(null, new object?[] { window, count, index, (int?)null })!;
         AssertEqual(5, result.Length, "CopyRing output length");
 
         // Should extract in insertion order: oldest first

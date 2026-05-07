@@ -4099,24 +4099,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     }
 
     private void UpdateMaxPendingCommands(int value)
-        => UpdateMaxInt(ref _maxPendingCommands, value);
-
-    private static void UpdateMaxInt(ref int target, int value)
-    {
-        while (true)
-        {
-            var current = Volatile.Read(ref target);
-            if (value <= current)
-            {
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref target, value, current) == current)
-            {
-                return;
-            }
-        }
-    }
+        => AtomicMax.Update(ref _maxPendingCommands, value);
 
     private void TrackPlaybackCadence(double intervalMs, double expectedFrameMs)
     {
@@ -4202,23 +4185,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (phaseTimings.AudioMs > max) { phase = "audio"; max = phaseTimings.AudioMs; }
         if (phaseTimings.ConvertMs > max) { phase = "convert"; }
         return phase;
-    }
-
-    private static void UpdateMaxLong(ref long target, long value)
-    {
-        while (true)
-        {
-            var current = Interlocked.Read(ref target);
-            if (value <= current)
-            {
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref target, value, current) == current)
-            {
-                return;
-            }
-        }
     }
 
     private void DecrementPendingCommands()

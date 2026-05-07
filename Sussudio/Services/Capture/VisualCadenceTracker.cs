@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
 
@@ -222,9 +223,9 @@ internal sealed class VisualCadenceTracker
                 return Empty;
             }
 
-            var outputIntervals = CopyRing(_outputIntervalsMs, _outputIntervalCount, _outputIntervalIndex, maxRecentIntervals);
-            var changeIntervals = CopyRing(_changeIntervalsMs, _changeIntervalCount, _changeIntervalIndex, maxRecentIntervals);
-            var deltas = CopyRing(_deltaWindow, _deltaCount, _deltaIndex, WindowSize);
+            var outputIntervals = RingBufferHelpers.Copy(_outputIntervalsMs, _outputIntervalCount, _outputIntervalIndex, maxRecentIntervals);
+            var changeIntervals = RingBufferHelpers.Copy(_changeIntervalsMs, _changeIntervalCount, _changeIntervalIndex, maxRecentIntervals);
+            var deltas = RingBufferHelpers.Copy(_deltaWindow, _deltaCount, _deltaIndex, WindowSize);
             var deltaStats = ComputeStats(deltas);
             var outputStats = ComputeStats(outputIntervals);
             var changeStats = ComputeStats(changeIntervals);
@@ -316,12 +317,7 @@ internal sealed class VisualCadenceTracker
             return;
         }
 
-        window[index] = value;
-        index = (index + 1) % window.Length;
-        if (count < window.Length)
-        {
-            count++;
-        }
+        RingBufferHelpers.Add(window, ref count, ref index, value);
     }
 
     private static void AddValueSample(double[] window, ref int count, ref int index, double value)
@@ -331,30 +327,7 @@ internal sealed class VisualCadenceTracker
             return;
         }
 
-        window[index] = value;
-        index = (index + 1) % window.Length;
-        if (count < window.Length)
-        {
-            count++;
-        }
-    }
-
-    private static double[] CopyRing(double[] window, int count, int index, int maxCount)
-    {
-        var take = Math.Min(Math.Max(0, maxCount), count);
-        if (take <= 0)
-        {
-            return Array.Empty<double>();
-        }
-
-        var result = new double[take];
-        var start = (index - take + window.Length) % window.Length;
-        for (var i = 0; i < take; i++)
-        {
-            result[i] = window[(start + i) % window.Length];
-        }
-
-        return result;
+        RingBufferHelpers.Add(window, ref count, ref index, value);
     }
 
     private static (double Average, double P95) ComputeStats(double[] values)

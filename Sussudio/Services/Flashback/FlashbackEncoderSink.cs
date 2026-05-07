@@ -12,6 +12,7 @@ using Sussudio.Services.Audio;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
 
@@ -41,9 +42,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private readonly object _sync = new();
     private readonly object _videoQueueSync = new();
-    private readonly object _videoQueueLatencySync = new();
-    private readonly object _videoSequenceSync = new();
-    private readonly Queue<long> _videoQueueEnqueueTicks = new();
     private readonly LibAvEncoder _encoder = new();
     private readonly FlashbackBufferManager _bufferManager;
     private readonly ManualResetEventSlim _workAvailable = new(false, 100);
@@ -105,18 +103,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private int _gpuQueueMaxDepth;
     private long _lastVideoEnqueueTick;
     private long _lastVideoWriteTick;
-    private long _lastVideoQueueLatencyMs;
-    private long _videoBackpressureWaitMs;
-    private long _videoBackpressureEvents;
-    private long _lastVideoBackpressureWaitMs;
-    private long _maxVideoBackpressureWaitMs;
-    private long _videoSequenceGaps;
-    private long _lastVideoSequenceNumber = -1;
     private string? _lastVideoQueueRejectReason;
     private string? _lastGpuQueueRejectReason;
-    private readonly double[] _videoQueueLatencySamples = new double[VideoQueueLatencyWindowSize];
-    private int _videoQueueLatencySampleCount;
-    private int _videoQueueLatencySampleIndex;
+    private readonly VideoQueueLatencyTracker _videoLatencyTracker;
     private string? _tsFilePath;
     private string? _recordingOutputPath;
     private int _recordingActive;
@@ -190,6 +179,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var opts = options ?? new FlashbackBufferOptions();
         _bufferManager = new FlashbackBufferManager(opts);
         _ownsBufferManager = true;
+        _videoLatencyTracker = new VideoQueueLatencyTracker(
+            "FLASHBACK_SINK", _videoQueueSync, VideoQueueLatencyWindowSize);
     }
 
     public FlashbackEncoderSink(FlashbackBufferManager bufferManager)
@@ -197,6 +188,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         ArgumentNullException.ThrowIfNull(bufferManager);
         _bufferManager = bufferManager;
         _ownsBufferManager = false;
+        _videoLatencyTracker = new VideoQueueLatencyTracker(
+            "FLASHBACK_SINK", _videoQueueSync, VideoQueueLatencyWindowSize);
     }
 
     public event EventHandler<long>? FrameEncoded;
@@ -225,7 +218,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public long VideoEncoderPts => _encoder.NextVideoPts;
     public long VideoEncoderPacketsWritten => _encoder.VideoPacketsWritten;
     public long VideoEncoderDroppedFrames => _encoder.DroppedFrameCount;
-    public long VideoSequenceGaps => Interlocked.Read(ref _videoSequenceGaps);
+    public long VideoSequenceGaps => _videoLatencyTracker.SequenceGaps;
 
     public long VideoDropsQueueSaturated => Interlocked.Read(ref _videoDropsQueueSaturated);
 
@@ -242,18 +235,18 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public long LastVideoEnqueueTick => Interlocked.Read(ref _lastVideoEnqueueTick);
 
     public long LastVideoWriteTick => Interlocked.Read(ref _lastVideoWriteTick);
-    public long LastVideoQueueLatencyMs => Interlocked.Read(ref _lastVideoQueueLatencyMs);
-    public long VideoQueueOldestFrameAgeMs => GetVideoQueueOldestFrameAgeMs();
-    public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics => GetVideoQueueLatencyMetrics();
-    public int VideoQueueLatencySampleCount => GetVideoQueueLatencyMetrics().SampleCount;
-    public double VideoQueueLatencyAvgMs => GetVideoQueueLatencyMetrics().AverageMs;
-    public double VideoQueueLatencyP95Ms => GetVideoQueueLatencyMetrics().P95Ms;
-    public double VideoQueueLatencyP99Ms => GetVideoQueueLatencyMetrics().P99Ms;
-    public double VideoQueueLatencyMaxMs => GetVideoQueueLatencyMetrics().MaxMs;
-    public long VideoBackpressureWaitMs => Interlocked.Read(ref _videoBackpressureWaitMs);
-    public long VideoBackpressureEvents => Interlocked.Read(ref _videoBackpressureEvents);
-    public long LastVideoBackpressureWaitMs => Interlocked.Read(ref _lastVideoBackpressureWaitMs);
-    public long MaxVideoBackpressureWaitMs => Interlocked.Read(ref _maxVideoBackpressureWaitMs);
+    public long LastVideoQueueLatencyMs => _videoLatencyTracker.LastLatencyMs;
+    public long VideoQueueOldestFrameAgeMs => _videoLatencyTracker.GetOldestFrameAgeMs(Volatile.Read(ref _videoQueueDepth));
+    public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics => _videoLatencyTracker.GetMetrics();
+    public int VideoQueueLatencySampleCount => _videoLatencyTracker.GetMetrics().SampleCount;
+    public double VideoQueueLatencyAvgMs => _videoLatencyTracker.GetMetrics().AverageMs;
+    public double VideoQueueLatencyP95Ms => _videoLatencyTracker.GetMetrics().P95Ms;
+    public double VideoQueueLatencyP99Ms => _videoLatencyTracker.GetMetrics().P99Ms;
+    public double VideoQueueLatencyMaxMs => _videoLatencyTracker.GetMetrics().MaxMs;
+    public long VideoBackpressureWaitMs => _videoLatencyTracker.BackpressureWaitMs;
+    public long VideoBackpressureEvents => _videoLatencyTracker.BackpressureEvents;
+    public long LastVideoBackpressureWaitMs => _videoLatencyTracker.LastBackpressureWaitMs;
+    public long MaxVideoBackpressureWaitMs => _videoLatencyTracker.MaxBackpressureWaitMs;
 
     public bool GpuEncodingEnabled => Volatile.Read(ref _gpuEncodingEnabled);
     public int GpuQueueCount => Volatile.Read(ref _gpuQueueDepth);
@@ -1513,11 +1506,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     break;
                 }
 
-                RemoveQueuedVideoTick(packet.EnqueueTick);
+                _videoLatencyTracker.TrackDequeueUnderLock(packet.EnqueueTick);
                 DecrementQueueDepth(ref _videoQueueDepth, "video");
             }
 
-            RecordVideoPacketDequeued(packet);
+            _videoLatencyTracker.RecordPacketDequeued(packet.EnqueueTick, packet.SequenceNumber);
             try
             {
                 var expectedFrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(w, h, packet.IsP010);
@@ -2014,23 +2007,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    private static void UpdateMaxDepth(ref int target, int depth)
-    {
-        while (true)
-        {
-            var current = Volatile.Read(ref target);
-            if (depth <= current)
-            {
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref target, depth, current) == current)
-            {
-                return;
-            }
-        }
-    }
-
     private static void DecrementQueueDepth(ref int target, string queueName)
     {
         while (true)
@@ -2049,157 +2025,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    private static void UpdateMaxValue(ref long target, long value)
-    {
-        while (true)
-        {
-            var current = Interlocked.Read(ref target);
-            if (value <= current)
-            {
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref target, value, current) == current)
-            {
-                return;
-            }
-        }
-    }
-
     private void ResetVideoDiagnostics()
     {
-        Interlocked.Exchange(ref _lastVideoQueueLatencyMs, 0);
-        Interlocked.Exchange(ref _videoBackpressureWaitMs, 0);
-        Interlocked.Exchange(ref _videoBackpressureEvents, 0);
-        Interlocked.Exchange(ref _lastVideoBackpressureWaitMs, 0);
-        Interlocked.Exchange(ref _maxVideoBackpressureWaitMs, 0);
-        Interlocked.Exchange(ref _videoSequenceGaps, 0);
-        Interlocked.Exchange(ref _lastVideoSequenceNumber, -1);
-        lock (_videoQueueSync)
-        {
-            _videoQueueEnqueueTicks.Clear();
-        }
-
-        lock (_videoQueueLatencySync)
-        {
-            Array.Clear(_videoQueueLatencySamples, 0, _videoQueueLatencySamples.Length);
-            _videoQueueLatencySampleCount = 0;
-            _videoQueueLatencySampleIndex = 0;
-        }
-    }
-
-    private long GetVideoQueueOldestFrameAgeMs()
-    {
-        lock (_videoQueueSync)
-        {
-            while (_videoQueueEnqueueTicks.Count > Volatile.Read(ref _videoQueueDepth))
-            {
-                _videoQueueEnqueueTicks.Dequeue();
-            }
-
-            return _videoQueueEnqueueTicks.Count == 0
-                ? 0
-                : Math.Max(0, Environment.TickCount64 - _videoQueueEnqueueTicks.Peek());
-        }
-    }
-
-    private void TrackQueuedVideoTick(long enqueueTick)
-    {
-        _videoQueueEnqueueTicks.Enqueue(enqueueTick);
-    }
-
-    private void RemoveQueuedVideoTick(long expectedEnqueueTick)
-    {
-        if (_videoQueueEnqueueTicks.Count == 0)
-        {
-            return;
-        }
-
-        var queuedTick = _videoQueueEnqueueTicks.Dequeue();
-        if (queuedTick != expectedEnqueueTick)
-        {
-            Logger.Log($"FLASHBACK_SINK_QUEUE_TICK_MISMATCH expected={expectedEnqueueTick} actual={queuedTick}");
-        }
-    }
-
-    private void RecordVideoBackpressure(long startTick, long endTick)
-    {
-        if (startTick <= 0)
-        {
-            return;
-        }
-
-        var elapsedMs = Math.Max(0, endTick - startTick);
-        if (elapsedMs <= 0)
-        {
-            return;
-        }
-
-        Interlocked.Increment(ref _videoBackpressureEvents);
-        Interlocked.Add(ref _videoBackpressureWaitMs, elapsedMs);
-        Interlocked.Exchange(ref _lastVideoBackpressureWaitMs, elapsedMs);
-        UpdateMaxValue(ref _maxVideoBackpressureWaitMs, elapsedMs);
-    }
-
-    private void RecordVideoPacketDequeued(VideoFramePacket packet)
-    {
-        var latencyMs = Math.Max(0, Environment.TickCount64 - packet.EnqueueTick);
-        Interlocked.Exchange(ref _lastVideoQueueLatencyMs, latencyMs);
-        lock (_videoQueueLatencySync)
-        {
-            _videoQueueLatencySamples[_videoQueueLatencySampleIndex] = latencyMs;
-            _videoQueueLatencySampleIndex = (_videoQueueLatencySampleIndex + 1) % _videoQueueLatencySamples.Length;
-            if (_videoQueueLatencySampleCount < _videoQueueLatencySamples.Length)
-            {
-                _videoQueueLatencySampleCount++;
-            }
-        }
-
-        if (packet.SequenceNumber.HasValue)
-        {
-            lock (_videoSequenceSync)
-            {
-                var last = Interlocked.Read(ref _lastVideoSequenceNumber);
-                var current = packet.SequenceNumber.Value;
-                if (last >= 0 && current > last + 1)
-                {
-                    Interlocked.Add(ref _videoSequenceGaps, current - last - 1);
-                }
-
-                if (current > last)
-                {
-                    Interlocked.Exchange(ref _lastVideoSequenceNumber, current);
-                }
-            }
-        }
-    }
-
-    private (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) GetVideoQueueLatencyMetrics()
-    {
-        double[] copy;
-        int count;
-        lock (_videoQueueLatencySync)
-        {
-            count = _videoQueueLatencySampleCount;
-            if (count <= 0)
-            {
-                return (0, 0, 0, 0, 0);
-            }
-
-            copy = new double[count];
-            Array.Copy(_videoQueueLatencySamples, copy, count);
-        }
-
-        Array.Sort(copy);
-        var total = 0.0;
-        for (var i = 0; i < copy.Length; i++)
-        {
-            total += copy[i];
-        }
-
-        var p95Index = Math.Clamp((int)Math.Ceiling(copy.Length * 0.95) - 1, 0, copy.Length - 1);
-        var p99Index = Math.Clamp((int)Math.Ceiling(copy.Length * 0.99) - 1, 0, copy.Length - 1);
-        return (copy.Length, total / copy.Length, copy[p95Index], copy[p99Index], copy[^1]);
+        _videoLatencyTracker.ResetAll();
     }
 
     private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
@@ -2216,7 +2044,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             if (TryWriteVideoPacket(queue, packet))
             {
-                TrackQueuedVideoTick(packet.EnqueueTick);
+                _videoLatencyTracker.TrackEnqueueUnderLock(packet.EnqueueTick);
                 Interlocked.Increment(ref _videoFramesEnqueued);
                 SignalWork("video_enqueue");
                 return VideoEnqueueResult.Accepted;
@@ -2308,7 +2136,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var depth = Interlocked.Increment(ref _videoQueueDepth);
         if (queue.Writer.TryWrite(packet))
         {
-            UpdateMaxDepth(ref _videoQueueMaxDepth, depth);
+            AtomicMax.Update(ref _videoQueueMaxDepth, depth);
             return true;
         }
 
@@ -2321,7 +2149,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var depth = Interlocked.Increment(ref _gpuQueueDepth);
         if (queue.Writer.TryWrite(packet))
         {
-            UpdateMaxDepth(ref _gpuQueueMaxDepth, depth);
+            AtomicMax.Update(ref _gpuQueueMaxDepth, depth);
             return true;
         }
 
@@ -2533,7 +2361,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         lock (_videoQueueSync)
         {
-            _videoQueueEnqueueTicks.Clear();
+            _videoLatencyTracker.ClearEnqueueTicksUnderLock();
         }
 
         Interlocked.Exchange(ref queueDepth, 0);

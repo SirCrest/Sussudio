@@ -161,24 +161,24 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         try
         {
-            MfInterop.AddStartupReference();
+            MfInteropHelpers.AddStartupReference();
             startupHeld = true;
 
             mediaSource = CreateMediaSource(deviceSymbolicLink);
 
             disableConverters = !useConvertedMjpegNv12 && !useRawMjpgOutput;
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 MfInterop.MFCreateAttributes(out readerAttributes, useConvertedMjpegNv12 ? 3 : 2),
                 "MFCreateAttributes(reader)");
             if (useConvertedMjpegNv12)
             {
-                ThrowIfFailed(
+                MfInteropHelpers.ThrowIfFailed(
                     readerAttributes.SetUINT32(ref MfGuids.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1),
                     "IMFAttributes.SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS)");
             }
             if (disableConverters)
             {
-                ThrowIfFailed(
+                MfInteropHelpers.ThrowIfFailed(
                     readerAttributes.SetUINT32(ref MfGuids.MF_READWRITE_DISABLE_CONVERTERS, 1),
                     "IMFAttributes.SetUINT32(MF_READWRITE_DISABLE_CONVERTERS)");
             }
@@ -199,7 +199,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             {
                 if (useConvertedMjpegNv12)
                 {
-                    ThrowIfFailed(createSourceReaderHr, "MFCreateSourceReaderFromMediaSource(hfr_mjpeg_d3d)");
+                    MfInteropHelpers.ThrowIfFailed(createSourceReaderHr, "MFCreateSourceReaderFromMediaSource(hfr_mjpeg_d3d)");
                 }
 
                 Log(
@@ -210,12 +210,12 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 WasapiComInterop.ReleaseComObject(ref sourceReader);
                 WasapiComInterop.ReleaseComObject(ref readerAttributes);
 
-                ThrowIfFailed(
+                MfInteropHelpers.ThrowIfFailed(
                     MfInterop.MFCreateAttributes(out readerAttributes, 1),
                     "MFCreateAttributes(reader_cpu_fallback)");
                 if (disableConverters)
                 {
-                    ThrowIfFailed(
+                    MfInteropHelpers.ThrowIfFailed(
                         readerAttributes.SetUINT32(ref MfGuids.MF_READWRITE_DISABLE_CONVERTERS, 1),
                         "IMFAttributes.SetUINT32(MF_READWRITE_DISABLE_CONVERTERS)");
                 }
@@ -224,7 +224,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 createSourceReaderHr = MfInterop.MFCreateSourceReaderFromMediaSource(mediaSource, readerAttributes, out sourceReader);
             }
 
-            ThrowIfFailed(createSourceReaderHr, "MFCreateSourceReaderFromMediaSource");
+            MfInteropHelpers.ThrowIfFailed(createSourceReaderHr, "MFCreateSourceReaderFromMediaSource");
 
             var requestedSubtype = requireP010
                 ? MfGuids.MFVideoFormat_P010
@@ -281,14 +281,14 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     out negotiatedDescription);
             }
 
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 sourceReader.SetCurrentMediaType(
                     MfConstants.MF_SOURCE_READER_FIRST_VIDEO_STREAM,
                     IntPtr.Zero,
                     selectedMediaType),
                 $"IMFSourceReader.SetCurrentMediaType({SubtypeGuidToName(negotiatedSubtype)})");
 
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 sourceReader.GetCurrentMediaType(
                     MfConstants.MF_SOURCE_READER_FIRST_VIDEO_STREAM,
                     out actualMediaType),
@@ -296,7 +296,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
             if (actualMediaType != null)
             {
-                if (TryGetGuid(actualMediaType, ref MfGuids.MF_MT_SUBTYPE, out var actualSubtype))
+                if (MfInteropHelpers.TryGetGuid(actualMediaType, ref MfGuids.MF_MT_SUBTYPE, out var actualSubtype))
                 {
                     negotiatedSubtype = actualSubtype;
                 }
@@ -423,7 +423,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
             if (startupHeld)
             {
-                MfInterop.ReleaseStartupReference();
+                MfInteropHelpers.ReleaseStartupReference();
             }
         }
 
@@ -553,7 +553,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         if (_startupHeld)
         {
-            MfInterop.ReleaseStartupReference();
+            MfInteropHelpers.ReleaseStartupReference();
             _startupHeld = false;
         }
     }
@@ -612,7 +612,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     break;
                 }
 
-                ThrowIfFailed(hr, "IMFSourceReader.ReadSample");
+                MfInteropHelpers.ThrowIfFailed(hr, "IMFSourceReader.ReadSample");
 
                 if ((flags & MfConstants.MF_SOURCE_READERF_ENDOFSTREAM) != 0)
                 {
@@ -978,7 +978,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     {
         if (Volatile.Read(ref _isCompressedMjpgOutput))
         {
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 buffer.Lock(out var compressedDataPtr, out _, out var compressedLength),
                 "IMFMediaBuffer.Lock");
 
@@ -1022,7 +1022,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             return;
         }
 
-        ThrowIfFailed(
+        MfInteropHelpers.ThrowIfFailed(
             buffer.Lock(out var dataPtr, out _, out var curLen),
             "IMFMediaBuffer.Lock");
         try
@@ -1111,7 +1111,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 return;
             }
 
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 buffer.Lock(out var dataPtr, out _, out var curLen),
                 "IMFMediaBuffer.Lock");
             try
@@ -1177,7 +1177,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             return false;
         }
 
-        ThrowIfFailed(
+        MfInteropHelpers.ThrowIfFailed(
             buffer2D.Lock2D(out var scanlinePtr, out var pitch),
             "IMF2DBuffer.Lock2D");
         try
@@ -1234,7 +1234,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             return false;
         }
 
-        ThrowIfFailed(
+        MfInteropHelpers.ThrowIfFailed(
             buffer2D.Lock2D(out var scanlinePtr, out var pitch),
             "IMF2DBuffer.Lock2D");
         try
@@ -1342,7 +1342,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         try
         {
             managerAsUnknown = Marshal.GetObjectForIUnknown(dxgiDeviceManager);
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 attributes.SetUnknown(ref MfGuids.MF_SOURCE_READER_D3D_MANAGER, managerAsUnknown),
                 "IMFAttributes.SetUnknown(MF_SOURCE_READER_D3D_MANAGER)");
             return true;
@@ -1369,13 +1369,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         IMFAttributes? attrs = null;
         try
         {
-            ThrowIfFailed(MfInterop.MFCreateAttributes(out attrs, 2), "MFCreateAttributes(device)");
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(MfInterop.MFCreateAttributes(out attrs, 2), "MFCreateAttributes(device)");
+            MfInteropHelpers.ThrowIfFailed(
                 attrs.SetGUID(
                     ref MfGuids.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE,
                     ref MfGuids.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID),
                 "IMFAttributes.SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE)");
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 attrs.SetString(
                     ref MfGuids.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK,
                     deviceSymbolicLink),
@@ -1406,14 +1406,14 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         try
         {
-            ThrowIfFailed(MfInterop.MFCreateAttributes(out attrs, 1), "MFCreateAttributes(enum)");
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(MfInterop.MFCreateAttributes(out attrs, 1), "MFCreateAttributes(enum)");
+            MfInteropHelpers.ThrowIfFailed(
                 attrs.SetGUID(
                     ref MfGuids.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE,
                     ref MfGuids.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID),
                 "IMFAttributes.SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE)");
 
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 MfInterop.MFEnumDeviceSources(attrs, out activateArrayPtr, out var activateCount),
                 "MFEnumDeviceSources");
 
@@ -1437,7 +1437,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     activate = (IMFActivate)Marshal.GetObjectForIUnknown(activatePtr);
                     _ = Marshal.Release(activatePtr);
 
-                    var link = TryReadAllocatedString(
+                    var link = MfInteropHelpers.TryReadAllocatedString(
                         activate,
                         ref MfGuids.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK);
                     if (!string.IsNullOrWhiteSpace(link))
@@ -1445,13 +1445,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         candidates.Add(link);
                     }
 
-                    if (!SymbolicLinksMatch(targetSymbolicLink, link))
+                    if (!DeviceSymbolicLinkMatcher.Matches(targetSymbolicLink, link))
                     {
                         continue;
                     }
 
                     var mediaSourceIid = typeof(IMFMediaSource).GUID;
-                    ThrowIfFailed(
+                    MfInteropHelpers.ThrowIfFailed(
                         activate.ActivateObject(ref mediaSourceIid, out var activated),
                         "IMFActivate.ActivateObject(IMFMediaSource)");
 
@@ -1527,14 +1527,14 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     break;
                 }
 
-                ThrowIfFailed(hr, $"IMFSourceReader.GetNativeMediaType(index={index})");
+                MfInteropHelpers.ThrowIfFailed(hr, $"IMFSourceReader.GetNativeMediaType(index={index})");
                 if (nativeType == null)
                 {
                     continue;
                 }
 
                 totalNativeTypes++;
-                var hasSubtype = TryGetGuid(nativeType, ref MfGuids.MF_MT_SUBTYPE, out var subtype);
+                var hasSubtype = MfInteropHelpers.TryGetGuid(nativeType, ref MfGuids.MF_MT_SUBTYPE, out var subtype);
                 var subtypeName = hasSubtype ? SubtypeGuidToName(subtype) : "unknown";
 
                 if (!subtypeSummary.ContainsKey(subtypeName))
@@ -1638,25 +1638,25 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         IMFMediaType? convertedType = null;
         try
         {
-            ThrowIfFailed(MfInterop.MFCreateMediaType(out convertedType), "MFCreateMediaType");
+            MfInteropHelpers.ThrowIfFailed(MfInterop.MFCreateMediaType(out convertedType), "MFCreateMediaType");
 
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 convertedType.SetGUID(ref MfGuids.MF_MT_MAJOR_TYPE, ref MfGuids.MFMediaType_Video),
                 "IMFMediaType.SetGUID(MF_MT_MAJOR_TYPE)");
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 convertedType.SetGUID(ref MfGuids.MF_MT_SUBTYPE, ref requestedOutputSubtype),
                 $"IMFMediaType.SetGUID(MF_MT_SUBTYPE,{SubtypeGuidToName(requestedOutputSubtype)})");
 
-            if (TryGetUInt64(nativeType, ref MfGuids.MF_MT_FRAME_SIZE, out var frameSize))
+            if (MfInteropHelpers.TryGetUInt64(nativeType, ref MfGuids.MF_MT_FRAME_SIZE, out var frameSize))
             {
-                ThrowIfFailed(
+                MfInteropHelpers.ThrowIfFailed(
                     convertedType.SetUINT64(ref MfGuids.MF_MT_FRAME_SIZE, frameSize),
                     "IMFMediaType.SetUINT64(MF_MT_FRAME_SIZE)");
             }
 
-            if (TryGetUInt64(nativeType, ref MfGuids.MF_MT_FRAME_RATE, out var frameRate))
+            if (MfInteropHelpers.TryGetUInt64(nativeType, ref MfGuids.MF_MT_FRAME_RATE, out var frameRate))
             {
-                ThrowIfFailed(
+                MfInteropHelpers.ThrowIfFailed(
                     convertedType.SetUINT64(ref MfGuids.MF_MT_FRAME_RATE, frameRate),
                     "IMFMediaType.SetUINT64(MF_MT_FRAME_RATE)");
             }
@@ -1686,7 +1686,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     {
         width = 0;
         height = 0;
-        if (!TryGetUInt64(attributes, ref MfGuids.MF_MT_FRAME_SIZE, out var packed))
+        if (!MfInteropHelpers.TryGetUInt64(attributes, ref MfGuids.MF_MT_FRAME_SIZE, out var packed))
         {
             return false;
         }
@@ -1703,7 +1703,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     {
         numerator = 0;
         denominator = 0;
-        if (!TryGetUInt64(attributes, ref MfGuids.MF_MT_FRAME_RATE, out var packed))
+        if (!MfInteropHelpers.TryGetUInt64(attributes, ref MfGuids.MF_MT_FRAME_RATE, out var packed))
         {
             return false;
         }
@@ -1713,100 +1713,24 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         return numerator > 0 && denominator > 0;
     }
 
-    private static bool TryGetGuid(IMFAttributes attributes, ref Guid key, out Guid value)
-    {
-        var hr = attributes.GetGUID(ref key, out value);
-        if (hr == MfHResults.MF_E_ATTRIBUTENOTFOUND)
-        {
-            value = Guid.Empty;
-            return false;
-        }
-
-        ThrowIfFailed(hr, $"IMFAttributes.GetGUID({key})");
-        return true;
-    }
-
-    private static bool TryGetUInt64(IMFAttributes attributes, ref Guid key, out ulong value)
-    {
-        var hr = attributes.GetUINT64(ref key, out value);
-        if (hr == MfHResults.MF_E_ATTRIBUTENOTFOUND)
-        {
-            value = 0;
-            return false;
-        }
-
-        ThrowIfFailed(hr, $"IMFAttributes.GetUINT64({key})");
-        return true;
-    }
-
-    private static bool TryGetUInt32(IMFAttributes attributes, ref Guid key, out int value)
-    {
-        var hr = attributes.GetUINT32(ref key, out value);
-        if (hr == MfHResults.MF_E_ATTRIBUTENOTFOUND)
-        {
-            value = 0;
-            return false;
-        }
-
-        ThrowIfFailed(hr, $"IMFAttributes.GetUINT32({key})");
-        return true;
-    }
-
     private static void CopyOptionalUInt64(IMFAttributes source, IMFAttributes destination, ref Guid key)
     {
-        if (!TryGetUInt64(source, ref key, out var value))
+        if (!MfInteropHelpers.TryGetUInt64(source, ref key, out var value))
         {
             return;
         }
 
-        ThrowIfFailed(destination.SetUINT64(ref key, value), $"IMFAttributes.SetUINT64({key})");
+        MfInteropHelpers.ThrowIfFailed(destination.SetUINT64(ref key, value), $"IMFAttributes.SetUINT64({key})");
     }
 
     private static void CopyOptionalUInt32(IMFAttributes source, IMFAttributes destination, ref Guid key)
     {
-        if (!TryGetUInt32(source, ref key, out var value))
+        if (!MfInteropHelpers.TryGetUInt32(source, ref key, out var value))
         {
             return;
         }
 
-        ThrowIfFailed(destination.SetUINT32(ref key, value), $"IMFAttributes.SetUINT32({key})");
-    }
-
-    private static string TryReadAllocatedString(IMFAttributes attributes, ref Guid key)
-    {
-        IntPtr textPtr = IntPtr.Zero;
-        try
-        {
-            var hr = attributes.GetAllocatedString(ref key, out textPtr, out var length);
-            if (hr == MfHResults.MF_E_ATTRIBUTENOTFOUND || textPtr == IntPtr.Zero)
-            {
-                return string.Empty;
-            }
-
-            ThrowIfFailed(hr, $"IMFAttributes.GetAllocatedString({key})");
-            return length > 0
-                ? Marshal.PtrToStringUni(textPtr, length) ?? string.Empty
-                : Marshal.PtrToStringUni(textPtr) ?? string.Empty;
-        }
-        finally
-        {
-            if (textPtr != IntPtr.Zero)
-            {
-                Marshal.FreeCoTaskMem(textPtr);
-            }
-        }
-    }
-
-    private static bool SymbolicLinksMatch(string target, string candidate)
-    {
-        if (string.IsNullOrWhiteSpace(target) || string.IsNullOrWhiteSpace(candidate))
-        {
-            return false;
-        }
-
-        return string.Equals(target, candidate, StringComparison.OrdinalIgnoreCase) ||
-               candidate.Contains(target, StringComparison.OrdinalIgnoreCase) ||
-               target.Contains(candidate, StringComparison.OrdinalIgnoreCase);
+        MfInteropHelpers.ThrowIfFailed(destination.SetUINT32(ref key, value), $"IMFAttributes.SetUINT32({key})");
     }
 
     public static int GetFrameSizeBytes(int width, int height, bool isP010)
@@ -1942,27 +1866,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
     }
 
-    private static void ThrowIfFailed(int hr, string operation)
-    {
-        if (hr >= 0)
-        {
-            return;
-        }
-
-        throw new InvalidOperationException($"{operation} failed (hr=0x{hr:X8}).");
-    }
-
     private static class MfInterop
     {
-        private static readonly object StartupSync = new();
-        private static int _startupRefCount;
-
-        [DllImport("mfplat.dll", ExactSpelling = true)]
-        private static extern int MFStartup(int version, int dwFlags);
-
-        [DllImport("mfplat.dll", ExactSpelling = true)]
-        private static extern int MFShutdown();
-
         [DllImport("mfplat.dll", ExactSpelling = true)]
         internal static extern int MFCreateAttributes(
             [MarshalAs(UnmanagedType.Interface)] out IMFAttributes ppMFAttributes,
@@ -1991,41 +1896,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         [DllImport("mfplat.dll", ExactSpelling = true)]
         internal static extern int MFCreateDXGIDeviceManager(out uint pResetToken, out IntPtr ppDeviceManager);
-
-        internal static void AddStartupReference()
-        {
-            lock (StartupSync)
-            {
-                if (_startupRefCount == 0)
-                {
-                    ThrowIfFailed(MFStartup(MfConstants.MF_VERSION, 0), "MFStartup");
-                }
-
-                _startupRefCount++;
-            }
-        }
-
-        internal static void ReleaseStartupReference()
-        {
-            lock (StartupSync)
-            {
-                if (_startupRefCount <= 0)
-                {
-                    return;
-                }
-
-                _startupRefCount--;
-                if (_startupRefCount == 0)
-                {
-                    _ = MFShutdown();
-                }
-            }
-        }
     }
 
     private static class MfConstants
     {
-        internal const int MF_VERSION = 0x00020070;
         internal const int MF_SOURCE_READER_FIRST_VIDEO_STREAM = unchecked((int)0xFFFFFFFC);
         internal const int MF_SOURCE_READERF_ENDOFSTREAM = 0x00000002;
     }
@@ -2033,7 +1907,6 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private static class MfHResults
     {
         internal const int MF_E_NO_MORE_TYPES = unchecked((int)0xC00D36B9);
-        internal const int MF_E_ATTRIBUTENOTFOUND = unchecked((int)0xC00D36E6);
         internal const int MF_E_INVALIDREQUEST = unchecked((int)0xC00D36B2);
         internal const int MF_E_SHUTDOWN = unchecked((int)0xC00D3E85);
     }

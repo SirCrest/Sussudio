@@ -11,13 +11,8 @@ namespace Sussudio.Services.Capture;
 // ref-counting and exposes only the capture-device data the managed app needs.
 internal static class MfDeviceEnumerator
 {
-    private const int MfVersion = 0x00020070;
     private const int MfSourceReaderFirstVideoStream = unchecked((int)0xFFFFFFFC);
     private const int MfENoMoreTypes = unchecked((int)0xC00D36B9);
-    private const int MfEAttributeNotFound = unchecked((int)0xC00D36E6);
-
-    private static readonly object StartupSync = new();
-    private static int _startupRefCount;
 
     private static Guid DevSourceAttributeSourceType = new(
         0xC60AC5FE, 0x252A, 0x478F, 0xA0, 0xEF, 0xBC, 0x8F, 0xA5, 0xF7, 0xCA, 0xD3);
@@ -51,18 +46,18 @@ internal static class MfDeviceEnumerator
     public static Task<List<MfVideoDeviceInfo>> EnumerateVideoDevicesAsync()
     {
         var devices = new List<MfVideoDeviceInfo>();
-        AddStartupReference();
+        MfInteropHelpers.AddStartupReference();
         try
         {
             IMFAttributes? attributes = null;
             IntPtr activateArray = IntPtr.Zero;
             try
             {
-                ThrowIfFailed(MFCreateAttributes(out attributes, 1), "MFCreateAttributes(video_enum)");
-                ThrowIfFailed(
+                MfInteropHelpers.ThrowIfFailed(MFCreateAttributes(out attributes, 1), "MFCreateAttributes(video_enum)");
+                MfInteropHelpers.ThrowIfFailed(
                     attributes.SetGUID(ref DevSourceAttributeSourceType, ref DevSourceAttributeSourceTypeVidcapGuid),
                     "IMFAttributes.SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE)");
-                ThrowIfFailed(
+                MfInteropHelpers.ThrowIfFailed(
                     MFEnumDeviceSources(attributes, out activateArray, out var activateCount),
                     "MFEnumDeviceSources(video_enum)");
 
@@ -82,8 +77,8 @@ internal static class MfDeviceEnumerator
                         _ = Marshal.Release(activatePtr);
                         rawReleased = true;
 
-                        var friendlyName = ReadAllocatedString(activate, ref DevSourceAttributeFriendlyName);
-                        var symbolicLink = ReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink);
+                        var friendlyName = MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeFriendlyName);
+                        var symbolicLink = MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink);
                         if (string.IsNullOrWhiteSpace(symbolicLink))
                         {
                             continue;
@@ -133,7 +128,7 @@ internal static class MfDeviceEnumerator
         }
         finally
         {
-            ReleaseStartupReference();
+            MfInteropHelpers.ReleaseStartupReference();
         }
 
         return Task.FromResult(devices);
@@ -213,7 +208,7 @@ internal static class MfDeviceEnumerator
             return Task.FromResult(formats);
         }
 
-        AddStartupReference();
+        MfInteropHelpers.AddStartupReference();
         IMFMediaSource? mediaSource = null;
         IMFAttributes? readerAttributes = null;
         IMFSourceReader? sourceReader = null;
@@ -221,11 +216,11 @@ internal static class MfDeviceEnumerator
         {
             mediaSource = CreateMediaSource(symbolicLink);
 
-            ThrowIfFailed(MFCreateAttributes(out readerAttributes, 1), "MFCreateAttributes(format_probe)");
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(MFCreateAttributes(out readerAttributes, 1), "MFCreateAttributes(format_probe)");
+            MfInteropHelpers.ThrowIfFailed(
                 readerAttributes.SetUINT32(ref MfReadwriteDisableConverters, 1),
                 "IMFAttributes.SetUINT32(MF_READWRITE_DISABLE_CONVERTERS)");
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 MFCreateSourceReaderFromMediaSource(mediaSource, readerAttributes, out sourceReader),
                 "MFCreateSourceReaderFromMediaSource(format_probe)");
 
@@ -243,13 +238,13 @@ internal static class MfDeviceEnumerator
                         break;
                     }
 
-                    ThrowIfFailed(hr, $"IMFSourceReader.GetNativeMediaType(index={mediaTypeIndex})");
+                    MfInteropHelpers.ThrowIfFailed(hr, $"IMFSourceReader.GetNativeMediaType(index={mediaTypeIndex})");
                     if (mediaType == null)
                     {
                         continue;
                     }
 
-                    if (!TryGetUInt64(mediaType, ref MfMtFrameSize, out var packedFrameSize))
+                    if (!MfInteropHelpers.TryGetUInt64(mediaType, ref MfMtFrameSize, out var packedFrameSize))
                     {
                         continue;
                     }
@@ -261,14 +256,14 @@ internal static class MfDeviceEnumerator
                         continue;
                     }
 
-                    if (!TryGetGuid(mediaType, ref MfMtSubtype, out var subtype))
+                    if (!MfInteropHelpers.TryGetGuid(mediaType, ref MfMtSubtype, out var subtype))
                     {
                         continue;
                     }
 
                     uint frameRateNumerator = 0;
                     uint frameRateDenominator = 0;
-                    if (TryGetUInt64(mediaType, ref MfMtFrameRate, out var packedFrameRate))
+                    if (MfInteropHelpers.TryGetUInt64(mediaType, ref MfMtFrameRate, out var packedFrameRate))
                     {
                         frameRateNumerator = (uint)(packedFrameRate >> 32);
                         frameRateDenominator = (uint)(packedFrameRate & 0xFFFFFFFFu);
@@ -306,17 +301,11 @@ internal static class MfDeviceEnumerator
             WasapiComInterop.ReleaseComObject(ref sourceReader);
             WasapiComInterop.ReleaseComObject(ref readerAttributes);
             WasapiComInterop.ReleaseComObject(ref mediaSource);
-            ReleaseStartupReference();
+            MfInteropHelpers.ReleaseStartupReference();
         }
 
         return Task.FromResult(formats);
     }
-
-    [DllImport("mfplat.dll", ExactSpelling = true)]
-    private static extern int MFStartup(int version, int dwFlags);
-
-    [DllImport("mfplat.dll", ExactSpelling = true)]
-    private static extern int MFShutdown();
 
     [DllImport("mfplat.dll", ExactSpelling = true)]
     private static extern int MFCreateAttributes(
@@ -345,11 +334,11 @@ internal static class MfDeviceEnumerator
         IMFAttributes? attributes = null;
         try
         {
-            ThrowIfFailed(MFCreateAttributes(out attributes, 2), "MFCreateAttributes(device_source)");
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(MFCreateAttributes(out attributes, 2), "MFCreateAttributes(device_source)");
+            MfInteropHelpers.ThrowIfFailed(
                 attributes.SetGUID(ref DevSourceAttributeSourceType, ref DevSourceAttributeSourceTypeVidcapGuid),
                 "IMFAttributes.SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE)");
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 attributes.SetString(ref DevSourceAttributeSourceTypeVidcapSymbolicLink, symbolicLink),
                 "IMFAttributes.SetString(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK)");
 
@@ -373,11 +362,11 @@ internal static class MfDeviceEnumerator
         IntPtr activateArray = IntPtr.Zero;
         try
         {
-            ThrowIfFailed(MFCreateAttributes(out attributes, 1), "MFCreateAttributes(device_enum_fallback)");
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(MFCreateAttributes(out attributes, 1), "MFCreateAttributes(device_enum_fallback)");
+            MfInteropHelpers.ThrowIfFailed(
                 attributes.SetGUID(ref DevSourceAttributeSourceType, ref DevSourceAttributeSourceTypeVidcapGuid),
                 "IMFAttributes.SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE)");
-            ThrowIfFailed(
+            MfInteropHelpers.ThrowIfFailed(
                 MFEnumDeviceSources(attributes, out activateArray, out var activateCount),
                 "MFEnumDeviceSources(device_enum_fallback)");
 
@@ -397,14 +386,14 @@ internal static class MfDeviceEnumerator
                     _ = Marshal.Release(activatePtr);
                     rawReleased = true;
 
-                    var candidateLink = ReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink);
-                    if (!SymbolicLinksMatch(targetSymbolicLink, candidateLink))
+                    var candidateLink = MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink);
+                    if (!DeviceSymbolicLinkMatcher.Matches(targetSymbolicLink, candidateLink))
                     {
                         continue;
                     }
 
                     var mediaSourceIid = typeof(IMFMediaSource).GUID;
-                    ThrowIfFailed(
+                    MfInteropHelpers.ThrowIfFailed(
                         activate.ActivateObject(ref mediaSourceIid, out var activatedObject),
                         "IMFActivate.ActivateObject(IMFMediaSource)");
                     if (activatedObject is IMFMediaSource mediaSource)
@@ -496,57 +485,6 @@ internal static class MfDeviceEnumerator
         }
     }
 
-    private static bool TryGetGuid(IMFAttributes attributes, ref Guid key, out Guid value)
-    {
-        var hr = attributes.GetGUID(ref key, out value);
-        if (hr == MfEAttributeNotFound)
-        {
-            value = Guid.Empty;
-            return false;
-        }
-
-        ThrowIfFailed(hr, $"IMFAttributes.GetGUID({key})");
-        return true;
-    }
-
-    private static bool TryGetUInt64(IMFAttributes attributes, ref Guid key, out ulong value)
-    {
-        var hr = attributes.GetUINT64(ref key, out value);
-        if (hr == MfEAttributeNotFound)
-        {
-            value = 0;
-            return false;
-        }
-
-        ThrowIfFailed(hr, $"IMFAttributes.GetUINT64({key})");
-        return true;
-    }
-
-    private static string ReadAllocatedString(IMFAttributes attributes, ref Guid key)
-    {
-        IntPtr textPtr = IntPtr.Zero;
-        try
-        {
-            var hr = attributes.GetAllocatedString(ref key, out textPtr, out var length);
-            if (hr == MfEAttributeNotFound || textPtr == IntPtr.Zero)
-            {
-                return string.Empty;
-            }
-
-            ThrowIfFailed(hr, $"IMFAttributes.GetAllocatedString({key})");
-            return length > 0
-                ? Marshal.PtrToStringUni(textPtr, length) ?? string.Empty
-                : Marshal.PtrToStringUni(textPtr) ?? string.Empty;
-        }
-        finally
-        {
-            if (textPtr != IntPtr.Zero)
-            {
-                Marshal.FreeCoTaskMem(textPtr);
-            }
-        }
-    }
-
     private static string SubtypeGuidToName(Guid subtype)
     {
         if (subtype == MfVideoFormatP010)
@@ -588,58 +526,6 @@ internal static class MfDeviceEnumerator
         }
 
         return subtype.ToString("B");
-    }
-
-    private static bool SymbolicLinksMatch(string target, string candidate)
-    {
-        if (string.IsNullOrWhiteSpace(target) || string.IsNullOrWhiteSpace(candidate))
-        {
-            return false;
-        }
-
-        return string.Equals(target, candidate, StringComparison.OrdinalIgnoreCase) ||
-               candidate.Contains(target, StringComparison.OrdinalIgnoreCase) ||
-               target.Contains(candidate, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static void AddStartupReference()
-    {
-        lock (StartupSync)
-        {
-            if (_startupRefCount == 0)
-            {
-                ThrowIfFailed(MFStartup(MfVersion, 0), "MFStartup");
-            }
-
-            _startupRefCount++;
-        }
-    }
-
-    private static void ReleaseStartupReference()
-    {
-        lock (StartupSync)
-        {
-            if (_startupRefCount <= 0)
-            {
-                return;
-            }
-
-            _startupRefCount--;
-            if (_startupRefCount == 0)
-            {
-                _ = MFShutdown();
-            }
-        }
-    }
-
-    private static void ThrowIfFailed(int hr, string operation)
-    {
-        if (hr >= 0)
-        {
-            return;
-        }
-
-        throw new InvalidOperationException($"{operation} failed (hr=0x{hr:X8}).");
     }
 
 }
