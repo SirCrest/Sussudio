@@ -553,6 +553,12 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     }
 
     public async ValueTask DisposeAsync()
+        => await DisposeCoreAsync(disposeSharedD3DDeviceManager: true).ConfigureAwait(false);
+
+    public async ValueTask DisposeForPreviewReinitAsync()
+        => await DisposeCoreAsync(disposeSharedD3DDeviceManager: false).ConfigureAwait(false);
+
+    private async ValueTask DisposeCoreAsync(bool disposeSharedD3DDeviceManager)
     {
         if (Interlocked.Exchange(ref _disposeStarted, 1) != 0)
         {
@@ -599,7 +605,14 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         mjpegPipeline?.Dispose();
         jitterBuffer?.Dispose();
-        d3dManager?.Dispose();
+        if (disposeSharedD3DDeviceManager)
+        {
+            d3dManager?.Dispose();
+        }
+        else if (d3dManager != null)
+        {
+            Logger.Log("UNIFIED_VIDEO_REINIT_RETIRE_SHARED_D3D_MANAGER skip_dispose=true");
+        }
 
         if (stopException != null)
         {

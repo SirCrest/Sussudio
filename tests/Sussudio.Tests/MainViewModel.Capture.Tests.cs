@@ -154,6 +154,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs")
             .Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
+            .Replace("\r\n", "\n");
         var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs")
             .Replace("\r\n", "\n");
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
@@ -186,6 +188,10 @@ static partial class Program
         AssertContains(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);");
         AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "PreviewStopRequested?.Invoke(this, EventArgs.Empty);");
         AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _sessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
+
+        var previewReinitStop = ExtractMemberCode(propertyChangedText, "ViewModel_PreviewRendererStopRequested");
+        AssertContains(previewReinitStop, "DisposeD3DPreviewRendererForReinit();");
+        AssertDoesNotContain(previewReinitStop, "renderer.StopRenderThread();");
 
         return Task.CompletedTask;
     }
@@ -789,6 +795,40 @@ static partial class Program
             "activeFlashbackSink.BeginRecording");
         AssertContains(ensureFlashbackAudio, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
         AssertContains(ensureFlashbackAudio, "await micCapture.DisposeAsync()");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_DeviceSwitchTeardown_StopsVideoBeforeFlashbackDisposal()
+    {
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
+        var unifiedVideoCaptureText = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
+            .Replace("\r\n", "\n");
+        var disposePreviewPipeline = ExtractTextBetween(
+            captureServiceText,
+            "private async Task DisposePreviewPipelineAsync",
+            "public Task StartRecordingAsync");
+        var unifiedDisposeCore = ExtractTextBetween(
+            unifiedVideoCaptureText,
+            "private async ValueTask DisposeCoreAsync",
+            "private void OnFrameArrived");
+
+        AssertContains(disposePreviewPipeline, "unifiedVideoCapture.SetPreviewSink(null);");
+        AssertContains(disposePreviewPipeline, "unifiedVideoCapture.SetFlashbackSink(null);");
+        AssertContains(disposePreviewPipeline, "PREVIEW_PIPELINE_VIDEO_STOP_BEFORE_FLASHBACK_DISPOSE");
+        AssertOccursBefore(
+            disposePreviewPipeline,
+            "await unifiedVideoCapture.StopAsync().ConfigureAwait(false);",
+            "await DisposeFlashbackPreviewBackendAsync(");
+        AssertOccursBefore(
+            disposePreviewPipeline,
+            "await DisposeFlashbackPreviewBackendAsync(",
+            "await unifiedVideoCapture.DisposeForPreviewReinitAsync().ConfigureAwait(false);");
+        AssertDoesNotContain(disposePreviewPipeline, "await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);");
+        AssertContains(unifiedVideoCaptureText, "public async ValueTask DisposeForPreviewReinitAsync()");
+        AssertContains(unifiedDisposeCore, "if (disposeSharedD3DDeviceManager)");
+        AssertContains(unifiedDisposeCore, "UNIFIED_VIDEO_REINIT_RETIRE_SHARED_D3D_MANAGER");
 
         return Task.CompletedTask;
     }

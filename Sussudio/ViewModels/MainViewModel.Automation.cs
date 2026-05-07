@@ -713,7 +713,7 @@ public partial class MainViewModel
 
     public Task SelectDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        return InvokeOnUiThreadAsync(async () =>
         {
             var target = ResolveDevice(deviceId, deviceName);
             if (target == null)
@@ -721,8 +721,7 @@ public partial class MainViewModel
                 throw new InvalidOperationException($"Capture device not found. Id='{deviceId ?? "(null)"}', Name='{deviceName ?? "(null)"}'.");
             }
 
-            SelectedDevice = target;
-            return Task.CompletedTask;
+            await ApplySelectedDeviceAsync(target, cancellationToken).ConfigureAwait(true);
         }, cancellationToken);
     }
 
@@ -1015,6 +1014,7 @@ public partial class MainViewModel
     }
 
     public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }
+    public Action<bool>? FrameTimeOverlayVisibilityHandler { get; set; }
 
     public Task SetStatsSectionVisibleAsync(string section, bool visible, CancellationToken cancellationToken = default)
     {
@@ -1039,6 +1039,24 @@ public partial class MainViewModel
         return InvokeOnUiThreadAsync(() =>
         {
             IsSettingsVisible = visible;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetFrameTimeOverlayVisibleAsync(bool visible, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            FrameTimeOverlayVisibilityHandler?.Invoke(visible);
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetFlashbackTimelineVisibleAsync(bool visible, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            IsFlashbackTimelineVisible = visible;
             return Task.CompletedTask;
         }, cancellationToken);
     }

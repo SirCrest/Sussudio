@@ -82,6 +82,28 @@ public sealed partial class MainWindow
             StopStatsDockPolling();
         }
     }
+
+    private void SetFrameTimeOverlayVisible(bool visible)
+    {
+        if (FrameTimeOverlayToggle.IsChecked != visible)
+        {
+            FrameTimeOverlayToggle.IsChecked = visible;
+        }
+
+        if (visible)
+        {
+            SetVisibilityIfChanged(FrameTimeOverlay, Visibility.Visible);
+            StartStatsDockPolling();
+            UpdateFrameTimeOverlay(GetStatsSnapshot());
+            return;
+        }
+
+        SetVisibilityIfChanged(FrameTimeOverlay, Visibility.Collapsed);
+        if (StatsDockPanel.Visibility != Visibility.Visible)
+        {
+            StopStatsDockPolling();
+        }
+    }
     private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)
     {
         if (sender is not Grid header || header.Tag is not string contentName)

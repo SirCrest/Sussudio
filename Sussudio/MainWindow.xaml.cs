@@ -316,6 +316,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         ViewModel = new MainViewModel();
         ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;
+        ViewModel.FrameTimeOverlayVisibilityHandler = SetFrameTimeOverlayVisible;
         _windowTitleBase = BuildWindowTitleBase();
         ApplyWindowTitle();
         var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);

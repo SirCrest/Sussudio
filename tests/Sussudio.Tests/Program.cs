@@ -297,6 +297,9 @@ static partial class Program
                 "Automation UI settings persist through the settings path",
                 AutomationUiSettings_PersistThroughSettingsPath),
             await RunCheckAsync(
+                "Automation device selection routes through apply reinit",
+                AutomationDeviceSelection_RoutesThroughApplyReinit),
+            await RunCheckAsync(
                 "Automation capture mode changes await reinitialization",
                 AutomationCaptureModeChanges_AwaitReinitialization),
             await RunCheckAsync(
@@ -320,6 +323,9 @@ static partial class Program
             await RunCheckAsync(
                 "Retained flashback preview pipeline recycles on settings changes",
                 CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange),
+            await RunCheckAsync(
+                "Device switch teardown stops video before flashback disposal",
+                CaptureService_DeviceSwitchTeardown_StopsVideoBeforeFlashbackDisposal),
             await RunCheckAsync(
                 "Flashback lifecycle logs use outcome names",
                 CaptureService_FlashbackLifecycleLogs_UseOutcomeNames),
@@ -2297,6 +2303,21 @@ static partial class Program
         AssertContains(automationText, "return SetAutomationCaptureModeAsync(\"frame rate\"");
         AssertContains(automationText, "return SetAutomationCaptureModeAsync(\"video format\"");
         AssertContains(automationText, "return SetAutomationCaptureModeAsync(\"mjpeg decoder count\"");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AutomationDeviceSelection_RoutesThroughApplyReinit()
+    {
+        var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs").Replace("\r\n", "\n");
+        var selectDevice = ExtractTextBetween(
+            automationText,
+            "public Task SelectDeviceAsync",
+            "public Task SelectAudioInputDeviceAsync");
+
+        AssertContains(selectDevice, "return InvokeOnUiThreadAsync(async () =>");
+        AssertContains(selectDevice, "await ApplySelectedDeviceAsync(target, cancellationToken).ConfigureAwait(true);");
+        AssertDoesNotContain(selectDevice, "SelectedDevice = target;");
 
         return Task.CompletedTask;
     }

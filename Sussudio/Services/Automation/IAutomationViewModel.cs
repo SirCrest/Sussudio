@@ -76,6 +76,8 @@ public interface IAutomationViewModel
     Task SetStatsVisibleAsync(bool visible, CancellationToken cancellationToken = default);
     Task SetStatsSectionVisibleAsync(string section, bool visible, CancellationToken cancellationToken = default);
     Task SetSettingsVisibleAsync(bool visible, CancellationToken cancellationToken = default);
+    Task SetFrameTimeOverlayVisibleAsync(bool visible, CancellationToken cancellationToken = default);
+    Task SetFlashbackTimelineVisibleAsync(bool visible, CancellationToken cancellationToken = default);
 
     // ── Microphone ──────────────────────────────────────────────────
 

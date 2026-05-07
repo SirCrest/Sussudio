@@ -191,6 +191,8 @@ internal static class AutomationCommandCatalog
         Set(entries, AutomationCommandKind.SetMicrophoneEnabled, "{ enabled: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "set mic on|off", "Enable or disable microphone recording.");
         Set(entries, AutomationCommandKind.SetFlashbackEnabled, "{ enabled: bool }", ready: false, timeoutMs: AutomationPipeProtocol.FlashbackMutationResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.None, "flashback on|off", "Enable or disable Flashback.");
         Set(entries, AutomationCommandKind.GetAudioRampTrace, "{}", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "audio-ramp-trace", "Get audio ramp trace diagnostics.");
+        Set(entries, AutomationCommandKind.SetFrameTimeOverlayVisible, "{ visible: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "frametime show|hide", "Show or hide the frametime graph overlay.");
+        Set(entries, AutomationCommandKind.SetFlashbackTimelineVisible, "{ visible: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "flashback timeline show|hide", "Show or hide the Flashback timeline UI.");
 
         return entries.Values.ToArray();
     }

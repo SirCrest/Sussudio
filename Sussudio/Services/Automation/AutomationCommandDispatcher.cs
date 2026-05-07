@@ -240,6 +240,20 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     return CreateAcknowledgedResponse(correlationId, $"Settings panel {(visible ? "shown" : "hidden")}.");
                 }
 
+                case AutomationCommandKind.SetFrameTimeOverlayVisible:
+                {
+                    var visible = RequireBool(payload, "visible");
+                    await _viewModel.SetFrameTimeOverlayVisibleAsync(visible, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Frametime graph {(visible ? "shown" : "hidden")}.");
+                }
+
+                case AutomationCommandKind.SetFlashbackTimelineVisible:
+                {
+                    var visible = RequireBool(payload, "visible");
+                    await _viewModel.SetFlashbackTimelineVisibleAsync(visible, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Flashback timeline {(visible ? "shown" : "hidden")}.");
+                }
+
                 case AutomationCommandKind.FlashbackAction:
                 {
                     var action = ParseFlashbackAction(payload);

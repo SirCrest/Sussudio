@@ -93,6 +93,7 @@ internal static class Program
         Console.WriteLine();
         Console.WriteLine("Flashback:");
         Console.WriteLine("  flashback on|off");
+        Console.WriteLine("  flashback timeline show|hide");
         Console.WriteLine("  flashback play [<ms>]");
         Console.WriteLine("  flashback pause");
         Console.WriteLine("  flashback go-live");
@@ -117,6 +118,7 @@ internal static class Program
         Console.WriteLine("  probe source|color");
         Console.WriteLine("  stats show|hide");
         Console.WriteLine("  stats section <name> show|hide");
+        Console.WriteLine("  frametime show|hide");
         Console.WriteLine("  settings show|hide");
         Console.WriteLine();
         Console.WriteLine("Flags:");

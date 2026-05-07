@@ -33,6 +33,7 @@ internal static class CommandHandlers
             "assert" => HandleAssertAsync(context),
             "probe" => HandleProbeAsync(context),
             "stats" => HandleStatsAsync(context),
+            "frametime" or "frame-time" => HandleFrameTimeAsync(context),
             "settings" => HandleSettingsAsync(context),
             "flashback" => HandleFlashbackAsync(context),
             _ => throw new UsageException($"Unknown command '{arguments[0]}'.")
@@ -454,11 +455,29 @@ internal static class CommandHandlers
             includeData: false);
     }
 
+    private static Task<int> HandleFrameTimeAsync(CommandContext context)
+    {
+        EnsureArgCount(context.Rest, 1, "frametime show|hide");
+        var visible = ParseShowHide(context.Rest[0], "frametime show|hide");
+        return HandleSimpleCommandAsync(
+            context,
+            "SetFrameTimeOverlayVisible",
+            new Dictionary<string, object?> { ["visible"] = visible },
+            includeData: false);
+    }
+
     private static Task<int> HandleFlashbackAsync(CommandContext context)
     {
-        var subcommand = RequireWord(context.Rest, 0, "flashback on|off|play|pause|go-live|seek|begin-scrub|update-scrub|end-scrub|set-in|set-out|clear-range|export|segments|apply").ToLowerInvariant();
+        var subcommand = RequireWord(context.Rest, 0, "flashback on|off|timeline|play|pause|go-live|seek|begin-scrub|update-scrub|end-scrub|set-in|set-out|clear-range|export|segments|apply").ToLowerInvariant();
         switch (subcommand)
         {
+            case "timeline":
+            {
+                EnsureArgCount(context.Rest, 2, "flashback timeline show|hide");
+                var visible = ParseShowHide(context.Rest[1], "flashback timeline show|hide");
+                return HandleSimpleCommandAsync(context, "SetFlashbackTimelineVisible",
+                    new Dictionary<string, object?> { ["visible"] = visible }, includeData: false);
+            }
             case "on":
             case "enable":
                 EnsureArgCount(context.Rest, 1, "flashback on|off");

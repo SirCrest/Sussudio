@@ -31,6 +31,24 @@ public static class UiSettingsTools
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, "SetSettingsVisible", "SetSettingsVisible", payload).ConfigureAwait(false);
     }
 
+    [McpServerTool, Description("Show or hide the frametime graph overlay")]
+    public static async Task<CallToolResult> configure_frametime_graph(
+        PipeClient pipeClient,
+        [Description("True to show the frametime graph, false to hide it")] bool visible)
+    {
+        var payload = new Dictionary<string, object?> { ["visible"] = visible };
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, "SetFrameTimeOverlayVisible", "SetFrameTimeOverlayVisible", payload).ConfigureAwait(false);
+    }
+
+    [McpServerTool, Description("Show or hide the Flashback timeline UI")]
+    public static async Task<CallToolResult> configure_flashback_timeline(
+        PipeClient pipeClient,
+        [Description("True to show the Flashback timeline, false to hide it")] bool visible)
+    {
+        var payload = new Dictionary<string, object?> { ["visible"] = visible };
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, "SetFlashbackTimelineVisible", "SetFlashbackTimelineVisible", payload).ConfigureAwait(false);
+    }
+
     [McpServerTool, Description("Show or hide a specific stats section by name")]
     public static async Task<CallToolResult> configure_stats_section(
         PipeClient pipeClient,
