@@ -15,6 +15,11 @@ using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Flashback;
 
+/// <summary>
+/// Continuous Flashback encoder sink. It receives the same frame/audio fan-out
+/// as normal recording, writes rolling MPEG-TS segments, and exposes a recording
+/// compatible sink contract when the user saves a retroactive clip.
+/// </summary>
 internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder
 {
     private const int DefaultVideoQueueCapacity = 180;
@@ -24,7 +29,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private const int VideoDrainBatchLimit = 24;
     private const int AudioDrainBatchLimit = 128;
     private const int GpuDrainBatchLimit = 16;
-    private const int QueueBackpressureTimeoutMs = 250;
     private const double ForceRotateQueueGuardRatio = 0.65;
     private const int StopTimeoutMs = 30_000;
     private const int DisposeTimeoutMs = 1_000;
@@ -48,6 +52,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private Channel<AudioSamplePacket>? _audioQueue;
     private Channel<AudioSamplePacket>? _microphoneQueue;
     private Channel<GpuFramePacket>? _gpuQueue;
+
+    // One encoding task owns LibAvEncoder and segment rotation. Capture
+    // callbacks only enqueue packets so file finalization never runs inline on
+    // the source-reader or WASAPI callback threads.
     private CancellationTokenSource? _cts;
     private Task? _encodingTask;
     private FlashbackSessionContext? _sessionContext;
@@ -861,6 +869,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
     {
+        // Hot WASAPI callback path: copy/enqueue only, never await or block.
         cancellationToken.ThrowIfCancellationRequested();
         EnqueueAudioSamples(samples);
         return Task.CompletedTask;
@@ -868,6 +877,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
     {
+        // Hot WASAPI callback path: copy/enqueue only, never await or block.
         cancellationToken.ThrowIfCancellationRequested();
         EnqueueMicrophoneSamples(samples);
         return Task.CompletedTask;
@@ -2194,125 +2204,69 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
     {
-        var deadlineTick = Environment.TickCount64 + QueueBackpressureTimeoutMs;
-        long backpressureStartTick = 0;
-        while (true)
+        lock (_videoQueueSync)
         {
-            bool overloaded = false;
-            lock (_videoQueueSync)
+            var rejectReason = GetVideoEnqueueRejectReason(isGpu: false);
+            if (rejectReason != null)
             {
-                var rejectReason = GetVideoEnqueueRejectReason(isGpu: false);
-                if (rejectReason != null)
-                {
-                    ReturnVideoPacket(packet);
-                    TrackVideoQueueRejected(rejectReason);
-                    return VideoEnqueueResult.Rejected;
-                }
-
-                if (TryWriteVideoPacket(queue, packet))
-                {
-                    RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                    TrackQueuedVideoTick(packet.EnqueueTick);
-                    Interlocked.Increment(ref _videoFramesEnqueued);
-                    SignalWork("video_enqueue");
-                    return VideoEnqueueResult.Accepted;
-                }
-
-                rejectReason = GetVideoEnqueueRejectReason(isGpu: false);
-                if (rejectReason != null)
-                {
-                    ReturnVideoPacket(packet);
-                    TrackVideoQueueRejected(rejectReason);
-                    return VideoEnqueueResult.Rejected;
-                }
-
-                if (Environment.TickCount64 < deadlineTick)
-                {
-                    backpressureStartTick = backpressureStartTick == 0 ? Environment.TickCount64 : backpressureStartTick;
-                }
-                else
-                {
-                    RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                    Interlocked.Increment(ref _droppedVideoFrames);
-                    overloaded = true;
-                    ReturnVideoPacket(packet);
-                }
+                ReturnVideoPacket(packet);
+                TrackVideoQueueRejected(rejectReason);
+                return VideoEnqueueResult.Rejected;
             }
 
-            if (overloaded)
+            if (TryWriteVideoPacket(queue, packet))
             {
-                Logger.Log(
-                    $"FLASHBACK_SINK_VIDEO_BACKPRESSURE_DROP timeout_ms={QueueBackpressureTimeoutMs} " +
-                    $"capacity={VideoQueueCapacityFrames} depth={Volatile.Read(ref _videoQueueDepth)}");
-                return VideoEnqueueResult.Overloaded;
+                TrackQueuedVideoTick(packet.EnqueueTick);
+                Interlocked.Increment(ref _videoFramesEnqueued);
+                SignalWork("video_enqueue");
+                return VideoEnqueueResult.Accepted;
             }
 
-            SignalWork("video_backpressure_retry");
-            if (WaitForBackpressureRetryCancellation())
+            rejectReason = GetVideoEnqueueRejectReason(isGpu: false);
+            if (rejectReason != null)
             {
-                continue;
+                ReturnVideoPacket(packet);
+                TrackVideoQueueRejected(rejectReason);
+                return VideoEnqueueResult.Rejected;
             }
+
+            Interlocked.Increment(ref _droppedVideoFrames);
+            ReturnVideoPacket(packet);
+            TrackVideoQueueRejected("queue_full");
+            return VideoEnqueueResult.Overloaded;
         }
     }
 
     private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
     {
-        var deadlineTick = Environment.TickCount64 + QueueBackpressureTimeoutMs;
-        long backpressureStartTick = 0;
-        while (true)
+        lock (_videoQueueSync)
         {
-            bool overloaded = false;
-            lock (_videoQueueSync)
+            var rejectReason = GetVideoEnqueueRejectReason(isGpu: true);
+            if (rejectReason != null)
             {
-                var rejectReason = GetVideoEnqueueRejectReason(isGpu: true);
-                if (rejectReason != null)
-                {
-                    ReleaseGpuTextureBestEffort(packet.Texture);
-                    TrackGpuQueueRejected(rejectReason);
-                    return VideoEnqueueResult.Rejected;
-                }
-
-                if (TryWriteGpuPacket(queue, packet))
-                {
-                    RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                    Interlocked.Increment(ref _gpuFramesEnqueued);
-                    SignalWork("gpu_enqueue");
-                    return VideoEnqueueResult.Accepted;
-                }
-
-                rejectReason = GetVideoEnqueueRejectReason(isGpu: true);
-                if (rejectReason != null)
-                {
-                    ReleaseGpuTextureBestEffort(packet.Texture);
-                    TrackGpuQueueRejected(rejectReason);
-                    return VideoEnqueueResult.Rejected;
-                }
-
-                if (Environment.TickCount64 < deadlineTick)
-                {
-                    backpressureStartTick = backpressureStartTick == 0 ? Environment.TickCount64 : backpressureStartTick;
-                }
-                else
-                {
-                    RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                    ReleaseGpuTextureBestEffort(packet.Texture);
-                    overloaded = true;
-                }
+                ReleaseGpuTextureBestEffort(packet.Texture);
+                TrackGpuQueueRejected(rejectReason);
+                return VideoEnqueueResult.Rejected;
             }
 
-            if (overloaded)
+            if (TryWriteGpuPacket(queue, packet))
             {
-                Logger.Log(
-                    $"FLASHBACK_SINK_GPU_BACKPRESSURE_DROP timeout_ms={QueueBackpressureTimeoutMs} " +
-                    $"capacity={GpuQueueCapacity} depth={Volatile.Read(ref _gpuQueueDepth)}");
-                return VideoEnqueueResult.Overloaded;
+                Interlocked.Increment(ref _gpuFramesEnqueued);
+                SignalWork("gpu_enqueue");
+                return VideoEnqueueResult.Accepted;
             }
 
-            SignalWork("gpu_backpressure_retry");
-            if (WaitForBackpressureRetryCancellation())
+            rejectReason = GetVideoEnqueueRejectReason(isGpu: true);
+            if (rejectReason != null)
             {
-                continue;
+                ReleaseGpuTextureBestEffort(packet.Texture);
+                TrackGpuQueueRejected(rejectReason);
+                return VideoEnqueueResult.Rejected;
             }
+
+            ReleaseGpuTextureBestEffort(packet.Texture);
+            TrackGpuQueueRejected("queue_full");
+            return VideoEnqueueResult.Overloaded;
         }
     }
 
@@ -2433,9 +2387,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 $"FLASHBACK_SINK_GPU_QUEUE_REJECT reason={reason} total={total} depth={Volatile.Read(ref _gpuQueueDepth)} capacity={GpuQueueCapacity}");
         }
     }
-
-    private bool WaitForBackpressureRetryCancellation()
-        => WaitForCancellation(TimeSpan.FromMilliseconds(1));
 
     private bool WaitForCancellation(TimeSpan timeout)
     {

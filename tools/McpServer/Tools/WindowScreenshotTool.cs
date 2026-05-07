@@ -7,6 +7,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP tool for capturing the app window as an image artifact.
 public static class WindowScreenshotTools
 {
     [McpServerTool, Description("Capture the entire application window (including UI chrome, margins, letterbox areas, and video preview) as a PNG screenshot. Use .bmp extension for uncompressed BMP.")]

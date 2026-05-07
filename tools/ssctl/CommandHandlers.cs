@@ -4,6 +4,9 @@ using Sussudio.Tools;
 
 namespace EcCtl;
 
+// CLI command layer over the shared automation pipe. Handlers keep console
+// parsing, command payload shape, and human-readable output together while
+// leaving transport details in AutomationPipeClient.
 internal static class CommandHandlers
 {
     public static Task<int> ExecuteAsync(PipeTransport transport, IReadOnlyList<string> arguments, bool globalJson)
@@ -273,7 +276,7 @@ internal static class CommandHandlers
                 return await HandleSimpleCommandAsync(
                     context,
                     "SelectAudioInputDevice",
-                    new Dictionary<string, object?> { ["audioDeviceName"] = JoinRemaining(context.Rest, 1) },
+                    new Dictionary<string, object?> { ["deviceName"] = JoinRemaining(context.Rest, 1) },
                     includeData: false).ConfigureAwait(false);
             case "custom-audio":
                 EnsureArgCount(context.Rest, 2, "device custom-audio on|off");

@@ -209,7 +209,11 @@ static partial class Program
         AssertContains(sourceText, "throttleHighResolutionBaseline && IsHighResolutionFlashbackExport(flashbackSink)");
         AssertContains(sourceText, "FastStart = false");
         AssertContains(sourceText, "AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(\n                    flashbackSink,\n                    throttleHighResolutionBaseline)");
-        AssertContains(sourceText, "requireCompleteLiveEdge: true,\n                    throttleHighResolutionBaseline: false");
+        AssertContains(sourceText, "ct: ct,");
+        AssertContains(sourceText, "requireCompleteLiveEdge: true");
+        AssertContains(sourceText, "throttleHighResolutionBaseline: false");
+        AssertOccursBefore(sourceText, "ct: ct,", "requireCompleteLiveEdge: true");
+        AssertOccursBefore(sourceText, "requireCompleteLiveEdge: true", "throttleHighResolutionBaseline: false");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LIVE_THROTTLE");
 
         return Task.CompletedTask;
@@ -2404,14 +2408,16 @@ static partial class Program
         AssertContains(sourceText, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu\");");
         AssertContains(sourceText, "DecrementQueueDepth(ref _audioQueueDepth, \"audio\");");
         AssertContains(sourceText, "DecrementQueueDepth(ref _microphoneQueueDepth, \"microphone\");");
-        AssertContains(sourceText, "private bool WaitForBackpressureRetryCancellation()");
-        AssertContains(sourceText, "=> WaitForCancellation(TimeSpan.FromMilliseconds(1));");
+        AssertDoesNotContain(sourceText, "private bool WaitForBackpressureRetryCancellation()");
+        AssertDoesNotContain(sourceText, "=> WaitForCancellation(TimeSpan.FromMilliseconds(1));");
         AssertContains(sourceText, "private bool WaitForCancellation(TimeSpan timeout)");
         AssertContains(sourceText, "return cts.Token.WaitHandle.WaitOne(timeout);");
         AssertContains(sourceText, "catch (ObjectDisposedException)\n        {\n            return true;\n        }");
-        AssertEqual(2, sourceText.Split("if (WaitForBackpressureRetryCancellation())", StringSplitOptions.None).Length - 1, "Video and GPU enqueue backpressure waits are cancellation-aware");
-        AssertContains(sourceText, "FLASHBACK_SINK_VIDEO_BACKPRESSURE_DROP");
-        AssertContains(sourceText, "FLASHBACK_SINK_GPU_BACKPRESSURE_DROP");
+        AssertDoesNotContain(sourceText, "if (WaitForBackpressureRetryCancellation())");
+        AssertContains(sourceText, "TrackVideoQueueRejected(\"queue_full\");");
+        AssertContains(sourceText, "TrackGpuQueueRejected(\"queue_full\");");
+        AssertDoesNotContain(sourceText, "FLASHBACK_SINK_VIDEO_BACKPRESSURE_DROP");
+        AssertDoesNotContain(sourceText, "FLASHBACK_SINK_GPU_BACKPRESSURE_DROP");
         AssertDoesNotContain(sourceText, "FailEncoding(overloadFailure);");
         AssertDoesNotContain(sourceText, "Flashback recording video queue overloaded after");
         AssertDoesNotContain(sourceText, "Flashback GPU recording queue overloaded after");

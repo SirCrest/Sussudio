@@ -3,6 +3,9 @@ using Sussudio.Tools;
 
 namespace EcCtl;
 
+// Entry point for ssctl, the local CLI over Sussudio's automation pipe. It owns
+// process-level argument parsing and exit codes; command behavior is delegated
+// to CommandHandlers.
 internal static class Program
 {
     public static async Task<int> Main(string[] args)

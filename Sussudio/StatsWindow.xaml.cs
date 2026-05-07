@@ -21,6 +21,8 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// Detached diagnostics window. It polls a StatsSnapshot provider and renders
+// the same live counters as the dock without owning capture or automation state.
 public sealed partial class StatsWindow : Window
 {
     private readonly Func<StatsSnapshot> _dataProvider;

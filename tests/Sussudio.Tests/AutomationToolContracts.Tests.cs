@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+// Contract tests for automation, ssctl, and MCP command surfaces.
 static partial class Program
 {
     private static Task AutomationPipeProtocol_ResolvesCommandsTimeoutsAuthAndEnvelopes()
@@ -48,7 +49,7 @@ static partial class Program
 
             var defaultTimeout = RequireNonPublicStaticMethod(protocolType, "GetDefaultResponseTimeout");
             AssertEqual(15000, (int)defaultTimeout.Invoke(null, new object[] { "GetSnapshot" })!, "GetDefaultResponseTimeout default command");
-            AssertEqual(60000, (int)defaultTimeout.Invoke(null, new object[] { "FlashbackExport" })!, "GetDefaultResponseTimeout extended command");
+            AssertEqual(305000, (int)defaultTimeout.Invoke(null, new object[] { "FlashbackExport" })!, "GetDefaultResponseTimeout flashback export command");
             AssertEqual(305000, (int)defaultTimeout.Invoke(null, new object[] { "SetFlashbackEnabled" })!, "GetDefaultResponseTimeout flashback command");
             AssertEqual(305000, (int)defaultTimeout.Invoke(null, new object[] { "RestartFlashback" })!, "GetDefaultResponseTimeout flashback restart command");
             AssertEqual(150000, (int)defaultTimeout.Invoke(null, new object[] { "SetRecordingEnabled" })!, "GetDefaultResponseTimeout recording command");
@@ -72,6 +73,88 @@ static partial class Program
         {
             Environment.SetEnvironmentVariable("SUSSUDIO_AUTOMATION_TOKEN", previousToken);
         }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AutomationCommandCatalog_CoversCommandsAndPolicyMetadata()
+    {
+        var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
+        var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
+        var pathPolicyType = RequireType("Sussudio.Tools.AutomationCommandPathPolicy");
+        var entriesProperty = catalogType.GetProperty("Entries", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("AutomationCommandCatalog.Entries not found.");
+        var entries = ((System.Collections.IEnumerable)entriesProperty.GetValue(null)!)
+            .Cast<object>()
+            .ToArray();
+        var enumValues = Enum.GetValues(enumType).Cast<object>().ToArray();
+        AssertEqual(enumValues.Length, entries.Length, "AutomationCommandCatalog entry count");
+
+        foreach (var enumValue in enumValues)
+        {
+            var entry = entries.Single(candidate =>
+                Convert.ToInt32(GetMetadataProperty(candidate, "Kind")) == Convert.ToInt32(enumValue));
+            AssertEqual(enumValue.ToString(), (string)GetMetadataProperty(entry, "Name")!, $"Catalog name for {enumValue}");
+            AssertNotEmpty((string)GetMetadataProperty(entry, "PayloadShape")!, $"Catalog payload shape for {enumValue}");
+            AssertEqual(true, (int)GetMetadataProperty(entry, "ResponseTimeoutMs")! > 0, $"Catalog timeout for {enumValue}");
+            AssertNotEmpty((string)GetMetadataProperty(entry, "CliHelp")!, $"Catalog CLI help for {enumValue}");
+            AssertNotEmpty((string)GetMetadataProperty(entry, "McpDescription")!, $"Catalog MCP description for {enumValue}");
+        }
+
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "SetRecordingEnabled",
+            timeoutMs: 150000,
+            requiresReadyDevices: true,
+            pathPolicy: "None",
+            payloadShapeContains: "enabled");
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "FlashbackExport",
+            timeoutMs: 305000,
+            requiresReadyDevices: false,
+            pathPolicy: "WriteFile",
+            payloadShapeContains: "outputPath");
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "VerifyFile",
+            timeoutMs: 60000,
+            requiresReadyDevices: false,
+            pathPolicy: "ReadFile",
+            payloadShapeContains: "filePath");
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "SetOutputPath",
+            timeoutMs: 15000,
+            requiresReadyDevices: false,
+            pathPolicy: "Directory",
+            payloadShapeContains: "outputPath");
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "SetResolution",
+            timeoutMs: 15000,
+            requiresReadyDevices: true,
+            pathPolicy: "None",
+            payloadShapeContains: "resolution");
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "SetFlashbackEnabled",
+            timeoutMs: 305000,
+            requiresReadyDevices: false,
+            pathPolicy: "None",
+            payloadShapeContains: "enabled");
 
         return Task.CompletedTask;
     }
@@ -412,6 +495,43 @@ static partial class Program
     private static MethodInfo RequireNonPublicStaticMethod(Type type, string name)
         => type.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic)
            ?? throw new InvalidOperationException($"{type.FullName}.{name} was not found.");
+
+    private static void AssertCatalogMetadata(
+        Type catalogType,
+        Type enumType,
+        Type pathPolicyType,
+        string commandName,
+        int timeoutMs,
+        bool requiresReadyDevices,
+        string pathPolicy,
+        string payloadShapeContains)
+    {
+        var get = RequireNonPublicStaticMethod(catalogType, "Get");
+        var enumValue = Enum.Parse(enumType, commandName);
+        var metadata = get.Invoke(null, new[] { enumValue })
+            ?? throw new InvalidOperationException($"Catalog metadata for {commandName} was null.");
+        AssertEqual(commandName, (string)GetMetadataProperty(metadata, "Name")!, $"{commandName} catalog name");
+        AssertEqual(timeoutMs, (int)GetMetadataProperty(metadata, "ResponseTimeoutMs")!, $"{commandName} catalog timeout");
+        AssertEqual(requiresReadyDevices, (bool)GetMetadataProperty(metadata, "RequiresReadyDevices")!, $"{commandName} catalog readiness");
+        AssertEqual(
+            Enum.Parse(pathPolicyType, pathPolicy).ToString(),
+            GetMetadataProperty(metadata, "PathPolicy")!.ToString(),
+            $"{commandName} catalog path policy");
+        AssertContains((string)GetMetadataProperty(metadata, "PayloadShape")!, payloadShapeContains);
+    }
+
+    private static object? GetMetadataProperty(object metadata, string name)
+        => metadata.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public)
+               ?.GetValue(metadata)
+           ?? throw new InvalidOperationException($"Metadata property '{name}' was not found.");
+
+    private static void AssertNotEmpty(string value, string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidOperationException($"Assertion failed for {fieldName}: expected non-empty text.");
+        }
+    }
 
     private static void AssertThrows<TException>(Action action, string fieldName)
         where TException : Exception

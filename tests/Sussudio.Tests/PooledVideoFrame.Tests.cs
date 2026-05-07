@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
+// Tests for pooled-frame leasing and buffer-return behavior.
 static partial class Program
 {
     private static Task PooledVideoFrame_LeaseLifecycle_ReturnsBufferAfterLastRelease()

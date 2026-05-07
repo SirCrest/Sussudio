@@ -4,6 +4,7 @@ using ModelContextProtocol.Protocol;
 
 namespace McpServer.Tools;
 
+// Creates MCP CallToolResult objects from automation responses.
 internal static class McpToolResultFactory
 {
     internal static CallToolResult FromResponse(JsonElement response, string text)

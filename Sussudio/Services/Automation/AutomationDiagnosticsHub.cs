@@ -13,6 +13,10 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Automation;
 
+// Polling diagnostics aggregator for automation, ssctl, and MCP tools. It
+// builds a single snapshot from UI state, capture runtime state, verifier
+// results, and health counters, then turns sustained bad signals into recent
+// diagnostic events and performance-timeline samples.
 public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 {
     private readonly IAutomationViewModel _viewModel;
@@ -59,6 +63,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private Task? _autoVerificationTask;
     private int _verificationInProgress;
     private int _autoVerificationScheduled;
+
+    // Fixed-size timeline ring used by long diagnostic sessions. It keeps the
+    // last few minutes of high-level performance evidence in memory without
+    // requiring every poll to become an unbounded event.
     private readonly PerformanceTimelineEntry[] _timelineBuffer = new PerformanceTimelineEntry[TimelineCapacity];
     private int _timelineHead;
     private int _timelineCount;

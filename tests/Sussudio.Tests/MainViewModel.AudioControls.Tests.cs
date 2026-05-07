@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Threading.Tasks;
 
+// Tests for view-model audio control persistence and ramp tracing.
 static partial class Program
 {
     private static Task MainViewModelAudioControls_MapsAnalogGainCurveAndClamps()

@@ -5,6 +5,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP tools for UI-only settings like stats visibility and window layout.
 public static class UiSettingsTools
 {
     [McpServerTool, Description("Configure UI-facing settings that matter to automation: show-all capture options, preview monitoring volume, and stats panel visibility. Only provided parameters are changed.")]

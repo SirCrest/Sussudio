@@ -2,6 +2,8 @@ using System;
 
 namespace Sussudio.Services.Automation;
 
+// Shared diagnostic thresholds so snapshot health and command tools evaluate
+// the same warning boundaries.
 internal static class DiagnosticThresholds
 {
     public const int RendererDropWarningMinSamples = 120;

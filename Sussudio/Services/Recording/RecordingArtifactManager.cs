@@ -10,6 +10,9 @@ using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Recording;
 
+// Creates and finalizes the file paths for a recording attempt. It keeps temp
+// video/audio artifacts, final output naming, HDR-active state, and mux result
+// cleanup in one place so sinks only write bytes.
 public sealed class RecordingArtifactManager
 {
     public async Task<RecordingContext> CreateContextAsync(

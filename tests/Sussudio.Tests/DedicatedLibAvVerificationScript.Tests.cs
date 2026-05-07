@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 
+// Tests for the dedicated libav verification script contract.
 static partial class Program
 {
     private static Task DedicatedLibAvVerificationScript_UsesFlashbackOffAndStrictVerification()

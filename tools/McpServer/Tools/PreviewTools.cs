@@ -7,6 +7,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP tools for preview start/stop and preview-related toggles.
 public static class PreviewTools
 {
     [McpServerTool, Description("Start or stop the live preview")]

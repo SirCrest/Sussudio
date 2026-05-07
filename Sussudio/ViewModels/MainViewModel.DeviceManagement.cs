@@ -19,6 +19,10 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.ViewModels;
 
+/// <summary>
+/// Device and format discovery flow. It refreshes user-selectable options while
+/// preserving the active selection whenever the underlying device list changes.
+/// </summary>
 public partial class MainViewModel
 {
     private void OnAudioDevicesChanged()
@@ -635,16 +639,7 @@ public partial class MainViewModel
         // MJPG at 4K120 SDR while exposing only P010 at the HDR retarget mode, so keep this
         // list scoped to the currently selected resolution+fps tuple.
         var formats = GetFormatsForSelectedModeTuple();
-        var pixelFormats = formats
-            .Select(format => NormalizeVideoFormatName(format.PixelFormat))
-            .Where(format => !string.IsNullOrWhiteSpace(format))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(MediaFormat.GetPixelFormatPriority)
-            .ThenBy(format => format, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        var nextFormats = new List<string> { "Auto" };
-        nextFormats.AddRange(pixelFormats);
+        var nextFormats = CaptureModeOptionsBuilder.BuildVideoFormatOptions(formats);
 
         AvailableVideoFormats.Clear();
         foreach (var format in nextFormats)
@@ -692,11 +687,6 @@ public partial class MainViewModel
                 (IsHdrEnabled ? IsHdrModeCandidate(format) : !IsHdrModeCandidate(format)))
             .ToList();
     }
-
-    private static string NormalizeVideoFormatName(string? pixelFormat)
-        => string.IsNullOrWhiteSpace(pixelFormat)
-            ? string.Empty
-            : pixelFormat.Trim().ToUpperInvariant();
 
     /// <summary>
     /// H.264 is intentionally excluded from HDR recording: the nvenc H.264
@@ -789,7 +779,7 @@ public partial class MainViewModel
     }
 
     private static bool IsHdrModeCandidate(MediaFormat format)
-        => format.IsHdr || MediaFormat.IsTrue10BitPixelFormat(format.PixelFormat);
+        => CaptureModeOptionsBuilder.IsHdrModeCandidate(format);
 
     private static bool ShouldPreserveMjpegHighFrameRateMode(MediaFormat? format)
         => format != null &&
@@ -861,34 +851,12 @@ public partial class MainViewModel
         var desiredSelection = !string.IsNullOrWhiteSpace(previousSelection)
             ? previousSelection
             : _lastKnownResolutionKey;
-        var options = _resolutionToFormats
-            .Select(entry =>
-            {
-                var formats = entry.Value;
-                var first = formats[0];
-                var hdrSupported = formats.Any(IsHdrModeCandidate);
-                var enabled = !IsHdrEnabled || hdrSupported;
-                return new ResolutionOption
-                {
-                    Value = entry.Key,
-                    Width = first.Width,
-                    Height = first.Height,
-                    IsEnabled = enabled,
-                    DisableReason = enabled
-                        ? string.Empty
-                        : "HDR mode is not supported at this resolution."
-                };
-            })
-            .OrderByDescending(option => (long)option.Width * option.Height)
+        var options = CaptureModeOptionsBuilder.BuildResolutionOptions(
+                _resolutionToFormats,
+                IsHdrEnabled,
+                ShowAllCaptureOptions,
+                _latestSourceTelemetry)
             .ToList();
-
-        if (!ShowAllCaptureOptions &&
-            _latestSourceTelemetry.HasDimensions)
-        {
-            options = options
-                .Where(DoesResolutionMatchSourceAspectRatio)
-                .ToList();
-        }
 
         var autoSelection = ResolveAutoCaptureSelection(options);
         var autoOption = options.Count > 0
@@ -1556,51 +1524,6 @@ public partial class MainViewModel
             .Select(format => GetFriendlyFrameRateBucket(format.FrameRateExact))
             .DefaultIfEmpty()
             .Max();
-    }
-
-    private bool DoesResolutionMatchSourceAspectRatio(ResolutionOption option)
-    {
-        if (!_latestSourceTelemetry.HasDimensions)
-        {
-            return true;
-        }
-
-        var sourceWidth = (uint)Math.Max(0, _latestSourceTelemetry.Width ?? 0);
-        var sourceHeight = (uint)Math.Max(0, _latestSourceTelemetry.Height ?? 0);
-        if (sourceWidth == 0 || sourceHeight == 0 || option.Width == 0 || option.Height == 0)
-        {
-            return true;
-        }
-
-        var reducedSource = ReduceAspectRatio(sourceWidth, sourceHeight);
-        var reducedOption = ReduceAspectRatio(option.Width, option.Height);
-        return reducedSource.Width == reducedOption.Width &&
-               reducedSource.Height == reducedOption.Height;
-    }
-
-    private static (uint Width, uint Height) ReduceAspectRatio(uint width, uint height)
-    {
-        if (width == 0 || height == 0)
-        {
-            return (width, height);
-        }
-
-        var divisor = GreatestCommonDivisor(width, height);
-        return divisor == 0
-            ? (width, height)
-            : (width / divisor, height / divisor);
-    }
-
-    private static uint GreatestCommonDivisor(uint a, uint b)
-    {
-        while (b != 0)
-        {
-            var next = a % b;
-            a = b;
-            b = next;
-        }
-
-        return a;
     }
 
     private static bool IsSourceFilteredFrameRateDisableReason(string? disableReason)

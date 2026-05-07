@@ -33,6 +33,8 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// Screenshot capture flow for the current preview surface. It snapshots the
+// displayed frame without changing recording, Flashback, or source-reader state.
 public sealed partial class MainWindow
 {
     private WindowScreenshotResult CaptureWindowScreenshotCore(string outputPath)

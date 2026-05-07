@@ -13,6 +13,11 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.ViewModels;
 
+/// <summary>
+/// Source telemetry projection. Native XU/device-format telemetry is advisory:
+/// it updates live signal labels and auto-retargeting hints without becoming the
+/// capture pipeline's authoritative negotiated format.
+/// </summary>
 public partial class MainViewModel
 {
     private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)

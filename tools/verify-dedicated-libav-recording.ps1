@@ -1,3 +1,5 @@
+<# End-to-end dedicated libav recording smoke: configures capture, records for a
+short window, waits for verification, and checks runtime/ffprobe counters. #>
 param(
     [string]$PipeName = "SussudioAutomation",
     [string]$AuthToken = "",

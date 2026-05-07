@@ -5,6 +5,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP tools for pipeline/debug knobs that affect capture and preview behavior.
 public static class PipelineSettingsTools
 {
     [McpServerTool, Description("Configure pipeline settings: HDR, audio capture, audio preview, true HDR preview, and output path. Only provided parameters are changed.")]

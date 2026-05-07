@@ -4,6 +4,9 @@ using Sussudio.Models;
 
 namespace Sussudio.Services.Capture;
 
+// Ring buffer of recent per-frame routing decisions. It gives automation a
+// compact "flight recorder" for one source sequence across capture, preview,
+// Flashback, and recording without writing a log line for every frame forever.
 internal sealed class FrameLedger
 {
     public const int DefaultCapacity = 4096;

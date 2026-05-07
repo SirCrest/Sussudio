@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+// Tests for command-line snapshot and diagnostics formatting.
 static partial class Program
 {
     private static Task SsctlFormatters_EmitCoreSnapshotSections()

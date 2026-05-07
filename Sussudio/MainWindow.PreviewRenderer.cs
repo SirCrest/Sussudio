@@ -33,6 +33,8 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// Preview renderer host wiring. This partial owns SwapChainPanel attachment,
+// renderer sizing, and the bridge between live/Flashback frames and D3D11.
 public sealed partial class MainWindow
 {
     private void OnD3DRendererFirstFrameRendered()

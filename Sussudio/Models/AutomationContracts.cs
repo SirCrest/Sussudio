@@ -4,6 +4,9 @@ using System.Text.Json;
 
 namespace Sussudio.Models;
 
+// Flashback actions exposed through automation. They describe timeline intent;
+// the playback controller decides whether that intent is valid for the current
+// Live/Scrub/Play/Pause state.
 public enum AutomationFlashbackAction
 {
     Play,
@@ -35,6 +38,9 @@ public enum AutomationWindowAction
     Resize
 }
 
+// Conditions that automation waits can poll against the latest snapshot. These
+// names are part of the ssctl/MCP surface, so prefer adding a new condition over
+// changing existing semantics.
 public enum AutomationWaitCondition
 {
     PreviewFramesActive,
@@ -70,6 +76,8 @@ public enum PreviewStartupStrategy
     D3D11VideoProcessor
 }
 
+// Wire-format request for the named-pipe automation server. Payload stays as a
+// JsonElement so each command can validate only the fields it actually needs.
 public sealed class AutomationCommandRequest
 {
     public AutomationCommandKind Command { get; init; }
@@ -78,6 +86,9 @@ public sealed class AutomationCommandRequest
     public JsonElement Payload { get; init; }
 }
 
+// Wire-format response shared by automation clients, ssctl, and MCP tools.
+// Snapshot is optional so cheap acknowledgement commands do not have to force a
+// full diagnostics refresh unless the caller needs it.
 public sealed class AutomationCommandResponse
 {
     public bool Success { get; init; }
@@ -195,6 +206,9 @@ public sealed class AutomationOptionsSnapshot
     public bool IsStatsVisible { get; init; }
 }
 
+// Point-in-time automation view of app, capture, preview, recording, and
+// Flashback health. The object is intentionally broad because diagnostic
+// sessions persist it as evidence, not just as an RPC convenience DTO.
 public sealed class AutomationSnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;

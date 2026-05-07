@@ -6,6 +6,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP entry point for long-running diagnostic sessions that persist evidence.
 public static class DiagnosticSessionTools
 {
     [McpServerTool, Description("Run a timed capture diagnostic session, write snapshot/frame-ledger/timeline artifacts, and optionally verify recording or capture PresentMon.")]

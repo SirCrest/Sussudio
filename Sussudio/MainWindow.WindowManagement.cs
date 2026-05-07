@@ -33,6 +33,8 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// Window chrome, sizing, and automation-facing window controls. Capture logic
+// should not live here; this partial only owns the native window shell.
 public sealed partial class MainWindow
 {
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)

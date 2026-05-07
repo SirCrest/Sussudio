@@ -3,6 +3,8 @@ using System.Globalization;
 
 namespace Sussudio.Services.Runtime;
 
+// Typed environment-variable parsing helpers for experimental performance and
+// diagnostics knobs.
 internal static class EnvironmentHelpers
 {
     public static int GetIntFromEnv(string variableName, int defaultValue, int minValue, int maxValue)

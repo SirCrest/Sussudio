@@ -11,6 +11,9 @@ using Sussudio.Models;
 
 namespace Sussudio;
 
+// Lightweight asynchronous debug logger. Logging must never block or crash
+// capture paths, so messages go through a bounded channel with a direct
+// best-effort fallback when the writer is saturated.
 public static class Logger
 {
     private static readonly string LogFilePath = RuntimePaths.GetRepoLogFile("Sussudio_Debug.log");

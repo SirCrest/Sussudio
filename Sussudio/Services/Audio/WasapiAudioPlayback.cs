@@ -11,6 +11,10 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Audio;
 
+// Low-latency monitoring renderer for live capture and Flashback playback.
+// Producers enqueue normalized f32le 48 kHz stereo chunks; a single WASAPI
+// render thread applies volume ramps, tracks queue depth, and writes to the
+// default output endpoint.
 internal sealed class WasapiAudioPlayback : IDisposable
 {
     private const int OutputChannels = 2;
@@ -46,6 +50,10 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private int _renderingPaused; // 0 = active, 1 = paused
     private volatile bool _pauseRequested;
     private volatile bool _resumeRequested;
+
+    // Flashback seeks can restart audio mid-timeline. Resume prebuffering gives
+    // the playback thread enough audio to avoid a dry render callback while
+    // video cadence is being re-established.
     private int _resumePrebufferFrames;
     private int _resumePrebufferTimeoutMs;
     private volatile float _targetVolume = 1.0f;

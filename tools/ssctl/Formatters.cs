@@ -5,6 +5,9 @@ using Sussudio.Tools;
 
 namespace EcCtl;
 
+// Console formatters for snapshots, diagnostics, and verification output. Keep
+// these projection-only: command behavior belongs in CommandHandlers and
+// protocol mechanics belong in the shared pipe client.
 internal static class Formatters
 {
     private static readonly JsonSerializerOptions IndentedJsonOptions = new()

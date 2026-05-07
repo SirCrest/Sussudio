@@ -6,6 +6,7 @@ using System.Runtime.Loader;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+// Tests for diagnostic snapshot JSON source-generation compatibility.
 static partial class Program
 {
     private static Task LoggingJsonContext_SerializesStructuredSnapshotPayloads()

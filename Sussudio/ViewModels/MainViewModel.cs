@@ -22,6 +22,11 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.ViewModels;
 
+/// <summary>
+/// UI-facing state coordinator. MainViewModel translates user settings and
+/// automation requests into serialized CaptureService operations while keeping
+/// WinUI properties, saved settings, and diagnostics summaries coherent.
+/// </summary>
 public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable, IAutomationViewModel
 {
     private readonly DeviceService _deviceService;

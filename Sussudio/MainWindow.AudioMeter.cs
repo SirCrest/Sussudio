@@ -33,6 +33,9 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// Audio-meter animation and rendering. The view model supplies level values;
+// this partial turns them into smoothed, stacked visual meters without changing
+// capture or monitoring state.
 public sealed partial class MainWindow
 {
     private void AnimateAudioMeterTick()

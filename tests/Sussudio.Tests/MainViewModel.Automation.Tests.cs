@@ -510,6 +510,8 @@ static partial class Program
 
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
+        var flashbackBackendText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
+            .Replace("\r\n", "\n");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
         AssertContains(captureServiceText, "FlashbackExporter? snapshotExporter = null,");
@@ -542,7 +544,7 @@ static partial class Program
         AssertContains(exportLastNMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
         AssertOccursBefore(exportLastNMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
         AssertContains(exportLastNMethod, "snapshotExporter: flashbackExporter,");
-        AssertContains(captureServiceText, "outerPauseApplied = bufferManager != null;");
+        AssertContains(flashbackBackendText, "outerPauseApplied = bufferManager != null;");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\", inPoint, outPoint);");
         AssertContains(captureServiceText, "var exportId = 0L;");
         AssertContains(captureServiceText, "var evictionPaused = false;");
@@ -567,15 +569,16 @@ static partial class Program
         AssertDoesNotContain(forceRotateFallbackBlock, "force_rotate_failed");
         AssertDoesNotContain(forceRotateFallbackBlock, "Flashback export failed: live-edge segment rotation failed.");
         AssertContains(captureServiceText, "private sealed class FlashbackRecordingBoundarySnapshot");
-        AssertContains(captureServiceText, "CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);");
-        AssertOccursBefore(captureServiceText, "CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);", "var exportResult = await ExportFlashbackCoreAsync(");
+        AssertContains(captureServiceText, "captureBoundarySnapshot: sink => CaptureFlashbackRecordingBoundarySnapshot(sink, recordingBoundary)");
+        AssertContains(flashbackBackendText, "captureBoundarySnapshot?.Invoke(flashbackSink);");
+        AssertOccursBefore(flashbackBackendText, "captureBoundarySnapshot?.Invoke(flashbackSink);", "var exportResult = await exportRecordingAsync(");
         AssertContains(captureServiceText, "counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline");
         AssertContains(captureServiceText, "audioCounters: recordingBoundary.AudioCounters ?? GetRecordingAudioCountersSinceBaseline");
         AssertContains(captureServiceText, "evictionPaused = true;");
         AssertContains(captureServiceText, "if (exportId != 0)");
         AssertContains(captureServiceText, "if (evictionPaused)");
         AssertContains(captureServiceText, "ResumeFlashbackEvictionBestEffort(bufferManager, \"flashback_export\");");
-        AssertContains(captureServiceText, "ResumeFlashbackEvictionBestEffort(bufferManager, \"flashback_recording_finalize\");");
+        AssertContains(flashbackBackendText, "resumeEvictionBestEffort(bufferManager, \"flashback_recording_finalize\");");
         AssertContains(captureServiceText, "RecordLastFlashbackExportResult(exportId, failure);");
         AssertContains(captureServiceText, "private void RecordLastFlashbackExportResult(long exportId, FinalizeResult result)");
         AssertContains(captureServiceText, "Volatile.Write(ref _lastFlashbackExportResultId, exportId);");
@@ -1028,8 +1031,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackLifecycleAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportConcurrentAsync(");
         AssertContains(diagnosticSessionText, "async Task<JsonElement> SendRawWithConnectRetryAsync(");
-        AssertContains(diagnosticSessionText, "var exportTaskA = sendCommandAsync(\"FlashbackExport\", exportPayloadA, 60_000);");
-        AssertContains(diagnosticSessionText, "var exportTaskB = sendCommandAsync(\"FlashbackExport\", exportPayloadB, 60_000);");
+        AssertContains(diagnosticSessionText, "var exportTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout(\"FlashbackExport\");");
+        AssertContains(diagnosticSessionText, "var exportTaskA = sendCommandAsync(\"FlashbackExport\", exportPayloadA, exportTimeoutMs);");
+        AssertContains(diagnosticSessionText, "var exportTaskB = sendCommandAsync(\"FlashbackExport\", exportPayloadB, exportTimeoutMs);");
         AssertContains(diagnosticSessionText, "flashback concurrent exports verified");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackDisableDuringExportAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-disable-during-export.mp4\"");
@@ -1244,10 +1248,14 @@ static partial class Program
         AssertContains(protocolText, "internal const int RecordingResponseTimeoutMs = 150000;");
         AssertContains(protocolText, "internal const int FlashbackMutationResponseTimeoutMs = 305000;");
         AssertContains(protocolText, "commandName = ResolveCanonicalCommandName(commandName);");
-        AssertContains(protocolText, "\"SetRecordingEnabled\" => RecordingResponseTimeoutMs");
-        AssertContains(protocolText, "\"RestartFlashback\" or \"SetFlashbackEnabled\" => FlashbackMutationResponseTimeoutMs");
-        AssertContains(protocolText, "_ => DefaultResponseTimeoutMs");
-        AssertContains(protocolText, "return commandTimeoutMs;");
+        AssertContains(protocolText, "AutomationCommandCatalog.TryGet(commandName, out var metadata)");
+        AssertContains(protocolText, "? metadata.ResponseTimeoutMs");
+        var catalogText = ReadRepoFile("tools/Common/AutomationCommandCatalog.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(catalogText, "AutomationCommandKind.SetRecordingEnabled");
+        AssertContains(catalogText, "AutomationPipeProtocol.RecordingResponseTimeoutMs");
+        AssertContains(catalogText, "AutomationCommandKind.FlashbackExport");
+        AssertContains(catalogText, "AutomationPipeProtocol.FlashbackMutationResponseTimeoutMs");
         AssertDoesNotContain(protocolText, "AlignResponseTimeoutWithServerRequest");
         AssertContains(clientText, "AutomationPipeProtocol.TryGetCommandName(commandValue, out var canonicalCommandName)");
         AssertContains(clientText, "AutomationPipeProtocol.GetDefaultResponseTimeout(timeoutCommandName)");
@@ -1271,8 +1279,8 @@ static partial class Program
         var defaultTimeoutMs = (int)getDefaultResponseTimeout.Invoke(null, new object[] { "GetSnapshot" })!;
         AssertEqual(15000, defaultTimeoutMs, "GetSnapshot timeout remains bounded");
 
-        var extendedTimeoutMs = (int)getDefaultResponseTimeout.Invoke(null, new object[] { "FlashbackExport" })!;
-        AssertEqual(60000, extendedTimeoutMs, "FlashbackExport uses extended timeout");
+        var flashbackExportTimeoutMs = (int)getDefaultResponseTimeout.Invoke(null, new object[] { "FlashbackExport" })!;
+        AssertEqual(305000, flashbackExportTimeoutMs, "FlashbackExport uses flashback mutation timeout");
 
         foreach (var acceptedName in new[] { "SetFlashbackEnabled", "set-flashback-enabled", "RestartFlashback" })
         {

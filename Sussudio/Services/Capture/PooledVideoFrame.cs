@@ -4,6 +4,9 @@ using System.Threading;
 
 namespace Sussudio.Services.Capture;
 
+// Pixel formats carried by pooled decoded frames. The enum is deliberately
+// narrow because the pooled-frame path currently transports luma/chroma capture
+// buffers, not arbitrary RGB render targets.
 internal enum PooledVideoPixelFormat
 {
     Unknown = 0,
@@ -11,6 +14,9 @@ internal enum PooledVideoPixelFormat
     P010 = 2
 }
 
+// ArrayPool-backed decoded frame with reference-counted leases. The owner can
+// dispose immediately after fan-out; the buffer returns to the pool only after
+// every preview/recording consumer releases its lease.
 internal sealed class PooledVideoFrame : IDisposable
 {
     private readonly object _leaseSync = new();
@@ -190,6 +196,9 @@ internal sealed class PooledVideoFrame : IDisposable
     }
 }
 
+// Read-only consumer lease over a PooledVideoFrame. Lease metadata is copied at
+// creation so diagnostics can still identify the frame after Dispose releases
+// the underlying pooled bytes.
 internal sealed class PooledVideoFrameLease : IDisposable
 {
     private PooledVideoFrame? _frame;

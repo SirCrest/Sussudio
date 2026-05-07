@@ -8,6 +8,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP tools for recent diagnostic events and health summaries.
 public static class DiagnosticsTools
 {
     [McpServerTool, Description("Get recent diagnostic events with severity, category, and timestamps")]

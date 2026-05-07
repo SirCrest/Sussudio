@@ -700,7 +700,8 @@ static partial class Program
 
         AssertContains(captureServiceText, "_flashbackBackendSettings = CloneCaptureSettings(settings)");
         AssertContains(captureServiceText, "_flashbackBackendSettings = CloneCaptureSettings(_currentSettings)");
-        AssertContains(captureServiceText, "_flashbackBackendSettings = null");
+        AssertContains(captureServiceText, "_flashbackBackend.ClearSinkAndSettings();");
+        AssertContains(captureServiceText, "_flashbackBackend.Clear();");
         AssertContains(captureServiceText, "FlashbackPlaybackController? playbackController = null;");
         AssertContains(captureServiceText, "controller is { IsDisposed: false, IsInitialized: false }");
         AssertContains(captureServiceText, "(playbackController ?? _flashbackPlaybackController)?.Dispose();");
@@ -905,7 +906,7 @@ static partial class Program
         AssertOccursBefore(
             cycleBuffer,
             "await oldSink.DisposeAsync().ConfigureAwait(false);",
-            "_flashbackSink = null;");
+            "_flashbackBackend.ClearSinkAndSettings();");
 
         return Task.CompletedTask;
     }
@@ -981,9 +982,7 @@ static partial class Program
         AssertContains(setFlashbackEnabled, "_pendingFlashbackEnableAfterRecording = false;");
         AssertContains(setFlashbackEnabled, "if (_flashbackEnabled == enabled)");
         AssertContains(setFlashbackEnabled, "if (enabled && (_flashbackSink != null || _isRecording))");
-        AssertContains(
-            setFlashbackEnabled,
-            "if (!enabled &&\n                    _flashbackSink == null &&\n                    _flashbackBufferManager == null &&\n                    _flashbackExporter == null &&\n                    _flashbackPlaybackController == null)");
+        AssertContains(setFlashbackEnabled, "if (!enabled && !_flashbackBackend.HasAnyResource)");
         AssertContains(
             setFlashbackEnabled,
             "if (!_isVideoPreviewActive && !_isAudioPreviewActive && !_isRecording)\n                {\n                    await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);");

@@ -7,6 +7,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP wrapper for PresentMon capture and parsed OS presentation metrics.
 public static class PresentMonTools
 {
     [McpServerTool, Description("Capture OS-level present/frame pacing metrics for Sussudio using the PresentMon console executable.")]

@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 
 namespace Sussudio.Services.Runtime;
 
+// Best-effort MMCSS registration wrapper for timing-sensitive worker threads.
+// Failure is logged but not fatal so the app still runs on systems without AVRT.
 internal sealed class MmcssThreadRegistration : IDisposable
 {
     private IntPtr _handle;

@@ -1,3 +1,5 @@
+<# Publishes Debug/Release app builds into the repo's latest-build staging
+layout used by local automation and smoke testing. #>
 param(
     [string[]]$Configurations = @("Debug", "Release")
 )

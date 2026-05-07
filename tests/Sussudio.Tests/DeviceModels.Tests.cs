@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Threading.Tasks;
 
+// Tests for capture/audio device display and option models.
 static partial class Program
 {
     private static Task AudioInputDevice_DisplayName_UsesNameOrUnknownFallback()

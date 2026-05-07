@@ -102,6 +102,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\tools\Common\AutomationCommandCatalog.cs" Link="Common\AutomationCommandCatalog.cs" />
     <Compile Include="..\tools\Common\AutomationPipeProtocol.cs" Link="Common\AutomationPipeProtocol.cs" />
     <Compile Include="..\tools\Common\AutomationPipeSecurityPolicy.cs" Link="Common\AutomationPipeSecurityPolicy.cs" />
   </ItemGroup>

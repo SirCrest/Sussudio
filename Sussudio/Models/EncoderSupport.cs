@@ -1,5 +1,7 @@
 namespace Sussudio.Models;
 
+// Cached FFmpeg encoder capability snapshot used to enable or disable recording
+// format choices.
 public sealed class EncoderSupport
 {
     public bool HasH264Nvenc { get; init; }

@@ -6,6 +6,9 @@ using Vortice.Direct3D11;
 
 namespace Sussudio.Services.Preview;
 
+// Shared D3D11 device plus MF DXGI device-manager handle used by the source
+// reader and preview renderer. The manager owns reset/disposal ordering so GPU
+// surfaces can be shared without each feature creating its own device.
 internal sealed class SharedD3DDeviceManager : IDisposable
 {
     private readonly object _sync = new();

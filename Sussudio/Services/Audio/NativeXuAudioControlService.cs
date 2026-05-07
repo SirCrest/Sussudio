@@ -11,6 +11,10 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Audio;
 
+// Controls the 4K X audio input route through the vendor UVC extension-unit
+// payload. Only the observed stable bytes are mutated; volatile counters and
+// timer bytes are preserved so read/modify/write does not trample firmware
+// state outside the HDMI/Analog selection.
 internal sealed class NativeXuAudioControlService
 {
     private static readonly Guid XuGuid = new("961073C7-49F7-44F2-AB42-E940405940C2");

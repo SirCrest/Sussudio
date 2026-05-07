@@ -1,5 +1,6 @@
 namespace Sussudio;
 
+// UI display helpers for compact source-signal labels.
 internal static class DisplayFormatters
 {
     public static string FormatSourceHdr(bool? isHdr, string? colorimetry)

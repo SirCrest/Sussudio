@@ -15,13 +15,19 @@ using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Recording;
 
+// Bounded-queue recording sink that isolates capture callbacks from libav.
+// Capture threads enqueue raw/GPU/CUDA video and audio quickly; one encoding
+// task drains the queues and serializes every LibAvEncoder call.
 public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder, ICudaVideoFrameEncoder
 {
     private const int VideoQueueCapacity = 360;
     private const int AudioQueueCapacity = 3600;
     private const int GpuQueueCapacity = 4;
     private const int CudaQueueCapacity = 12;
-    private const int QueueBackpressureTimeoutMs = 250;
+    private const int VideoDrainBatchLimit = 24;
+    private const int AudioDrainBatchLimit = 128;
+    private const int GpuDrainBatchLimit = 16;
+    private const int CudaDrainBatchLimit = 16;
     private const int StopTimeoutMs = 30_000;
     private const int DisposeTimeoutMs = 1_000;
     private const int VideoQueueLatencyWindowSize = 256;
@@ -38,6 +44,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private Channel<AudioSamplePacket>? _microphoneQueue;
     private Channel<GpuFramePacket>? _gpuQueue;
     private Channel<CudaFramePacket>? _cudaQueue;
+
+    // The work semaphore is a wake-up signal, not a count of queued packets.
+    // The encoding loop drains audio around bounded video batches so video
+    // backlog cannot starve HDMI or microphone audio.
     private CancellationTokenSource? _cts;
     private Task? _encodingTask;
     private RecordingContext? _context;
@@ -449,6 +459,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
     public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
     {
+        // Hot WASAPI callback path: copy/enqueue only, never await or block.
         var queue = _audioQueue;
         if (_disposed || !_started || !_audioEnabled || queue == null || samples.IsEmpty)
         {
@@ -475,6 +486,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
     public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
     {
+        // Hot WASAPI callback path: copy/enqueue only, never await or block.
         var queue = _microphoneQueue;
         if (_disposed || !_started || !_microphoneEnabled || queue == null || samples.IsEmpty)
         {
@@ -891,16 +903,26 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             while (true)
             {
                 var madeProgress = false;
+
+                madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
+                if (_microphoneEnabled && microphoneQueue != null)
+                {
+                    madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
+                }
+
                 if (cudaQueue != null)
                 {
-                    madeProgress = DrainCudaPackets(cudaQueue.Reader);
+                    madeProgress = DrainCudaPackets(cudaQueue.Reader, CudaDrainBatchLimit) || madeProgress;
                 }
                 if (gpuQueue != null)
                 {
-                    madeProgress = DrainGpuPackets(gpuQueue.Reader) || madeProgress;
+                    madeProgress = DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit) || madeProgress;
                 }
 
-                madeProgress = DrainVideoPackets(videoQueue.Reader) || madeProgress;
+                madeProgress = DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit) || madeProgress;
+
+                // Audio again catches samples that arrived while video encoding
+                // was consuming its bounded batch.
                 madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
                 if (_microphoneEnabled && microphoneQueue != null)
                 {
@@ -969,10 +991,11 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
     }
 
-    private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader)
+    private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)
     {
         var drainedAny = false;
-        while (true)
+        var drainedCount = 0;
+        while (drainedCount < maxPackets)
         {
             VideoFramePacket packet;
             lock (_videoQueueSync)
@@ -1011,15 +1034,17 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             }
 
             drainedAny = true;
+            drainedCount++;
         }
 
         return drainedAny;
     }
 
-    private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader)
+    private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)
     {
         var drainedAny = false;
-        while (reader.TryRead(out var packet))
+        var drainedCount = 0;
+        while (drainedCount < maxPackets && reader.TryRead(out var packet))
         {
             DecrementQueueDepth(ref _gpuQueueDepth, "gpu");
             try
@@ -1043,15 +1068,17 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             }
 
             drainedAny = true;
+            drainedCount++;
         }
 
         return drainedAny;
     }
 
-    private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader)
+    private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)
     {
         var drainedAny = false;
-        while (reader.TryRead(out var packet))
+        var drainedCount = 0;
+        while (drainedCount < maxPackets && reader.TryRead(out var packet))
         {
             DecrementQueueDepth(ref _cudaQueueDepth, "cuda");
             var frame = (AVFrame*)packet.Frame;
@@ -1083,6 +1110,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             }
 
             drainedAny = true;
+            drainedCount++;
         }
 
         return drainedAny;
@@ -1312,167 +1340,118 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
     private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
     {
-        var deadlineTick = Environment.TickCount64 + QueueBackpressureTimeoutMs;
-        long backpressureStartTick = 0;
-        while (true)
+        Exception? overloadFailure = null;
+        lock (_videoQueueSync)
         {
-            Exception? overloadFailure = null;
-            lock (_videoQueueSync)
+            if (!_started ||
+                _cts?.IsCancellationRequested == true ||
+                Volatile.Read(ref _encodingFailure) != null)
             {
-                if (!_started ||
-                    _cts?.IsCancellationRequested == true ||
-                    Volatile.Read(ref _encodingFailure) != null)
-                {
-                    ReturnVideoPacket(packet);
-                    return VideoEnqueueResult.Rejected;
-                }
-
-                if (TryWriteVideoPacket(queue, packet))
-                {
-                    RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                    TrackQueuedVideoTick(packet.EnqueueTick);
-                    Interlocked.Increment(ref _videoFramesEnqueued);
-                    SignalWork("video_enqueue");
-                    return VideoEnqueueResult.Accepted;
-                }
-
-                if (!_started ||
-                    _cts?.IsCancellationRequested == true ||
-                    Volatile.Read(ref _encodingFailure) != null)
-                {
-                    ReturnVideoPacket(packet);
-                    return VideoEnqueueResult.Rejected;
-                }
-
-                if (Environment.TickCount64 < deadlineTick)
-                {
-                    backpressureStartTick = backpressureStartTick == 0 ? Environment.TickCount64 : backpressureStartTick;
-                    overloadFailure = null;
-                }
-                else
-                {
-                    RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                    Interlocked.Increment(ref _droppedVideoFrames);
-                    overloadFailure = new InvalidOperationException(
-                        $"LibAv recording video queue overloaded after {QueueBackpressureTimeoutMs}ms backpressure: capacity={VideoQueueCapacity} depth={Volatile.Read(ref _videoQueueDepth)}");
-                    ReturnVideoPacket(packet);
-                }
+                ReturnVideoPacket(packet);
+                return VideoEnqueueResult.Rejected;
             }
 
-            if (overloadFailure != null)
+            if (TryWriteVideoPacket(queue, packet))
             {
-                FailEncoding(overloadFailure);
-                return VideoEnqueueResult.Overloaded;
+                TrackQueuedVideoTick(packet.EnqueueTick);
+                Interlocked.Increment(ref _videoFramesEnqueued);
+                SignalWork("video_enqueue");
+                return VideoEnqueueResult.Accepted;
             }
 
-            SignalWork("video_backpressure_retry");
-            Thread.Sleep(1);
+            if (!_started ||
+                _cts?.IsCancellationRequested == true ||
+                Volatile.Read(ref _encodingFailure) != null)
+            {
+                ReturnVideoPacket(packet);
+                return VideoEnqueueResult.Rejected;
+            }
+
+            Interlocked.Increment(ref _droppedVideoFrames);
+            overloadFailure = new InvalidOperationException(
+                $"LibAv recording video queue overloaded: capacity={VideoQueueCapacity} depth={Volatile.Read(ref _videoQueueDepth)}");
+            ReturnVideoPacket(packet);
         }
+
+        FailEncoding(overloadFailure);
+        return VideoEnqueueResult.Overloaded;
     }
 
     private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
     {
-        var deadlineTick = Environment.TickCount64 + QueueBackpressureTimeoutMs;
-        long backpressureStartTick = 0;
-        while (true)
+        if (!_started ||
+            _cts?.IsCancellationRequested == true ||
+            Volatile.Read(ref _encodingFailure) != null)
         {
-            if (!_started ||
-                _cts?.IsCancellationRequested == true ||
-                Volatile.Read(ref _encodingFailure) != null)
-            {
-                Marshal.Release(packet.Texture);
-                return VideoEnqueueResult.Rejected;
-            }
-
-            if (TryWriteGpuPacket(queue, packet))
-            {
-                RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                Interlocked.Increment(ref _gpuFramesEnqueued);
-                SignalWork("gpu_enqueue");
-                return VideoEnqueueResult.Accepted;
-            }
-
-            if (!_started ||
-                _cts?.IsCancellationRequested == true ||
-                Volatile.Read(ref _encodingFailure) != null)
-            {
-                Marshal.Release(packet.Texture);
-                return VideoEnqueueResult.Rejected;
-            }
-
-            if (Environment.TickCount64 >= deadlineTick)
-            {
-                RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                Marshal.Release(packet.Texture);
-                FailEncoding(new InvalidOperationException(
-                    $"LibAv GPU recording queue overloaded after {QueueBackpressureTimeoutMs}ms backpressure: capacity={GpuQueueCapacity} depth={Volatile.Read(ref _gpuQueueDepth)}"));
-                return VideoEnqueueResult.Overloaded;
-            }
-
-            backpressureStartTick = backpressureStartTick == 0 ? Environment.TickCount64 : backpressureStartTick;
-            SignalWork("gpu_backpressure_retry");
-            Thread.Sleep(1);
+            Marshal.Release(packet.Texture);
+            return VideoEnqueueResult.Rejected;
         }
+
+        if (TryWriteGpuPacket(queue, packet))
+        {
+            Interlocked.Increment(ref _gpuFramesEnqueued);
+            SignalWork("gpu_enqueue");
+            return VideoEnqueueResult.Accepted;
+        }
+
+        if (!_started ||
+            _cts?.IsCancellationRequested == true ||
+            Volatile.Read(ref _encodingFailure) != null)
+        {
+            Marshal.Release(packet.Texture);
+            return VideoEnqueueResult.Rejected;
+        }
+
+        Marshal.Release(packet.Texture);
+        FailEncoding(new InvalidOperationException(
+            $"LibAv GPU recording queue overloaded: capacity={GpuQueueCapacity} depth={Volatile.Read(ref _gpuQueueDepth)}"));
+        return VideoEnqueueResult.Overloaded;
     }
 
     private unsafe VideoEnqueueResult TryEnqueueCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)
     {
-        var deadlineTick = Environment.TickCount64 + QueueBackpressureTimeoutMs;
-        long backpressureStartTick = 0;
-        while (true)
+        if (!_started ||
+            _cts?.IsCancellationRequested == true ||
+            Volatile.Read(ref _encodingFailure) != null)
         {
-            if (!_started ||
-                _cts?.IsCancellationRequested == true ||
-                Volatile.Read(ref _encodingFailure) != null)
+            var rejectedFrame = (AVFrame*)packet.Frame;
+            if (rejectedFrame != null)
             {
-                var rejectedFrame = (AVFrame*)packet.Frame;
-                if (rejectedFrame != null)
-                {
-                    ffmpeg.av_frame_free(&rejectedFrame);
-                }
-
-                return VideoEnqueueResult.Rejected;
+                ffmpeg.av_frame_free(&rejectedFrame);
             }
 
-            if (TryWriteCudaPacket(queue, packet))
-            {
-                RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                Interlocked.Increment(ref _cudaFramesEnqueued);
-                SignalWork("cuda_enqueue");
-                return VideoEnqueueResult.Accepted;
-            }
-
-            if (!_started ||
-                _cts?.IsCancellationRequested == true ||
-                Volatile.Read(ref _encodingFailure) != null)
-            {
-                var frame = (AVFrame*)packet.Frame;
-                if (frame != null)
-                {
-                    ffmpeg.av_frame_free(&frame);
-                }
-
-                return VideoEnqueueResult.Rejected;
-            }
-
-            if (Environment.TickCount64 >= deadlineTick)
-            {
-                RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                var frame = (AVFrame*)packet.Frame;
-                if (frame != null)
-                {
-                    ffmpeg.av_frame_free(&frame);
-                }
-
-                FailEncoding(new InvalidOperationException(
-                    $"LibAv CUDA recording queue overloaded after {QueueBackpressureTimeoutMs}ms backpressure: capacity={CudaQueueCapacity} depth={Volatile.Read(ref _cudaQueueDepth)}"));
-                return VideoEnqueueResult.Overloaded;
-            }
-
-            backpressureStartTick = backpressureStartTick == 0 ? Environment.TickCount64 : backpressureStartTick;
-            SignalWork("cuda_backpressure_retry");
-            Thread.Sleep(1);
+            return VideoEnqueueResult.Rejected;
         }
+
+        if (TryWriteCudaPacket(queue, packet))
+        {
+            Interlocked.Increment(ref _cudaFramesEnqueued);
+            SignalWork("cuda_enqueue");
+            return VideoEnqueueResult.Accepted;
+        }
+
+        if (!_started ||
+            _cts?.IsCancellationRequested == true ||
+            Volatile.Read(ref _encodingFailure) != null)
+        {
+            var frame = (AVFrame*)packet.Frame;
+            if (frame != null)
+            {
+                ffmpeg.av_frame_free(&frame);
+            }
+
+            return VideoEnqueueResult.Rejected;
+        }
+
+        var overloadedFrame = (AVFrame*)packet.Frame;
+        if (overloadedFrame != null)
+        {
+            ffmpeg.av_frame_free(&overloadedFrame);
+        }
+
+        FailEncoding(new InvalidOperationException(
+            $"LibAv CUDA recording queue overloaded: capacity={CudaQueueCapacity} depth={Volatile.Read(ref _cudaQueueDepth)}"));
+        return VideoEnqueueResult.Overloaded;
     }
 
     private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)

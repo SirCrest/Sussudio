@@ -2,6 +2,8 @@ using System;
 
 namespace Sussudio.Services.Capture;
 
+// Tolerant matcher for device symbolic-link strings returned by different
+// Windows APIs.
 internal static class DeviceSymbolicLinkMatcher
 {
     internal static bool Matches(string target, string candidate)

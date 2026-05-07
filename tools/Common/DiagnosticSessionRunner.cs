@@ -226,6 +226,9 @@ public sealed class DiagnosticSessionSample
 
 public static class DiagnosticSessionRunner
 {
+    // Scenario names are intentionally normalized into booleans once near the
+    // top of RunAsync. The rest of the runner reads like a phase plan: setup,
+    // optional background scenario task, sampling loop, cleanup, then summary.
     private const int FlashbackStressMaxPlaybackPendingCommands = 4;
     private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;
     private const double FlashbackStressPlaybackWarmSeconds = 10.0;
@@ -2436,8 +2439,9 @@ public static class DiagnosticSessionRunner
         var exportPayloadA = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathA };
         var exportPayloadB = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathB };
 
-        var exportTaskA = sendCommandAsync("FlashbackExport", exportPayloadA, 60_000);
-        var exportTaskB = sendCommandAsync("FlashbackExport", exportPayloadB, 60_000);
+        var exportTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport");
+        var exportTaskA = sendCommandAsync("FlashbackExport", exportPayloadA, exportTimeoutMs);
+        var exportTaskB = sendCommandAsync("FlashbackExport", exportPayloadB, exportTimeoutMs);
         actions.Add("flashback concurrent export requests issued");
 
         var exportResponses = await Task.WhenAll(exportTaskA, exportTaskB).ConfigureAwait(false);
@@ -2486,7 +2490,7 @@ public static class DiagnosticSessionRunner
         var exportTask = sendCommandAsync(
             "FlashbackExport",
             new Dictionary<string, object?> { ["seconds"] = 3, ["outputPath"] = exportPath },
-            60_000);
+            AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
 
         await Task.Delay(100, cancellationToken).ConfigureAwait(false);
         var disableTask = SendCommandWithConnectRetryAsync(

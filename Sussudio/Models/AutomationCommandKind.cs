@@ -1,5 +1,7 @@
 namespace Sussudio.Models;
 
+// Numeric automation command identifiers shared by the app, ssctl, MCP, and the
+// generic AutomationClient. Preserve existing values for protocol compatibility.
 public enum AutomationCommandKind
 {
     Authenticate = 0,

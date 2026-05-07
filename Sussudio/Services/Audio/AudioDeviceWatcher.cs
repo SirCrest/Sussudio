@@ -6,6 +6,8 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Audio;
 
+// Debounced Core Audio endpoint watcher. It tells the view model when audio
+// devices changed without forcing a refresh for every low-level notification.
 internal sealed class AudioDeviceWatcher : IMMNotificationClient, IDisposable
 {
     private IMMDeviceEnumerator? _enumerator;

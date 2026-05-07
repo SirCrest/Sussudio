@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 
+// Tests for XAML value converters used by hand-bound WinUI controls.
 static partial class Program
 {
     private static Task BoolConverters_PreserveInversionAndVisibilityMappings()

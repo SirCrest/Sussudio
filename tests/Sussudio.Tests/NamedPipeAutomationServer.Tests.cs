@@ -4,6 +4,7 @@ using System.IO.Pipes;
 using System.Reflection;
 using System.Threading.Tasks;
 
+// Tests for named-pipe automation server framing, auth, and lifecycle behavior.
 static partial class Program
 {
     private static Task NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken()

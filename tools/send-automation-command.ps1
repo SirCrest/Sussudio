@@ -1,3 +1,5 @@
+<# Sends one raw automation command through the shared AutomationClient and
+prints the JSON response for scripts. #>
 param(
     [Parameter(Mandatory = $true)]
     [string]$Command,

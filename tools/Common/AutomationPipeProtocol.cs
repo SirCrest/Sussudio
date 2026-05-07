@@ -6,6 +6,8 @@ using Sussudio.Models;
 
 namespace Sussudio.Tools;
 
+// Shared automation protocol constants, command names, and timeout policy used
+// by ssctl, MCP, diagnostic sessions, and the generic automation client.
 internal static class AutomationPipeProtocol
 {
     internal const string DefaultPipeName = "SussudioAutomation";
@@ -44,16 +46,9 @@ internal static class AutomationPipeProtocol
     internal static int GetDefaultResponseTimeout(string commandName)
     {
         commandName = ResolveCanonicalCommandName(commandName);
-
-        var commandTimeoutMs = commandName switch
-        {
-            "SetRecordingEnabled" => RecordingResponseTimeoutMs,
-            "RestartFlashback" or "SetFlashbackEnabled" => FlashbackMutationResponseTimeoutMs,
-            "WaitForCondition" or "VerifyLastRecording" or "CapturePreviewFrame" or
-            "CaptureWindowScreenshot" or "FlashbackExport" or "VerifyFile" => ExtendedResponseTimeoutMs,
-            _ => DefaultResponseTimeoutMs
-        };
-        return commandTimeoutMs;
+        return AutomationCommandCatalog.TryGet(commandName, out var metadata)
+            ? metadata.ResponseTimeoutMs
+            : DefaultResponseTimeoutMs;
     }
 
     private static string ResolveCanonicalCommandName(string commandName)

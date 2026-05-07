@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Sussudio.Converters;
 
+// Small XAML converter set used by the hand-bound WinUI controls.
 public class InverseBoolConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)

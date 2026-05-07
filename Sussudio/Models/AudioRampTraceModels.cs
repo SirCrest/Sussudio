@@ -2,6 +2,8 @@ using System;
 
 namespace Sussudio.Models;
 
+// Bounded audio-transition trace returned through automation for stutter/ramp
+// investigations.
 public sealed class AudioRampTraceSnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
@@ -14,6 +16,7 @@ public sealed class AudioRampTraceSnapshot
     public AudioRampTraceEntry[] Entries { get; init; } = Array.Empty<AudioRampTraceEntry>();
 }
 
+// One 10ms-ish sample of control-side volume state plus render/capture evidence.
 public sealed class AudioRampTraceEntry
 {
     public long Sequence { get; init; }

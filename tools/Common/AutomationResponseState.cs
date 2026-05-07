@@ -3,6 +3,7 @@ using System.Text.Json;
 
 namespace Sussudio.Tools;
 
+// Minimal success/status/retry reader shared by command-line clients.
 internal static class AutomationResponseState
 {
     internal static bool TryRead(

@@ -7,6 +7,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP tools for retrieving the current app snapshot and high-level state.
 public static class AppStateTools
 {
     [McpServerTool, Description("Get the full application state snapshot including device, preview, recording, HDR, audio, and performance status")]

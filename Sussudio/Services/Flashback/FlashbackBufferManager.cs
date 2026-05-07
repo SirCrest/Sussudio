@@ -13,6 +13,7 @@ namespace Sussudio.Services.Flashback;
 /// <summary>
 /// Manages a single MPEG-TS flashback buffer file.
 /// Tracks buffered duration via PTS updates from the encoder.
+/// Owns disk retention and recovery markers; it does not control live capture.
 /// </summary>
 internal sealed class FlashbackBufferManager : IDisposable
 {

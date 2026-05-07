@@ -6,6 +6,8 @@ using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Gpu;
 
+// Optional NVML telemetry snapshot. All values are nullable because the monitor
+// is diagnostic-only and must gracefully degrade on non-NVIDIA systems.
 public sealed record NvmlSnapshot(
     string? GpuName,
     uint? GpuUtilizationPercent,
@@ -28,6 +30,9 @@ public sealed record NvmlSnapshot(
     public ulong? VramTotalMB => VramTotalBytes.HasValue ? VramTotalBytes.Value / (1024 * 1024) : null;
 }
 
+// Polls NVIDIA GPU utilization/encoder/decoder counters for stats overlays and
+// diagnostic sessions. Missing nvml.dll disables the feature without affecting
+// capture, preview, or recording.
 public sealed class NvmlMonitor : IDisposable
 {
     private const uint NVML_SUCCESS = 0;

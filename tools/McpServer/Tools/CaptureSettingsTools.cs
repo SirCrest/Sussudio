@@ -5,6 +5,8 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP tools for changing capture settings such as resolution, FPS, HDR, codec,
+// bitrate, and decoder count.
 public static class CaptureSettingsTools
 {
     [McpServerTool, Description("Configure capture settings: resolution, frame rate, video format override, recording format, quality, custom bitrate, preset, split encode mode, and MJPEG decoder count. Only provided parameters are changed.")]

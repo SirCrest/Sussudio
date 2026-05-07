@@ -447,6 +447,9 @@ static partial class Program
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
+                "Stats presentation logic lives in focused builder",
+                StatsPresentationLogic_LivesInFocusedBuilder),
+            await RunCheckAsync(
                 "Stats live summary shows current preview frame time and 1 percent low",
                 StatsLiveSummary_ShowsCurrentPreviewFrameTimeAndOnePercentLow),
             await RunCheckAsync(
@@ -663,6 +666,18 @@ static partial class Program
                 "LibAv recording stop validates final output",
                 LibAvRecordingSink_StopValidatesFinalOutput),
             await RunCheckAsync(
+                "Recording video try enqueue paths do not block capture callbacks",
+                RecordingVideoTryEnqueuePaths_DoNotBlockCaptureCallbacks),
+            await RunCheckAsync(
+                "WASAPI audio capture rejects incomplete hot audio writes",
+                WasapiAudioCapture_HotAudioWritesRejectIncompleteTasks),
+            await RunCheckAsync(
+                "CaptureService flashback backend ownership uses resource aggregate",
+                CaptureService_FlashbackBackendOwnershipUsesResourceAggregate),
+            await RunCheckAsync(
+                "LibAv recording drain loop interleaves audio with bounded video batches",
+                LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches),
+            await RunCheckAsync(
                 "MJPG HFR mode only activates for SDR 4K120-style settings",
                 CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest),
             await RunCheckAsync(
@@ -706,6 +721,9 @@ static partial class Program
             await RunCheckAsync(
                 "Capture mode options preserve display text and metadata",
                 CaptureModeOptions_PreserveDisplayTextAndMetadata),
+            await RunCheckAsync(
+                "Capture mode options builder builds resolution and video format options",
+                CaptureModeOptionsBuilder_BuildsResolutionAndVideoFormatOptions),
             await RunCheckAsync(
                 "Capture settings defaults preserve output and pipeline contracts",
                 CaptureSettings_DefaultsAndOutputContracts),
@@ -1216,6 +1234,9 @@ static partial class Program
             await RunCheckAsync(
                 "Automation pipe protocol resolves commands timeouts auth and envelopes",
                 AutomationPipeProtocol_ResolvesCommandsTimeoutsAuthAndEnvelopes),
+            await RunCheckAsync(
+                "Automation command catalog covers command metadata and policy",
+                AutomationCommandCatalog_CoversCommandsAndPolicyMetadata),
             await RunCheckAsync(
                 "Automation response state parses status and retry contracts",
                 AutomationResponseState_ParsesStatusAndRetryContracts),
@@ -2468,14 +2489,16 @@ static partial class Program
     private static Task StatsPanels_UseSourceTelemetry_ForHdmiInput()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
         var statsWindowXaml = ReadRepoFile("Sussudio/StatsWindow.xaml").Replace("\r\n", "\n");
         var nativeXuText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayText, "var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
-        AssertContains(statsOverlayText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
-        AssertDoesNotContain(statsOverlayText, "var sourceFormat =\n            snapshot.ReaderSourceSubtype ??");
+        AssertContains(statsPresentationText, "var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
+        AssertContains(statsPresentationText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
+        AssertDoesNotContain(statsPresentationText, "var sourceFormat =\n            snapshot.ReaderSourceSubtype ??");
+        AssertContains(statsOverlayText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
         AssertContains(statsWindowText, "SourceHdrValue.Text = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
         AssertContains(statsWindowText, "SourceFormatValue.Text = snapshot.SourceVideoFormat ?? \"\\u2014\";");
         AssertContains(mainWindowXaml, "Text=\"Video Format\"");
@@ -2490,17 +2513,38 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task StatsPresentationLogic_LivesInFocusedBuilder()
+    {
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
+
+        AssertContains(statsPresentationText, "internal static class StatsPresentationBuilder");
+        AssertContains(statsPresentationText, "public static StatsDockPresentation BuildDockPresentation(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationText, "public static StatsFrameTimePresentation BuildFrameTimePresentation(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationText, "public static StatsDiagnosticRowsPresentation BuildDiagnosticRows(");
+        AssertContains(statsPresentationText, "public static StatsDiagnosticSummary BuildStatsDiagnosticSummary(");
+        AssertContains(statsOverlayText, "var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);");
+        AssertContains(statsOverlayText, "var presentation = StatsPresentationBuilder.BuildFrameTimePresentation(snapshot);");
+        AssertContains(statsOverlayText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
+        AssertDoesNotContain(statsOverlayText, "private enum MetricStatus");
+        AssertDoesNotContain(statsOverlayText, "private static string ResolveCaptureSummaryText");
+        AssertDoesNotContain(statsOverlayText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
+
+        return Task.CompletedTask;
+    }
+
     private static Task StatsLiveSummary_ShowsCurrentPreviewFrameTimeAndOnePercentLow()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayText, "PreviewOnePercentLowFps: Sanitize(presentCadence?.OnePercentLowFps ?? 0)");
-        AssertContains(statsOverlayText, "ResolveCurrentPreviewFrameTimeMs(snapshot)");
-        AssertContains(statsOverlayText, "1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps");
-        AssertContains(statsOverlayText, "return $\"{currentFrameTime} | {onePercentLow}\";");
-        AssertContains(statsOverlayText, "SetMetricBrush(Stats_SummaryRendererFpsValue, ResolvePreviewFrameLaneStatus(snapshot));");
+        AssertContains(statsOverlayText, "PreviewOnePercentLowFps: StatsPresentationBuilder.Sanitize(presentCadence?.OnePercentLowFps ?? 0)");
+        AssertContains(statsPresentationText, "ResolveCurrentPreviewFrameTimeMs(snapshot)");
+        AssertContains(statsPresentationText, "1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps");
+        AssertContains(statsPresentationText, "return $\"{currentFrameTime} | {onePercentLow}\";");
+        AssertContains(statsOverlayText, "SetMetricBrush(Stats_SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);");
         AssertContains(statsWindowText, "double PreviewOnePercentLowFps");
         AssertDoesNotContain(statsWindowText, "double PreviewFivePercentLowFps");
         AssertContains(mainWindowXaml, "x:Name=\"Stats_SummaryRendererFpsValue\"");
@@ -2513,21 +2557,22 @@ static partial class Program
     private static Task FrameTimeOverlay_UsesDetectedFpsBoundedRange()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayText, "ResolveFrameTimeRange(snapshot.SourceExpectedFps)");
-        AssertContains(statsOverlayText, "fps * 0.75");
-        AssertContains(statsOverlayText, "fps * 1.25");
-        AssertContains(statsOverlayText, "Target {FormatMs(frameTimeRange.ExpectedMs)}");
-        AssertContains(statsOverlayText, "range {FormatMs(frameTimeRange.MinMs)}-{FormatMs(frameTimeRange.MaxMs)}");
+        AssertContains(statsPresentationText, "ResolveFrameTimeRange(snapshot.SourceExpectedFps)");
+        AssertContains(statsPresentationText, "fps * 0.75");
+        AssertContains(statsPresentationText, "fps * 1.25");
+        AssertContains(statsPresentationText, "Target {FormatMs(range.ExpectedMs)}");
+        AssertContains(statsPresentationText, "range {FormatMs(range.MinMs)}-{FormatMs(range.MaxMs)}");
         AssertDoesNotContain(statsOverlayText, "LowerFpsLabel");
         AssertDoesNotContain(statsOverlayText, "UpperFpsLabel");
         AssertContains(statsOverlayText, "(samples[i] - range.MinMs) / range.SpanMs");
         AssertContains(statsOverlayText, "UpdateFrameTimeExpectedLine");
         AssertContains(mainWindowXaml, "x:Name=\"FrameTime_ExpectedLine\"");
 
-        var mainWindowType = RequireType("Sussudio.MainWindow");
-        var resolveRange = mainWindowType.GetMethod("ResolveFrameTimeRange", BindingFlags.Static | BindingFlags.NonPublic)
+        var presentationType = RequireType("Sussudio.StatsPresentationBuilder");
+        var resolveRange = presentationType.GetMethod("ResolveFrameTimeRange", BindingFlags.Static | BindingFlags.Public)
             ?? throw new InvalidOperationException("ResolveFrameTimeRange was not found.");
 
         var range120 = resolveRange.Invoke(null, new object[] { 120.0 })

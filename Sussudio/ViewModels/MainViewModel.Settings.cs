@@ -18,6 +18,11 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.ViewModels;
 
+/// <summary>
+/// Settings persistence and option restoration. Saved user choices are kept
+/// separate from negotiated runtime state so Auto/source-driven modes can be
+/// displayed accurately after capture starts.
+/// </summary>
 public partial class MainViewModel
 {
     public Task InitializeAsync()

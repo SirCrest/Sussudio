@@ -1,3 +1,5 @@
+<# Strict ffprobe-based HDR validator for recorded MP4 files. CaptureService
+uses this as the final HDR correctness gate. #>
 param(
     [Parameter(Mandatory = $true)]
     [string]$File,

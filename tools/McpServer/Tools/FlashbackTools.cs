@@ -8,6 +8,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP tools for Flashback timeline playback, export, and backend settings.
 public static class FlashbackTools
 {
     [McpServerTool, Description("Enable or disable the Flashback rolling buffer. Disable it before dedicated LibAv recording verification.")]
@@ -104,7 +105,7 @@ public static class FlashbackTools
             ["useSelectionRange"] = useSelectionRange
         };
 
-        var response = await pipeClient.SendCommandAsync("FlashbackExport", payload, responseTimeoutMs: 60000).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync("FlashbackExport", payload).ConfigureAwait(false);
         var status = AutomationSnapshotFormatter.IsSuccess(response) ? "OK" : "ERROR";
         var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
 

@@ -8,6 +8,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP tool for process memory, GC, and thread-pool diagnostics.
 public static class MemoryDiagnosticsTools
 {
     [McpServerTool, Description("Get memory, GC, and thread pool diagnostics for the running application. Shows working set, managed heap, GC collection counts, pause time, fragmentation, and thread pool utilization.")]

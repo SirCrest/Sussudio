@@ -4,6 +4,9 @@ using System.Globalization;
 
 namespace Sussudio.Models;
 
+// Availability describes whether telemetry is usable, separate from the
+// confidence of any individual value. Unavailable/Stale/Inconclusive should
+// keep capture running and only affect UI gating or diagnostics.
 public enum SourceTelemetryAvailability
 {
     Unknown,
@@ -13,6 +16,9 @@ public enum SourceTelemetryAvailability
     Inconclusive
 }
 
+// Origin identifies which source supplied signal truth. NativeXu is preferred;
+// device-format fallback exists so automation can still reason about requested
+// modes when read-only XU telemetry is absent.
 public enum SourceTelemetryOrigin
 {
     Unknown,
@@ -42,6 +48,9 @@ public enum SourceAudioInputMode
     Analog
 }
 
+// Device audio mode strings are user-facing and persisted through settings, so
+// keep these constants as the single spelling shared by UI, automation, and XU
+// audio control.
 public static class DeviceAudioMode
 {
     public const string Hdmi = "HDMI";
@@ -61,6 +70,9 @@ public sealed record SourceTelemetryDetailEntry(
     string DisplayValue,
     string? RawValue = null);
 
+// Snapshot of read-only HDMI/source telemetry. Values may be partial: callers
+// should check Availability/Confidence and the Has* helpers before using it to
+// retarget capture or explain a diagnostics mismatch.
 public sealed record SourceSignalTelemetrySnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;

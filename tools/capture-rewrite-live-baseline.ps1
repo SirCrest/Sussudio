@@ -1,3 +1,6 @@
+<# Collects baseline live-capture evidence for the realtime capture rewrite:
+preview, Flashback, recording, optional PresentMon, and implementation-log
+artifacts. #>
 param(
     [string]$PipeName = "SussudioAutomation",
     [string]$AuthToken = $env:SUSSUDIO_AUTOMATION_TOKEN,

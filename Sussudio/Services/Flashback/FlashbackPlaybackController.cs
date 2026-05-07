@@ -16,6 +16,11 @@ using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
 
+/// <summary>
+/// Presentation-layer state machine for the Flashback timeline. It chooses
+/// whether preview/audio should show live capture or decoded file playback, but
+/// it never starts, stops, or throttles the capture pipeline.
+/// </summary>
 internal sealed class FlashbackPlaybackController : IDisposable
 {
     private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);

@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
+// Tests that prevent app service code from drifting into stale namespaces.
 static partial class Program
 {
     private static readonly Regex RootServicesUsingRegex = new(

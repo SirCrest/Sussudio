@@ -34,6 +34,8 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// Main window composition root. This partial owns construction and service
+// wiring; feature-specific UI behavior lives in the sibling MainWindow.* files.
 public sealed partial class MainWindow : Window, IAutomationWindowControl
 {
     private enum PreviewStartupState

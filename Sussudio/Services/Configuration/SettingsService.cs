@@ -6,6 +6,8 @@ using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Configuration;
 
+// Persisted user preferences. Missing nullable values mean "use current app
+// defaults" so new settings can be added without breaking older installs.
 public class UserSettings
 {
     public string? SelectedDeviceId { get; set; }
@@ -36,6 +38,8 @@ public class UserSettings
 [JsonSourceGenerationOptions(WriteIndented = true)]
 internal partial class SettingsJsonContext : JsonSerializerContext;
 
+// LocalAppData settings store for the WinUI app. Load is forgiving and Save is
+// serialized so UI updates cannot corrupt the JSON file.
 public static class SettingsService
 {
     private static readonly object _lock = new();

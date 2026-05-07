@@ -9,6 +9,9 @@ using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Recording;
 
+// Runs the repo HDR validation script after recording finalization. This wraps
+// the external PowerShell gate so recording code receives a compact pass/fail
+// detail instead of parsing script output itself.
 internal static class HdrValidationRunner
 {
     private const int ValidationTimeoutMs = 30_000;

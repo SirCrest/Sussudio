@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Detached diagnostics window that mirrors live capture, preview, recording,
+     and Flashback counters without owning capture state. -->
 <Window
     x:Class="Sussudio.StatsWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"

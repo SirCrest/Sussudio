@@ -3,6 +3,9 @@ using System.Text;
 using System.Text.Json;
 using Sussudio.Tools;
 
+// Generic automation-pipe client used by scripts and ad hoc debugging. ssctl
+// is the friendlier CLI; this tool stays close to the raw command/payload
+// protocol for low-level contract tests.
 internal static class Program
 {
     public static async Task<int> Main(string[] args)

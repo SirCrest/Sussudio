@@ -9,6 +9,10 @@ using Sussudio.Services.Capture;
 
 namespace Sussudio.Services.Gpu;
 
+// CPU-side MJPEG decode pipeline used when the source reader delivers
+// compressed MJPG samples. It parallelizes decode, restores source sequence
+// order in the emitter, and returns decoded NV12/P010 frames through pooled
+// leases so preview and recording can share bytes safely.
 internal sealed class ParallelMjpegDecodePipeline : IDisposable
 {
     private const int WorkQueueItemCapacityPerDecoder = 8;
@@ -75,6 +79,10 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private readonly SoftwareMjpegDecoder[] _decoders;
     private readonly Thread[] _workers;
     private readonly Channel<MjpegWorkItem> _workQueue;
+
+    // Workers complete out of order, so decoded frames wait here until the
+    // emitter can advance _nextEmitSeq. Missing-sequence tracking is explicit
+    // so a dropped compressed packet does not permanently stall the pipeline.
     private readonly SortedDictionary<long, DecodedFrame> _reorderFrames = new();
     private readonly SortedSet<long> _knownMissingSequences = new();
     private readonly object _reorderLock = new();

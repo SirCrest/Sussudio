@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Threading.Tasks;
 
+// Tests for Realtek/I2C audio-control payload decisions.
 static partial class Program
 {
     private static Task RtkI2cProbe_GuardsUnsafeNativePaths()

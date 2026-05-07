@@ -10,6 +10,8 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Automation;
 
+// Window operations that automation can request without reaching into WinUI
+// implementation details.
 public interface IAutomationWindowControl
 {
     Task MinimizeAsync(CancellationToken cancellationToken = default);
@@ -22,6 +24,7 @@ public interface IAutomationWindowControl
     Task<WindowScreenshotResult> CaptureWindowScreenshotAsync(string outputPath, CancellationToken cancellationToken = default);
 }
 
+// Diagnostics facade consumed by the command dispatcher and MCP/ssctl tools.
 public interface IAutomationDiagnosticsHub : IDisposable, IAsyncDisposable
 {
     AutomationSnapshot GetLatestSnapshot();
@@ -38,6 +41,7 @@ public interface IAutomationDiagnosticsHub : IDisposable, IAsyncDisposable
     event EventHandler<AutomationSnapshot>? SnapshotUpdated;
 }
 
+// Executes one authenticated automation request and returns the protocol DTO.
 public interface IAutomationCommandDispatcher
 {
     Task<AutomationCommandResponse> ExecuteAsync(

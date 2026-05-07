@@ -2,6 +2,7 @@ using System;
 
 namespace Sussudio.Models;
 
+// Resolution choice shown in the settings shelf.
 public sealed class ResolutionOption
 {
     public required string Value { get; init; }
@@ -13,6 +14,8 @@ public sealed class ResolutionOption
     public string DisplayText => string.IsNullOrWhiteSpace(DisplayTextOverride) ? Value : DisplayTextOverride;
 }
 
+// Frame-rate choice shown in the settings shelf. FriendlyValue is the rounded
+// UI bucket, while Value/Rational carry the exact capture timing.
 public sealed class FrameRateOption
 {
     public required double FriendlyValue { get; init; }

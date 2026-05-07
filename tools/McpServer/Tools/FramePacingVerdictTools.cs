@@ -9,6 +9,9 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP diagnostic helper that combines snapshot cadence, recent interval arrays,
+// visual/fingerprint cadence, and timeline deltas into one trust/readiness
+// verdict before humans rely on 1% or 5% low numbers.
 public static class FramePacingVerdictTools
 {
     [McpServerTool, Description("Get a compact frame pacing verdict that combines snapshot cadence, raw recent frame intervals, visual cadence, MJPEG fingerprint cadence, and performance timeline counters. Use for 120fps-vs-60fps suspicion, hidden stutter, and sample-quality checks before trusting 1%/5% lows.")]

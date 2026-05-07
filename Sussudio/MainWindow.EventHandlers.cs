@@ -33,6 +33,8 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// User-input event handlers. These bridge XAML controls to view-model commands
+// and keep animations/fades coordinated around the actual capture transitions.
 public sealed partial class MainWindow
 {
     private void RefreshButton_Click(object sender, RoutedEventArgs e)

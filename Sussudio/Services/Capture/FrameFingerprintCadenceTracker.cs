@@ -4,6 +4,9 @@ using System.Diagnostics;
 
 namespace Sussudio.Services.Capture;
 
+// Hashes compressed/source frame bytes to detect duplicate cadence patterns
+// before decode. It is intentionally approximate: the goal is fast evidence of
+// repeated packets, not cryptographic identity.
 internal sealed class FrameFingerprintCadenceTracker
 {
     public readonly record struct Metrics(

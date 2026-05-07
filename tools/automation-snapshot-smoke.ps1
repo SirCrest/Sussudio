@@ -1,3 +1,5 @@
+<# Smoke-tests the automation pipe through preview, optional recording, and
+snapshot assertions without requiring manual UI interaction. #>
 param(
     [string]$PipeName = "SussudioAutomation",
     [string]$AuthToken = "",

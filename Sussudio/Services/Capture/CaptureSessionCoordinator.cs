@@ -15,6 +15,9 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Capture;
 
+// Command names are the durable automation-facing lifecycle vocabulary. Keep
+// additions explicit so snapshots, diagnostic sessions, and ssctl output can
+// explain which transition was queued or failed.
 public enum CaptureCommandKind
 {
     Initialize,
@@ -35,11 +38,16 @@ public enum CaptureCommandKind
     CycleFlashbackEncoderSettings
 }
 
+// Lightweight queue receipt for a capture transition. CorrelationId is carried
+// through diagnostics so automation can match a request to later state changes.
 public readonly record struct CaptureCommand(
     CaptureCommandKind Kind,
     string CorrelationId,
     DateTimeOffset EnqueuedAtUtc);
 
+// Thread-safe state projection of the serialized command worker. This snapshot
+// intentionally reports queue health as well as CaptureService state, because
+// pending/coalesced commands are often the real cause of "the UI is stuck".
 public sealed class CaptureSessionSnapshot
 {
     public DateTimeOffset LastTransitionUtc { get; init; }
@@ -122,6 +130,9 @@ internal readonly record struct FlashbackBufferStatus(
         false);
 }
 
+// Serializes all capture lifecycle mutations onto one worker. Public callers
+// may enqueue from UI, automation, and background diagnostics, but CaptureService
+// itself should only see one transition at a time.
 public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 {
     private readonly CaptureService _captureService;

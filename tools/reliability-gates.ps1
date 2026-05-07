@@ -1,3 +1,5 @@
+<# Runs the build/test/HDR validation gates used before treating a change as
+reliability-ready. #>
 param(
     [switch]$FailOnAnyWarning,
     [ValidateSet("Debug", "Release")]

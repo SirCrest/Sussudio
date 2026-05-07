@@ -33,6 +33,8 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// Manual binding layer for WinUI controls. The app deliberately avoids x:Bind,
+// so this partial maps view-model property changes to concrete UI updates.
 public sealed partial class MainWindow
 {
     private void EnsureDeviceSelection()

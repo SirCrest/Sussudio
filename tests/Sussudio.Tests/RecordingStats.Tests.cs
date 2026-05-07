@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Threading.Tasks;
 
+// Tests for recording byte counters and flashback-size estimates.
 static partial class Program
 {
     private static Task RecordingStats_ComputesTotalsAndPreservesEstimateFlag()

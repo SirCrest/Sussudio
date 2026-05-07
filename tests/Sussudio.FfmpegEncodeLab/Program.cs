@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
+// Standalone lab harness for exercising FFmpeg/libav encoding paths outside
+// the WinUI app and main regression runner.
 internal static class Program
 {
     private sealed record Options(

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -22,7 +21,6 @@ using System.Numerics;
 using Windows.Foundation;
 using WinRT.Interop;
 using Sussudio.Services.Audio;
-using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Configuration;
 using Sussudio.Services.Flashback;
@@ -34,6 +32,9 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// Stats dock and frame-time overlay presentation. This partial only projects
+// diagnostics into UI elements; the underlying snapshot data is owned by
+// AutomationDiagnosticsHub and CaptureService.
 public sealed partial class MainWindow
 {
     private void StatsToggle_Checked(object sender, RoutedEventArgs e)
@@ -264,125 +265,60 @@ public sealed partial class MainWindow
         }
 
         var snapshot = GetStatsSnapshot();
-        var sessionState = snapshot.Recording
-            ? "Recording"
-            : snapshot.Previewing
-                ? "Previewing"
-                : "Idle";
-        var sourceFps = FormatFps(snapshot.SourceObservedFps);
-        var sourceExpectedFps = FormatFps(snapshot.SourceExpectedFps);
-        var sourceAvg = $"{FormatMs(snapshot.SourceAvgIntervalMs)} avg";
-        var sourceP95 = $"{FormatMs(snapshot.SourceP95IntervalMs)} P95";
-        var sourceJitter = FormatMs(snapshot.SourceJitterMs);
-        var sourceGaps = $"{FormatCount(snapshot.SourceSevereGaps)} severe";
-        var sourceDrops = $"{FormatCount(snapshot.SourceEstDrops)} drops ({FormatPercent(snapshot.SourceEstDropPct)})";
-        var previewFps = FormatFps(snapshot.PreviewObservedFps);
-        var previewAvg = $"{FormatMs(snapshot.PreviewAvgIntervalMs)} avg";
-        var previewP95 = $"{FormatMs(snapshot.PreviewP95IntervalMs)} P95";
-        var previewSlow = $"{FormatCount(snapshot.PreviewSlowFrames)} frames ({FormatPercent(snapshot.PreviewSlowPct)})";
-        var visualFps = snapshot.VisualCadenceSamples <= 0
-            ? "\u2014"
-            : $"crop {FormatVisualCadenceSummary(snapshot)}";
-        var visualMotion = snapshot.VisualCadenceSamples <= 0
-            ? "NoSamples"
-            : FormatVisualMotionSummary(snapshot);
-        var pipelineLatency = $"{FormatMs(snapshot.PipelineLatencyMs)} avg";
-        var sourceDelivered = $"{FormatCount(snapshot.SourceFramesDelivered)} delivered";
-        var sourceDropped = $"{FormatCount(snapshot.SourceFramesDropped)} dropped";
-        var rendererRendered = $"{FormatCount(snapshot.RendererFramesRendered)} rendered";
-        var rendererDropped = $"{FormatCount(snapshot.RendererFramesDropped)} dropped";
-        var perfScore = $"{FormatScore(snapshot.PerformanceScore)} / 100";
-        var sourceResolution = snapshot.SourceWidth.HasValue && snapshot.SourceHeight.HasValue
-            ? $"{snapshot.SourceWidth} x {snapshot.SourceHeight}"
-            : "\u2014";
-        var previewResolution = ResolvePreviewResolutionText(snapshot);
-        var previewFrameTimeSummary = FormatPreviewCadenceSummary(snapshot);
-        var visualFpsSummary = FormatVisualRepeatSummary(snapshot);
-        var captureSummary = ResolveCaptureSummaryText(snapshot);
-        var latencySummary = $"{FormatMs(snapshot.PipelineLatencyMs)} avg";
+        var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);
 
-        var sourceFrameRate = snapshot.SourceFrameRateExact.HasValue
-            ? $"{snapshot.SourceFrameRateExact.Value:0.##} fps"
-            : "\u2014";
-        var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);
-        var sourceFormat = snapshot.SourceVideoFormat ?? "\u2014";
-        var telemetryOrigin = snapshot.TelemetryOrigin is not null and not "Unknown"
-            ? $"{snapshot.TelemetryOrigin} ({snapshot.TelemetryConfidence ?? "?"})"
-            : "\u2014";
-
-        var adcOnOff = "\u2014";
-        var adcGain = "\u2014";
-        if (snapshot.SourceTelemetryDetails is { } details)
+        SetTextIfChanged(Stats_SessionStateValue, presentation.SessionState);
+        SetTextIfChanged(Stats_SummaryCaptureValue, presentation.SummaryCapture);
+        SetTextIfChanged(Stats_SummaryPreviewValue, presentation.SummaryPreview);
+        SetTextIfChanged(Stats_SummaryRendererFpsValue, presentation.SummaryRendererFps);
+        SetTextIfChanged(Stats_SummaryVisualFpsValue, presentation.SummaryVisualFps);
+        SetTextIfChanged(Stats_SummaryLatencyValue, presentation.SummaryLatency);
+        SetMetricBrush(Stats_SummaryCaptureValue, presentation.SummaryCaptureStatus);
+        SetMetricBrush(Stats_SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);
+        SetMetricBrush(Stats_SummaryVisualFpsValue, presentation.SummaryVisualFpsStatus);
+        SetMetricBrush(Stats_SummaryLatencyValue, presentation.SummaryLatencyStatus);
+        SetTextIfChanged(Stats_SourceResolutionValue, presentation.SourceResolution);
+        SetTextIfChanged(Stats_SourceFrameRateValue, presentation.SourceFrameRate);
+        SetTextIfChanged(Stats_SourceHdrValue, presentation.SourceHdr);
+        SetTextIfChanged(Stats_SourceFormatValue, presentation.SourceFormat);
+        SetTextIfChanged(Stats_TelemetryOriginValue, presentation.TelemetryOrigin);
+        SetTextIfChanged(Stats_AdcOnOffValue, presentation.AdcOnOff);
+        SetTextIfChanged(Stats_AdcGainValue, presentation.AdcGain);
+        SetTextIfChanged(Stats_SourceFpsValue, presentation.SourceFps);
+        SetTextIfChanged(Stats_SourceExpectedFpsValue, presentation.SourceExpectedFps);
+        SetTextIfChanged(Stats_SourceAvgValue, presentation.SourceAvg);
+        SetTextIfChanged(Stats_SourceP95Value, presentation.SourceP95);
+        SetTextIfChanged(Stats_SourceJitterValue, presentation.SourceJitter);
+        SetTextIfChanged(Stats_SourceGapsValue, presentation.SourceGaps);
+        SetTextIfChanged(Stats_SourceDropsValue, presentation.SourceDrops);
+        SetTextIfChanged(Stats_PreviewFpsValue, presentation.PreviewFps);
+        SetTextIfChanged(Stats_PreviewAvgValue, presentation.PreviewAvg);
+        SetTextIfChanged(Stats_PreviewP95Value, presentation.PreviewP95);
+        SetTextIfChanged(Stats_PreviewSlowValue, presentation.PreviewSlow);
+        SetTextIfChanged(Stats_VisualFpsValue, presentation.VisualFps);
+        SetTextIfChanged(Stats_VisualMotionValue, presentation.VisualMotion);
+        SetMetricBrush(Stats_VisualFpsValue, presentation.VisualFpsStatus);
+        SetTextIfChanged(Stats_PipelineLatencyValue, presentation.PipelineLatency);
+        SetTextIfChanged(Stats_SourceDeliveredValue, presentation.SourceDelivered);
+        SetTextIfChanged(Stats_SourceDroppedValue, presentation.SourceDropped);
+        SetTextIfChanged(Stats_RendererRenderedValue, presentation.RendererRendered);
+        SetTextIfChanged(Stats_RendererDroppedValue, presentation.RendererDropped);
+        SetTextIfChanged(Stats_PerfScoreValue, presentation.PerformanceScore);
+        SetTextIfChanged(Stats_AvSyncDriftValue, presentation.AvSyncDrift);
+        SetTextIfChanged(Stats_AvSyncDriftRateValue, presentation.AvSyncDriftRate);
+        SetVisibilityIfChanged(Stats_AvSyncEncoderRow, presentation.EncoderDriftVisible ? Visibility.Visible : Visibility.Collapsed);
+        if (presentation.EncoderDriftVisible)
         {
-            foreach (var d in details)
-            {
-                if (d.Label == TelemetryLabels.AdcAnalog) adcOnOff = d.DisplayValue;
-                else if (d.Label == TelemetryLabels.AnalogGain) adcGain = d.DisplayValue;
-            }
+            SetTextIfChanged(Stats_AvSyncEncoderValue, presentation.EncoderDrift);
         }
 
-        SetTextIfChanged(Stats_SessionStateValue, sessionState);
-        SetTextIfChanged(Stats_SummaryCaptureValue, captureSummary);
-        SetTextIfChanged(Stats_SummaryPreviewValue, previewResolution);
-        SetTextIfChanged(Stats_SummaryRendererFpsValue, previewFrameTimeSummary);
-        SetTextIfChanged(Stats_SummaryVisualFpsValue, visualFpsSummary);
-        SetTextIfChanged(Stats_SummaryLatencyValue, latencySummary);
-        SetMetricBrush(Stats_SummaryCaptureValue, ResolveFrameLaneStatus(snapshot.SourceP95IntervalMs, snapshot.SourceExpectedFps, snapshot.SourceEstDropPct));
-        SetMetricBrush(Stats_SummaryRendererFpsValue, ResolvePreviewFrameLaneStatus(snapshot));
-        SetMetricBrush(Stats_SummaryVisualFpsValue, ResolveDecodedVisualStatus(snapshot));
-        SetMetricBrush(Stats_SummaryLatencyValue, ResolveLatencyStatus(snapshot.PipelineLatencyMs));
-        SetTextIfChanged(Stats_SourceResolutionValue, sourceResolution);
-        SetTextIfChanged(Stats_SourceFrameRateValue, sourceFrameRate);
-        SetTextIfChanged(Stats_SourceHdrValue, sourceHdr);
-        SetTextIfChanged(Stats_SourceFormatValue, sourceFormat);
-        SetTextIfChanged(Stats_TelemetryOriginValue, telemetryOrigin);
-        SetTextIfChanged(Stats_AdcOnOffValue, adcOnOff);
-        SetTextIfChanged(Stats_AdcGainValue, adcGain);
-        SetTextIfChanged(Stats_SourceFpsValue, sourceFps);
-        SetTextIfChanged(Stats_SourceExpectedFpsValue, sourceExpectedFps);
-        SetTextIfChanged(Stats_SourceAvgValue, sourceAvg);
-        SetTextIfChanged(Stats_SourceP95Value, sourceP95);
-        SetTextIfChanged(Stats_SourceJitterValue, sourceJitter);
-        SetTextIfChanged(Stats_SourceGapsValue, sourceGaps);
-        SetTextIfChanged(Stats_SourceDropsValue, sourceDrops);
-        SetTextIfChanged(Stats_PreviewFpsValue, previewFps);
-        SetTextIfChanged(Stats_PreviewAvgValue, previewAvg);
-        SetTextIfChanged(Stats_PreviewP95Value, previewP95);
-        SetTextIfChanged(Stats_PreviewSlowValue, previewSlow);
-        SetTextIfChanged(Stats_VisualFpsValue, visualFps);
-        SetTextIfChanged(Stats_VisualMotionValue, visualMotion);
-        SetMetricBrush(Stats_VisualFpsValue, ResolveDecodedVisualStatus(snapshot));
-        SetTextIfChanged(Stats_PipelineLatencyValue, pipelineLatency);
-        SetTextIfChanged(Stats_SourceDeliveredValue, sourceDelivered);
-        SetTextIfChanged(Stats_SourceDroppedValue, sourceDropped);
-        SetTextIfChanged(Stats_RendererRenderedValue, rendererRendered);
-        SetTextIfChanged(Stats_RendererDroppedValue, rendererDropped);
-        SetTextIfChanged(Stats_PerfScoreValue, perfScore);
-        SetTextIfChanged(Stats_AvSyncDriftValue, FormatSignedMs(snapshot.AvSyncCaptureDriftMs));
-        SetTextIfChanged(Stats_AvSyncDriftRateValue, FormatSignedMsPerSec(snapshot.AvSyncCaptureDriftRateMsPerSec));
-        var encoderVisible = snapshot.Recording && snapshot.AvSyncEncoderDriftMs.HasValue;
-        SetVisibilityIfChanged(Stats_AvSyncEncoderRow, encoderVisible ? Visibility.Visible : Visibility.Collapsed);
-        if (encoderVisible)
+        SetVisibilityIfChanged(EncoderSection, presentation.EncoderActive ? Visibility.Visible : Visibility.Collapsed);
+        if (presentation.EncoderActive)
         {
-            var encoderText = $"{FormatSignedMs(snapshot.AvSyncEncoderDriftMs)} ({snapshot.AvSyncEncoderCorrectionSamples ?? 0} corr)";
-            SetTextIfChanged(Stats_AvSyncEncoderValue, encoderText);
-        }
-        var encoderActive = !string.IsNullOrEmpty(snapshot.EncoderCodecName);
-        SetVisibilityIfChanged(EncoderSection, encoderActive ? Visibility.Visible : Visibility.Collapsed);
-        if (encoderActive)
-        {
-            var codec = snapshot.EncoderCodecName switch
-            {
-                "hevc_nvenc" => "HEVC (NVENC)",
-                "h264_nvenc" => "H.264 (NVENC)",
-                "av1_nvenc" => "AV1 (NVENC)",
-                _ => snapshot.EncoderCodecName!
-            };
-            var mbps = snapshot.EncoderTargetBitRate / 1_000_000.0;
-            SetTextIfChanged(Stats_EncoderCodecValue, codec);
-            SetTextIfChanged(Stats_EncoderResolutionValue, $"{snapshot.EncoderWidth} x {snapshot.EncoderHeight}");
-            SetTextIfChanged(Stats_EncoderFrameRateValue, $"{snapshot.EncoderFrameRate:0.##} fps");
-            SetTextIfChanged(Stats_EncoderBitrateValue, $"{mbps:0.#} Mbps");
+            SetTextIfChanged(Stats_EncoderCodecValue, presentation.EncoderCodec);
+            SetTextIfChanged(Stats_EncoderResolutionValue, presentation.EncoderResolution);
+            SetTextIfChanged(Stats_EncoderFrameRateValue, presentation.EncoderFrameRate);
+            SetTextIfChanged(Stats_EncoderBitrateValue, presentation.EncoderBitrate);
         }
 
         UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
@@ -481,50 +417,24 @@ public sealed partial class MainWindow
 
         EnsureDiagnosticsEmptyState();
 
-        var slotIndex = 0;
-        if (telemetryDetails.Count > 0)
-        {
-            var currentGroup = string.Empty;
-            var alt = true;
-            foreach (var detail in telemetryDetails)
-            {
-                EnsureDiagnosticsPoolCapacity(slotIndex + 1);
-                var showHeader = !string.Equals(currentGroup, detail.Group, StringComparison.Ordinal);
-                if (showHeader)
-                {
-                    currentGroup = detail.Group;
-                    alt = true;
-                }
-
-                UpdateDiagnosticsPoolSlot(
-                    _diagnosticsRowPool[slotIndex],
-                    showHeader ? currentGroup : null,
-                    detail.Label,
-                    detail.DisplayValue,
-                    alt);
-                alt = !alt;
-                slotIndex++;
-            }
-
-            SetVisibilityIfChanged(_diagnosticsEmptyStateTextBlock!, Visibility.Collapsed);
-            CollapseDiagnosticsPoolSlots(startIndex: slotIndex);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(diagnosticSummary))
+        var presentation = StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary);
+        if (presentation.IsEmpty)
         {
             SetVisibilityIfChanged(_diagnosticsEmptyStateTextBlock!, Visibility.Visible);
             CollapseDiagnosticsPoolSlots();
             return;
         }
 
-        var entries = ParseDiagnosticSummary(diagnosticSummary);
-        var fallbackAlt = true;
-        foreach (var (label, value) in entries)
+        var slotIndex = 0;
+        foreach (var row in presentation.Rows)
         {
             EnsureDiagnosticsPoolCapacity(slotIndex + 1);
-            UpdateDiagnosticsPoolSlot(_diagnosticsRowPool[slotIndex], null, label, value, fallbackAlt);
-            fallbackAlt = !fallbackAlt;
+            UpdateDiagnosticsPoolSlot(
+                _diagnosticsRowPool[slotIndex],
+                row.GroupHeader,
+                row.Label,
+                row.Value,
+                row.IsAlternate);
             slotIndex++;
         }
 
@@ -542,36 +452,26 @@ public sealed partial class MainWindow
             return;
         }
 
-        SetTextIfChanged(
-            FrameTime_SourceValue,
-            $"Src {FormatMs(snapshot.SourceP95IntervalMs)} P95 / {FormatMs(snapshot.SourceAvgIntervalMs)} avg");
-        SetTextIfChanged(
-            FrameTime_VisualValue,
-            snapshot.VisualCadenceSamples <= 0
-                ? "Crop \u2014"
-                : $"Crop {FormatVisualCadenceSummary(snapshot)}");
-        SetTextIfChanged(
-            FrameTime_PreviewValue,
-            $"Preview: {FormatPreviewCadenceSummary(snapshot)}");
-        SetTextIfChanged(FrameTime_LatencyValue, $"Lat {FormatMs(snapshot.PipelineLatencyMs)}");
-        var frameTimeRange = ResolveFrameTimeRange(snapshot.SourceExpectedFps);
-        SetTextIfChanged(
-            FrameTime_StatusValue,
-            $"Target {FormatMs(frameTimeRange.ExpectedMs)} | blue=crop changes; green=preview presents | range {FormatMs(frameTimeRange.MinMs)}-{FormatMs(frameTimeRange.MaxMs)}");
+        var presentation = StatsPresentationBuilder.BuildFrameTimePresentation(snapshot);
+        SetTextIfChanged(FrameTime_SourceValue, presentation.SourceText);
+        SetTextIfChanged(FrameTime_VisualValue, presentation.VisualText);
+        SetTextIfChanged(FrameTime_PreviewValue, presentation.PreviewText);
+        SetTextIfChanged(FrameTime_LatencyValue, presentation.LatencyText);
+        SetTextIfChanged(FrameTime_StatusValue, presentation.StatusText);
 
-        UpdateFrameTimeExpectedLine(frameTimeRange);
+        UpdateFrameTimeExpectedLine(presentation.Range);
 
         UpdateFrameTimeLine(
             FrameTime_VisualLine,
-            snapshot.VisualCadenceRecentChangeIntervalsMs ?? Array.Empty<double>(),
-            frameTimeRange);
+            presentation.VisualSamples,
+            presentation.Range);
         UpdateFrameTimeLine(
             FrameTime_PreviewLine,
-            snapshot.PreviewRecentPresentIntervalsMs ?? Array.Empty<double>(),
-            frameTimeRange);
+            presentation.PreviewSamples,
+            presentation.Range);
     }
 
-    private void UpdateFrameTimeLine(Microsoft.UI.Xaml.Shapes.Polyline line, IReadOnlyList<double> samples, FrameTimeRange range)
+    private void UpdateFrameTimeLine(Microsoft.UI.Xaml.Shapes.Polyline line, IReadOnlyList<double> samples, StatsFrameTimeRange range)
     {
         line.Points.Clear();
         if (samples.Count <= 1)
@@ -590,7 +490,7 @@ public sealed partial class MainWindow
         }
     }
 
-    private void UpdateFrameTimeExpectedLine(FrameTimeRange range)
+    private void UpdateFrameTimeExpectedLine(StatsFrameTimeRange range)
     {
         var width = FrameTime_Canvas.ActualWidth > 1 ? FrameTime_Canvas.ActualWidth : 500;
         var height = FrameTime_Canvas.ActualHeight > 1 ? FrameTime_Canvas.ActualHeight : 92;
@@ -601,231 +501,23 @@ public sealed partial class MainWindow
         FrameTime_ExpectedLine.Y2 = y;
     }
 
-    private static FrameTimeRange ResolveFrameTimeRange(double expectedFps)
-    {
-        var fps = expectedFps > 0 ? expectedFps : 60.0;
-        var lowerFps = Math.Max(1.0, fps * 0.75);
-        var upperFps = Math.Max(lowerFps + 1.0, fps * 1.25);
-        var minMs = 1000.0 / upperFps;
-        var maxMs = 1000.0 / lowerFps;
-        return new FrameTimeRange(
-            MinMs: minMs,
-            MaxMs: maxMs,
-            ExpectedMs: 1000.0 / fps);
-    }
-
-    private readonly record struct FrameTimeRange(
-        double MinMs,
-        double MaxMs,
-        double ExpectedMs)
-    {
-        public double SpanMs => Math.Max(0.001, MaxMs - MinMs);
-    }
-
-    private string ResolvePreviewResolutionText(StatsSnapshot snapshot)
-    {
-        if (snapshot.PreviewNaturalWidth > 0 && snapshot.PreviewNaturalHeight > 0)
-        {
-            return $"{snapshot.PreviewNaturalWidth} x {snapshot.PreviewNaturalHeight}";
-        }
-
-        // The renderer's natural size is the best live-preview answer. If it has not
-        // reported yet, the negotiated capture mode is closer than HDMI source timing:
-        // a 4K input can legitimately be captured and previewed through a 1080p path.
-        if (snapshot.CaptureWidth is > 0 && snapshot.CaptureHeight is > 0)
-        {
-            return $"{snapshot.CaptureWidth.Value} x {snapshot.CaptureHeight.Value}";
-        }
-
-        if (snapshot.SourceWidth.HasValue && snapshot.SourceHeight.HasValue)
-        {
-            return $"{snapshot.SourceWidth} x {snapshot.SourceHeight}";
-        }
-
-        return "\u2014";
-    }
-
-    private static string ResolveCaptureSummaryText(StatsSnapshot snapshot)
-    {
-        // Source telemetry is the HDMI signal entering the card; the compact Capture
-        // row should show the negotiated UVC/SourceReader mode the app is consuming.
-        if (snapshot.CaptureWidth is not > 0 || snapshot.CaptureHeight is not > 0)
-        {
-            return "\u2014";
-        }
-
-        var frameRate = Sanitize(snapshot.CaptureFrameRate ?? 0);
-        var frameRateText = frameRate > 0 ? $" @ {frameRate:0.##} fps" : string.Empty;
-        return $"{snapshot.CaptureWidth.Value} x {snapshot.CaptureHeight.Value}{frameRateText}";
-    }
-
-    private enum MetricStatus
-    {
-        Neutral,
-        Good,
-        Info,
-        Warning,
-        Bad
-    }
-
     private static readonly SolidColorBrush MetricNeutralBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xF1, 0xF1, 0xF1));
     private static readonly SolidColorBrush MetricGoodBrush = new(Windows.UI.Color.FromArgb(0xFF, 0x70, 0xF0, 0x8B));
     private static readonly SolidColorBrush MetricInfoBrush = new(Windows.UI.Color.FromArgb(0xFF, 0x55, 0xD6, 0xFF));
     private static readonly SolidColorBrush MetricWarningBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xFF, 0xC8, 0x57));
     private static readonly SolidColorBrush MetricBadBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xFF, 0x6B, 0x6B));
 
-    private static void SetMetricBrush(TextBlock target, MetricStatus status)
+    private static void SetMetricBrush(TextBlock target, StatsMetricStatus status)
     {
         target.Foreground = status switch
         {
-            MetricStatus.Good => MetricGoodBrush,
-            MetricStatus.Info => MetricInfoBrush,
-            MetricStatus.Warning => MetricWarningBrush,
-            MetricStatus.Bad => MetricBadBrush,
+            StatsMetricStatus.Good => MetricGoodBrush,
+            StatsMetricStatus.Info => MetricInfoBrush,
+            StatsMetricStatus.Warning => MetricWarningBrush,
+            StatsMetricStatus.Bad => MetricBadBrush,
             _ => MetricNeutralBrush
         };
     }
-
-    private static MetricStatus ResolveDropStatus(double dropPercent)
-        => dropPercent <= 0.01 ? MetricStatus.Good :
-           dropPercent <= 0.25 ? MetricStatus.Warning :
-           MetricStatus.Bad;
-
-    private static MetricStatus ResolveFpsStatus(double observedFps, double expectedFps)
-    {
-        if (observedFps <= 0)
-        {
-            return MetricStatus.Neutral;
-        }
-
-        if (expectedFps <= 0)
-        {
-            return MetricStatus.Info;
-        }
-
-        var ratio = observedFps / expectedFps;
-        return ratio >= 0.985 ? MetricStatus.Good :
-               ratio >= 0.95 ? MetricStatus.Warning :
-               MetricStatus.Bad;
-    }
-
-    private static MetricStatus ResolveFrameLaneStatus(double p95IntervalMs, double expectedFps, double issuePercent)
-    {
-        if (p95IntervalMs <= 0 && issuePercent <= 0.01)
-        {
-            return MetricStatus.Neutral;
-        }
-
-        var timingStatus = ResolveFrameTimeStatus(p95IntervalMs, expectedFps);
-        var issueStatus = ResolveDropStatus(issuePercent);
-        return ResolveWorstStatus(timingStatus, issueStatus);
-    }
-
-    private static MetricStatus ResolvePreviewFrameLaneStatus(StatsSnapshot snapshot)
-    {
-        var currentFrameTimeMs = ResolveCurrentPreviewFrameTimeMs(snapshot);
-        if (currentFrameTimeMs <= 0 && snapshot.PreviewOnePercentLowFps <= 0)
-        {
-            return MetricStatus.Neutral;
-        }
-
-        var timingStatus = ResolveFrameTimeStatus(currentFrameTimeMs, snapshot.SourceExpectedFps);
-        var lowFpsStatus = ResolveFpsStatus(snapshot.PreviewOnePercentLowFps, snapshot.SourceExpectedFps);
-        return ResolveWorstStatus(timingStatus, lowFpsStatus);
-    }
-
-    private static MetricStatus ResolveWorstStatus(MetricStatus first, MetricStatus second)
-    {
-        if (first == MetricStatus.Bad || second == MetricStatus.Bad)
-        {
-            return MetricStatus.Bad;
-        }
-
-        if (first == MetricStatus.Warning || second == MetricStatus.Warning)
-        {
-            return MetricStatus.Warning;
-        }
-
-        if (first == MetricStatus.Good || second == MetricStatus.Good)
-        {
-            return MetricStatus.Good;
-        }
-
-        return first == MetricStatus.Info || second == MetricStatus.Info
-            ? MetricStatus.Info
-            : MetricStatus.Neutral;
-    }
-
-    private static MetricStatus ResolveFrameTimeStatus(double p95IntervalMs, double expectedFps)
-    {
-        if (p95IntervalMs <= 0)
-        {
-            return MetricStatus.Neutral;
-        }
-
-        expectedFps = Sanitize(expectedFps);
-        if (expectedFps <= 0)
-        {
-            return MetricStatus.Info;
-        }
-
-        var budgetMs = 1000.0 / expectedFps;
-        return p95IntervalMs <= budgetMs * 1.10 ? MetricStatus.Good :
-               p95IntervalMs <= budgetMs * 1.50 ? MetricStatus.Warning :
-               MetricStatus.Bad;
-    }
-
-    private static MetricStatus ResolveVisualStatus(StatsSnapshot snapshot)
-    {
-        if (snapshot.MjpegPacketHashSamples <= 0)
-        {
-            return MetricStatus.Neutral;
-        }
-
-        if (string.Equals(snapshot.MjpegPacketHashPattern, "MostlyDuplicate", StringComparison.OrdinalIgnoreCase))
-        {
-            return MetricStatus.Bad;
-        }
-
-        if (string.Equals(snapshot.MjpegPacketHashPattern, "DuplicateRun", StringComparison.OrdinalIgnoreCase))
-        {
-            return MetricStatus.Bad;
-        }
-
-        if (string.Equals(snapshot.MjpegPacketHashPattern, "AlternatingDuplicate", StringComparison.OrdinalIgnoreCase))
-        {
-            return MetricStatus.Info;
-        }
-
-        return ResolveFpsStatus(snapshot.MjpegPacketHashUniqueFps, snapshot.SourceExpectedFps);
-    }
-
-    private static MetricStatus ResolveDecodedVisualStatus(StatsSnapshot snapshot)
-    {
-        if (snapshot.VisualCadenceSamples <= 0)
-        {
-            return MetricStatus.Neutral;
-        }
-
-        if (IsVisualRepeatWithinExpectedDrift(snapshot))
-        {
-            return MetricStatus.Good;
-        }
-
-        if (string.Equals(snapshot.VisualCadenceMotionConfidence, "LowMotion", StringComparison.OrdinalIgnoreCase) &&
-            snapshot.VisualCadenceChangeFps < snapshot.SourceExpectedFps * 0.95)
-        {
-            return MetricStatus.Info;
-        }
-
-        return ResolveFpsStatus(snapshot.VisualCadenceChangeFps, snapshot.SourceExpectedFps);
-    }
-
-    private static MetricStatus ResolveLatencyStatus(double latencyMs)
-        => latencyMs <= 0 ? MetricStatus.Neutral :
-           latencyMs <= 100 ? MetricStatus.Good :
-           latencyMs <= 150 ? MetricStatus.Warning :
-           MetricStatus.Bad;
 
     private sealed record DiagnosticRowSlot(Border Row, TextBlock Label, TextBlock Value);
     private sealed record DiagnosticsPoolSlot(
@@ -940,149 +632,12 @@ public sealed partial class MainWindow
             }
         }
     }
-    private static string FormatFps(double value)
-    {
-        return Sanitize(value).ToString("0.00");
-    }
-    private static string FormatHz(double value)
-    {
-        value = Sanitize(value);
-        if (value <= 0)
-        {
-            return "\u2014";
-        }
-
-        var rounded = Math.Round(value);
-        return Math.Abs(value - rounded) <= 0.15
-            ? $"{rounded:0} Hz"
-            : $"{value:0.##} Hz";
-    }
-    private static string FormatSourceHdr(bool? isHdr, string? colorimetry)
-        => DisplayFormatters.FormatSourceHdr(isHdr, colorimetry);
-
-    private static string FormatMs(double value)
-    {
-        return $"{Sanitize(value):0.00}ms";
-    }
-    private static string FormatFrameBudget(double expectedFps)
-    {
-        var budgetMs = FormatFrameBudgetMs(expectedFps);
-        return budgetMs == "\u2014" ? budgetMs : $"{budgetMs} target";
-    }
-    private static string FormatFrameBudgetMs(double expectedFps)
-    {
-        expectedFps = Sanitize(expectedFps);
-        return expectedFps > 0 ? $"{1000.0 / expectedFps:0.00}ms" : "\u2014";
-    }
-    private static string FormatPreviewCadenceSummary(StatsSnapshot snapshot)
-    {
-        if (snapshot.PreviewCadenceSamples <= 0)
-        {
-            return "\u2014";
-        }
-
-        var currentFrameTimeMs = ResolveCurrentPreviewFrameTimeMs(snapshot);
-        var currentFrameTime = currentFrameTimeMs > 0
-            ? FormatMs(currentFrameTimeMs)
-            : "\u2014";
-        var onePercentLow = Sanitize(snapshot.PreviewOnePercentLowFps) > 0
-            ? $"1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps"
-            : "1% low \u2014";
-        return $"{currentFrameTime} | {onePercentLow}";
-    }
-    private static double ResolveCurrentPreviewFrameTimeMs(StatsSnapshot snapshot)
-    {
-        var samples = snapshot.PreviewRecentPresentIntervalsMs;
-        if (samples is { Count: > 0 })
-        {
-            return Sanitize(samples[samples.Count - 1]);
-        }
-
-        return Sanitize(snapshot.PreviewAvgIntervalMs);
-    }
-    private static string FormatVisualRepeatSummary(StatsSnapshot snapshot)
-    {
-        if (snapshot.VisualCadenceSamples <= 0)
-        {
-            return "\u2014";
-        }
-
-        if (IsVisualRepeatWithinExpectedDrift(snapshot))
-        {
-            return FormatHz(snapshot.VisualCadenceOutputFps);
-        }
-
-        var repeat = FormatPercent(snapshot.VisualCadenceRepeatPercent);
-        return $"{FormatHz(snapshot.VisualCadenceChangeFps)} ({repeat} repeat, run {FormatCount(snapshot.VisualCadenceLongestRepeatRun)})";
-    }
-    private static string FormatVisualCadenceSummary(StatsSnapshot snapshot)
-    {
-        if (snapshot.VisualCadenceSamples <= 0)
-        {
-            return "\u2014";
-        }
-
-        if (IsVisualRepeatWithinExpectedDrift(snapshot))
-        {
-            return FormatHz(snapshot.VisualCadenceOutputFps);
-        }
-
-        return $"{FormatHz(snapshot.VisualCadenceChangeFps)} / {FormatPercent(snapshot.VisualCadenceRepeatPercent)} rep";
-    }
-    private static string FormatVisualMotionSummary(StatsSnapshot snapshot)
-    {
-        if (IsVisualRepeatWithinExpectedDrift(snapshot))
-        {
-            return $"{FormatPercent(snapshot.VisualCadenceMotionScore)} px / {snapshot.VisualCadenceMotionConfidence}";
-        }
-
-        return $"{FormatPercent(snapshot.VisualCadenceRepeatPercent)} repeat / run {FormatCount(snapshot.VisualCadenceLongestRepeatRun)} / {FormatPercent(snapshot.VisualCadenceMotionScore)} px / {snapshot.VisualCadenceMotionConfidence}";
-    }
-    private static string FormatPercent(double value)
-    {
-        return $"{Sanitize(value):0.0}%";
-    }
-    private static string FormatScore(double value)
-    {
-        return Sanitize(value).ToString("0.0");
-    }
-    private static string FormatCount(long value)
-    {
-        return Math.Max(0, value).ToString("N0");
-    }
-    private static string FormatSignedMs(double? value)
-    {
-        if (!value.HasValue || double.IsNaN(value.Value))
-        {
-            return "\u2014";
-        }
-
-        return value.Value >= 0 ? $"+{value.Value:F1}ms" : $"{value.Value:F1}ms";
-    }
-    private static string FormatSignedMsPerSec(double? value)
-    {
-        if (!value.HasValue || double.IsNaN(value.Value))
-        {
-            return "\u2014";
-        }
-
-        return value.Value >= 0 ? $"+{value.Value:F2} ms/s" : $"{value.Value:F2} ms/s";
-    }
     private static void SetTextIfChanged(TextBlock target, string value)
     {
         if (!string.Equals(target.Text, value, StringComparison.Ordinal))
         {
             target.Text = value;
         }
-    }
-    private static double Sanitize(double value)
-    {
-        if (!double.IsFinite(value) || value < 0)
-        {
-            return 0;
-        }
-
-        return value;
     }
     private static int? ToPositiveInt(uint? value)
     {
@@ -1092,33 +647,6 @@ public sealed partial class MainWindow
         }
 
         return (int)value.Value;
-    }
-
-    private const double VisualRepeatTolerancePercent = 0.25;
-
-    private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)
-    {
-        if (snapshot.VisualCadenceSamples <= 0)
-        {
-            return false;
-        }
-
-        var expectedRepeatPercent = GetExpectedVisualRepeatPercent(snapshot);
-        var allowedRepeatPercent = expectedRepeatPercent + VisualRepeatTolerancePercent;
-        return snapshot.VisualCadenceLongestRepeatRun <= 1 &&
-               snapshot.VisualCadenceRepeatPercent <= allowedRepeatPercent;
-    }
-
-    private static double GetExpectedVisualRepeatPercent(StatsSnapshot snapshot)
-    {
-        var sourceFps = Sanitize(snapshot.SourceFrameRateExact ?? snapshot.SourceExpectedFps);
-        var outputFps = Sanitize(snapshot.VisualCadenceOutputFps);
-        if (sourceFps <= 0 || outputFps <= sourceFps)
-        {
-            return 0;
-        }
-
-        return Math.Clamp((outputFps - sourceFps) / outputFps * 100.0, 0.0, 100.0);
     }
     private StatsSnapshot GetStatsSnapshot()
     {
@@ -1131,10 +659,10 @@ public sealed partial class MainWindow
         var visualCenterChangeIntervals = health.VisualCenterCadenceRecentChangeIntervalsMs ?? Array.Empty<double>();
         var previewPresentIntervals = d3d?.GetRecentPresentIntervalsMs(180) ?? Array.Empty<double>();
         var previewLatencySamples = d3d?.GetRecentPipelineLatencyMs(180) ?? Array.Empty<double>();
-        var sourceDropPercent = Sanitize(health.CaptureCadenceEstimatedDropPercent);
-        var previewSlowPercent = Sanitize(presentCadence?.SlowFramePercent ?? 0);
+        var sourceDropPercent = StatsPresentationBuilder.Sanitize(health.CaptureCadenceEstimatedDropPercent);
+        var previewSlowPercent = StatsPresentationBuilder.Sanitize(presentCadence?.SlowFramePercent ?? 0);
         var performanceScore = Math.Clamp(100.0 - sourceDropPercent - previewSlowPercent, 0.0, 100.0);
-        var diagnostic = BuildStatsDiagnosticSummary(
+        var diagnostic = StatsPresentationBuilder.BuildStatsDiagnosticSummary(
             health,
             ViewModel.IsPreviewing,
             ViewModel.IsRecording,
@@ -1152,45 +680,45 @@ public sealed partial class MainWindow
 
         return new StatsSnapshot(
             SourceCadenceSamples: health.CaptureCadenceSampleCount,
-            SourceObservedFps: Sanitize(health.CaptureCadenceObservedFps),
-            SourceExpectedFps: Sanitize(health.ExpectedFrameRate),
-            SourceAvgIntervalMs: Sanitize(health.CaptureCadenceAverageIntervalMs),
-            SourceP95IntervalMs: Sanitize(health.CaptureCadenceP95IntervalMs),
-            SourceMaxIntervalMs: Sanitize(health.CaptureCadenceMaxIntervalMs),
-            SourceJitterMs: Sanitize(health.CaptureCadenceJitterStdDevMs),
+            SourceObservedFps: StatsPresentationBuilder.Sanitize(health.CaptureCadenceObservedFps),
+            SourceExpectedFps: StatsPresentationBuilder.Sanitize(health.ExpectedFrameRate),
+            SourceAvgIntervalMs: StatsPresentationBuilder.Sanitize(health.CaptureCadenceAverageIntervalMs),
+            SourceP95IntervalMs: StatsPresentationBuilder.Sanitize(health.CaptureCadenceP95IntervalMs),
+            SourceMaxIntervalMs: StatsPresentationBuilder.Sanitize(health.CaptureCadenceMaxIntervalMs),
+            SourceJitterMs: StatsPresentationBuilder.Sanitize(health.CaptureCadenceJitterStdDevMs),
             SourceSevereGaps: health.CaptureCadenceSevereGapCount,
             SourceEstDrops: health.CaptureCadenceEstimatedDroppedFrames,
             SourceEstDropPct: sourceDropPercent,
             PreviewCadenceSamples: presentCadence?.SampleCount ?? 0,
-            PreviewObservedFps: Sanitize(presentCadence?.ObservedFps ?? 0),
-            PreviewAvgIntervalMs: Sanitize(presentCadence?.AverageIntervalMs ?? 0),
-            PreviewP95IntervalMs: Sanitize(presentCadence?.P95IntervalMs ?? 0),
-            PreviewP99IntervalMs: Sanitize(presentCadence?.P99IntervalMs ?? 0),
-            PreviewOnePercentLowFps: Sanitize(presentCadence?.OnePercentLowFps ?? 0),
+            PreviewObservedFps: StatsPresentationBuilder.Sanitize(presentCadence?.ObservedFps ?? 0),
+            PreviewAvgIntervalMs: StatsPresentationBuilder.Sanitize(presentCadence?.AverageIntervalMs ?? 0),
+            PreviewP95IntervalMs: StatsPresentationBuilder.Sanitize(presentCadence?.P95IntervalMs ?? 0),
+            PreviewP99IntervalMs: StatsPresentationBuilder.Sanitize(presentCadence?.P99IntervalMs ?? 0),
+            PreviewOnePercentLowFps: StatsPresentationBuilder.Sanitize(presentCadence?.OnePercentLowFps ?? 0),
             PreviewSlowFrames: presentCadence?.SlowFrameCount ?? 0,
             PreviewSlowPct: previewSlowPercent,
             MjpegPacketHashSamples: health.MjpegPacketHashSampleCount,
-            MjpegPacketHashInputFps: Sanitize(health.MjpegPacketHashInputObservedFps),
-            MjpegPacketHashUniqueFps: Sanitize(health.MjpegPacketHashUniqueObservedFps),
-            MjpegPacketHashDuplicatePercent: Sanitize(health.MjpegPacketHashDuplicateFramePercent),
+            MjpegPacketHashInputFps: StatsPresentationBuilder.Sanitize(health.MjpegPacketHashInputObservedFps),
+            MjpegPacketHashUniqueFps: StatsPresentationBuilder.Sanitize(health.MjpegPacketHashUniqueObservedFps),
+            MjpegPacketHashDuplicatePercent: StatsPresentationBuilder.Sanitize(health.MjpegPacketHashDuplicateFramePercent),
             MjpegPacketHashLongestDuplicateRun: health.MjpegPacketHashLongestDuplicateRun,
             MjpegPacketHashPattern: health.MjpegPacketHashPattern,
             MjpegPacketHashLastFrameDuplicate: health.MjpegPacketHashLastFrameDuplicate,
             VisualCadenceSamples: health.VisualCadenceSampleCount,
-            VisualCadenceOutputFps: Sanitize(health.VisualCadenceOutputObservedFps),
-            VisualCadenceChangeFps: Sanitize(health.VisualCadenceChangeObservedFps),
-            VisualCadenceRepeatPercent: Sanitize(health.VisualCadenceRepeatFramePercent),
+            VisualCadenceOutputFps: StatsPresentationBuilder.Sanitize(health.VisualCadenceOutputObservedFps),
+            VisualCadenceChangeFps: StatsPresentationBuilder.Sanitize(health.VisualCadenceChangeObservedFps),
+            VisualCadenceRepeatPercent: StatsPresentationBuilder.Sanitize(health.VisualCadenceRepeatFramePercent),
             VisualCadenceRepeatFrames: health.VisualCadenceRepeatFrameCount,
             VisualCadenceLongestRepeatRun: health.VisualCadenceLongestRepeatRun,
-            VisualCadenceMotionScore: Sanitize(health.VisualCadenceMotionScore),
+            VisualCadenceMotionScore: StatsPresentationBuilder.Sanitize(health.VisualCadenceMotionScore),
             VisualCadenceMotionConfidence: health.VisualCadenceMotionConfidence,
             VisualCenterCadenceSamples: health.VisualCenterCadenceSampleCount,
-            VisualCenterCadenceOutputFps: Sanitize(health.VisualCenterCadenceOutputObservedFps),
-            VisualCenterCadenceChangeFps: Sanitize(health.VisualCenterCadenceChangeObservedFps),
-            VisualCenterCadenceRepeatPercent: Sanitize(health.VisualCenterCadenceRepeatFramePercent),
-            VisualCenterCadenceMotionScore: Sanitize(health.VisualCenterCadenceMotionScore),
+            VisualCenterCadenceOutputFps: StatsPresentationBuilder.Sanitize(health.VisualCenterCadenceOutputObservedFps),
+            VisualCenterCadenceChangeFps: StatsPresentationBuilder.Sanitize(health.VisualCenterCadenceChangeObservedFps),
+            VisualCenterCadenceRepeatPercent: StatsPresentationBuilder.Sanitize(health.VisualCenterCadenceRepeatFramePercent),
+            VisualCenterCadenceMotionScore: StatsPresentationBuilder.Sanitize(health.VisualCenterCadenceMotionScore),
             VisualCenterCadenceMotionConfidence: health.VisualCenterCadenceMotionConfidence,
-            PipelineLatencyMs: Sanitize(pipelineLatency),
+            PipelineLatencyMs: StatsPresentationBuilder.Sanitize(pipelineLatency),
             SourceFramesDelivered: health.VideoFramesArrived,
             SourceFramesDropped: health.VideoFramesDropped,
             RendererFramesSubmitted: d3d?.FramesSubmitted ?? 0,
@@ -1235,68 +763,6 @@ public sealed partial class MainWindow
             PreviewRecentLatencyMs: previewLatencySamples);
     }
 
-    private static (string HealthStatus, string LikelyStage, string Evidence) BuildStatsDiagnosticSummary(
-        CaptureHealthSnapshot health,
-        bool isPreviewing,
-        bool isRecording,
-        double sourceDropPercent,
-        double previewSlowPercent,
-        long rendererSubmitted,
-        long rendererDrops,
-        int presentSampleCount)
-    {
-        if (!isPreviewing && !isRecording)
-        {
-            return ("Idle", "diagnostic_unavailable", "Start preview or recording to collect live frame-lane diagnostics.");
-        }
-
-        var sourceEvidence =
-            $"source target={FormatFrameBudgetMs(health.ExpectedFrameRate)} avg={Sanitize(health.CaptureCadenceAverageIntervalMs):0.##}ms p95={Sanitize(health.CaptureCadenceP95IntervalMs):0.##}ms p99={Sanitize(health.CaptureCadenceP99IntervalMs):0.##}ms max={Sanitize(health.CaptureCadenceMaxIntervalMs):0.##}ms rate={Sanitize(health.CaptureCadenceObservedFps):0.##}/{Sanitize(health.ExpectedFrameRate):0.##}fps 1pctLow={Sanitize(health.CaptureCadenceOnePercentLowFps):0.##}fps gaps={health.CaptureCadenceSevereGapCount} drops={health.CaptureCadenceEstimatedDroppedFrames} ({sourceDropPercent:0.###}%)";
-
-        if (health.CaptureCadenceSampleCount < 30 || (isPreviewing && presentSampleCount == 0))
-        {
-            return ("WarmingUp", "diagnostic_unavailable", sourceEvidence);
-        }
-
-        if (health.CaptureCadenceEstimatedDroppedFrames > 0 ||
-            health.CaptureCadenceSevereGapCount > 0 ||
-            sourceDropPercent > 0.1)
-        {
-            return ("Warning", "source_capture", sourceEvidence);
-        }
-
-        if (health.MjpegDecodeFailures > 0 ||
-            health.MjpegEmitFailures > 0 ||
-            health.MjpegCompressedDropsQueueFull > 0 ||
-            health.MjpegTotalDropped > 0)
-        {
-            var decodeEvidence =
-                $"decode p95={Sanitize(health.MjpegDecodeP95Ms):0.##}ms callbackP95={Sanitize(health.MjpegCallbackP95Ms):0.##}ms dropped={health.MjpegTotalDropped} failures={health.MjpegDecodeFailures + health.MjpegEmitFailures}";
-            return ("Warning", "mjpeg_decode", decodeEvidence);
-        }
-
-        var previewQueueBelowTarget =
-            health.MjpegPreviewJitterQueueDepth < health.MjpegPreviewJitterTargetDepth;
-        if (previewQueueBelowTarget &&
-            (health.MjpegPreviewJitterDeadlineDropCount > 0 ||
-            health.MjpegPreviewJitterUnderflowCount > 3))
-        {
-            var previewEvidence =
-                $"scheduler target={health.MjpegPreviewJitterTargetDepth} depth={health.MjpegPreviewJitterQueueDepth}/{health.MjpegPreviewJitterMaxDepth} deadlineDrops={health.MjpegPreviewJitterDeadlineDropCount} underflows={health.MjpegPreviewJitterUnderflowCount} resumeReprimes={health.MjpegPreviewJitterResumeReprimeCount}";
-            return ("Warning", "preview_scheduler", previewEvidence);
-        }
-
-        var rendererDropPercent = DiagnosticThresholds.CalculatePercent(rendererDrops, rendererSubmitted);
-        if ((rendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples && rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||
-            previewSlowPercent > 1.0)
-        {
-            var renderEvidence =
-                $"render drops={rendererDrops} ({rendererDropPercent:0.###}%) slow={previewSlowPercent:0.##}%";
-            return ("Warning", "renderer", renderEvidence);
-        }
-
-        return ("Healthy", "none", "All monitored frame lanes are within current thresholds.");
-    }
     private TextBlock CreateDiagnosticGroupHeader(string title)
     {
         return new TextBlock
@@ -1305,82 +771,6 @@ public sealed partial class MainWindow
             Margin = new Thickness(0, 8, 0, 2),
             Style = (Style)StatsDockPanel.Resources["DockStatsSectionHeaderStyle"]
         };
-    }
-    private static List<(string Label, string Value)> ParseDiagnosticSummary(string summary)
-    {
-        if (!summary.StartsWith("nativexu:", StringComparison.OrdinalIgnoreCase))
-        {
-            return new List<(string Label, string Value)>
-            {
-                ("Summary", summary.Trim())
-            };
-        }
-
-        var result = new List<(string Label, string Value)>();
-        var parts = summary.Split(':');
-
-        foreach (var part in parts)
-        {
-            if (string.IsNullOrWhiteSpace(part))
-            {
-                continue;
-            }
-
-            var eqIndex = part.IndexOf('=');
-            if (eqIndex > 0)
-            {
-                var key = part[..eqIndex].Trim();
-                var val = part[(eqIndex + 1)..].Trim();
-                var label = key switch
-                {
-                    "vic" => "VIC Code",
-                    "vfreq" => "Vert Freq",
-                    "quant" => "Quantization",
-                    "hdr2sdr" => "HDR to SDR",
-                    "eotf" => "EOTF",
-                    "fw" => "Firmware",
-                    "audiofmt" => "Audio Format",
-                    "audiosrate" => "Audio Sample Rate",
-                    "inputsrc" => "Input Source",
-                    "usbproto" => "USB Protocol",
-                    "usbcdc" => "USB CDC",
-                    "usblinkst" => "USB Link State",
-                    "usbspeed" => "USB Speed",
-                    "txhpd" => "TX Hot Plug",
-                    "txvrr" => "TX VRR",
-                    "uvctiming" => "UVC Timing",
-                    "uvcfmt" => "UVC Format",
-                    "uvcerr" => "UVC Error",
-                    "hdcpmode" => "HDCP Mode",
-                    "hdcpver" => "HDCP Version",
-                    "rxtxhdcp" => "RX/TX HDCP",
-                    "hdr2sdrext" => "HDR2SDR Status",
-                    "hdr2sdrcolor" => "HDR2SDR Color",
-                    "colorrangesetting" => "Color Range",
-                    "vtem" => "VTEM (VRR)",
-                    "biterr" => "Bit Errors",
-                    "rawtiming" => "Raw Timing",
-                    _ => key
-                };
-                result.Add((label, val));
-                continue;
-            }
-
-            var entry = part switch
-            {
-                "nativexu" => ("Origin", "NativeXu"),
-                "hdr" => ("HDR", "Yes"),
-                "sdr" => ("HDR", "No"),
-                "unknown" => ("HDR", "Unknown"),
-                _ when part.Contains('x') && part.Length > 3 && char.IsDigit(part[0]) => ("Resolution", part),
-                _ when double.TryParse(part, NumberStyles.Float, CultureInfo.InvariantCulture, out var fps) && fps > 0 =>
-                    ("Frame Rate", $"{fps:0.##} Hz"),
-                _ => ("Info", part)
-            };
-            result.Add(entry);
-        }
-
-        return result;
     }
     private Border CreateDiagnosticRow(string label, string value, bool alt)
     {

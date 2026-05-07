@@ -2,6 +2,8 @@ using System;
 
 namespace Sussudio.Models;
 
+// End-of-recording counter comparison used to explain whether the capture,
+// encoder, and audio paths stayed continuous.
 public sealed record RecordingIntegritySummary
 {
     public static RecordingIntegritySummary NotStarted { get; } = new()

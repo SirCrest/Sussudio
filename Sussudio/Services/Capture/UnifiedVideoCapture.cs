@@ -13,6 +13,10 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Capture;
 
+// Owns the single source-reader session used by both preview and recording.
+// The important contract is fan-out: capture frames arrive once, then this
+// class routes them to the live preview sink, optional Flashback sink, and
+// optional user recording sink without starting a second device session.
 internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 {
     private readonly object _sync = new();
@@ -200,6 +204,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         var d3dManager = new SharedD3DDeviceManager();
         var dxgiDeviceManagerPtr = d3dManager.DxgiDeviceManagerPtr;
         ParallelMjpegDecodePipeline? mjpegPipeline = null;
+
+        // 4K120 MJPEG is compressed on the USB wire. In that mode the source
+        // reader must hand compressed samples to our decoder instead of trying
+        // to expose D3D textures directly from Media Foundation.
         var useExternalMjpegDecode =
             useMjpegHighFrameRateMode &&
             !requireP010 &&
@@ -322,6 +330,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         try
         {
+            // D3D output and CPU/MJPEG output are mutually exclusive at source
+            // reader initialization time; the callback shape is chosen from the
+            // negotiated capture path and stays stable until StopAsync.
             var useDualCallback = capture.IsD3DOutputEnabled && Volatile.Read(ref _d3dManager) != null;
             if (useDualCallback)
             {
@@ -352,6 +363,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
     public void SuppressPreviewSubmission()
     {
+        // Flashback playback temporarily owns the preview renderer. Drain
+        // pending live frames so an old live texture cannot flash over a
+        // scrub/playback frame when presentation mode changes.
         _previewSuppressed = true;
         Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ResetForPreviewSuppression();
         DropPendingPreviewFrames("live-preview-suppressed");
@@ -359,6 +373,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
     public void ResumePreviewSubmission()
     {
+        // Drop before clearing suppression so the first resumed frame is a new
+        // live source frame, not stale queue residue from the playback period.
         DropPendingPreviewFrames("live-preview-resumed");
         _previewSuppressed = false;
         Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ReprimeAfterPreviewResume();

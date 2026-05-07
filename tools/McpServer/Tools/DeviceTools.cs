@@ -5,6 +5,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP tools for refreshing and selecting capture/audio devices.
 public static class DeviceTools
 {
     [McpServerTool, Description("Select capture device, audio input device, refresh device list, or toggle custom audio input")]

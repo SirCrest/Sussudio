@@ -13,9 +13,14 @@ using Sussudio.Services.Capture;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
 using Sussudio.Services.Telemetry;
+using Sussudio.Tools;
 
 namespace Sussudio.Services.Automation;
 
+// JSON command router for the named-pipe automation protocol. It authenticates
+// requests, validates payloads, delegates mutations to the view model, and
+// shapes every response with correlation and lifecycle fields for external
+// harnesses.
 public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 {
     private readonly IAutomationViewModel _viewModel;
@@ -310,7 +315,10 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         throw new InvalidOperationException("Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
                     }
 
-                    var outputPath = RequireString(payload, "outputPath");
+                    var outputPath = ValidatePathPayload(
+                        AutomationCommandKind.FlashbackExport,
+                        "outputPath",
+                        RequireString(payload, "outputPath"));
                     var useSelectionRange = GetBool(payload, "useSelectionRange") ?? false;
                     var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken).ConfigureAwait(false);
                     var failureKind = exportResult.Succeeded
@@ -343,7 +351,10 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
                 case AutomationCommandKind.VerifyFile:
                 {
-                    var filePath = RequireString(payload, "filePath");
+                    var filePath = ValidatePathPayload(
+                        AutomationCommandKind.VerifyFile,
+                        "filePath",
+                        RequireString(payload, "filePath"));
                     var verificationProfile = GetString(payload, "verificationProfile");
                     var verifyStartedAt = Stopwatch.GetTimestamp();
                     var verification = await _diagnosticsHub
@@ -415,7 +426,10 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
                 case AutomationCommandKind.SetOutputPath:
                 {
-                    var outputPath = RequireString(payload, "outputPath");
+                    var outputPath = ValidatePathPayload(
+                        AutomationCommandKind.SetOutputPath,
+                        "outputPath",
+                        RequireString(payload, "outputPath"));
                     await _viewModel.SetOutputPathAsync(outputPath, cancellationToken).ConfigureAwait(false);
                     return CreateAcknowledgedResponse(correlationId, $"Output path change requested: {outputPath}.");
                 }
@@ -564,8 +578,11 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
                 case AutomationCommandKind.CapturePreviewFrame:
                 {
-                    var outputPath = GetString(payload, "outputPath")
-                        ?? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp");
+                    var outputPath = ValidatePathPayload(
+                        AutomationCommandKind.CapturePreviewFrame,
+                        "outputPath",
+                        GetString(payload, "outputPath")
+                            ?? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp"));
                     var result = await _viewModel.CapturePreviewFrameAsync(outputPath, cancellationToken).ConfigureAwait(false);
                     return CreateResponse(
                         correlationId,
@@ -578,8 +595,11 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
                 case AutomationCommandKind.CaptureWindowScreenshot:
                 {
-                    var outputPath = GetString(payload, "outputPath")
-                        ?? Path.Combine(Path.GetTempPath(), $"window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.png");
+                    var outputPath = ValidatePathPayload(
+                        AutomationCommandKind.CaptureWindowScreenshot,
+                        "outputPath",
+                        GetString(payload, "outputPath")
+                            ?? Path.Combine(Path.GetTempPath(), $"window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.png"));
                     var result = await _windowControl.CaptureWindowScreenshotAsync(outputPath, cancellationToken).ConfigureAwait(false);
                     return CreateResponse(
                         correlationId,
@@ -744,30 +764,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     }
 
     private static bool RequiresReadyDevices(AutomationCommandKind command)
-    {
-        return command switch
-        {
-            AutomationCommandKind.SelectDevice => true,
-            AutomationCommandKind.SelectAudioInputDevice => true,
-            AutomationCommandKind.SetCustomAudioInput => true,
-            AutomationCommandKind.SetResolution => true,
-            AutomationCommandKind.SetFrameRate => true,
-            AutomationCommandKind.SetVideoFormat => true,
-            AutomationCommandKind.SetPreset => true,
-            AutomationCommandKind.SetSplitEncodeMode => true,
-            AutomationCommandKind.SetMjpegDecoderCount => true,
-            AutomationCommandKind.SetRecordingFormat => true,
-            AutomationCommandKind.SetQuality => true,
-            AutomationCommandKind.SetCustomBitrate => true,
-            AutomationCommandKind.SetHdrEnabled => true,
-            AutomationCommandKind.SetAudioEnabled => true,
-            AutomationCommandKind.SetAudioPreviewEnabled => true,
-            AutomationCommandKind.SetPreviewEnabled => true,
-            AutomationCommandKind.SetRecordingEnabled => true,
-            AutomationCommandKind.SetAnalogAudioGain => true,
-            _ => false
-        };
-    }
+        => AutomationCommandCatalog.Get(command).RequiresReadyDevices;
+
+    private static string ValidatePathPayload(
+        AutomationCommandKind command,
+        string payloadKey,
+        string path)
+        => AutomationCommandCatalog.ValidatePath(command, payloadKey, path);
 
     private static AutomationWindowAction ParseWindowAction(JsonElement payload)
     {

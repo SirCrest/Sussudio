@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Sussudio.Tools;
 
+// Inputs for a short PresentMon capture. App-side present IDs and timestamps
+// are optional correlation anchors used to connect Sussudio renderer telemetry
+// with the OS-level present stream.
 public sealed class PresentMonProbeOptions
 {
     public int? ProcessId { get; init; }
@@ -20,6 +23,8 @@ public sealed class PresentMonProbeOptions
     public bool TrackGpuVideo { get; init; } = true;
 }
 
+// Raw process result plus parsed presentation metrics. Callers should inspect
+// Success/Message first, then Summary when PresentMon produced usable CSV.
 public sealed class PresentMonProbeResult
 {
     public bool Success { get; init; }
@@ -36,6 +41,9 @@ public sealed class PresentMonProbeResult
     public PresentMonCaptureSummary? Summary { get; init; }
 }
 
+// Aggregated view of one PresentMon run. The selected swap chain is either the
+// expected renderer address from the app snapshot or the best non-artifact
+// candidate when the address is unknown.
 public sealed class PresentMonCaptureSummary
 {
     public int SampleCount { get; init; }
@@ -106,6 +114,8 @@ public sealed class PresentMonMetricSummary
     public double Max { get; init; }
 }
 
+// Runs PresentMon and reduces the CSV into frame-pacing metrics that complement
+// the app's internal D3D/cadence counters.
 public static class PresentMonProbe
 {
     private static readonly string[] CandidateExeNames =

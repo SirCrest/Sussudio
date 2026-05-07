@@ -33,6 +33,9 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// Preview startup visual state machine. It delays the "preview is visible"
+// transition until meaningful media/render signals arrive, avoiding black-frame
+// flashes during source-reader and renderer warm-up.
 public sealed partial class MainWindow
 {
     private void SetPreviewStartupState(PreviewStartupState state, string? reason = null)

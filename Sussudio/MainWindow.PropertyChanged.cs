@@ -33,6 +33,9 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// PropertyChanged dispatcher for view-model updates. Keep this as UI projection
+// logic: command execution belongs in MainViewModel and capture state belongs in
+// CaptureService.
 public sealed partial class MainWindow
 {
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

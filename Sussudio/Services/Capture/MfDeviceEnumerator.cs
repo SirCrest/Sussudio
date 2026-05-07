@@ -7,6 +7,8 @@ using Sussudio.Services.Audio;
 
 namespace Sussudio.Services.Capture;
 
+// Thin Media Foundation device/format enumerator. It owns MFStartup/MFShutdown
+// ref-counting and exposes only the capture-device data the managed app needs.
 internal static class MfDeviceEnumerator
 {
     private const int MfVersion = 0x00020070;

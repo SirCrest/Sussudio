@@ -23,6 +23,9 @@ using WinRT.Interop;
 
 namespace Sussudio;
 
+// Shared WinUI animation helpers for preview, settings, stats, and transient
+// visual states. Capture state is updated elsewhere; animations should make
+// state changes legible without becoming the source of truth.
 public sealed partial class MainWindow
 {
     private FrameworkElement[] GetControlBarButtons() => new FrameworkElement[]

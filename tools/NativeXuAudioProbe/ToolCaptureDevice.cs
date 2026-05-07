@@ -1,5 +1,7 @@
 namespace Sussudio.Models;
 
+// Minimal CaptureDevice shape compiled into the standalone NativeXuAudioProbe
+// tool so it can reuse source files without referencing the WinUI app project.
 public sealed class CaptureDevice
 {
     public string Id { get; set; } = string.Empty;

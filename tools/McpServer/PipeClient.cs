@@ -4,6 +4,8 @@ using Sussudio.Tools;
 
 namespace McpServer;
 
+// MCP-side adapter over the shared automation pipe client. Tool handlers call
+// this instead of handling pipe connection and synthetic error shaping directly.
 public sealed class PipeClient
 {
     private readonly string _pipeName;

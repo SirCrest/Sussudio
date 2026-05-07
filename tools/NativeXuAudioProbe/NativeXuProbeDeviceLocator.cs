@@ -1,6 +1,9 @@
 using Sussudio.Models;
 using Sussudio.Services.Devices;
 
+// CLI-only device locator for NativeXuAudioProbe. It finds supported Elgato
+// KS/XU interfaces and turns the selected interface path into a lightweight
+// CaptureDevice model for the shared audio-control services.
 internal static class NativeXuProbeDeviceLocator
 {
     private const ushort ElgatoVendorId = 0x0FD9;
@@ -130,6 +133,7 @@ internal static class NativeXuProbeDeviceLocator
         }
     }
 
+    // Candidate pairing of a display device and the selected interface metadata.
     private sealed record NativeXuProbeCandidate(
         CaptureDevice Device,
         ushort ProductId,

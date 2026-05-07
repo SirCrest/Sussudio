@@ -1,5 +1,6 @@
 using System.Reflection;
 
+// Tests for the bounded frame-ledger flight recorder.
 static partial class Program
 {
     private static Task FrameLedger_RetainsBoundedRecentEvents()

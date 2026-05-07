@@ -3,6 +3,9 @@ using System.Diagnostics;
 
 namespace Sussudio.Services.Capture;
 
+// Samples luma from rendered frames to estimate what the viewer actually sees.
+// This detects repeated visual output even when source frames keep arriving,
+// which is why it complements source-reader and renderer-submit counters.
 internal sealed class VisualCadenceTracker
 {
     public readonly record struct Metrics(

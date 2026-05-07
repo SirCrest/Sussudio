@@ -9,6 +9,10 @@ using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
 
+// Smooths decoded MJPEG preview frames before they hit the renderer. 4K120
+// decode workers can emit in bursts, so this thread paces frame submission
+// against the expected display cadence and drops stale frames instead of
+// letting preview latency grow without bound.
 internal sealed class MjpegPreviewJitterBuffer : IDisposable
 {
     private enum DequeueMissReason
@@ -139,6 +143,10 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private const int FastCatchUpSurplusFrames = 2;
     private const int AggressiveCatchUpSurplusFrames = 4;
     private const double LateScheduleResetFrames = 0.5;
+
+    // The adaptive target is a small queue-depth range, not a general-purpose
+    // video buffer. It only absorbs decode jitter; hard deadlines below keep
+    // preview real-time when the decoder falls behind.
     private int _minAdaptiveTargetDepth;
     private int _maxAdaptiveTargetDepth;
     private int _targetDepth;

@@ -171,7 +171,14 @@ public unsafe interface ICudaVideoFrameEncoder
 public interface IRecordingSink : IDisposable, IAsyncDisposable
 {
     Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Hot WASAPI callback write. Implementations must copy or enqueue
+    /// synchronously, must not do blocking/async work, and must return a
+    /// completed task. The Task return preserves the existing contract shape.
+    /// </summary>
     Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default);
+
     Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default);
 }
 

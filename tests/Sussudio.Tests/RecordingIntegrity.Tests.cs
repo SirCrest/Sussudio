@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+// Tests for recording integrity counter summaries and mismatch reporting.
 static partial class Program
 {
     private static Task RecordingIntegritySummary_DefaultsAreExplicit()

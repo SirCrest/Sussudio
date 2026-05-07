@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 
 namespace Sussudio.Models;
 
+// Capture device option returned by Media Foundation enumeration.
 public class CaptureDevice
 {
     public string Id { get; set; } = string.Empty;

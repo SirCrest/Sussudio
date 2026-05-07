@@ -3,6 +3,8 @@ using Sussudio.Tools;
 
 namespace EcCtl;
 
+// ssctl transport wrapper that applies command-specific timeouts and converts
+// protocol errors into CLI-friendly usage failures where appropriate.
 internal sealed class PipeTransport
 {
     private readonly string _pipeName;

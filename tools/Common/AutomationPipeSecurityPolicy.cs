@@ -1,5 +1,6 @@
 namespace Sussudio.Services.Automation;
 
+// Security fallback policy for the named-pipe server.
 internal static class AutomationPipeSecurityPolicy
 {
     public static bool ShouldDisableDefaultSecurityFallback(

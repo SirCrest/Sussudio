@@ -33,6 +33,8 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// Flashback timeline UI. The controls here change presentation state only;
+// live capture and the continuous Flashback encoder keep running in CaptureService.
 public sealed partial class MainWindow
 {
     #region Flashback Timeline

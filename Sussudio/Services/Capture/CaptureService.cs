@@ -17,6 +17,10 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Capture;
 
+// High-level capture orchestrator. It owns the lifetime of video capture,
+// WASAPI capture/playback, recording sinks, Flashback backend pieces, source
+// telemetry, and the snapshots consumed by automation. CaptureSessionCoordinator
+// serializes public transitions; this class enforces the actual resource order.
 public partial class CaptureService : IDisposable, IAsyncDisposable
 {
     private readonly SemaphoreSlim _sessionTransitionLock = new(1, 1);
@@ -40,16 +44,45 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private LibAvRecordingSink? _libavSink;
     private IRecordingSink? _recordingSink;
-    private FlashbackBufferManager? _flashbackBufferManager;
-    private FlashbackEncoderSink? _flashbackSink;
-    private FlashbackExporter? _flashbackExporter;
-    private FlashbackPlaybackController? _flashbackPlaybackController;
-    private CaptureSettings? _flashbackBackendSettings;
+    private readonly FlashbackBackendResources _flashbackBackend = new();
+    private FlashbackBufferManager? _flashbackBufferManager
+    {
+        get => _flashbackBackend.BufferManager;
+        set => _flashbackBackend.BufferManager = value;
+    }
+
+    private FlashbackEncoderSink? _flashbackSink
+    {
+        get => _flashbackBackend.Sink;
+        set => _flashbackBackend.Sink = value;
+    }
+
+    private FlashbackExporter? _flashbackExporter
+    {
+        get => _flashbackBackend.Exporter;
+        set => _flashbackBackend.Exporter = value;
+    }
+
+    private FlashbackPlaybackController? _flashbackPlaybackController
+    {
+        get => _flashbackBackend.PlaybackController;
+        set => _flashbackBackend.PlaybackController = value;
+    }
+
+    private CaptureSettings? _flashbackBackendSettings
+    {
+        get => _flashbackBackend.SettingsSnapshot;
+        set => _flashbackBackend.SettingsSnapshot = value;
+    }
+
+    // Flashback uses a preview-owned continuous encoder when the user is not
+    // recording, but can also become the recording backend. These flags track
+    // deferred enable/settings changes so recording stop can restore the safe
+    // preview backend without mutating capture topology mid-recording.
     private volatile bool _flashbackEnabled = true;
     private bool _hasAv1Nvenc;
     private bool _pendingFlashbackSettingsChange;
     private bool _pendingFlashbackEnableAfterRecording;
-    private bool _preserveFlashbackSegmentsAfterFailedRecordingFinalize;
     private long _flashbackRecordingStartBytes;
     private WasapiAudioCapture? _wasapiAudioCapture;
     private WasapiAudioCapture? _microphoneCapture;
@@ -77,6 +110,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private UnifiedVideoCapture? _unifiedVideoCapture;
     private IPreviewFrameSink? _previewFrameSink;
     private RecordingContext? _recordingContext;
+
+    // Recording finalization state is intentionally retained after stop so the
+    // UI, automation, and verifier can explain what happened to the last file
+    // even after capture resources have been torn down.
     private readonly Stopwatch _recordingStopwatch = new();
     private string? _lastOutputPath;
     private string _lastFinalizeStatus = "None";
@@ -137,6 +174,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private UnifiedVideoCapture.MjpegPipelineTimingMetrics _lastMjpegPipelineTimingMetrics;
     private ParallelMjpegDecodePipeline.PipelineTimingMetrics? _lastFullMjpegPipelineTimingMetrics;
     private readonly object _telemetryPollSync = new();
+
+    // Telemetry is advisory and read-only: it gates UI choices and diagnostics
+    // but must not block capture or recording. Polling has its own generation so
+    // stale results from an old device/session cannot overwrite the live state.
     private CancellationTokenSource? _telemetryPollCts;
     private Task? _telemetryPollTask;
     private long _telemetryPollGeneration;
@@ -200,11 +241,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     return;
                 }
 
-                if (!enabled &&
-                    _flashbackSink == null &&
-                    _flashbackBufferManager == null &&
-                    _flashbackExporter == null &&
-                    _flashbackPlaybackController == null)
+                if (!enabled && !_flashbackBackend.HasAnyResource)
                 {
                     return;
                 }
@@ -240,7 +277,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 {
                     _flashbackEnabled = false;
                     _pendingFlashbackEnableAfterRecording = false;
-                    if (_flashbackSink != null || _flashbackBufferManager != null || _flashbackExporter != null || _flashbackPlaybackController != null)
+                    if (_flashbackBackend.HasAnyResource)
                     {
                         await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true).ConfigureAwait(false);
                     }
@@ -251,7 +288,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 {
                     _flashbackEnabled = false;
                     _pendingFlashbackEnableAfterRecording = false;
-                    if (_flashbackSink != null || _flashbackBufferManager != null || _flashbackExporter != null || _flashbackPlaybackController != null)
+                    if (_flashbackBackend.HasAnyResource)
                     {
                         await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true).ConfigureAwait(false);
                     }
@@ -1812,29 +1849,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
            Volatile.Read(ref _flashbackRecordingFinalizeInProgress) != 0 ||
            (_isRecording && IsFlashbackRecordingBackendActive());
 
-    private bool ResolveFlashbackSegmentPurge(bool requested, string reason)
-    {
-        if (!requested)
-        {
-            return false;
-        }
-
-        if (!_preserveFlashbackSegmentsAfterFailedRecordingFinalize)
-        {
-            return true;
-        }
-
-        Logger.Log($"FLASHBACK_SEGMENT_PURGE_BLOCKED reason={reason}");
-        return false;
-    }
-
-    private void PreserveFlashbackRecoverySegments(string reason)
-    {
-        _preserveFlashbackSegmentsAfterFailedRecordingFinalize = true;
-        Logger.Log($"FLASHBACK_RECOVERY_PRESERVE reason={reason}");
-        _flashbackBufferManager?.MarkSessionPreservedForRecovery();
-    }
-
     private void AttachFlashbackAudioIfSupported(WasapiAudioCapture? capture, string reason)
     {
         var flashbackSink = _flashbackSink;
@@ -2243,10 +2257,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 cancellationToken).ConfigureAwait(false);
             flashbackSink.FrameEncoded += OnFlashbackFrameEncoded;
             unifiedVideoCapture.SetFlashbackSink(flashbackSink);
-            // Set _flashbackSink BEFORE AttachFlashbackAudioIfSupported — it reads the field
-            _flashbackBufferManager = bufferManager;
-            _flashbackSink = flashbackSink;
-            _flashbackExporter = flashbackExporter;
+            // Install the backend before AttachFlashbackAudioIfSupported — it reads the active sink.
+            _flashbackBackend.Install(
+                bufferManager,
+                flashbackSink,
+                flashbackExporter,
+                playbackController: null,
+                settingsSnapshot: null);
             AttachFlashbackAudioIfSupported(_wasapiAudioCapture, "preview_backend_start");
             if (_microphoneCapture != null && flashbackSink.MicrophoneEnabled)
             {
@@ -2263,7 +2280,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             _flashbackPlaybackController = playbackController;
             _flashbackBackendSettings = CloneCaptureSettings(settings);
-            _preserveFlashbackSegmentsAfterFailedRecordingFinalize = false;
+            _flashbackBackend.ClearRecoveryPreserve();
             ClearLastFlashbackFailure();
 
             Logger.Log($"FLASHBACK_PREVIEW_INIT_OK session='{bufferManager.SessionId}' controller_initialized={playbackController.IsInitialized}");
@@ -2308,11 +2325,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             try { bufferManager?.Dispose(); }
             catch (Exception disposeEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_BUFFER_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
 
-            _flashbackSink = null;
-            _flashbackBufferManager = null;
-            _flashbackExporter = null;
-            _flashbackPlaybackController = null;
-            _flashbackBackendSettings = null;
+            _flashbackBackend.Clear();
 
             throw;
         }
@@ -2330,7 +2343,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             exportOperationLockHeld = true;
 
-            var effectivePurgeSegments = ResolveFlashbackSegmentPurge(
+            var effectivePurgeSegments = _flashbackBackend.ResolveSegmentPurge(
                 purgeSegments,
                 "preview_backend_dispose");
             await DisposeFlashbackPreviewBackendCoreAsync(
@@ -2356,8 +2369,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         var flashbackSink = _flashbackSink;
         var flashbackBufferManager = _flashbackBufferManager;
         var flashbackExporter = _flashbackExporter;
-        var flashbackPlaybackController = _flashbackPlaybackController;
-        _flashbackPlaybackController = null;
+        var flashbackPlaybackController = _flashbackBackend.TakePlaybackController();
 
         // Do NOT null the sink/buffer/exporter fields yet; the encoding loop may still be running
         // and code that checks _flashbackSink (e.g. IsFlashbackActive) must see
@@ -2377,15 +2389,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
 
         // Detach feeds first — stops new frames from entering the sink
-        if (detachMicrophoneWriter)
-        {
-            try { _microphoneCapture?.SetAudioWriter(null); }
-            catch (Exception ex) { Logger.Log($"FLASHBACK_PREVIEW_DETACH_WARN target=microphone type={ex.GetType().Name} msg={ex.Message}"); }
-        }
-        try { _wasapiAudioCapture?.DetachFlashbackSink(); }
-        catch (Exception ex) { Logger.Log($"FLASHBACK_PREVIEW_DETACH_WARN target=audio type={ex.GetType().Name} msg={ex.Message}"); }
-        try { _unifiedVideoCapture?.SetFlashbackSink(null); }
-        catch (Exception ex) { Logger.Log($"FLASHBACK_PREVIEW_DETACH_WARN target=video type={ex.GetType().Name} msg={ex.Message}"); }
+        _flashbackBackend.DetachProducers(
+            _unifiedVideoCapture,
+            _wasapiAudioCapture,
+            _microphoneCapture,
+            "FLASHBACK_PREVIEW_DETACH_WARN",
+            detachMicrophoneWriter);
 
         Task sinkCompletionTask = Task.CompletedTask;
         if (flashbackSink != null)
@@ -2417,11 +2426,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // Now that the sink is fully stopped and disposed, clear the fields.
         // Any concurrent reader of _flashbackSink sees either the old (valid)
         // value or null — never a half-disposed object.
-        _flashbackSink = null;
-        _flashbackBufferManager = null;
-        _flashbackExporter = null;
-        _flashbackPlaybackController = null;
-        _flashbackBackendSettings = null;
+        _flashbackBackend.Clear();
 
         if (!sinkCompletionTask.IsCompleted)
         {
@@ -2482,7 +2487,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         var unifiedVideoCapture = _unifiedVideoCapture;
         var bufferManager = _flashbackBufferManager;
         var oldSink = _flashbackSink;
-        var effectivePurgeSegments = ResolveFlashbackSegmentPurge(
+        var effectivePurgeSegments = _flashbackBackend.ResolveSegmentPurge(
             purgeSegments,
             "buffer_cycle");
 
@@ -2518,8 +2523,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
 
         // Close playback before cycling the sink so active decoders release segment files.
-        var oldPlaybackController = _flashbackPlaybackController;
-        _flashbackPlaybackController = null;
+        var oldPlaybackController = _flashbackBackend.TakePlaybackController();
         var preservedInPoint = !effectivePurgeSegments ? oldPlaybackController?.InPoint : null;
         var preservedOutPoint = !effectivePurgeSegments ? oldPlaybackController?.OutPoint : null;
         var preservedInPointFilePts = !effectivePurgeSegments ? oldPlaybackController?.InPointFilePts : null;
@@ -2537,13 +2541,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
         }
 
-        // Detach audio/video feeds from the old sink
-        try { _microphoneCapture?.SetAudioWriter(null); }
-        catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_DETACH_WARN target=microphone type={detachEx.GetType().Name} msg={detachEx.Message}"); }
-        try { _wasapiAudioCapture?.DetachFlashbackSink(); }
-        catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_DETACH_WARN target=audio type={detachEx.GetType().Name} msg={detachEx.Message}"); }
-        try { unifiedVideoCapture.SetFlashbackSink(null); }
-        catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_DETACH_WARN target=video type={detachEx.GetType().Name} msg={detachEx.Message}"); }
+        _flashbackBackend.DetachProducers(
+            unifiedVideoCapture,
+            _wasapiAudioCapture,
+            _microphoneCapture,
+            "FLASHBACK_CYCLE_DETACH_WARN");
         oldSink.FrameEncoded -= OnFlashbackFrameEncoded;
         var committedCycleToken = CancellationToken.None;
 
@@ -2572,8 +2574,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         // From this point on the old sink is no longer a usable backend. Keep
         // cancellation deferred until a replacement is attached or teardown is complete.
-        _flashbackSink = null;
-        _flashbackBackendSettings = null;
+        _flashbackBackend.ClearSinkAndSettings();
 
         var oldSinkCompletionTask = oldSink.EncodingCompletionTask;
         if (!oldSinkCompletionTask.IsCompleted)
@@ -2581,11 +2582,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             Logger.Log("FLASHBACK_CYCLE_DISPOSE_DEFERRED - falling back to full teardown");
             var oldExporter = _flashbackExporter;
 
-            _flashbackSink = null;
-            _flashbackBufferManager = null;
-            _flashbackExporter = null;
-            _flashbackPlaybackController = null;
-            _flashbackBackendSettings = null;
+            _flashbackBackend.Clear();
 
             ScheduleDeferredFlashbackBackendCleanup(
                 oldSinkCompletionTask,
@@ -2680,8 +2677,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_MIC_DETACH_WARN type={detachEx.GetType().Name} msg={detachEx.Message}"); }
             try { await newSink.DisposeAsync().ConfigureAwait(false); }
             catch (Exception disposeEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
-            _flashbackSink = null;
-            _flashbackBackendSettings = null;
+            _flashbackBackend.ClearSinkAndSettings();
 
             // Full teardown and rebuild
             await DisposeFlashbackPreviewBackendCoreAsync(committedCycleToken, purgeSegments: effectivePurgeSegments, exportOperationLockAlreadyHeld: true).ConfigureAwait(false);
@@ -2740,7 +2736,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     }
 
     private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync(
-        FlashbackEncoderSink flashbackSink,
         RecordingContext? recordingContext,
         FlashbackRecordingBoundarySnapshot recordingBoundary,
         CancellationToken cancellationToken)
@@ -2751,51 +2746,30 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // eviction could delete segments between EndRecording (which resumes eviction
         // internally) and ExportFlashbackCoreAsync (which pauses it again).
         // With ref-counted eviction, the nested Pause from ExportFlashbackCoreAsync is safe.
-        // M2: Track whether we actually paused so the finally block doesn't decrement past zero
-        // if PauseEviction was never reached (e.g. bufferManager is null).
         var backendLeaseHeld = false;
-        bool outerPauseApplied = false;
-        var bufferManager = _flashbackBufferManager;
         try
         {
             await _flashbackBackendLeaseLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             backendLeaseHeld = true;
-            bufferManager?.PauseEviction();
-            outerPauseApplied = bufferManager != null;
 
-            var endResult = await flashbackSink.EndRecordingAsync(cancellationToken).ConfigureAwait(false);
-            CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);
-            if (!endResult.Succeeded)
-                return endResult;
-
-            var startPts = flashbackSink.LastRecordingStartPts;
-            var endPts = flashbackSink.LastRecordingEndPts;
-
-            var exportResult = await ExportFlashbackCoreAsync(
-                    startPts,
-                    endPts,
+            return await _flashbackBackend.FinalizeRecordingAsync(
                     outputPath,
-                    progress: null,
-                    ct: cancellationToken,
-                    requireCompleteLiveEdge: true,
-                    throttleHighResolutionBaseline: false)
+                    captureBoundarySnapshot: sink => CaptureFlashbackRecordingBoundarySnapshot(sink, recordingBoundary),
+                    exportRecordingAsync: (startPts, endPts, exportOutputPath, ct) =>
+                        ExportFlashbackCoreAsync(
+                            startPts,
+                            endPts,
+                            exportOutputPath,
+                            progress: null,
+                            ct: ct,
+                            requireCompleteLiveEdge: true,
+                            throttleHighResolutionBaseline: false),
+                    resumeEvictionBestEffort: ResumeFlashbackEvictionBestEffort,
+                    cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
-
-            exportResult = PreserveFlashbackEndArtifactsOnFailure(exportResult, endResult);
-            if (exportResult.Succeeded)
-            {
-                Logger.Log($"FLASHBACK_RECORDING_EXPORT_OK output='{outputPath}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} status='{exportResult.StatusMessage}'");
-            }
-            else
-            {
-                Logger.Log($"FLASHBACK_RECORDING_EXPORT_FAIL output='{outputPath}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} status='{exportResult.StatusMessage}'");
-            }
-            return exportResult;
         }
         finally
         {
-            if (outerPauseApplied)
-                ResumeFlashbackEvictionBestEffort(bufferManager, "flashback_recording_finalize");
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
         }
     }
@@ -2838,21 +2812,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         recordingBoundary.AudioCounters = GetRecordingAudioCountersSinceBaseline(
             CaptureRecordingAudioCounters(_wasapiAudioCapture, flashbackSink, _activeRecordingSettings));
         recordingBoundary.Captured = true;
-    }
-
-    private static FinalizeResult PreserveFlashbackEndArtifactsOnFailure(
-        FinalizeResult exportResult,
-        FinalizeResult endResult)
-    {
-        if (exportResult.Succeeded || endResult.PreservedArtifacts.Count == 0)
-        {
-            return exportResult;
-        }
-
-        return FinalizeResult.Failure(
-            exportResult.OutputPath,
-            exportResult.StatusMessage,
-            exportResult.PreservedArtifacts.Concat(endResult.PreservedArtifacts));
     }
 
     private void OnUnifiedVideoCaptureFatalError(object? sender, Exception ex)
@@ -3913,7 +3872,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     {
         await DisposeFlashbackPreviewBackendAsync(
                 transitionToken,
-                purgeSegments: ResolveFlashbackSegmentPurge(
+                purgeSegments: _flashbackBackend.ResolveSegmentPurge(
                     purgeFlashbackSegments,
                     "preview_pipeline_dispose"))
             .ConfigureAwait(false);
@@ -4722,7 +4681,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     Logger.Log($"Cleanup stop reported issues: {result.StatusMessage}");
                     if (stoppingFlashbackRecording)
                     {
-                        PreserveFlashbackRecoverySegments("cleanup_stop_failed");
+                        _flashbackBackend.PreserveRecoverySegments("cleanup_stop_failed");
                         preserveFlashbackSegmentsAfterFailedRecordingFinalize = true;
                     }
                 }
@@ -4732,7 +4691,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 cancellationRequested = true;
                 if (stoppingFlashbackRecording)
                 {
-                    PreserveFlashbackRecoverySegments("cleanup_stop_cancelled");
+                    _flashbackBackend.PreserveRecoverySegments("cleanup_stop_cancelled");
                     preserveFlashbackSegmentsAfterFailedRecordingFinalize = true;
                 }
             }
@@ -4843,7 +4802,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 try
                 {
                     fbResult = await FinalizeFlashbackRecordingAsync(
-                            flashbackSink,
                             fbRecordingContext,
                             recordingBoundary,
                             cancellationToken)
@@ -4896,7 +4854,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 {
                     var hadPendingFlashbackSettingsChange = _pendingFlashbackSettingsChange;
                     _pendingFlashbackSettingsChange = false;
-                    PreserveFlashbackRecoverySegments("recording_finalize_failed");
+                    _flashbackBackend.PreserveRecoverySegments("recording_finalize_failed");
                     Logger.Log(
                         "FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING_DEFERRED " +
                         $"reason=recording_finalize_failed pending_settings={hadPendingFlashbackSettingsChange}");
@@ -4922,7 +4880,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 Logger.Log($"FLASHBACK_BUFFER_CYCLE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
                 RecordLastFlashbackFailure(ex);
-                PreserveFlashbackRecoverySegments("buffer_cycle_failed");
+                _flashbackBackend.PreserveRecoverySegments("buffer_cycle_failed");
                 BeginFlashbackBackendCleanup(ex);
             }
 
@@ -5220,7 +5178,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     cancellationException ??= new OperationCanceledException(cancellationToken);
                     _flashbackEnabled = false;
                     _pendingFlashbackEnableAfterRecording = false;
-                    if (_flashbackSink != null || _flashbackBufferManager != null || _flashbackExporter != null || _flashbackPlaybackController != null)
+                    if (_flashbackBackend.HasAnyResource)
                     {
                         await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true).ConfigureAwait(false);
                     }
@@ -5230,7 +5188,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 {
                     _flashbackEnabled = false;
                     _pendingFlashbackEnableAfterRecording = false;
-                    if (_flashbackSink != null || _flashbackBufferManager != null || _flashbackExporter != null || _flashbackPlaybackController != null)
+                    if (_flashbackBackend.HasAnyResource)
                     {
                         await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true).ConfigureAwait(false);
                     }

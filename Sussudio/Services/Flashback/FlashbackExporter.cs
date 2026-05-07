@@ -20,6 +20,8 @@ namespace Sussudio.Services.Flashback;
 /// </summary>
 internal sealed unsafe class FlashbackExporter : IDisposable
 {
+    // Export reads finalized segment artifacts only. Live capture continues via
+    // FlashbackEncoderSink while this class remuxes packets into the target MP4.
     private delegate bool CompletedOutputValidator(string outputPath, out long outputBytes, out string failureMessage);
 
     private const int MaxSupportedInputStreams = 64;

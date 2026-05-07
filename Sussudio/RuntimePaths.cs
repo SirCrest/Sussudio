@@ -6,6 +6,9 @@ using System.Threading;
 
 namespace Sussudio;
 
+// Resolves repo-local temp/log paths for both development and staged-build
+// execution. The app should not assume the current directory is the repository,
+// especially when launched from latest-build or automation tooling.
 public static class RuntimePaths
 {
     private const string LogRootEnvVar = "SUSSUDIO_LOG_ROOT";

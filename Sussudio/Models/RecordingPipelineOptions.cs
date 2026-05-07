@@ -2,12 +2,16 @@ using System;
 
 namespace Sussudio.Models;
 
+// Video queue behavior knob for recording pipelines that support latency
+// constrained buffering.
 public enum VideoFrameDropPolicy
 {
     DropOldest,
     DropNewest
 }
 
+// Desired queue/latency policy for recording sinks. Active sinks must opt into
+// these values explicitly; this model alone does not change queue behavior.
 public sealed class RecordingPipelineOptions
 {
     public int TargetVideoLatencyMs { get; set; } = 250;

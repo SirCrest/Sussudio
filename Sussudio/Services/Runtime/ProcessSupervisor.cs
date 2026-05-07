@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 
 namespace Sussudio.Services.Runtime;
 
+// Process execution contract used by verifiers and tooling wrappers. It keeps
+// timeout, stdout/stderr capture, start failure, and priority behavior uniform.
 public sealed class ProcessSpec
 {
     public required string FileName { get; init; }
@@ -31,6 +33,8 @@ public interface IProcessSupervisor
     Task<ProcessRunResult> RunAsync(ProcessSpec spec, CancellationToken cancellationToken = default);
 }
 
+// Small supervised process runner. It is deliberately conservative: no shell,
+// bounded waits, and explicit timeout reporting for diagnostics.
 public sealed class ProcessSupervisor : IProcessSupervisor
 {
     public async Task<ProcessRunResult> RunAsync(ProcessSpec spec, CancellationToken cancellationToken = default)

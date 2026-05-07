@@ -17,6 +17,10 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Capture;
 
+// Serializable cache entry for one media mode exposed by a capture device.
+// The cache avoids slow full Media Foundation enumeration on every startup,
+// but DeviceService still refreshes from live devices when the cache is absent
+// or stale.
 internal sealed class CachedMediaFormat
 {
     public uint Width { get; set; }
@@ -42,6 +46,9 @@ internal sealed class DeviceFormatCacheFile
 [JsonSourceGenerationOptions(WriteIndented = true)]
 internal partial class DeviceFormatCacheJsonContext : JsonSerializerContext;
 
+// Enumerates capture/audio devices and builds the format lists shown by the UI.
+// It is the boundary between slow native discovery and view-model option state,
+// so it owns cache hydration, capability filtering, and friendly labels.
 public class DeviceService
 {
     private const int FormatProbeConcurrency = 2;

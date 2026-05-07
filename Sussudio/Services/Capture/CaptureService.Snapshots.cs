@@ -14,6 +14,9 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Capture;
 
+// Snapshot projection for diagnostics, automation, and verification. These
+// methods translate live service objects into immutable DTOs without mutating
+// capture state, so they can be polled frequently by ssctl/MCP.
 public partial class CaptureService
 {
     private const double RecordingIntegrityAvSyncDriftWarningMs = 500.0;
@@ -75,6 +78,9 @@ public partial class CaptureService
         return GetHealthSnapshot();
     }
 
+    // Recording integrity compares counters captured at start/stop, not just
+    // final file metadata. This catches capture/sink discontinuities that a
+    // syntactically valid MP4 would otherwise hide.
     private static string? ResolveEncoderCodecName(CaptureSettings? settings)
         => settings == null ? null : MediaFormat.MapNvencCodecName(settings.Format);
 

@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Threading.Tasks;
 
+// Tests for compact UI/source-signal display labels.
 static partial class Program
 {
     private static Task DisplayFormatters_FormatSourceHdr_MapsKnownAndUnknownStates()

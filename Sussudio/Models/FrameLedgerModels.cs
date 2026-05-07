@@ -2,6 +2,7 @@ using System;
 
 namespace Sussudio.Models;
 
+// Frame-ledger stages name the major handoff points a source frame can cross.
 public enum FrameLedgerStage
 {
     CaptureArrived,
@@ -24,6 +25,7 @@ public enum FrameLedgerStage
     PresentMonDisplayedOrSuperseded
 }
 
+// Immutable identity carried with a frame through capture/preview/recording.
 public readonly record struct FrameIdentity(
     long SourceSequence,
     long CaptureArrivalQpc,
@@ -34,6 +36,7 @@ public readonly record struct FrameIdentity(
     double FrameRateNominal,
     int CompressedByteLength);
 
+// Public snapshot DTO for one retained ledger event.
 public sealed record FrameLedgerEventSnapshot(
     long SourceSequence,
     FrameLedgerStage Stage,
@@ -45,6 +48,7 @@ public sealed record FrameLedgerEventSnapshot(
     string? Reason,
     FrameIdentity? Identity);
 
+// Bounded ledger summary returned in diagnostics snapshots.
 public sealed record FrameLedgerSummary(
     int Capacity,
     long TotalEventsRecorded,

@@ -32,7 +32,7 @@ static partial class Program
         AssertEqual(0, deviceExitCode, "device audio-select exit code");
         AssertEqual(5, deviceRequest.GetProperty("command").GetInt32(), "device audio-select command id");
         // Auth token is null when not configured via env var
-        AssertEqual("Synthetic Mic", deviceRequest.GetProperty("payload").GetProperty("audioDeviceName").GetString(), "device audio-select payload key");
+        AssertEqual("Synthetic Mic", deviceRequest.GetProperty("payload").GetProperty("deviceName").GetString(), "device audio-select payload key");
 
         var previewPipeName = $"ssctl-preview-{Guid.NewGuid():N}";
         var previewTransport = Activator.CreateInstance(transportType, previewPipeName, (int?)null)

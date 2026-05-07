@@ -6,6 +6,9 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Sussudio.Services.Devices;
 
+// Kernel Streaming extension-unit helper. It enumerates capture/video device
+// interfaces and issues KSPROPERTY topology GET/SET calls used by the native XU
+// telemetry and audio-control services.
 internal static class KsExtensionUnitNative
 {
     private static readonly Guid KsCategoryCapture = new("65E8773D-8F56-11D0-A3B9-00A0C9223196");

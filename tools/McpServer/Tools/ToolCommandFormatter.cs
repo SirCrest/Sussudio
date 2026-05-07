@@ -4,6 +4,8 @@ using ModelContextProtocol.Protocol;
 
 namespace McpServer.Tools;
 
+// Shared formatting helper for MCP tools that execute one or more automation
+// commands and present concise text results.
 internal static class ToolCommandFormatter
 {
     internal readonly record struct PendingCommand(

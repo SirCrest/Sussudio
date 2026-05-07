@@ -10,6 +10,10 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Audio;
 
+// Event-driven WASAPI capture for HDMI, custom audio input, and microphone
+// sources. It normalizes capture into f32le 48 kHz stereo blocks, fans samples
+// out to monitoring/recording/Flashback, and keeps low-volume glitch counters
+// for automation diagnostics.
 internal sealed class WasapiAudioCapture : IAsyncDisposable
 {
     private const int OutputSampleRate = 48_000;
@@ -37,6 +41,10 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     private long _audioLevelLastFireTick;
     private long _audioLevelEventsFired;
     private long _audioLevelEventsLastFireTickMs;
+
+    // Integer remainder carried between callbacks when the endpoint mix format
+    // does not divide evenly into the 48 kHz output rate. This avoids slow
+    // sample-count drift without bringing a full resampler into the hot path.
     private long _resampleRemainderNumerator;
     private long _captureCallbackCount;
     private long _lastCaptureCallbackTickMs;
@@ -298,6 +306,9 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
     public void SetAudioWriter(Func<ReadOnlyMemory<byte>, Task>? writer)
     {
+        // Runs on the WASAPI capture thread. Writers must copy/enqueue
+        // synchronously and return a completed task; incomplete tasks are
+        // rejected instead of being waited on in the callback path.
         Volatile.Write(ref _audioWriter, writer);
     }
 
@@ -453,9 +464,10 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                 {
                     try
                     {
-                        audioWriter(new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length))
-                            .GetAwaiter()
-                            .GetResult();
+                        InvokeHotAudioWriter(
+                            audioWriter,
+                            new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length),
+                            "delegate");
                         Interlocked.Add(ref _audioFramesWrittenToSink, converted.Frames);
                     }
                     catch (Exception ex)
@@ -473,9 +485,10 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                     {
                         try
                         {
-                            sink.WriteAudioAsync(new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length))
-                                .GetAwaiter()
-                                .GetResult();
+                            WriteAudioToSinkOnCaptureThread(
+                                sink,
+                                new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length),
+                                "recording");
                             Interlocked.Add(ref _audioFramesWrittenToSink, converted.Frames);
                         }
                         catch (Exception ex)
@@ -493,9 +506,10 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                 {
                     try
                     {
-                        flashbackSink.WriteAudioAsync(new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length))
-                            .GetAwaiter()
-                            .GetResult();
+                        WriteAudioToSinkOnCaptureThread(
+                            flashbackSink,
+                            new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length),
+                            "flashback");
                     }
                     catch (Exception ex)
                     {
@@ -522,6 +536,31 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                     "IAudioCaptureClient.ReleaseBuffer");
             }
         }
+    }
+
+    private static void InvokeHotAudioWriter(
+        Func<ReadOnlyMemory<byte>, Task> writer,
+        ReadOnlyMemory<byte> samples,
+        string target)
+        => CompleteHotAudioWrite(writer(samples), target);
+
+    private static void WriteAudioToSinkOnCaptureThread(
+        IRecordingSink sink,
+        ReadOnlyMemory<byte> samples,
+        string target)
+        => CompleteHotAudioWrite(sink.WriteAudioAsync(samples), target);
+
+    private static void CompleteHotAudioWrite(Task task, string target)
+    {
+        ArgumentNullException.ThrowIfNull(task);
+        if (!task.IsCompleted)
+        {
+            throw new InvalidOperationException(
+                $"{target} audio writer returned an incomplete Task on the WASAPI capture thread. " +
+                "Audio writers must copy/enqueue synchronously and return Task.CompletedTask.");
+        }
+
+        task.GetAwaiter().GetResult();
     }
 
     private ConvertedAudioPacket ConvertToOutputFormat(IntPtr dataPtr, int inputFrames, bool silent)

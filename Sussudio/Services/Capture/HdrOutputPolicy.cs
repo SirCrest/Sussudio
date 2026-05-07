@@ -4,6 +4,8 @@ using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
 
+// Single policy gate for enabling HDR output. Environment overrides live here
+// so capture setup and UI readiness checks stay consistent.
 internal static class HdrOutputPolicy
 {
     public static bool IsEnabled(CaptureSettings settings)

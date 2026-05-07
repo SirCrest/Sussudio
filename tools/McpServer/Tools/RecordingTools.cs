@@ -7,6 +7,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
+// MCP tools for starting and stopping user recordings.
 public static class RecordingTools
 {
     [McpServerTool, Description("Start or stop recording")]

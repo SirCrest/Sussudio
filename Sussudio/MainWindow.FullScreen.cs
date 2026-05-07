@@ -33,6 +33,8 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
+// Full-screen and restore behavior for the preview window. This is a shell/UI
+// mode change only; capture and preview renderer ownership stay unchanged.
 public sealed partial class MainWindow
 {
     #region Full screen mode

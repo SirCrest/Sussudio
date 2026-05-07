@@ -10,10 +10,11 @@ using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Runtime;
 
+// Locates FFmpeg/ffprobe and caches capability probes. UI option lists and
+// recording verification depend on these probes, so failures return explicit
+// "unsupported" snapshots rather than throwing during normal startup.
 internal static class FfmpegRuntimeLocator
 {
-    // Encoder capability probes.
-
     private static Task<EncoderSupport>? _encoderProbeTask;
     private static readonly object EncoderProbeLock = new();
     private static Task<SplitEncodeSupport>? _splitEncodeSupportTask;
