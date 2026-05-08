@@ -6,9 +6,16 @@
     <Platform Solution="*|x64" Project="x64" />
     <Deploy />
   </Project>
-  <Project Path="tools/McpServer/McpServer.csproj" />
+  <Project Path="tests/Sussudio.Tests/Sussudio.Tests.csproj" />
   <Project Path="tests/Sussudio.HdrLab/Sussudio.HdrLab.csproj">
     <Platform Solution="*|x64" Project="x64" />
   </Project>
   <Project Path="tests/Sussudio.FfmpegEncodeLab/Sussudio.FfmpegEncodeLab.csproj" />
+  <Project Path="tools/AutomationClient/AutomationClient.csproj" />
+  <Project Path="tools/CoreAudioEndpointProbe/CoreAudioEndpointProbe.csproj" />
+  <Project Path="tools/EgavdsAudioProbe/EgavdsAudioProbe.csproj" />
+  <Project Path="tools/KsAudioNodeProbe/KsAudioNodeProbe.csproj" />
+  <Project Path="tools/McpServer/McpServer.csproj" />
+  <Project Path="tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj" />
+  <Project Path="tools/ssctl/ssctl.csproj" />
 </Solution>
