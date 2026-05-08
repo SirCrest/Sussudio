@@ -330,7 +330,7 @@ public partial class CaptureService
                     : "HDR requested and waiting for recording start.")
                 : "HDR not requested.";
         var sourceTelemetryTimestampUtc = _latestSourceTelemetry.TimestampUtc;
-        var sourceTelemetryAgeSeconds = ResolveTelemetryAgeSeconds(sourceTelemetryTimestampUtc, DateTimeOffset.UtcNow);
+        var sourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(sourceTelemetryTimestampUtc, DateTimeOffset.UtcNow);
         var sourceTelemetryBackend = ResolveSourceTelemetryBackend(_latestSourceTelemetry);
         var sourceTelemetrySuppressedReason = ResolveSourceTelemetrySuppressedReason(_latestSourceTelemetry);
         var sourceTelemetrySuppressed = !string.IsNullOrWhiteSpace(sourceTelemetrySuppressedReason);
@@ -388,6 +388,8 @@ public partial class CaptureService
         var recordingIntegrity = ResolveRecordingIntegritySummary(unifiedVideoCapture, sink, _flashbackSink);
         var (runtimeAvSyncDriftMs, runtimeAvSyncDriftRate) = ComputeAvSyncDrift();
         var (runtimeAvSyncEncoderDriftMs, runtimeAvSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
+        var (wasapiCaptureCallbackAvgMs, wasapiCaptureCallbackMaxMs) =
+            wasapiCapture?.GetCaptureCallbackIntervalSnapshot() ?? (0d, 0d);
 
         return new CaptureRuntimeSnapshot
         {
@@ -420,8 +422,8 @@ public partial class CaptureService
             SourceReaderLastFrameTickMs = unifiedVideoCapture?.SourceReaderLastFrameTickMs ?? 0,
             SourceReaderFrameChannelDepth = sink?.VideoQueueCount ?? 0,
             WasapiCaptureCallbackCount = wasapiCapture?.CaptureCallbackCount ?? 0,
-            WasapiCaptureCallbackAvgIntervalMs = wasapiCapture?.CaptureCallbackAvgIntervalMs ?? 0,
-            WasapiCaptureCallbackMaxIntervalMs = wasapiCapture?.CaptureCallbackMaxIntervalMs ?? 0,
+            WasapiCaptureCallbackAvgIntervalMs = wasapiCaptureCallbackAvgMs,
+            WasapiCaptureCallbackMaxIntervalMs = wasapiCaptureCallbackMaxMs,
             WasapiCaptureCallbackSevereGapCount = wasapiCapture?.CaptureCallbackSevereGapCount ?? 0,
             WasapiCaptureAudioDiscontinuityCount = wasapiCapture?.AudioDataDiscontinuityCount ?? 0,
             WasapiCaptureAudioTimestampErrorCount = wasapiCapture?.AudioTimestampErrorCount ?? 0,
@@ -612,17 +614,6 @@ public partial class CaptureService
         }
 
         return fallbackArg;
-    }
-
-    private static int? ResolveTelemetryAgeSeconds(DateTimeOffset telemetryTimestampUtc, DateTimeOffset nowUtc)
-    {
-        var age = nowUtc - telemetryTimestampUtc;
-        if (age < TimeSpan.Zero)
-        {
-            return 0;
-        }
-
-        return (int)Math.Floor(age.TotalSeconds);
     }
 
     private static long ComputeTickAge(long tick)

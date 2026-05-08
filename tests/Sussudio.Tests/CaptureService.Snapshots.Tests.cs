@@ -62,23 +62,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // ── CaptureService.Snapshots: ResolveTelemetryAgeSeconds ──
+    // ── TelemetryAgeHelper: shared compute-age logic used by capture/automation/view-model ──
 
     private static Task CaptureService_ResolveTelemetryAgeSeconds_ComputesCorrectly()
     {
-        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
-        var method = serviceType.GetMethod("ResolveTelemetryAgeSeconds",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("ResolveTelemetryAgeSeconds not found.");
+        var helperType = RequireType("Sussudio.Services.Runtime.TelemetryAgeHelper");
+        var method = helperType.GetMethod(
+            "ComputeAgeSeconds",
+            BindingFlags.Static | BindingFlags.Public,
+            binder: null,
+            types: new[] { typeof(DateTimeOffset?), typeof(DateTimeOffset) },
+            modifiers: null)
+            ?? throw new InvalidOperationException("TelemetryAgeHelper.ComputeAgeSeconds(DateTimeOffset?, DateTimeOffset) not found.");
 
         var now = DateTimeOffset.UtcNow;
 
         // 10 seconds ago → 10
-        var age10 = (int?)method.Invoke(null, new object[] { now.AddSeconds(-10), now });
+        var age10 = (int?)method.Invoke(null, new object?[] { (DateTimeOffset?)now.AddSeconds(-10), now });
         AssertEqual(10, age10!.Value, "10 seconds ago");
 
         // Future timestamp → clamped to 0
-        var ageFuture = (int?)method.Invoke(null, new object[] { now.AddSeconds(5), now });
+        var ageFuture = (int?)method.Invoke(null, new object?[] { (DateTimeOffset?)now.AddSeconds(5), now });
         AssertEqual(true, ageFuture!.Value <= 0, "Future timestamp clamps to 0");
 
         return Task.CompletedTask;

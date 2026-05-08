@@ -270,7 +270,7 @@ public partial class MainViewModel
         }
 
         var smoothed = ComputeAverageBitrate(_flashbackBitrateSamples);
-        FlashbackBitrateInfo = smoothed.HasValue ? FormatBitrate(smoothed.Value) : "";
+        FlashbackBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : "";
     }
 
     public async Task ExportFlashbackAsync()
@@ -596,7 +596,7 @@ public partial class MainViewModel
             SourceTelemetryConfidence = SourceTelemetryConfidence,
             SourceTelemetryDiagnosticSummary = SourceTelemetryDiagnosticSummary,
             SourceTelemetryTimestampUtc = SourceTelemetryTimestampUtc,
-            SourceTelemetryAgeSeconds = ComputeTelemetryAgeSeconds(SourceTelemetryTimestampUtc, DateTimeOffset.UtcNow),
+            SourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(SourceTelemetryTimestampUtc, DateTimeOffset.UtcNow),
             SourceTelemetrySummaryText = SourceTelemetrySummaryText,
             SourceTargetSummaryText = SourceTargetSummaryText,
             CaptureCommandCommandsEnqueued = sessionSnapshot.CommandsEnqueued,

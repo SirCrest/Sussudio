@@ -20,6 +20,16 @@ namespace Sussudio.ViewModels;
 /// </summary>
 public partial class MainViewModel
 {
+    // Cached enum values for the telemetry projection. ToString() on enums goes
+    // through Enum.GetName which allocates per call; telemetry snapshots fire
+    // every device-cycle (often ~500ms) and these enums rarely change. Fully
+    // qualified to disambiguate from the partial-property string accessors with
+    // the same names on this class.
+    private Models.SourceTelemetryAvailability _lastAppliedTelemetryAvailability = Models.SourceTelemetryAvailability.Unknown;
+    private Models.SourceTelemetryConfidence _lastAppliedTelemetryConfidence = Models.SourceTelemetryConfidence.Unknown;
+    private SourceTelemetryOrigin _lastAppliedFrameRateOrigin = SourceTelemetryOrigin.Unknown;
+    private bool _hasAppliedTelemetryEnums;
+
     private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)
     {
         var runtime = runtimeSnapshot ?? _captureService.GetRuntimeSnapshot();
@@ -30,7 +40,7 @@ public partial class MainViewModel
 
     private void RefreshSourceTelemetrySummaryAge()
     {
-        var ageSeconds = ComputeTelemetryAgeSeconds(SourceTelemetryTimestampUtc, DateTimeOffset.UtcNow);
+        var ageSeconds = TelemetryAgeHelper.ComputeAgeSeconds(SourceTelemetryTimestampUtc, DateTimeOffset.UtcNow);
         var ageBucket = ageSeconds.HasValue ? ageSeconds.Value / 5 : (int?)null;
         if (_lastTelemetryAgeBucket.HasValue &&
             ageBucket.HasValue &&
@@ -72,16 +82,29 @@ public partial class MainViewModel
         {
             IsHdrEnabled = false;
         }
-        SourceTelemetryAvailability = snapshot.Availability.ToString();
+        if (!_hasAppliedTelemetryEnums || _lastAppliedTelemetryAvailability != snapshot.Availability)
+        {
+            SourceTelemetryAvailability = snapshot.Availability.ToString();
+            _lastAppliedTelemetryAvailability = snapshot.Availability;
+        }
         SourceTelemetryOriginDetail = snapshot.OriginDetail;
-        SourceTelemetryConfidence = snapshot.Confidence.ToString();
+        if (!_hasAppliedTelemetryEnums || _lastAppliedTelemetryConfidence != snapshot.Confidence)
+        {
+            SourceTelemetryConfidence = snapshot.Confidence.ToString();
+            _lastAppliedTelemetryConfidence = snapshot.Confidence;
+        }
         SourceTelemetryDiagnosticSummary = snapshot.DiagnosticSummary;
         SourceTelemetryTimestampUtc = snapshot.TimestampUtc;
         DetectedSourceFrameRate = snapshot.FrameRateExact;
         DetectedSourceFrameRateArg = snapshot.FrameRateArg;
-        SourceFrameRateOrigin = snapshot.Origin != SourceTelemetryOrigin.Unknown
-            ? snapshot.Origin.ToString()
-            : "Unknown";
+        if (!_hasAppliedTelemetryEnums || _lastAppliedFrameRateOrigin != snapshot.Origin)
+        {
+            SourceFrameRateOrigin = snapshot.Origin != SourceTelemetryOrigin.Unknown
+                ? snapshot.Origin.ToString()
+                : "Unknown";
+            _lastAppliedFrameRateOrigin = snapshot.Origin;
+        }
+        _hasAppliedTelemetryEnums = true;
         _lastTelemetryAgeBucket = null;
         SourceTelemetrySummaryText = BuildSourceTelemetrySummaryText(snapshot, DateTimeOffset.UtcNow);
 
@@ -152,7 +175,7 @@ public partial class MainViewModel
 
     private static string BuildTelemetryAgeText(DateTimeOffset timestampUtc, DateTimeOffset nowUtc)
     {
-        var ageSeconds = ComputeTelemetryAgeSeconds(timestampUtc, nowUtc);
+        var ageSeconds = TelemetryAgeHelper.ComputeAgeSeconds(timestampUtc, nowUtc);
         if (!ageSeconds.HasValue)
         {
             return "updated ?";
@@ -161,22 +184,6 @@ public partial class MainViewModel
         return ageSeconds.Value <= 0
             ? "updated now"
             : $"updated {ageSeconds.Value}s ago";
-    }
-
-    private static int? ComputeTelemetryAgeSeconds(DateTimeOffset? timestampUtc, DateTimeOffset nowUtc)
-    {
-        if (!timestampUtc.HasValue)
-        {
-            return null;
-        }
-
-        var age = nowUtc - timestampUtc.Value;
-        if (age < TimeSpan.Zero)
-        {
-            return 0;
-        }
-
-        return (int)Math.Floor(age.TotalSeconds);
     }
 
     private void UpdateTargetSummary()

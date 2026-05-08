@@ -496,17 +496,13 @@ public sealed partial class MainWindow
         _selectedDecoderCount = Math.Clamp(ViewModel.MjpegDecoderCount, 1, 8);
         DecoderCountComboBox.SelectedItem = _selectedDecoderCount;
         CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
-        CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
-        PresetPanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Collapsed : Visibility.Visible;
+        ApplyBitrateVisibility();
         HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
-        HdrToggle.IsEnabled = ViewModel.IsHdrAvailable &&
-                              !ViewModel.IsRecording &&
-                              ViewModel.SourceIsHdr != false;
         TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
-        TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
+        ApplyHdrToggleEnabledState();
         ResetAudioMeterVisuals();
         _audioMeterTargetLevel = Math.Clamp(ViewModel.AudioMeterTarget, 0.0, 1.0);
-        AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
+        ApplyAudioClipVisibility();
         RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing;
         RefreshHdrHintText();
         UpdateFpsTelemetryTooltip();
@@ -991,5 +987,24 @@ public sealed partial class MainWindow
             parts.Add(ViewModel.SourceTargetSummaryText);
         ToolTipService.SetToolTip(FrameRateComboBox,
             parts.Count > 0 ? string.Join(Environment.NewLine, parts) : null);
+    }
+
+    private void ApplyHdrToggleEnabledState()
+    {
+        HdrToggle.IsEnabled = ViewModel.IsHdrAvailable &&
+                              !ViewModel.IsRecording &&
+                              ViewModel.SourceIsHdr != false;
+        TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
+    }
+
+    private void ApplyBitrateVisibility()
+    {
+        CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
+        PresetPanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void ApplyAudioClipVisibility()
+    {
+        AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
     }
 }

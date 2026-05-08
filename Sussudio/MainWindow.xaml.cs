@@ -160,8 +160,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private const double ControlBarLabelThreshold = 900.0;
     private const int MinWindowWidth = 900;
     private const int MinWindowHeight = 500;
-    private WndProcDelegate? _minSizeWndProc;
-    private IntPtr _originalWndProc;
+    private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
     private IntPtr _hwnd;
     private double _audioPeakHoldLevel;
     private long _audioPeakHoldTimestamp;
@@ -357,9 +356,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         DwmSetWindowAttribute(_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref darkMode, sizeof(int));
 
         // Enforce minimum window size via WM_GETMINMAXINFO
-        _minSizeWndProc = MinSizeWndProc;
-        _originalWndProc = GetWindowLongPtr(_hwnd, GWLP_WNDPROC);
-        SetWindowLongPtr(_hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_minSizeWndProc));
+        _minSizeHandle = MinSizeWindowSubclass.Install(_hwnd, MinWindowWidth, MinWindowHeight);
 
         // Set initial window size and constraints
         var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(

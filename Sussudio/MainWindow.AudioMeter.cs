@@ -38,6 +38,11 @@ namespace Sussudio;
 // capture or monitoring state.
 public sealed partial class MainWindow
 {
+    private static readonly SolidColorBrush MonitoringPeakBrush =
+        new(Windows.UI.Color.FromArgb(255, 255, 255, 255));
+    private static readonly SolidColorBrush IdlePeakBrush =
+        new(Windows.UI.Color.FromArgb(255, 160, 160, 160));
+
     private void AnimateAudioMeterTick()
     {
         _audioMeterTargetLevel = ViewModel.AudioMeterTarget;
@@ -202,9 +207,7 @@ public sealed partial class MainWindow
         _audioMeterMonitoringStoryboard?.Stop();
 
         // Color layer visible only when monitoring; grey raw layer always shows through.
-        AudioPeakHoldIndicator.Background = isMonitoring
-            ? new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255))
-            : new SolidColorBrush(Windows.UI.Color.FromArgb(255, 160, 160, 160));
+        AudioPeakHoldIndicator.Background = isMonitoring ? MonitoringPeakBrush : IdlePeakBrush;
 
         var duration = TimeSpan.FromMilliseconds(isMonitoring ? 260 : 220);
         var easing = new CubicEase { EasingMode = isMonitoring ? EasingMode.EaseOut : EasingMode.EaseIn };

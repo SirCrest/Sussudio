@@ -36,6 +36,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private bool _disposed;
     private bool _wasRecording;
     private long _lastRecordedBytes;
+    private string? _cachedFinalOutputPath;
+    private long? _cachedFinalOutputSize;
     private long _muteLowSignalStartTick;
     private long _recordingNoGrowthStartTick;
     private long _lastPreviewJitterUnderflows;
@@ -215,7 +217,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 return _recentEvents.ToArray();
             }
 
-            return _recentEvents.Skip(_recentEvents.Count - take).ToArray();
+            return _recentEvents.GetRange(_recentEvents.Count - take, take).ToArray();
         }
     }
 
@@ -565,17 +567,42 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         bool lastOutputExists = false;
         long? lastOutputSize = null;
-        if (!string.IsNullOrWhiteSpace(captureRuntime.LastOutputPath))
+        var lastOutputPath = captureRuntime.LastOutputPath;
+        if (!string.IsNullOrWhiteSpace(lastOutputPath))
         {
-            try
+            // While recording, the file is still growing — re-stat each poll. Once
+            // recording stops, the size is final and the cached value is reused
+            // until the path changes.
+            var isFinalAndCached = !viewModelSnapshot.IsRecording &&
+                                   _cachedFinalOutputSize.HasValue &&
+                                   string.Equals(_cachedFinalOutputPath, lastOutputPath, StringComparison.Ordinal);
+            if (isFinalAndCached)
             {
-                lastOutputSize = new FileInfo(captureRuntime.LastOutputPath).Length;
+                lastOutputSize = _cachedFinalOutputSize;
                 lastOutputExists = true;
             }
-            catch (Exception ex)
+            else
             {
-                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub output file probe: {ex.Message}");
+                try
+                {
+                    lastOutputSize = new FileInfo(lastOutputPath).Length;
+                    lastOutputExists = true;
+                    if (!viewModelSnapshot.IsRecording)
+                    {
+                        _cachedFinalOutputSize = lastOutputSize;
+                        _cachedFinalOutputPath = lastOutputPath;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub output file probe: {ex.Message}");
+                }
             }
+        }
+        else
+        {
+            _cachedFinalOutputSize = null;
+            _cachedFinalOutputPath = null;
         }
 
         // Memory & GC metrics (all APIs are thread-safe and microsecond-cheap)
@@ -688,7 +715,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             SourceTelemetryDiagnosticSummary = viewModelSnapshot.SourceTelemetryDiagnosticSummary ?? captureRuntime.SourceTelemetryDiagnosticSummary,
             SourceTelemetryDetails = captureRuntime.SourceTelemetryDetails,
             SourceTelemetryTimestampUtc = viewModelSnapshot.SourceTelemetryTimestampUtc ?? captureRuntime.SourceTelemetryTimestampUtc,
-            SourceTelemetryAgeSeconds = ResolveTelemetryAgeSeconds(
+            SourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(
                 viewModelSnapshot.SourceTelemetryAgeSeconds,
                 viewModelSnapshot.SourceTelemetryTimestampUtc ?? captureRuntime.SourceTelemetryTimestampUtc,
                 DateTimeOffset.UtcNow),
@@ -3408,27 +3435,6 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FinalClassification = finalClassification,
             Evidence = evidence
         };
-    }
-
-    private static int? ResolveTelemetryAgeSeconds(int? reportedAgeSeconds, DateTimeOffset? timestampUtc, DateTimeOffset nowUtc)
-    {
-        if (reportedAgeSeconds.HasValue)
-        {
-            return Math.Max(0, reportedAgeSeconds.Value);
-        }
-
-        if (!timestampUtc.HasValue)
-        {
-            return null;
-        }
-
-        var age = nowUtc - timestampUtc.Value;
-        if (age < TimeSpan.Zero)
-        {
-            return 0;
-        }
-
-        return (int)Math.Floor(age.TotalSeconds);
     }
 
 }

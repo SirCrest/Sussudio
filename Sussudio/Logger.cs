@@ -115,7 +115,7 @@ public static class Logger
             {
                 if (obj["TotalPhysicalMemory"] is ulong bytes)
                 {
-                    Log($"RAM: {FormatBytes(bytes)}");
+                    Log($"RAM: {DisplayFormatters.FormatBytes((long)Math.Min(bytes, long.MaxValue))}");
                 }
             }
         }
@@ -132,7 +132,7 @@ public static class Logger
                 var name = obj["Name"];
                 var driverVersion = obj["DriverVersion"];
                 var driverDate = obj["DriverDate"];
-                var ram = obj["AdapterRAM"] is uint adapterRam ? FormatBytes(adapterRam) : "unknown";
+                var ram = obj["AdapterRAM"] is uint adapterRam ? DisplayFormatters.FormatBytes(adapterRam) : "unknown";
                 Log($"GPU: {name} | Driver={driverVersion} | DriverDate={driverDate} | VRAM={ram}");
             }
         }
@@ -203,20 +203,6 @@ public static class Logger
         {
             System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.RotatePriorLog: {ex.Message}");
         }
-    }
-
-    private static string FormatBytes(ulong bytes)
-    {
-        const double scale = 1024;
-        double value = bytes;
-        string[] units = { "B", "KB", "MB", "GB", "TB" };
-        var unit = 0;
-        while (value >= scale && unit < units.Length - 1)
-        {
-            value /= scale;
-            unit++;
-        }
-        return $"{value:0.##} {units[unit]}";
     }
 
     public static void LogException(Exception ex, [CallerMemberName] string caller = "")

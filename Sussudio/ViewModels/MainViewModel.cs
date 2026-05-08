@@ -1306,7 +1306,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         var stats = _captureService.GetRecordingStats();
         var totalBytes = stats.TotalBytes;
-        RecordingSizeInfo = FormatBytes(totalBytes);
+        RecordingSizeInfo = DisplayFormatters.FormatBytes(totalBytes, "0");
 
         var now = Environment.TickCount64;
         _bitrateSamples.Enqueue((now, totalBytes));
@@ -1316,7 +1316,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         var smoothed = ComputeAverageBitrate(_bitrateSamples);
-        RecordingBitrateInfo = smoothed.HasValue ? FormatBitrate(smoothed.Value) : "--";
+        RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : "--";
     }
 
     private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)
@@ -1335,37 +1335,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
         var deltaBytes = Math.Max(0, last.Bytes - first.Bytes);
         return (deltaBytes * 8.0) / (deltaMs / 1000.0);
-    }
-
-    private static string FormatBytes(long bytes)
-    {
-        const double scale = 1024;
-        double value = Math.Max(0, bytes);
-        string[] units = { "B", "KB", "MB", "GB", "TB" };
-        var unit = 0;
-        while (value >= scale && unit < units.Length - 1)
-        {
-            value /= scale;
-            unit++;
-        }
-        return $"{Math.Round(value):0} {units[unit]}";
-    }
-
-    private static string FormatBitrate(double bitsPerSecond)
-    {
-        if (bitsPerSecond <= 0)
-        {
-            return "0 bps";
-        }
-
-        string[] units = { "bps", "Kbps", "Mbps", "Gbps" };
-        var unit = 0;
-        while (bitsPerSecond >= 1000 && unit < units.Length - 1)
-        {
-            bitsPerSecond /= 1000;
-            unit++;
-        }
-        return $"{Math.Round(bitsPerSecond):0} {units[unit]}";
     }
 
     // -- Capture lifecycle methods are in MainViewModel.Capture.cs -----

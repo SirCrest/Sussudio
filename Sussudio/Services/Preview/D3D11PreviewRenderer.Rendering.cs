@@ -22,6 +22,11 @@ internal sealed partial class D3D11PreviewRenderer
     private const uint WaitObject0 = 0;
     private const uint WaitTimeout = 258;
 
+    // Reused at every shader bind in the per-frame render path; the LINQ-friendly
+    // overloads on Vortice's device context allocate an IReadOnlyList wrapper from
+    // Array.Empty<T>() each call, which adds up at 60-120 fps.
+    private static readonly ID3D11ClassInstance[] EmptyClassInstances = System.Array.Empty<ID3D11ClassInstance>();
+
     private void RenderThreadMain()
     {
         Interlocked.Exchange(ref _isRendering, 1);
@@ -395,8 +400,8 @@ internal sealed partial class D3D11PreviewRenderer
             _deviceContext.RSSetViewports(1, _viewportArray);
             _deviceContext.IASetInputLayout(null);
             _deviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
-            _deviceContext.VSSetShader(_fullscreenVS, Array.Empty<ID3D11ClassInstance>(), 0);
-            _deviceContext.PSSetShader(_nv12PS, Array.Empty<ID3D11ClassInstance>(), 0);
+            _deviceContext.VSSetShader(_fullscreenVS, EmptyClassInstances, 0);
+            _deviceContext.PSSetShader(_nv12PS, EmptyClassInstances, 0);
             _samplerArray[0] = _linearSampler!;
             _deviceContext.PSSetSamplers(0, 1, _samplerArray);
             _srvArray2[0] = _nv12YSRV;
@@ -515,8 +520,8 @@ internal sealed partial class D3D11PreviewRenderer
             _deviceContext.RSSetViewports(1, _viewportArray);
             _deviceContext.IASetInputLayout(null);
             _deviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
-            _deviceContext.VSSetShader(_fullscreenVS, Array.Empty<ID3D11ClassInstance>(), 0);
-            _deviceContext.PSSetShader(pixelShader, Array.Empty<ID3D11ClassInstance>(), 0);
+            _deviceContext.VSSetShader(_fullscreenVS, EmptyClassInstances, 0);
+            _deviceContext.PSSetShader(pixelShader, EmptyClassInstances, 0);
             _samplerArray[0] = _linearSampler!;
             _deviceContext.PSSetSamplers(0, 1, _samplerArray);
             _srvArray2[0] = _hdrYPlaneSRV!;
