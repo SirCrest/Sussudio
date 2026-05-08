@@ -4826,7 +4826,9 @@ static partial class Program
         ("GetAudioRampTrace", 48),
         ("SetFrameTimeOverlayVisible", 49),
         ("SetFlashbackTimelineVisible", 50),
-        ("GetAutomationManifest", 51)
+        ("GetAutomationManifest", 51),
+        ("SetFullScreenEnabled", 52),
+        ("OpenRecordingsFolder", 53)
     ];
 
     private static Task AutomationWindowAction_HasExpectedValues()

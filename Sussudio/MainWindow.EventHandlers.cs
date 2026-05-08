@@ -148,7 +148,7 @@ public sealed partial class MainWindow
         var path = ViewModel.OutputPath;
         if (!string.IsNullOrWhiteSpace(path) && System.IO.Directory.Exists(path))
         {
-            System.Diagnostics.Process.Start("explorer.exe", path);
+            _ = RunUiEventHandlerAsync(() => OpenRecordingsFolderAsync(), nameof(OpenRecordingsButton_Click));
         }
     }
     private void ScreenshotButton_Click(object sender, RoutedEventArgs e)

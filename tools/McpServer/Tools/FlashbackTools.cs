@@ -24,6 +24,16 @@ public static class FlashbackTools
             .ConfigureAwait(false);
     }
 
+    [McpServerTool, Description("Restart Flashback to apply deferred settings. This clears the current rolling buffer.")]
+    public static async Task<CallToolResult> flashback_apply(PipeClient pipeClient)
+    {
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
+                pipeClient,
+                commandName: "RestartFlashback",
+                label: "RestartFlashback")
+            .ConfigureAwait(false);
+    }
+
     [McpServerTool, Description("Control flashback playback: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points")]
     public static async Task<CallToolResult> flashback_action(
         PipeClient pipeClient,

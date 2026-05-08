@@ -427,6 +427,24 @@ public sealed partial class MainWindow
         PresenterActionAsync(p => p.Maximize(), cancellationToken);
     public Task RestoreAsync(CancellationToken cancellationToken = default) =>
         PresenterActionAsync(p => p.Restore(), cancellationToken);
+    public Task OpenRecordingsFolderAsync(CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var path = ViewModel.OutputPath;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new InvalidOperationException("Output path is not set.");
+            }
+
+            if (!Directory.Exists(path))
+            {
+                throw new DirectoryNotFoundException($"Output path does not exist: {path}");
+            }
+
+            Process.Start("explorer.exe", path);
+        }, cancellationToken);
+    }
     public Task MoveToAsync(int x, int y, CancellationToken cancellationToken = default)
     {
         return InvokeOnUiThreadAsync(() =>

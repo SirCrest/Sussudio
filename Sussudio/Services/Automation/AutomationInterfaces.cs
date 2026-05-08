@@ -17,6 +17,8 @@ public interface IAutomationWindowControl
     Task MinimizeAsync(CancellationToken cancellationToken = default);
     Task MaximizeAsync(CancellationToken cancellationToken = default);
     Task RestoreAsync(CancellationToken cancellationToken = default);
+    Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default);
+    Task OpenRecordingsFolderAsync(CancellationToken cancellationToken = default);
     Task CloseAsync(CancellationToken cancellationToken = default);
     Task MoveToAsync(int x, int y, CancellationToken cancellationToken = default);
     Task ResizeToAsync(int width, int height, CancellationToken cancellationToken = default);

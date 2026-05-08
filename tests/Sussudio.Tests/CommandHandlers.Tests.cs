@@ -70,6 +70,58 @@ static partial class Program
         AssertEqual(47, flashbackRequest.GetProperty("command").GetInt32(), "flashback off command id");
         AssertEqual(false, flashbackRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(), "flashback off payload enabled");
 
+        var deviceRefreshPipeName = $"ssctl-device-refresh-{Guid.NewGuid():N}";
+        var deviceRefreshTransport = Activator.CreateInstance(transportType, deviceRefreshPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for device refresh command test.");
+        var deviceRefreshArguments = new List<string> { "device", "refresh" };
+        var deviceRefreshExitCode = -1;
+        JsonElement deviceRefreshRequest = await CapturePipeRequestAsync(
+            deviceRefreshPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { deviceRefreshTransport, deviceRefreshArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                deviceRefreshExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, deviceRefreshExitCode, "device refresh exit code");
+        AssertEqual(3, deviceRefreshRequest.GetProperty("command").GetInt32(), "device refresh command id");
+
+        var fullscreenPipeName = $"ssctl-fullscreen-{Guid.NewGuid():N}";
+        var fullscreenTransport = Activator.CreateInstance(transportType, fullscreenPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for fullscreen command test.");
+        var fullscreenArguments = new List<string> { "window", "fullscreen", "on" };
+        var fullscreenExitCode = -1;
+        JsonElement fullscreenRequest = await CapturePipeRequestAsync(
+            fullscreenPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { fullscreenTransport, fullscreenArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                fullscreenExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, fullscreenExitCode, "window fullscreen exit code");
+        AssertEqual(52, fullscreenRequest.GetProperty("command").GetInt32(), "window fullscreen command id");
+        AssertEqual(true, fullscreenRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(), "window fullscreen payload enabled");
+
+        var recordingsPipeName = $"ssctl-recordings-open-{Guid.NewGuid():N}";
+        var recordingsTransport = Activator.CreateInstance(transportType, recordingsPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for recordings command test.");
+        var recordingsArguments = new List<string> { "recordings", "open" };
+        var recordingsExitCode = -1;
+        JsonElement recordingsRequest = await CapturePipeRequestAsync(
+            recordingsPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { recordingsTransport, recordingsArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                recordingsExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, recordingsExitCode, "recordings open exit code");
+        AssertEqual(53, recordingsRequest.GetProperty("command").GetInt32(), "recordings open command id");
+
         var manifestPipeName = $"ssctl-manifest-{Guid.NewGuid():N}";
         var manifestTransport = Activator.CreateInstance(transportType, manifestPipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for manifest command test.");
@@ -90,7 +142,11 @@ static partial class Program
         var commandHandlersSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n");
         AssertContains(commandHandlersSource, "\"manifest\" => HandleManifestAsync(context)");
+        AssertContains(commandHandlersSource, "\"recordings\" => HandleRecordingsAsync(context)");
         AssertContains(commandHandlersSource, "context.Transport.SendCommandAsync(\"GetAutomationManifest\")");
+        AssertContains(commandHandlersSource, "\"RefreshDevices\",");
+        AssertContains(commandHandlersSource, "\"SetFullScreenEnabled\",");
+        AssertContains(commandHandlersSource, "\"OpenRecordingsFolder\"");
         AssertContains(commandHandlersSource, "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
         AssertContains(commandHandlersSource, "return HandleSimpleCommandAsync(context, \"FlashbackAction\", playPayload, includeData: true);");
         AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback seek <ms>\"))");

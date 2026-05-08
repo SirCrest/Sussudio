@@ -257,6 +257,8 @@ internal static class AutomationCommandCatalog
         Set(entries, AutomationCommandKind.SetFrameTimeOverlayVisible, "{ visible: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "frametime show|hide", "Show or hide the frametime graph overlay.", Required("visible", AutomationPayloadFieldType.Boolean));
         Set(entries, AutomationCommandKind.SetFlashbackTimelineVisible, "{ visible: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "flashback timeline show|hide", "Show or hide the Flashback timeline UI.", Required("visible", AutomationPayloadFieldType.Boolean));
         Set(entries, AutomationCommandKind.GetAutomationManifest, "{}", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "manifest", "Get automation command manifest.");
+        Set(entries, AutomationCommandKind.SetFullScreenEnabled, "{ enabled: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "window fullscreen on|off", "Enter or exit full-screen mode.", Required("enabled", AutomationPayloadFieldType.Boolean));
+        Set(entries, AutomationCommandKind.OpenRecordingsFolder, "{}", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "recordings open", "Open the current recordings output folder.");
 
         return entries.Values.ToArray();
     }

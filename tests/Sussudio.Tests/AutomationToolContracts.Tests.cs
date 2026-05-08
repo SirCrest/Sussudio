@@ -170,6 +170,24 @@ static partial class Program
             requiresReadyDevices: false,
             pathPolicy: "None",
             payloadShapeContains: "{}");
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "SetFullScreenEnabled",
+            timeoutMs: 15000,
+            requiresReadyDevices: false,
+            pathPolicy: "None",
+            payloadShapeContains: "enabled");
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "OpenRecordingsFolder",
+            timeoutMs: 15000,
+            requiresReadyDevices: false,
+            pathPolicy: "None",
+            payloadShapeContains: "{}");
 
         return Task.CompletedTask;
     }
@@ -269,7 +287,7 @@ static partial class Program
 
     private static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "B97AC5A05A69D1B036CED794BA00A627F2754C725E85283C32156E743CCD0DC3";
+        const string ExpectedManifestSha256 = "DAC49529D9EFCE424491470190B9036A3F3F6F33050AF3C453A830FBDB133DE7";
         var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;

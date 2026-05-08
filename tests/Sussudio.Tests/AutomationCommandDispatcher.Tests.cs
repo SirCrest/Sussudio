@@ -139,6 +139,12 @@ static partial class Program
         var getAutomationManifest = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "GetAutomationManifest") })!;
         AssertEqual(false, getAutomationManifest, "GetAutomationManifest does not require ready devices");
 
+        var setFullScreenEnabled = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetFullScreenEnabled") })!;
+        AssertEqual(false, setFullScreenEnabled, "SetFullScreenEnabled does not require ready devices");
+
+        var openRecordingsFolder = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "OpenRecordingsFolder") })!;
+        AssertEqual(false, openRecordingsFolder, "OpenRecordingsFolder does not require ready devices");
+
         // Capture configuration commands SHOULD require ready devices
         var setResolution = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetResolution") })!;
         AssertEqual(true, setResolution, "SetResolution requires ready devices");

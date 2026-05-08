@@ -54,4 +54,27 @@ public static class WindowTools
         return McpToolResultFactory.FromResponse(actionResponse, string.Join(Environment.NewLine, results));
     }
 
+    [McpServerTool, Description("Enter or exit full-screen mode")]
+    public static async Task<CallToolResult> set_full_screen(
+        PipeClient pipeClient,
+        [Description("True to enter full-screen mode, false to exit")] bool enabled)
+    {
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
+                pipeClient,
+                "SetFullScreenEnabled",
+                "SetFullScreenEnabled",
+                new Dictionary<string, object?> { ["enabled"] = enabled })
+            .ConfigureAwait(false);
+    }
+
+    [McpServerTool, Description("Open the current recordings output folder in Explorer")]
+    public static async Task<CallToolResult> open_recordings_folder(PipeClient pipeClient)
+    {
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
+                pipeClient,
+                "OpenRecordingsFolder",
+                "OpenRecordingsFolder")
+            .ConfigureAwait(false);
+    }
+
 }

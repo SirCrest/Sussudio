@@ -110,6 +110,17 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         data: AutomationCommandCatalog.CreateManifest(),
                         includeSnapshot: false);
 
+                case AutomationCommandKind.SetFullScreenEnabled:
+                {
+                    var enabled = RequireBool(payload, "enabled");
+                    await _windowControl.SetFullScreenEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Full screen {(enabled ? "enter" : "exit")} requested.");
+                }
+
+                case AutomationCommandKind.OpenRecordingsFolder:
+                    await _windowControl.OpenRecordingsFolderAsync(cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, "Recordings folder open requested.");
+
                 case AutomationCommandKind.GetDiagnostics:
                 {
                     var maxEvents = GetInt(payload, "maxEvents") ?? 100;

@@ -64,6 +64,7 @@ internal static class Program
         Console.WriteLine("  record start|stop");
         Console.WriteLine("  screenshot [path]");
         Console.WriteLine("  frame [path]");
+        Console.WriteLine("  recordings open");
         Console.WriteLine();
         Console.WriteLine("Configure:");
         Console.WriteLine("  set resolution <value>");
@@ -87,6 +88,7 @@ internal static class Program
         Console.WriteLine("  set mic on|off");
         Console.WriteLine();
         Console.WriteLine("Device:");
+        Console.WriteLine("  device refresh");
         Console.WriteLine("  device list");
         Console.WriteLine("  device select <name>");
         Console.WriteLine("  device audio-select <name>");
@@ -108,6 +110,7 @@ internal static class Program
         Console.WriteLine();
         Console.WriteLine("Window:");
         Console.WriteLine("  window close|minimize|maximize|restore|center");
+        Console.WriteLine("  window fullscreen on|off");
         Console.WriteLine("  window snap left|right|top-left|top-right|bottom-left|bottom-right");
         Console.WriteLine("  window move <x> <y>");
         Console.WriteLine("  window resize <w> <h>");

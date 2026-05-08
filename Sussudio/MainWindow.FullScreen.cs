@@ -108,6 +108,20 @@ public sealed partial class MainWindow
             EnterFullScreen();
         }
     }
+    public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            if (enabled)
+            {
+                EnterFullScreen();
+            }
+            else
+            {
+                ExitFullScreen();
+            }
+        }, cancellationToken);
+    }
     private async void EnterFullScreen()
     {
         if (_isFullScreenTransitioning || _isFullScreen) return;

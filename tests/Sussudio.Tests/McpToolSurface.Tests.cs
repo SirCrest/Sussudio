@@ -2111,7 +2111,7 @@ static partial class Program
         string result = string.Empty;
         var requests = await CapturePipeRequestsAsync(
                 pipeName,
-                expectedCount: 7,
+                expectedCount: 9,
                 async () =>
                 {
                     result = await InvokeMcpToolStringAsync(
@@ -2169,6 +2169,17 @@ static partial class Program
                             null,
                             null)
                         .ConfigureAwait(false);
+                    result += Environment.NewLine + await InvokeMcpToolStringAsync(
+                            windowTools,
+                            "set_full_screen",
+                            pipeClient,
+                            true)
+                        .ConfigureAwait(false);
+                    result += Environment.NewLine + await InvokeMcpToolStringAsync(
+                            windowTools,
+                            "open_recordings_folder",
+                            pipeClient)
+                        .ConfigureAwait(false);
                 },
                 i => $$"""{"Success":true,"Message":"window command {{i}} ok"}""")
             .ConfigureAwait(false);
@@ -2180,6 +2191,8 @@ static partial class Program
         AssertCommandRequest(requests[4], "WindowAction", ("action", "Close"));
         AssertCommandRequest(requests[5], "ArmClose", ("armed", true));
         AssertCommandRequest(requests[6], "WindowAction", ("action", "Close"));
+        AssertCommandRequest(requests[7], "SetFullScreenEnabled", ("enabled", true));
+        AssertCommandRequest(requests[8], "OpenRecordingsFolder");
         AssertEqual(
             string.Join(
                 Environment.NewLine,
@@ -2189,7 +2202,9 @@ static partial class Program
                 "[OK] ArmClose: window command 3 ok",
                 "[OK] WindowAction: window command 4 ok",
                 "[OK] ArmClose: window command 5 ok",
-                "[OK] WindowAction: window command 6 ok"),
+                "[OK] WindowAction: window command 6 ok",
+                "[OK] SetFullScreenEnabled: window command 7 ok",
+                "[OK] OpenRecordingsFolder: window command 8 ok"),
             result,
             "window_action ordered formatted output");
     }
@@ -2265,6 +2280,25 @@ static partial class Program
 
         AssertCommandRequest(actionRequests[0], "FlashbackAction", ("action", "begin-scrub"), ("positionMs", 1234d));
         AssertContains(result, "[OK] FlashbackAction(begin-scrub): Flashback scrub begin at 1234ms requested.");
+
+        var applyPipeName = NewMcpToolPipeName("flashback-apply");
+        var applyPipeClient = CreateMcpPipeClient(applyPipeName);
+        var applyRequests = await CapturePipeRequestsAsync(
+                applyPipeName,
+                expectedCount: 1,
+                async () =>
+                {
+                    result = await InvokeMcpToolStringAsync(
+                            flashbackTools,
+                            "flashback_apply",
+                            applyPipeClient)
+                        .ConfigureAwait(false);
+                },
+                _ => "{\"Success\":true,\"Message\":\"Flashback restarted.\"}")
+            .ConfigureAwait(false);
+
+        AssertCommandRequest(applyRequests[0], "RestartFlashback");
+        AssertEqual("[OK] RestartFlashback: Flashback restarted.", result, "flashback_apply formatted success");
 
         var flashbackToolsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs")
             .Replace("\r\n", "\n");

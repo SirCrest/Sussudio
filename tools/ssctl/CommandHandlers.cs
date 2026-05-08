@@ -26,6 +26,7 @@ internal static class CommandHandlers
             "record" => HandleRecordAsync(context),
             "screenshot" => HandleCaptureAsync(context, "CaptureWindowScreenshot", "temp/window_screenshot.png"),
             "frame" => HandleCaptureAsync(context, "CapturePreviewFrame", "temp/preview_capture.bmp"),
+            "recordings" => HandleRecordingsAsync(context),
             "set" => HandleSetAsync(context),
             "device" => HandleDeviceAsync(context),
             "window" => HandleWindowAsync(context),
@@ -255,6 +256,12 @@ internal static class CommandHandlers
         var subcommand = RequireWord(context.Rest, 0, "device <command>").ToLowerInvariant();
         switch (subcommand)
         {
+            case "refresh":
+                EnsureArgCount(context.Rest, 1, "device refresh");
+                return await HandleSimpleCommandAsync(
+                    context,
+                    "RefreshDevices",
+                    includeData: false).ConfigureAwait(false);
             case "list":
             {
                 EnsureArgCount(context.Rest, 1, "device list");
@@ -333,6 +340,14 @@ internal static class CommandHandlers
                     "WindowAction",
                     new Dictionary<string, object?> { ["action"] = Capitalize(subcommand) },
                     includeData: false).ConfigureAwait(false);
+            case "fullscreen":
+            case "full-screen":
+                EnsureArgCount(context.Rest, 2, "window fullscreen on|off");
+                return await HandleSimpleCommandAsync(
+                    context,
+                    "SetFullScreenEnabled",
+                    new Dictionary<string, object?> { ["enabled"] = ParseOnOff(RequireWord(context.Rest, 1, "window fullscreen on|off")) },
+                    includeData: false).ConfigureAwait(false);
             case "snap":
                 EnsureArgCount(context.Rest, 2, "window snap <dir>");
                 return await HandleSimpleCommandAsync(
@@ -366,6 +381,19 @@ internal static class CommandHandlers
                     includeData: false).ConfigureAwait(false);
             default:
                 throw new UsageException($"Unknown window command '{subcommand}'.");
+        }
+    }
+
+    private static Task<int> HandleRecordingsAsync(CommandContext context)
+    {
+        var subcommand = RequireWord(context.Rest, 0, "recordings open").ToLowerInvariant();
+        switch (subcommand)
+        {
+            case "open":
+                EnsureArgCount(context.Rest, 1, "recordings open");
+                return HandleSimpleCommandAsync(context, "OpenRecordingsFolder", includeData: false);
+            default:
+                throw new UsageException($"Unknown recordings command '{subcommand}'.");
         }
     }
 
