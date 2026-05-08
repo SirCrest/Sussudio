@@ -70,8 +70,27 @@ static partial class Program
         AssertEqual(47, flashbackRequest.GetProperty("command").GetInt32(), "flashback off command id");
         AssertEqual(false, flashbackRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(), "flashback off payload enabled");
 
+        var manifestPipeName = $"ssctl-manifest-{Guid.NewGuid():N}";
+        var manifestTransport = Activator.CreateInstance(transportType, manifestPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for manifest command test.");
+        var manifestArguments = new List<string> { "manifest" };
+        var manifestExitCode = -1;
+        JsonElement manifestRequest = await CapturePipeRequestAsync(
+            manifestPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { manifestTransport, manifestArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                manifestExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, manifestExitCode, "manifest exit code");
+        AssertEqual(51, manifestRequest.GetProperty("command").GetInt32(), "manifest command id");
+
         var commandHandlersSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n");
+        AssertContains(commandHandlersSource, "\"manifest\" => HandleManifestAsync(context)");
+        AssertContains(commandHandlersSource, "context.Transport.SendCommandAsync(\"GetAutomationManifest\")");
         AssertContains(commandHandlersSource, "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
         AssertContains(commandHandlersSource, "return HandleSimpleCommandAsync(context, \"FlashbackAction\", playPayload, includeData: true);");
         AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback seek <ms>\"))");

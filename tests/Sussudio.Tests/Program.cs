@@ -279,6 +279,9 @@ static partial class Program
                 "Automation dispatcher authorization contract is token-gated",
                 AutomationCommandDispatcher_AuthorizesConfiguredTokens),
             await RunCheckAsync(
+                "Automation dispatcher manifest command is read-only and readiness-independent",
+                AutomationCommandDispatcher_GetAutomationManifest_IsReadOnlyAndReadinessIndependent),
+            await RunCheckAsync(
                 "Automation dispatcher flashback failures return playback diagnostics",
                 AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics),
             await RunCheckAsync(
@@ -896,8 +899,8 @@ static partial class Program
 
             // --- AutomationContracts ---
             await RunCheckAsync(
-                "AutomationCommandKind has sequential values 0 through 50",
-                AutomationCommandKind_HasSequentialValues_0Through50),
+                "AutomationCommandKind preserves numeric values through GetAutomationManifest",
+                AutomationCommandKind_PreservesNumericValuesThroughGetAutomationManifest),
             await RunCheckAsync(
                 "AutomationWindowAction has expected values",
                 AutomationWindowAction_HasExpectedValues),
@@ -1243,6 +1246,15 @@ static partial class Program
             await RunCheckAsync(
                 "Automation command catalog covers command metadata and policy",
                 AutomationCommandCatalog_CoversCommandsAndPolicyMetadata),
+            await RunCheckAsync(
+                "Automation manifest covers catalog metadata",
+                AutomationManifest_CoversCatalogMetadata),
+            await RunCheckAsync(
+                "Automation path-bearing commands have validation coverage",
+                AutomationCommandCatalog_PathBearingCommandsHaveValidationCoverage),
+            await RunCheckAsync(
+                "Automation manifest serialization is stable",
+                AutomationManifest_SerializationIsStable),
             await RunCheckAsync(
                 "Automation response state parses status and retry contracts",
                 AutomationResponseState_ParsesStatusAndRetryContracts),
@@ -4740,7 +4752,7 @@ static partial class Program
 
     // --- AutomationContracts tests ---
 
-    private static Task AutomationCommandKind_HasSequentialValues_0Through50()
+    private static Task AutomationCommandKind_PreservesNumericValuesThroughGetAutomationManifest()
     {
         var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
         var expectedCommands = ExpectedAutomationCommands();
@@ -4813,7 +4825,8 @@ static partial class Program
         ("SetFlashbackEnabled", 47),
         ("GetAudioRampTrace", 48),
         ("SetFrameTimeOverlayVisible", 49),
-        ("SetFlashbackTimelineVisible", 50)
+        ("SetFlashbackTimelineVisible", 50),
+        ("GetAutomationManifest", 51)
     ];
 
     private static Task AutomationWindowAction_HasExpectedValues()

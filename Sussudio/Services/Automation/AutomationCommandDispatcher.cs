@@ -103,6 +103,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     return CreateResponse(correlationId, "Snapshot retrieved.", snapshot: snapshot);
                 }
 
+                case AutomationCommandKind.GetAutomationManifest:
+                    return CreateResponse(
+                        correlationId,
+                        "Automation manifest retrieved.",
+                        data: AutomationCommandCatalog.CreateManifest(),
+                        includeSnapshot: false);
+
                 case AutomationCommandKind.GetDiagnostics:
                 {
                     var maxEvents = GetInt(payload, "maxEvents") ?? 100;

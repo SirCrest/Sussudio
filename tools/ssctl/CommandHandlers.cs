@@ -17,6 +17,7 @@ internal static class CommandHandlers
             "state" => HandleStateAsync(context),
             "diagnostics" => HandleDiagnosticsAsync(context),
             "options" => HandleOptionsAsync(context),
+            "manifest" => HandleManifestAsync(context),
             "timeline" => HandleTimelineAsync(context),
             "memory" => HandleMemoryAsync(context),
             "presentmon" => HandlePresentMonAsync(context),
@@ -66,6 +67,15 @@ internal static class CommandHandlers
 
         var response = await context.Transport.SendCommandAsync("GetCaptureOptions").ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatOptions);
+    }
+
+    private static async Task<int> HandleManifestAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        EnsureNoArgs(context.Rest, "manifest [--json]");
+
+        var response = await context.Transport.SendCommandAsync("GetAutomationManifest").ConfigureAwait(false);
+        return WriteResponse(response, json, responseValue => Formatters.FormatResult(responseValue, includeData: true));
     }
 
     private static async Task<int> HandleTimelineAsync(CommandContext context)

@@ -54,5 +54,6 @@ public enum AutomationCommandKind
     SetFlashbackEnabled = 47,
     GetAudioRampTrace = 48,
     SetFrameTimeOverlayVisible = 49,
-    SetFlashbackTimelineVisible = 50
+    SetFlashbackTimelineVisible = 50,
+    GetAutomationManifest = 51
 }

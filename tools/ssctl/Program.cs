@@ -53,6 +53,7 @@ internal static class Program
         Console.WriteLine("  state [--json]");
         Console.WriteLine("  diagnostics [--max N] [--json]");
         Console.WriteLine("  options [--json]");
+        Console.WriteLine("  manifest [--json]");
         Console.WriteLine("  timeline [--max N] [--json]");
         Console.WriteLine("  memory [--json]");
         Console.WriteLine("  presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--app-present-id N] [--app-source-seq N] [--app-present-utc-ms N] [--capture-start-utc-ms N] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
