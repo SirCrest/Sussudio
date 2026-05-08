@@ -13,7 +13,9 @@ static partial class Program
         var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
         var captureSnapshotsSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs");
         var unifiedVideoCaptureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs");
-        var recordingContractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs");
+        var recordingContractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
+            + "\n"
+            + ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs");
 
         AssertDoesNotContain(libAvSource, "LIBAV_SINK_BURST_EVICT");
         AssertDoesNotContain(flashbackSource, "FLASHBACK_SINK_BURST_EVICT");
@@ -655,7 +657,9 @@ static partial class Program
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
-        var contractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
+        var contractsSource = (ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
+                + "\n"
+                + ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs"))
             .Replace("\r\n", "\n");
         var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");

@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using Sussudio.Services.Devices;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Telemetry;
 

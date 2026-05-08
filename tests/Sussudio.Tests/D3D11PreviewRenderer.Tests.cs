@@ -288,7 +288,7 @@ static partial class Program
         }
 
         var ownershipMetricsType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer+FrameOwnershipMetrics");
-        var previewSinkType = RequireType("Sussudio.Services.Preview.IPreviewFrameSink");
+        var previewSinkType = RequireType("Sussudio.Services.Contracts.IPreviewFrameSink");
         var submitTexture = previewSinkType.GetMethod("SubmitTexture", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("IPreviewFrameSink.SubmitTexture was not found.");
         AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.Name == "sourceSequenceNumber"), "SubmitTexture source identity parameter");

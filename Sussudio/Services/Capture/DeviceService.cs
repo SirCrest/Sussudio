@@ -12,7 +12,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
-using Sussudio.Services.Devices;
 using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Capture;

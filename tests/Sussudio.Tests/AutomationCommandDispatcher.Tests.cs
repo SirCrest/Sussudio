@@ -239,8 +239,8 @@ static partial class Program
     private static async Task AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics()
     {
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
-        var diagnosticsType = RequireType("Sussudio.Services.Automation.IAutomationDiagnosticsHub");
-        var windowControlType = RequireType("Sussudio.Services.Automation.IAutomationWindowControl");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
         var actionType = RequireType("Sussudio.Models.AutomationFlashbackAction");
 
@@ -301,8 +301,8 @@ static partial class Program
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
-        var diagnosticsType = RequireType("Sussudio.Services.Automation.IAutomationDiagnosticsHub");
-        var windowControlType = RequireType("Sussudio.Services.Automation.IAutomationWindowControl");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
         var constructor = dispatcherType.GetConstructors()
             .Single(ctor => ctor.GetParameters().Length == 4);
 

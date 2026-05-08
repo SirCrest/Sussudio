@@ -2271,7 +2271,7 @@ static partial class Program
     private static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
         var settingsPartialText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Settings.cs").Replace("\r\n", "\n");
-        var settingsServiceText = ReadRepoFile("Sussudio/Services/Configuration/SettingsService.cs").Replace("\r\n", "\n");
+        var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? ShowAllCaptureOptions { get; set; }");
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
@@ -2648,7 +2648,7 @@ static partial class Program
         var emitMethod = unifiedVideoCapture.GetType().GetMethod("OnMjpegPipelineFrameEmitted", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("OnMjpegPipelineFrameEmitted method not found.");
         var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
         var rentMethod = frameType.GetMethod("Rent", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("PooledVideoFrame.Rent method not found.");
         var frame = rentMethod.Invoke(
@@ -2850,7 +2850,7 @@ static partial class Program
 
     private static Task FinalizeResult_Success_ProducesEmptyPreservedList()
     {
-        var resultType = RequireType("Sussudio.Services.Recording.FinalizeResult");
+        var resultType = RequireType("Sussudio.Services.Contracts.FinalizeResult");
         var successMethod = resultType.GetMethod("Success", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("FinalizeResult.Success not found");
         var result = successMethod.Invoke(null, new object[] { "/path/output.mp4", "Stopped" })!;
@@ -2866,7 +2866,7 @@ static partial class Program
 
     private static Task FinalizeResult_Failure_DeduplicatesAndFiltersArtifacts()
     {
-        var resultType = RequireType("Sussudio.Services.Recording.FinalizeResult");
+        var resultType = RequireType("Sussudio.Services.Contracts.FinalizeResult");
         var failureMethod = resultType.GetMethod("Failure", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("FinalizeResult.Failure not found");
 
@@ -3042,7 +3042,7 @@ static partial class Program
         var rollbackMethod = manager.GetType().GetMethod("RollbackAsync")
             ?? throw new InvalidOperationException("RollbackAsync not found");
 
-        var contextType = RequireType("Sussudio.Services.Recording.RecordingContext");
+        var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
         var task = rollbackMethod.Invoke(manager, new object?[] { null, CancellationToken.None }) as Task
             ?? throw new InvalidOperationException("RollbackAsync did not return Task");
         task.GetAwaiter().GetResult();
@@ -4648,7 +4648,7 @@ static partial class Program
 
     private static Task GpuPipelineHandles_None_ReturnsZeroedStruct()
     {
-        var handlesType = RequireType("Sussudio.Services.Recording.GpuPipelineHandles");
+        var handlesType = RequireType("Sussudio.Services.Contracts.GpuPipelineHandles");
         var noneProp = handlesType.GetProperty("None", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("GpuPipelineHandles.None not found");
         var none = noneProp.GetValue(null)!;
@@ -4663,7 +4663,7 @@ static partial class Program
 
     private static Task RecordingContextRequest_DefaultsMatchRecordingContextDefaults()
     {
-        var request = CreateInstance("Sussudio.Services.Recording.RecordingContextRequest");
+        var request = CreateInstance("Sussudio.Services.Contracts.RecordingContextRequest");
         AssertEqual("30", GetStringProperty(request, "FrameRateArg"), "FrameRateArg default");
         AssertEqual("nv12", GetStringProperty(request, "VideoInputPixelFormat"), "VideoInputPixelFormat default");
         AssertEqual(false, GetBoolProperty(request, "IsFullRangeInput"), "IsFullRangeInput default");
@@ -5500,27 +5500,20 @@ static partial class Program
         string? finalPath = null)
     {
         var settings = BuildSettings(hdrEnabled: false);
-        // Build a RecordingContextRequest and use the RecordingContext constructor
-        var requestType = RequireType("Sussudio.Services.Recording.RecordingContextRequest");
-        var request = RuntimeHelpers.GetUninitializedObject(requestType);
-        SetPropertyBackingField(request, "Settings", settings);
-        SetPropertyBackingField(request, "UsePostMuxAudio", usePostMuxAudio);
-        SetPropertyBackingField(request, "EffectiveFrameRate", 60.0);
-        SetPropertyBackingField(request, "FrameRateArg", "60");
-        SetPropertyBackingField(request, "EffectiveWidth", 1920u);
-        SetPropertyBackingField(request, "EffectiveHeight", 1080u);
-        SetPropertyBackingField(request, "VideoInputPixelFormat", "nv12");
-
-        var contextType = RequireType("Sussudio.Services.Recording.RecordingContext");
-        var ctor = contextType.GetConstructors()[0];
-        return ctor.Invoke(new object?[]
-        {
-            request,
-            videoPath ?? "/tmp/video.mp4",
-            finalPath ?? "/tmp/final.mp4",
-            audioTempPath,
-            false // hdrPipelineActive
-        });
+        var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
+        var context = RuntimeHelpers.GetUninitializedObject(contextType);
+        SetPropertyBackingField(context, "Settings", settings);
+        SetPropertyBackingField(context, "UsePostMuxAudio", usePostMuxAudio);
+        SetPropertyBackingField(context, "EffectiveFrameRate", 60.0);
+        SetPropertyBackingField(context, "FrameRateArg", "60");
+        SetPropertyBackingField(context, "EffectiveWidth", 1920u);
+        SetPropertyBackingField(context, "EffectiveHeight", 1080u);
+        SetPropertyBackingField(context, "VideoInputPixelFormat", "nv12");
+        SetPropertyBackingField(context, "VideoOutputPath", videoPath ?? "/tmp/video.mp4");
+        SetPropertyBackingField(context, "FinalOutputPath", finalPath ?? "/tmp/final.mp4");
+        SetPropertyBackingField(context, "AudioTempPath", audioTempPath);
+        SetPropertyBackingField(context, "HdrPipelineActive", false);
+        return context;
     }
 
     private static void SetPropertyBackingField(object instance, string propertyName, object? value)

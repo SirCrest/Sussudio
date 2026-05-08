@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
-using Sussudio.Services.Configuration;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;

@@ -3,12 +3,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
-using Sussudio.Services.Recording;
-using Sussudio.Services.Runtime;
-using Sussudio.Services.Telemetry;
 
-namespace Sussudio.Services.Automation;
+namespace Sussudio.Services.Contracts;
 
 // Window operations that automation can request without reaching into WinUI
 // implementation details.

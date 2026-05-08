@@ -93,7 +93,7 @@ static partial class Program
     private static Task RecordingVerifier_ImplementsIRecordingVerifier()
     {
         var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
-        var interfaceType = RequireType("Sussudio.Services.Recording.IRecordingVerifier");
+        var interfaceType = RequireType("Sussudio.Services.Contracts.IRecordingVerifier");
 
         AssertEqual(true, interfaceType.IsAssignableFrom(verifierType), "RecordingVerifier implements IRecordingVerifier");
 

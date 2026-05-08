@@ -214,7 +214,7 @@ static partial class Program
         Func<NamedPipeServerStream> defaultServerStreamFactory)
     {
         var serverType = RequireType("Sussudio.Services.Automation.NamedPipeAutomationServer");
-        var dispatcherType = RequireType("Sussudio.Services.Automation.IAutomationCommandDispatcher");
+        var dispatcherType = RequireType("Sussudio.Services.Contracts.IAutomationCommandDispatcher");
         var constructor = serverType
             .GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
             .Single(ctor => ctor.GetParameters().Length == 6);
