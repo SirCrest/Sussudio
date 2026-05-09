@@ -241,12 +241,15 @@ public sealed class AutomationSnapshot
     public long CaptureCommandCommandsCompleted { get; init; }
     public long CaptureCommandCommandsFailed { get; init; }
     public long CaptureCommandCommandsCanceled { get; init; }
+    public long CaptureCommandCommandsCoalesced { get; init; }
     public int CaptureCommandPendingCommands { get; init; }
     public int CaptureCommandMaxPendingCommands { get; init; }
     public long CaptureCommandOldestPendingCommandAgeMs { get; init; }
     public long CaptureCommandLastQueueLatencyMs { get; init; }
     public long CaptureCommandMaxQueueLatencyMs { get; init; }
     public string CaptureCommandLastCommand { get; init; } = "None";
+    public string CaptureCommandLastOutcome { get; init; } = "None";
+    public string CaptureCommandLastCorrelationId { get; init; } = string.Empty;
     public string CaptureCommandLastError { get; init; } = string.Empty;
     public double PerformanceThresholdCaptureDropPercent { get; init; }
     public double PerformanceThresholdCaptureP95Multiplier { get; init; }
@@ -1674,12 +1677,15 @@ public sealed class ViewModelRuntimeSnapshot
     public long CaptureCommandCommandsCompleted { get; init; }
     public long CaptureCommandCommandsFailed { get; init; }
     public long CaptureCommandCommandsCanceled { get; init; }
+    public long CaptureCommandCommandsCoalesced { get; init; }
     public int CaptureCommandPendingCommands { get; init; }
     public int CaptureCommandMaxPendingCommands { get; init; }
     public long CaptureCommandOldestPendingCommandAgeMs { get; init; }
     public long CaptureCommandLastQueueLatencyMs { get; init; }
     public long CaptureCommandMaxQueueLatencyMs { get; init; }
     public string CaptureCommandLastCommand { get; init; } = "None";
+    public string CaptureCommandLastOutcome { get; init; } = "None";
+    public string CaptureCommandLastCorrelationId { get; init; } = string.Empty;
     public string CaptureCommandLastError { get; init; } = string.Empty;
     public string SelectedRecordingFormat { get; init; } = string.Empty;
     public string SelectedQuality { get; init; } = string.Empty;

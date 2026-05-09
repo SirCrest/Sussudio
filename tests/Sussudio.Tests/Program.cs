@@ -252,6 +252,9 @@ static partial class Program
                 "UI automation commands are not blocked on device readiness",
                 UiAutomationCommands_AreNotBlockedOnDeviceReadiness),
             await RunCheckAsync(
+                "MainWindow automation IDs cover the agent-critical UI surface",
+                MainWindowAutomationIds_CoverAgentCriticalSurface),
+            await RunCheckAsync(
                 "Automation dispatcher extracts string payload fields",
                 AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload),
             await RunCheckAsync(
@@ -347,6 +350,15 @@ static partial class Program
             await RunCheckAsync(
                 "Capture session snapshot exposes lifecycle contract",
                 CaptureSessionCoordinator_CaptureSessionSnapshot_HasFullContract),
+            await RunCheckAsync(
+                "Capture session coordinator accounts canceled queued commands",
+                CaptureSessionCoordinator_CanceledQueuedCommandUpdatesAccounting),
+            await RunCheckAsync(
+                "Capture session coordinator coalesces latest queued command behaviorally",
+                CaptureSessionCoordinator_CoalescesQueuedLatestOnlyAndAccountsSkip),
+            await RunCheckAsync(
+                "Capture session coordinator dispose drains queued commands before cancellation",
+                CaptureSessionCoordinator_DisposeDrainsQueuedCommandBeforeCancellation),
             await RunCheckAsync(
                 "Capture session coordinator coalesces flashback encoder cycles",
                 CaptureSessionCoordinator_CoalescesFlashbackEncoderCycles),
@@ -458,6 +470,12 @@ static partial class Program
             await RunCheckAsync(
                 "Stats presentation logic lives in focused builder",
                 StatsPresentationLogic_LivesInFocusedBuilder),
+            await RunCheckAsync(
+                "Stats snapshot construction lives in focused builder",
+                StatsSnapshotConstruction_LivesInFocusedBuilder),
+            await RunCheckAsync(
+                "Stats snapshot builder maps health and renderer metrics",
+                StatsSnapshotBuilder_MapsHealthAndRendererMetrics),
             await RunCheckAsync(
                 "Stats live summary shows current preview frame time and 1 percent low",
                 StatsLiveSummary_ShowsCurrentPreviewFrameTimeAndOnePercentLow),
@@ -1894,12 +1912,15 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("CaptureCommandCommandsCompleted"), "AutomationSnapshot.CaptureCommandCommandsCompleted");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandCommandsFailed"), "AutomationSnapshot.CaptureCommandCommandsFailed");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandCommandsCanceled"), "AutomationSnapshot.CaptureCommandCommandsCanceled");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandCommandsCoalesced"), "AutomationSnapshot.CaptureCommandCommandsCoalesced");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandPendingCommands"), "AutomationSnapshot.CaptureCommandPendingCommands");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandMaxPendingCommands"), "AutomationSnapshot.CaptureCommandMaxPendingCommands");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandOldestPendingCommandAgeMs"), "AutomationSnapshot.CaptureCommandOldestPendingCommandAgeMs");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandLastQueueLatencyMs"), "AutomationSnapshot.CaptureCommandLastQueueLatencyMs");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandMaxQueueLatencyMs"), "AutomationSnapshot.CaptureCommandMaxQueueLatencyMs");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandLastCommand"), "AutomationSnapshot.CaptureCommandLastCommand");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandLastOutcome"), "AutomationSnapshot.CaptureCommandLastOutcome");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandLastCorrelationId"), "AutomationSnapshot.CaptureCommandLastCorrelationId");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandLastError"), "AutomationSnapshot.CaptureCommandLastError");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoFramesSubmittedToEncoder"), "AutomationSnapshot.RecordingVideoFramesSubmittedToEncoder");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoEncoderPts"), "AutomationSnapshot.RecordingVideoEncoderPts");
@@ -2570,15 +2591,18 @@ static partial class Program
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
+        var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs").Replace("\r\n", "\n");
+        var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs").Replace("\r\n", "\n");
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayText, "PreviewOnePercentLowFps: StatsPresentationBuilder.Sanitize(presentCadence?.OnePercentLowFps ?? 0)");
+        AssertContains(statsOverlayText, "PreviewOnePercentLowFps: presentCadence?.OnePercentLowFps ?? 0");
+        AssertContains(statsSnapshotBuilderText, "PreviewOnePercentLowFps: StatsPresentationBuilder.Sanitize(renderer.PreviewOnePercentLowFps)");
         AssertContains(statsPresentationText, "ResolveCurrentPreviewFrameTimeMs(snapshot)");
         AssertContains(statsPresentationText, "1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps");
         AssertContains(statsPresentationText, "return $\"{currentFrameTime} | {onePercentLow}\";");
         AssertContains(statsOverlayText, "SetMetricBrush(Stats_SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);");
-        AssertContains(statsWindowText, "double PreviewOnePercentLowFps");
+        AssertContains(statsSnapshotText, "double PreviewOnePercentLowFps");
         AssertDoesNotContain(statsWindowText, "double PreviewFivePercentLowFps");
         AssertContains(mainWindowXaml, "x:Name=\"Stats_SummaryRendererFpsValue\"");
         AssertContains(mainWindowXaml, "TextWrapping=\"NoWrap\"");
@@ -5143,6 +5167,8 @@ static partial class Program
         AssertEqual(false, GetBoolProperty(snapshot, "IsVideoPreviewActive"), "IsVideoPreviewActive default");
         AssertEqual(false, GetBoolProperty(snapshot, "IsAudioPreviewActive"), "IsAudioPreviewActive default");
         AssertEqual(0, (int)GetPropertyValue(snapshot, "PendingCommands")!, "PendingCommands default");
+        AssertEqual(0L, GetLongProperty(snapshot, "CommandsCoalesced"), "CommandsCoalesced default");
+        AssertEqual("None", GetStringProperty(snapshot, "LastOutcome"), "LastOutcome default");
 
         return Task.CompletedTask;
     }

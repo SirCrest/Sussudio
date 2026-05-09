@@ -38,6 +38,15 @@ public enum CaptureCommandKind
     CycleFlashbackEncoderSettings
 }
 
+public enum CaptureCommandOutcome
+{
+    None,
+    Completed,
+    Failed,
+    Canceled,
+    Coalesced
+}
+
 // Lightweight queue receipt for a capture transition. CorrelationId is carried
 // through diagnostics so automation can match a request to later state changes.
 public readonly record struct CaptureCommand(
@@ -58,11 +67,13 @@ public sealed class CaptureSessionSnapshot
     public long CommandsCompleted { get; init; }
     public long CommandsFailed { get; init; }
     public long CommandsCanceled { get; init; }
+    public long CommandsCoalesced { get; init; }
     public int PendingCommands { get; init; }
     public int MaxPendingCommands { get; init; }
     public long OldestPendingCommandAgeMs { get; init; }
     public long LastCommandQueueLatencyMs { get; init; }
     public long MaxCommandQueueLatencyMs { get; init; }
+    public CaptureCommandOutcome LastOutcome { get; init; }
     public CaptureSessionState SessionState { get; init; }
     public bool IsRecording { get; init; }
     public bool IsInitialized { get; init; }
@@ -149,6 +160,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     private long _commandsCompleted;
     private long _commandsFailed;
     private long _commandsCanceled;
+    private long _commandsCoalesced;
     private long _lastCommandQueueLatencyMs;
     private long _maxCommandQueueLatencyMs;
     private long _lastFlashbackCommandRejectionUtcUnixMs;
@@ -158,7 +170,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     private CaptureCommandKind? _lastCommand;
     private string? _lastCorrelationId;
     private string? _lastError;
+    private CaptureCommandOutcome _lastOutcome = CaptureCommandOutcome.None;
     private const int DefaultDisposeDrainTimeoutMs = 15_000;
+    private const int DefaultDisposeCancelTimeoutMs = 1_000;
 
     private sealed class CoordinatorWorkItem
     {
@@ -202,11 +216,13 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                     CommandsCompleted = Volatile.Read(ref _commandsCompleted),
                     CommandsFailed = Volatile.Read(ref _commandsFailed),
                     CommandsCanceled = Volatile.Read(ref _commandsCanceled),
+                    CommandsCoalesced = Volatile.Read(ref _commandsCoalesced),
                     PendingCommands = Volatile.Read(ref _pendingCommands),
                     MaxPendingCommands = Volatile.Read(ref _maxPendingCommands),
                     OldestPendingCommandAgeMs = oldestPendingCommandAgeMs,
                     LastCommandQueueLatencyMs = Volatile.Read(ref _lastCommandQueueLatencyMs),
                     MaxCommandQueueLatencyMs = Volatile.Read(ref _maxCommandQueueLatencyMs),
+                    LastOutcome = _lastOutcome,
                     SessionState = _captureService.SessionState,
                     IsRecording = _captureService.IsRecording,
                     IsInitialized = _captureService.IsInitialized,
@@ -603,7 +619,8 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                     {
                         workItem.Completion.TrySetResult(null);
                         Interlocked.Increment(ref _commandsCompleted);
-                        UpdateSnapshot(workItem.Command, "Skipped stale coalesced command");
+                        Interlocked.Increment(ref _commandsCoalesced);
+                        UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Coalesced, null);
                         Logger.LogEvent("CAP-COORD-SKIP", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} stale_generation={generation}");
                         continue;
                     }
@@ -612,7 +629,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                     {
                         workItem.Completion.TrySetCanceled(workItem.CancellationToken);
                         Interlocked.Increment(ref _commandsCanceled);
-                        UpdateSnapshot(workItem.Command, "Canceled before execution");
+                        UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
                         continue;
                     }
 
@@ -627,14 +644,14 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                     {
                         workItem.Completion.TrySetCanceled(operationToken);
                         Interlocked.Increment(ref _commandsCanceled);
-                        UpdateSnapshot(workItem.Command, "Canceled before execution");
+                        UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
                         continue;
                     }
 
                     await workItem.Operation(operationToken);
                     workItem.Completion.TrySetResult(null);
                     Interlocked.Increment(ref _commandsCompleted);
-                    UpdateSnapshot(workItem.Command, null);
+                    UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Completed, null);
                     Logger.LogEvent("CAP-COORD-DONE", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
                 }
                 catch (OperationCanceledException oce) when (
@@ -646,14 +663,14 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                         : _workerCancellation.Token;
                     workItem.Completion.TrySetCanceled(cancelToken);
                     Interlocked.Increment(ref _commandsCanceled);
-                    UpdateSnapshot(workItem.Command, oce.Message);
+                    UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Canceled, oce.Message);
                     Logger.LogEvent("CAP-COORD-CANCEL", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
                 }
                 catch (Exception ex)
                 {
                     workItem.Completion.TrySetException(ex);
                     Interlocked.Increment(ref _commandsFailed);
-                    UpdateSnapshot(workItem.Command, ex.Message);
+                    UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Failed, ex.Message);
                     Logger.LogException(ex);
                     Logger.LogEvent("CAP-COORD-FAIL", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
                 }
@@ -682,13 +699,14 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         }
     }
 
-    private void UpdateSnapshot(CaptureCommand command, string? error)
+    private void UpdateSnapshot(CaptureCommand command, CaptureCommandOutcome outcome, string? error)
     {
         lock (_snapshotLock)
         {
             _lastTransitionUtc = DateTimeOffset.UtcNow;
             _lastCommand = command.Kind;
             _lastCorrelationId = command.CorrelationId;
+            _lastOutcome = outcome;
             _lastError = error;
         }
     }
@@ -710,18 +728,22 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
             if (pending.Completion.Task.IsCanceled)
             {
                 Interlocked.Increment(ref _commandsCanceled);
+                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
             }
             else if (pending.Completion.TrySetException(ex))
             {
                 Interlocked.Increment(ref _commandsFailed);
+                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Failed, ex.Message);
             }
             else if (pending.Completion.Task.IsCanceled)
             {
                 Interlocked.Increment(ref _commandsCanceled);
+                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
             }
             else if (pending.Completion.Task.IsFaulted)
             {
                 Interlocked.Increment(ref _commandsFailed);
+                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Failed, ex.Message);
             }
 
             DecrementPendingCommands("fail_pending");
@@ -799,7 +821,6 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     private async ValueTask CoreDisposeAsync()
     {
         _queue.Writer.TryComplete();
-        CancelWorkerBestEffort();
         var drainTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "SUSSUDIO_COORDINATOR_DISPOSE_TIMEOUT_MS",
             DefaultDisposeDrainTimeoutMs,
@@ -812,7 +833,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         }
         catch (TimeoutException)
         {
-            Logger.Log($"CaptureSessionCoordinator dispose timed out after {drainTimeoutMs} ms.");
+            Logger.Log($"CaptureSessionCoordinator dispose drain timed out after {drainTimeoutMs} ms; canceling worker.");
+            CancelWorkerBestEffort();
+            await WaitForWorkerCancellationAsync().ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -825,6 +848,32 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         finally
         {
             DisposeWorkerCancellationWhenSafe();
+        }
+    }
+
+    private async Task WaitForWorkerCancellationAsync()
+    {
+        var cancelTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
+            "SUSSUDIO_COORDINATOR_DISPOSE_CANCEL_TIMEOUT_MS",
+            DefaultDisposeCancelTimeoutMs,
+            100,
+            300000);
+
+        try
+        {
+            await _workerTask.WaitAsync(TimeSpan.FromMilliseconds(cancelTimeoutMs)).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            Logger.Log($"CaptureSessionCoordinator worker cancellation timed out after {cancelTimeoutMs} ms.");
+        }
+        catch (OperationCanceledException)
+        {
+            /* Expected during disposal - worker task was cancelled */
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex);
         }
     }
 

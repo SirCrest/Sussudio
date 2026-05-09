@@ -41,12 +41,18 @@ static partial class Program
         var ssctlFormatterSource = ReadRepoFile("tools/ssctl/Formatters.cs");
         AssertContains(ssctlFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
         AssertContains(ssctlFormatterSource, "CaptureCommandMaxQueueLatencyMs");
+        AssertContains(ssctlFormatterSource, "CaptureCommandCommandsCoalesced");
+        AssertContains(ssctlFormatterSource, "CaptureCommandLastOutcome");
+        AssertContains(ssctlFormatterSource, "CaptureCommandLastCorrelationId");
         AssertContains(ssctlFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
         AssertContains(ssctlFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
         AssertContains(ssctlFormatterSource, "ProcessCpuPercent");
         var sharedFormatterSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
         AssertContains(sharedFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
         AssertContains(sharedFormatterSource, "CaptureCommandMaxQueueLatencyMs");
+        AssertContains(sharedFormatterSource, "CaptureCommandCommandsCoalesced");
+        AssertContains(sharedFormatterSource, "CaptureCommandLastOutcome");
+        AssertContains(sharedFormatterSource, "CaptureCommandLastCorrelationId");
         AssertContains(sharedFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
         AssertContains(sharedFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
         AssertContains(sharedFormatterSource, "ProcessCpuPercent");

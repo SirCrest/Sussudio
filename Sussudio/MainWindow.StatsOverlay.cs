@@ -661,128 +661,31 @@ public sealed partial class MainWindow
             target.Text = value;
         }
     }
-    private static int? ToPositiveInt(uint? value)
-    {
-        if (!value.HasValue || value.Value == 0 || value.Value > int.MaxValue)
-        {
-            return null;
-        }
-
-        return (int)value.Value;
-    }
     private StatsSnapshot GetStatsSnapshot()
     {
         var health = ViewModel.GetCaptureHealthSnapshot();
         var d3d = _d3dRenderer;
         var presentCadence = d3d?.GetPresentCadenceMetrics(_previewMinPresentationIntervalMs);
-        var pipelineLatency = d3d?.GetEstimatedPipelineLatencyMs() ?? 0;
-        var packetHashUniqueIntervals = health.MjpegPacketHashRecentUniqueIntervalsMs ?? Array.Empty<double>();
-        var visualChangeIntervals = health.VisualCadenceRecentChangeIntervalsMs ?? Array.Empty<double>();
-        var visualCenterChangeIntervals = health.VisualCenterCadenceRecentChangeIntervalsMs ?? Array.Empty<double>();
-        var previewPresentIntervals = d3d?.GetRecentPresentIntervalsMs(180) ?? Array.Empty<double>();
-        var previewLatencySamples = d3d?.GetRecentPipelineLatencyMs(180) ?? Array.Empty<double>();
-        var sourceDropPercent = StatsPresentationBuilder.Sanitize(health.CaptureCadenceEstimatedDropPercent);
-        var previewSlowPercent = StatsPresentationBuilder.Sanitize(presentCadence?.SlowFramePercent ?? 0);
-        var performanceScore = Math.Clamp(100.0 - sourceDropPercent - previewSlowPercent, 0.0, 100.0);
-        var diagnostic = StatsPresentationBuilder.BuildStatsDiagnosticSummary(
-            health,
-            ViewModel.IsPreviewing,
-            ViewModel.IsRecording,
-            sourceDropPercent,
-            previewSlowPercent,
-            d3d?.FramesSubmitted ?? 0,
-            d3d?.FramesDropped ?? 0,
-            presentCadence?.SampleCount ?? 0);
-        var telemetryDetails = new List<SourceTelemetryDetailEntry>(health.SourceTelemetryDetails);
-        var captureCardFormat = health.ReaderSourceSubtype ?? health.NegotiatedPixelFormat;
-        if (!string.IsNullOrWhiteSpace(captureCardFormat))
-        {
-            telemetryDetails.Add(new SourceTelemetryDetailEntry("Capture Card / UVC", "Capture Format", captureCardFormat));
-        }
-
-        return new StatsSnapshot(
-            SourceCadenceSamples: health.CaptureCadenceSampleCount,
-            SourceObservedFps: StatsPresentationBuilder.Sanitize(health.CaptureCadenceObservedFps),
-            SourceExpectedFps: StatsPresentationBuilder.Sanitize(health.ExpectedFrameRate),
-            SourceAvgIntervalMs: StatsPresentationBuilder.Sanitize(health.CaptureCadenceAverageIntervalMs),
-            SourceP95IntervalMs: StatsPresentationBuilder.Sanitize(health.CaptureCadenceP95IntervalMs),
-            SourceMaxIntervalMs: StatsPresentationBuilder.Sanitize(health.CaptureCadenceMaxIntervalMs),
-            SourceJitterMs: StatsPresentationBuilder.Sanitize(health.CaptureCadenceJitterStdDevMs),
-            SourceSevereGaps: health.CaptureCadenceSevereGapCount,
-            SourceEstDrops: health.CaptureCadenceEstimatedDroppedFrames,
-            SourceEstDropPct: sourceDropPercent,
+        var renderer = new StatsSnapshotRenderMetrics(
             PreviewCadenceSamples: presentCadence?.SampleCount ?? 0,
-            PreviewObservedFps: StatsPresentationBuilder.Sanitize(presentCadence?.ObservedFps ?? 0),
-            PreviewAvgIntervalMs: StatsPresentationBuilder.Sanitize(presentCadence?.AverageIntervalMs ?? 0),
-            PreviewP95IntervalMs: StatsPresentationBuilder.Sanitize(presentCadence?.P95IntervalMs ?? 0),
-            PreviewP99IntervalMs: StatsPresentationBuilder.Sanitize(presentCadence?.P99IntervalMs ?? 0),
-            PreviewOnePercentLowFps: StatsPresentationBuilder.Sanitize(presentCadence?.OnePercentLowFps ?? 0),
+            PreviewObservedFps: presentCadence?.ObservedFps ?? 0,
+            PreviewAvgIntervalMs: presentCadence?.AverageIntervalMs ?? 0,
+            PreviewP95IntervalMs: presentCadence?.P95IntervalMs ?? 0,
+            PreviewP99IntervalMs: presentCadence?.P99IntervalMs ?? 0,
+            PreviewOnePercentLowFps: presentCadence?.OnePercentLowFps ?? 0,
             PreviewSlowFrames: presentCadence?.SlowFrameCount ?? 0,
-            PreviewSlowPct: previewSlowPercent,
-            MjpegPacketHashSamples: health.MjpegPacketHashSampleCount,
-            MjpegPacketHashInputFps: StatsPresentationBuilder.Sanitize(health.MjpegPacketHashInputObservedFps),
-            MjpegPacketHashUniqueFps: StatsPresentationBuilder.Sanitize(health.MjpegPacketHashUniqueObservedFps),
-            MjpegPacketHashDuplicatePercent: StatsPresentationBuilder.Sanitize(health.MjpegPacketHashDuplicateFramePercent),
-            MjpegPacketHashLongestDuplicateRun: health.MjpegPacketHashLongestDuplicateRun,
-            MjpegPacketHashPattern: health.MjpegPacketHashPattern,
-            MjpegPacketHashLastFrameDuplicate: health.MjpegPacketHashLastFrameDuplicate,
-            VisualCadenceSamples: health.VisualCadenceSampleCount,
-            VisualCadenceOutputFps: StatsPresentationBuilder.Sanitize(health.VisualCadenceOutputObservedFps),
-            VisualCadenceChangeFps: StatsPresentationBuilder.Sanitize(health.VisualCadenceChangeObservedFps),
-            VisualCadenceRepeatPercent: StatsPresentationBuilder.Sanitize(health.VisualCadenceRepeatFramePercent),
-            VisualCadenceRepeatFrames: health.VisualCadenceRepeatFrameCount,
-            VisualCadenceLongestRepeatRun: health.VisualCadenceLongestRepeatRun,
-            VisualCadenceMotionScore: StatsPresentationBuilder.Sanitize(health.VisualCadenceMotionScore),
-            VisualCadenceMotionConfidence: health.VisualCadenceMotionConfidence,
-            VisualCenterCadenceSamples: health.VisualCenterCadenceSampleCount,
-            VisualCenterCadenceOutputFps: StatsPresentationBuilder.Sanitize(health.VisualCenterCadenceOutputObservedFps),
-            VisualCenterCadenceChangeFps: StatsPresentationBuilder.Sanitize(health.VisualCenterCadenceChangeObservedFps),
-            VisualCenterCadenceRepeatPercent: StatsPresentationBuilder.Sanitize(health.VisualCenterCadenceRepeatFramePercent),
-            VisualCenterCadenceMotionScore: StatsPresentationBuilder.Sanitize(health.VisualCenterCadenceMotionScore),
-            VisualCenterCadenceMotionConfidence: health.VisualCenterCadenceMotionConfidence,
-            PipelineLatencyMs: StatsPresentationBuilder.Sanitize(pipelineLatency),
-            SourceFramesDelivered: health.VideoFramesArrived,
-            SourceFramesDropped: health.VideoFramesDropped,
-            RendererFramesSubmitted: d3d?.FramesSubmitted ?? 0,
-            RendererFramesRendered: d3d?.FramesRendered ?? 0,
-            RendererFramesDropped: d3d?.FramesDropped ?? 0,
-            PerformanceScore: performanceScore,
-            Previewing: ViewModel.IsPreviewing,
-            Recording: ViewModel.IsRecording,
+            PreviewSlowPercent: presentCadence?.SlowFramePercent ?? 0,
+            PipelineLatencyMs: d3d?.GetEstimatedPipelineLatencyMs() ?? 0,
+            FramesSubmitted: d3d?.FramesSubmitted ?? 0,
+            FramesRendered: d3d?.FramesRendered ?? 0,
+            FramesDropped: d3d?.FramesDropped ?? 0,
             PreviewNaturalWidth: d3d?.NaturalWidth ?? 0,
             PreviewNaturalHeight: d3d?.NaturalHeight ?? 0,
-            CaptureWidth: ToPositiveInt(health.NegotiatedWidth),
-            CaptureHeight: ToPositiveInt(health.NegotiatedHeight),
-            CaptureFrameRate: health.NegotiatedFrameRate,
-            SourceWidth: health.SourceWidth,
-            SourceHeight: health.SourceHeight,
-            SourceFrameRateExact: health.SourceFrameRateExact,
-            SourceIsHdr: health.SourceIsHdr,
-            SourceVideoFormat: health.SourceVideoFormat,
-            SourceColorimetry: health.SourceColorimetry,
-            ReaderSourceSubtype: health.ReaderSourceSubtype,
-            NegotiatedPixelFormat: health.NegotiatedPixelFormat,
-            TelemetryOrigin: health.SourceTelemetryOrigin.ToString(),
-            TelemetryConfidence: health.SourceTelemetryConfidence.ToString(),
-            SourceTelemetryDetails: telemetryDetails,
-            DiagnosticSummary: health.SourceTelemetryDiagnosticSummary,
-            DiagnosticHealthStatus: diagnostic.HealthStatus,
-            DiagnosticLikelyStage: diagnostic.LikelyStage,
-            DiagnosticEvidence: diagnostic.Evidence,
-            AvSyncCaptureDriftMs: health.AvSyncCaptureDriftMs,
-            AvSyncCaptureDriftRateMsPerSec: health.AvSyncCaptureDriftRateMsPerSec,
-            AvSyncEncoderDriftMs: health.AvSyncEncoderDriftMs,
-            AvSyncEncoderCorrectionSamples: health.AvSyncEncoderCorrectionSamples,
-            EncoderCodecName: health.EncoderCodecName,
-            EncoderWidth: health.EncoderWidth,
-            EncoderHeight: health.EncoderHeight,
-            EncoderFrameRate: health.EncoderFrameRate,
-            EncoderTargetBitRate: health.EncoderTargetBitRate,
-            MjpegPacketHashRecentUniqueIntervalsMs: packetHashUniqueIntervals,
-            VisualCadenceRecentChangeIntervalsMs: visualChangeIntervals,
-            VisualCenterCadenceRecentChangeIntervalsMs: visualCenterChangeIntervals,
-            PreviewRecentPresentIntervalsMs: previewPresentIntervals,
-            PreviewRecentLatencyMs: previewLatencySamples);
+            PreviewRecentPresentIntervalsMs: d3d?.GetRecentPresentIntervalsMs(180) ?? Array.Empty<double>(),
+            PreviewRecentLatencyMs: d3d?.GetRecentPipelineLatencyMs(180) ?? Array.Empty<double>());
+        var viewState = new StatsSnapshotViewState(ViewModel.IsPreviewing, ViewModel.IsRecording);
+
+        return StatsSnapshotBuilder.Build(health, renderer, viewState);
     }
 
     private TextBlock CreateDiagnosticGroupHeader(string title)
