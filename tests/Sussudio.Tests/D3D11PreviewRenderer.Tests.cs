@@ -289,16 +289,17 @@ static partial class Program
 
         var ownershipMetricsType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer+FrameOwnershipMetrics");
         var previewSinkType = RequireType("Sussudio.Services.Contracts.IPreviewFrameSink");
+        var trackingType = RequireType("Sussudio.Services.Contracts.PreviewFrameTracking");
+        foreach (var prop in new[] { "SourceSequenceNumber", "PreviewPresentId", "SourcePtsTicks", "ArrivalTick", "SchedulerSubmitTick", "CountForPresentCadence" })
+        {
+            AssertNotNull(trackingType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PreviewFrameTracking.{prop}");
+        }
         var submitTexture = previewSinkType.GetMethod("SubmitTexture", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("IPreviewFrameSink.SubmitTexture was not found.");
-        AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.Name == "sourceSequenceNumber"), "SubmitTexture source identity parameter");
-        AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.Name == "previewPresentId"), "SubmitTexture present identity parameter");
-        AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.Name == "sourcePtsTicks"), "SubmitTexture PTS identity parameter");
+        AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.ParameterType == trackingType), "SubmitTexture tracking parameter");
         var submitNv12PlaneTextures = previewSinkType.GetMethod("SubmitNv12PlaneTextures", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("IPreviewFrameSink.SubmitNv12PlaneTextures was not found.");
-        AssertEqual(true, submitNv12PlaneTextures.GetParameters().Any(parameter => parameter.Name == "sourceSequenceNumber"), "SubmitNv12PlaneTextures source identity parameter");
-        AssertEqual(true, submitNv12PlaneTextures.GetParameters().Any(parameter => parameter.Name == "previewPresentId"), "SubmitNv12PlaneTextures present identity parameter");
-        AssertEqual(true, submitNv12PlaneTextures.GetParameters().Any(parameter => parameter.Name == "sourcePtsTicks"), "SubmitNv12PlaneTextures PTS identity parameter");
+        AssertEqual(true, submitNv12PlaneTextures.GetParameters().Any(parameter => parameter.ParameterType == trackingType), "SubmitNv12PlaneTextures tracking parameter");
         foreach (var prop in new[]
                  {
                      "LastSubmittedPreviewPresentId",

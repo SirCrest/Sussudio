@@ -136,13 +136,14 @@ static partial class Program
             modifiers: null);
         AssertNotNull(previewLeaseEnqueue, "MjpegPreviewJitterBuffer.Enqueue(PooledVideoFrameLease)");
 
+        var trackingType = previewSinkType.Assembly.GetType("Sussudio.Services.Contracts.PreviewFrameTracking", throwOnError: true)!;
         var rendererLeaseSubmit = previewSinkType.GetMethod(
             "SubmitRawFrameLease",
             BindingFlags.Public | BindingFlags.Instance,
             binder: null,
-            types: new[] { leaseType, typeof(bool), typeof(long), typeof(long), typeof(bool) },
+            types: new[] { leaseType, typeof(bool), trackingType },
             modifiers: null);
-        AssertNotNull(rendererLeaseSubmit, "IPreviewFrameSink.SubmitRawFrameLease(PooledVideoFrameLease, bool, long, long, bool)");
+        AssertNotNull(rendererLeaseSubmit, "IPreviewFrameSink.SubmitRawFrameLease(PooledVideoFrameLease, bool, PreviewFrameTracking)");
         AssertEqual(true, previewSinkType.IsAssignableFrom(rendererType), "D3D11PreviewRenderer implements preview lease sink");
         AssertEqual(true, leaseEncoderType.IsAssignableFrom(libAvSinkType), "LibAvRecordingSink implements lease encoder");
         AssertEqual(true, leaseEncoderType.IsAssignableFrom(flashbackSinkType), "FlashbackEncoderSink implements lease encoder");

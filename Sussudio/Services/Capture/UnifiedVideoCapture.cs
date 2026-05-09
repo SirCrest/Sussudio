@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
@@ -700,7 +701,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         PooledVideoFrameLease? ownedFrame = frame;
         try
         {
-            previewSink.SubmitRawFrameLease(ownedFrame, isHdr: false);
+            previewSink.SubmitRawFrameLease(ownedFrame, isHdr: false, PreviewFrameTracking.Default);
             ownedFrame = null;
         }
         finally
@@ -751,7 +752,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             {
                 try
                 {
-                    previewSink.SubmitTexture(gpuTexture, gpuSubresource, width, height, isP010, arrivalTick);
+                    previewSink.SubmitTexture(
+                        gpuTexture,
+                        gpuSubresource,
+                        width,
+                        height,
+                        isP010,
+                        PreviewFrameTracking.Default.WithArrivalTick(arrivalTick));
                     _frameLedger.RecordEvent(
                         sourceSequence,
                         FrameLedgerStage.PreviewEnqueued,
@@ -1002,7 +1009,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 sequenceNumber: sourceSequence);
             fixed (byte* pointer = frameData)
             {
-                previewSink.SubmitRawFrame((IntPtr)pointer, frameData.Length, width, height, isP010, arrivalTick);
+                previewSink.SubmitRawFrame(
+                    (IntPtr)pointer,
+                    frameData.Length,
+                    width,
+                    height,
+                    isP010,
+                    PreviewFrameTracking.Default.WithArrivalTick(arrivalTick));
             }
             _frameLedger.RecordEvent(
                 sourceSequence,

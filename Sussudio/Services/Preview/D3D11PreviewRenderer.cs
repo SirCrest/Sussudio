@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Runtime;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
@@ -973,12 +974,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         int width,
         int height,
         bool isHdr,
-        long arrivalTick = 0,
-        long sourceSequenceNumber = -1,
-        long previewPresentId = 0,
-        long schedulerSubmitTick = 0,
-        long sourcePtsTicks = 0,
-        bool countForPresentCadence = true)
+        PreviewFrameTracking tracking)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1009,21 +1005,19 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             width,
             height,
             isHdr,
-            arrivalTick,
-            sourceSequenceNumber,
-            previewPresentId,
-            schedulerSubmitTick,
-            sourcePtsTicks,
-            countForPresentCadence: countForPresentCadence);
+            tracking.ArrivalTick,
+            tracking.SourceSequenceNumber,
+            tracking.PreviewPresentId,
+            tracking.SchedulerSubmitTick,
+            tracking.SourcePtsTicks,
+            countForPresentCadence: tracking.CountForPresentCadence);
         EnqueuePendingFrame(frame);
     }
 
     public void SubmitRawFrameLease(
         PooledVideoFrameLease frame,
         bool isHdr,
-        long previewPresentId = 0,
-        long schedulerSubmitTick = 0,
-        bool countForPresentCadence = true)
+        PreviewFrameTracking tracking)
     {
         ArgumentNullException.ThrowIfNull(frame);
 
@@ -1049,11 +1043,11 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             isHdr,
             frame.ArrivalTick,
             frame.SequenceNumber,
-            previewPresentId,
-            schedulerSubmitTick,
+            tracking.PreviewPresentId,
+            tracking.SchedulerSubmitTick,
             sourcePtsTicks: 0,
             frameLease: frame,
-            countForPresentCadence: countForPresentCadence));
+            countForPresentCadence: tracking.CountForPresentCadence));
     }
 
     public void SubmitTexture(
@@ -1062,12 +1056,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         int width,
         int height,
         bool isHdr,
-        long arrivalTick = 0,
-        long schedulerSubmitTick = 0,
-        long sourceSequenceNumber = -1,
-        long previewPresentId = 0,
-        long sourcePtsTicks = 0,
-        bool countForPresentCadence = true)
+        PreviewFrameTracking tracking)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1111,12 +1100,12 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             width,
             height,
             isHdr,
-            arrivalTick,
-            sourceSequenceNumber,
-            previewPresentId,
-            schedulerSubmitTick,
-            sourcePtsTicks,
-            countForPresentCadence: countForPresentCadence);
+            tracking.ArrivalTick,
+            tracking.SourceSequenceNumber,
+            tracking.PreviewPresentId,
+            tracking.SchedulerSubmitTick,
+            tracking.SourcePtsTicks,
+            countForPresentCadence: tracking.CountForPresentCadence);
         EnqueuePendingFrame(frame);
     }
 
@@ -1125,13 +1114,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         IntPtr uvTexturePtr,
         int width,
         int height,
-        bool isHdr = false,
-        long arrivalTick = 0,
-        long schedulerSubmitTick = 0,
-        long sourceSequenceNumber = -1,
-        long previewPresentId = 0,
-        long sourcePtsTicks = 0,
-        bool countForPresentCadence = true)
+        bool isHdr,
+        PreviewFrameTracking tracking)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1190,12 +1174,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 width,
                 height,
                 isHdr,
-                arrivalTick,
-                schedulerSubmitTick,
-                sourceSequenceNumber,
-                previewPresentId,
-                sourcePtsTicks,
-                countForPresentCadence);
+                tracking);
         }
         catch
         {
@@ -1223,12 +1202,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         int width,
         int height,
         bool isHdr,
-        long arrivalTick,
-        long schedulerSubmitTick,
-        long sourceSequenceNumber,
-        long previewPresentId,
-        long sourcePtsTicks,
-        bool countForPresentCadence)
+        PreviewFrameTracking tracking)
     {
         var frame = new PendingFrame(
             d3dTexture: null,
@@ -1238,16 +1212,16 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             width: width,
             height: height,
             isHdr: isHdr,
-            arrivalTick: arrivalTick,
-            sourceSequenceNumber: sourceSequenceNumber,
-            previewPresentId: previewPresentId,
-            schedulerSubmitTick: schedulerSubmitTick,
-            sourcePtsTicks: sourcePtsTicks,
+            arrivalTick: tracking.ArrivalTick,
+            sourceSequenceNumber: tracking.SourceSequenceNumber,
+            previewPresentId: tracking.PreviewPresentId,
+            schedulerSubmitTick: tracking.SchedulerSubmitTick,
+            sourcePtsTicks: tracking.SourcePtsTicks,
             d3dTextureY: yTexturePtr,
             d3dTextureUV: uvTexturePtr,
             d3dTextureYObject: yTexture,
             d3dTextureUVObject: uvTexture,
-            countForPresentCadence: countForPresentCadence);
+            countForPresentCadence: tracking.CountForPresentCadence);
         EnqueuePendingFrame(frame);
     }
 

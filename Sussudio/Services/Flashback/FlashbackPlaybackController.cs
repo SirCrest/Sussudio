@@ -10,6 +10,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
@@ -3610,24 +3611,26 @@ internal sealed class FlashbackPlaybackController : IDisposable
             previewSink.SubmitTexture(
                 frame.TexturePtr, frame.SubresourceIndex,
                 frame.Width, frame.Height, frame.IsHdr,
-                arrivalTick: submitTick,
-                schedulerSubmitTick: submitTick,
-                sourceSequenceNumber: -1,
-                previewPresentId: previewPresentId,
-                sourcePtsTicks: frame.Pts.Ticks,
-                countForPresentCadence: countForPresentCadence);
+                new PreviewFrameTracking(
+                    ArrivalTick: submitTick,
+                    SourceSequenceNumber: -1,
+                    PreviewPresentId: previewPresentId,
+                    SchedulerSubmitTick: submitTick,
+                    SourcePtsTicks: frame.Pts.Ticks,
+                    CountForPresentCadence: countForPresentCadence));
         }
         else
         {
             previewSink.SubmitRawFrame(
                 frame.Data, frame.DataLength,
                 frame.Width, frame.Height, frame.IsHdr,
-                arrivalTick: submitTick,
-                sourceSequenceNumber: -1,
-                previewPresentId: previewPresentId,
-                schedulerSubmitTick: submitTick,
-                sourcePtsTicks: frame.Pts.Ticks,
-                countForPresentCadence: countForPresentCadence);
+                new PreviewFrameTracking(
+                    ArrivalTick: submitTick,
+                    SourceSequenceNumber: -1,
+                    PreviewPresentId: previewPresentId,
+                    SchedulerSubmitTick: submitTick,
+                    SourcePtsTicks: frame.Pts.Ticks,
+                    CountForPresentCadence: countForPresentCadence));
         }
     }
 
