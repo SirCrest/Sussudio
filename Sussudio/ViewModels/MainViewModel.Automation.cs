@@ -67,7 +67,10 @@ public partial class MainViewModel
         => _sessionCoordinator.GetFlashbackPlaybackSnapshot();
 
     /// <summary>
-    /// Returns the active flashback playback controller if it exists and is not disabled.
+    /// Forwards a scrub-begin command to the active flashback playback controller.
+    /// Returns true when the controller accepted the command (timeline was
+    /// running and not stopped); false when flashback is disabled or the
+    /// controller refused.
     /// </summary>
     public bool FlashbackBeginScrub(TimeSpan position)
     {

@@ -51,11 +51,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private const int PreviewStartupMinVisualTimeoutMs = 1000;
     private const int PreviewStartupMaxVisualTimeoutMs = 15000;
     private static readonly TimeSpan PreviewStartupPlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);
-    private static readonly int PreviewStartupVisualTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
-        "SUSSUDIO_PREVIEW_START_TIMEOUT_MS",
-        PreviewStartupDefaultVisualTimeoutMs,
-        PreviewStartupMinVisualTimeoutMs,
-        PreviewStartupMaxVisualTimeoutMs);
+    // Lazy<int> instead of static readonly so per-test env overrides work:
+    // tests that flip SUSSUDIO_PREVIEW_START_TIMEOUT_MS before constructing
+    // MainWindow get the override on the first read instead of a value
+    // baked in at type-init time.
+    private readonly Lazy<int> _previewStartupVisualTimeoutMs = new(static () =>
+        EnvironmentHelpers.GetIntFromEnv(
+            "SUSSUDIO_PREVIEW_START_TIMEOUT_MS",
+            PreviewStartupDefaultVisualTimeoutMs,
+            PreviewStartupMinVisualTimeoutMs,
+            PreviewStartupMaxVisualTimeoutMs));
+
+    private int PreviewStartupVisualTimeoutMs => _previewStartupVisualTimeoutMs.Value;
 
     public MainViewModel ViewModel { get; }
     private readonly DispatcherQueue _dispatcherQueue;
