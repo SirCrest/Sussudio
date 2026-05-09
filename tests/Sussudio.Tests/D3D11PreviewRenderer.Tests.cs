@@ -44,17 +44,18 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // ── D3D11PreviewRenderer: CountLeadingBlackEdges / CountTrailingBlackEdges ──
+    // ── PreviewScreenshotCapture: CountLeadingBlackEdges / CountTrailingBlackEdges ──
 
     private static Task D3D11PreviewRenderer_BlackEdgeCounting_WorksCorrectly()
     {
-        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
+        // Extracted to PreviewScreenshotCapture; reflect on the new type.
+        var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
 
-        var leadingMethod = rendererType.GetMethod("CountLeadingBlackEdges",
-            BindingFlags.Static | BindingFlags.NonPublic)
+        var leadingMethod = captureType.GetMethod("CountLeadingBlackEdges",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("CountLeadingBlackEdges not found.");
-        var trailingMethod = rendererType.GetMethod("CountTrailingBlackEdges",
-            BindingFlags.Static | BindingFlags.NonPublic)
+        var trailingMethod = captureType.GetMethod("CountTrailingBlackEdges",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("CountTrailingBlackEdges not found.");
 
         // [true, true, false, true, false] → leading = 2, trailing = 0
@@ -174,13 +175,14 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // ── D3D11PreviewRenderer: InitPngCrc32Table ──
+    // ── PreviewScreenshotCapture: InitPngCrc32Table ──
 
     private static Task D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries()
     {
-        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
-        var method = rendererType.GetMethod("InitPngCrc32Table",
-            BindingFlags.Static | BindingFlags.NonPublic)
+        // Extracted to PreviewScreenshotCapture; reflect on the new type.
+        var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
+        var method = captureType.GetMethod("InitPngCrc32Table",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("InitPngCrc32Table not found.");
 
         var table = (uint[])method.Invoke(null, null)!;
