@@ -178,16 +178,16 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // ── LibAvEncoder: ToChromaticityRational and ToLuminanceRational ──
+    // ── HdrMasterDisplayMetadata: ToChromaticityRational and ToLuminanceRational ──
 
     private static Task LibAvEncoder_ChromaticityAndLuminanceRationals_ParseCorrectly()
     {
-        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
+        var hdrType = RequireType("Sussudio.Services.Recording.HdrMasterDisplayMetadata");
 
-        var chromaMethod = encoderType.GetMethod("ToChromaticityRational",
+        var chromaMethod = hdrType.GetMethod("ToChromaticityRational",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ToChromaticityRational not found.");
-        var lumaMethod = encoderType.GetMethod("ToLuminanceRational",
+        var lumaMethod = hdrType.GetMethod("ToLuminanceRational",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ToLuminanceRational not found.");
 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Threading;
 using FFmpeg.AutoGen;
 using Sussudio.Services.Flashback;
@@ -27,10 +26,6 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     private const double DriftCorrectionThresholdMs = double.MaxValue;
     private const double MicDriftCorrectionThresholdMs = 200.0;
     private const int MaxDriftCorrectionSamplesPerPass = 480;
-
-    private static readonly Regex MasterDisplayMetadataRegex = new(
-        @"^G\((\d+),(\d+)\)B\((\d+),(\d+)\)R\((\d+),(\d+)\)WP\((\d+),(\d+)\)L\((\d+),(\d+)\)$",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private static readonly object FfmpegInitSync = new();
     private static bool _ffmpegInitialized;
@@ -1543,7 +1538,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=av_mastering_display_metadata_create_side_data msg=Allocation returned null.");
             }
 
-            ApplyMasterDisplayMetadata(masteringMetadata, options.HdrMasterDisplayMetadata);
+            HdrMasterDisplayMetadata.Apply(masteringMetadata, options.HdrMasterDisplayMetadata);
             attached = true;
         }
 
@@ -1575,7 +1570,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=av_mastering_display_metadata_create_side_data(hw) msg=Allocation returned null.");
             }
 
-            ApplyMasterDisplayMetadata(masteringMetadata, options.HdrMasterDisplayMetadata);
+            HdrMasterDisplayMetadata.Apply(masteringMetadata, options.HdrMasterDisplayMetadata);
             attached = true;
         }
 
@@ -1685,43 +1680,6 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             throw CreateLibAvException(
                 $"LIBAV_ENCODER_ERROR operation=av_malloc(audio_sample_queue) msg=Allocation returned null size={queueBytes}.");
         }
-    }
-
-    private static void ApplyMasterDisplayMetadata(AVMasteringDisplayMetadata* metadata, string masterDisplayMetadata)
-    {
-        var match = MasterDisplayMetadataRegex.Match(masterDisplayMetadata);
-        if (!match.Success)
-        {
-            throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=ApplyMasterDisplayMetadata msg=Invalid mastering metadata format value='{masterDisplayMetadata}'.");
-        }
-
-        var primaries = metadata->display_primaries;
-        var red = primaries[0];
-        red[0] = ToChromaticityRational(match.Groups[5].Value);
-        red[1] = ToChromaticityRational(match.Groups[6].Value);
-        primaries[0] = red;
-
-        var green = primaries[1];
-        green[0] = ToChromaticityRational(match.Groups[1].Value);
-        green[1] = ToChromaticityRational(match.Groups[2].Value);
-        primaries[1] = green;
-
-        var blue = primaries[2];
-        blue[0] = ToChromaticityRational(match.Groups[3].Value);
-        blue[1] = ToChromaticityRational(match.Groups[4].Value);
-        primaries[2] = blue;
-        metadata->display_primaries = primaries;
-
-        var whitePoint = metadata->white_point;
-        whitePoint[0] = ToChromaticityRational(match.Groups[7].Value);
-        whitePoint[1] = ToChromaticityRational(match.Groups[8].Value);
-        metadata->white_point = whitePoint;
-
-        metadata->max_luminance = ToLuminanceRational(match.Groups[9].Value);
-        metadata->min_luminance = ToLuminanceRational(match.Groups[10].Value);
-        metadata->has_primaries = 1;
-        metadata->has_luminance = 1;
     }
 
     private void DrainEncoderPackets()
@@ -3139,20 +3097,6 @@ ValidateHdrOptions:
             den = value.num
         };
     }
-
-    private static AVRational ToChromaticityRational(string value)
-        => new()
-        {
-            num = int.Parse(value, CultureInfo.InvariantCulture),
-            den = 50_000
-        };
-
-    private static AVRational ToLuminanceRational(string value)
-        => new()
-        {
-            num = int.Parse(value, CultureInfo.InvariantCulture),
-            den = 10_000
-        };
 
     private int GetDriftCorrectionSamples(long audioSamples, int sampleRate, out long correctionVideoFrame, out double driftMs,
         double thresholdMs = DriftCorrectionThresholdMs)
