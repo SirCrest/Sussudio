@@ -140,8 +140,19 @@ static partial class Program
         var getMetrics = rendererType.GetMethod("GetPresentCadenceMetrics", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("GetPresentCadenceMetrics not found.");
 
+        // Use a deterministic fake clock: advance _lastPresentTick by a fixed step
+        // (one 60 fps frame at the system frequency) before each TrackPresentCadence
+        // call so the interval calculation is fully predictable without Thread.Sleep.
+        var fakeStepTicks = System.Diagnostics.Stopwatch.Frequency / 60;
+
+        // Call 1: establish baseline. _lastPresentTick starts at 0 (uninitialized
+        // long), so the method sees previousTick <= 0 and returns 0.
+        SetPrivateField(renderer, "_lastPresentTick", 0L);
         InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true });
-        System.Threading.Thread.Sleep(2);
+
+        // Call 2: _lastPresentTick was just written by call 1 (real Stopwatch.GetTimestamp).
+        // Prime it to a known value that is one step in the past so the interval is fakeStepTicks.
+        SetPrivateField(renderer, "_lastPresentTick", System.Diagnostics.Stopwatch.GetTimestamp() - fakeStepTicks);
         var firstInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true }));
         AssertEqual(true, firstInterval > 0, "first measured cadence interval is recorded");
 
@@ -149,7 +160,8 @@ static partial class Program
             ?? throw new InvalidOperationException("GetPresentCadenceMetrics returned null.");
         AssertEqual(1, Convert.ToInt32(GetPropertyValue(metrics, "SampleCount")), "sample count after first measured interval");
 
-        System.Threading.Thread.Sleep(2);
+        // Call 3: suppressed present — advance the fake clock, result must be 0.0.
+        SetPrivateField(renderer, "_lastPresentTick", System.Diagnostics.Stopwatch.GetTimestamp() - fakeStepTicks);
         var suppressedInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { false }));
         AssertEqual(0.0, suppressedInterval, "suppressed present does not report interval");
         metrics = getMetrics.Invoke(renderer, new object[] { 8.333 })
@@ -157,7 +169,8 @@ static partial class Program
         AssertEqual(1, Convert.ToInt32(GetPropertyValue(metrics, "SampleCount")), "suppressed present does not add a sample");
         AssertEqual(1L, GetLongPrivateField(renderer, "_presentCadenceBaselinePending"), "suppressed present marks baseline pending");
 
-        System.Threading.Thread.Sleep(2);
+        // Call 4: first measured present after suppression — resets baseline, returns 0.
+        SetPrivateField(renderer, "_lastPresentTick", System.Diagnostics.Stopwatch.GetTimestamp() - fakeStepTicks);
         var baselineInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true }));
         AssertEqual(0.0, baselineInterval, "first measured present after suppression resets baseline");
         metrics = getMetrics.Invoke(renderer, new object[] { 8.333 })
@@ -165,7 +178,8 @@ static partial class Program
         AssertEqual(1, Convert.ToInt32(GetPropertyValue(metrics, "SampleCount")), "baseline reset does not add transition gap sample");
         AssertEqual(0L, GetLongPrivateField(renderer, "_presentCadenceBaselinePending"), "baseline pending flag clears after measured present");
 
-        System.Threading.Thread.Sleep(2);
+        // Call 5: resumed measured present — should record a valid interval.
+        SetPrivateField(renderer, "_lastPresentTick", System.Diagnostics.Stopwatch.GetTimestamp() - fakeStepTicks);
         var resumedInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true }));
         AssertEqual(true, resumedInterval > 0, "second measured present after suppression records interval");
         metrics = getMetrics.Invoke(renderer, new object[] { 8.333 })
