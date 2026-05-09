@@ -2592,7 +2592,7 @@ static partial class Program
         AssertContains(statsOverlayText, "UpdateFrameTimeExpectedLine");
         AssertContains(mainWindowXaml, "x:Name=\"FrameTime_ExpectedLine\"");
 
-        var presentationType = RequireType("Sussudio.StatsPresentationBuilder");
+        var presentationType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
         var resolveRange = presentationType.GetMethod("ResolveFrameTimeRange", BindingFlags.Static | BindingFlags.Public)
             ?? throw new InvalidOperationException("ResolveFrameTimeRange was not found.");
 
