@@ -68,7 +68,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         : "Authentication rejected.",
                     errorCode: authorized ? null : "unauthorized",
                     success: authorized,
-                    status: authorized ? "ok" : "error",
+                    status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                     includeSnapshot: false);
             }
 
@@ -79,7 +79,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     "Unauthorized command request.",
                     errorCode: "unauthorized",
                     success: false,
-                    status: "error",
+                    status: AutomationResponseStatus.Error,
                     includeSnapshot: false);
             }
 
@@ -90,7 +90,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     "Automation is still initializing devices; retry shortly.",
                     errorCode: "not-ready",
                     success: false,
-                    status: "not_ready",
+                    status: AutomationResponseStatus.NotReady,
                     retryAfterMs: 1000);
             }
 
@@ -351,7 +351,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: exportResult.Succeeded ? null : "export-failed",
                         success: exportResult.Succeeded,
-                        status: exportResult.Succeeded ? "ok" : "error");
+                        status: exportResult.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error);
                 }
 
                 case AutomationCommandKind.FlashbackGetSegments:
@@ -385,7 +385,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: verification.Succeeded ? null : "verification-failed",
                         success: verification.Succeeded,
-                        status: verification.Succeeded ? "ok" : "error",
+                        status: verification.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         elapsedMs: elapsedMs);
                 }
 
@@ -492,7 +492,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                                 "Window close is disallowed until ArmClose is requested.",
                                 errorCode: "window-close-not-armed",
                                 success: false,
-                                status: "error");
+                                status: AutomationResponseStatus.Error);
                         }
 
                         await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);
@@ -524,7 +524,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: met ? null : "timeout",
                         success: met,
-                        status: met ? "ok" : "error",
+                        status: met ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         snapshot: snapshot);
                 }
 
@@ -543,7 +543,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: verification.Succeeded ? null : "verification-failed",
                         success: verification.Succeeded,
-                        status: verification.Succeeded ? "ok" : "error",
+                        status: verification.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         elapsedMs: elapsedMs);
                 }
 
@@ -574,7 +574,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: passed ? null : "assertion-failed",
                         success: passed,
-                        status: passed ? "ok" : "error",
+                        status: passed ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         snapshot: snapshot);
                 }
 
@@ -603,7 +603,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         result.Message,
                         data: result,
                         success: result.Succeeded,
-                        status: result.Succeeded ? "ok" : "error",
+                        status: result.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         errorCode: result.Succeeded ? null : "capture-failed");
                 }
 
@@ -620,7 +620,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         result.Message,
                         data: result,
                         success: result.Succeeded,
-                        status: result.Succeeded ? "ok" : "error",
+                        status: result.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         errorCode: result.Succeeded ? null : "capture-failed");
                 }
 
@@ -664,7 +664,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         $"Unsupported command: {request.Command}",
                         errorCode: "unsupported-command",
                         success: false,
-                        status: "error");
+                        status: AutomationResponseStatus.Error);
             }
         }
         catch (OperationCanceledException)
@@ -674,7 +674,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 "Command canceled.",
                 errorCode: "canceled",
                 success: false,
-                status: "error",
+                status: AutomationResponseStatus.Error,
                 includeSnapshot: false);
         }
         catch (Exception ex)
@@ -692,7 +692,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 message,
                 errorCode: "command-failed",
                 success: false,
-                status: "error",
+                status: AutomationResponseStatus.Error,
                 elapsedMs: (long)Math.Round(Stopwatch.GetElapsedTime(commandStartedAt).TotalMilliseconds));
         }
     }
@@ -704,13 +704,15 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string? errorCode = null,
         bool success = true,
         bool includeSnapshot = true,
-        string status = "ok",
-        string? commandLifecycle = null,
+        AutomationResponseStatus status = AutomationResponseStatus.Ok,
+        AutomationCommandLifecycle? commandLifecycle = null,
         int? retryAfterMs = null,
         long? elapsedMs = null,
         AutomationSnapshot? snapshot = null)
     {
-        var lifecycle = commandLifecycle ?? (success ? "completed" : "failed");
+        var lifecycle = commandLifecycle ?? (success
+            ? AutomationCommandLifecycle.Completed
+            : AutomationCommandLifecycle.Failed);
         return new AutomationCommandResponse
         {
             Success = success,
@@ -737,8 +739,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             message,
             data: data,
             includeSnapshot: includeSnapshot,
-            status: "ok",
-            commandLifecycle: "acknowledged");
+            status: AutomationResponseStatus.Ok,
+            commandLifecycle: AutomationCommandLifecycle.Acknowledged);
     }
 
     private AutomationCommandResponse CreateFlashbackActionRejectedResponse(
@@ -768,7 +770,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             },
             errorCode: "flashback-action-failed",
             success: false,
-            status: "error",
+            status: AutomationResponseStatus.Error,
             snapshot: snapshot);
     }
 

@@ -232,7 +232,7 @@ static partial class Program
         AssertContains(dispatcherText, "return string.Equals(_authToken, providedToken, StringComparison.Ordinal);");
         AssertContains(dispatcherText, "errorCode: authorized ? null : \"unauthorized\"");
         AssertContains(dispatcherText, "errorCode: \"unauthorized\"");
-        AssertContains(dispatcherText, "status: authorized ? \"ok\" : \"error\"");
+        AssertContains(dispatcherText, "status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error");
 
     }
 
@@ -410,7 +410,9 @@ static partial class Program
     {
         AssertEqual(success, (bool)GetPublicProperty(response, "Success")!, $"{scenario}: Success");
         AssertEqual(errorCode, (string?)GetPublicProperty(response, "ErrorCode"), $"{scenario}: ErrorCode");
-        AssertEqual(status, (string)GetPublicProperty(response, "Status")!, $"{scenario}: Status");
+        var actualStatus = GetPublicProperty(response, "Status")!;
+        var actualStatusName = JsonNamingPolicy.SnakeCaseLower.ConvertName(actualStatus.ToString()!);
+        AssertEqual(status, actualStatusName, $"{scenario}: Status");
     }
 
     private static object? GetPublicProperty(object instance, string propertyName)
