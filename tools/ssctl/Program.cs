@@ -10,6 +10,7 @@ internal static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        var verbose = args.Contains("--verbose");
         try
         {
             var options = CliOptions.Parse(args);
@@ -38,7 +39,7 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine(ex.Message);
+            Console.Error.WriteLine(verbose ? ex.ToString() : ex.Message);
             return 1;
         }
     }
@@ -153,6 +154,9 @@ internal static class Program
                 {
                     case "--json":
                         options.Json = true;
+                        continue;
+                    case "--verbose":
+                        // Handled directly in Main so it survives Parse() throwing.
                         continue;
                     case "--pipe":
                         options.PipeName = NextValue(args, ref i, arg);
