@@ -229,7 +229,8 @@ static partial class Program
         AssertContains(dispatcherText, "if (string.IsNullOrWhiteSpace(_authToken))\n        {\n            return true;\n        }");
         AssertContains(dispatcherText, "var providedToken = request.AuthToken;");
         AssertContains(dispatcherText, "providedToken = GetString(request.Payload, \"authToken\");");
-        AssertContains(dispatcherText, "return string.Equals(_authToken, providedToken, StringComparison.Ordinal);");
+        AssertContains(dispatcherText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
+        AssertContains(dispatcherText, "Logger.LogEvent(\"AUTH_FAILED\"");
         AssertContains(dispatcherText, "errorCode: authorized ? null : \"unauthorized\"");
         AssertContains(dispatcherText, "errorCode: \"unauthorized\"");
         AssertContains(dispatcherText, "status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error");

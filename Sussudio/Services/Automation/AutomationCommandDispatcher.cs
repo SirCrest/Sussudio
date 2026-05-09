@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1093,7 +1095,18 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             providedToken = GetString(request.Payload, "authToken");
         }
 
-        return string.Equals(_authToken, providedToken, StringComparison.Ordinal);
+        // Constant-time comparison: even on a local pipe, sidechannel timing
+        // hardening is cheap insurance and matches how token comparison is
+        // expected to work in any future remote/transport variant.
+        var expected = Encoding.UTF8.GetBytes(_authToken);
+        var actual = Encoding.UTF8.GetBytes(providedToken ?? string.Empty);
+        var ok = expected.Length == actual.Length
+            && CryptographicOperations.FixedTimeEquals(expected, actual);
+        if (!ok)
+        {
+            Logger.LogEvent("AUTH_FAILED", $"command={request.Command} correlationId={request.CorrelationId ?? "<none>"}");
+        }
+        return ok;
     }
 
     private static string RequireString(JsonElement payload, string propertyName)

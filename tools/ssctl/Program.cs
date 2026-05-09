@@ -39,9 +39,28 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine(verbose ? ex.ToString() : ex.Message);
+            Console.Error.WriteLine(verbose ? ex.ToString() : FormatExceptionChain(ex));
             return 1;
         }
+    }
+
+    // Without --verbose, emit the full inner-exception chain (not just the
+    // outer message) so operators see why a transport call failed without
+    // needing to re-run with --verbose to get the stack trace.
+    private static string FormatExceptionChain(Exception ex)
+    {
+        var sb = new System.Text.StringBuilder();
+        var current = ex;
+        while (current != null)
+        {
+            if (sb.Length > 0)
+            {
+                sb.Append(" → ");
+            }
+            sb.Append(current.GetType().Name).Append(": ").Append(current.Message);
+            current = current.InnerException;
+        }
+        return sb.ToString();
     }
 
     private static void WriteHelp()

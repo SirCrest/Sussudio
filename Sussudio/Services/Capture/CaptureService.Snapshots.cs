@@ -67,7 +67,7 @@ public partial class CaptureService
         catch (Exception ex)
         {
             Logger.Log($"GetRecordingStats failed: {ex.Message}");
-            return new RecordingStats(0, 0);
+            return new RecordingStats(0, 0, isFailure: true);
         }
     }
 

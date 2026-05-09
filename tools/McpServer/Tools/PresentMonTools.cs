@@ -103,12 +103,14 @@ public static class PresentMonTools
                 GetNonNegativeLong(snapshot, "PreviewD3DLastRenderedSourceSequenceNumber"),
                 GetPositiveLong(snapshot, "PreviewD3DLastRenderedUtcUnixMs"));
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            System.Diagnostics.Trace.TraceWarning($"GetExpectedSwapChainAsync: malformed snapshot JSON: {ex.Message}");
             return default;
         }
-        catch (IOException)
+        catch (IOException ex)
         {
+            System.Diagnostics.Trace.TraceWarning($"GetExpectedSwapChainAsync: pipe IO failure: {ex.Message}");
             return default;
         }
     }
