@@ -96,6 +96,9 @@ public static class FramePacingVerdictTools
         var mjpegInputFps = AutomationSnapshotFormatter.GetDouble(snapshot, "MjpegPacketHashInputObservedFps");
         var mjpegUniqueFps = AutomationSnapshotFormatter.GetDouble(snapshot, "MjpegPacketHashUniqueObservedFps");
         var mjpegDuplicatePercent = AutomationSnapshotFormatter.GetDouble(snapshot, "MjpegPacketHashDuplicateFramePercent");
+        var previewPacingStage = AutomationSnapshotFormatter.Get(snapshot, "PreviewPacingLikelySlowStage", "Unknown");
+        var previewPacingConfidence = AutomationSnapshotFormatter.Get(snapshot, "PreviewPacingSlowStageConfidence", "None");
+        var previewPacingEvidence = AutomationSnapshotFormatter.Get(snapshot, "PreviewPacingSlowStageEvidence", string.Empty);
 
         var builder = new StringBuilder();
         builder.AppendLine($"Verdict: {verdict}");
@@ -117,6 +120,9 @@ public static class FramePacingVerdictTools
         builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"MjpegInputFps: {mjpegInputFps:0.##}"));
         builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"MjpegUniqueFps: {mjpegUniqueFps:0.##}"));
         builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"MjpegDuplicatePercent: {mjpegDuplicatePercent:0.##}"));
+        builder.AppendLine($"PreviewPacingLikelySlowStage: {previewPacingStage}");
+        builder.AppendLine($"PreviewPacingSlowStageConfidence: {previewPacingConfidence}");
+        builder.AppendLine($"PreviewPacingSlowStageEvidence: {previewPacingEvidence}");
         builder.AppendLine($"TimelineSamples: {timeline.Count}");
         builder.AppendLine($"DxgiMissedRefreshRecentMax: {dxgiMissedMax}");
         builder.AppendLine($"PreviewDropDelta: {previewDropDelta}");

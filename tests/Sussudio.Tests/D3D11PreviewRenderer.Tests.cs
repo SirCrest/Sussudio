@@ -510,6 +510,9 @@ static partial class Program
                      "PreviewD3DLastDroppedUtcUnixMs",
                      "PreviewD3DLastDropReason",
                      "PreviewD3DRecentSlowFrames",
+                     "PreviewPacingLikelySlowStage",
+                     "PreviewPacingSlowStageConfidence",
+                     "PreviewPacingSlowStageEvidence",
                      "ProcessCpuPercent",
                      "ProcessCpuTotalProcessorTimeMs"
                  })
@@ -552,6 +555,9 @@ static partial class Program
                      "PreviewD3DLastRenderedSchedulerToPresentMs",
                      "PreviewD3DLastRenderedPipelineLatencyMs",
                      "PreviewD3DLastDropReason",
+                     "PreviewPacingLikelySlowStage",
+                     "PreviewPacingSlowStageConfidence",
+                     "PreviewPacingSlowStageEvidence",
                      "FlashbackPlaybackState",
                      "FlashbackPlaybackP99FrameMs",
                      "FlashbackPlaybackDecodeP99Ms",

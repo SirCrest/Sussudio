@@ -1723,6 +1723,8 @@ static partial class Program
         AssertContains(source, "D3D Present P99:");
         AssertContains(source, "D3D Total P99:");
         AssertContains(source, "D3D P99 Bottleneck:");
+        AssertContains(source, "PreviewPacingLikelySlowStage");
+        AssertContains(source, "Preview Slow Stage:");
         AssertContains(source, "FormatD3DP99Bottleneck");
         AssertContains(source, "== Pressure Summary ==");
         AssertContains(source, "Preview Pressure:");
@@ -1756,6 +1758,9 @@ static partial class Program
                      "MjpegPacketHashInputObservedFps",
                      "MjpegPacketHashUniqueObservedFps",
                      "MjpegPacketHashDuplicateFramePercent",
+                     "PreviewPacingLikelySlowStage",
+                     "PreviewPacingSlowStageConfidence",
+                     "PreviewPacingSlowStageEvidence",
                      "FlashbackPlaybackFivePercentLowFps",
                      "FlashbackPlaybackCommandsEnqueued",
                      "FlashbackPlaybackCommandsProcessed",
@@ -1807,6 +1812,7 @@ static partial class Program
 
                     AssertContains(output, "Flashback Cmd Counters: enqueued 1 -> 9, processed 0 -> 8, dropped 0 -> 2, skippedNotReady 0 -> 1, scrubCoalesced 0 -> 4, seekCoalesced 0 -> 3, lastQueued=Seek, lastProcessed=Pause");
                     AssertContains(output, "cmdDropsDelta=2");
+                    AssertContains(output, "Preview Slow Stage: Unknown/None -> CompositorMiss/High evidence=dxgiRecentMissed=4");
                 },
                 _ => """
                      {
@@ -1814,6 +1820,9 @@ static partial class Program
                        "Data": [
                          {
                            "TimestampUtc": "2026-05-04T12:00:00Z",
+                           "PreviewPacingLikelySlowStage": "Unknown",
+                           "PreviewPacingSlowStageConfidence": "None",
+                           "PreviewPacingSlowStageEvidence": "",
                            "FlashbackPlaybackCommandsEnqueued": 1,
                            "FlashbackPlaybackCommandsProcessed": 0,
                            "FlashbackPlaybackCommandsDropped": 0,
@@ -1825,6 +1834,9 @@ static partial class Program
                          },
                          {
                            "TimestampUtc": "2026-05-04T12:00:01Z",
+                           "PreviewPacingLikelySlowStage": "CompositorMiss",
+                           "PreviewPacingSlowStageConfidence": "High",
+                           "PreviewPacingSlowStageEvidence": "dxgiRecentMissed=4",
                            "FlashbackPlaybackPendingCommands": 2,
                            "FlashbackPlaybackCommandsEnqueued": 9,
                            "FlashbackPlaybackCommandsProcessed": 8,
@@ -1873,6 +1885,9 @@ static partial class Program
                     AssertContains(output, "MjpegUniqueFps: 60");
                     AssertContains(output, "PreviewDropDelta: 4");
                     AssertContains(output, "PlaybackDropDelta: 2");
+                    AssertContains(output, "PreviewPacingLikelySlowStage: VisualDuplicateOrLowMotion");
+                    AssertContains(output, "PreviewPacingSlowStageConfidence: Medium");
+                    AssertContains(output, "PreviewPacingSlowStageEvidence: synthetic duplicate cadence");
                 },
                 i => i == 0
                     ? """
@@ -1903,7 +1918,10 @@ static partial class Program
                           "VisualCadenceMotionConfidence": "High",
                           "MjpegPacketHashInputObservedFps": 120,
                           "MjpegPacketHashUniqueObservedFps": 60,
-                          "MjpegPacketHashDuplicateFramePercent": 50
+                          "MjpegPacketHashDuplicateFramePercent": 50,
+                          "PreviewPacingLikelySlowStage": "VisualDuplicateOrLowMotion",
+                          "PreviewPacingSlowStageConfidence": "Medium",
+                          "PreviewPacingSlowStageEvidence": "synthetic duplicate cadence"
                         }
                       }
                       """

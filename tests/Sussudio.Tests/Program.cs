@@ -504,6 +504,24 @@ static partial class Program
                 "D3D preview diagnostics expose swap-chain and render timing contract",
                 D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming),
             await RunCheckAsync(
+                "Preview pacing classifier rejects weak samples",
+                PreviewPacingClassifier_RequiresStableSampleUnlessHardSignal),
+            await RunCheckAsync(
+                "Preview pacing classifier prefers source capture when source drops",
+                PreviewPacingClassifier_ClassifiesSourceCaptureBeforePreviewTail),
+            await RunCheckAsync(
+                "Preview pacing classifier flags compositor misses first",
+                PreviewPacingClassifier_ClassifiesCompositorMissBeforePresentBlocked),
+            await RunCheckAsync(
+                "Preview pacing classifier flags dominant render upload",
+                PreviewPacingClassifier_ClassifiesDominantRenderUpload),
+            await RunCheckAsync(
+                "Preview pacing classifier flags frame latency wait timeout",
+                PreviewPacingClassifier_ClassifiesFrameLatencyWaitTimeout),
+            await RunCheckAsync(
+                "Preview pacing classifier is wired into automation snapshots",
+                PreviewPacingClassifier_IsWiredIntoAutomationSnapshots),
+            await RunCheckAsync(
                 "D3D preview transition drain drops pending frames",
                 D3D11PreviewRenderer_DropPendingFrames_DrainsQueueAndMarksGeneration),
             await RunCheckAsync(
@@ -1908,6 +1926,9 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("DiagnosticPresentLane"), "AutomationSnapshot.DiagnosticPresentLane");
         AssertNotNull(snapshotType.GetProperty("DiagnosticRecordingLane"), "AutomationSnapshot.DiagnosticRecordingLane");
         AssertNotNull(snapshotType.GetProperty("DiagnosticAudioLane"), "AutomationSnapshot.DiagnosticAudioLane");
+        AssertNotNull(snapshotType.GetProperty("PreviewPacingLikelySlowStage"), "AutomationSnapshot.PreviewPacingLikelySlowStage");
+        AssertNotNull(snapshotType.GetProperty("PreviewPacingSlowStageConfidence"), "AutomationSnapshot.PreviewPacingSlowStageConfidence");
+        AssertNotNull(snapshotType.GetProperty("PreviewPacingSlowStageEvidence"), "AutomationSnapshot.PreviewPacingSlowStageEvidence");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandCommandsEnqueued"), "AutomationSnapshot.CaptureCommandCommandsEnqueued");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandCommandsCompleted"), "AutomationSnapshot.CaptureCommandCommandsCompleted");
         AssertNotNull(snapshotType.GetProperty("CaptureCommandCommandsFailed"), "AutomationSnapshot.CaptureCommandCommandsFailed");
@@ -2180,7 +2201,7 @@ static partial class Program
             ?? throw new InvalidOperationException("AutomationSnapshotFormatter.FormatSnapshot not found.");
 
         const string json = """
-                            {"Snapshot":{"SessionState":"Ready","StatusText":"Idle","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":true,"IsRecording":false,"SelectedResolution":"3840x2160","SelectedFrameRate":120,"SelectedRecordingFormat":"HEVC","SelectedQuality":"High","SelectedPreset":"P5","SelectedSplitEncodeMode":"Auto","SelectedVideoFormat":"MJPG","ShowAllCaptureOptions":true,"PreviewVolumePercent":42.5,"IsStatsVisible":true,"IsHdrEnabled":false,"IsHdrAvailable":true,"HdrOutputActive":false,"HdrRuntimeState":"Inactive","RequestedPipelineMode":"SDR","ActivePipelineMode":"SDR","PipelineModeMatched":true,"IsAudioEnabled":true,"IsAudioPreviewEnabled":false,"IsCustomAudioInputEnabled":false,"AudioPeak":0,"AudioClipping":false,"AudioSignalPresent":false,"AudioReaderActive":false,"AudioFramesArrived":0,"AudioFramesWrittenToSink":0,"VideoReaderActive":true,"IngestVideoFramesArrived":120,"IngestVideoFramesWrittenToSink":120,"EncoderVideoFramesEnqueued":0,"EncoderVideoFramesEncoded":0,"FfmpegVideoQueueDepth":0,"VideoDropsQueueSaturated":0,"IngestLastVideoFrameAgeMs":5,"EncoderLastEnqueueAgeMs":0,"EncoderLastWriteAgeMs":0,"MemoryPreference":"Gpu","VideoRequestedSubtype":"MJPG","VideoNegotiatedSubtype":"MJPG","VideoIngestErrorCount":0,"SourceReaderReadOutstanding":false,"SourceReaderReadOutstandingMs":0,"SourceReaderLastFrameTickMs":0,"SourceReaderFrameChannelDepth":0,"WasapiCaptureCallbackCount":0,"WasapiCaptureCallbackAvgIntervalMs":0,"WasapiCaptureCallbackMaxIntervalMs":0,"WasapiCaptureCallbackSilenceCount":0,"WasapiCaptureLastCallbackTickMs":0,"WasapiCaptureAudioLevelEventsFired":0,"WasapiPlaybackRenderCallbackCount":0,"WasapiPlaybackRenderSilenceCount":0,"WasapiPlaybackQueueDepth":0,"WasapiPlaybackQueueDropCount":0,"WasapiPlaybackLastRenderTickMs":0,"OutputPath":"","RecordingTime":"00:00:00","RecordingSizeInfo":"0 B","RecordingBitrateInfo":"0 Mbps","RecordingBackend":"None","AudioPathMode":"None","MuxResult":"NotAttempted","LastOutputPath":"","LastOutputSizeBytes":0,"LastFinalizeStatus":"None","PerformanceScore":100,"PerformancePerfectionMet":true,"PerformanceSummary":"OK","EstimatedPipelineLatencyMs":1,"CaptureCadenceObservedFps":120,"ExpectedCaptureFrameRate":120,"CaptureCadenceSampleCount":300,"CaptureCadenceAverageIntervalMs":8.3,"CaptureCadenceP95IntervalMs":8.5,"CaptureCadenceMaxIntervalMs":9.0,"CaptureCadenceJitterStdDevMs":0.1,"CaptureCadenceSevereGapCount":0,"CaptureCadenceEstimatedDroppedFrames":0,"CaptureCadenceEstimatedDropPercent":0,"MjpegDecodeSampleCount":300,"MjpegDecodeAvgMs":2.1,"MjpegDecodeP95Ms":3.4,"MjpegDecodeMaxMs":5.6,"MjpegInteropCopySampleCount":300,"MjpegInteropCopyAvgMs":0.9,"MjpegInteropCopyP95Ms":1.4,"MjpegInteropCopyMaxMs":2.2,"MjpegCallbackSampleCount":300,"MjpegCallbackAvgMs":4.5,"MjpegCallbackP95Ms":6.7,"MjpegCallbackMaxMs":9.1,"MjpegDecoderCount":2,"MjpegReorderSampleCount":300,"MjpegReorderAvgMs":0.4,"MjpegReorderP95Ms":0.8,"MjpegReorderMaxMs":1.2,"MjpegPipelineSampleCount":300,"MjpegPipelineAvgMs":5.1,"MjpegPipelineP95Ms":7.0,"MjpegPipelineMaxMs":9.4,"MjpegTotalDecoded":301,"MjpegTotalEmitted":300,"MjpegTotalDropped":1,"MjpegReorderSkips":2,"MjpegReorderBufferDepth":1,"MjpegPerDecoder":[{"WorkerIndex":0,"SampleCount":150,"AvgMs":2.0,"P95Ms":3.0,"MaxMs":4.0},{"WorkerIndex":1,"SampleCount":151,"AvgMs":2.2,"P95Ms":3.2,"MaxMs":4.2}],"PreviewRendererMode":"D3D11VideoProcessor","PreviewStartupState":"Rendering","PreviewFirstVisualConfirmed":true,"PreviewD3DFramesSubmitted":120,"PreviewD3DFramesRendered":120,"PreviewD3DFramesDropped":0,"PreviewD3DInputColorSpace":"BT.709","PreviewD3DOutputColorSpace":"sRGB","PreviewCadenceObservedFps":120,"DetectedSourceFrameRate":120,"SourceWidth":3840,"SourceHeight":2160,"SourceIsHdr":false,"SourceTelemetryAvailability":"Available","SourceTelemetryConfidence":"High"}}
+                            {"Snapshot":{"SessionState":"Ready","StatusText":"Idle","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":true,"IsRecording":false,"SelectedResolution":"3840x2160","SelectedFrameRate":120,"SelectedRecordingFormat":"HEVC","SelectedQuality":"High","SelectedPreset":"P5","SelectedSplitEncodeMode":"Auto","SelectedVideoFormat":"MJPG","ShowAllCaptureOptions":true,"PreviewVolumePercent":42.5,"IsStatsVisible":true,"IsHdrEnabled":false,"IsHdrAvailable":true,"HdrOutputActive":false,"HdrRuntimeState":"Inactive","RequestedPipelineMode":"SDR","ActivePipelineMode":"SDR","PipelineModeMatched":true,"IsAudioEnabled":true,"IsAudioPreviewEnabled":false,"IsCustomAudioInputEnabled":false,"AudioPeak":0,"AudioClipping":false,"AudioSignalPresent":false,"AudioReaderActive":false,"AudioFramesArrived":0,"AudioFramesWrittenToSink":0,"VideoReaderActive":true,"IngestVideoFramesArrived":120,"IngestVideoFramesWrittenToSink":120,"EncoderVideoFramesEnqueued":0,"EncoderVideoFramesEncoded":0,"FfmpegVideoQueueDepth":0,"VideoDropsQueueSaturated":0,"IngestLastVideoFrameAgeMs":5,"EncoderLastEnqueueAgeMs":0,"EncoderLastWriteAgeMs":0,"MemoryPreference":"Gpu","VideoRequestedSubtype":"MJPG","VideoNegotiatedSubtype":"MJPG","VideoIngestErrorCount":0,"SourceReaderReadOutstanding":false,"SourceReaderReadOutstandingMs":0,"SourceReaderLastFrameTickMs":0,"SourceReaderFrameChannelDepth":0,"WasapiCaptureCallbackCount":0,"WasapiCaptureCallbackAvgIntervalMs":0,"WasapiCaptureCallbackMaxIntervalMs":0,"WasapiCaptureCallbackSilenceCount":0,"WasapiCaptureLastCallbackTickMs":0,"WasapiCaptureAudioLevelEventsFired":0,"WasapiPlaybackRenderCallbackCount":0,"WasapiPlaybackRenderSilenceCount":0,"WasapiPlaybackQueueDepth":0,"WasapiPlaybackQueueDropCount":0,"WasapiPlaybackLastRenderTickMs":0,"OutputPath":"","RecordingTime":"00:00:00","RecordingSizeInfo":"0 B","RecordingBitrateInfo":"0 Mbps","RecordingBackend":"None","AudioPathMode":"None","MuxResult":"NotAttempted","LastOutputPath":"","LastOutputSizeBytes":0,"LastFinalizeStatus":"None","PerformanceScore":100,"PerformancePerfectionMet":true,"PerformanceSummary":"OK","EstimatedPipelineLatencyMs":1,"CaptureCadenceObservedFps":120,"ExpectedCaptureFrameRate":120,"CaptureCadenceSampleCount":300,"CaptureCadenceAverageIntervalMs":8.3,"CaptureCadenceP95IntervalMs":8.5,"CaptureCadenceMaxIntervalMs":9.0,"CaptureCadenceJitterStdDevMs":0.1,"CaptureCadenceSevereGapCount":0,"CaptureCadenceEstimatedDroppedFrames":0,"CaptureCadenceEstimatedDropPercent":0,"MjpegDecodeSampleCount":300,"MjpegDecodeAvgMs":2.1,"MjpegDecodeP95Ms":3.4,"MjpegDecodeMaxMs":5.6,"MjpegInteropCopySampleCount":300,"MjpegInteropCopyAvgMs":0.9,"MjpegInteropCopyP95Ms":1.4,"MjpegInteropCopyMaxMs":2.2,"MjpegCallbackSampleCount":300,"MjpegCallbackAvgMs":4.5,"MjpegCallbackP95Ms":6.7,"MjpegCallbackMaxMs":9.1,"MjpegDecoderCount":2,"MjpegReorderSampleCount":300,"MjpegReorderAvgMs":0.4,"MjpegReorderP95Ms":0.8,"MjpegReorderMaxMs":1.2,"MjpegPipelineSampleCount":300,"MjpegPipelineAvgMs":5.1,"MjpegPipelineP95Ms":7.0,"MjpegPipelineMaxMs":9.4,"MjpegTotalDecoded":301,"MjpegTotalEmitted":300,"MjpegTotalDropped":1,"MjpegReorderSkips":2,"MjpegReorderBufferDepth":1,"MjpegPerDecoder":[{"WorkerIndex":0,"SampleCount":150,"AvgMs":2.0,"P95Ms":3.0,"MaxMs":4.0},{"WorkerIndex":1,"SampleCount":151,"AvgMs":2.2,"P95Ms":3.2,"MaxMs":4.2}],"PreviewRendererMode":"D3D11VideoProcessor","PreviewStartupState":"Rendering","PreviewFirstVisualConfirmed":true,"PreviewD3DFramesSubmitted":120,"PreviewD3DFramesRendered":120,"PreviewD3DFramesDropped":0,"PreviewD3DInputColorSpace":"BT.709","PreviewD3DOutputColorSpace":"sRGB","PreviewCadenceObservedFps":120,"PreviewPacingLikelySlowStage":"MjpegDecode","PreviewPacingSlowStageConfidence":"Medium","PreviewPacingSlowStageEvidence":"decode p95 over budget","DetectedSourceFrameRate":120,"SourceWidth":3840,"SourceHeight":2160,"SourceIsHdr":false,"SourceTelemetryAvailability":"Available","SourceTelemetryConfidence":"High"}}
                             """;
         using var document = JsonDocument.Parse(json);
         var output = formatSnapshot.Invoke(null, new object[] { document.RootElement, false })?.ToString()
@@ -2198,6 +2219,7 @@ static partial class Program
         AssertContains(output, "Pipeline: avg=5.1ms");
         AssertContains(output, "== Diagnostics ==");
         AssertContains(output, "Legacy Score:");
+        AssertContains(output, "Pacing Classifier: stage=MjpegDecode confidence=Medium evidence=decode p95 over budget");
         AssertContains(output, "Frame Time:");
         AssertContains(output, "Average Rate:");
         AssertContains(output, "Decoder[0]: avg=2.0ms");
@@ -5923,7 +5945,9 @@ static partial class Program
 
     private static void AssertContains(string value, string token)
     {
-        if (value.IndexOf(token, StringComparison.OrdinalIgnoreCase) < 0)
+        var normalizedValue = NormalizeLineEndings(value);
+        var normalizedToken = NormalizeLineEndings(token);
+        if (normalizedValue.IndexOf(normalizedToken, StringComparison.OrdinalIgnoreCase) < 0)
         {
             throw new InvalidOperationException(
                 $"Assertion failed: expected '{value}' to contain '{token}'.");
@@ -5932,12 +5956,17 @@ static partial class Program
 
     private static void AssertDoesNotContain(string value, string token)
     {
-        if (value.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
+        var normalizedValue = NormalizeLineEndings(value);
+        var normalizedToken = NormalizeLineEndings(token);
+        if (normalizedValue.IndexOf(normalizedToken, StringComparison.OrdinalIgnoreCase) >= 0)
         {
             throw new InvalidOperationException(
                 $"Assertion failed: expected value not to contain '{token}'.");
         }
     }
+
+    private static string NormalizeLineEndings(string value)
+        => value.Replace("\r\n", "\n").Replace('\r', '\n');
 
     private static void AssertNotNull(object? value, string fieldName)
     {

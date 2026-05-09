@@ -772,19 +772,22 @@ static partial class Program
 
     private static string ExtractSourceBlock(string source, string startToken, string endToken)
     {
-        var start = source.IndexOf(startToken, StringComparison.Ordinal);
+        var normalizedSource = NormalizeLineEndings(source);
+        var normalizedStartToken = NormalizeLineEndings(startToken);
+        var normalizedEndToken = NormalizeLineEndings(endToken);
+        var start = normalizedSource.IndexOf(normalizedStartToken, StringComparison.Ordinal);
         if (start < 0)
         {
             throw new InvalidOperationException($"Assertion failed: expected source to contain '{startToken}'.");
         }
 
-        var end = source.IndexOf(endToken, start + startToken.Length, StringComparison.Ordinal);
+        var end = normalizedSource.IndexOf(normalizedEndToken, start + normalizedStartToken.Length, StringComparison.Ordinal);
         if (end < 0)
         {
             throw new InvalidOperationException($"Assertion failed: expected source after '{startToken}' to contain '{endToken}'.");
         }
 
-        return source[start..end];
+        return normalizedSource[start..end];
     }
 
 }

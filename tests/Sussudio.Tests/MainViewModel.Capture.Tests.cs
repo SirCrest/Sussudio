@@ -1234,8 +1234,11 @@ static partial class Program
 
     private static void AssertOccursBefore(string value, string earlierToken, string laterToken)
     {
-        var earlier = value.IndexOf(earlierToken, StringComparison.Ordinal);
-        var later = value.IndexOf(laterToken, StringComparison.Ordinal);
+        var normalizedValue = NormalizeLineEndings(value);
+        var normalizedEarlierToken = NormalizeLineEndings(earlierToken);
+        var normalizedLaterToken = NormalizeLineEndings(laterToken);
+        var earlier = normalizedValue.IndexOf(normalizedEarlierToken, StringComparison.Ordinal);
+        var later = normalizedValue.IndexOf(normalizedLaterToken, StringComparison.Ordinal);
         if (earlier < 0 || later < 0 || earlier >= later)
         {
             throw new InvalidOperationException(

@@ -100,6 +100,9 @@ public static class PerformanceTimelineTools
                 PreviewD3DSchedulerToPresentMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DLastRenderedSchedulerToPresentMs"),
                 PreviewD3DLastPipelineLatencyMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DLastRenderedPipelineLatencyMs"),
                 PreviewD3DLastDropReason = AutomationSnapshotFormatter.Get(item, "PreviewD3DLastDropReason"),
+                PreviewPacingLikelySlowStage = AutomationSnapshotFormatter.Get(item, "PreviewPacingLikelySlowStage"),
+                PreviewPacingSlowStageConfidence = AutomationSnapshotFormatter.Get(item, "PreviewPacingSlowStageConfidence"),
+                PreviewPacingSlowStageEvidence = AutomationSnapshotFormatter.Get(item, "PreviewPacingSlowStageEvidence"),
                 FlashbackPlaybackState = AutomationSnapshotFormatter.Get(item, "FlashbackPlaybackState"),
                 FlashbackPlaybackTargetFps = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackTargetFps"),
                 FlashbackPlaybackObservedFps = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackObservedFps"),
@@ -287,6 +290,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"D3D Missed:     {first.PreviewD3DRecentMissed} -> {last.PreviewD3DRecentMissed} (latest-window delta: {last.PreviewD3DRecentMissed - first.PreviewD3DRecentMissed:+0;-0;0})");
             builder.AppendLine($"D3D Stat Fails: {first.PreviewD3DRecentFailures} -> {last.PreviewD3DRecentFailures} (latest-window delta: {last.PreviewD3DRecentFailures - first.PreviewD3DRecentFailures:+0;-0;0})");
             builder.AppendLine($"D3D Last Drop:  {FormatOptional(last.PreviewD3DLastDropReason)}");
+            builder.AppendLine($"Preview Slow Stage: {FormatOptional(first.PreviewPacingLikelySlowStage)}/{FormatOptional(first.PreviewPacingSlowStageConfidence)} -> {FormatOptional(last.PreviewPacingLikelySlowStage)}/{FormatOptional(last.PreviewPacingSlowStageConfidence)} evidence={FormatOptional(last.PreviewPacingSlowStageEvidence)}");
             builder.AppendLine($"Flashback State:{FormatOptional(first.FlashbackPlaybackState)} -> {FormatOptional(last.FlashbackPlaybackState)}");
             builder.AppendLine($"Flashback target:{first.FlashbackPlaybackTargetFps:F1}fps -> {last.FlashbackPlaybackTargetFps:F1}fps observed:{first.FlashbackPlaybackObservedFps:F1}fps -> {last.FlashbackPlaybackObservedFps:F1}fps 5%Low:{first.FlashbackPlaybackFivePercentLowFps:F1}fps -> {last.FlashbackPlaybackFivePercentLowFps:F1}fps 1%Low:{first.FlashbackPlaybackOnePercentLowFps:F1}fps -> {last.FlashbackPlaybackOnePercentLowFps:F1}fps");
             builder.AppendLine($"Flashback P99:  {first.FlashbackPlaybackP99FrameMs:F1}ms -> {last.FlashbackPlaybackP99FrameMs:F1}ms (max latest={last.FlashbackPlaybackMaxFrameMs:F1}ms)");
@@ -617,6 +621,9 @@ public static class PerformanceTimelineTools
         public double PreviewD3DSchedulerToPresentMs { get; init; }
         public double PreviewD3DLastPipelineLatencyMs { get; init; }
         public string PreviewD3DLastDropReason { get; init; } = string.Empty;
+        public string PreviewPacingLikelySlowStage { get; init; } = string.Empty;
+        public string PreviewPacingSlowStageConfidence { get; init; } = string.Empty;
+        public string PreviewPacingSlowStageEvidence { get; init; } = string.Empty;
         public string FlashbackPlaybackState { get; init; } = string.Empty;
         public double FlashbackPlaybackTargetFps { get; init; }
         public double FlashbackPlaybackObservedFps { get; init; }

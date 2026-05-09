@@ -237,6 +237,9 @@ public sealed class AutomationSnapshot
     public string DiagnosticPresentLane { get; init; } = string.Empty;
     public string DiagnosticRecordingLane { get; init; } = string.Empty;
     public string DiagnosticAudioLane { get; init; } = string.Empty;
+    public string PreviewPacingLikelySlowStage { get; init; } = "Unknown";
+    public string PreviewPacingSlowStageConfidence { get; init; } = "None";
+    public string PreviewPacingSlowStageEvidence { get; init; } = "Preview pacing classification has not run.";
     public long CaptureCommandCommandsEnqueued { get; init; }
     public long CaptureCommandCommandsCompleted { get; init; }
     public long CaptureCommandCommandsFailed { get; init; }
@@ -1082,6 +1085,9 @@ public sealed class PerformanceTimelineEntry
     public double PreviewD3DLastRenderedSchedulerToPresentMs { get; init; }
     public double PreviewD3DLastRenderedPipelineLatencyMs { get; init; }
     public string PreviewD3DLastDropReason { get; init; } = string.Empty;
+    public string PreviewPacingLikelySlowStage { get; init; } = "Unknown";
+    public string PreviewPacingSlowStageConfidence { get; init; } = "None";
+    public string PreviewPacingSlowStageEvidence { get; init; } = string.Empty;
     public string FlashbackPlaybackState { get; init; } = "N/A";
     public double FlashbackPlaybackTargetFps { get; init; }
     public double FlashbackPlaybackObservedFps { get; init; }
