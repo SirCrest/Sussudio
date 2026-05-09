@@ -2437,7 +2437,7 @@ static partial class Program
 
     private static Task AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry()
     {
-        var traceModelsText = ReadRepoFile("Sussudio/Models/AudioRampTraceModels.cs").Replace("\r\n", "\n");
+        var traceModelsText = ReadRepoFile("Sussudio/Models/Audio/AudioRampTraceModels.cs").Replace("\r\n", "\n");
         var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs").Replace("\r\n", "\n");
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
         var runtimeContractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeSnapshots.cs").Replace("\r\n", "\n");
@@ -6123,7 +6123,7 @@ static partial class Program
         var inputFiles = inputDirectories
             .SelectMany(Directory.EnumerateFiles)
             .Concat(EnumerateToolProjectCompileIncludes(projectDirectory))
-            .Append(Path.Combine(root, "Sussudio", "Models", "AutomationCommandKind.cs"))
+            .Append(Path.Combine(root, "Sussudio", "Models", "Automation", "AutomationCommandKind.cs"))
             .Where(file => File.Exists(file) && IsToolInputFile(file))
             .Distinct(StringComparer.OrdinalIgnoreCase);
 
