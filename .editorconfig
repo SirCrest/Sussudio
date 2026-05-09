@@ -1,0 +1,18 @@
+root = true
+
+[*]
+end_of_line = crlf
+insert_final_newline = true
+charset = utf-8
+indent_style = space
+
+[*.{cs,csx}]
+indent_size = 4
+
+# Disallow runs of empty lines (>1 consecutive). MainWindow.xaml.cs once
+# accumulated a 49-blank-line gap between methods; this rule prevents
+# regressing into that.
+dotnet_style_allow_multiple_blank_lines_experimental = false:warning
+
+[*.{xml,csproj,props,targets,xaml,json,slnx}]
+indent_size = 2

@@ -2308,7 +2308,7 @@ static partial class Program
 
     private static async Task McpPreviewColorProbeTool_FormatsProbeResponses()
     {
-        var previewColorProbeTool = RequireMcpType("McpServer.Tools.PreviewColorProbeTool");
+        var previewColorProbeTool = RequireMcpType("McpServer.Tools.PreviewColorProbeTools");
 
         var failureText = await InvokePreviewColorProbeAsync(
                 previewColorProbeTool,
@@ -2390,7 +2390,7 @@ static partial class Program
 
     private static async Task McpVideoSourceProbeTool_FormatsProbeResponses()
     {
-        var videoSourceProbeTool = RequireMcpType("McpServer.Tools.VideoSourceProbeTool");
+        var videoSourceProbeTool = RequireMcpType("McpServer.Tools.VideoSourceProbeTools");
 
         var failureText = await InvokeVideoSourceProbeAsync(
                 videoSourceProbeTool,
