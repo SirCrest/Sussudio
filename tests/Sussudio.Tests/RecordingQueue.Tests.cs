@@ -10,6 +10,7 @@ static partial class Program
         var flashbackSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs");
         var flashbackBackendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
         var flashbackBufferSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs");
+        var flashbackCleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs");
         var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
         var captureSnapshotsSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs");
         var unifiedVideoCaptureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs");
@@ -202,8 +203,8 @@ static partial class Program
         AssertContains(flashbackBufferSource, "private bool IsSessionPreservedForRecoveryUnsafe()");
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY");
-        AssertContains(flashbackBufferSource, "FLASHBACK_STALE_SESSION_PRESERVE_SKIP");
-        AssertContains(flashbackBufferSource, "File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName))");
+        AssertContains(flashbackCleanupSource, "FLASHBACK_STALE_SESSION_PRESERVE_SKIP");
+        AssertContains(flashbackCleanupSource, "File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName))");
         AssertContains(flashbackBufferSource, "DeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"valid_window\")");
         AssertContains(flashbackBufferSource, "DeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"disk_budget\")");
         AssertContains(flashbackBufferSource, "private static bool DeleteEvictedFile");

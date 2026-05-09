@@ -3858,7 +3858,7 @@ static partial class Program
         var abandonBlock = ExtractTextBetween(
             bufferText,
             "public void AbandonGeneratedSegmentPath",
-            "    private static void CleanupStaleSessionDirectories");
+            "    public void OnSegmentCompleted");
         AssertContains(abandonBlock, "if (IsSameSegmentPath(_activeSegmentPath, generatedPath))");
         AssertContains(abandonBlock, "_activeSegmentPath = restoreActivePath;");
         AssertContains(abandonBlock, "_nextSegmentIndex--;");

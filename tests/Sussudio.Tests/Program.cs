@@ -3452,6 +3452,8 @@ static partial class Program
     {
         var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
+        var cleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(source, "var maxTicks = Math.Max(0, _options.BufferDuration.Ticks);");
         AssertContains(source, "var duration = NonNegativeDeltaTicks(ptsTicks, startTicks);");
@@ -3464,9 +3466,9 @@ static partial class Program
         AssertContains(source, "var totalDuration = NonNegativeDeltaTicks(latestTicks, startTicks);");
         AssertContains(source, "var evictTicks = ToNonNegativeLongSaturated(excessBytes / bytesPerTick);");
         AssertContains(source, "var newStart = AddNonNegativeSaturated(Math.Max(0, startTicks), evictTicks);");
-        AssertContains(source, "directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);");
-        AssertContains(source, "totalCacheBytes = AddNonNegativeSaturated(totalCacheBytes, directoryBytes);");
-        AssertContains(source, "totalCacheBytes = SubtractNonNegative(totalCacheBytes, candidate.SizeBytes);");
+        AssertContains(cleanupSource, "directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);");
+        AssertContains(cleanupSource, "totalCacheBytes = AddNonNegativeSaturated(totalCacheBytes, directoryBytes);");
+        AssertContains(cleanupSource, "totalCacheBytes = SubtractNonNegative(totalCacheBytes, candidate.SizeBytes);");
 
         return Task.CompletedTask;
     }
@@ -4483,8 +4485,8 @@ static partial class Program
             Directory.SetLastWriteTimeUtc(staleFlashbackSession, staleTime);
             Directory.SetLastWriteTimeUtc(unrelatedEmptyDirectory, staleTime);
 
-            var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
-            var cleanup = managerType.GetMethod("CleanupStaleSessionDirectories", BindingFlags.Static | BindingFlags.NonPublic)
+            var cleanupType = RequireType("Sussudio.Services.Flashback.FlashbackStartupCacheCleanup");
+            var cleanup = cleanupType.GetMethod("CleanupStaleSessionDirectories", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
                 ?? throw new InvalidOperationException("CleanupStaleSessionDirectories not found.");
 
             cleanup.Invoke(null, new object[] { tempDir, currentSession });
@@ -4493,11 +4495,13 @@ static partial class Program
             AssertEqual(false, Directory.Exists(staleFlashbackSession), "Plausible stale empty flashback session removed");
             AssertEqual(true, Directory.Exists(unrelatedEmptyDirectory), "Unrelated stale empty directory preserved");
 
-            var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.cs"))
+            var cleanupSource = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackStartupCacheCleanup.cs"))
                 .Replace("\r\n", "\n");
-            AssertContains(source, "FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir");
-            AssertContains(source, "private static bool IsPlausibleFlashbackSessionDirectoryName(string name)");
-            AssertContains(source, "private static bool IsLowerHexString(ReadOnlySpan<char> value)");
+            var scannerSource = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackSessionRecoveryScanner.cs"))
+                .Replace("\r\n", "\n");
+            AssertContains(cleanupSource, "FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir");
+            AssertContains(scannerSource, "internal static bool IsPlausibleFlashbackSessionDirectoryName(string name)");
+            AssertContains(scannerSource, "internal static bool IsLowerHexString(ReadOnlySpan<char> value)");
         }
         finally
         {
@@ -4537,8 +4541,8 @@ static partial class Program
             File.SetLastWriteTimeUtc(Path.Combine(oldSession, "fb_old_0001.ts"), now - TimeSpan.FromHours(2));
             File.SetLastWriteTimeUtc(Path.Combine(recentSession, "fb_recent_0001.ts"), now - TimeSpan.FromMinutes(5));
 
-            var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
-            var cleanup = managerType.GetMethod("CleanupSessionCacheBudget", BindingFlags.Static | BindingFlags.NonPublic)
+            var cleanupType = RequireType("Sussudio.Services.Flashback.FlashbackStartupCacheCleanup");
+            var cleanup = cleanupType.GetMethod("CleanupSessionCacheBudget", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
                 ?? throw new InvalidOperationException("CleanupSessionCacheBudget not found.");
 
             cleanup.Invoke(null, new object[] { tempDir, currentSession, 25L });
