@@ -240,14 +240,16 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         {
             await capture.InitializeAsync(
                 deviceSymbolicLink,
-                width,
-                height,
-                fps,
-                requireP010,
-                requestedPixelFormat,
-                useMjpegHighFrameRateMode,
-                useExternalMjpegDecode ? IntPtr.Zero : dxgiDeviceManagerPtr,
-                useExternalMjpegDecode).ConfigureAwait(false);
+                new VideoCaptureNegotiationOptions(
+                    Width: width,
+                    Height: height,
+                    Fps: fps,
+                    RequireP010: requireP010,
+                    RequestedPixelFormat: requestedPixelFormat,
+                    UseMjpegHighFrameRateMode: useMjpegHighFrameRateMode,
+                    DxgiDeviceManager: useExternalMjpegDecode ? IntPtr.Zero : dxgiDeviceManagerPtr,
+                    UseExternalMjpegDecode: useExternalMjpegDecode))
+                .ConfigureAwait(false);
         }
         catch
         {

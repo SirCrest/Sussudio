@@ -11,6 +11,19 @@ using Sussudio.Services.Audio;
 
 namespace Sussudio.Services.Capture;
 
+// Negotiated capture mode for one MfSourceReaderVideoCapture session. Bundling
+// these is mostly about not having a 9-positional-parameter call site — the
+// device link stays separate because it identifies the device, not the mode.
+public sealed record VideoCaptureNegotiationOptions(
+    int Width,
+    int Height,
+    double Fps,
+    bool RequireP010,
+    string? RequestedPixelFormat = null,
+    bool UseMjpegHighFrameRateMode = false,
+    IntPtr DxgiDeviceManager = default,
+    bool UseExternalMjpegDecode = false);
+
 public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 {
     public delegate void RawFrameCallback(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick);
@@ -107,31 +120,31 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         long EstimatedDroppedFrames,
         double EstimatedDropPercent);
 
-    public Task InitializeAsync(
-        string deviceSymbolicLink,
-        int width,
-        int height,
-        double fps,
-        bool requireP010,
-        string? requestedPixelFormat = null,
-        bool useMjpegHighFrameRateMode = false,
-        IntPtr dxgiDeviceManager = default,
-        bool useExternalMjpegDecode = false)
+    public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)
     {
         if (string.IsNullOrWhiteSpace(deviceSymbolicLink))
         {
             throw new ArgumentException("Video device symbolic link is required.", nameof(deviceSymbolicLink));
         }
 
-        if (width <= 0 || height <= 0)
+        if (options.Width <= 0 || options.Height <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(width), "Video width/height must be positive.");
+            throw new ArgumentOutOfRangeException(nameof(options), "Video width/height must be positive.");
         }
 
-        if (fps <= 0)
+        if (options.Fps <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(fps), "Video frame rate must be positive.");
+            throw new ArgumentOutOfRangeException(nameof(options), "Video frame rate must be positive.");
         }
+
+        var width = options.Width;
+        var height = options.Height;
+        var fps = options.Fps;
+        var requireP010 = options.RequireP010;
+        var requestedPixelFormat = options.RequestedPixelFormat;
+        var useMjpegHighFrameRateMode = options.UseMjpegHighFrameRateMode;
+        var dxgiDeviceManager = options.DxgiDeviceManager;
+        var useExternalMjpegDecode = options.UseExternalMjpegDecode;
 
         lock (_sync)
         {
