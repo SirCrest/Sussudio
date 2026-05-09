@@ -398,7 +398,7 @@ static partial class Program
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "CancelFlashbackExportCts(oldExportCts);");
-        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "CancellationTokenSource.CreateLinkedTokenSource(ct)");
+        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "IsCurrentFlashbackExport(exportId, exportCts)");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "FlashbackExportProgress = p.Percent;");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "exportCts.Token");

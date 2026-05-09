@@ -454,6 +454,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
     {
         // Hot WASAPI callback path: copy/enqueue only, never await or block.
+        cancellationToken.ThrowIfCancellationRequested();
         var queue = _audioQueue;
         if (_disposed || !_started || !_audioEnabled || queue == null || samples.IsEmpty)
         {
@@ -481,6 +482,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
     {
         // Hot WASAPI callback path: copy/enqueue only, never await or block.
+        cancellationToken.ThrowIfCancellationRequested();
         var queue = _microphoneQueue;
         if (_disposed || !_started || !_microphoneEnabled || queue == null || samples.IsEmpty)
         {

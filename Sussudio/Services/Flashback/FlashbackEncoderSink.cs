@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Windows.Graphics.Imaging;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Preview;
@@ -321,7 +320,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
             _bufferManager.SetSegmentExtension(GetSegmentExtension(sessionContext.CodecName));
 
-            var tsPath = _bufferManager.GetFilePath(out var startupGeneratedSegment);
+            var tsPath = _bufferManager.AcquireSegmentPath(out var startupGeneratedSegment);
             if (startupGeneratedSegment)
             {
                 startupGeneratedSegmentPath = tsPath;
@@ -874,11 +873,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         cancellationToken.ThrowIfCancellationRequested();
         EnqueueMicrophoneSamples(samples);
         return Task.CompletedTask;
-    }
-
-    public Task WriteVideoAsync(SoftwareBitmap frame, CancellationToken cancellationToken = default)
-    {
-        throw new NotSupportedException("Use EnqueueRawVideoFrame or EnqueueGpuVideoFrame instead.");
     }
 
     public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)

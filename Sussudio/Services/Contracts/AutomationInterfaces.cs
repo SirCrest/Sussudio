@@ -30,8 +30,8 @@ public interface IAutomationDiagnosticsHub : IDisposable, IAsyncDisposable
     Task<RecordingVerificationResult> VerifyLastRecordingAsync(CancellationToken cancellationToken = default);
     Task<RecordingVerificationResult> VerifyFileAsync(
         string filePath,
-        CancellationToken cancellationToken = default,
-        string? verificationProfile = null);
+        string? verificationProfile = null,
+        CancellationToken cancellationToken = default);
     void Start();
     Task StopAsync(CancellationToken cancellationToken = default);
     event EventHandler<AutomationSnapshot>? SnapshotUpdated;

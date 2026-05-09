@@ -372,7 +372,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var verificationProfile = GetString(payload, "verificationProfile");
                     var verifyStartedAt = Stopwatch.GetTimestamp();
                     var verification = await _diagnosticsHub
-                        .VerifyFileAsync(filePath, cancellationToken, verificationProfile)
+                        .VerifyFileAsync(filePath, verificationProfile, cancellationToken)
                         .ConfigureAwait(false);
                     var elapsedMs = (long)Math.Round(Stopwatch.GetElapsedTime(verifyStartedAt).TotalMilliseconds);
                     return CreateResponse(

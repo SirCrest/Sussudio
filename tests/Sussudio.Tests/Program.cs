@@ -4196,14 +4196,14 @@ static partial class Program
         {
             SetPrivateField(manager, "_activeSegmentPath", null);
             var startingIndex = (int)GetPrivateField(manager, "_nextSegmentIndex")!;
-            var getFilePath = manager.GetType().GetMethod("GetFilePath", new[] { typeof(bool).MakeByRefType() })
-                ?? throw new InvalidOperationException("FlashbackBufferManager.GetFilePath(out bool) not found.");
+            var getFilePath = manager.GetType().GetMethod("AcquireSegmentPath", new[] { typeof(bool).MakeByRefType() })
+                ?? throw new InvalidOperationException("FlashbackBufferManager.AcquireSegmentPath(out bool) not found.");
             var abandonGenerated = manager.GetType().GetMethod("AbandonGeneratedSegmentPath")
                 ?? throw new InvalidOperationException("FlashbackBufferManager.AbandonGeneratedSegmentPath not found.");
 
             object?[] args = { false };
             var generatedPath = (string)getFilePath.Invoke(manager, args)!;
-            AssertEqual(true, (bool)args[0]!, "Fresh GetFilePath reports generated path");
+            AssertEqual(true, (bool)args[0]!, "Fresh AcquireSegmentPath reports generated path");
             AssertEqual(generatedPath, (string)GetPrivateField(manager, "_activeSegmentPath")!, "Generated path becomes raw active segment");
             AssertEqual(startingIndex + 1, (int)GetPrivateField(manager, "_nextSegmentIndex")!, "Generated path advances segment index");
 

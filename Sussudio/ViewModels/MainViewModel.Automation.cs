@@ -437,12 +437,12 @@ public partial class MainViewModel
     }
 
     public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
-        double seconds, string outputPath, bool useSelectionRange, CancellationToken ct)
+        double seconds, string outputPath, bool useSelectionRange, CancellationToken cancellationToken = default)
     {
         var exportId = Interlocked.Increment(ref _flashbackExportOperationId);
         var oldExportCts = _exportCts;
         CancelFlashbackExportCts(oldExportCts);
-        _exportCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        _exportCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var exportCts = _exportCts;
 
         if (!_dispatcherQueue.TryEnqueue(() =>

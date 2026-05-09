@@ -275,8 +275,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
     public async Task<RecordingVerificationResult> VerifyFileAsync(
         string filePath,
-        CancellationToken cancellationToken = default,
-        string? verificationProfile = null)
+        string? verificationProfile = null,
+        CancellationToken cancellationToken = default)
     {
         await _verificationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         Interlocked.Increment(ref _verificationInProgress);

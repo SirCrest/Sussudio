@@ -197,7 +197,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     /// <summary>
     /// Prepares the buffer for a sink-only cycle (new encoder, same buffer).
-    /// Nulls the active segment path so the next <see cref="GetFilePath"/> generates
+    /// Nulls the active segment path so the next <see cref="AcquireSegmentPath"/> generates
     /// a fresh file instead of reusing/overwriting the previous sink's segment.
     /// </summary>
     public void FinalizeActiveSegmentForCycle()
@@ -249,7 +249,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 if (TryDeleteFile(_activeSegmentPath))
                 {
                     freedBytes = AddNonNegativeSaturated(freedBytes, activeSegmentBytes);
-                    _activeSegmentPath = null; // Force new path generation on next GetFilePath()
+                    _activeSegmentPath = null; // Force new path generation on next AcquireSegmentPath()
                     Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
                     _previousActiveSegmentBytes = 0;
                 }
@@ -474,12 +474,16 @@ internal sealed class FlashbackBufferManager : IDisposable
     }
 
     /// <summary>
-    /// Gets the active .ts segment path for this session. Generates the first segment on first call.
+    /// Returns the active .ts segment path, generating a new one on first call
+    /// after <see cref="StartCaptureAsync"/> or after segment rotation. The
+    /// "Acquire" prefix flags the side effect (segment-index increment and
+    /// active-path assignment); callers that just want to peek at the current
+    /// path without creating one should add a peek API rather than reuse this.
     /// </summary>
-    public string GetFilePath()
-        => GetFilePath(out _);
+    public string AcquireSegmentPath()
+        => AcquireSegmentPath(out _);
 
-    public string GetFilePath(out bool generated)
+    public string AcquireSegmentPath(out bool generated)
     {
         lock (_indexLock)
         {
