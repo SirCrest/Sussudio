@@ -8,7 +8,6 @@ using D3D11Device = Vortice.Direct3D11.ID3D11Device;
 using D3D11DeviceContext = Vortice.Direct3D11.ID3D11DeviceContext;
 using D3D11Multithread = Vortice.Direct3D11.ID3D11Multithread;
 using D3D11Texture2D = Vortice.Direct3D11.ID3D11Texture2D;
-using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Gpu;
 

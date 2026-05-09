@@ -2,7 +2,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Gpu;
 
