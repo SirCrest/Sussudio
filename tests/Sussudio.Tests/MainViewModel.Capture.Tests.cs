@@ -198,8 +198,12 @@ static partial class Program
 
     private static Task CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+                .Replace("\r\n", "\n");
 
         var rangeExport = ExtractTextBetween(
             captureServiceText,
@@ -629,9 +633,12 @@ static partial class Program
 
     private static Task CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange()
     {
-        var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.cs");
+        var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.cs")
+            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs");
         var captureServiceRawText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
+                .Replace("\r\n", "\n");
         var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
         var viewModelCaptureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
@@ -840,8 +847,12 @@ static partial class Program
             .Where(path => File.ReadAllText(path).Contains("FLASHBACK_", StringComparison.Ordinal))
             .Select(path => File.ReadAllText(path).Replace("\r\n", "\n"))
             .ToArray();
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
+                .Replace("\r\n", "\n");
         var flashbackText = string.Join("\n", flashbackTexts);
 
         AssertNoRegex(
@@ -901,7 +912,7 @@ static partial class Program
         var formatChange = ExtractTextBetween(
             captureServiceText,
             "public Task UpdateRecordingFormatAsync",
-            "/// <summary>\n    /// Cycles the flashback encoder");
+            "    public Task CycleFlashbackEncoderSettingsAsync");
         AssertContains(formatChange, "var cycleFailed = false;");
         AssertContains(formatChange, "var previousSettings = CloneCaptureSettings(_currentSettings);");
         AssertContains(formatChange, "cycleFailed = true;");
@@ -933,7 +944,7 @@ static partial class Program
         var createFlashbackSessionContext = ExtractTextBetween(
             captureServiceText,
             "private FlashbackSessionContext CreateFlashbackSessionContext",
-            "    private async Task EnsureFlashbackPreviewBackendAsync");
+            "    private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts");
         AssertContains(createFlashbackSessionContext, "var frameRateParts = ResolveFlashbackSessionFrameRateParts(settings, frameRate);");
         AssertContains(createFlashbackSessionContext, "frameRate = frameRateParts.EffectiveFrameRate;");
         AssertContains(createFlashbackSessionContext, "FrameRateNumerator = fpsNum");
@@ -1059,8 +1070,10 @@ static partial class Program
 
     private static Task CaptureService_FlashbackEnableDisable_PreservesPreviewState()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+                .Replace("\r\n", "\n");
         var setFlashbackEnabled = ExtractTextBetween(
             captureServiceText,
             "public Task SetFlashbackEnabledAsync",

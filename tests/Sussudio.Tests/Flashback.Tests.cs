@@ -195,8 +195,10 @@ static partial class Program
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var resolve = serviceType.GetMethod("ResolveFlashbackExportThrottleDelayMs", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveFlashbackExportThrottleDelayMs not found.");
-        var sourceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+                .Replace("\r\n", "\n");
 
         AssertEqual(0, (int)resolve.Invoke(null, new object[] { 0.49, 29L, false })!, "Flashback export throttle idle");
         AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.49, 0L, true })!, "Flashback export throttle high-resolution live baseline");
@@ -948,7 +950,7 @@ static partial class Program
 
     private static Task FlashbackExportRejectedDiagnostics_PreserveAttemptedRange()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "resolveRangeAfterEvictionPaused: manager =>");

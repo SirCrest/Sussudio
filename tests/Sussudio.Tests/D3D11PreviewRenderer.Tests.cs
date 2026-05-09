@@ -773,7 +773,9 @@ static partial class Program
         var managerText = ReadRepoFile("Sussudio/Services/Preview/SharedD3DDeviceManager.cs")
             .Replace("\r\n", "\n");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+                .Replace("\r\n", "\n");
         var duplicateMethod = ExtractTextBetween(
             managerText,
             "public bool TryCreateDeviceReference",

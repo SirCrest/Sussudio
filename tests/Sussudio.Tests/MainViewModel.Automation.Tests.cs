@@ -509,7 +509,13 @@ static partial class Program
         AssertDoesNotContain(diagnosticsText, "rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||\n            previewRuntime.DisplayCadenceSlowFramePercent > 1.0");
 
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+                .Replace("\r\n", "\n");
         var flashbackBackendText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
             .Replace("\r\n", "\n");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
@@ -533,7 +539,7 @@ static partial class Program
         var exportLastNMethod = ExtractTextBetween(
             captureServiceText,
             "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
-            "private void ReleaseFlashbackBackendLeaseIfHeld");
+            "private FinalizeResult FailFlashbackExport");
         AssertContains(exportRangeMethod, "FlashbackExporter? flashbackExporter;");
         AssertContains(exportRangeMethod, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
         AssertContains(exportRangeMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
@@ -1362,7 +1368,7 @@ static partial class Program
 
     private static Task RecordingStop_PropagatesUnifiedVideoStopFailure()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "Unified video recording stop failed");
