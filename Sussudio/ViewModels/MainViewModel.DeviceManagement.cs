@@ -700,10 +700,9 @@ public partial class MainViewModel
 
     private void RebuildRecordingFormatOptions()
     {
-        var sourceFormats = (_detectedRecordingFormats.Count > 0
-            ? _detectedRecordingFormats
-            : AvailableRecordingFormats.ToList())
-            .ToList();
+        var sourceFormats = _detectedRecordingFormats.Count > 0
+            ? _detectedRecordingFormats.ToList()
+            : AvailableRecordingFormats.ToList();
         if (sourceFormats.Count == 0)
         {
             sourceFormats.Add(DefaultRecordingFormat);
