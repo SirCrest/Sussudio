@@ -30,8 +30,8 @@ $ErrorActionPreference = "Stop"
 $script:Root = Split-Path -Parent $PSScriptRoot
 $script:SendCommandPath = Join-Path $PSScriptRoot "send-automation-command.ps1"
 $script:VerifyDedicatedLibAvPath = Join-Path $PSScriptRoot "verify-dedicated-libav-recording.ps1"
-$script:EcCtlProjectPath = Join-Path $PSScriptRoot "ssctl\ssctl.csproj"
-$script:EcCtlPath = Join-Path $PSScriptRoot "ssctl\bin\Debug\net8.0\ssctl.dll"
+$script:SsctlProjectPath = Join-Path $PSScriptRoot "ssctl\ssctl.csproj"
+$script:SsctlPath = Join-Path $PSScriptRoot "ssctl\bin\Debug\net8.0\ssctl.dll"
 $script:AppExePath = Join-Path $script:Root "Sussudio\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Sussudio.exe"
 $script:ImplementationLogPath = Join-Path $script:Root "docs\realtime-capture-engine-implementation-log.md"
 $script:LaunchedApp = $false
@@ -314,22 +314,22 @@ function Start-AppIfNeeded {
     }
 }
 
-function Ensure-EcCtl {
-    if (Test-Path $script:EcCtlPath) {
+function Ensure-Ssctl {
+    if (Test-Path $script:SsctlPath) {
         return
     }
 
-    if (-not (Test-Path $script:EcCtlProjectPath)) {
-        throw "ssctl project not found: $script:EcCtlProjectPath"
+    if (-not (Test-Path $script:SsctlProjectPath)) {
+        throw "ssctl project not found: $script:SsctlProjectPath"
     }
 
-    & dotnet build $script:EcCtlProjectPath -c Debug --no-restore /nr:false /m:1 -p:UseSharedCompilation=false | Out-Null
+    & dotnet build $script:SsctlProjectPath -c Debug --no-restore /nr:false /m:1 -p:UseSharedCompilation=false | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw "ssctl build failed with exit code $LASTEXITCODE."
     }
 
-    if (-not (Test-Path $script:EcCtlPath)) {
-        throw "ssctl build output not found: $script:EcCtlPath"
+    if (-not (Test-Path $script:SsctlPath)) {
+        throw "ssctl build output not found: $script:SsctlPath"
     }
 }
 
@@ -385,14 +385,14 @@ function Start-PresentMonCapture {
         return $null
     }
 
-    Ensure-EcCtl
+    Ensure-Ssctl
     $seconds = [Math]::Max([Math]::Min($PresentMonSeconds, $PreviewSeconds), 1)
     $stdoutPath = Join-Path $ScenarioDir "presentmon.stdout.json"
     $stderrPath = Join-Path $ScenarioDir "presentmon.stderr.txt"
     $csvPath = Join-Path $ScenarioDir "presentmon.csv"
     $swapChain = [string](Get-PropertyValue $Snapshot "PreviewD3DSwapChainAddress" "")
     $arguments = @(
-        $script:EcCtlPath,
+        $script:SsctlPath,
         "--json",
         "presentmon",
         "--seconds", ([string]$seconds),
@@ -1063,7 +1063,7 @@ if ($ValidateOnly) {
         Root = $script:Root
         SendCommandPath = $script:SendCommandPath
         VerifyDedicatedLibAvPath = $script:VerifyDedicatedLibAvPath
-        EcCtlPath = $script:EcCtlPath
+        SsctlPath = $script:SsctlPath
         AppExePath = $script:AppExePath
         AppExeExists = Test-Path $script:AppExePath
         NoLaunch = [bool]$NoLaunch

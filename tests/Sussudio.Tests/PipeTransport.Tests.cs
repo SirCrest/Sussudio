@@ -10,10 +10,10 @@ static partial class Program
         var ssctlAssembly = LoadToolAssembly(assemblyPath);
 
         // Verify PipeTransport exposes expected command routing
-        var transportType = ssctlAssembly.GetType("EcCtl.PipeTransport")
-            ?? throw new InvalidOperationException("EcCtl.PipeTransport type not found.");
+        var transportType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.PipeTransport")
+            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.PipeTransport type not found.");
         var sendCommandAsync = transportType.GetMethod("SendCommandAsync", BindingFlags.Instance | BindingFlags.Public)
-            ?? throw new InvalidOperationException("EcCtl.PipeTransport.SendCommandAsync not found.");
+            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.PipeTransport.SendCommandAsync not found.");
 
         var pipeName = $"ssctl-pipe-transport-{Guid.NewGuid():N}";
         var transport = Activator.CreateInstance(transportType, pipeName, (int?)null)
@@ -155,7 +155,7 @@ static partial class Program
             usageException = ex;
         }
 
-        AssertEqual("EcCtl.UsageException", usageException?.GetType().FullName, "PipeTransport unknown command exception type");
+        AssertEqual("Sussudio.Tools.Ssctl.UsageException", usageException?.GetType().FullName, "PipeTransport unknown command exception type");
     }
 
     private static async Task<JsonElement> InvokePipeTransportSendCommandAsync(

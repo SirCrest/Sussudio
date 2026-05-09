@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Sussudio.Tools;
 
-namespace EcCtl;
+namespace Sussudio.Tools.Ssctl;
 
 // Console formatters for snapshots, diagnostics, and verification output. Keep
 // these projection-only: command behavior belongs in CommandHandlers and

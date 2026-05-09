@@ -1,7 +1,7 @@
 using System.Globalization;
 using Sussudio.Tools;
 
-namespace EcCtl;
+namespace Sussudio.Tools.Ssctl;
 
 // Entry point for ssctl, the local CLI over Sussudio's automation pipe. It owns
 // process-level argument parsing and exit codes; command behavior is delegated
