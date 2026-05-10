@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Sussudio\Models\AutomationCommandKind.cs" Link="Models\AutomationCommandKind.cs" />
+    <Compile Include="..\..\Sussudio\Models\Automation\AutomationCommandKind.cs" Link="Models\AutomationCommandKind.cs" />
     <Compile Include="..\Common\**\*.cs" Link="Common\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 

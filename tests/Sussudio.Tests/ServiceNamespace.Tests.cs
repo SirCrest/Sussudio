@@ -187,7 +187,7 @@ static partial class Program
             var includes = ReadCompileIncludes(toolProject);
             AssertEqual(
                 1,
-                CountCompileInclude(includes, @"..\..\Sussudio\Models\AutomationCommandKind.cs"),
+                CountCompileInclude(includes, @"..\..\Sussudio\Models\Automation\AutomationCommandKind.cs"),
                 $"{Path.GetFileName(toolProject)} links app-owned AutomationCommandKind source exactly once");
         }
 
