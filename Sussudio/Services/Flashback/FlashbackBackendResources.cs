@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Capture;
-using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Flashback;
 

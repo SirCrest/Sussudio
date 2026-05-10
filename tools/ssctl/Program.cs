@@ -145,6 +145,7 @@ internal static class Program
         Console.WriteLine("  --json            Print raw JSON responses where supported");
         Console.WriteLine("  --pipe NAME       Named pipe (default: SussudioAutomation)");
         Console.WriteLine("  --timeout MS      Response timeout override for pipe calls");
+        Console.WriteLine("  --verbose         On error, print full stack trace + InnerException chain to stderr");
         Console.WriteLine("  --help            Show this help");
     }
 
