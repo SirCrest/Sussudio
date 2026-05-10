@@ -282,6 +282,9 @@ static partial class Program
                 "Automation dispatcher flashback failures return playback diagnostics",
                 AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics),
             await RunCheckAsync(
+                "Automation dispatcher handles every AutomationCommandKind value",
+                AutomationCommandDispatcher_AllCommandKinds_AreHandled),
+            await RunCheckAsync(
                 "Automation pipe server gates default security fallback on auth token",
                 NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken),
             await RunCheckAsync(

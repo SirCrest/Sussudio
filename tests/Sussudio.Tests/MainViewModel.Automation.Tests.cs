@@ -252,6 +252,8 @@ static partial class Program
     {
         var diagnosticsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             .Replace("\r\n", "\n");
+        var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
+            .Replace("\r\n", "\n");
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
@@ -315,10 +317,10 @@ static partial class Program
         AssertContains(diagnosticsText, "snapshot.FlashbackEncodingFailed");
         AssertContains(diagnosticsText, "Flashback encoder failed: type={snapshot.FlashbackEncodingFailureType ?? \"Unknown\"}");
         AssertContains(diagnosticsText, "\"flashback-recording-degraded\"");
-        AssertContains(diagnosticsText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
-        AssertContains(diagnosticsText, "Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps)");
-        AssertContains(diagnosticsText, "Interlocked.Exchange(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped)");
-        AssertContains(diagnosticsText, "Interlocked.Exchange(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents)");
+        AssertContains(countersText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
+        AssertContains(countersText, "Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps)");
+        AssertContains(countersText, "Interlocked.Exchange(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped)");
+        AssertContains(countersText, "Interlocked.Exchange(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents)");
         AssertContains(diagnosticsText, "var recentFlashbackRecording = UpdateFlashbackRecordingRecentCounters(health, nowTick);");
         AssertContains(diagnosticsText, "UpdateAlerts(snapshot, recentFlashbackRecording);");
         AssertContains(diagnosticsText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
@@ -453,8 +455,8 @@ static partial class Program
         AssertContains(diagnosticsText, "health.FlashbackExportActive ||\n             health.FlashbackForceRotateActive ||\n             health.FlashbackForceRotateRequested ||\n             health.FlashbackForceRotateDraining");
         AssertContains(diagnosticsText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
         AssertContains(diagnosticsText, "UpdateD3DRendererRecentCounters(previewRuntime, nowTick)");
-        AssertContains(diagnosticsText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
-        AssertContains(diagnosticsText, "Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted)");
+        AssertContains(countersText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
+        AssertContains(countersText, "Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted)");
         AssertContains(diagnosticsText, "recentSubmitted={recentRendererSubmitted} recentDropped={recentRenderer.Dropped}");
         AssertContains(diagnosticsText, "var previewLastDropReason = string.IsNullOrWhiteSpace(health.MjpegPreviewJitterLastDropReason)");
         AssertContains(diagnosticsText, "clearedDrops={health.MjpegPreviewJitterClearedDropCount}");
@@ -501,7 +503,7 @@ static partial class Program
         AssertContains(diagnosticsText, "repeatFramePercent <= 1.0");
         AssertContains(diagnosticsText, "longestRepeatRun <= 1");
         AssertContains(diagnosticsText, "\"Present/display 1% low is below target.\"");
-        AssertContains(diagnosticsText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
+        AssertContains(countersText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
         AssertContains(diagnosticsText, "var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick);");
         AssertContains(diagnosticsText, "recentDropped={recentMjpeg.TotalDropped} recentFailures={recentMjpeg.Failures}");
         AssertContains(diagnosticsText, "recentMjpeg.TotalDropped > 0");
