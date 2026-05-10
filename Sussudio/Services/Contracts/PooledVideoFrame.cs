@@ -2,7 +2,7 @@ using System;
 using System.Buffers;
 using System.Threading;
 
-namespace Sussudio.Services.Capture;
+namespace Sussudio.Services.Contracts;
 
 // ArrayPool-backed decoded frame with reference-counted leases. The owner can
 // dispose immediately after fan-out; the buffer returns to the pool only after

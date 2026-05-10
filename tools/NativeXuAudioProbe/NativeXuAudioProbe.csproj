@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Sussudio\Models\SourceSignalTelemetrySnapshot.cs" Link="Shared\Models\SourceSignalTelemetrySnapshot.cs" />
+    <Compile Include="..\..\Sussudio\Models\Telemetry\SourceSignalTelemetrySnapshot.cs" Link="Shared\Models\Telemetry\SourceSignalTelemetrySnapshot.cs" />
     <Compile Include="..\..\Sussudio\Services\Audio\NativeXuAudioControlService.cs" Link="Shared\Services\Audio\NativeXuAudioControlService.cs" />
     <Compile Include="..\..\Sussudio\Services\Capture\KsExtensionUnitNative.cs" Link="Shared\Services\Capture\KsExtensionUnitNative.cs" />
     <Compile Include="..\..\Sussudio\Services\Contracts\ISourceSignalTelemetryProvider.cs" Link="Shared\Services\Contracts\ISourceSignalTelemetryProvider.cs" />

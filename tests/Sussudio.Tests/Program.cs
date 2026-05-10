@@ -2650,7 +2650,7 @@ static partial class Program
 
         var emitMethod = unifiedVideoCapture.GetType().GetMethod("OnMjpegPipelineFrameEmitted", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("OnMjpegPipelineFrameEmitted method not found.");
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
         var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
         var rentMethod = frameType.GetMethod("Rent", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("PooledVideoFrame.Rent method not found.");
