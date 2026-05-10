@@ -109,7 +109,7 @@ public partial class CaptureService
             reasons.Add($"bitrate:{backendSettings.CustomBitrateMbps:0.##}->{requestedSettings.CustomBitrateMbps:0.##}");
         }
 
-        if (!string.Equals(backendSettings.NvencPreset, requestedSettings.NvencPreset, StringComparison.OrdinalIgnoreCase))
+        if (backendSettings.NvencPreset != requestedSettings.NvencPreset)
         {
             reasons.Add($"preset:{backendSettings.NvencPreset}->{requestedSettings.NvencPreset}");
         }
@@ -1518,8 +1518,8 @@ public partial class CaptureService
             FlashbackBackendSettingsStaleReason = flashbackBackendSettingsStaleReason,
             FlashbackBackendActiveFormat = flashbackBackendSettings?.Format.ToString() ?? string.Empty,
             FlashbackBackendRequestedFormat = _currentSettings?.Format.ToString() ?? string.Empty,
-            FlashbackBackendActivePreset = flashbackBackendSettings?.NvencPreset ?? string.Empty,
-            FlashbackBackendRequestedPreset = _currentSettings?.NvencPreset ?? string.Empty,
+            FlashbackBackendActivePreset = flashbackBackendSettings?.NvencPreset.ToString() ?? string.Empty,
+            FlashbackBackendRequestedPreset = _currentSettings?.NvencPreset.ToString() ?? string.Empty,
             EncoderCodecName = fbSink?.CodecName,
             EncoderTargetBitRate = fbSink?.TargetBitRate ?? 0,
             EncoderWidth = fbSink?.EncoderWidth ?? 0,

@@ -1,7 +1,33 @@
 using System;
 using System.IO;
+using System.Text.Json.Serialization;
 
 namespace Sussudio.Models;
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum NvencPreset
+{
+    Auto,
+    P1,
+    P2,
+    P3,
+    P4,
+    P5,
+    P6,
+    P7,
+    Fast,
+    Slow
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum SplitEncodeMode
+{
+    Auto,
+    Disabled,
+    TwoWay,
+    ThreeWay,
+    ForcedOn
+}
 
 public enum RecordingFormat
 {
@@ -43,8 +69,8 @@ public class CaptureSettings
     public string? RequestedPixelFormat { get; set; }
     public RecordingFormat Format { get; set; } = RecordingFormat.H264Mp4;
     public VideoQuality Quality { get; set; } = VideoQuality.High;
-    public string NvencPreset { get; set; } = "Auto";
-    public string SplitEncodeMode { get; set; } = "Auto";
+    public NvencPreset NvencPreset { get; set; } = NvencPreset.Auto;
+    public SplitEncodeMode SplitEncodeMode { get; set; } = SplitEncodeMode.Auto;
     public double CustomBitrateMbps { get; set; } = 50; // Used when Quality is Custom
     public bool HdrEnabled { get; set; }
     public HdrOutputMode HdrOutputMode { get; set; } = HdrOutputMode.Hdr10Pq;
@@ -159,6 +185,41 @@ public class CaptureSettings
     }
 
     public string GetFullOutputPath() => Path.Combine(OutputPath, GetOutputFileName());
+}
+
+public static class NvencPresetParser
+{
+    public static NvencPreset Parse(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return NvencPreset.Auto;
+        return Enum.TryParse<NvencPreset>(value, ignoreCase: true, out var result) ? result : NvencPreset.Auto;
+    }
+}
+
+public static class SplitEncodeModeParser
+{
+    public static SplitEncodeMode Parse(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return SplitEncodeMode.Auto;
+        // Handle hyphenated wire values from UI/automation
+        if (string.Equals(value, "2-way", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(value, "2", StringComparison.OrdinalIgnoreCase))
+            return SplitEncodeMode.TwoWay;
+        if (string.Equals(value, "3-way", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(value, "3", StringComparison.OrdinalIgnoreCase))
+            return SplitEncodeMode.ThreeWay;
+        return Enum.TryParse<SplitEncodeMode>(value, ignoreCase: true, out var result) ? result : SplitEncodeMode.Auto;
+    }
+
+    /// <summary>Returns the wire/UI string for a SplitEncodeMode value.</summary>
+    public static string ToWireString(SplitEncodeMode mode) => mode switch
+    {
+        SplitEncodeMode.TwoWay => "2-way",
+        SplitEncodeMode.ThreeWay => "3-way",
+        _ => mode.ToString()
+    };
 }
 
 public sealed record SplitEncodeSupport(bool Supports2Way, bool Supports3Way)

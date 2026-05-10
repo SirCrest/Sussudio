@@ -464,15 +464,23 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 _currentSettings.CustomBitrateMbps = customBitrateMbps.Value;
                 changed = true;
             }
-            if (nvencPreset != null && !string.Equals(nvencPreset, _currentSettings.NvencPreset, StringComparison.OrdinalIgnoreCase))
+            if (nvencPreset != null)
             {
-                _currentSettings.NvencPreset = nvencPreset;
-                changed = true;
+                var parsedPreset = NvencPresetParser.Parse(nvencPreset);
+                if (parsedPreset != _currentSettings.NvencPreset)
+                {
+                    _currentSettings.NvencPreset = parsedPreset;
+                    changed = true;
+                }
             }
-            if (splitEncodeMode != null && !string.Equals(splitEncodeMode, _currentSettings.SplitEncodeMode, StringComparison.OrdinalIgnoreCase))
+            if (splitEncodeMode != null)
             {
-                _currentSettings.SplitEncodeMode = splitEncodeMode;
-                changed = true;
+                var parsedSplitMode = SplitEncodeModeParser.Parse(splitEncodeMode);
+                if (parsedSplitMode != _currentSettings.SplitEncodeMode)
+                {
+                    _currentSettings.SplitEncodeMode = parsedSplitMode;
+                    changed = true;
+                }
             }
 
             if (!changed) return;
@@ -946,8 +954,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             FrameRateNumerator = fpsNum,
             FrameRateDenominator = fpsDen,
             CodecName = codecName,
-            NvencPreset = flashbackNvencPreset,
-            SplitEncodeMode = settings.SplitEncodeMode,
+            NvencPreset = flashbackNvencPreset.ToString(),
+            SplitEncodeMode = SplitEncodeModeParser.ToWireString(settings.SplitEncodeMode),
             IsP010 = isP010,
             BitRate = settings.GetTargetBitrate(),
             HdrEnabled = hdrRequested,
@@ -2100,8 +2108,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         return current.Format == next.Format &&
                current.Quality == next.Quality &&
                Math.Abs(current.CustomBitrateMbps - next.CustomBitrateMbps) < 0.01 &&
-               string.Equals(current.NvencPreset, next.NvencPreset, StringComparison.OrdinalIgnoreCase) &&
-               string.Equals(current.SplitEncodeMode, next.SplitEncodeMode, StringComparison.OrdinalIgnoreCase) &&
+               current.NvencPreset == next.NvencPreset &&
+               current.SplitEncodeMode == next.SplitEncodeMode &&
                current.AudioEnabled == next.AudioEnabled &&
                current.MicrophoneEnabled == next.MicrophoneEnabled &&
                current.FlashbackBufferMinutes == next.FlashbackBufferMinutes &&

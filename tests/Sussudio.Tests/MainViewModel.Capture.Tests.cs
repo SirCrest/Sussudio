@@ -904,7 +904,7 @@ static partial class Program
         AssertContains(encoderSettingsChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
         AssertContains(encoderSettingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED");
         AssertContains(encoderSettingsChange, "string? splitEncodeMode = null");
-        AssertContains(encoderSettingsChange, "_currentSettings.SplitEncodeMode = splitEncodeMode;");
+        AssertContains(encoderSettingsChange, "_currentSettings.SplitEncodeMode = parsedSplitMode;");
         AssertContains(
             encoderSettingsChange,
             "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
@@ -972,7 +972,7 @@ static partial class Program
         AssertDoesNotContain(captureServiceText, "? RecordingFormat.HevcMp4.ToString()");
         AssertContains(createFlashbackSessionContext, "var flashbackNvencPreset = settings.NvencPreset;");
         AssertContains(createFlashbackSessionContext, "NvencPreset = flashbackNvencPreset");
-        AssertContains(createFlashbackSessionContext, "SplitEncodeMode = settings.SplitEncodeMode");
+        AssertContains(createFlashbackSessionContext, "SplitEncodeMode = SplitEncodeModeParser.ToWireString(settings.SplitEncodeMode)");
         // Flashback must honor user codec/preset settings directly. The legacy snapshot
         // field remains for compatibility, but the old silent AV1->HEVC path must stay gone.
         AssertDoesNotContain(createFlashbackSessionContext, "FLASHBACK_CODEC_DOWNGRADE");
