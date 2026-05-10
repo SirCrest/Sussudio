@@ -349,14 +349,20 @@ static partial class Program
         AssertContains(sourceText, "splitEncodeMode is 2 or 3");
         AssertContains(sourceText, "public string SplitEncodeMode { get; init; } = \"Auto\";");
         AssertDoesNotContain(sourceText, "\"repeat_headers\"");
+        // Suppression forwarder stays on LibAvEncoder for caller compatibility.
         AssertContains(sourceText, "internal static IDisposable SuppressRecoverableSeekFfmpegLogs()");
-        AssertContains(sourceText, "private static bool ShouldSuppressRecoverableSeekFfmpegLog(string message)");
-        AssertContains(sourceText, "[ThreadStatic]\n    private static int _recoverableSeekLogSuppressionDepth;");
-        AssertContains(sourceText, "message.Contains(\"Could not find ref with POC\", StringComparison.Ordinal)");
-        AssertContains(sourceText, "message.Contains(\"Error constructing the frame RPS\", StringComparison.Ordinal)");
-        AssertContains(sourceText, "message.Contains(\"First slice in a frame missing\", StringComparison.Ordinal)");
-        AssertContains(sourceText, "message.Contains(\"PPS id out of range\", StringComparison.Ordinal)");
-        AssertContains(sourceText, "FFMPEG_LOG_RECOVERABLE_SEEK_SUPPRESSED");
+        AssertContains(sourceText, "FfmpegLogSuppressionScope.SuppressRecoverableSeekFfmpegLogs()");
+
+        // Suppression implementation lives in its own helper file.
+        var suppressionText = ReadRepoFile("Sussudio/Services/Recording/FfmpegLogSuppressionScope.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(suppressionText, "internal static bool ShouldSuppressRecoverableSeekFfmpegLog(string message)");
+        AssertContains(suppressionText, "[ThreadStatic]\n    private static int _recoverableSeekLogSuppressionDepth;");
+        AssertContains(suppressionText, "message.Contains(\"Could not find ref with POC\", StringComparison.Ordinal)");
+        AssertContains(suppressionText, "message.Contains(\"Error constructing the frame RPS\", StringComparison.Ordinal)");
+        AssertContains(suppressionText, "message.Contains(\"First slice in a frame missing\", StringComparison.Ordinal)");
+        AssertContains(suppressionText, "message.Contains(\"PPS id out of range\", StringComparison.Ordinal)");
+        AssertContains(suppressionText, "FFMPEG_LOG_RECOVERABLE_SEEK_SUPPRESSED");
 
         return Task.CompletedTask;
     }
