@@ -372,8 +372,8 @@ static partial class Program
         AssertContains(rawAutomationText, "EnsureFlashbackActiveForExport(\"save_last_5m\")");
         AssertContains(rawAutomationText, "FLASHBACK_EXPORT_UI_REJECTED op={operation} reason=inactive");
         AssertContains(rawAutomationText, "Flashback export unavailable: flashback is not active.");
-        AssertMemberContains(automationText, "ExportFlashbackAsync", "if (!isCurrent) return;");
-        AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "if (!isCurrent) return;");
+        AssertMemberContains(automationText, "ExportFlashbackAsync", "case ExportFlashbackOutcome.Stale:");
+        AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "case ExportFlashbackOutcome.Stale:");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _flashbackExportOperationId;");
         AssertContains(viewModelFiles["MainViewModel.cs"], "Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(viewModelFiles["MainViewModel.cs"], "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
@@ -390,7 +390,7 @@ static partial class Program
         AssertContains(rawCaptureText, "catch (TimeoutException ex)\n            {\n                Logger.Log($\"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}\");");
         AssertContains(rawCaptureText, "REINIT_WAIT_FLASHBACK_CYCLE_FAULT");
         AssertContains(viewModelFiles["MainViewModel.Capture.cs"], "if (ReferenceEquals(_pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)\n            {\n                _pendingFlashbackCycleTask = null;\n            }");
-        AssertContains(automationText, "private async Task<(FinalizeResult? Result, string? ErrorMessage, bool IsCurrent)> ExportFlashbackCoreAsync");
+        AssertContains(automationText, "private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync");
         AssertContains(automationText, "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(automationText, "CancelFlashbackExportCts(oldExportCts);");
         AssertContains(automationText, "IsCurrentFlashbackExport(exportId, exportCts)");

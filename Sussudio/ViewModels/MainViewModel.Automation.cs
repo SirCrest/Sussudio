@@ -289,7 +289,7 @@ public partial class MainViewModel
         var inPoint = playback.InPoint;
         var outPoint = playback.OutPoint;
 
-        var (result, errorMessage, isCurrent) = await ExportFlashbackCoreAsync(async (progress, ct) =>
+        var outcome = await ExportFlashbackCoreAsync(async (progress, ct) =>
             await _sessionCoordinator.ExportFlashbackRangeAsync(
                 inPoint,
                 outPoint,
@@ -298,17 +298,18 @@ public partial class MainViewModel
                 ct,
                 playback.InPointFilePts,
                 playback.OutPointFilePts));
-        if (!isCurrent) return;
-
-        if (errorMessage != null)
+        switch (outcome)
         {
-            StatusText = $"Export error: {errorMessage}";
-        }
-        else
-        {
-            StatusText = result!.Succeeded
-                ? $"Export complete: {file.Path}"
-                : $"Export failed: {result.StatusMessage}";
+            case ExportFlashbackOutcome.Stale:
+                return;
+            case ExportFlashbackOutcome.Failed failed:
+                StatusText = $"Export error: {failed.ErrorMessage}";
+                break;
+            case ExportFlashbackOutcome.Succeeded succeeded:
+                StatusText = succeeded.Result.Succeeded
+                    ? $"Export complete: {file.Path}"
+                    : $"Export failed: {succeeded.Result.StatusMessage}";
+                break;
         }
     }
 
@@ -322,19 +323,20 @@ public partial class MainViewModel
         var file = await PickFlashbackExportFileAsync($"Flashback_Last5m_{DateTime.Now:yyyyMMdd_HHmmss}");
         if (file == null) return;
 
-        var (result, errorMessage, isCurrent) = await ExportFlashbackCoreAsync(async (progress, ct) =>
+        var outcome = await ExportFlashbackCoreAsync(async (progress, ct) =>
             await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(300, file.Path, progress, ct));
-        if (!isCurrent) return;
-
-        if (errorMessage != null)
+        switch (outcome)
         {
-            StatusText = $"Save error: {errorMessage}";
-        }
-        else
-        {
-            StatusText = result!.Succeeded
-                ? $"Saved last 5 minutes: {file.Path}"
-                : $"Save failed: {result.StatusMessage}";
+            case ExportFlashbackOutcome.Stale:
+                return;
+            case ExportFlashbackOutcome.Failed failed:
+                StatusText = $"Save error: {failed.ErrorMessage}";
+                break;
+            case ExportFlashbackOutcome.Succeeded succeeded:
+                StatusText = succeeded.Result.Succeeded
+                    ? $"Saved last 5 minutes: {file.Path}"
+                    : $"Save failed: {succeeded.Result.StatusMessage}";
+                break;
         }
     }
 
@@ -360,7 +362,14 @@ public partial class MainViewModel
         return false;
     }
 
-    private async Task<(FinalizeResult? Result, string? ErrorMessage, bool IsCurrent)> ExportFlashbackCoreAsync(
+    private abstract record ExportFlashbackOutcome
+    {
+        public sealed record Succeeded(FinalizeResult Result) : ExportFlashbackOutcome;
+        public sealed record Failed(string ErrorMessage) : ExportFlashbackOutcome;
+        public sealed record Stale : ExportFlashbackOutcome;
+    }
+
+    private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync(
         Func<IProgress<ExportProgress>, CancellationToken, Task<FinalizeResult>> exportAction)
     {
         // Export snapshots the flashback backend under CaptureService locks, then runs
@@ -391,12 +400,16 @@ public partial class MainViewModel
             });
 
             var result = await exportAction(progress, ct);
-            return (result, null, IsCurrentFlashbackExport(exportId, exportCts));
+            return IsCurrentFlashbackExport(exportId, exportCts)
+                ? new ExportFlashbackOutcome.Succeeded(result)
+                : new ExportFlashbackOutcome.Stale();
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
-            return (null, ex.Message, IsCurrentFlashbackExport(exportId, exportCts));
+            return IsCurrentFlashbackExport(exportId, exportCts)
+                ? new ExportFlashbackOutcome.Failed(ex.Message)
+                : new ExportFlashbackOutcome.Stale();
         }
         finally
         {
