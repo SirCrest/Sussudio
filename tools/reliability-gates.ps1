@@ -1,4 +1,4 @@
-<# Runs the build/test/HDR validation gates used before treating a change as
+<# Runs the build, tool, test, and optional HDR validation gates used before treating a change as
 reliability-ready. #>
 param(
     [switch]$FailOnAnyWarning,
@@ -7,6 +7,7 @@ param(
     [ValidateSet("x64")]
     [string]$Platform = "x64",
     [int]$BuildTimeoutSeconds = 900,
+    [int]$TestTimeoutSeconds = 900,
     [string]$ValidateHdrFile,
     [switch]$ValidateHdrExpectHdr,
     [ValidateSet("hevc", "av1", "either")]
@@ -76,8 +77,24 @@ $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = "1"
 $env:DOTNET_CLI_HOME = $dotnetCliHome
 
 $projectPath = Join-Path $repoRoot "Sussudio\Sussudio.csproj"
+$testProjectPath = Join-Path $repoRoot "tests\Sussudio.Tests\Sussudio.Tests.csproj"
+$ssctlProjectPath = Join-Path $repoRoot "tools\ssctl\ssctl.csproj"
+$mcpServerProjectPath = Join-Path $repoRoot "tools\McpServer\McpServer.csproj"
+$nativeXuProbeProjectPath = Join-Path $repoRoot "tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj"
 if (-not (Test-Path $projectPath)) {
     throw "Project file not found: $projectPath"
+}
+if (-not (Test-Path $testProjectPath)) {
+    throw "Test project file not found: $testProjectPath"
+}
+if (-not (Test-Path $ssctlProjectPath)) {
+    throw "ssctl project file not found: $ssctlProjectPath"
+}
+if (-not (Test-Path $mcpServerProjectPath)) {
+    throw "McpServer project file not found: $mcpServerProjectPath"
+}
+if (-not (Test-Path $nativeXuProbeProjectPath)) {
+    throw "NativeXuAudioProbe project file not found: $nativeXuProbeProjectPath"
 }
 
 $buildOutput = Invoke-ToolWithTimeout `
@@ -101,6 +118,76 @@ if ($buildOutput -match "MVVMTK0045") {
 if ($FailOnAnyWarning -and ($buildOutput -match ": warning ")) {
     throw "Warnings detected in build output."
 }
+
+Invoke-ToolWithTimeout `
+    -Exe "dotnet" `
+    -Arguments @(
+        "build",
+        $ssctlProjectPath,
+        "-c", $Configuration,
+        "-t:Rebuild",
+        "--nologo",
+        "-v", "minimal"
+    ) `
+    -TimeoutSeconds $BuildTimeoutSeconds `
+    -WorkingDirectory $repoRoot
+
+Invoke-ToolWithTimeout `
+    -Exe "dotnet" `
+    -Arguments @(
+        "build",
+        $mcpServerProjectPath,
+        "-c", $Configuration,
+        "-t:Rebuild",
+        "--nologo",
+        "-v", "minimal"
+    ) `
+    -TimeoutSeconds $BuildTimeoutSeconds `
+    -WorkingDirectory $repoRoot
+
+Invoke-ToolWithTimeout `
+    -Exe "dotnet" `
+    -Arguments @(
+        "build",
+        $nativeXuProbeProjectPath,
+        "-c", $Configuration,
+        "-t:Rebuild",
+        "--nologo",
+        "-v", "minimal"
+    ) `
+    -TimeoutSeconds $BuildTimeoutSeconds `
+    -WorkingDirectory $repoRoot
+
+Invoke-ToolWithTimeout `
+    -Exe "dotnet" `
+    -Arguments @(
+        "build",
+        $testProjectPath,
+        "-c", $Configuration,
+        "--nologo",
+        "-v", "minimal"
+    ) `
+    -TimeoutSeconds $BuildTimeoutSeconds `
+    -WorkingDirectory $repoRoot
+
+$appAssemblyPath = Join-Path $repoRoot "Sussudio\bin\$Platform\$Configuration\net8.0-windows10.0.19041.0\win-x64\Sussudio.dll"
+if (-not (Test-Path $appAssemblyPath)) {
+    throw "Built app assembly not found: $appAssemblyPath"
+}
+
+Invoke-ToolWithTimeout `
+    -Exe "dotnet" `
+    -Arguments @(
+        "run",
+        "--project",
+        $testProjectPath,
+        "-c", $Configuration,
+        "--no-build",
+        "--",
+        $appAssemblyPath
+    ) `
+    -TimeoutSeconds $TestTimeoutSeconds `
+    -WorkingDirectory $repoRoot
 
 if (-not [string]::IsNullOrWhiteSpace($ValidateHdrFile)) {
     $validatorPath = Join-Path $repoRoot "tools\\validate_hdr.ps1"
@@ -135,4 +222,4 @@ if (-not [string]::IsNullOrWhiteSpace($ValidateHdrFile)) {
 
 Write-Host ""
 Write-Host "Gate result: PASS"
-Write-Host "Automation stack reset is active. Add new tests incrementally under docs/testing/README.md."
+Write-Host "Build, tool, and offline regression gates passed. Optional HDR validation is controlled by the ValidateHdr parameters."

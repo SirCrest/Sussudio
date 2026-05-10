@@ -23,6 +23,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     private const int AudioLevelFireIntervalMs = 66;
     private const double SevereCallbackGapMultiplier = 4.0;
     private const uint WaitTimeoutMs = 100;
+    private static readonly TimeSpan CaptureThreadJoinTimeout = TimeSpan.FromSeconds(3);
 
     private IMMDeviceEnumerator? _deviceEnumerator;
     private IMMDevice? _device;
@@ -282,7 +283,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
             _captureEvent?.Set();
             if (_captureThread?.IsAlive == true)
             {
-                _captureThread.Join();
+                JoinCaptureThread(_captureThread, "WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT_START_FAILURE");
             }
 
             _captureThread = null;
@@ -348,11 +349,22 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         _captureThread = null;
         if (thread != null && thread.IsAlive)
         {
-            thread.Join();
+            JoinCaptureThread(thread, "WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT_STOP");
         }
 
         Logger.Log("WASAPI capture stopped.");
         return Task.CompletedTask;
+    }
+
+    private static bool JoinCaptureThread(Thread thread, string timeoutEvent)
+    {
+        if (thread.Join(CaptureThreadJoinTimeout))
+        {
+            return true;
+        }
+
+        Logger.Log(timeoutEvent);
+        return false;
     }
 
     public async ValueTask DisposeAsync()

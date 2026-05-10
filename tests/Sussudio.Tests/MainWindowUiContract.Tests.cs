@@ -113,6 +113,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task MainWindowFullScreenAutomation_AwaitsTransitionTask()
+    {
+        var fullScreenSource = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs")
+            .Replace("\r\n", "\n");
+        var windowManagementSource = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(fullScreenSource, "public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => InvokeOnUiThreadAsync(\n            enabled ? EnterFullScreenAsync : ExitFullScreenAsync,");
+        AssertContains(fullScreenSource, "private async Task EnterFullScreenAsync()");
+        AssertContains(fullScreenSource, "private async Task ExitFullScreenAsync()");
+        AssertContains(fullScreenSource, "await AnimateFullScreenRectAsync(");
+        AssertContains(fullScreenSource, "private Task AnimateFullScreenRectAsync(");
+        AssertContains(fullScreenSource, "return completion.Task;");
+        AssertDoesNotContain(fullScreenSource, "private async void EnterFullScreen");
+        AssertDoesNotContain(fullScreenSource, "private async void ExitFullScreen");
+        AssertContains(windowManagementSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
+        AssertContains(windowManagementSource, "await action().ConfigureAwait(true);");
+        AssertDoesNotContain(windowManagementSource, "registration.Dispose();\n                registration = default;\n\n                if (cancellationToken.IsCancellationRequested)");
+        return Task.CompletedTask;
+    }
+
     private static Task StatsSnapshotConstruction_LivesInFocusedBuilder()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");

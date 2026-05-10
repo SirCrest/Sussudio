@@ -255,6 +255,9 @@ static partial class Program
                 "MainWindow automation IDs cover the agent-critical UI surface",
                 MainWindowAutomationIds_CoverAgentCriticalSurface),
             await RunCheckAsync(
+                "MainWindow full-screen automation awaits transition tasks",
+                MainWindowFullScreenAutomation_AwaitsTransitionTask),
+            await RunCheckAsync(
                 "Automation dispatcher extracts string payload fields",
                 AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload),
             await RunCheckAsync(
@@ -266,6 +269,9 @@ static partial class Program
             await RunCheckAsync(
                 "Automation dispatcher extracts double payload fields",
                 AutomationCommandDispatcher_GetDouble_ExtractsFromJsonPayload),
+            await RunCheckAsync(
+                "Automation dispatcher rejects non-finite double payload fields",
+                AutomationCommandDispatcher_GetDouble_RejectsNonFiniteValues),
             await RunCheckAsync(
                 "Automation dispatcher requires missing string fields",
                 AutomationCommandDispatcher_RequireString_ThrowsOnMissing),
@@ -519,6 +525,12 @@ static partial class Program
                 "Preview pacing classifier flags frame latency wait timeout",
                 PreviewPacingClassifier_ClassifiesFrameLatencyWaitTimeout),
             await RunCheckAsync(
+                "Preview pacing classifier ignores stale lifetime signals",
+                PreviewPacingClassifier_IgnoresStaleLifetimeSignalsWithoutRecentDeltas),
+            await RunCheckAsync(
+                "Preview pacing classifier flags recent jitter schedule-late",
+                PreviewPacingClassifier_ClassifiesRecentJitterScheduleLate),
+            await RunCheckAsync(
                 "Preview pacing classifier is wired into automation snapshots",
                 PreviewPacingClassifier_IsWiredIntoAutomationSnapshots),
             await RunCheckAsync(
@@ -675,8 +687,8 @@ static partial class Program
                 "MJPEG packet hash current duplicate run lowers unique FPS",
                 FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps),
             await RunCheckAsync(
-                "Decoded visual cadence uses exact high resolution crop pixels",
-                VisualCadenceTracker_UsesExactHighResolutionCropPixels),
+                "Decoded visual cadence samples exact crop pixels in one pass",
+                VisualCadenceTracker_UsesExactCropPixelsWithOnePassDiff),
             await RunCheckAsync(
                 "MJPEG leased video packets release queued leases",
                 MjpegLeasedVideoPackets_ReleaseQueuedLeases),
@@ -716,6 +728,9 @@ static partial class Program
             await RunCheckAsync(
                 "WASAPI audio capture rejects incomplete hot audio writes",
                 WasapiAudioCapture_HotAudioWritesRejectIncompleteTasks),
+            await RunCheckAsync(
+                "WASAPI audio capture stop uses bounded thread join",
+                WasapiAudioCapture_StopUsesBoundedThreadJoin),
             await RunCheckAsync(
                 "CaptureService flashback backend ownership uses resource aggregate",
                 CaptureService_FlashbackBackendOwnershipUsesResourceAggregate),
@@ -1282,6 +1297,9 @@ static partial class Program
             await RunCheckAsync(
                 "Automation command catalog covers command metadata and policy",
                 AutomationCommandCatalog_CoversCommandsAndPolicyMetadata),
+            await RunCheckAsync(
+                "Reliability gates run tools and offline regression harness",
+                ReliabilityGates_RunToolsAndOfflineHarness),
             await RunCheckAsync(
                 "Automation manifest covers catalog metadata",
                 AutomationManifest_CoversCatalogMetadata),
@@ -2825,7 +2843,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task VisualCadenceTracker_UsesExactHighResolutionCropPixels()
+    private static Task VisualCadenceTracker_UsesExactCropPixelsWithOnePassDiff()
     {
         var trackerSource = ReadRepoFile("Sussudio/Services/Capture/VisualCadenceTracker.cs").Replace("\r\n", "\n");
         var captureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs").Replace("\r\n", "\n");
@@ -2836,15 +2854,21 @@ static partial class Program
         AssertContains(trackerSource, "sampleY = cropY + Math.Max(0, (cropHeight - sampleHeight) / 2)");
         AssertContains(trackerSource, "var x = sampleX + col;");
         AssertContains(trackerSource, "var y = sampleY + row;");
-        AssertContains(trackerSource, "if (previous[i + byteIndex] != current[i + byteIndex])");
+        AssertContains(trackerSource, "SampleLumaAndCompare(");
+        AssertContains(trackerSource, "destination[index] = luma;");
+        AssertContains(trackerSource, "if (previous != null && previous[index] != luma)");
         AssertContains(trackerSource, "_lastSample = new byte[_sampleSize * 2]");
-        AssertContains(trackerSource, "destination[index++] = frame[lumaOffset];");
         AssertContains(trackerSource, "if (bytesPerLuma == 2)");
-        AssertContains(trackerSource, "ComputeChangedPixelCount(_lastSample, _currentSample, sampleLength, bytesPerLuma)");
+        AssertContains(trackerSource, "if (previous != null && previous[index] != secondLuma)");
+        AssertContains(trackerSource, "sample.ChangedPixels");
+        AssertContains(trackerSource, "PromoteCurrentSample(sampleLength, bytesPerLuma)");
+        AssertContains(trackerSource, "_lastSample = _currentSample;");
         AssertContains(trackerSource, "AddValueSample(_deltaWindow, ref _deltaCount, ref _deltaIndex, delta)");
         AssertContains(trackerSource, "if (delta > 0)");
         AssertDoesNotContain(trackerSource, "ChangeThreshold");
         AssertDoesNotContain(trackerSource, "ComputeAverageDelta");
+        AssertDoesNotContain(trackerSource, "Array.Copy(_currentSample, _lastSample");
+        AssertDoesNotContain(trackerSource, "ComputeChangedPixelCount");
 
         AssertContains(captureSource, "previewFrameProbe: null");
         AssertContains(captureSource, "frame.ArrivalTick");

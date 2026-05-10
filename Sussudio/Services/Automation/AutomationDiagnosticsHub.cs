@@ -40,8 +40,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private long? _cachedFinalOutputSize;
     private long _muteLowSignalStartTick;
     private long _recordingNoGrowthStartTick;
+    private long _lastPreviewJitterTotalDropped;
     private long _lastPreviewJitterUnderflows;
     private long _lastPreviewJitterDeadlineDrops;
+    private long _lastPreviewJitterScheduleLateCount;
+    private double _lastPreviewJitterLastScheduleLateMs;
     private long _lastPreviewJitterEvalTick;
     private long _lastD3DFramesSubmitted;
     private long _lastD3DFramesRendered;
@@ -50,6 +53,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private long _lastD3DFrameStatsMissedRefreshes;
     private long _lastD3DFrameStatsFailures;
     private long _lastD3DFrameStatsEvalTick;
+    private long _lastD3DFrameLatencyWaitTimeouts;
+    private long _lastD3DFrameLatencyWaitEvalTick;
     private long _lastMjpegTotalDropped;
     private long _lastMjpegDecodeFailures;
     private long _lastMjpegEmitFailures;
@@ -535,10 +540,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             visualCadenceHealthy: visualCadenceHealthy,
             captureCadenceDropPercent: health.CaptureCadenceEstimatedDropPercent,
             lastVerification: lastVerification);
-        var (recentPreviewUnderflows, recentPreviewDeadlineDrops) = UpdatePreviewJitterRecentCounters(health, nowTick);
+        var recentPreviewJitter = UpdatePreviewJitterRecentCounters(health, nowTick);
         var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick);
         var recentRenderer = UpdateD3DRendererRecentCounters(previewRuntime, nowTick);
         var (recentD3DMissedRefreshes, recentD3DStatsFailures) = UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick);
+        var recentD3DFrameLatencyWaitTimeouts = UpdateD3DFrameLatencyWaitRecentCounters(previewRuntime, nowTick);
         var recentFlashbackRecording = UpdateFlashbackRecordingRecentCounters(health, nowTick);
         var diagnostic = BuildDiagnosticEvaluation(
             health,
@@ -548,8 +554,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             viewModelSnapshot.IsRecording,
             performance,
             recentMjpeg,
-            recentPreviewUnderflows,
-            recentPreviewDeadlineDrops,
+            recentPreviewJitter.Underflows,
+            recentPreviewJitter.DeadlineDrops,
             recentRenderer,
             recentD3DMissedRefreshes,
             recentD3DStatsFailures,
@@ -580,8 +586,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 RecentMjpegDropped = recentMjpeg.TotalDropped,
                 RecentMjpegFailures = recentMjpeg.Failures,
                 MjpegPreviewJitterEnabled = health.MjpegPreviewJitterEnabled,
-                RecentPreviewJitterUnderflows = recentPreviewUnderflows,
-                RecentPreviewJitterDeadlineDrops = recentPreviewDeadlineDrops,
+                RecentPreviewJitterDropped = recentPreviewJitter.Dropped,
+                RecentPreviewJitterUnderflows = recentPreviewJitter.Underflows,
+                RecentPreviewJitterDeadlineDrops = recentPreviewJitter.DeadlineDrops,
+                RecentPreviewJitterScheduleLateCount = recentPreviewJitter.ScheduleLateCount,
+                RecentPreviewJitterScheduleLateMs = recentPreviewJitter.ScheduleLateMs,
                 MjpegPreviewJitterScheduleLateCount = health.MjpegPreviewJitterScheduleLateCount,
                 MjpegPreviewJitterMaxScheduleLateMs = health.MjpegPreviewJitterMaxScheduleLateMs,
                 MjpegPreviewJitterLatencyP95Ms = health.MjpegPreviewJitterLatencyP95Ms,
@@ -596,6 +605,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 PreviewD3DFrameLatencyWaitP95Ms = previewRuntime.D3DFrameLatencyWaitP95Ms,
                 PreviewD3DFrameLatencyWaitMaxMs = previewRuntime.D3DFrameLatencyWaitMaxMs,
                 PreviewD3DFrameLatencyWaitTimeoutCount = previewRuntime.D3DFrameLatencyWaitTimeoutCount,
+                RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts,
                 RecentD3DMissedRefreshes = recentD3DMissedRefreshes,
                 RecentD3DStatsFailures = recentD3DStatsFailures,
                 PreviewD3DLastDropReason = previewRuntime.D3DLastDropReason,
@@ -1713,24 +1723,35 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         return snapshot;
     }
 
-    private (long RecentUnderflows, long RecentDeadlineDrops) UpdatePreviewJitterRecentCounters(
+    private PreviewJitterRecentCounters UpdatePreviewJitterRecentCounters(
         CaptureHealthSnapshot health,
         long nowTick)
     {
+        var totalDropped = Math.Max(0, health.MjpegPreviewJitterTotalDropped);
         var underflows = Math.Max(0, health.MjpegPreviewJitterUnderflowCount);
         var deadlineDrops = Math.Max(0, health.MjpegPreviewJitterDeadlineDropCount);
+        var scheduleLateCount = Math.Max(0, health.MjpegPreviewJitterScheduleLateCount);
+        var lastScheduleLateMs = Math.Max(0, health.MjpegPreviewJitterLastScheduleLateMs);
         var previousTick = Interlocked.Exchange(ref _lastPreviewJitterEvalTick, nowTick);
+        var previousTotalDropped = Interlocked.Exchange(ref _lastPreviewJitterTotalDropped, totalDropped);
         var previousUnderflows = Interlocked.Exchange(ref _lastPreviewJitterUnderflows, underflows);
         var previousDeadlineDrops = Interlocked.Exchange(ref _lastPreviewJitterDeadlineDrops, deadlineDrops);
+        var previousScheduleLateCount = Interlocked.Exchange(ref _lastPreviewJitterScheduleLateCount, scheduleLateCount);
+        var previousLastScheduleLateMs = _lastPreviewJitterLastScheduleLateMs;
+        _lastPreviewJitterLastScheduleLateMs = lastScheduleLateMs;
 
         if (previousTick == 0 || nowTick < previousTick)
         {
-            return (0, 0);
+            return PreviewJitterRecentCounters.Empty;
         }
 
-        return (
+        var recentScheduleLateCount = Math.Max(0, scheduleLateCount - previousScheduleLateCount);
+        return new PreviewJitterRecentCounters(
+            Math.Max(0, totalDropped - previousTotalDropped),
             Math.Max(0, underflows - previousUnderflows),
-            Math.Max(0, deadlineDrops - previousDeadlineDrops));
+            Math.Max(0, deadlineDrops - previousDeadlineDrops),
+            recentScheduleLateCount,
+            recentScheduleLateCount > 0 ? Math.Max(0, lastScheduleLateMs) : Math.Max(0, lastScheduleLateMs - previousLastScheduleLateMs));
     }
 
     private MjpegRecentCounters UpdateMjpegRecentCounters(
@@ -1800,6 +1821,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         return (
             Math.Max(0, missedRefreshes - previousMissedRefreshes),
             Math.Max(0, failures - previousFailures));
+    }
+
+    private long UpdateD3DFrameLatencyWaitRecentCounters(
+        PreviewRuntimeSnapshot previewRuntime,
+        long nowTick)
+    {
+        var timeouts = Math.Max(0, previewRuntime.D3DFrameLatencyWaitTimeoutCount);
+        var previousTick = Interlocked.Exchange(ref _lastD3DFrameLatencyWaitEvalTick, nowTick);
+        var previousTimeouts = Interlocked.Exchange(ref _lastD3DFrameLatencyWaitTimeouts, timeouts);
+
+        if (previousTick == 0 || nowTick < previousTick)
+        {
+            return 0;
+        }
+
+        return Math.Max(0, timeouts - previousTimeouts);
     }
 
     private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(
@@ -2487,6 +2524,16 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         long Dropped)
     {
         public static D3DRendererRecentCounters Empty { get; } = new(0, 0, 0);
+    }
+
+    private readonly record struct PreviewJitterRecentCounters(
+        long Dropped,
+        long Underflows,
+        long DeadlineDrops,
+        long ScheduleLateCount,
+        double ScheduleLateMs)
+    {
+        public static PreviewJitterRecentCounters Empty { get; } = new(0, 0, 0, 0, 0);
     }
 
     private readonly record struct MjpegRecentCounters(

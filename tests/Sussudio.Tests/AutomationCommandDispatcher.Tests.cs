@@ -85,6 +85,23 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task AutomationCommandDispatcher_GetDouble_RejectsNonFiniteValues()
+    {
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
+        var method = dispatcherType.GetMethod("GetDouble",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("GetDouble not found.");
+
+        using var doc = JsonDocument.Parse("{\"nan\":\"NaN\",\"positive\":\"Infinity\",\"negative\":\"-Infinity\",\"valid\":\"1.25\"}");
+        AssertEqual(null, method.Invoke(null, new object[] { doc.RootElement, "nan" }), "GetDouble rejects NaN string");
+        AssertEqual(null, method.Invoke(null, new object[] { doc.RootElement, "positive" }), "GetDouble rejects Infinity string");
+        AssertEqual(null, method.Invoke(null, new object[] { doc.RootElement, "negative" }), "GetDouble rejects -Infinity string");
+
+        var valid = (double?)method.Invoke(null, new object[] { doc.RootElement, "valid" });
+        AssertEqual(true, Math.Abs(valid!.Value - 1.25) < 0.001, "GetDouble still accepts finite numeric strings");
+        return Task.CompletedTask;
+    }
+
     private static Task AutomationCommandDispatcher_RequireString_ThrowsOnMissing()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");

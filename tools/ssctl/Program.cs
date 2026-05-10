@@ -117,7 +117,7 @@ internal static class Program
         Console.WriteLine();
         Console.WriteLine("Wait / Verify:");
         Console.WriteLine("  wait <condition> [--timeout MS] [--poll MS]");
-        Console.WriteLine("  verify");
+        Console.WriteLine("  verify [path] [--profile NAME|--verification-profile NAME]");
         Console.WriteLine("  assert <json>");
         Console.WriteLine("  probe source|color");
         Console.WriteLine("  stats show|hide");

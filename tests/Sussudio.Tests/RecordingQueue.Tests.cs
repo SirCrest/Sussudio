@@ -691,6 +691,20 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task WasapiAudioCapture_StopUsesBoundedThreadJoin()
+    {
+        var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(wasapiSource, "private static readonly TimeSpan CaptureThreadJoinTimeout = TimeSpan.FromSeconds(3);");
+        AssertContains(wasapiSource, "JoinCaptureThread(_captureThread, \"WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT_START_FAILURE\")");
+        AssertContains(wasapiSource, "JoinCaptureThread(thread, \"WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT_STOP\")");
+        AssertContains(wasapiSource, "thread.Join(CaptureThreadJoinTimeout)");
+        AssertDoesNotContain(wasapiSource, "_captureThread.Join();");
+        AssertDoesNotContain(wasapiSource, "thread.Join();");
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_FlashbackBackendOwnershipUsesResourceAggregate()
     {
         var captureSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")

@@ -1193,13 +1193,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
         if (property.ValueKind == JsonValueKind.Number && property.TryGetDouble(out var numeric))
         {
-            return numeric;
+            return double.IsFinite(numeric) ? numeric : null;
         }
 
         if (property.ValueKind == JsonValueKind.String &&
             double.TryParse(property.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
         {
-            return parsed;
+            return double.IsFinite(parsed) ? parsed : null;
         }
 
         return null;

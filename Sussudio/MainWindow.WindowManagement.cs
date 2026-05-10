@@ -404,6 +404,63 @@ public sealed partial class MainWindow
 
         return completion.Task;
     }
+
+    private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)
+    {
+        if (action == null)
+        {
+            throw new ArgumentNullException(nameof(action));
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled(cancellationToken);
+        }
+
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            return action();
+        }
+
+        var completion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration registration = default;
+        if (cancellationToken.CanBeCanceled)
+        {
+            registration = cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
+        }
+
+        var enqueued = _dispatcherQueue.TryEnqueue(async () =>
+        {
+            try
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    completion.TrySetCanceled(cancellationToken);
+                    return;
+                }
+
+                await action().ConfigureAwait(true);
+                completion.TrySetResult(null);
+            }
+            catch (Exception ex)
+            {
+                completion.TrySetException(ex);
+            }
+            finally
+            {
+                registration.Dispose();
+            }
+        });
+
+        if (!enqueued)
+        {
+            registration.Dispose();
+            completion.TrySetException(new InvalidOperationException("Failed to enqueue window action on the UI thread."));
+        }
+
+        return completion.Task;
+    }
+
     private Microsoft.UI.Windowing.AppWindow GetAppWindow()
     {
         var hwnd = WindowNative.GetWindowHandle(this);

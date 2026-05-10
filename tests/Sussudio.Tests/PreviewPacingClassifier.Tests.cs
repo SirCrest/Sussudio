@@ -69,12 +69,47 @@ static partial class Program
     {
         var input = CreateBaselinePreviewPacingInput();
         SetPropertyOrBackingField(input, "PreviewD3DFrameLatencyWaitTimeoutCount", 1L);
+        SetPropertyOrBackingField(input, "RecentD3DFrameLatencyWaitTimeoutCount", 1L);
 
         var result = ClassifyPreviewPacing(input);
 
         AssertEqual("PresentBlocked", GetStringProperty(result, "LikelySlowStage"), "Preview pacing wait timeout stage");
         AssertEqual("Medium", GetStringProperty(result, "Confidence"), "Preview pacing wait timeout confidence");
         AssertContains(GetStringProperty(result, "Evidence"), "waitP95");
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewPacingClassifier_IgnoresStaleLifetimeSignalsWithoutRecentDeltas()
+    {
+        var input = CreateBaselinePreviewPacingInput();
+        SetPropertyOrBackingField(input, "MjpegPreviewJitterEnabled", true);
+        SetPropertyOrBackingField(input, "MjpegPreviewJitterScheduleLateCount", 12L);
+        SetPropertyOrBackingField(input, "MjpegPreviewJitterMaxScheduleLateMs", 20d);
+        SetPropertyOrBackingField(input, "MjpegPreviewJitterLastDropReason", "submit-failed");
+        SetPropertyOrBackingField(input, "PreviewD3DFrameLatencyWaitTimeoutCount", 4L);
+        SetPropertyOrBackingField(input, "PreviewD3DLastDropReason", "queue-full");
+
+        var result = ClassifyPreviewPacing(input);
+
+        AssertEqual("Unknown", GetStringProperty(result, "LikelySlowStage"), "Preview pacing stale lifetime signals stage");
+        AssertEqual("Low", GetStringProperty(result, "Confidence"), "Preview pacing stale lifetime signals confidence");
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewPacingClassifier_ClassifiesRecentJitterScheduleLate()
+    {
+        var input = CreateBaselinePreviewPacingInput();
+        SetPropertyOrBackingField(input, "MjpegPreviewJitterEnabled", true);
+        SetPropertyOrBackingField(input, "RecentPreviewJitterScheduleLateCount", 1L);
+        SetPropertyOrBackingField(input, "RecentPreviewJitterScheduleLateMs", 5d);
+        SetPropertyOrBackingField(input, "MjpegPreviewJitterScheduleLateCount", 12L);
+        SetPropertyOrBackingField(input, "MjpegPreviewJitterMaxScheduleLateMs", 20d);
+
+        var result = ClassifyPreviewPacing(input);
+
+        AssertEqual("PreviewJitterScheduler", GetStringProperty(result, "LikelySlowStage"), "Preview pacing recent jitter schedule-late stage");
+        AssertEqual("Medium", GetStringProperty(result, "Confidence"), "Preview pacing recent jitter schedule-late confidence");
+        AssertContains(GetStringProperty(result, "Evidence"), "recentScheduleLate=1/5");
         return Task.CompletedTask;
     }
 
@@ -90,6 +125,9 @@ static partial class Program
         AssertContains(diagnosticsHubText, "PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps");
         AssertContains(diagnosticsHubText, "CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames");
         AssertContains(diagnosticsHubText, "RecentD3DMissedRefreshes = recentD3DMissedRefreshes");
+        AssertContains(diagnosticsHubText, "RecentPreviewJitterScheduleLateCount = recentPreviewJitter.ScheduleLateCount");
+        AssertContains(diagnosticsHubText, "RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts");
+        AssertContains(diagnosticsHubText, "UpdateD3DFrameLatencyWaitRecentCounters");
         AssertContains(diagnosticsHubText, "PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage");
         AssertContains(diagnosticsHubText, "PreviewPacingSlowStageConfidence = previewPacingClassification.Confidence");
         AssertContains(diagnosticsHubText, "PreviewPacingSlowStageEvidence = previewPacingClassification.Evidence");

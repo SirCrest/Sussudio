@@ -861,8 +861,9 @@ public static class DiagnosticSessionRunner
                     try
                     {
                         SetStage("cleanup-restore-flashback-off");
-                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
-                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = false }, 15_000, false, cleanupCts.Token).ConfigureAwait(false);
+                        var cleanupTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackEnabled");
+                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs));
+                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = false }, cleanupTimeoutMs, false, cleanupCts.Token).ConfigureAwait(false);
                         actions.Add("flashback restored off");
                     }
                     catch (Exception ex)
@@ -876,8 +877,9 @@ public static class DiagnosticSessionRunner
                     try
                     {
                         SetStage("cleanup-restore-flashback-on");
-                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
-                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, 15_000, false, cleanupCts.Token).ConfigureAwait(false);
+                        var cleanupTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackEnabled");
+                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs));
+                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, cleanupTimeoutMs, false, cleanupCts.Token).ConfigureAwait(false);
                         actions.Add("flashback restored on");
                     }
                     catch (Exception ex)
