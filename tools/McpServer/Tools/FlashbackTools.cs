@@ -88,12 +88,13 @@ public static class FlashbackTools
             .ConfigureAwait(false);
     }
 
-    [McpServerTool, Description("Export flashback buffer to an MP4 file. Exports the most recent N seconds of the rolling buffer.")]
+    [McpServerTool, Description("Export flashback buffer to an MP4 file. Exports the most recent N seconds of the rolling buffer. Refuses to overwrite an existing destination file unless force=true.")]
     public static async Task<CallToolResult> flashback_export(
         PipeClient pipeClient,
         [Description("Number of seconds to export from the buffer (default: 300)")] double seconds = 300,
         [Description("Output file path (default: temp/flashback_export_<timestamp>.mp4)")] string? outputPath = null,
-        [Description("True to export the current in/out selection instead of the most recent N seconds")] bool useSelectionRange = false)
+        [Description("True to export the current in/out selection instead of the most recent N seconds")] bool useSelectionRange = false,
+        [Description("True to overwrite an existing file at outputPath. Default false: the export is refused if the destination already exists, preserving any prior take.")] bool force = false)
     {
         if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)
         {
@@ -112,7 +113,8 @@ public static class FlashbackTools
         {
             ["seconds"] = seconds,
             ["outputPath"] = outputPath,
-            ["useSelectionRange"] = useSelectionRange
+            ["useSelectionRange"] = useSelectionRange,
+            ["force"] = force
         };
 
         var response = await pipeClient.SendCommandAsync("FlashbackExport", payload).ConfigureAwait(false);

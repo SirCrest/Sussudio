@@ -588,6 +588,7 @@ internal static class CommandHandlers
             case "export":
             {
                 var useSelectionRange = ConsumeFlag(context.Rest, "--range");
+                var force = ConsumeFlag(context.Rest, "--force");
                 var seconds = context.Rest.Count >= 2
                     ? ParseFlashbackExportSeconds(context.Rest[1])
                     : 300;
@@ -600,7 +601,8 @@ internal static class CommandHandlers
                     {
                         ["seconds"] = seconds,
                         ["outputPath"] = outputPath,
-                        ["useSelectionRange"] = useSelectionRange
+                        ["useSelectionRange"] = useSelectionRange,
+                        ["force"] = force
                     }, includeData: true);
             }
             case "segments":

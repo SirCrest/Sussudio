@@ -78,11 +78,15 @@ public enum PreviewStartupStrategy
 
 // Wire-format request for the named-pipe automation server. Payload stays as a
 // JsonElement so each command can validate only the fields it actually needs.
+// ManifestRevision is the client's view of the AutomationCommandKind numeric
+// ID table; the server rejects mismatched revisions before dispatching to keep
+// stale ssctl/MCP/StreamDeck binaries from silently misrouting commands.
 public sealed class AutomationCommandRequest
 {
     public AutomationCommandKind Command { get; init; }
     public string? CorrelationId { get; init; }
     public string? AuthToken { get; init; }
+    public int? ManifestRevision { get; init; }
     public JsonElement Payload { get; init; }
 }
 

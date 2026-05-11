@@ -603,6 +603,9 @@ static partial class Program
                 "Diagnostic session runner retries synthetic pipe connect failures",
                 DiagnosticSessionRunner_RetriesSyntheticPipeConnectFailures),
             await RunCheckAsync(
+                "Diagnostic session runner rejects concurrent invocation on same output directory",
+                DiagnosticSessionRunner_RejectsConcurrentInvocationOnSameOutputDirectory),
+            await RunCheckAsync(
                 "Diagnostic session runner classifies flashback stress audio-master fallbacks",
                 DiagnosticSessionRunner_ClassifiesFlashbackStressAudioMasterFallbacks),
             await RunCheckAsync(
@@ -1260,6 +1263,12 @@ static partial class Program
             await RunCheckAsync(
                 "Flashback exporter invalid temp output preserves existing exports",
                 FlashbackExporter_InvalidTempOutputDoesNotReplaceExistingExport),
+            await RunCheckAsync(
+                "Flashback exporter refuses to overwrite existing destination when force is false",
+                FlashbackExporter_RefusesOverwriteWhenDestinationExistsAndForceFalse),
+            await RunCheckAsync(
+                "Flashback exporter overwrites existing destination when force is true",
+                FlashbackExporter_OverwritesWhenForceTrue),
             await RunCheckAsync(
                 "Flashback exporter deletes invalid moved final outputs",
                 FlashbackExporter_FinalValidationFailureDeletesMovedOutput),
