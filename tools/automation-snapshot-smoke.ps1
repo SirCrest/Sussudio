@@ -82,6 +82,36 @@ function Wait-Condition {
 
 Write-Host "Automation snapshot smoke: starting"
 
+# Track whether the smoke run actually toggled preview/recording on so the
+# finally block can roll the app back to a known-safe state even on Ctrl-C
+# (PowerShell PipelineStoppedException) or unexpected exception. Without this
+# wrapper, an operator Ctrl-C between SetRecordingEnabled=true and the
+# matching SetRecordingEnabled=false leaves the app recording indefinitely.
+$script:SmokePreviewEnabled = $false
+$script:SmokeRecordingEnabled = $false
+
+function Restore-SmokeAppState {
+    if ($script:SmokeRecordingEnabled) {
+        try {
+            Invoke-Automation -Command "SetRecordingEnabled" -Payload @{ enabled = $false } -AllowFailure | Out-Null
+        }
+        catch {
+            Write-Warning "Smoke cleanup: SetRecordingEnabled=false failed: $($_.Exception.Message)"
+        }
+    }
+
+    if ($script:SmokePreviewEnabled) {
+        try {
+            Invoke-Automation -Command "SetPreviewEnabled" -Payload @{ enabled = $false } -AllowFailure | Out-Null
+        }
+        catch {
+            Write-Warning "Smoke cleanup: SetPreviewEnabled=false failed: $($_.Exception.Message)"
+        }
+    }
+}
+
+try {
+
 $idle = Get-Snapshot
 Assert-Condition ($null -ne $idle.SessionState -and $idle.SessionState.Length -gt 0) "Idle snapshot missing SessionState."
 Assert-Condition ($null -ne $idle.TelemetryAlignmentStatus -and $idle.TelemetryAlignmentStatus.Length -gt 0) "Idle snapshot missing TelemetryAlignmentStatus."
@@ -90,6 +120,7 @@ Assert-Condition ($null -ne $idle.ActivePipelineMode -and $idle.ActivePipelineMo
 Assert-Condition ([bool]$idle.PipelineModeMatched) "Idle snapshot expected PipelineModeMatched=true."
 
 Invoke-Automation -Command "SetPreviewEnabled" -Payload @{ enabled = $true } | Out-Null
+$script:SmokePreviewEnabled = $true
 Wait-Condition -ConditionName "PreviewRendererHealthy"
 
 $preview = Get-Snapshot
@@ -119,6 +150,7 @@ if ([bool]$preview.IsHdrAvailable) {
 
 if (-not $SkipRecording) {
     Invoke-Automation -Command "SetRecordingEnabled" -Payload @{ enabled = $true } | Out-Null
+    $script:SmokeRecordingEnabled = $true
     Wait-Condition -ConditionName "RecordingFileGrowing"
 
     $recording = Get-Snapshot
@@ -132,6 +164,7 @@ if (-not $SkipRecording) {
     Assert-Condition ($recording.PipelineModeStatus -eq "Active") "Recording snapshot expected PipelineModeStatus=Active."
 
     Invoke-Automation -Command "SetRecordingEnabled" -Payload @{ enabled = $false } | Out-Null
+    $script:SmokeRecordingEnabled = $false
     Wait-Condition -ConditionName "RecordingStopped"
 
     $stopped = Get-Snapshot
@@ -140,6 +173,7 @@ if (-not $SkipRecording) {
 }
 
 Invoke-Automation -Command "SetPreviewEnabled" -Payload @{ enabled = $false } | Out-Null
+$script:SmokePreviewEnabled = $false
 Start-Sleep -Milliseconds 500
 
 $final = Get-Snapshot
@@ -163,3 +197,8 @@ $summary = [ordered]@{
 
 Write-Host "Automation snapshot smoke: PASS"
 $summary | ConvertTo-Json -Depth 8
+
+}
+finally {
+    Restore-SmokeAppState
+}

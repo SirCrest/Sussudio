@@ -10,6 +10,40 @@ internal static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        // Operator Ctrl-C / CI SIGTERM must give the in-flight pipe call a
+        // chance to print a cleanup hint instead of leaving the app in a
+        // recording state. Handler is idempotent across repeated Ctrl-C.
+        using var cts = new CancellationTokenSource();
+        ConsoleCancelEventHandler? cancelHandler = null;
+        cancelHandler = (_, e) =>
+        {
+            if (cts.IsCancellationRequested)
+            {
+                // Second Ctrl-C: let the runtime terminate so a hung pipe
+                // call does not trap the operator forever.
+                return;
+            }
+
+            e.Cancel = true;
+            try
+            {
+                Console.Error.WriteLine("AutomationClient: Ctrl-C received; cancelling. If a recording was started, send SetRecordingEnabled enabled=false to clean up.");
+            }
+            catch
+            {
+                // Console may already be torn down during shutdown.
+            }
+
+            try
+            {
+                cts.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // CTS already disposed; nothing more to do.
+            }
+        };
+        Console.CancelKeyPress += cancelHandler;
         try
         {
             var options = ParseArgs(args);
@@ -73,6 +107,10 @@ internal static class Program
         {
             Console.Error.WriteLine(ex.Message);
             return 1;
+        }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
         }
     }
 

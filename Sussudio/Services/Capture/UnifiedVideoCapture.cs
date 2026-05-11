@@ -60,6 +60,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     private string _negotiatedFormat = "unknown";
     private long _videoFramesArrived;
     private long _videoFramesDropped;
+    private long _livePreviewPresentId;
     private long _videoFramesWrittenToSink;
     private long _recordingFramesDelivered;
     private long _lastVideoFrameArrivedTick;
@@ -700,7 +701,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         PooledVideoFrameLease? ownedFrame = frame;
         try
         {
-            previewSink.SubmitRawFrameLease(ownedFrame, isHdr: false);
+            var previewPresentId = Interlocked.Increment(ref _livePreviewPresentId);
+            var submitTick = Stopwatch.GetTimestamp();
+            previewSink.SubmitRawFrameLease(
+                ownedFrame,
+                isHdr: false,
+                previewPresentId: previewPresentId,
+                schedulerSubmitTick: submitTick);
             ownedFrame = null;
         }
         finally
@@ -751,7 +758,18 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             {
                 try
                 {
-                    previewSink.SubmitTexture(gpuTexture, gpuSubresource, width, height, isP010, arrivalTick);
+                    var previewPresentId = Interlocked.Increment(ref _livePreviewPresentId);
+                    var submitTick = Stopwatch.GetTimestamp();
+                    previewSink.SubmitTexture(
+                        gpuTexture,
+                        gpuSubresource,
+                        width,
+                        height,
+                        isP010,
+                        arrivalTick,
+                        schedulerSubmitTick: submitTick,
+                        sourceSequenceNumber: sourceSequence,
+                        previewPresentId: previewPresentId);
                     _frameLedger.RecordEvent(
                         sourceSequence,
                         FrameLedgerStage.PreviewEnqueued,
@@ -1002,7 +1020,18 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 sequenceNumber: sourceSequence);
             fixed (byte* pointer = frameData)
             {
-                previewSink.SubmitRawFrame((IntPtr)pointer, frameData.Length, width, height, isP010, arrivalTick);
+                var previewPresentId = Interlocked.Increment(ref _livePreviewPresentId);
+                var submitTick = Stopwatch.GetTimestamp();
+                previewSink.SubmitRawFrame(
+                    (IntPtr)pointer,
+                    frameData.Length,
+                    width,
+                    height,
+                    isP010,
+                    arrivalTick,
+                    sourceSequenceNumber: sourceSequence,
+                    previewPresentId: previewPresentId,
+                    schedulerSubmitTick: submitTick);
             }
             _frameLedger.RecordEvent(
                 sourceSequence,

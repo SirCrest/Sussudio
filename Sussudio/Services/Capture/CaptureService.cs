@@ -556,7 +556,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct,
         TimeSpan? inPointFilePts = null,
-        TimeSpan? outPointFilePts = null)
+        TimeSpan? outPointFilePts = null,
+        bool force = false)
     {
         // Snapshot buffer state under the session lock, then release it.
         // PauseEviction (inside ExportFlashbackCoreAsync) protects segment files
@@ -622,6 +623,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 snapshotBufferManager: bufferManager,
                 snapshotExporter: flashbackExporter,
                 exportOperationLockAlreadyHeld: true,
+                force: force,
                 resolveRangeAfterEvictionPaused: manager =>
                 {
                     var validStart = manager.ValidStartPts;
@@ -660,7 +662,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(
         double seconds, string outputPath,
-        IProgress<ExportProgress>? progress, CancellationToken ct)
+        IProgress<ExportProgress>? progress, CancellationToken ct,
+        bool force = false)
     {
         if (ct.IsCancellationRequested)
         {
@@ -733,6 +736,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 snapshotBufferManager: bufferManager,
                 snapshotExporter: flashbackExporter,
                 exportOperationLockAlreadyHeld: true,
+                force: force,
                 resolveRangeAfterEvictionPaused: manager =>
                 {
                     var bufferedDuration = manager.BufferedDuration;
@@ -792,6 +796,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         bool requireCompleteLiveEdge = false,
         bool exportOperationLockAlreadyHeld = false,
         bool throttleHighResolutionBaseline = true,
+        bool force = false,
         Func<FlashbackBufferManager, (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)>? resolveRangeAfterEvictionPaused = null)
     {
         var flashbackSink = snapshotSink ?? _flashbackSink;
@@ -962,6 +967,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 OutPoint = outPoint,
                 OutputPath = outputPath,
                 FastStart = false,
+                Force = force,
                 AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(
                     flashbackSink,
                     throttleHighResolutionBaseline),

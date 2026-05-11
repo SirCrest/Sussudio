@@ -280,6 +280,34 @@ public static class DiagnosticSessionRunner
             ? Path.Combine(Environment.CurrentDirectory, "temp", "diagnostic-sessions", sessionId)
             : Path.GetFullPath(options.OutputDirectory);
         Directory.CreateDirectory(outputDirectory);
+
+        // Per-output-directory exclusive lock. Prevents two concurrent diagnostic-session
+        // invocations from corrupting the manifest, final.snapshot.json, and per-scenario
+        // JSON files in the same OutputDirectory (e.g., parallel CI matrix jobs sharing an
+        // artifacts root). FileShare.None blocks other openers; DeleteOnClose self-cleans
+        // on normal exit; the OS releases the handle on crash.
+        var lockPath = Path.Combine(outputDirectory, ".sussudio-diag.lock");
+        FileStream? lockHandle;
+        try
+        {
+            lockHandle = new FileStream(
+                lockPath,
+                FileMode.OpenOrCreate,
+                FileAccess.Write,
+                FileShare.None,
+                bufferSize: 1,
+                FileOptions.DeleteOnClose);
+        }
+        catch (IOException ex)
+        {
+            throw new InvalidOperationException(
+                $"Another diagnostic session is already running in '{outputDirectory}'. " +
+                $"Wait for it to finish or choose a different output directory. ({ex.Message})",
+                ex);
+        }
+
+        try
+        {
         var livePath = Path.Combine(outputDirectory, "session-live.json");
         var startedUtc = DateTimeOffset.UtcNow;
         var runnerProcessId = Environment.ProcessId;
@@ -861,8 +889,9 @@ public static class DiagnosticSessionRunner
                     try
                     {
                         SetStage("cleanup-restore-flashback-off");
-                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
-                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = false }, 15_000, false, cleanupCts.Token).ConfigureAwait(false);
+                        var cleanupTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackEnabled");
+                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs));
+                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = false }, cleanupTimeoutMs, false, cleanupCts.Token).ConfigureAwait(false);
                         actions.Add("flashback restored off");
                     }
                     catch (Exception ex)
@@ -876,8 +905,9 @@ public static class DiagnosticSessionRunner
                     try
                     {
                         SetStage("cleanup-restore-flashback-on");
-                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
-                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, 15_000, false, cleanupCts.Token).ConfigureAwait(false);
+                        var cleanupTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackEnabled");
+                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs));
+                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, cleanupTimeoutMs, false, cleanupCts.Token).ConfigureAwait(false);
                         actions.Add("flashback restored on");
                     }
                     catch (Exception ex)
@@ -1799,6 +1829,11 @@ public static class DiagnosticSessionRunner
 
         static CancellationTokenSource CreateCleanupCts(TimeSpan timeout)
             => new(timeout);
+        }
+        finally
+        {
+            lockHandle.Dispose();
+        }
     }
 
     public static string Format(DiagnosticSessionResult result)
@@ -2441,8 +2476,10 @@ public static class DiagnosticSessionRunner
 
         var exportPathA = Path.Combine(outputDirectory, "flashback-concurrent-a.mp4");
         var exportPathB = Path.Combine(outputDirectory, "flashback-concurrent-b.mp4");
-        var exportPayloadA = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathA };
-        var exportPayloadB = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathB };
+        // Diagnostic runs may execute against the same output directory across sessions;
+        // pass force=true so the destination-exists guard does not break the diagnostic.
+        var exportPayloadA = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathA, ["force"] = true };
+        var exportPayloadB = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathB, ["force"] = true };
 
         var exportTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport");
         var exportTaskA = sendCommandAsync("FlashbackExport", exportPayloadA, exportTimeoutMs);
@@ -2494,7 +2531,7 @@ public static class DiagnosticSessionRunner
         var exportPath = Path.Combine(outputDirectory, "flashback-disable-during-export.mp4");
         var exportTask = sendCommandAsync(
             "FlashbackExport",
-            new Dictionary<string, object?> { ["seconds"] = 3, ["outputPath"] = exportPath },
+            new Dictionary<string, object?> { ["seconds"] = 3, ["outputPath"] = exportPath, ["force"] = true },
             AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
 
         await Task.Delay(100, cancellationToken).ConfigureAwait(false);
@@ -4452,7 +4489,8 @@ public static class DiagnosticSessionRunner
                 {
                     ["seconds"] = 1,
                     ["outputPath"] = exportPath,
-                    ["useSelectionRange"] = true
+                    ["useSelectionRange"] = true,
+                    ["force"] = true
                 },
                 60_000)
             ;

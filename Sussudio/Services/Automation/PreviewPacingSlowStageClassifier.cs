@@ -28,8 +28,11 @@ public sealed class PreviewPacingClassificationInput
     public long RecentMjpegDropped { get; init; }
     public long RecentMjpegFailures { get; init; }
     public bool MjpegPreviewJitterEnabled { get; init; }
+    public long RecentPreviewJitterDropped { get; init; }
     public long RecentPreviewJitterUnderflows { get; init; }
     public long RecentPreviewJitterDeadlineDrops { get; init; }
+    public long RecentPreviewJitterScheduleLateCount { get; init; }
+    public double RecentPreviewJitterScheduleLateMs { get; init; }
     public long MjpegPreviewJitterScheduleLateCount { get; init; }
     public double MjpegPreviewJitterMaxScheduleLateMs { get; init; }
     public double MjpegPreviewJitterLatencyP95Ms { get; init; }
@@ -44,6 +47,7 @@ public sealed class PreviewPacingClassificationInput
     public double PreviewD3DFrameLatencyWaitP95Ms { get; init; }
     public double PreviewD3DFrameLatencyWaitMaxMs { get; init; }
     public long PreviewD3DFrameLatencyWaitTimeoutCount { get; init; }
+    public long RecentD3DFrameLatencyWaitTimeoutCount { get; init; }
     public long RecentD3DMissedRefreshes { get; init; }
     public long RecentD3DStatsFailures { get; init; }
     public string PreviewD3DLastDropReason { get; init; } = string.Empty;
@@ -184,13 +188,16 @@ public static class PreviewPacingSlowStageClassifier
             return new PreviewPacingClassification(
                 "PreviewJitterScheduler",
                 input.RecentPreviewJitterDeadlineDrops > 0 ||
-                string.Equals(input.MjpegPreviewJitterLastDropReason, "submit-failed", StringComparison.OrdinalIgnoreCase)
+                input.RecentPreviewJitterDropped > 0
                     ? "High"
                     : "Medium",
                 Format(
-                    "jitter deadlineDrops={0} underflows={1} scheduleLateCount={2} maxScheduleLate={3:0.##}ms latencyP95={4:0.##}ms lastDrop={5}.",
+                    "jitter recentDrops={0} deadlineDrops={1} underflows={2} recentScheduleLate={3}/{4:0.##}ms lifetimeScheduleLate={5} maxScheduleLate={6:0.##}ms latencyP95={7:0.##}ms lastDrop={8}.",
+                    input.RecentPreviewJitterDropped,
                     input.RecentPreviewJitterDeadlineDrops,
                     input.RecentPreviewJitterUnderflows,
+                    input.RecentPreviewJitterScheduleLateCount,
+                    input.RecentPreviewJitterScheduleLateMs,
                     input.MjpegPreviewJitterScheduleLateCount,
                     input.MjpegPreviewJitterMaxScheduleLateMs,
                     input.MjpegPreviewJitterLatencyP95Ms,
@@ -213,7 +220,7 @@ public static class PreviewPacingSlowStageClassifier
         var rendererDropPercent = CalculatePercent(input.RecentRendererDropped, input.RecentRendererSubmitted);
         if (rendererDropPercent > RendererDropWarningPercent ||
             input.PreviewD3DPendingFrameCount > 1 ||
-            !string.IsNullOrWhiteSpace(input.PreviewD3DLastDropReason))
+            input.RecentRendererDropped > 0 && !string.IsNullOrWhiteSpace(input.PreviewD3DLastDropReason))
         {
             return new PreviewPacingClassification(
                 "RenderSubmit",
@@ -257,13 +264,13 @@ public static class PreviewPacingSlowStageClassifier
     private static bool HasHardPreviewSignal(PreviewPacingClassificationInput input)
         => input.RecentMjpegDropped > 0 ||
            input.RecentMjpegFailures > 0 ||
+           input.RecentPreviewJitterDropped > 0 ||
            input.RecentPreviewJitterDeadlineDrops > 0 ||
            input.RecentPreviewJitterUnderflows > 0 ||
            input.RecentRendererDropped > 0 ||
            input.RecentD3DMissedRefreshes > 0 ||
            input.RecentD3DStatsFailures > 0 ||
-           input.PreviewD3DFrameLatencyWaitTimeoutCount > 0 ||
-           !string.IsNullOrWhiteSpace(input.PreviewD3DLastDropReason);
+           input.RecentD3DFrameLatencyWaitTimeoutCount > 0;
 
     private static bool IsSourceCaptureSuspect(
         PreviewPacingClassificationInput input,
@@ -326,15 +333,15 @@ public static class PreviewPacingSlowStageClassifier
             return false;
         }
 
-        if (string.Equals(input.MjpegPreviewJitterLastDropReason, "submit-failed", StringComparison.OrdinalIgnoreCase) ||
+        if (input.RecentPreviewJitterDropped > 0 ||
             input.RecentPreviewJitterDeadlineDrops > 0 ||
             input.RecentPreviewJitterUnderflows > 3)
         {
             return true;
         }
 
-        return input.MjpegPreviewJitterScheduleLateCount > 0 &&
-               input.MjpegPreviewJitterMaxScheduleLateMs > Math.Max(1.0, targetFrameMs * 0.25);
+        return input.RecentPreviewJitterScheduleLateCount > 0 &&
+               input.RecentPreviewJitterScheduleLateMs > Math.Max(1.0, targetFrameMs * 0.25);
     }
 
     private static string ResolveDominantD3DStage(
@@ -349,7 +356,7 @@ public static class PreviewPacingSlowStageClassifier
             Positive(input.PreviewD3DFrameLatencyWaitP95Ms),
             Positive(input.PreviewD3DFrameLatencyWaitMaxMs) * 0.50);
 
-        if (input.PreviewD3DFrameLatencyWaitTimeoutCount > 0)
+        if (input.RecentD3DFrameLatencyWaitTimeoutCount > 0)
         {
             return "PresentBlocked";
         }

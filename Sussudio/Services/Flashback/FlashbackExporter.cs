@@ -76,7 +76,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
             return ExportSegmentsAsync(request.Segments, request.InPoint, request.OutPoint,
-                request.OutputPath, request.FastStart, progress, ct);
+                request.OutputPath, request.FastStart, request.Force, progress, ct);
         }
 
         if (request.SegmentPaths is { Count: > 0 })
@@ -88,13 +88,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 request.OutPoint,
                 request.OutputPath,
                 request.FastStart,
+                request.Force,
                 progress,
                 ct);
         }
 
         SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
         return ExportSingleAsync(request.InputTsPath!, request.InPoint, request.OutPoint,
-            request.OutputPath, request.FastStart, progress, ct);
+            request.OutputPath, request.FastStart, request.Force, progress, ct);
     }
 
     /// <summary>
@@ -108,6 +109,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         TimeSpan outPoint,
         string outputPath,
         bool fastStart,
+        bool allowOverwrite,
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
@@ -127,7 +129,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return RunWithBackgroundPriority(
                 () => RunWithAdaptiveThrottle(
                     adaptiveThrottleDelayMsProvider,
-                    () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),
+                    () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),
                 () => DisposeLinkedCtsBestEffort(linkedCts, "single_export"));
         });
     }
@@ -142,6 +144,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         TimeSpan outPoint,
         string outputPath,
         bool fastStart,
+        bool allowOverwrite,
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
@@ -162,7 +165,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return RunWithBackgroundPriority(
                 () => RunWithAdaptiveThrottle(
                     adaptiveThrottleDelayMsProvider,
-                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),
+                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),
                 () => DisposeLinkedCtsBestEffort(linkedCts, "segment_export"));
         });
     }
@@ -304,6 +307,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         TimeSpan outPoint,
         string outputPath,
         bool fastStart,
+        bool allowOverwrite,
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
@@ -595,7 +599,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer");
             CloseOutputIo();
 
-            if (!TryFinalizeTempOutputFile(tmpPath, outputPath, out var outputBytes, out var outputFailure))
+            if (!TryFinalizeTempOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))
             {
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'");
                 return FinalizeResult.Failure(outputPath, outputFailure);
@@ -638,6 +642,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         TimeSpan outPoint,
         string outputPath,
         bool fastStart,
+        bool allowOverwrite,
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
@@ -1312,7 +1317,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer");
             CloseOutputIo();
 
-            if (!TryFinalizeTempOutputFile(tmpPath, outputPath, out var outputBytes, out var outputFailure))
+            if (!TryFinalizeTempOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))
             {
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'");
                 return FinalizeResult.Failure(outputPath, outputFailure);
@@ -1800,11 +1805,28 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
     }
 
-    private static void AtomicMoveTempFile(string tmpPath, string outputPath)
+    private static void AtomicMoveTempFile(string tmpPath, string outputPath, bool allowOverwrite)
     {
         if (!File.Exists(tmpPath))
         {
             throw new IOException($"Temporary export file was not created: '{tmpPath}'.");
+        }
+
+        var destinationExists = File.Exists(outputPath);
+        if (destinationExists && !allowOverwrite)
+        {
+            Logger.Log(
+                $"FLASHBACK_EXPORT_REFUSED_DESTINATION_EXISTS path='{outputPath}' " +
+                "reason='destination_exists' force=false");
+            DeleteTempFileIfPresent(tmpPath);
+            throw new IOException(
+                $"Flashback export failed: destination file already exists at '{outputPath}'. " +
+                "Pass force=true to overwrite an existing export.");
+        }
+
+        if (destinationExists)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_OVERWRITE path='{outputPath}' force=true");
         }
 
         File.Move(tmpPath, outputPath, overwrite: true);
@@ -1813,11 +1835,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     private static bool TryFinalizeTempOutputFile(
         string tmpPath,
         string outputPath,
+        bool allowOverwrite,
         out long outputBytes,
         out string failureMessage)
         => TryFinalizeTempOutputFileCore(
             tmpPath,
             outputPath,
+            allowOverwrite,
             out outputBytes,
             out failureMessage,
             TryValidateCompletedOutputFile);
@@ -1825,6 +1849,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     private static bool TryFinalizeTempOutputFileCore(
         string tmpPath,
         string outputPath,
+        bool allowOverwrite,
         out long outputBytes,
         out string failureMessage,
         CompletedOutputValidator validateOutput)
@@ -1838,7 +1863,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return false;
         }
 
-        AtomicMoveTempFile(tmpPath, outputPath);
+        // Refuse-on-collision is enforced here before the atomic move so the
+        // existing destination is preserved when the caller did not opt in to
+        // overwrite. AtomicMoveTempFile throws IOException for the refusal path.
+        try
+        {
+            AtomicMoveTempFile(tmpPath, outputPath, allowOverwrite);
+        }
+        catch (IOException ex)
+        {
+            failureMessage = ex.Message;
+            return false;
+        }
 
         if (!validateOutput(outputPath, out outputBytes, out failureMessage))
         {

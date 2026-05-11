@@ -139,6 +139,25 @@ static partial class Program
         AssertEqual(0, manifestExitCode, "manifest exit code");
         AssertEqual(51, manifestRequest.GetProperty("command").GetInt32(), "manifest command id");
 
+        var verifyPipeName = $"ssctl-verify-profile-{Guid.NewGuid():N}";
+        var verifyTransport = Activator.CreateInstance(transportType, verifyPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for verify command test.");
+        var verifyArguments = new List<string> { "verify", @"C:\captures\clip.mp4", "--profile", "flashback-export" };
+        var verifyExitCode = -1;
+        JsonElement verifyRequest = await CapturePipeRequestAsync(
+            verifyPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { verifyTransport, verifyArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                verifyExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, verifyExitCode, "verify profile exit code");
+        AssertEqual(44, verifyRequest.GetProperty("command").GetInt32(), "verify file command id");
+        AssertEqual(@"C:\captures\clip.mp4", verifyRequest.GetProperty("payload").GetProperty("filePath").GetString(), "verify file payload path");
+        AssertEqual("flashback-export", verifyRequest.GetProperty("payload").GetProperty("verificationProfile").GetString(), "verify file payload profile");
+
         var commandHandlersSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n");
         AssertContains(commandHandlersSource, "\"manifest\" => HandleManifestAsync(context)");
@@ -149,6 +168,8 @@ static partial class Program
         AssertContains(commandHandlersSource, "\"OpenRecordingsFolder\"");
         AssertContains(commandHandlersSource, "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
         AssertContains(commandHandlersSource, "return HandleSimpleCommandAsync(context, \"FlashbackAction\", playPayload, includeData: true);");
+        AssertContains(commandHandlersSource, "ParseOptionalStringFlag(context.Rest, \"--profile\")");
+        AssertContains(commandHandlersSource, "payload[\"verificationProfile\"] = verificationProfile;");
         AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback seek <ms>\"))");
         AssertContains(commandHandlersSource, "[\"action\"] = \"begin-scrub\"");
         AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback begin-scrub <ms>\"))");

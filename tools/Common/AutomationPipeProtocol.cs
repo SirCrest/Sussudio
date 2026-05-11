@@ -12,6 +12,14 @@ internal static class AutomationPipeProtocol
 {
     internal const string DefaultPipeName = "SussudioAutomation";
     internal const string AutomationKeyEnvVar = "SUSSUDIO_AUTOMATION_TOKEN";
+
+    // Wire-format revision for the AutomationCommandKind numeric ID table.
+    // Bump by +1 whenever AutomationCommandKind gains, loses, or renames a
+    // member. The server uses this to reject clients that were built against
+    // a different manifest revision before they can misroute a command. See
+    // Sussudio/Models/AutomationCommandKind.cs for the maintainer rules.
+    internal const int CommandManifestRevision = 1;
+
     internal const int DefaultConnectTimeoutMs = 5000;
     internal const int DefaultResponseTimeoutMs = 15000;
     internal const int ExtendedResponseTimeoutMs = 60000;
@@ -102,6 +110,7 @@ internal static class AutomationPipeProtocol
             ["command"] = commandValue,
             ["correlationId"] = Guid.NewGuid().ToString("N"),
             ["authToken"] = authToken ?? GetConfiguredAuthToken(),
+            ["manifestRevision"] = CommandManifestRevision,
             ["payload"] = payload ?? new Dictionary<string, object?>(StringComparer.Ordinal)
         };
     }

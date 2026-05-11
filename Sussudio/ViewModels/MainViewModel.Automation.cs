@@ -287,6 +287,8 @@ public partial class MainViewModel
         var inPoint = playback.InPoint;
         var outPoint = playback.OutPoint;
 
+        // UI flow: the file picker already confirmed any overwrite with the user.
+        // Pass force=true so the exporter does not refuse the user-chosen path.
         var (result, errorMessage, isCurrent) = await ExportFlashbackCoreAsync(async (progress, ct) =>
             await _sessionCoordinator.ExportFlashbackRangeAsync(
                 inPoint,
@@ -295,7 +297,8 @@ public partial class MainViewModel
                 progress,
                 ct,
                 playback.InPointFilePts,
-                playback.OutPointFilePts));
+                playback.OutPointFilePts,
+                force: true));
         if (!isCurrent) return;
 
         if (errorMessage != null)
@@ -320,8 +323,9 @@ public partial class MainViewModel
         var file = await PickFlashbackExportFileAsync($"Flashback_Last5m_{DateTime.Now:yyyyMMdd_HHmmss}");
         if (file == null) return;
 
+        // UI flow: the file picker already confirmed any overwrite with the user.
         var (result, errorMessage, isCurrent) = await ExportFlashbackCoreAsync(async (progress, ct) =>
-            await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(300, file.Path, progress, ct));
+            await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(300, file.Path, progress, ct, force: true));
         if (!isCurrent) return;
 
         if (errorMessage != null)
@@ -438,7 +442,7 @@ public partial class MainViewModel
     }
 
     public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
-        double seconds, string outputPath, bool useSelectionRange, CancellationToken ct)
+        double seconds, string outputPath, bool useSelectionRange, bool force, CancellationToken ct)
     {
         var exportId = Interlocked.Increment(ref _flashbackExportOperationId);
         var oldExportCts = _exportCts;
@@ -488,11 +492,12 @@ public partial class MainViewModel
                     progress,
                     exportCts.Token,
                     playback.InPointFilePts,
-                    playback.OutPointFilePts);
+                    playback.OutPointFilePts,
+                    force);
             }
 
             return await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(
-                seconds, outputPath, progress, exportCts.Token);
+                seconds, outputPath, progress, exportCts.Token, force);
         }
         finally
         {

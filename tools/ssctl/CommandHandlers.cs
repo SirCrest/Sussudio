@@ -588,6 +588,7 @@ internal static class CommandHandlers
             case "export":
             {
                 var useSelectionRange = ConsumeFlag(context.Rest, "--range");
+                var force = ConsumeFlag(context.Rest, "--force");
                 var seconds = context.Rest.Count >= 2
                     ? ParseFlashbackExportSeconds(context.Rest[1])
                     : 300;
@@ -600,7 +601,8 @@ internal static class CommandHandlers
                     {
                         ["seconds"] = seconds,
                         ["outputPath"] = outputPath,
-                        ["useSelectionRange"] = useSelectionRange
+                        ["useSelectionRange"] = useSelectionRange,
+                        ["force"] = force
                     }, includeData: true);
             }
             case "segments":
@@ -613,13 +615,21 @@ internal static class CommandHandlers
     private static async Task<int> HandleVerifyAsync(CommandContext context)
     {
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        var verificationProfile =
+            ParseOptionalStringFlag(context.Rest, "--profile") ??
+            ParseOptionalStringFlag(context.Rest, "--verification-profile");
         if (context.Rest.Count > 0)
         {
-            // Verify a specific file
             var filePath = JoinRemaining(context.Rest, 0);
+            var payload = new Dictionary<string, object?> { ["filePath"] = filePath };
+            if (!string.IsNullOrWhiteSpace(verificationProfile))
+            {
+                payload["verificationProfile"] = verificationProfile;
+            }
+
             var response = await context.Transport.SendCommandAsync(
                 "VerifyFile",
-                new Dictionary<string, object?> { ["filePath"] = filePath },
+                payload,
                 60000).ConfigureAwait(false);
             return WriteResponse(response, json, value => Formatters.FormatResult(value, includeData: true));
         }

@@ -37,8 +37,8 @@ internal sealed class VisualCadenceTracker
     private readonly double _cropTop;
     private readonly double _cropWidth;
     private readonly double _cropHeight;
-    private readonly byte[] _lastSample;
-    private readonly byte[] _currentSample;
+    private byte[] _lastSample;
+    private byte[] _currentSample;
     private readonly double[] _outputIntervalsMs = new double[WindowSize];
     private readonly double[] _changeIntervalsMs = new double[WindowSize];
     private readonly double[] _deltaWindow = new double[WindowSize];
@@ -155,7 +155,8 @@ internal sealed class VisualCadenceTracker
         var nowTick = timestampTick > 0 ? timestampTick : Stopwatch.GetTimestamp();
         lock (_sync)
         {
-            var sampleLength = SampleLuma(frame, width, height, bytesPerLuma, _currentSample);
+            var sample = SampleLumaAndCompare(frame, width, height, bytesPerLuma, _currentSample, _hasLastSample ? _lastSample : null);
+            var sampleLength = sample.Length;
             if (sampleLength <= 0)
             {
                 return;
@@ -171,10 +172,8 @@ internal sealed class VisualCadenceTracker
 
             if (!_hasLastSample)
             {
-                Array.Copy(_currentSample, _lastSample, sampleLength);
+                PromoteCurrentSample(sampleLength, bytesPerLuma);
                 _hasLastSample = true;
-                _lastSampleLength = sampleLength;
-                _lastBytesPerLuma = bytesPerLuma;
                 _changedFrameCount++;
                 _lastChangeTick = nowTick;
                 return;
@@ -185,7 +184,7 @@ internal sealed class VisualCadenceTracker
                 ? Math.Max(
                     sampleLength / Math.Max(1, bytesPerLuma),
                     _lastSampleLength / Math.Max(1, _lastBytesPerLuma))
-                : ComputeChangedPixelCount(_lastSample, _currentSample, sampleLength, bytesPerLuma);
+                : sample.ChangedPixels;
             _lastDelta = delta;
             AddValueSample(_deltaWindow, ref _deltaCount, ref _deltaIndex, delta);
 
@@ -199,9 +198,7 @@ internal sealed class VisualCadenceTracker
                 _lastChangeTick = nowTick;
                 _changedFrameCount++;
                 _currentRepeatRun = 0;
-                Array.Copy(_currentSample, _lastSample, sampleLength);
-                _lastSampleLength = sampleLength;
-                _lastBytesPerLuma = bytesPerLuma;
+                PromoteCurrentSample(sampleLength, bytesPerLuma);
                 return;
             }
 
@@ -253,7 +250,15 @@ internal sealed class VisualCadenceTracker
         }
     }
 
-    private int SampleLuma(ReadOnlySpan<byte> frame, int width, int height, int bytesPerLuma, byte[] destination)
+    private readonly record struct LumaSample(int Length, double ChangedPixels);
+
+    private LumaSample SampleLumaAndCompare(
+        ReadOnlySpan<byte> frame,
+        int width,
+        int height,
+        int bytesPerLuma,
+        byte[] destination,
+        byte[]? previous)
     {
         var cropX = Math.Clamp((int)Math.Round(width * _cropLeft), 0, Math.Max(0, width - 1));
         var cropY = Math.Clamp((int)Math.Round(height * _cropTop), 0, Math.Max(0, height - 1));
@@ -264,6 +269,7 @@ internal sealed class VisualCadenceTracker
         var sampleX = cropX + Math.Max(0, (cropWidth - sampleWidth) / 2);
         var sampleY = cropY + Math.Max(0, (cropHeight - sampleHeight) / 2);
         var index = 0;
+        var changed = 0;
         for (var row = 0; row < sampleHeight; row++)
         {
             var y = sampleY + row;
@@ -272,42 +278,46 @@ internal sealed class VisualCadenceTracker
             {
                 var x = sampleX + col;
                 var lumaOffset = rowOffset + x * bytesPerLuma;
-                destination[index++] = frame[lumaOffset];
+                var changedPixel = false;
+                var luma = frame[lumaOffset];
+                destination[index] = luma;
+                if (previous != null && previous[index] != luma)
+                {
+                    changedPixel = true;
+                }
+
+                index++;
                 if (bytesPerLuma == 2)
                 {
-                    destination[index++] = lumaOffset + 1 < frame.Length
+                    var secondLuma = lumaOffset + 1 < frame.Length
                         ? frame[lumaOffset + 1]
                         : (byte)0;
+                    destination[index] = secondLuma;
+                    if (previous != null && previous[index] != secondLuma)
+                    {
+                        changedPixel = true;
+                    }
+
+                    index++;
+                }
+
+                if (changedPixel)
+                {
+                    changed++;
                 }
             }
         }
 
-        return index;
+        return new LumaSample(index, changed);
     }
 
-    private static double ComputeChangedPixelCount(byte[] previous, byte[] current, int length, int bytesPerLuma)
+    private void PromoteCurrentSample(int sampleLength, int bytesPerLuma)
     {
-        var stride = Math.Max(1, bytesPerLuma);
-        var changed = 0;
-        for (var i = 0; i < length; i += stride)
-        {
-            var different = false;
-            for (var byteIndex = 0; byteIndex < stride && i + byteIndex < length; byteIndex++)
-            {
-                if (previous[i + byteIndex] != current[i + byteIndex])
-                {
-                    different = true;
-                    break;
-                }
-            }
-
-            if (different)
-            {
-                changed++;
-            }
-        }
-
-        return changed;
+        var oldLast = _lastSample;
+        _lastSample = _currentSample;
+        _currentSample = oldLast;
+        _lastSampleLength = sampleLength;
+        _lastBytesPerLuma = bytesPerLuma;
     }
 
     private static void AddTimingSample(double[] window, ref int count, ref int index, double value)

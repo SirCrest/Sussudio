@@ -10,6 +10,42 @@ internal static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        // Ensure operator Ctrl-C (or CI SIGTERM) gives the in-flight command a
+        // chance to surface a cleanup hint instead of vanishing while the app
+        // is still recording. The handler is idempotent: repeated Ctrl-C
+        // collapses to a single cancellation request, and the second press
+        // falls through to the runtime's default terminate behavior.
+        using var cts = new CancellationTokenSource();
+        ConsoleCancelEventHandler? cancelHandler = null;
+        cancelHandler = (_, e) =>
+        {
+            if (cts.IsCancellationRequested)
+            {
+                // Second Ctrl-C: let the runtime terminate so a hung command
+                // does not trap the operator forever.
+                return;
+            }
+
+            e.Cancel = true;
+            try
+            {
+                Console.Error.WriteLine("ssctl: Ctrl-C received; cancelling. If a recording was started, run 'ssctl record stop' to clean up.");
+            }
+            catch
+            {
+                // Console may already be torn down during shutdown.
+            }
+
+            try
+            {
+                cts.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // CTS already disposed; nothing more to do.
+            }
+        };
+        Console.CancelKeyPress += cancelHandler;
         try
         {
             var options = CliOptions.Parse(args);
@@ -40,6 +76,10 @@ internal static class Program
         {
             Console.Error.WriteLine(ex.Message);
             return 1;
+        }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
         }
     }
 
@@ -117,7 +157,7 @@ internal static class Program
         Console.WriteLine();
         Console.WriteLine("Wait / Verify:");
         Console.WriteLine("  wait <condition> [--timeout MS] [--poll MS]");
-        Console.WriteLine("  verify");
+        Console.WriteLine("  verify [path] [--profile NAME|--verification-profile NAME]");
         Console.WriteLine("  assert <json>");
         Console.WriteLine("  probe source|color");
         Console.WriteLine("  stats show|hide");

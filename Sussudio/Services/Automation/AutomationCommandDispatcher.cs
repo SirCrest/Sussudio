@@ -58,6 +58,32 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
         try
         {
+            if (request.ManifestRevision.HasValue)
+            {
+                if (request.ManifestRevision.Value != AutomationPipeProtocol.CommandManifestRevision)
+                {
+                    Logger.Log(
+                        $"AUTOMATION_MANIFEST_MISMATCH command={request.Command} " +
+                        $"clientRevision={request.ManifestRevision.Value} " +
+                        $"serverRevision={AutomationPipeProtocol.CommandManifestRevision} " +
+                        $"correlationId={correlationId}");
+                    return CreateResponse(
+                        correlationId,
+                        $"Automation command manifest revision mismatch (client={request.ManifestRevision.Value}, server={AutomationPipeProtocol.CommandManifestRevision}). " +
+                        "Rebuild ssctl/MCP/StreamDeck against the current Sussudio source to refresh the numeric command IDs.",
+                        errorCode: "manifest-mismatch",
+                        success: false,
+                        status: "error",
+                        includeSnapshot: false);
+                }
+            }
+            else
+            {
+                Logger.Log(
+                    $"STALE_CLIENT_NO_MANIFEST_REVISION command={request.Command} correlationId={correlationId} " +
+                    "(client predates manifest-revision handshake; allowing for back-compat but command IDs are not verified).");
+            }
+
             var authorized = IsAuthorized(request);
             if (request.Command == AutomationCommandKind.Authenticate)
             {
@@ -352,7 +378,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         "outputPath",
                         RequireString(payload, "outputPath"));
                     var useSelectionRange = GetBool(payload, "useSelectionRange") ?? false;
-                    var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken).ConfigureAwait(false);
+                    var force = GetBool(payload, "force") ?? false;
+                    var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken).ConfigureAwait(false);
                     var failureKind = exportResult.Succeeded
                         ? string.Empty
                         : CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage);
@@ -1193,13 +1220,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
         if (property.ValueKind == JsonValueKind.Number && property.TryGetDouble(out var numeric))
         {
-            return numeric;
+            return double.IsFinite(numeric) ? numeric : null;
         }
 
         if (property.ValueKind == JsonValueKind.String &&
             double.TryParse(property.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
         {
-            return parsed;
+            return double.IsFinite(parsed) ? parsed : null;
         }
 
         return null;

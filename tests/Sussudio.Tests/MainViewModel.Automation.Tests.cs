@@ -118,7 +118,8 @@ static partial class Program
         AssertContains(dispatcherText, "RequestedPositionMs = requestedPositionMs");
         AssertContains(dispatcherText, "LastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs");
         AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
-        AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
+        AssertContains(dispatcherText, "var force = GetBool(payload, \"force\") ?? false;");
+        AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken)");
         AssertContains(dispatcherText, "CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage)");
         AssertContains(dispatcherText, "FailureKind = failureKind");
         AssertContains(dispatcherText, "if (positionMs.HasValue &&\n                        (!double.IsFinite(positionMs.Value) ||\n                         positionMs.Value < 0 ||\n                         positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds))");

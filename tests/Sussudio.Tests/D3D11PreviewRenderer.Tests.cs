@@ -255,6 +255,11 @@ static partial class Program
         AssertContains(captureSource, "DropPendingPreviewFrames(\"live-preview-suppressed\")");
         AssertContains(captureSource, "DropPendingPreviewFrames(\"live-preview-resumed\")");
         AssertContains(captureSource, "queueControl.DropPendingFrames(reason)");
+        AssertContains(captureSource, "private long _livePreviewPresentId;");
+        AssertContains(captureSource, "var previewPresentId = Interlocked.Increment(ref _livePreviewPresentId);");
+        AssertContains(captureSource, "sourceSequenceNumber: sourceSequence");
+        AssertContains(captureSource, "previewPresentId: previewPresentId");
+        AssertContains(captureSource, "schedulerSubmitTick: submitTick");
         AssertNotNull(rendererType.GetProperty("SwapChainAddress", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.SwapChainAddress");
         AssertNotNull(rendererType.GetMethod("DropPendingFrames", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.DropPendingFrames");
         AssertNotNull(rendererType.GetMethod("GetRenderCpuTimingMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetRenderCpuTimingMetrics");

@@ -109,20 +109,29 @@ public sealed partial class MainWindow
         }
     }
     public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+        => InvokeOnUiThreadAsync(
+            enabled ? EnterFullScreenAsync : ExitFullScreenAsync,
+            cancellationToken);
+
+    private void EnterFullScreen()
+        => _ = RunFullScreenTransitionAsync(EnterFullScreenAsync, "enter");
+
+    private void ExitFullScreen()
+        => _ = RunFullScreenTransitionAsync(ExitFullScreenAsync, "exit");
+
+    private static async Task RunFullScreenTransitionAsync(Func<Task> transition, string operation)
     {
-        return InvokeOnUiThreadAsync(() =>
+        try
         {
-            if (enabled)
-            {
-                EnterFullScreen();
-            }
-            else
-            {
-                ExitFullScreen();
-            }
-        }, cancellationToken);
+            await transition().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FULLSCREEN_TRANSITION_FAIL operation={operation} type={ex.GetType().Name} msg={ex.Message}");
+        }
     }
-    private async void EnterFullScreen()
+
+    private async Task EnterFullScreenAsync()
     {
         if (_isFullScreenTransitioning || _isFullScreen) return;
         _isFullScreenTransitioning = true;
@@ -217,7 +226,7 @@ public sealed partial class MainWindow
 
         if (postW > 0 && postH > 0)
         {
-            AnimateFullScreenRect(
+            await AnimateFullScreenRectAsync(
                 prePosition, preW, preH,
                 postPosition, postW, postH,
                 () =>
@@ -234,7 +243,8 @@ public sealed partial class MainWindow
             UpdateFullScreenButtonState();
         }
     }
-    private async void ExitFullScreen()
+
+    private async Task ExitFullScreenAsync()
     {
         if (_isFullScreenTransitioning || !_isFullScreen) return;
         _isFullScreenTransitioning = true;
@@ -306,7 +316,7 @@ public sealed partial class MainWindow
 
         if (postW > 0 && postH > 0)
         {
-            AnimateFullScreenRect(
+            await AnimateFullScreenRectAsync(
                 prePosition, preW, preH,
                 postPosition, postW, postH,
                 () =>
@@ -381,11 +391,12 @@ public sealed partial class MainWindow
         }
     }
 
-    private void AnimateFullScreenRect(
+    private Task AnimateFullScreenRectAsync(
         Windows.Foundation.Point prePos, double preW, double preH,
         Windows.Foundation.Point postPos, double postW, double postH,
         Action onCompleted)
     {
+        var completion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var scaleX = (float)(preW / postW);
         var scaleY = (float)(preH / postH);
         // Offset compensates for CenterPoint at element center:
@@ -434,16 +445,29 @@ public sealed partial class MainWindow
 
         batch.Completed += (_, _) =>
         {
-            _dispatcherQueue.TryEnqueue(() =>
+            if (!_dispatcherQueue.TryEnqueue(() =>
             {
-                visual.StopAnimation("Scale");
-                visual.StopAnimation("Offset");
-                visual.Scale = Vector3.One;
-                visual.Offset = Vector3.Zero;
-                visual.CenterPoint = Vector3.Zero;
-                onCompleted();
-            });
+                try
+                {
+                    visual.StopAnimation("Scale");
+                    visual.StopAnimation("Offset");
+                    visual.Scale = Vector3.One;
+                    visual.Offset = Vector3.Zero;
+                    visual.CenterPoint = Vector3.Zero;
+                    onCompleted();
+                    completion.TrySetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    completion.TrySetException(ex);
+                }
+            }))
+            {
+                completion.TrySetException(new InvalidOperationException("Failed to enqueue full-screen animation completion on the UI thread."));
+            }
         };
+
+        return completion.Task;
     }
     private static Task WaitForSizeChangedAsync(FrameworkElement element, int timeoutMs)
     {

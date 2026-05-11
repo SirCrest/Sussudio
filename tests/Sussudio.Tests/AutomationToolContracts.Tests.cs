@@ -134,6 +134,9 @@ static partial class Program
             requiresReadyDevices: false,
             pathPolicy: "ReadFile",
             payloadShapeContains: "filePath");
+        var verifyEntry = entries.Single(candidate =>
+            string.Equals((string)GetMetadataProperty(candidate, "Name")!, "VerifyFile", StringComparison.Ordinal));
+        AssertContains((string)GetMetadataProperty(verifyEntry, "CliHelp")!, "--profile");
         AssertCatalogMetadata(
             catalogType,
             enumType,
@@ -189,6 +192,31 @@ static partial class Program
             pathPolicy: "None",
             payloadShapeContains: "{}");
 
+        return Task.CompletedTask;
+    }
+
+    private static Task ReliabilityGates_RunToolsAndOfflineHarness()
+    {
+        var scriptText = ReadRepoFile("tools/reliability-gates.ps1")
+            .Replace("\r\n", "\n");
+        var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(scriptText, "$testProjectPath = Join-Path $repoRoot \"tests\\Sussudio.Tests\\Sussudio.Tests.csproj\"");
+        AssertContains(scriptText, "$ssctlProjectPath = Join-Path $repoRoot \"tools\\ssctl\\ssctl.csproj\"");
+        AssertContains(scriptText, "$mcpServerProjectPath = Join-Path $repoRoot \"tools\\McpServer\\McpServer.csproj\"");
+        AssertContains(scriptText, "$nativeXuProbeProjectPath = Join-Path $repoRoot \"tools\\NativeXuAudioProbe\\NativeXuAudioProbe.csproj\"");
+        AssertContains(scriptText, "-t:Rebuild");
+        AssertContains(scriptText, "\"run\"");
+        AssertContains(scriptText, "--no-build");
+        AssertContains(scriptText, "$appAssemblyPath");
+        AssertContains(scriptText, "Build, tool, and offline regression gates passed.");
+        AssertDoesNotContain(scriptText, "docs/testing/README.md");
+
+        AssertContains(diagnosticSessionText, "var cleanupTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout(\"SetFlashbackEnabled\");");
+        AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs))");
+        AssertContains(diagnosticSessionText, "await SendWithTokenAsync(\"SetFlashbackEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, cleanupTimeoutMs");
+        AssertContains(diagnosticSessionText, "await SendWithTokenAsync(\"SetFlashbackEnabled\", new Dictionary<string, object?> { [\"enabled\"] = true }, cleanupTimeoutMs");
         return Task.CompletedTask;
     }
 
@@ -287,7 +315,7 @@ static partial class Program
 
     private static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "DAC49529D9EFCE424491470190B9036A3F3F6F33050AF3C453A830FBDB133DE7";
+        const string ExpectedManifestSha256 = "B6A413C3173E67562BF2030574EC34E2F92942AB13B94B9681F64F373E55BA48";
         var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;

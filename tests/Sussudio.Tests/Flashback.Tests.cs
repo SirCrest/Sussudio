@@ -643,6 +643,7 @@ static partial class Program
             TimeSpan.FromSeconds(10),
             outputPath,
             true,
+            false,
             null,
             CancellationToken.None
         }) as Task ?? throw new InvalidOperationException("ExportSegmentsAsync did not return Task.");
@@ -677,8 +678,8 @@ static partial class Program
         AssertContains(sourceText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
         AssertContains(sourceText, "_exportLock.Wait(TimeSpan.FromSeconds(ExportLockWaitTimeoutSeconds), ct)");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_WAIT_TIMEOUT");
-        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
-        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\"));");
+        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
+        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\"));");
         AssertContains(sourceText, "thread.Priority = ThreadPriority.BelowNormal;");
         AssertContains(sourceText, "thread.Priority = previousPriority;");
         AssertContains(sourceText, "Func<int>? adaptiveThrottleDelayMsProvider");
@@ -898,6 +899,7 @@ static partial class Program
                     TimeSpan.FromSeconds(5),
                     singleOutputPath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportCore returned null.");
@@ -921,6 +923,7 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     segmentOutputPath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -997,6 +1000,7 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     outputPath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -1015,6 +1019,7 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     nullSegmentOutputPath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null for null segment.");
@@ -1081,6 +1086,7 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     outputPath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -1125,7 +1131,7 @@ static partial class Program
         AssertContains(segmentExportLoopBlock, "ReportProgress(");
         AssertContains(segmentExportLoopBlock, "\"segment_heartbeat\");");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(1, 1, 100.0), \"single_complete\")");
-        AssertContains(sourceText, "if (!TryFinalizeTempOutputFile(tmpPath, outputPath, out var outputBytes, out var outputFailure))");
+        AssertContains(sourceText, "if (!TryFinalizeTempOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'\");");
         AssertContains(sourceText, "return FinalizeResult.Failure(outputPath, outputFailure);");
         AssertContains(sourceText, "ReportProgress(\n                        progress,\n                        new ExportProgress(\n                            segIdx + 1,\n                            segments.Count,");
@@ -1146,7 +1152,8 @@ static partial class Program
         AssertContains(sourceText, "Flashback export failed: output file length unavailable");
         AssertContains(sourceText, "private static bool TryFinalizeTempOutputFile(");
         AssertContains(sourceText, "Flashback export failed: temporary output file is empty before replacing");
-        AssertContains(sourceText, "AtomicMoveTempFile(tmpPath, outputPath);");
+        AssertContains(sourceText, "AtomicMoveTempFile(tmpPath, outputPath, allowOverwrite);");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_REFUSED_DESTINATION_EXISTS");
         AssertContains(sourceText, "FLASHBACK_EXPORT_FINAL_OUTPUT_VALIDATE_WARN");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_ORPHAN_CLEANUP_FAIL path='{Path.GetFileName(tmpFile)}' type={ex.GetType().Name} msg='{ex.Message}'\");");
@@ -1368,6 +1375,7 @@ static partial class Program
                 TimeSpan.FromSeconds(1),
                 outputPath,
                 true,
+                false,
                 null,
                 cts.Token
             }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -1408,6 +1416,7 @@ static partial class Program
                 TimeSpan.FromSeconds(1),
                 singleOutputPath,
                 true,
+                false,
                 null,
                 cts.Token
             }) ?? throw new InvalidOperationException("ExportCore returned null.");
@@ -1427,6 +1436,7 @@ static partial class Program
                 TimeSpan.FromSeconds(1),
                 segmentOutputPath,
                 true,
+                false,
                 null,
                 cts.Token
             }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -1474,6 +1484,7 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     outputPath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -1554,6 +1565,7 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     sourcePath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportCore returned null.");
@@ -1576,6 +1588,7 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     sourcePath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -1595,6 +1608,7 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     outputPath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportCore returned null.");
@@ -1614,6 +1628,7 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     outputPath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -1655,15 +1670,90 @@ static partial class Program
             File.WriteAllBytes(outputPath, existingBytes);
             File.WriteAllBytes(tmpPath, Array.Empty<byte>());
 
-            var args = new object?[] { tmpPath, outputPath, 0L, string.Empty };
+            // Pass allowOverwrite=true so we exercise the empty-temp guard rather than
+            // the destination-exists guard: the existing export must still be preserved
+            // when the temp file itself is invalid.
+            var args = new object?[] { tmpPath, outputPath, true, 0L, string.Empty };
             var finalized = (bool)(finalizeTemp.Invoke(null, args)
                 ?? throw new InvalidOperationException("TryFinalizeTempOutputFile returned null."));
 
             AssertEqual(false, finalized, "Invalid temp output is rejected");
-            AssertContains((string)args[3]!, "temporary output file is empty before replacing");
+            AssertContains((string)args[4]!, "temporary output file is empty before replacing");
             AssertEqual(true, File.Exists(outputPath), "Existing export remains present");
             AssertEqual(existingBytes.Length, new FileInfo(outputPath).Length, "Existing export length is preserved");
             AssertEqual(false, File.Exists(tmpPath), "Invalid temp output is deleted");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackExporter_RefusesOverwriteWhenDestinationExistsAndForceFalse()
+    {
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var finalizeTemp = exporterType.GetMethod("TryFinalizeTempOutputFile", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("TryFinalizeTempOutputFile not found.");
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_refuse_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "existing-take.mp4");
+            var tmpPath = outputPath + ".tmp";
+            var existingBytes = new byte[] { 0x66, 0x69, 0x72, 0x73, 0x74 };
+            var freshTempBytes = new byte[] { 0x6e, 0x65, 0x77 };
+            File.WriteAllBytes(outputPath, existingBytes);
+            File.WriteAllBytes(tmpPath, freshTempBytes);
+
+            // allowOverwrite=false → destination must be preserved, tmp must be deleted,
+            // and a structured refusal message must surface in the out failureMessage.
+            var args = new object?[] { tmpPath, outputPath, false, 0L, string.Empty };
+            var finalized = (bool)(finalizeTemp.Invoke(null, args)
+                ?? throw new InvalidOperationException("TryFinalizeTempOutputFile returned null."));
+
+            AssertEqual(false, finalized, "Refuse-on-collision rejects the overwrite");
+            AssertContains((string)args[4]!, "destination file already exists");
+            AssertEqual(true, File.Exists(outputPath), "Existing take is preserved on refusal");
+            AssertEqual(existingBytes.Length, new FileInfo(outputPath).Length, "Existing take bytes are preserved on refusal");
+            AssertEqual(false, File.Exists(tmpPath), "Temporary export is cleaned up on refusal");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackExporter_OverwritesWhenForceTrue()
+    {
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var finalizeTemp = exporterType.GetMethod("TryFinalizeTempOutputFile", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("TryFinalizeTempOutputFile not found.");
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_force_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "existing-take.mp4");
+            var tmpPath = outputPath + ".tmp";
+            File.WriteAllBytes(outputPath, new byte[] { 0x6f, 0x6c, 0x64 });
+            var freshTempBytes = new byte[] { 0x6e, 0x65, 0x77, 0x65, 0x72 };
+            File.WriteAllBytes(tmpPath, freshTempBytes);
+
+            var args = new object?[] { tmpPath, outputPath, true, 0L, string.Empty };
+            var finalized = (bool)(finalizeTemp.Invoke(null, args)
+                ?? throw new InvalidOperationException("TryFinalizeTempOutputFile returned null."));
+
+            AssertEqual(true, finalized, "Force=true overwrites the destination");
+            AssertEqual(true, File.Exists(outputPath), "Destination remains present after overwrite");
+            AssertEqual(freshTempBytes.Length, new FileInfo(outputPath).Length, "Destination contains the fresh export bytes");
+            AssertEqual(false, File.Exists(tmpPath), "Temporary export was moved into place");
         }
         finally
         {
@@ -1695,12 +1785,12 @@ static partial class Program
             var tmpPath = outputPath + ".tmp";
             File.WriteAllBytes(tmpPath, new byte[] { 0x66, 0x69, 0x6e, 0x61, 0x6c });
 
-            var args = new object?[] { tmpPath, outputPath, 0L, string.Empty, validator };
+            var args = new object?[] { tmpPath, outputPath, true, 0L, string.Empty, validator };
             var finalized = (bool)(finalizeCore.Invoke(null, args)
                 ?? throw new InvalidOperationException("TryFinalizeTempOutputFileCore returned null."));
 
             AssertEqual(false, finalized, "Final validation failure is rejected");
-            AssertContains((string)args[3]!, "forced final validation failure");
+            AssertContains((string)args[4]!, "forced final validation failure");
             AssertEqual(false, File.Exists(tmpPath), "Temporary output was moved before final validation");
             AssertEqual(false, File.Exists(outputPath), "Invalid moved final output is deleted");
         }
@@ -1753,6 +1843,7 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     singleOutputPath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportCore returned null.");
@@ -1778,6 +1869,7 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     segmentOutputPath,
                     true,
+                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
