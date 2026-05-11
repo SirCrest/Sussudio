@@ -603,6 +603,9 @@ static partial class Program
                 "Diagnostic session runner retries synthetic pipe connect failures",
                 DiagnosticSessionRunner_RetriesSyntheticPipeConnectFailures),
             await RunCheckAsync(
+                "Diagnostic session runner rejects concurrent invocation on same output directory",
+                DiagnosticSessionRunner_RejectsConcurrentInvocationOnSameOutputDirectory),
+            await RunCheckAsync(
                 "Diagnostic session runner classifies flashback stress audio-master fallbacks",
                 DiagnosticSessionRunner_ClassifiesFlashbackStressAudioMasterFallbacks),
             await RunCheckAsync(

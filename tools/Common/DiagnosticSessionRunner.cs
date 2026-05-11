@@ -280,6 +280,34 @@ public static class DiagnosticSessionRunner
             ? Path.Combine(Environment.CurrentDirectory, "temp", "diagnostic-sessions", sessionId)
             : Path.GetFullPath(options.OutputDirectory);
         Directory.CreateDirectory(outputDirectory);
+
+        // Per-output-directory exclusive lock. Prevents two concurrent diagnostic-session
+        // invocations from corrupting the manifest, final.snapshot.json, and per-scenario
+        // JSON files in the same OutputDirectory (e.g., parallel CI matrix jobs sharing an
+        // artifacts root). FileShare.None blocks other openers; DeleteOnClose self-cleans
+        // on normal exit; the OS releases the handle on crash.
+        var lockPath = Path.Combine(outputDirectory, ".sussudio-diag.lock");
+        FileStream? lockHandle;
+        try
+        {
+            lockHandle = new FileStream(
+                lockPath,
+                FileMode.OpenOrCreate,
+                FileAccess.Write,
+                FileShare.None,
+                bufferSize: 1,
+                FileOptions.DeleteOnClose);
+        }
+        catch (IOException ex)
+        {
+            throw new InvalidOperationException(
+                $"Another diagnostic session is already running in '{outputDirectory}'. " +
+                $"Wait for it to finish or choose a different output directory. ({ex.Message})",
+                ex);
+        }
+
+        try
+        {
         var livePath = Path.Combine(outputDirectory, "session-live.json");
         var startedUtc = DateTimeOffset.UtcNow;
         var runnerProcessId = Environment.ProcessId;
@@ -1801,6 +1829,11 @@ public static class DiagnosticSessionRunner
 
         static CancellationTokenSource CreateCleanupCts(TimeSpan timeout)
             => new(timeout);
+        }
+        finally
+        {
+            lockHandle.Dispose();
+        }
     }
 
     public static string Format(DiagnosticSessionResult result)
