@@ -1,7 +1,25 @@
 namespace Sussudio.Models;
 
 // Numeric automation command identifiers shared by the app, ssctl, MCP, and the
-// generic AutomationClient. Preserve existing values for protocol compatibility.
+// generic AutomationClient. The pipe protocol serializes the numeric value, so
+// these IDs are part of the on-wire contract.
+//
+// MAINTAINERS — STRICT ORDERING RULES:
+//   1. APPEND new members at the end with the next sequential explicit value.
+//      Do NOT insert a new member in the middle, even if "the next value is
+//      free". Inserting reorders the source but keeps explicit values stable;
+//      that's safe, but appending is the convention so reviewers don't have to
+//      manually verify every value.
+//   2. NEVER renumber an existing member. A stale ssctl/MCP/StreamDeck client
+//      will silently misroute commands (e.g. SetRecordingFormat -> SetQuality)
+//      and corrupt user recording profiles.
+//   3. NEVER reuse a value freed by a deleted member. Reserve the gap or
+//      replace the deleted entry with a sentinel — old clients still encode
+//      the old value, and reuse would route them to the wrong handler.
+//   4. When you add/remove/rename ANY member, bump
+//      AutomationPipeProtocol.CommandManifestRevision by exactly +1. The
+//      server uses the revision to reject mismatched clients before they can
+//      dispatch a command.
 public enum AutomationCommandKind
 {
     Authenticate = 0,
