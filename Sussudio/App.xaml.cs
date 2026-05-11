@@ -43,7 +43,36 @@ namespace Sussudio
 
         private static bool IsRecoverableUnhandled(Exception ex)
         {
-            return ex is OperationCanceledException;
+            // Task-based exceptions often arrive wrapped in AggregateException when they
+            // surface through Task.Wait/.Result or escape the async machinery on a worker
+            // thread. Unwrap to a single inner before triage so a wrapped MF_E_NOTACCEPTING
+            // or DXGI device-removed isn't misclassified as fatal and routed to FailFast.
+            // We unwrap only when there's exactly one inner — a multi-fault aggregate is
+            // unusual enough that we'd rather fail fast than guess which inner to trust.
+            if (ex is AggregateException agg && agg.InnerExceptions.Count == 1 && agg.InnerException is not null)
+            {
+                ex = agg.InnerException;
+            }
+
+            if (ex is OperationCanceledException) return true;
+            if (ex is System.IO.IOException) return true;
+            if (ex is TimeoutException) return true;
+            if (ex is System.Runtime.InteropServices.COMException com)
+            {
+                // HRESULTs are 32-bit unsigned values but COMException.HResult is int.
+                // Cast through unchecked so the literal 0x8XXXXXXX values compare correctly
+                // (their signed-int reinterpretation is negative).
+                unchecked
+                {
+                    return com.HResult == (int)0x887A0005   // DXGI_ERROR_DEVICE_REMOVED
+                        || com.HResult == (int)0x887A0006   // DXGI_ERROR_DEVICE_HUNG
+                        || com.HResult == (int)0x887A0007   // DXGI_ERROR_DEVICE_RESET
+                        || com.HResult == (int)0x88890004   // AUDCLNT_E_DEVICE_INVALIDATED
+                        || com.HResult == (int)0xC00D36B5   // MF_E_NOTACCEPTING
+                        || com.HResult == (int)0xC00D4A44;  // MF_E_INVALID_STREAM_DATA
+                }
+            }
+            return false;
         }
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
