@@ -1,6 +1,6 @@
 using System;
 
-namespace Sussudio.Services.Recording;
+namespace Sussudio.Services.Runtime;
 
 /// <summary>
 /// Suppresses known-recoverable FFmpeg log messages emitted during seek operations.

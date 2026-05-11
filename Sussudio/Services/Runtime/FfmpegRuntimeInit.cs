@@ -1,8 +1,7 @@
 using System;
 using FFmpeg.AutoGen;
-using Sussudio.Services.Runtime;
 
-namespace Sussudio.Services.Recording;
+namespace Sussudio.Services.Runtime;
 
 /// <summary>
 /// One-time FFmpeg native runtime initialization: resolves the native library root,

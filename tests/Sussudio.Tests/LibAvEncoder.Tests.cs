@@ -354,7 +354,7 @@ static partial class Program
         AssertContains(sourceText, "FfmpegLogSuppressionScope.SuppressRecoverableSeekFfmpegLogs()");
 
         // Suppression implementation lives in its own helper file.
-        var suppressionText = ReadRepoFile("Sussudio/Services/Recording/FfmpegLogSuppressionScope.cs")
+        var suppressionText = ReadRepoFile("Sussudio/Services/Runtime/FfmpegLogSuppressionScope.cs")
             .Replace("\r\n", "\n");
         AssertContains(suppressionText, "internal static bool ShouldSuppressRecoverableSeekFfmpegLog(string message)");
         AssertContains(suppressionText, "[ThreadStatic]\n    private static int _recoverableSeekLogSuppressionDepth;");
