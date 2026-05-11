@@ -52,8 +52,6 @@ marketing page and it is not a finished public release.
   native FFmpeg/libav runtime. Native FFmpeg DLLs are not checked into the repo.
   The app prefers app-local DLLs under `Sussudio/ffmpeg/` when running recording,
   playback, or decode paths that call libav directly.
-- The Stream Deck plugin is a companion effort, not part of this app repository.
-  This repo contains the app automation surface that a plugin can call.
 
 ## Build Requirements
 
