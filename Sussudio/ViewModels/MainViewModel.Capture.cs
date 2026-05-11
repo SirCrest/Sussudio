@@ -433,6 +433,19 @@ public partial class MainViewModel
         if (SelectedDevice == null || SelectedFormat == null)
             return;
 
+        // Guard: a reinit tears down the capture pipeline (StopPreviewAsync with
+        // teardownPipeline:true) and rebuilds it via InitializeDeviceAsync. Doing
+        // this mid-recording silently truncates the in-flight file (the encoder's
+        // moov is whatever state the teardown caught) and purges the flashback
+        // buffer. Refuse the change and require the operator to stop recording
+        // first. See ApplySelectedDeviceAsync for the equivalent device-switch guard.
+        if (IsRecording)
+        {
+            Logger.Log($"REINIT_REJECTED_RECORDING reason='{reason}' — stop recording before changing capture settings.");
+            StatusText = "Stop recording before changing capture settings.";
+            return;
+        }
+
         var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);
         await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);
         if (Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration)
