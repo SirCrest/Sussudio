@@ -1261,6 +1261,12 @@ static partial class Program
                 "Flashback exporter invalid temp output preserves existing exports",
                 FlashbackExporter_InvalidTempOutputDoesNotReplaceExistingExport),
             await RunCheckAsync(
+                "Flashback exporter refuses to overwrite existing destination when force is false",
+                FlashbackExporter_RefusesOverwriteWhenDestinationExistsAndForceFalse),
+            await RunCheckAsync(
+                "Flashback exporter overwrites existing destination when force is true",
+                FlashbackExporter_OverwritesWhenForceTrue),
+            await RunCheckAsync(
                 "Flashback exporter deletes invalid moved final outputs",
                 FlashbackExporter_FinalValidationFailureDeletesMovedOutput),
             await RunCheckAsync(

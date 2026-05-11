@@ -352,7 +352,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         "outputPath",
                         RequireString(payload, "outputPath"));
                     var useSelectionRange = GetBool(payload, "useSelectionRange") ?? false;
-                    var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken).ConfigureAwait(false);
+                    var force = GetBool(payload, "force") ?? false;
+                    var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken).ConfigureAwait(false);
                     var failureKind = exportResult.Succeeded
                         ? string.Empty
                         : CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage);

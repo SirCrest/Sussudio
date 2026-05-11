@@ -135,6 +135,14 @@ internal sealed record FlashbackExportRequest
     public bool FastStart { get; init; } = true;
 
     /// <summary>
+    /// When true, the exporter is allowed to overwrite an existing file at
+    /// <see cref="OutputPath"/>. When false (the default), the export is refused
+    /// if the destination already exists. This guards automation harnesses from
+    /// silently destroying previous exports by re-using the same output path.
+    /// </summary>
+    public bool Force { get; init; }
+
+    /// <summary>
     /// Optional live-recorder pressure signal. Returns the number of milliseconds
     /// the exporter should sleep before continuing packet copy.
     /// </summary>

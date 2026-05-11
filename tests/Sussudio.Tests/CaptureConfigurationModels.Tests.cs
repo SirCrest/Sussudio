@@ -409,6 +409,7 @@ static partial class Program
                 RequiredConfigProperty("OutPoint", typeof(TimeSpan), ConfigSetterExpectation.InitOnly),
                 RequiredConfigString("OutputPath", ConfigSetterExpectation.InitOnly),
                 ConfigProperty("FastStart", typeof(bool), ConfigSetterExpectation.InitOnly),
+                ConfigProperty("Force", typeof(bool), ConfigSetterExpectation.InitOnly),
                 ConfigProperty("AdaptiveThrottleDelayMsProvider", typeof(Func<int>), ConfigSetterExpectation.InitOnly, Nullability: ConfigNullability.Nullable)
             });
 
@@ -460,6 +461,7 @@ static partial class Program
 
         var exportRequest = CreateConfigInstance(exportRequestType);
         AssertEqual(true, GetBoolProperty(exportRequest, "FastStart"), "FlashbackExportRequest.FastStart default");
+        AssertEqual(false, GetBoolProperty(exportRequest, "Force"), "FlashbackExportRequest.Force default");
         var exportSegments = Array.CreateInstance(exportSegmentType, 1);
         exportSegments.SetValue(exportSegment, 0);
         SetPropertyOrBackingField(exportRequest, "Segments", exportSegments);

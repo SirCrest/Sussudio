@@ -2443,8 +2443,10 @@ public static class DiagnosticSessionRunner
 
         var exportPathA = Path.Combine(outputDirectory, "flashback-concurrent-a.mp4");
         var exportPathB = Path.Combine(outputDirectory, "flashback-concurrent-b.mp4");
-        var exportPayloadA = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathA };
-        var exportPayloadB = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathB };
+        // Diagnostic runs may execute against the same output directory across sessions;
+        // pass force=true so the destination-exists guard does not break the diagnostic.
+        var exportPayloadA = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathA, ["force"] = true };
+        var exportPayloadB = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathB, ["force"] = true };
 
         var exportTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport");
         var exportTaskA = sendCommandAsync("FlashbackExport", exportPayloadA, exportTimeoutMs);
@@ -2496,7 +2498,7 @@ public static class DiagnosticSessionRunner
         var exportPath = Path.Combine(outputDirectory, "flashback-disable-during-export.mp4");
         var exportTask = sendCommandAsync(
             "FlashbackExport",
-            new Dictionary<string, object?> { ["seconds"] = 3, ["outputPath"] = exportPath },
+            new Dictionary<string, object?> { ["seconds"] = 3, ["outputPath"] = exportPath, ["force"] = true },
             AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
 
         await Task.Delay(100, cancellationToken).ConfigureAwait(false);
@@ -4454,7 +4456,8 @@ public static class DiagnosticSessionRunner
                 {
                     ["seconds"] = 1,
                     ["outputPath"] = exportPath,
-                    ["useSelectionRange"] = true
+                    ["useSelectionRange"] = true,
+                    ["force"] = true
                 },
                 60_000)
             ;
