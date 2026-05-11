@@ -973,7 +973,26 @@ function Restore-AppState {
 
     try {
         $initialFlashback = Convert-ToBool (Get-PropertyValue $script:InitialSnapshot "FlashbackActive" $false)
-        Invoke-Automation -Command "SetFlashbackEnabled" -Payload @{ enabled = $initialFlashback } -AllowFailure | Out-Null
+        $currentSnapshot = $null
+        try {
+            $currentSnapshot = Get-Snapshot
+        }
+        catch {
+            $currentSnapshot = $null
+        }
+
+        if ($null -eq $currentSnapshot) {
+            Write-Warning "Restore-AppState: skipping SetFlashbackEnabled - current snapshot unavailable; toggling could purge the operator's flashback segments."
+        }
+        else {
+            $currentFlashback = Convert-ToBool (Get-PropertyValue $currentSnapshot "FlashbackActive" $false)
+            if ($currentFlashback -ne $initialFlashback) {
+                Invoke-Automation -Command "SetFlashbackEnabled" -Payload @{ enabled = $initialFlashback } -AllowFailure | Out-Null
+            }
+            else {
+                Write-Host "Restore-AppState: skipping SetFlashbackEnabled - state unchanged (flashback=$initialFlashback). Toggle would purge segments."
+            }
+        }
     }
     catch {
         Write-Warning "Flashback restore failed: $($_.Exception.Message)"
