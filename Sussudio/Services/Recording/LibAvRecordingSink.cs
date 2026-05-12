@@ -29,6 +29,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private const int GpuDrainBatchLimit = 16;
     private const int CudaDrainBatchLimit = 16;
     private const int StopTimeoutMs = 30_000;
+    // Emergency path uses a tighter encode-drain budget so the total emergency
+    // stop fits well within App.TryEmergencyStopRecording's 8s wrapper (fix #12).
+    // Normal user-stop keeps the 30s budget so saturated 4K queues can drain.
+    private const int EmergencyStopTimeoutMs = 5_000;
     private const int DisposeTimeoutMs = 1_000;
     private const int VideoQueueLatencyWindowSize = 256;
 
@@ -505,7 +509,20 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return Task.CompletedTask;
     }
 
-    public async Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)
+    // Public path used by normal recording-stop (UI Stop button, automation StopRecording).
+    // Keeps the 30s StopTimeoutMs drain budget so saturated 4K 60fps queues can drain
+    // cleanly without triggering the fix #11 emergency-flush fallback.
+    public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)
+        => StopCoreAsync(emergency: false, cancellationToken);
+
+    // Internal overload used by the emergency-stop path (CaptureService.StopRecordingAsync
+    // when called from CaptureSessionCoordinator.StopRecordingForEmergencyAsync).
+    // Uses EmergencyStopTimeoutMs (5s) so the encode-drain fits inside App.xaml.cs's 8s
+    // emergency-stop wrapper (fix #12).
+    internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)
+        => StopCoreAsync(emergency, cancellationToken);
+
+    private async Task<FinalizeResult> StopCoreAsync(bool emergency, CancellationToken cancellationToken)
     {
         var context = _context;
         var outputPath = context?.FinalOutputPath ?? OutputPath;
@@ -528,7 +545,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         if (_encodingTask != null)
         {
-            var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(StopTimeoutMs, cancellationToken)).ConfigureAwait(false);
+            var drainTimeoutMs = emergency ? EmergencyStopTimeoutMs : StopTimeoutMs;
+            var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(drainTimeoutMs, cancellationToken)).ConfigureAwait(false);
             if (!ReferenceEquals(completedTask, _encodingTask))
             {
                 cancellationToken.ThrowIfCancellationRequested();

@@ -136,11 +136,17 @@ namespace Sussudio
             }
         }
 
-        // Best-effort: give the mux up to 3 seconds to write the moov atom before
-        // FailFast kills the process. Better to try and fail than guarantee a
-        // truncated MP4. A corrupted-state exception may still bypass this path
-        // (AVE is uncatchable in .NET 8+), but ordinary unhandled exceptions on
-        // a background thread are recoverable here.
+        // Best-effort: give the recording backend up to 8 seconds to flush the moov atom
+        // before FailFast kills the process. Budget breakdown after fix #12 split:
+        //   - LibAvRecordingSink.EmergencyStopTimeoutMs = 5s for the encode-drain,
+        //   - DisposeTimeoutMs = 1s grace for the cancel-then-flush window (fix #11),
+        //   - ~1-2s coordinator-queue + StopAndDisposeRecordingBackendAsync overhead.
+        // Leaves headroom over the downstream ~6s worst case. The previous 3s budget
+        // unconditionally cancelled downstream finalizers before they could finish,
+        // truncating the file and surfacing nothing actionable.
+        // A corrupted-state exception may still bypass this path (AVE is uncatchable
+        // in .NET 8+), but ordinary unhandled exceptions on a background thread are
+        // recoverable here.
         private void TryEmergencyStopRecording(string source)
         {
             try
@@ -151,7 +157,7 @@ namespace Sussudio
 
                 Logger.LogFatalBreadcrumb($"EMERGENCY_FINALIZE_ATTEMPT source={source}");
                 var task = viewModel.StopRecordingForEmergencyAsync();
-                var finished = task.Wait(TimeSpan.FromSeconds(3));
+                var finished = task.Wait(TimeSpan.FromSeconds(8));
                 if (finished)
                 {
                     try

@@ -4442,7 +4442,15 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
         }, cancellationToken);
 
+    // Public path used by normal recording-stop (UI Stop button, automation StopRecording).
     public Task StopRecordingAsync(CancellationToken cancellationToken = default)
+        => StopRecordingAsync(emergency: false, cancellationToken);
+
+    // Internal overload used by CaptureSessionCoordinator.StopRecordingForEmergencyAsync.
+    // Threads `emergency` through StopAndDisposeRecordingBackendAsync to LibAvRecordingSink
+    // so the sink applies EmergencyStopTimeoutMs (5s) instead of StopTimeoutMs (30s) — fits
+    // inside App.TryEmergencyStopRecording's 8s wrapper (fix #12).
+    internal Task StopRecordingAsync(bool emergency, CancellationToken cancellationToken = default)
         => RunTransitionAsync(CaptureSessionState.Ready, async transitionToken =>
         {
             if (!_isRecording && _recordingSink == null && _libavSink == null)
@@ -4450,7 +4458,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 return;
             }
 
-            var result = await StopAndDisposeRecordingBackendAsync("Stopped", transitionToken).ConfigureAwait(false);
+            var result = await StopAndDisposeRecordingBackendAsync("Stopped", emergency, transitionToken).ConfigureAwait(false);
             // Preview continues running on the active source-reader/WASAPI sessions - no resume needed.
             StatusChanged?.Invoke(this, result.StatusMessage);
             if (!result.Succeeded)
@@ -4690,6 +4698,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 var result = await StopAndDisposeRecordingBackendAsync(
                     "Stopped during cleanup",
+                    emergency: false,
                     transitionToken).ConfigureAwait(false);
                 if (!result.Succeeded)
                 {
@@ -4796,7 +4805,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(string fallbackStatusMessage, CancellationToken cancellationToken)
+    private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(string fallbackStatusMessage, bool emergency, CancellationToken cancellationToken)
     {
         // --- Unified flashback recording path: remux from .ts, cycle buffer ---
         if (IsFlashbackRecordingBackendActive())
@@ -5040,7 +5049,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             try
             {
-                var sinkResult = await sink.StopAsync(cancellationToken).ConfigureAwait(false);
+                // Use the typed LibAvRecordingSink reference (when available) so the
+                // emergency flag can select EmergencyStopTimeoutMs (5s) vs the public
+                // StopAsync's 30s budget. The plain IRecordingSink overload is the
+                // fallback for non-LibAv sinks (unused in practice but kept for safety).
+                var sinkResult = libAvSink != null
+                    ? await libAvSink.StopAsync(emergency, cancellationToken).ConfigureAwait(false)
+                    : await sink.StopAsync(cancellationToken).ConfigureAwait(false);
                 if (result.Succeeded)
                 {
                     result = sinkResult;
