@@ -343,6 +343,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         // Set window handle for folder picker
         _hwnd = WindowNative.GetWindowHandle(this);
         ViewModel.SetWindowHandle(_hwnd);
+        InitializeWindowScreenshotController();
 
         // Cloak the window to prevent white flash before XAML renders
         int cloakTrue = 1;
@@ -513,99 +514,4 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
 
 
-
-
-
-
-
-
-
-
-
-    public Task<WindowScreenshotResult> CaptureWindowScreenshotAsync(string outputPath, CancellationToken cancellationToken = default)
-    {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return Task.FromResult(new WindowScreenshotResult
-            {
-                Succeeded = false,
-                Message = "Screenshot canceled."
-            });
-        }
-
-        var completion = new TaskCompletionSource<WindowScreenshotResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-        CancellationTokenRegistration cancellationRegistration = default;
-        if (cancellationToken.CanBeCanceled)
-        {
-            cancellationRegistration = cancellationToken.Register(() =>
-            {
-                completion.TrySetResult(new WindowScreenshotResult
-                {
-                    Succeeded = false,
-                    Message = "Screenshot canceled."
-                });
-            });
-            _ = completion.Task.ContinueWith(
-                _ => cancellationRegistration.Dispose(),
-                CancellationToken.None,
-                TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
-        }
-
-        if (!_dispatcherQueue.TryEnqueue(() =>
-        {
-            try
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    completion.TrySetResult(new WindowScreenshotResult
-                    {
-                        Succeeded = false,
-                        Message = "Screenshot canceled."
-                    });
-                    return;
-                }
-
-                var result = CaptureWindowScreenshotCore(outputPath);
-                completion.TrySetResult(result);
-            }
-            catch (Exception ex)
-            {
-                completion.TrySetResult(new WindowScreenshotResult
-                {
-                    Succeeded = false,
-                    Message = $"Screenshot failed: {ex.Message}"
-                });
-            }
-        }))
-        {
-            cancellationRegistration.Dispose();
-            completion.TrySetResult(new WindowScreenshotResult
-            {
-                Succeeded = false,
-                Message = "Failed to enqueue screenshot capture on the UI thread."
-            });
-        }
-
-        return completion.Task;
-    }
-
-
-
-
-
-
-
-    private static uint[] InitCrc32Table()
-    {
-        var t = new uint[256];
-        for (uint i = 0; i < 256; i++)
-        {
-            var c = i;
-            for (var j = 0; j < 8; j++)
-                c = (c & 1) != 0 ? 0xEDB88320 ^ (c >> 1) : c >> 1;
-            t[i] = c;
-        }
-        return t;
-    }
 }

@@ -1374,13 +1374,17 @@ static partial class Program
 
     private static Task MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation()
     {
-        var windowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
+        var windowText = ReadRepoFile("Sussudio/MainWindow.Screenshot.cs")
+            .Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/WindowScreenshotController.cs")
             .Replace("\r\n", "\n");
         var method = ExtractTextBetween(
-            windowText,
-            "public Task<WindowScreenshotResult> CaptureWindowScreenshotAsync",
-            "    private static uint[] InitCrc32Table()");
+            controllerText,
+            "public Task<WindowScreenshotResult> CaptureAsync",
+            "    private WindowScreenshotResult CaptureCore");
 
+        AssertContains(windowText, "public Task<WindowScreenshotResult> CaptureWindowScreenshotAsync");
+        AssertContains(windowText, "=> _windowScreenshotController.CaptureAsync(outputPath, cancellationToken);");
         AssertContains(method, "if (cancellationToken.IsCancellationRequested)");
         AssertContains(method, "Message = \"Screenshot canceled.\"");
         AssertContains(method, "CancellationTokenRegistration cancellationRegistration = default;");

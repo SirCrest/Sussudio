@@ -30,6 +30,10 @@ Fullscreen transition mechanics now live in
 `Sussudio/Controllers/FullScreenController.cs`. `MainWindow.FullScreen.cs`
 remains the XAML event adapter and Flashback keyboard/scrub bridge.
 
+Automation whole-window screenshot capture now lives in
+`Sussudio/Controllers/WindowScreenshotController.cs`. `MainWindow.Screenshot.cs`
+is only the automation adapter.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
@@ -62,9 +66,9 @@ Remaining `tools/Common` ownership:
 
 4. Continue converting MainWindow partial concerns into controllers.
 
-   `FullScreen` is extracted. Next candidates are `StatsOverlay`, `AudioMeter`,
-   and `Screenshot` because they are easier to isolate than preview startup and
-   close/recording lifecycle. Keep XAML bindings stable.
+   `FullScreen` and automation `Screenshot` are extracted. Next candidates are
+   `StatsOverlay` and `AudioMeter` because they are easier to isolate than
+   preview startup and close/recording lifecycle. Keep XAML bindings stable.
 
 5. Move MainViewModel feature state behind a facade.
 

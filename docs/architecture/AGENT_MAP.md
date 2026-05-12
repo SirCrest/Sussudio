@@ -97,6 +97,9 @@ Primary current owners:
   state, overlay reparenting, button state, and auto-hide timer behavior. Keep
   `MainWindow.FullScreen.cs` as the XAML-facing adapter and Flashback shortcut
   bridge.
+- `Sussudio/Controllers/WindowScreenshotController.cs` owns automation whole-
+  window screenshot dispatch, native PrintWindow capture, and PNG/BMP encoding.
+  Keep `MainWindow.Screenshot.cs` as the `IAutomationWindowControl` adapter.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility.
 
