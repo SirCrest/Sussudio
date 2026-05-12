@@ -119,6 +119,12 @@ Diagnostic-session Flashback rejected-export scenarios now live in
 buffer and active-recording rejection flows, including failure-kind and
 post-rejection state assertions.
 
+Diagnostic-session Flashback segment playback now lives in
+`tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`. It owns
+completed-segment playback crossing plus recording-assisted segment rotation,
+while `DiagnosticSessionFlashbackSegments.cs` stays read-only segment parsing
+and wait policy.
+
 Diagnostic-session Flashback segment handling now lives in
 `tools/Common/DiagnosticSessionFlashbackSegments.cs`. It owns segment DTOs,
 `FlashbackGetSegments` parsing, completed-segment waits, and playable-boundary
@@ -156,6 +162,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
+- `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
 - `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionFlashbackWaits.cs`

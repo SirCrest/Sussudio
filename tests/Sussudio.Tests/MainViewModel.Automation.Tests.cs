@@ -707,6 +707,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.cs")
@@ -1073,7 +1075,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback encoder cycle export verified");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackExportPlaybackAsync(");
         AssertContains(diagnosticSessionText, "flashback export during playback verified");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackSegmentPlaybackAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackSegmentPlaybackAsync(");
         AssertContains(diagnosticSessionText, "internal static async Task<FlashbackSegmentProbe?> WaitForFlashbackCompletedSegmentAsync(");
         AssertContains(diagnosticSessionText, "internal static async Task<bool> WaitForFlashbackSegmentPlaybackHeadroomAsync(");
         AssertContains(diagnosticSessionText, "const int requiredHeadroomMs = 8_000;");

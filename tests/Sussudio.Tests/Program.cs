@@ -639,6 +639,9 @@ static partial class Program
                 "Diagnostic session Flashback rejected exports have a named owner",
                 DiagnosticSessionFlashbackRejectedExports_OwnRejectionFlows),
             await RunCheckAsync(
+                "Diagnostic session Flashback segment playback scenarios have a named owner",
+                DiagnosticSessionFlashbackSegmentPlaybackScenarios_OwnSegmentPlaybackFlow),
+            await RunCheckAsync(
                 "Diagnostic session Flashback export scenarios have a named owner",
                 DiagnosticSessionFlashbackExportScenarios_OwnExportFlows),
             await RunCheckAsync(

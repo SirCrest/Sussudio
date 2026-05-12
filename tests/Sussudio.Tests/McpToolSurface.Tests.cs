@@ -1298,6 +1298,30 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackSegmentPlaybackScenarios_OwnSegmentPlaybackFlow()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var segmentPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(segmentPlaybackText, "internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios");
+        AssertContains(segmentPlaybackText, "internal static async Task RunFlashbackSegmentPlaybackAsync(");
+        AssertContains(segmentPlaybackText, "flashback segment playback live headroom established");
+        AssertContains(segmentPlaybackText, "flashback segment playback started near boundary");
+        AssertContains(segmentPlaybackText, "frameCount >= 180");
+        AssertContains(segmentPlaybackText, "playback FPS below source-rate target after warm sample");
+        AssertContains(segmentPlaybackText, "private static async Task<bool> CreateFlashbackCompletedSegmentViaRecordingAsync(");
+        AssertContains(segmentPlaybackText, "recording-assisted rotation started");
+        AssertContains(segmentPlaybackText, "private static async Task TryStopRecordingAsync(");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackSegmentPlaybackAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task<bool> CreateFlashbackCompletedSegmentViaRecordingAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task TryStopRecordingAsync(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackExportScenarios_OwnExportFlows()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
