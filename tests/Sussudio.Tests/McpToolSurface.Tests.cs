@@ -1184,6 +1184,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackValidation_OwnsFlashbackWarningPolicy()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(validationText, "internal static class DiagnosticSessionFlashbackValidation");
+        AssertContains(validationText, "internal static void ValidateFlashbackPlaybackSession(");
+        AssertContains(validationText, "\"flashback playback: no playback frames were observed\"");
+        AssertContains(validationText, "\"flashback playback: absolute A/V drift exceeded budget");
+        AssertContains(validationText, "internal static void ValidateFlashbackPreviewScheduler(");
+        AssertContains(validationText, "\"flashback preview: present/display pressure \"");
+        AssertContains(validationText, "latestSlowReason={FormatOptional(previewD3DMetrics.LatestSlowFrameReason)}");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;");
+        AssertDoesNotContain(runnerText, "private static void ValidateFlashbackPlaybackSession(");
+        AssertDoesNotContain(runnerText, "private static void ValidateFlashbackPreviewScheduler(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));

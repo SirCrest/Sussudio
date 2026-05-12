@@ -695,6 +695,8 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
@@ -828,7 +830,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback playback returned live");
         AssertContains(diagnosticSessionText, "ValidateFlashbackPlaybackSession(");
         AssertContains(diagnosticSessionText, "visualCadenceMetrics,");
-        AssertContains(diagnosticSessionText, "private static void ValidateFlashbackPlaybackSession(");
+        AssertContains(diagnosticSessionText, "internal static void ValidateFlashbackPlaybackSession(");
         AssertContains(diagnosticSessionText, "flashback playback: no playback frames were observed");
         AssertContains(diagnosticSessionText, "var frameCount = Math.Max(metrics.EndSessionFrameCount, metrics.MaxSessionFrameCountObserved);");
         AssertContains(diagnosticSessionText, "var visualCadenceHealthy = IsVisualCadenceSessionHealthy(visualCadenceMetrics, targetFps);");
@@ -1156,7 +1158,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback stress: audio-master harmful fallbacks increased during warmed playback \"");
         AssertContains(diagnosticSessionText, "\"flashback stress: audio-master unavailable fallbacks exceeded startup allowance \"");
         AssertContains(diagnosticSessionText, "\"flashback stress: audio-master unclassified fallbacks increased during warmed playback");
-        AssertContains(diagnosticSessionText, "private static void ValidateFlashbackPreviewScheduler(");
+        AssertContains(diagnosticSessionText, "internal static void ValidateFlashbackPreviewScheduler(");
         AssertContains(diagnosticSessionText, "\"flashback preview: scheduler deadline drops increased delta=");
         AssertContains(diagnosticSessionText, "\"flashback preview: scheduler underflows increased delta=");
         AssertContains(diagnosticSessionText, "\"flashback preview: D3D frame stats failures increased delta=");

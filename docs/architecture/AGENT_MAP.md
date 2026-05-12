@@ -147,6 +147,8 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackMetrics.cs` owns read-only
   diagnostic-session Flashback metric projection for recording, playback, and
   export sessions.
+- `tools/Common/DiagnosticSessionFlashbackValidation.cs` owns Flashback
+  diagnostic-session warning policy for playback and preview scheduler metrics.
 - `tools/Common/DiagnosticSessionHealthPolicy.cs` owns diagnostic-session health
   severity, warmup filtering, sparse-cadence tolerance, and tolerated Flashback
   warning classification.
@@ -175,6 +177,9 @@ Invariants:
 - Preserve Flashback metric projection semantics; this helper should only read
   sampled snapshots and derive deltas/statuses, not mutate playback/export
   state.
+- Preserve Flashback validation warning thresholds; these warnings feed
+  diagnostic-session pass/fail summaries and should stay explainable in result
+  text.
 - Preserve health policy semantics when moving tolerance logic; warmup filtering
   must still ignore only transient low-severity Flashback startup observations.
 - Preserve sampler checkpoint ordering; checkpoint callbacks are allowed to
