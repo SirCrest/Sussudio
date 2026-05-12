@@ -237,7 +237,9 @@ Remaining `tools/Common` ownership:
 
    Preserve the root `MainViewModel` public surface while introducing feature
    view models or adapters for capture selection, recording, audio, Flashback,
-   diagnostics, and automation.
+   diagnostics, and automation. The live audio/microphone meter callback state
+   now has a named owner in `MainViewModel.AudioMeters.cs`; keep future meter
+   behavior there instead of growing the root facade file.
 
 5. Extract capture resource owners behind the transition policy.
 

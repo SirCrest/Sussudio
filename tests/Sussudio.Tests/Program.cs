@@ -477,6 +477,9 @@ static partial class Program
                 "MainViewModel audio controls preserve routing persistence and device guards",
                 MainViewModelAudioControls_PreserveRoutingPersistenceAndDeviceGuards),
             await RunCheckAsync(
+                "MainViewModel audio meters own callback meter state",
+                MainViewModelAudioMeters_OwnCallbackMeterState),
+            await RunCheckAsync(
                 "Audio ramp trace exposes control and render-side envelope telemetry",
                 AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry),
             await RunCheckAsync(

@@ -176,6 +176,31 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task MainViewModelAudioMeters_OwnCallbackMeterState()
+    {
+        var baseText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var metersText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMeters.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(metersText, "public double AudioMeterTarget;");
+        AssertContains(metersText, "public double MicrophoneMeterTarget;");
+        AssertContains(metersText, "public event Action? AudioMeterActivated;");
+        AssertContains(metersText, "public event Action? MicrophoneMeterActivated;");
+        AssertContains(metersText, "private void OnAudioLevelUpdated(object? sender, AudioLevelEventArgs e)");
+        AssertContains(metersText, "private void OnMicrophoneAudioLevelUpdated(object? sender, AudioLevelEventArgs e)");
+        AssertContains(metersText, "private void ResetAudioMeter()");
+        AssertContains(metersText, "public void ResetAudioMeterTimerFlag()");
+        AssertContains(metersText, "private double UpdateMeterLevel(double peak, ref double meterDb, ref long lastTick)");
+        AssertContains(baseText, "_captureService.AudioLevelUpdated += OnAudioLevelUpdated;");
+        AssertContains(baseText, "_captureService.MicrophoneAudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
+        AssertDoesNotContain(baseText, "private const double MeterFloorDb");
+        AssertDoesNotContain(baseText, "private void OnAudioLevelUpdated(object? sender, AudioLevelEventArgs e)");
+        AssertDoesNotContain(baseText, "private double UpdateMeterLevel(double peak, ref double meterDb, ref long lastTick)");
+
+        return Task.CompletedTask;
+    }
+
     private static void AssertNear(double expected, double actual, double tolerance, string fieldName)
     {
         if (Math.Abs(expected - actual) > tolerance)

@@ -113,7 +113,9 @@ Primary current owners:
   animations. `MainWindow.StatsOverlay.cs` still owns metric text projection,
   dynamic diagnostic row pools, and snapshot assembly for now.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
-  automation-facing compatibility.
+  automation-facing compatibility. `MainViewModel.AudioMeters.cs` owns live
+  audio/microphone meter callback state; keep callback-thread meter targets
+  out of the root facade file.
 
 Refactor direction:
 
