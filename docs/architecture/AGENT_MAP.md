@@ -100,6 +100,10 @@ Primary current owners:
 - `Sussudio/Controllers/WindowScreenshotController.cs` owns automation whole-
   window screenshot dispatch, native PrintWindow capture, and PNG/BMP encoding.
   Keep `MainWindow.Screenshot.cs` as the `IAutomationWindowControl` adapter.
+- `Sussudio/Controllers/AudioMeterController.cs` owns audio/microphone meter
+  smoothing, timer lifetime, peak/range markers, and meter clip rendering.
+  Keep microphone row layout animation in `MainWindow.Bindings.cs` until that
+  binding surface is split separately.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility.
 

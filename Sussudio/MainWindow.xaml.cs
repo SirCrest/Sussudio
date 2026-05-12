@@ -79,7 +79,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private Storyboard? _micMeterRowStoryboard;
     private Storyboard? _showMicMeterRowStoryboard;
     private Storyboard? _hideMicMeterRowStoryboard;
-    private Storyboard? _audioMeterMonitoringStoryboard;
     private const double MicMeterRowHeight = 14;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
@@ -157,27 +156,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private const int MinWindowHeight = 500;
     private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
     private IntPtr _hwnd;
-    private double _audioPeakHoldLevel;
-    private long _audioPeakHoldTimestamp;
-    private double _audioRangeMin = 1.0;
-    private double _audioRangeMax;
-    private long _audioRangeResetTimestamp;
-    private double _audioMeterDisplayLevel;
-    private double _audioMeterTargetLevel;
-    private double _micMeterDisplayLevel;
-    private double _micMeterTargetLevel;
     private bool _syncingMicrophoneVolumeControls;
     private int _selectedDecoderCount = 4;
-    private LinearGradientBrush? _audioMeterColorBrush;
-    private DispatcherQueueTimer? _audioMeterAnimationTimer;
     private readonly List<DiagnosticRowSlot> _decodeRowPool = new();
     private readonly List<DiagnosticRowSlot> _gpuRowPool = new();
     private readonly List<DiagnosticsPoolSlot> _diagnosticsRowPool = new();
     private TextBlock? _diagnosticsEmptyStateTextBlock;
 
-    private const long AudioPeakHoldDurationMs = 1500;
-    private const double AudioPeakHoldDecayPerSecond = 0.8;
-    private const long AudioRangeWindowMs = 3000;
     private const int MaxExpectedDecodeRowCount = 14;
     private const int FixedGpuRowCount = 10;
 

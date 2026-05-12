@@ -34,6 +34,10 @@ Automation whole-window screenshot capture now lives in
 `Sussudio/Controllers/WindowScreenshotController.cs`. `MainWindow.Screenshot.cs`
 is only the automation adapter.
 
+Audio and microphone meter rendering now lives in
+`Sussudio/Controllers/AudioMeterController.cs`. The broader control-bar binding
+and microphone-row animation code remains in `MainWindow.Bindings.cs`.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
@@ -66,9 +70,9 @@ Remaining `tools/Common` ownership:
 
 4. Continue converting MainWindow partial concerns into controllers.
 
-   `FullScreen` and automation `Screenshot` are extracted. Next candidates are
-   `StatsOverlay` and `AudioMeter` because they are easier to isolate than
-   preview startup and close/recording lifecycle. Keep XAML bindings stable.
+   `FullScreen`, automation `Screenshot`, and audio meter rendering are
+   extracted. Next candidate is `StatsOverlay`; keep its D3D/NVML dependencies
+   explicit if it moves. Keep XAML bindings stable.
 
 5. Move MainViewModel feature state behind a facade.
 

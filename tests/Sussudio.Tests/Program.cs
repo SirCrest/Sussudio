@@ -2507,18 +2507,21 @@ static partial class Program
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var audioMeterText = ReadRepoFile("Sussudio/MainWindow.AudioMeter.cs").Replace("\r\n", "\n");
+        var audioMeterControllerText = ReadRepoFile("Sussudio/Controllers/AudioMeterController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "IsAudioPreviewActive");
         AssertContains(propertyChangedText, "case nameof(MainViewModel.IsAudioPreviewActive):");
         AssertContains(propertyChangedText, "SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);");
-        AssertContains(mainWindowText, "private Storyboard? _audioMeterMonitoringStoryboard;");
-        AssertContains(audioMeterText, "_audioMeterMonitoringStoryboard?.Stop();");
-        AssertContains(audioMeterText, "AddOpacityAnimation(storyboard, AudioMeterFill, isMonitoring ? 1.0 : 0.0");
-        AssertContains(audioMeterText, "AddOpacityAnimation(storyboard, AudioPeakHoldIndicator, isMonitoring ? 0.9 : 0.4");
-        AssertContains(audioMeterText, "AddOpacityAnimation(storyboard, AudioRangeMinMarker, isMonitoring ? 0.5 : 0.2");
-        AssertContains(audioMeterText, "AddOpacityAnimation(storyboard, AudioRangeMaxMarker, isMonitoring ? 0.7 : 0.3");
-        AssertContains(audioMeterText, "private static void AddOpacityAnimation(");
+        AssertContains(audioMeterText, "private AudioMeterController _audioMeterController = null!;");
+        AssertDoesNotContain(mainWindowText, "private Storyboard? _audioMeterMonitoringStoryboard;");
+        AssertContains(audioMeterControllerText, "private Storyboard? _audioMeterMonitoringStoryboard;");
+        AssertContains(audioMeterControllerText, "_audioMeterMonitoringStoryboard?.Stop();");
+        AssertContains(audioMeterControllerText, "AddOpacityAnimation(storyboard, _context.AudioMeterFill, isMonitoring ? 1.0 : 0.0");
+        AssertContains(audioMeterControllerText, "AddOpacityAnimation(storyboard, _context.AudioPeakHoldIndicator, isMonitoring ? 0.9 : 0.4");
+        AssertContains(audioMeterControllerText, "AddOpacityAnimation(storyboard, _context.AudioRangeMinMarker, isMonitoring ? 0.5 : 0.2");
+        AssertContains(audioMeterControllerText, "AddOpacityAnimation(storyboard, _context.AudioRangeMaxMarker, isMonitoring ? 0.7 : 0.3");
+        AssertContains(audioMeterControllerText, "private static void AddOpacityAnimation(");
 
         return Task.CompletedTask;
     }

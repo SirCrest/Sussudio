@@ -500,7 +500,7 @@ public sealed partial class MainWindow
         TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
         ApplyHdrToggleEnabledState();
         ResetAudioMeterVisuals();
-        _audioMeterTargetLevel = Math.Clamp(ViewModel.AudioMeterTarget, 0.0, 1.0);
+        SetAudioMeterTargetLevel(ViewModel.AudioMeterTarget);
         ApplyAudioClipVisibility();
         RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing;
         RefreshHdrHintText();
@@ -703,9 +703,7 @@ public sealed partial class MainWindow
             DeviceAudioRowTranslate.Y = MicMeterRowHeight / 2;
             MicMeterRowTranslate.Y = MicMeterRowHeight;
             MicMeterRow.Opacity = 0;
-            _micMeterDisplayLevel = 0;
-            _micMeterTargetLevel = 0;
-            MicMeterClip.Rect = new Windows.Foundation.Rect(0, 0, 0, 8);
+            ResetMicrophoneMeterVisuals();
             return;
         }
 
@@ -781,9 +779,7 @@ public sealed partial class MainWindow
             DeviceAudioRowTranslate.Y = MicMeterRowHeight / 2;
             MicMeterRowTranslate.Y = MicMeterRowHeight;
             MicMeterRow.Opacity = 0;
-            _micMeterDisplayLevel = 0;
-            _micMeterTargetLevel = 0;
-            MicMeterClip.Rect = new Windows.Foundation.Rect(0, 0, 0, 8);
+            ResetMicrophoneMeterVisuals();
         };
 
         return storyboard;
