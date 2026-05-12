@@ -82,10 +82,17 @@ Diagnostic-session Flashback metric projection now lives in
 recording, playback, and export metric projection while the runner retains
 scenario control and validation warning policy.
 
+Diagnostic-session health policy now lives in
+`tools/Common/DiagnosticSessionHealthPolicy.cs`. It owns health severity,
+Flashback warmup filtering, sparse cadence tolerances, and tolerated warning
+classification while the runner still owns scenario execution and warning
+emission.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
+- `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionModels.cs`

@@ -695,6 +695,8 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionMetrics.cs")
@@ -1163,12 +1165,12 @@ static partial class Program
         AssertContains(diagnosticSessionText, "runFlashbackPreviewCycle || runFlashbackPlaybackPreviewCycle || runFlashbackRecordingPreviewCycle");
         AssertContains(diagnosticSessionText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
         AssertContains(diagnosticSessionText, "IsSparsePreviewSchedulerDeadlineDropRun(");
-        AssertContains(diagnosticSessionText, "private static bool IsSparsePreviewSchedulerDeadlineDropRun(");
+        AssertContains(diagnosticSessionText, "internal static bool IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(diagnosticSessionText, "var allowedDrops = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 10.0));");
         AssertContains(diagnosticSessionText, "var toleratesSparseScrubSchedulerTransitions =");
         AssertContains(diagnosticSessionText, "(runFlashbackScrubStress || runFlashbackSegmentPlayback) &&");
         AssertContains(diagnosticSessionText, "IsSparsePreviewSchedulerStressRun(");
-        AssertContains(diagnosticSessionText, "private static bool IsSparsePreviewSchedulerStressRun(");
+        AssertContains(diagnosticSessionText, "internal static bool IsSparsePreviewSchedulerStressRun(");
         AssertContains(diagnosticSessionText, "var allowedDeadlineDrops = Math.Max(6, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 45.0));");
         AssertContains(diagnosticSessionText, "var allowedUnderflows = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 120.0));");
         AssertContains(diagnosticSessionText, "bool tolerateSchedulerTransitionsWithHealthyVisualCadence");
@@ -1200,11 +1202,11 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var videoIngestErrorsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, \"VideoIngestErrorCount\")");
         AssertContains(diagnosticSessionText, "var sparseSourceCaptureCadenceWarning =");
         AssertContains(diagnosticSessionText, "IsSparseSourceCaptureCadenceWarningRun(");
-        AssertContains(diagnosticSessionText, "private static bool IsSparseSourceCaptureCadenceWarningRun(");
+        AssertContains(diagnosticSessionText, "internal static bool IsSparseSourceCaptureCadenceWarningRun(");
         AssertContains(diagnosticSessionText, "var toleratesFlashbackForceRotateDrainWarning =");
         AssertContains(diagnosticSessionText, "IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)");
         AssertContains(diagnosticSessionText, "flashback force-rotate drain warning tolerated for flashback scenario");
-        AssertContains(diagnosticSessionText, "private static bool IsFlashbackForceRotateDrainDiagnosticHealthObservation(");
+        AssertContains(diagnosticSessionText, "internal static bool IsFlashbackForceRotateDrainDiagnosticHealthObservation(");
         AssertContains(diagnosticSessionText, "lastReject=force_rotate_draining");
         AssertContains(diagnosticSessionText, "sourceReaderFramesDroppedDelta > 0");
         AssertContains(diagnosticSessionText, "videoIngestErrorsDelta > 0");

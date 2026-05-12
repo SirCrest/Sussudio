@@ -946,11 +946,11 @@ static partial class Program
     private static Task DiagnosticSessionRunner_IgnoresTransientFlashbackWarmupWarnings()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
-        var runnerType = assembly.GetType("Sussudio.Tools.DiagnosticSessionRunner")
-            ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
+        var healthPolicyType = assembly.GetType("Sussudio.Tools.DiagnosticSessionHealthPolicy")
+            ?? throw new InvalidOperationException("DiagnosticSessionHealthPolicy type was not found.");
         var sampleType = assembly.GetType("Sussudio.Tools.DiagnosticSessionSample")
             ?? throw new InvalidOperationException("DiagnosticSessionSample type was not found.");
-        var buildObservation = runnerType.GetMethod(
+        var buildObservation = healthPolicyType.GetMethod(
                 "BuildSessionDiagnosticHealthObservation",
                 BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("BuildSessionDiagnosticHealthObservation was not found.");
@@ -1009,6 +1009,30 @@ static partial class Program
                 """);
             return document.RootElement.Clone();
         }
+    }
+
+    private static Task DiagnosticSessionHealthPolicy_OwnsHealthTolerances()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var policyText = ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(policyText, "internal static class DiagnosticSessionHealthPolicy");
+        AssertContains(policyText, "internal readonly record struct DiagnosticHealthObservation");
+        AssertContains(policyText, "internal static DiagnosticHealthObservation BuildSessionDiagnosticHealthObservation(");
+        AssertContains(policyText, "private static DiagnosticHealthObservation BuildWorstDiagnosticHealthObservationAfterOffset(");
+        AssertContains(policyText, "internal static bool IsSparseSourceCaptureCadenceWarningRun(");
+        AssertContains(policyText, "internal static bool IsSparsePreviewSchedulerDeadlineDropRun(");
+        AssertContains(policyText, "internal static bool IsSparsePreviewSchedulerStressRun(");
+        AssertContains(policyText, "internal static bool IsToleratedFlashbackScenarioWarning(");
+        AssertContains(policyText, "private const double FlashbackDiagnosticWarmupFraction = 0.20;");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionHealthPolicy;");
+        AssertDoesNotContain(runnerText, "private readonly record struct DiagnosticHealthObservation");
+        AssertDoesNotContain(runnerText, "private static DiagnosticHealthObservation BuildSessionDiagnosticHealthObservation(");
+        AssertDoesNotContain(runnerText, "private static bool IsSparseSourceCaptureCadenceWarningRun(");
+
+        return Task.CompletedTask;
     }
 
     private static Task DiagnosticSessionModels_AreSplitFromRunnerBehavior()
@@ -1163,13 +1187,13 @@ static partial class Program
     private static Task DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
-        var runnerType = assembly.GetType("Sussudio.Tools.DiagnosticSessionRunner")
-            ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
-        var observationType = runnerType.GetNestedType("DiagnosticHealthObservation", BindingFlags.NonPublic)
+        var healthPolicyType = assembly.GetType("Sussudio.Tools.DiagnosticSessionHealthPolicy")
+            ?? throw new InvalidOperationException("DiagnosticSessionHealthPolicy type was not found.");
+        var observationType = assembly.GetType("Sussudio.Tools.DiagnosticHealthObservation")
             ?? throw new InvalidOperationException("DiagnosticHealthObservation type was not found.");
         var sourceMetricsType = assembly.GetType("Sussudio.Tools.SourceCadenceSessionMetrics")
             ?? throw new InvalidOperationException("SourceCadenceSessionMetrics type was not found.");
-        var sparseSourceWarning = runnerType.GetMethod(
+        var sparseSourceWarning = healthPolicyType.GetMethod(
                 "IsSparseSourceCaptureCadenceWarningRun",
                 BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("Sparse source-cadence classifier was not found.");
