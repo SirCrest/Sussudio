@@ -1112,6 +1112,30 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionMetrics_OwnsSessionMetricProjection()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var metricsText = ReadRepoFile("tools/Common/DiagnosticSessionMetrics.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(metricsText, "internal static class DiagnosticSessionMetrics");
+        AssertContains(metricsText, "internal sealed class SourceCadenceSessionMetrics");
+        AssertContains(metricsText, "internal sealed class PreviewD3DMetrics");
+        AssertContains(metricsText, "internal static SourceCadenceSessionMetrics BuildSourceCadenceSessionMetrics(");
+        AssertContains(metricsText, "internal static PreviewD3DMetrics BuildPreviewD3DMetrics(");
+        AssertContains(metricsText, "internal static PlaybackCommandHealth BuildPlaybackCommandHealth(");
+        AssertContains(metricsText, "internal static long GetResetAwareCounterDelta(");
+        AssertContains(metricsText, "internal static bool IsVisualCadenceSessionHealthy(");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionMetrics;");
+        AssertDoesNotContain(runnerText, "private sealed class SourceCadenceSessionMetrics");
+        AssertDoesNotContain(runnerText, "private sealed class PreviewD3DMetrics");
+        AssertDoesNotContain(runnerText, "private static PlaybackCommandHealth BuildPlaybackCommandHealth(");
+        AssertDoesNotContain(runnerText, "private static long GetCounterDelta(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
@@ -1119,7 +1143,7 @@ static partial class Program
             ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
         var observationType = runnerType.GetNestedType("DiagnosticHealthObservation", BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("DiagnosticHealthObservation type was not found.");
-        var sourceMetricsType = runnerType.GetNestedType("SourceCadenceSessionMetrics", BindingFlags.NonPublic)
+        var sourceMetricsType = assembly.GetType("Sussudio.Tools.SourceCadenceSessionMetrics")
             ?? throw new InvalidOperationException("SourceCadenceSessionMetrics type was not found.");
         var sparseSourceWarning = runnerType.GetMethod(
                 "IsSparseSourceCaptureCadenceWarningRun",

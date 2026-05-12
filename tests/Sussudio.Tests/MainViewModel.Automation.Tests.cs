@@ -695,6 +695,8 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionMetrics.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
@@ -761,7 +763,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackPlaybackCommandsSkippedNotReadyAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackScrubUpdatesCoalescedAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackSeekCommandsCoalescedAtEnd");
-        AssertContains(diagnosticSessionText, "private readonly record struct PlaybackCommandHealth");
+        AssertContains(diagnosticSessionText, "internal readonly record struct PlaybackCommandHealth");
         AssertContains(diagnosticSessionText, "BuildPlaybackCommandHealth");
         AssertContains(diagnosticSessionText, "nonCoalescedDropped={commandHealth.NonCoalescedDropped}");
         AssertContains(diagnosticSessionText, "coalescedSeek={commandHealth.CoalescedSeek}");

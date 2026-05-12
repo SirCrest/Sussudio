@@ -72,10 +72,16 @@ Diagnostic-session sampling now lives in
 optional checkpoint callback so checkpoint failures cannot orphan an unseen
 sample.
 
+Diagnostic-session metric projection now lives in
+`tools/Common/DiagnosticSessionMetrics.cs`. It owns snapshot-only projections
+for source cadence, preview cadence, visual cadence, D3D slow-frame summaries,
+playback command health, and reset-aware counter deltas.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
+- `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionModels.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionResultFormatter.cs`

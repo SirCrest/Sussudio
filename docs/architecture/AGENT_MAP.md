@@ -140,6 +140,10 @@ Primary owners:
 - `tools/Common/DiagnosticSessionJsonArtifacts.cs` owns diagnostic-session JSON
   artifact writing, frame-ledger extraction, and automation response shape
   helpers.
+- `tools/Common/DiagnosticSessionMetrics.cs` owns read-only projection from
+  diagnostic snapshots into session metrics: source cadence, preview cadence,
+  visual cadence, D3D slow-frame summaries, playback command health, and
+  counter deltas.
 - `tools/Common/DiagnosticSessionSampler.cs` owns snapshot sample collection.
   Preserve its ordering: append the cloned sample before running checkpoint
   callbacks.
@@ -160,6 +164,8 @@ Invariants:
 - Preserve diagnostic-session artifact filenames and JSON shapes when moving
   artifact helpers; tests read `summary.json`, `session-live.json`, samples,
   frame ledger, and timeline outputs.
+- Preserve diagnostic metric projection semantics; these helpers must stay
+  read-only over sampled snapshots and must not send automation commands.
 - Preserve sampler checkpoint ordering; checkpoint callbacks are allowed to
   observe the sample that was just appended.
 - Preserve result text compatibility when refactoring diagnostic-session
