@@ -104,6 +104,11 @@ concurrent export, disable-during-export, rotated export, export during
 playback, and selection-range export flows while the runner only starts the
 scenario tasks.
 
+Diagnostic-session Flashback lifecycle checks now live in
+`tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`. They own the
+pause/seek/play disable-and-re-enable flow and post-disable playback queue
+assertions while the runner only starts the lifecycle task.
+
 Diagnostic-session Flashback metric projection now lives in
 `tools/Common/DiagnosticSessionFlashbackMetrics.cs`. It owns snapshot-only
 recording, playback, and export metric projection while the runner retains
@@ -164,6 +169,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`
+- `DiagnosticSessionFlashbackLifecycleScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`

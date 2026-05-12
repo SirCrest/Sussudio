@@ -1346,6 +1346,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackLifecycleScenarios_OwnLifecycleFlow()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var lifecycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(lifecycleText, "internal static class DiagnosticSessionFlashbackLifecycleScenarios");
+        AssertContains(lifecycleText, "internal static async Task RunFlashbackLifecycleAsync(");
+        AssertContains(lifecycleText, "flashback lifecycle pause requested");
+        AssertContains(lifecycleText, "flashback lifecycle disabled during playback");
+        AssertContains(lifecycleText, "flashback lifecycle: playback worker still alive after disable");
+        AssertContains(lifecycleText, "flashback lifecycle: pending commands remained after disable");
+        AssertContains(lifecycleText, "flashback lifecycle re-enabled");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackLifecycleScenarios;");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackLifecycleAsync(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackExportScenarios_OwnExportFlows()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")

@@ -157,6 +157,8 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs` owns Flashback
   export diagnostic command flows: concurrent exports, disable-during-export,
   rotated exports, export during playback, and selection-range exports.
+- `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
+  Flashback playback disable/re-enable lifecycle diagnostic flow.
 - `tools/Common/DiagnosticSessionFlashbackMetrics.cs` owns read-only
   diagnostic-session Flashback metric projection for recording, playback, and
   export sessions.

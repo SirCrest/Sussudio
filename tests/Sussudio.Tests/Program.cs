@@ -642,6 +642,9 @@ static partial class Program
                 "Diagnostic session Flashback recording settings scenarios have a named owner",
                 DiagnosticSessionFlashbackRecordingSettingsScenarios_OwnDeferredSettingsFlow),
             await RunCheckAsync(
+                "Diagnostic session Flashback lifecycle scenarios have a named owner",
+                DiagnosticSessionFlashbackLifecycleScenarios_OwnLifecycleFlow),
+            await RunCheckAsync(
                 "Diagnostic session Flashback segment playback scenarios have a named owner",
                 DiagnosticSessionFlashbackSegmentPlaybackScenarios_OwnSegmentPlaybackFlow),
             await RunCheckAsync(

@@ -701,6 +701,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs")
@@ -1093,7 +1095,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackExportActive");
         AssertContains(diagnosticSessionText, "[\"useSelectionRange\"] = true");
         AssertContains(diagnosticSessionText, "actions.Add($\"{scenarioLabel} verified\")");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackLifecycleAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackLifecycleAsync(");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackExportConcurrentAsync(");
         AssertContains(diagnosticSessionText, "async Task<JsonElement> SendRawWithConnectRetryAsync(");
         AssertContains(diagnosticSessionText, "var exportTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout(\"FlashbackExport\");");
