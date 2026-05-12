@@ -132,13 +132,16 @@ Primary owners:
 - `tools/McpServer/` for MCP bridge tools.
 - `tools/Common/` for shared tool helpers that are not contracts, including
   pipe client, snapshot formatting, diagnostic sessions, diagnostic scenario
-  cataloging, PresentMon probing, and shared JSON options.
+  cataloging, diagnostic-session pipe retry policy, PresentMon probing, and
+  shared JSON options.
 - `tools/Common/DiagnosticSessionModels.cs` owns diagnostic session options,
   result, and sample DTOs. Keep summary/live JSON shape changes there rather
   than expanding the runner header.
 - `tools/Common/DiagnosticSessionResultFormatter.cs` owns the human-readable
   diagnostic-session text used by ssctl and MCP. Keep
   `DiagnosticSessionRunner.Format(...)` as the stable compatibility wrapper.
+- `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
+  connect retry classification and local failure-response envelopes.
 
 Invariants:
 
@@ -150,6 +153,8 @@ Invariants:
   when refactoring runners.
 - Preserve result text compatibility when refactoring diagnostic-session
   formatting; ssctl and MCP both flow through `DiagnosticSessionRunner.Format`.
+- Preserve pipe error-code semantics when refactoring diagnostic-session retry:
+  `pipe-access-denied` is permanent, while connect failed/timeout are retried.
 - Add new diagnostic-session scenario names in
   `tools/Common/DiagnosticSessionScenarios.cs` before wiring scenario behavior
   into `DiagnosticSessionRunner`.

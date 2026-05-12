@@ -58,10 +58,15 @@ Diagnostic-session result text now lives in
 `Format(...)` as a compatibility wrapper so existing ssctl and MCP callers do
 not need to know about the formatter owner.
 
+Diagnostic-session pipe retry/error classification now lives in
+`tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a
+permanent failure and connect failed/timeout responses retryable.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
 - `DiagnosticSessionModels.cs`
+- `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionRunner.cs`
 - `AutomationSnapshotFormatter.cs`

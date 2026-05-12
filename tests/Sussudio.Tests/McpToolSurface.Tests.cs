@@ -1052,6 +1052,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var retryText = ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(retryText, "internal static class DiagnosticSessionPipeRetryPolicy");
+        AssertContains(retryText, "BuildLocalFailureResponse(command, ex.Message)");
+        AssertContains(retryText, "\"pipe-connect-failed\"");
+        AssertContains(retryText, "\"pipe-connect-timeout\"");
+        AssertContains(retryText, "\"pipe-access-denied\"");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
+        AssertDoesNotContain(runnerText, "private static bool IsSyntheticPipeConnectFailure(");
+        AssertDoesNotContain(runnerText, "private static bool IsPermanentPipeConnectFailure(");
+        AssertDoesNotContain(runnerText, "private static JsonElement BuildLocalFailureResponse(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));

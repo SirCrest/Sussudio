@@ -205,6 +205,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var diagnosticSessionPipeRetryText = ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(sharedClientText, "catch (UnauthorizedAccessException ex)");
         AssertContains(sharedClientText, "\"pipe-access-denied\"");
@@ -219,10 +221,14 @@ static partial class Program
         AssertContains(mcpPipeText, "CreateSyntheticError(ex.Message, ex.ErrorCode)");
         AssertDoesNotContain(mcpPipeText, "Sussudio is not running or not responding. Start the app and try again.");
 
-        AssertContains(diagnosticSessionText, "\"pipe-connect-failed\"");
-        AssertContains(diagnosticSessionText, "\"pipe-connect-timeout\"");
-        AssertContains(diagnosticSessionText, "IsPermanentPipeConnectFailure(ex.ErrorCode)");
-        AssertContains(diagnosticSessionText, "\"pipe-access-denied\"");
+        AssertContains(diagnosticSessionText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
+        AssertContains(diagnosticSessionPipeRetryText, "internal static class DiagnosticSessionPipeRetryPolicy");
+        AssertContains(diagnosticSessionPipeRetryText, "internal static async Task<JsonElement?> SendCommandWithConnectRetryAsync(");
+        AssertContains(diagnosticSessionPipeRetryText, "\"pipe-connect-failed\"");
+        AssertContains(diagnosticSessionPipeRetryText, "\"pipe-connect-timeout\"");
+        AssertContains(diagnosticSessionPipeRetryText, "IsPermanentPipeConnectFailure(ex.ErrorCode)");
+        AssertContains(diagnosticSessionPipeRetryText, "\"pipe-access-denied\"");
+        AssertDoesNotContain(diagnosticSessionText, "private static async Task<JsonElement?> SendCommandWithConnectRetryAsync(");
 
         return Task.CompletedTask;
     }

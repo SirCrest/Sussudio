@@ -609,6 +609,9 @@ static partial class Program
                 "Diagnostic session result formatting has a named owner",
                 DiagnosticSessionResultFormatter_OwnsFormattedSummaryText),
             await RunCheckAsync(
+                "Diagnostic session pipe retry policy has a named owner",
+                DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification),
+            await RunCheckAsync(
                 "Diagnostic session runner verifies flashback export during playback",
                 DiagnosticSessionRunner_VerifiesFlashbackExportPlaybackCommandFlow),
             await RunCheckAsync(
