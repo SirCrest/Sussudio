@@ -82,6 +82,11 @@ Diagnostic-session Flashback metric projection now lives in
 recording, playback, and export metric projection while the runner retains
 scenario control and validation warning policy.
 
+Diagnostic-session Flashback segment handling now lives in
+`tools/Common/DiagnosticSessionFlashbackSegments.cs`. It owns segment DTOs,
+`FlashbackGetSegments` parsing, completed-segment waits, and playable-boundary
+headroom waits while the runner keeps scenario command sequencing.
+
 Diagnostic-session Flashback validation now lives in
 `tools/Common/DiagnosticSessionFlashbackValidation.cs`. It owns playback and
 preview-scheduler warning thresholds over already projected metrics while the
@@ -97,6 +102,7 @@ Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
+- `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionJsonArtifacts.cs`

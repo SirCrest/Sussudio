@@ -1184,6 +1184,34 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackSegments_OwnsSegmentWaitsAndParsing()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var segmentsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(segmentsText, "internal static class DiagnosticSessionFlashbackSegments");
+        AssertContains(segmentsText, "internal readonly record struct FlashbackSegmentProbe(");
+        AssertContains(segmentsText, "internal readonly record struct FlashbackSegmentPlaybackTarget(");
+        AssertContains(segmentsText, "internal static async Task<FlashbackSegmentProbe?> WaitForFlashbackCompletedSegmentAsync(");
+        AssertContains(segmentsText, "internal static bool TryGetFlashbackSegments(");
+        AssertContains(segmentsText, "internal static async Task<FlashbackSegmentPlaybackTarget?> WaitForFlashbackPlayableCompletedSegmentAsync(");
+        AssertContains(segmentsText, "internal static async Task<bool> WaitForFlashbackSegmentPlaybackHeadroomAsync(");
+        AssertContains(segmentsText, "\"FlashbackGetSegments\"");
+        AssertContains(segmentsText, "data.TryGetProperty(\"Segments\", out var segmentsElement)");
+        AssertContains(segmentsText, "const int requiredHeadroomMs = 8_000;");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;");
+        AssertDoesNotContain(runnerText, "private readonly record struct FlashbackSegmentProbe(");
+        AssertDoesNotContain(runnerText, "private readonly record struct FlashbackSegmentPlaybackTarget(");
+        AssertDoesNotContain(runnerText, "private static async Task<FlashbackSegmentProbe?> WaitForFlashbackCompletedSegmentAsync(");
+        AssertDoesNotContain(runnerText, "private static bool TryGetFlashbackSegments(");
+        AssertDoesNotContain(runnerText, "private static async Task<FlashbackSegmentPlaybackTarget?> WaitForFlashbackPlayableCompletedSegmentAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task<bool> WaitForFlashbackSegmentPlaybackHeadroomAsync(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackValidation_OwnsFlashbackWarningPolicy()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
