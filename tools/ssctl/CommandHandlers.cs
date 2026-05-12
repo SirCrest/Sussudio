@@ -20,6 +20,7 @@ internal static class CommandHandlers
             "manifest" => HandleManifestAsync(context),
             "timeline" => HandleTimelineAsync(context),
             "memory" => HandleMemoryAsync(context),
+            "audio-ramp-trace" => HandleAudioRampTraceAsync(context),
             "presentmon" => HandlePresentMonAsync(context),
             "diagnostic-session" or "session" => HandleDiagnosticSessionAsync(context),
             "preview" => HandlePreviewAsync(context),
@@ -98,6 +99,15 @@ internal static class CommandHandlers
 
         var response = await context.Transport.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatMemory);
+    }
+
+    private static async Task<int> HandleAudioRampTraceAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        EnsureNoArgs(context.Rest, "audio-ramp-trace [--json]");
+
+        var response = await context.Transport.SendCommandAsync("GetAudioRampTrace").ConfigureAwait(false);
+        return WriteResponse(response, json, responseValue => Formatters.FormatResult(responseValue, includeData: true));
     }
 
     private static async Task<int> HandlePresentMonAsync(CommandContext context)
@@ -426,16 +436,34 @@ internal static class CommandHandlers
 
     private static async Task<int> HandleAssertAsync(CommandContext context)
     {
-        var assertionsJson = JoinRemaining(context.Rest, 0);
-        if (string.IsNullOrWhiteSpace(assertionsJson))
+        object assertionsPayload;
+        if (context.Rest.Count == 3 && !LooksLikeJson(context.Rest[0]))
         {
-            throw new UsageException("assert <json>");
+            assertionsPayload = new[]
+            {
+                new Dictionary<string, object?>
+                {
+                    ["field"] = context.Rest[0],
+                    ["op"] = context.Rest[1],
+                    ["value"] = ParseAssertionValue(context.Rest[2])
+                }
+            };
+        }
+        else
+        {
+            var assertionsJson = JoinRemaining(context.Rest, 0);
+            if (string.IsNullOrWhiteSpace(assertionsJson))
+            {
+                throw new UsageException("assert <json> OR assert <field> <op> <value>");
+            }
+
+            using var document = JsonDocument.Parse(assertionsJson);
+            assertionsPayload = document.RootElement.Clone();
         }
 
-        using var document = JsonDocument.Parse(assertionsJson);
         var response = await context.Transport.SendCommandAsync(
             "AssertSnapshot",
-            new Dictionary<string, object?> { ["assertions"] = document.RootElement.Clone() }).ConfigureAwait(false);
+            new Dictionary<string, object?> { ["assertions"] = assertionsPayload }).ConfigureAwait(false);
         return WriteResponse(response, context.GlobalJson, responseValue => Formatters.FormatResult(responseValue, includeData: true));
     }
 
@@ -824,6 +852,37 @@ internal static class CommandHandlers
         }
 
         return parsed;
+    }
+
+    private static bool LooksLikeJson(string value)
+    {
+        var trimmed = value.TrimStart();
+        return trimmed.StartsWith("{", StringComparison.Ordinal) || trimmed.StartsWith("[", StringComparison.Ordinal);
+    }
+
+    private static object? ParseAssertionValue(string value)
+    {
+        if (bool.TryParse(value, out var boolValue))
+        {
+            return boolValue;
+        }
+
+        if (string.Equals(value, "null", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var longValue))
+        {
+            return longValue;
+        }
+
+        if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue))
+        {
+            return doubleValue;
+        }
+
+        return value;
     }
 
     private static bool ParseOnOff(string value)

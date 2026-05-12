@@ -117,6 +117,7 @@ internal static class Program
         Console.WriteLine("  manifest [--json]");
         Console.WriteLine("  timeline [--max N] [--json]");
         Console.WriteLine("  memory [--json]");
+        Console.WriteLine("  audio-ramp-trace [--json]");
         Console.WriteLine("  presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--app-present-id N] [--app-source-seq N] [--app-present-utc-ms N] [--capture-start-utc-ms N] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
         Console.WriteLine("  diagnostic-session [--scenario observe|preview-only|recording-only|flashback|flashback-playback|flashback-stress|flashback-scrub-stress|flashback-restart-cycle|flashback-encoder-cycle|flashback-export-playback|flashback-segment-playback|flashback-range-export|flashback-range-export-audio-switch|flashback-lifecycle|flashback-export-concurrent|flashback-disable-during-export|flashback-rotated-export|flashback-preview-cycle|flashback-playback-preview-cycle|flashback-recording|flashback-recording-preview-cycle|flashback-recording-settings-deferred|flashback-recording-export-rejected|flashback-export-rejected|combined] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
         Console.WriteLine();
@@ -179,7 +180,7 @@ internal static class Program
         Console.WriteLine("Wait / Verify:");
         Console.WriteLine("  wait <condition> [--timeout MS] [--poll MS]");
         Console.WriteLine("  verify [path] [--profile NAME|--verification-profile NAME]");
-        Console.WriteLine("  assert <json>");
+        Console.WriteLine("  assert <json>|<field> <op> <value>");
         Console.WriteLine("  probe source|color");
         Console.WriteLine("  stats show|hide");
         Console.WriteLine("  stats section <name> show|hide");

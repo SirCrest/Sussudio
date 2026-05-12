@@ -197,7 +197,8 @@ static partial class Program
             AssertEqual(true, resultElement.GetProperty("isError").GetBoolean(), "get_app_state pipe failure MCP isError");
             var content = resultElement.GetProperty("content");
             var text = content[0].GetProperty("text").GetString() ?? string.Empty;
-            AssertContains(text, "Sussudio is not running or not responding.");
+            AssertContains(text, "Timed out connecting to automation pipe");
+            AssertContains(text, "pipe-connect-timeout");
 
             await WriteJsonRpcLineAsync(
                     process,
@@ -2435,6 +2436,7 @@ static partial class Program
                             exportPipeClient,
                             1d,
                             "temp/fb-failure-kind.mp4",
+                            false,
                             false)
                         .ConfigureAwait(false);
                 },
@@ -2822,8 +2824,7 @@ static partial class Program
 
     private static async Task<string> InvokeMcpToolStringAsync(Type type, string methodName, params object?[] args)
     {
-        var method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public)
-            ?? throw new InvalidOperationException($"{type.FullName}.{methodName} was not found.");
+        var method = ResolveMcpToolMethod(type, methodName, args.Length);
         var task = method.Invoke(null, args) as Task
             ?? throw new InvalidOperationException($"{type.FullName}.{methodName} did not return a Task.");
         await task.ConfigureAwait(false);
@@ -2836,13 +2837,35 @@ static partial class Program
 
     private static async Task<object> InvokeMcpToolResultAsync(Type type, string methodName, params object?[] args)
     {
-        var method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public)
-            ?? throw new InvalidOperationException($"{type.FullName}.{methodName} was not found.");
+        var method = ResolveMcpToolMethod(type, methodName, args.Length);
         var task = method.Invoke(null, args) as Task
             ?? throw new InvalidOperationException($"{type.FullName}.{methodName} did not return a Task.");
         await task.ConfigureAwait(false);
         return task.GetType().GetProperty("Result")?.GetValue(task)
             ?? throw new InvalidOperationException($"{type.FullName}.{methodName} returned null.");
+    }
+
+    private static MethodInfo ResolveMcpToolMethod(Type type, string methodName, int argumentCount)
+    {
+        var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Public)
+            .Where(method => string.Equals(method.Name, methodName, StringComparison.Ordinal))
+            .ToArray();
+        if (methods.Length == 0)
+        {
+            throw new InvalidOperationException($"{type.FullName}.{methodName} was not found.");
+        }
+
+        var matchingMethod = methods.SingleOrDefault(method => method.GetParameters().Length == argumentCount);
+        if (matchingMethod != null)
+        {
+            return matchingMethod;
+        }
+
+        var shapes = string.Join(
+            ", ",
+            methods.Select(method => $"{method.Name}({string.Join(", ", method.GetParameters().Select(parameter => parameter.ParameterType.Name))})"));
+        throw new InvalidOperationException(
+            $"{type.FullName}.{methodName} had no overload accepting {argumentCount} argument(s). Available: {shapes}");
     }
 
     private static string GetMcpToolResultText(object? result)

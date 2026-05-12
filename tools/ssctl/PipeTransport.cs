@@ -55,11 +55,9 @@ internal sealed class PipeTransport
             // exception class that should propagate.
             throw new UsageException(ex.Message);
         }
-        catch (AutomationPipeConnectException)
+        catch (AutomationPipeConnectException ex)
         {
-            return CreateSyntheticError(
-                "Sussudio is not running or not responding. Start the app and try again.",
-                "pipe-connect-failed");
+            return CreateSyntheticError(ex.Message, ex.ErrorCode);
         }
         catch (AutomationPipeResponseTimeoutException ex)
         {

@@ -45,16 +45,25 @@ internal static class AutomationPipeClient
         {
             throw new AutomationPipeConnectException(
                 $"Timed out connecting to automation pipe '{pipeName}' after {connectTimeoutMs} ms.",
+                "pipe-connect-timeout",
                 ex);
         }
         catch (OperationCanceledException)
         {
             throw;
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            throw new AutomationPipeConnectException(
+                $"Access denied connecting to automation pipe '{pipeName}'. The app is running, but this process is not allowed by the pipe security descriptor. Run the client from the same Windows user/elevation/session as the app, or restart the app with {AutomationPipeProtocol.AutomationKeyEnvVar} configured for token-gated fallback security.",
+                "pipe-access-denied",
+                ex);
+        }
         catch (Exception ex)
         {
             throw new AutomationPipeConnectException(
                 $"Failed to connect to automation pipe '{pipeName}': {ex.Message}",
+                "pipe-connect-failed",
                 ex);
         }
 
@@ -245,10 +254,13 @@ internal class AutomationPipeException : Exception
 
 internal sealed class AutomationPipeConnectException : AutomationPipeException
 {
-    public AutomationPipeConnectException(string message, Exception innerException)
+    public AutomationPipeConnectException(string message, string errorCode, Exception innerException)
         : base(message, innerException)
     {
+        ErrorCode = errorCode;
     }
+
+    public string ErrorCode { get; }
 }
 
 internal sealed class AutomationPipeResponseTimeoutException : AutomationPipeException

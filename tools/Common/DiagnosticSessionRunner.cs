@@ -2775,6 +2775,11 @@ public static class DiagnosticSessionRunner
             }
             catch (AutomationPipeConnectException ex)
             {
+                if (IsPermanentPipeConnectFailure(ex.ErrorCode))
+                {
+                    return BuildLocalFailureResponse(command, ex.Message);
+                }
+
                 lastConnectException = ex;
                 await Task.Delay(500, cancellationToken).ConfigureAwait(false);
             }
@@ -2809,8 +2814,12 @@ public static class DiagnosticSessionRunner
         }
 
         var errorCode = GetString(response, "ErrorCode");
-        return string.Equals(errorCode, "pipe-connect-failed", StringComparison.OrdinalIgnoreCase);
+        return string.Equals(errorCode, "pipe-connect-failed", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(errorCode, "pipe-connect-timeout", StringComparison.OrdinalIgnoreCase);
     }
+
+    private static bool IsPermanentPipeConnectFailure(string? errorCode)
+        => string.Equals(errorCode, "pipe-access-denied", StringComparison.OrdinalIgnoreCase);
 
     private static JsonElement CreateEmptyJsonObject()
     {

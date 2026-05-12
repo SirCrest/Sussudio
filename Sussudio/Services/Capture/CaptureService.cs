@@ -27,6 +27,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private readonly SemaphoreSlim _sessionTransitionLock = new(1, 1);
     // Lock ordering: acquire _sessionTransitionLock before _flashbackBackendLeaseLock.
     private readonly SemaphoreSlim _flashbackBackendLeaseLock = new(1, 1);
+    private const int PreviewFrameCaptureRendererWaitTimeoutMs = 2000;
+    private const int PreviewFrameCaptureRendererPollMs = 50;
     private readonly ISourceSignalTelemetryProvider _sourceTelemetryProvider;
     private readonly IProcessSupervisor _processSupervisor;
     private readonly RecordingArtifactManager _artifactManager = new();
@@ -1776,19 +1778,37 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         };
     }
 
-    public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default)
+    public async Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default)
     {
-        var d3dSink = _previewFrameSink as D3D11PreviewRenderer;
-        if (d3dSink == null || !d3dSink.IsRendering)
+        var waitStartedAt = Stopwatch.GetTimestamp();
+        while (_isVideoPreviewActive && !cancellationToken.IsCancellationRequested)
         {
-            return Task.FromResult(new PreviewFrameCaptureResult
+            var d3dSink = _previewFrameSink as D3D11PreviewRenderer;
+            if (d3dSink is { IsRendering: true })
             {
-                Succeeded = false,
-                Message = "No active preview renderer."
-            });
+                return await d3dSink.CaptureNextFrameAsync(outputPath, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (Stopwatch.GetElapsedTime(waitStartedAt).TotalMilliseconds >= PreviewFrameCaptureRendererWaitTimeoutMs)
+            {
+                break;
+            }
+
+            try
+            {
+                await Task.Delay(PreviewFrameCaptureRendererPollMs, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
         }
 
-        return d3dSink.CaptureNextFrameAsync(outputPath, cancellationToken);
+        return new PreviewFrameCaptureResult
+        {
+            Succeeded = false,
+            Message = "No active preview renderer."
+        };
     }
 
     public Task InitializeAsync(CaptureDevice device, CaptureSettings settings, CancellationToken cancellationToken = default)

@@ -158,11 +158,51 @@ static partial class Program
         AssertEqual(@"C:\captures\clip.mp4", verifyRequest.GetProperty("payload").GetProperty("filePath").GetString(), "verify file payload path");
         AssertEqual("flashback-export", verifyRequest.GetProperty("payload").GetProperty("verificationProfile").GetString(), "verify file payload profile");
 
+        var audioRampPipeName = $"ssctl-audio-ramp-trace-{Guid.NewGuid():N}";
+        var audioRampTransport = Activator.CreateInstance(transportType, audioRampPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for audio ramp trace command test.");
+        var audioRampArguments = new List<string> { "audio-ramp-trace" };
+        var audioRampExitCode = -1;
+        JsonElement audioRampRequest = await CapturePipeRequestAsync(
+            audioRampPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { audioRampTransport, audioRampArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                audioRampExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, audioRampExitCode, "audio-ramp-trace exit code");
+        AssertEqual(48, audioRampRequest.GetProperty("command").GetInt32(), "audio-ramp-trace command id");
+
+        var assertPipeName = $"ssctl-assert-simple-{Guid.NewGuid():N}";
+        var assertTransport = Activator.CreateInstance(transportType, assertPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for assert command test.");
+        var assertArguments = new List<string> { "assert", "IsRecording", "eq", "false" };
+        var assertExitCode = -1;
+        JsonElement assertRequest = await CapturePipeRequestAsync(
+            assertPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { assertTransport, assertArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                assertExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, assertExitCode, "assert simple exit code");
+        AssertEqual(22, assertRequest.GetProperty("command").GetInt32(), "assert simple command id");
+        var assertPayload = assertRequest.GetProperty("payload").GetProperty("assertions")[0];
+        AssertEqual("IsRecording", assertPayload.GetProperty("field").GetString(), "assert simple field");
+        AssertEqual("eq", assertPayload.GetProperty("op").GetString(), "assert simple op");
+        AssertEqual(false, assertPayload.GetProperty("value").GetBoolean(), "assert simple value");
+
         var commandHandlersSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n");
         AssertContains(commandHandlersSource, "\"manifest\" => HandleManifestAsync(context)");
+        AssertContains(commandHandlersSource, "\"audio-ramp-trace\" => HandleAudioRampTraceAsync(context)");
         AssertContains(commandHandlersSource, "\"recordings\" => HandleRecordingsAsync(context)");
         AssertContains(commandHandlersSource, "context.Transport.SendCommandAsync(\"GetAutomationManifest\")");
+        AssertContains(commandHandlersSource, "context.Transport.SendCommandAsync(\"GetAudioRampTrace\")");
         AssertContains(commandHandlersSource, "\"RefreshDevices\",");
         AssertContains(commandHandlersSource, "\"SetFullScreenEnabled\",");
         AssertContains(commandHandlersSource, "\"OpenRecordingsFolder\"");
@@ -182,5 +222,7 @@ static partial class Program
         AssertContains(commandHandlersSource, "Flashback position must be finite, non-negative, and within TimeSpan range.");
         AssertContains(commandHandlersSource, "private static double ParseFlashbackExportSeconds(string value)");
         AssertContains(commandHandlersSource, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
+        AssertContains(commandHandlersSource, "assert <json> OR assert <field> <op> <value>");
+        AssertContains(commandHandlersSource, "private static object? ParseAssertionValue(string value)");
     }
 }

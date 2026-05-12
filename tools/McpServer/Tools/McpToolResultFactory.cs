@@ -8,7 +8,20 @@ namespace McpServer.Tools;
 internal static class McpToolResultFactory
 {
     internal static CallToolResult FromResponse(JsonElement response, string text)
-        => FromText(text, isError: !AutomationSnapshotFormatter.IsSuccess(response));
+    {
+        var isError = !AutomationSnapshotFormatter.IsSuccess(response);
+        if (isError)
+        {
+            var errorCode = AutomationSnapshotFormatter.Get(response, "ErrorCode", string.Empty);
+            if (!string.IsNullOrWhiteSpace(errorCode) &&
+                !text.Contains(errorCode, StringComparison.OrdinalIgnoreCase))
+            {
+                text = $"{text}{Environment.NewLine}ErrorCode: {errorCode}";
+            }
+        }
+
+        return FromText(text, isError);
+    }
 
     internal static CallToolResult FromText(string text, bool isError = false)
         => new()

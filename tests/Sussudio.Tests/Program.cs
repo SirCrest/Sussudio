@@ -1310,6 +1310,9 @@ static partial class Program
                 "Automation command catalog covers command metadata and policy",
                 AutomationCommandCatalog_CoversCommandsAndPolicyMetadata),
             await RunCheckAsync(
+                "Automation pipe connect failures are classified for CLI and MCP",
+                AutomationPipeConnectFailures_AreClassifiedForCliAndMcp),
+            await RunCheckAsync(
                 "Reliability gates run tools and offline regression harness",
                 ReliabilityGates_RunToolsAndOfflineHarness),
             await RunCheckAsync(

@@ -46,11 +46,9 @@ public sealed class PipeClient
             return result.ResponseElement
                 ?? throw new JsonException("Automation pipe returned invalid JSON.");
         }
-        catch (AutomationPipeConnectException)
+        catch (AutomationPipeConnectException ex)
         {
-            return CreateSyntheticError(
-                "Sussudio is not running or not responding. Start the app and try again.",
-                "pipe-connect-failed");
+            return CreateSyntheticError(ex.Message, ex.ErrorCode);
         }
         catch (AutomationPipeResponseTimeoutException ex)
         {

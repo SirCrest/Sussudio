@@ -195,6 +195,38 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task AutomationPipeConnectFailures_AreClassifiedForCliAndMcp()
+    {
+        var sharedClientText = ReadRepoFile("tools/Common/AutomationPipeClient.cs")
+            .Replace("\r\n", "\n");
+        var ssctlPipeText = ReadRepoFile("tools/ssctl/PipeTransport.cs")
+            .Replace("\r\n", "\n");
+        var mcpPipeText = ReadRepoFile("tools/McpServer/PipeClient.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sharedClientText, "catch (UnauthorizedAccessException ex)");
+        AssertContains(sharedClientText, "\"pipe-access-denied\"");
+        AssertContains(sharedClientText, "AutomationPipeProtocol.AutomationKeyEnvVar");
+        AssertContains(sharedClientText, "public string ErrorCode { get; }");
+
+        AssertContains(ssctlPipeText, "catch (AutomationPipeConnectException ex)");
+        AssertContains(ssctlPipeText, "CreateSyntheticError(ex.Message, ex.ErrorCode)");
+        AssertDoesNotContain(ssctlPipeText, "Sussudio is not running or not responding. Start the app and try again.");
+
+        AssertContains(mcpPipeText, "catch (AutomationPipeConnectException ex)");
+        AssertContains(mcpPipeText, "CreateSyntheticError(ex.Message, ex.ErrorCode)");
+        AssertDoesNotContain(mcpPipeText, "Sussudio is not running or not responding. Start the app and try again.");
+
+        AssertContains(diagnosticSessionText, "\"pipe-connect-failed\"");
+        AssertContains(diagnosticSessionText, "\"pipe-connect-timeout\"");
+        AssertContains(diagnosticSessionText, "IsPermanentPipeConnectFailure(ex.ErrorCode)");
+        AssertContains(diagnosticSessionText, "\"pipe-access-denied\"");
+
+        return Task.CompletedTask;
+    }
+
     private static Task ReliabilityGates_RunToolsAndOfflineHarness()
     {
         var scriptText = ReadRepoFile("tools/reliability-gates.ps1")
