@@ -703,6 +703,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
@@ -1105,16 +1107,16 @@ static partial class Program
         AssertContains(diagnosticSessionText, "TryParseFlashbackExportSegmentCount(exportMessage)");
         AssertContains(diagnosticSessionText, "exportedSegments is null or < 2");
         AssertContains(diagnosticSessionText, "flashback rotated export verified");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackPreviewCycleAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-preview-off-export.mp4\"");
         AssertContains(diagnosticSessionText, "flashback preview cycle export verified");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackPlaybackPreviewCycleAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackPlaybackPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-playback-preview-cycle.mp4\"");
         AssertContains(diagnosticSessionText, "flashback playback preview cycle preview stopped during playback");
         AssertContains(diagnosticSessionText, "flashback playback preview cycle: playback did not return live after preview stop");
         AssertContains(diagnosticSessionText, "flashback playback preview cycle export verified");
         AssertContains(diagnosticSessionText, "internal static async Task<JsonElement?> WaitForPreviewActiveAsync(");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRecordingPreviewCycleAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback recording preview cycle preview stopped");
         AssertContains(diagnosticSessionText, "const int recordingCleanupTimeoutMs = 300_000;");
         AssertContains(diagnosticSessionText, "SetRecordingEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, recordingCleanupTimeoutMs");

@@ -160,6 +160,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackMetrics.cs` owns read-only
   diagnostic-session Flashback metric projection for recording, playback, and
   export sessions.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` owns
+  Flashback diagnostic preview stop/restart flows for normal Flashback,
+  playback, and recording-backed scenarios.
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback
   rejected-export diagnostic scenarios for inactive buffers and active
   Flashback recording backends.

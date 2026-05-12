@@ -1249,6 +1249,32 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackPreviewCycleScenarios_OwnPreviewCycleFlows()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var cyclesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(cyclesText, "internal static class DiagnosticSessionFlashbackPreviewCycleScenarios");
+        AssertContains(cyclesText, "internal static async Task RunFlashbackPreviewCycleAsync(");
+        AssertContains(cyclesText, "\"flashback-preview-off-export.mp4\"");
+        AssertContains(cyclesText, "flashback preview cycle export verified");
+        AssertContains(cyclesText, "internal static async Task RunFlashbackPlaybackPreviewCycleAsync(");
+        AssertContains(cyclesText, "flashback playback preview cycle preview stopped during playback");
+        AssertContains(cyclesText, "flashback playback preview cycle export verified");
+        AssertContains(cyclesText, "internal static async Task RunFlashbackRecordingPreviewCycleAsync(");
+        AssertContains(cyclesText, "flashback recording preview cycle preview stopped");
+        AssertContains(cyclesText, "internal static bool IsPreviewCycleScenario(");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackPreviewCycleAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackPlaybackPreviewCycleAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRecordingPreviewCycleAsync(");
+        AssertDoesNotContain(runnerText, "private static bool IsPreviewCycleScenario(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackRejectedExports_OwnRejectionFlows()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")

@@ -109,6 +109,11 @@ Diagnostic-session Flashback metric projection now lives in
 recording, playback, and export metric projection while the runner retains
 scenario control and validation warning policy.
 
+Diagnostic-session Flashback preview-cycle scenarios now live in
+`tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`. They own
+preview stop/restart flows for normal Flashback, playback, and recording-backed
+diagnostics while the runner only starts the scenario tasks.
+
 Diagnostic-session Flashback rejected-export scenarios now live in
 `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs`. They own inactive
 buffer and active-recording rejection flows, including failure-kind and
@@ -149,6 +154,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
