@@ -483,6 +483,9 @@ static partial class Program
                 "Live pixel format surfaces prefer source subtype over decoded output",
                 LivePixelFormatSurfaces_PreferReaderSourceSubtype),
             await RunCheckAsync(
+                "Stats overlay lifecycle lives in controller",
+                StatsOverlayLifecycle_LivesInController),
+            await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
@@ -2630,6 +2633,32 @@ static partial class Program
         AssertContains(nativeXuText, "Colorimetry = aviInfo.Colorimetry,");
         AssertContains(nativeXuText, "Quantization = aviInfo.Quantization,");
         AssertContains(nativeXuText, "HdrTransferFunction = ResolveHdrTransferFunction(hdrInfo.Eotf),");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task StatsOverlayLifecycle_LivesInController()
+    {
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/StatsOverlayController.cs").Replace("\r\n", "\n");
+
+        AssertContains(statsOverlayText, "private StatsOverlayController _statsOverlayController = null!;");
+        AssertContains(statsOverlayText, "private void InitializeStatsOverlayController()");
+        AssertContains(statsOverlayText, "=> _statsOverlayController.ApplyStatsVisibility(visible, immediate);");
+        AssertContains(statsOverlayText, "=> _statsOverlayController.SetFrameTimeOverlayVisible(visible);");
+        AssertContains(mainWindowText, "InitializeStatsOverlayController();");
+        AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _statsPollTimer;");
+        AssertDoesNotContain(mainWindowText, "private Storyboard? _statsDockStoryboard;");
+        AssertContains(controllerText, "internal sealed class StatsOverlayController");
+        AssertContains(controllerText, "private DispatcherQueueTimer? _statsPollTimer;");
+        AssertContains(controllerText, "private Storyboard? _statsDockStoryboard;");
+        AssertContains(controllerText, "public void ApplyStatsVisibility(bool visible, bool immediate = false)");
+        AssertContains(controllerText, "public void SetFrameTimeOverlayVisible(bool visible)");
+        AssertContains(controllerText, "private Storyboard CreateStatsDockStoryboard(bool showing)");
+        AssertContains(controllerText, "STATS_POLL_TIMER_FAIL");
+        AssertDoesNotContain(statsOverlayText, "private void StatsPollTimer_Tick(");
+        AssertDoesNotContain(statsOverlayText, "private Storyboard CreateStatsDockStoryboard(");
 
         return Task.CompletedTask;
     }

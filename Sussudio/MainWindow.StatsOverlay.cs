@@ -1,33 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.ViewModels;
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Composition;
-using Microsoft.UI.Xaml.Hosting;
-using System.Numerics;
 using Windows.Foundation;
-using WinRT.Interop;
-using Sussudio.Services.Audio;
-using Sussudio.Services.Capture;
-using Sussudio.Services.Flashback;
-using Sussudio.Services.Gpu;
-using Sussudio.Services.Preview;
-using Sussudio.Services.Recording;
-using Sussudio.Services.Runtime;
-using Sussudio.Services.Telemetry;
+using Sussudio.Controllers;
 
 namespace Sussudio;
 
@@ -36,6 +16,23 @@ namespace Sussudio;
 // AutomationDiagnosticsHub and CaptureService.
 public sealed partial class MainWindow
 {
+    private StatsOverlayController _statsOverlayController = null!;
+
+    private void InitializeStatsOverlayController()
+    {
+        _statsOverlayController = new StatsOverlayController(new StatsOverlayControllerContext
+        {
+            DispatcherQueue = _dispatcherQueue,
+            StatsDockPanel = StatsDockPanel,
+            FrameTimeOverlay = FrameTimeOverlay,
+            FrameTimeOverlayToggle = FrameTimeOverlayToggle,
+            GetStatsSnapshot = GetStatsSnapshot,
+            UpdateStatsDock = UpdateStatsDock,
+            UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,
+            Log = message => Logger.Log(message)
+        });
+    }
+
     private void StatsToggle_Checked(object sender, RoutedEventArgs e)
     {
         if (_isWindowClosing)
@@ -50,59 +47,16 @@ public sealed partial class MainWindow
         ViewModel.IsStatsVisible = false;
     }
     private void ApplyStatsVisibility(bool visible, bool immediate = false)
-    {
-        if (visible)
-        {
-            ShowStatsDockPanel();
-            UpdateStatsDock();
-            StartStatsDockPolling();
-            return;
-        }
-
-        if (!IsFrameTimeOverlayVisible())
-        {
-            StopStatsDockPolling();
-        }
-        HideStatsDockPanel(immediate);
-    }
+        => _statsOverlayController.ApplyStatsVisibility(visible, immediate);
 
     private void FrameTimeOverlayToggle_Checked(object sender, RoutedEventArgs e)
-    {
-        SetVisibilityIfChanged(FrameTimeOverlay, Visibility.Visible);
-        StartStatsDockPolling();
-        UpdateFrameTimeOverlay(GetStatsSnapshot());
-    }
+        => _statsOverlayController.SetFrameTimeOverlayVisible(true);
 
     private void FrameTimeOverlayToggle_Unchecked(object sender, RoutedEventArgs e)
-    {
-        SetVisibilityIfChanged(FrameTimeOverlay, Visibility.Collapsed);
-        if (StatsDockPanel.Visibility != Visibility.Visible)
-        {
-            StopStatsDockPolling();
-        }
-    }
+        => _statsOverlayController.SetFrameTimeOverlayVisible(false);
 
     private void SetFrameTimeOverlayVisible(bool visible)
-    {
-        if (FrameTimeOverlayToggle.IsChecked != visible)
-        {
-            FrameTimeOverlayToggle.IsChecked = visible;
-        }
-
-        if (visible)
-        {
-            SetVisibilityIfChanged(FrameTimeOverlay, Visibility.Visible);
-            StartStatsDockPolling();
-            UpdateFrameTimeOverlay(GetStatsSnapshot());
-            return;
-        }
-
-        SetVisibilityIfChanged(FrameTimeOverlay, Visibility.Collapsed);
-        if (StatsDockPanel.Visibility != Visibility.Visible)
-        {
-            StopStatsDockPolling();
-        }
-    }
+        => _statsOverlayController.SetFrameTimeOverlayVisible(visible);
     private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)
     {
         if (sender is not Grid header || header.Tag is not string contentName)
@@ -157,127 +111,17 @@ public sealed partial class MainWindow
         }
     }
     private void StartStatsDockPolling()
-    {
-        _statsPollTimer ??= _dispatcherQueue.CreateTimer();
-        _statsPollTimer.Interval = TimeSpan.FromMilliseconds(500);
-        _statsPollTimer.IsRepeating = true;
-        _statsPollTimer.Tick -= StatsPollTimer_Tick;
-        _statsPollTimer.Tick += StatsPollTimer_Tick;
-        _statsPollTimer.Start();
-    }
+        => _statsOverlayController.StartPolling();
+
     private void StopStatsDockPolling()
-    {
-        if (_statsPollTimer == null)
-        {
-            return;
-        }
+        => _statsOverlayController.StopPolling();
 
-        _statsPollTimer.Stop();
-        _statsPollTimer.Tick -= StatsPollTimer_Tick;
-        _statsPollTimer = null;
-    }
-    private void StatsPollTimer_Tick(DispatcherQueueTimer sender, object args)
-    {
-        try
-        {
-            UpdateStatsDock();
-            if (IsFrameTimeOverlayVisible())
-            {
-                UpdateFrameTimeOverlay(GetStatsSnapshot());
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"STATS_POLL_TIMER_FAIL type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
     private void ShowStatsDockPanel()
-    {
-        EnsureStatsDockAnimations();
-        StopStatsDockAnimation();
-        StatsDockPanel.Width = 0;
-        StatsDockPanel.Opacity = 0;
-        StatsDockPanel.Visibility = Visibility.Visible;
-        _statsDockStoryboard = _showStatsDockStoryboard;
-        _showStatsDockStoryboard?.Begin();
-    }
+        => _statsOverlayController.ShowDockPanel();
+
     private void HideStatsDockPanel(bool immediate = false)
-    {
-        EnsureStatsDockAnimations();
-        StopStatsDockAnimation();
-        if (immediate || StatsDockPanel.Visibility != Visibility.Visible)
-        {
-            StatsDockPanel.Width = 0;
-            StatsDockPanel.Visibility = Visibility.Collapsed;
-            StatsDockPanel.Opacity = 1;
-            return;
-        }
+        => _statsOverlayController.HideDockPanel(immediate);
 
-        _statsDockStoryboard = _hideStatsDockStoryboard;
-        _hideStatsDockStoryboard?.Begin();
-    }
-    private void StopStatsDockAnimation()
-    {
-        _statsDockStoryboard?.Stop();
-        _statsDockStoryboard = null;
-    }
-    private void EnsureStatsDockAnimations()
-    {
-        _showStatsDockStoryboard ??= CreateStatsDockStoryboard(showing: true);
-        _hideStatsDockStoryboard ??= CreateStatsDockStoryboard(showing: false);
-    }
-    private const double StatsDockPanelWidth = 360;
-    private Storyboard CreateStatsDockStoryboard(bool showing)
-    {
-        var durationMs = showing ? 400 : 300;
-        var easing = new CubicEase { EasingMode = showing ? EasingMode.EaseOut : EasingMode.EaseIn };
-        var duration = TimeSpan.FromMilliseconds(durationMs);
-
-        var storyboard = new Storyboard();
-
-        var widthAnim = new DoubleAnimation
-        {
-            To = showing ? StatsDockPanelWidth : 0,
-            Duration = duration,
-            EasingFunction = easing,
-            EnableDependentAnimation = true
-        };
-        Storyboard.SetTarget(widthAnim, StatsDockPanel);
-        Storyboard.SetTargetProperty(widthAnim, "Width");
-
-        var fade = new DoubleAnimation
-        {
-            To = showing ? 1 : 0,
-            Duration = duration,
-            EasingFunction = easing
-        };
-        Storyboard.SetTarget(fade, StatsDockPanel);
-        Storyboard.SetTargetProperty(fade, "Opacity");
-
-        storyboard.Children.Add(widthAnim);
-        storyboard.Children.Add(fade);
-        storyboard.Completed += (_, _) =>
-        {
-            if (!ReferenceEquals(_statsDockStoryboard, storyboard))
-            {
-                return;
-            }
-
-            _statsDockStoryboard = null;
-            if (showing)
-            {
-                StatsDockPanel.Width = StatsDockPanelWidth;
-                StatsDockPanel.Opacity = 1;
-                return;
-            }
-
-            StatsDockPanel.Width = 0;
-            StatsDockPanel.Visibility = Visibility.Collapsed;
-            StatsDockPanel.Opacity = 1;
-        };
-
-        return storyboard;
-    }
     private void UpdateStatsDock()
     {
         if (_isWindowClosing || StatsDockPanel.Visibility != Visibility.Visible)
@@ -464,7 +308,7 @@ public sealed partial class MainWindow
     }
 
     private bool IsFrameTimeOverlayVisible()
-        => FrameTimeOverlay.Visibility == Visibility.Visible;
+        => _statsOverlayController.IsFrameTimeOverlayVisible;
 
     private void UpdateFrameTimeOverlay(StatsSnapshot snapshot)
     {

@@ -43,6 +43,11 @@ Capture session transition legality now lives in
 uses it before entering a transition and delegates steady-state resolution to
 the same pure policy; resource ownership has not moved in this slice.
 
+Stats dock and frame-time overlay lifecycle now live in
+`Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
+still renders metric values and dynamic diagnostic rows, but polling, visibility
+state, and dock animations are out of the shell fields.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
@@ -69,8 +74,9 @@ Remaining `tools/Common` ownership:
 3. Continue converting MainWindow partial concerns into controllers.
 
    `FullScreen`, automation `Screenshot`, and audio meter rendering are
-   extracted. Next candidate is `StatsOverlay`; keep its D3D/NVML dependencies
-   explicit if it moves. Keep XAML bindings stable.
+   extracted. `StatsOverlay` lifecycle is extracted; next UI candidates are
+   preview startup, Flashback timeline UI, and the remaining stats row/snapshot
+   projection. Keep XAML bindings stable.
 
 4. Move MainViewModel feature state behind a facade.
 

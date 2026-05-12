@@ -72,10 +72,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private NvmlMonitor? _nvmlMonitor;
     private SpriteVisual? _videoShadowVisual;
     private SpriteVisual? _controlBarShadowVisual;
-    private DispatcherQueueTimer? _statsPollTimer;
-    private Storyboard? _statsDockStoryboard;
-    private Storyboard? _showStatsDockStoryboard;
-    private Storyboard? _hideStatsDockStoryboard;
     private Storyboard? _micMeterRowStoryboard;
     private Storyboard? _showMicMeterRowStoryboard;
     private Storyboard? _hideMicMeterRowStoryboard;
@@ -324,6 +320,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             _automationPipeName,
             _automationTokenRequired);
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
+        InitializeStatsOverlayController();
 
         // Set window handle for folder picker
         _hwnd = WindowNative.GetWindowHandle(this);

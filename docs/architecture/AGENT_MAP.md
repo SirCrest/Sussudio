@@ -108,14 +108,19 @@ Primary current owners:
   smoothing, timer lifetime, peak/range markers, and meter clip rendering.
   Keep microphone row layout animation in `MainWindow.Bindings.cs` until that
   binding surface is split separately.
+- `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility,
+  frame-time overlay visibility, polling lifetime, and dock show/hide
+  animations. `MainWindow.StatsOverlay.cs` still owns metric text projection,
+  dynamic diagnostic row pools, and snapshot assembly for now.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility.
 
 Refactor direction:
 
 - Keep `MainWindow.xaml.cs` as a shell/composition root over time.
-- Prefer named controllers for fullscreen, preview startup, screenshots, stats
-  overlay, audio meters, and timeline UI.
+- Prefer named controllers for preview startup, remaining stats projection
+  pieces, timeline UI, and other shell behavior that currently lives in
+  partials.
 - Keep `MainViewModel` as a compatibility facade while moving feature state to
   capture, recording, audio, Flashback, diagnostics, and automation adapters.
 
