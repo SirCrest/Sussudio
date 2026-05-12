@@ -2526,11 +2526,11 @@ static partial class Program
     private static Task DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll()
     {
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs");
-        var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs");
+        var automationSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs");
 
         AssertDoesNotContain(diagnosticsHubText, "GetAutomationOptionsSnapshotAsync(cancellationToken)");
         AssertDoesNotContain(diagnosticsHubText, "Options = optionsSnapshot");
-        AssertContains(automationText, "GetAutomationOptionsSnapshotAsync");
+        AssertContains(automationSnapshotText, "GetAutomationOptionsSnapshotAsync");
 
         return Task.CompletedTask;
     }

@@ -245,7 +245,9 @@ Remaining `tools/Common` ownership:
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
    and live runtime text/timer/status/error handling now lives in
    `MainViewModel.Runtime.cs`. Bounded teardown and event unsubscription now live
-   in `MainViewModel.Disposal.cs`.
+   in `MainViewModel.Disposal.cs`. Automation-facing snapshot/probe/options
+   projection now lives in `MainViewModel.AutomationSnapshots.cs`; keep command
+   mutation code in `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.
 

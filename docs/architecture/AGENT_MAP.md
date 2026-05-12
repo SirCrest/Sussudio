@@ -123,6 +123,9 @@ Primary current owners:
   recording bitrate display, capture status/error fan-out, and resume cleanup
   callbacks. `MainViewModel.Disposal.cs` owns bounded teardown, event
   unsubscription, and export-cancellation cleanup.
+  `MainViewModel.AutomationSnapshots.cs` owns automation-facing snapshot,
+  probe, and options projection; keep command mutation code in
+  `MainViewModel.Automation.cs`.
 
 Refactor direction:
 
