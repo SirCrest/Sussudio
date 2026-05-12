@@ -166,6 +166,8 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback
   rejected-export diagnostic scenarios for inactive buffers and active
   Flashback recording backends.
+- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs` owns
+  Flashback recording-settings deferral checks and post-stop preset restore.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs` owns the
   Flashback completed-segment playback scenario and its recording-assisted
   segment-rotation cleanup helper.

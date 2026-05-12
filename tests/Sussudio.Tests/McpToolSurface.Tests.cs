@@ -1322,6 +1322,30 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackRecordingSettingsScenarios_OwnDeferredSettingsFlow()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var settingsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(settingsText, "internal readonly record struct FlashbackRecordingSettingsDeferredPresetState(");
+        AssertContains(settingsText, "internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios");
+        AssertContains(settingsText, "internal static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
+        AssertContains(settingsText, "flashback recording settings deferred preset changed to");
+        AssertContains(settingsText, "RestartFlashback unexpectedly succeeded during recording");
+        AssertContains(settingsText, "SetFlashbackEnabled(false) unexpectedly succeeded during recording");
+        AssertContains(settingsText, "internal static async Task VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(");
+        AssertContains(settingsText, "flashback recording settings deferred post-stop buffer verified");
+        AssertContains(settingsText, "flashback recording settings deferred preset restored to");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackRecordingSettingsScenarios;");
+        AssertDoesNotContain(runnerText, "private static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(");
+        AssertDoesNotContain(runnerText, "private readonly record struct FlashbackRecordingSettingsDeferredPresetState(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackExportScenarios_OwnExportFlows()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")

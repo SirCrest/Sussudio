@@ -707,6 +707,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
@@ -1123,7 +1125,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "const int recordingCleanupTimeoutMs = 300_000;");
         AssertContains(diagnosticSessionText, "SetRecordingEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, recordingCleanupTimeoutMs");
         AssertContains(diagnosticSessionText, "internal static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
-        AssertContains(diagnosticSessionText, "private static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
         AssertContains(diagnosticSessionText, "flashback recording settings deferred post-stop buffer verified");
         AssertContains(diagnosticSessionText, "flashback recording settings deferred preset restored to");
         AssertContains(diagnosticSessionText, "RestartFlashback unexpectedly succeeded during recording");

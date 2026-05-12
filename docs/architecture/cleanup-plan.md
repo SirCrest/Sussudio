@@ -119,6 +119,11 @@ Diagnostic-session Flashback rejected-export scenarios now live in
 buffer and active-recording rejection flows, including failure-kind and
 post-rejection state assertions.
 
+Diagnostic-session Flashback recording-settings deferral now lives in
+`tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`. It owns
+preset mutation rejection during Flashback recording plus post-stop preset
+verification and restore.
+
 Diagnostic-session Flashback segment playback now lives in
 `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`. It owns
 completed-segment playback crossing plus recording-assisted segment rotation,
@@ -162,6 +167,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
+- `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
 - `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
