@@ -140,6 +140,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionJsonArtifacts.cs` owns diagnostic-session JSON
   artifact writing, frame-ledger extraction, and automation response shape
   helpers.
+- `tools/Common/DiagnosticSessionCleanupPolicy.cs` owns cleanup restore
+  validation after diagnostic sessions stop recording, preview, Flashback, or
+  playback state.
 - `tools/Common/DiagnosticSessionMetrics.cs` owns read-only projection from
   diagnostic snapshots into session metrics: source cadence, preview cadence,
   visual cadence, D3D slow-frame summaries, playback command health, and

@@ -67,6 +67,11 @@ Diagnostic-session JSON artifact helpers now live in
 session lifecycle, but JSON writing, frame-ledger extraction, and snapshot /
 verification response extraction have a smaller home.
 
+Diagnostic-session cleanup restore validation now lives in
+`tools/Common/DiagnosticSessionCleanupPolicy.cs`. It owns warnings for preview,
+Flashback, and playback state that remain active after the runner attempts
+cleanup.
+
 Diagnostic-session sampling now lives in
 `tools/Common/DiagnosticSessionSampler.cs`. Keep the sample append before the
 optional checkpoint callback so checkpoint failures cannot orphan an unseen
@@ -112,6 +117,7 @@ emission.
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
+- `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackSegments.cs`

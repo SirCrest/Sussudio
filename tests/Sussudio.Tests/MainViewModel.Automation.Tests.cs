@@ -693,6 +693,8 @@ static partial class Program
 
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs")
@@ -1033,7 +1035,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "queueDropsDelta={result.FlashbackRecordingIntegrityQueueDroppedFramesDelta}");
         AssertContains(diagnosticSessionText, "Flashback video sequence gaps increased delta={metrics.IntegritySequenceGapsDelta}");
         AssertContains(diagnosticSessionText, "Flashback dropped frames increased delta={metrics.IntegrityQueueDroppedFramesDelta}");
-        AssertContains(diagnosticSessionText, "ValidateCleanupLifecycleRestored(");
+        AssertContains(diagnosticSessionText, "internal static void ValidateCleanupLifecycleRestored(");
         AssertContains(diagnosticSessionText, "cleanup: preview remained active after restore");
         AssertContains(diagnosticSessionText, "cleanup: Flashback remained active after restore");
         AssertContains(diagnosticSessionText, "cleanup: playback did not return live state={state}");

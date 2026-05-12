@@ -1117,6 +1117,24 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionCleanupPolicy_OwnsRestoreWarnings()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(cleanupText, "internal static class DiagnosticSessionCleanupPolicy");
+        AssertContains(cleanupText, "internal static void ValidateCleanupLifecycleRestored(");
+        AssertContains(cleanupText, "cleanup: preview remained active after restore");
+        AssertContains(cleanupText, "cleanup: Flashback remained active after restore");
+        AssertContains(cleanupText, "cleanup: playback did not return live state={state}");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;");
+        AssertDoesNotContain(runnerText, "private static void ValidateCleanupLifecycleRestored(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionSampler_OwnsSampleLoopOrdering()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
