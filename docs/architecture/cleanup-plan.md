@@ -72,6 +72,12 @@ Diagnostic-session JSON artifact helpers now live in
 session lifecycle, but JSON writing, frame-ledger extraction, and snapshot /
 verification response extraction have a smaller home.
 
+Diagnostic-session run state now lives in
+`tools/Common/DiagnosticSessionRunState.cs`. It owns last-stage tracking,
+terminal exception classification, `session-live.json` breadcrumbs, and
+best-effort artifact write failure recording while the runner keeps the
+scenario flow readable.
+
 Diagnostic-session background task tracking now lives in
 `tools/Common/DiagnosticSessionBackgroundTasks.cs`. It owns scenario task
 registration, deterministic await/drain order, PresentMon completion, and
@@ -196,6 +202,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionModels.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionResultFormatter.cs`
+- `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionText.cs`

@@ -140,6 +140,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionJsonArtifacts.cs` owns diagnostic-session JSON
   artifact writing, frame-ledger extraction, and automation response shape
   helpers.
+- `tools/Common/DiagnosticSessionRunState.cs` owns diagnostic-session terminal
+  exception state, last-stage tracking, live-state breadcrumbs, and
+  best-effort artifact write failure recording.
 - `tools/Common/DiagnosticSessionBackgroundTasks.cs` owns diagnostic-session
   background task registration, deterministic await/drain order, PresentMon
   task completion, and interrupted-task warning collection.
@@ -220,6 +223,9 @@ Invariants:
 - Preserve diagnostic-session artifact filenames and JSON shapes when moving
   artifact helpers; tests read `summary.json`, `session-live.json`, samples,
   frame ledger, and timeline outputs.
+- Preserve diagnostic-session terminal-state semantics: canceled wins when the
+  caller token is canceled, otherwise terminal exceptions fail and clean runs
+  complete. `session-live.json` is best-effort breadcrumb output.
 - Preserve diagnostic metric projection semantics; these helpers must stay
   read-only over sampled snapshots and must not send automation commands.
 - Preserve Flashback metric projection semantics; this helper should only read

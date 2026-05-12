@@ -75,17 +75,21 @@ public static class DiagnosticSessionRunner
 
         try
         {
-        var livePath = Path.Combine(outputDirectory, "session-live.json");
         var startedUtc = DateTimeOffset.UtcNow;
         var runnerProcessId = Environment.ProcessId;
-        var lastStage = "initializing";
-        var lastSamplingLiveStateUtc = DateTimeOffset.MinValue;
-        Exception? terminalException = null;
-        string? terminalExceptionStage = null;
 
         var actions = new List<string>();
         var warnings = new List<string>();
         var samples = new List<DiagnosticSessionSample>();
+        var runState = new DiagnosticSessionRunState(
+            sessionId,
+            scenario,
+            outputDirectory,
+            startedUtc,
+            runnerProcessId,
+            () => cancellationToken.IsCancellationRequested,
+            warnings);
+        var livePath = runState.LivePath;
         JsonElement? timeline = null;
         JsonElement? verification = null;
         PresentMonProbeResult? presentMon = null;
@@ -535,7 +539,7 @@ public static class DiagnosticSessionRunner
         }
         catch (Exception ex)
         {
-            RecordTerminalException(ex, lastStage);
+            RecordTerminalException(ex, runState.LastStage);
             scenarioCts.Cancel();
             var backgroundTaskDrain = await backgroundTasks.ObserveAfterFaultAsync(
                     warnings,
@@ -1017,7 +1021,7 @@ public static class DiagnosticSessionRunner
             SessionId = sessionId,
             Scenario = scenario,
             Success = commandFailureCount == 0 &&
-                      terminalException is null &&
+                      runState.TerminalException is null &&
                       diagnosticHealthSucceeded &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
@@ -1026,7 +1030,7 @@ public static class DiagnosticSessionRunner
             CompletedUtc = completedUtc,
             TerminalState = terminalState,
             LastStage = GetResultLastStage(),
-            UnhandledException = terminalException is null ? null : FormatTerminalException(terminalException),
+            UnhandledException = runState.TerminalException is null ? null : DiagnosticSessionRunState.FormatTerminalException(runState.TerminalException),
             RunnerProcessId = runnerProcessId,
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
@@ -1233,7 +1237,7 @@ public static class DiagnosticSessionRunner
             result.CompletedUtc = completedUtc;
             result.TerminalState = terminalState;
             result.LastStage = GetResultLastStage();
-            result.UnhandledException = terminalException is null ? null : FormatTerminalException(terminalException);
+            result.UnhandledException = runState.TerminalException is null ? null : DiagnosticSessionRunState.FormatTerminalException(runState.TerminalException);
             result.Warnings = warnings.ToArray();
         }
 
@@ -1247,102 +1251,45 @@ public static class DiagnosticSessionRunner
 
         void SetStage(string stage)
         {
-            lastStage = stage;
+            runState.SetStage(stage);
         }
 
         void RecordTerminalException(Exception ex, string stage)
         {
-            SetStage(stage);
-            if (terminalException is null)
-            {
-                terminalException = ex;
-                terminalExceptionStage = stage;
-            }
-
-            warnings.Add($"{stage}: {FormatTerminalException(ex)}");
-        }
-
-        static string FormatTerminalException(Exception ex)
-        {
-            return string.IsNullOrWhiteSpace(ex.Message)
-                ? ex.GetType().Name
-                : $"{ex.GetType().Name}: {ex.Message}";
+            runState.RecordTerminalException(ex, stage);
         }
 
         string GetTerminalState()
         {
-            if (terminalException is OperationCanceledException || cancellationToken.IsCancellationRequested)
-            {
-                return "canceled";
-            }
-
-            return terminalException is null ? "completed" : "failed";
+            return runState.GetTerminalState();
         }
 
         string GetResultLastStage()
-            => terminalExceptionStage ?? lastStage;
+            => runState.GetResultLastStage();
 
         async Task WriteArtifactBestEffortAsync<T>(string stage, string path, T value)
         {
-            try
-            {
-                SetStage(stage);
-                await WriteJsonAsync(path, value, CancellationToken.None).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                RecordTerminalException(ex, stage);
-            }
+            await runState.WriteArtifactBestEffortAsync(stage, path, value).ConfigureAwait(false);
         }
 
         async Task WriteLiveStateBestEffortAsync(DateTimeOffset? completedUtcOverride = null, string? terminalStateOverride = null)
         {
-            try
-            {
-                var liveHealthSnapshot = samples.Count > 0
-                    ? samples[^1].Snapshot
-                    : initialSnapshot;
-                await WriteJsonAsync(
-                        livePath,
-                        new
-                        {
-                            SessionId = sessionId,
-                            Scenario = scenario,
-                            StartedUtc = startedUtc,
-                            UpdatedUtc = DateTimeOffset.UtcNow,
-                            CompletedUtc = completedUtcOverride,
-                            TerminalState = terminalStateOverride ?? (terminalException is null ? "running" : GetTerminalState()),
-                            LastStage = terminalStateOverride is null ? lastStage : GetResultLastStage(),
-                            RunnerProcessId = runnerProcessId,
-                            OutputDirectory = outputDirectory,
-                            SummaryPath = Path.Combine(outputDirectory, "summary.json"),
-                            SampleCount = samples.Count,
-                            HealthStatus = GetDiagnosticHealthStatus(liveHealthSnapshot),
-                            LikelyStage = GetDiagnosticLikelyStage(liveHealthSnapshot),
-                            CommandFailureCount = commandFailureCount,
-                            WarningCount = warnings.Count,
-                            LastWarning = warnings.Count > 0 ? warnings[^1] : string.Empty,
-                            UnhandledException = terminalException is null ? null : FormatTerminalException(terminalException)
-                        },
-                        CancellationToken.None)
-                    .ConfigureAwait(false);
-            }
-            catch
-            {
-                // The live-state file is diagnostic breadcrumbs only.
-            }
+            await runState.WriteLiveStateBestEffortAsync(
+                    samples,
+                    initialSnapshot,
+                    commandFailureCount,
+                    completedUtcOverride,
+                    terminalStateOverride)
+                .ConfigureAwait(false);
         }
 
         async Task WriteSamplingLiveStateBestEffortAsync()
         {
-            var now = DateTimeOffset.UtcNow;
-            if (now - lastSamplingLiveStateUtc < TimeSpan.FromSeconds(5))
-            {
-                return;
-            }
-
-            lastSamplingLiveStateUtc = now;
-            await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
+            await runState.WriteSamplingLiveStateBestEffortAsync(
+                    samples,
+                    initialSnapshot,
+                    commandFailureCount)
+                .ConfigureAwait(false);
         }
 
         async Task<JsonElement> SendAsync(

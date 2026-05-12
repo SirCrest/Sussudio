@@ -695,6 +695,8 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionRunState.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs")
@@ -755,6 +757,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesFlashbackForceRotateDrainWarning");
         AssertContains(diagnosticSessionText, "scenarioPlan.IsPreviewCycleScenario");
         AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionBackgroundTasks");
+        AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionRunState");
+        AssertContains(diagnosticSessionText, "var runState = new DiagnosticSessionRunState(");
         AssertContains(diagnosticSessionText, "backgroundTasks.AwaitScenarioTasksAsync()");
         AssertContains(diagnosticSessionText, "backgroundTasks.ObserveAfterFaultAsync(");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<string> All { get; }");
@@ -784,7 +788,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "catch (JsonException ex)");
         AssertContains(diagnosticSessionModelsText, "public sealed class DiagnosticSessionResult");
         AssertContains(diagnosticSessionModelsText, "public string TerminalState { get; set; }");
-        AssertContains(diagnosticSessionText, "var livePath = Path.Combine(outputDirectory, \"session-live.json\");");
+        AssertContains(diagnosticSessionText, "var livePath = runState.LivePath;");
         AssertContains(diagnosticSessionText, "var initialSnapshotKnown = false;");
         AssertContains(diagnosticSessionText, "skipped state-mutating scenario");
         AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs))");
@@ -798,7 +802,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, ".WaitAsync(cancellationToken)");
         AssertContains(diagnosticSessionText, "scenarioCts.Cancel();");
         AssertContains(diagnosticSessionText, "WriteSamplingLiveStateBestEffortAsync");
-        AssertContains(diagnosticSessionText, "RecordTerminalException(ex, lastStage);");
+        AssertContains(diagnosticSessionText, "RecordTerminalException(ex, runState.LastStage);");
         AssertContains(diagnosticSessionText, "RecordTerminalException(ex, \"final-snapshot\");");
         AssertContains(diagnosticSessionText, "WriteArtifactBestEffortAsync(\"write-samples\", samplesPath, samples)");
         AssertContains(diagnosticSessionText, "await WriteJsonAsync(summaryPath, result, CancellationToken.None)");

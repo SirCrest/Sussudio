@@ -618,6 +618,9 @@ static partial class Program
                 "Diagnostic session JSON artifacts have a named owner",
                 DiagnosticSessionJsonArtifacts_OwnsArtifactsAndResponseExtraction),
             await RunCheckAsync(
+                "Diagnostic session run state has a named owner",
+                DiagnosticSessionRunState_OwnsTerminalAndLiveState),
+            await RunCheckAsync(
                 "Diagnostic session scenario plan has a named owner",
                 DiagnosticSessionScenarioPlan_OwnsScenarioFlags),
             await RunCheckAsync(
