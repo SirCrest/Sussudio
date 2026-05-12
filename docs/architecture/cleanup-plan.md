@@ -127,8 +127,8 @@ assertions while the runner only starts the lifecycle task.
 
 Diagnostic-session Flashback metric projection now lives in
 `tools/Common/DiagnosticSessionFlashbackMetrics.cs`. It owns snapshot-only
-recording, playback, and export metric projection while the runner retains
-scenario control and validation warning policy.
+recording, playback, playback-result, and export metric projection while the
+runner retains scenario control and validation warning policy.
 
 Diagnostic-session Flashback preview-cycle scenarios now live in
 `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`. They own

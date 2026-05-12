@@ -889,6 +889,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback playback: audio buffered duration exceeded budget");
         AssertContains(diagnosticSessionText, "flashback playback: absolute A/V drift exceeded budget");
         AssertContains(diagnosticSessionText, "BuildFlashbackPlaybackSessionMetrics(initialSnapshot, samples, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "BuildFlashbackPlaybackResultMetrics(playbackSessionMetrics)");
         AssertContains(diagnosticSessionText, "var baselineFrameCount = GetNullableLong(initialSnapshot, \"FlashbackPlaybackFrameCount\") ?? 0;");
         AssertContains(diagnosticSessionText, "frameCount > baselineFrameCount");
         AssertContains(diagnosticSessionText, "commandsProcessed > baselineCommandsProcessed");

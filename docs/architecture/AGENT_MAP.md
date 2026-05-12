@@ -167,7 +167,8 @@ Primary owners:
   Flashback playback disable/re-enable lifecycle diagnostic flow.
 - `tools/Common/DiagnosticSessionFlashbackMetrics.cs` owns read-only
   diagnostic-session Flashback metric projection for recording, playback, and
-  export sessions.
+  export sessions, including the playback result fields copied into
+  `DiagnosticSessionResult`.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` owns
   Flashback diagnostic preview stop/restart flows for normal Flashback,
   playback, and recording-backed scenarios.

@@ -769,68 +769,13 @@ public static class DiagnosticSessionRunner
         var summary = GetString(diagnosticHealthSnapshot, "DiagnosticSummary") ?? string.Empty;
         var evidence = GetString(diagnosticHealthSnapshot, "DiagnosticEvidence") ?? string.Empty;
         var playbackSessionMetrics = BuildFlashbackPlaybackSessionMetrics(initialSnapshot, samples, lastSnapshot);
-        var playbackEndSnapshot = playbackSessionMetrics.EndSnapshot;
-        var playbackPendingAtEnd = playbackSessionMetrics.Observed
-            ? GetInt(playbackEndSnapshot, "FlashbackPlaybackPendingCommands")
-            : 0;
-        var playbackMaxPendingObserved = playbackSessionMetrics.MaxPendingCommandsObserved;
-        var playbackMaxLatencyObserved = playbackSessionMetrics.MaxCommandQueueLatencyMsObserved;
-        var playbackMaxLatencyCommandObserved = playbackSessionMetrics.MaxCommandQueueLatencyCommandObserved;
-        var playbackDroppedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackCommandsDropped") ?? 0 : 0;
-        var playbackSkippedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0 : 0;
-        var playbackScrubCoalescedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackScrubUpdatesCoalesced") ?? 0 : 0;
-        var playbackSeekCoalescedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSeekCommandsCoalesced") ?? 0 : 0;
-        var playbackLastCommandFailureAtEnd = playbackSessionMetrics.Observed ? GetString(playbackEndSnapshot, "FlashbackPlaybackLastCommandFailure") ?? string.Empty : string.Empty;
-        var playbackLastCommandFailureUtcUnixMsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackLastCommandFailureUtcUnixMs") ?? 0 : 0;
-        var playbackObservedFpsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackObservedFps") : 0;
-        var playbackAvgFrameMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackAvgFrameMs") : 0;
-        var playbackP99FrameMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackP99FrameMs") : 0;
-        var playbackMaxFrameMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxFrameMs") : 0;
-        var playbackOnePercentLowFpsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackOnePercentLowFps") : 0;
-        var playbackDecodeAvgMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackDecodeAvgMs") : 0;
-        var playbackDecodeP95MsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackDecodeP95Ms") : 0;
-        var playbackDecodeP99MsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackDecodeP99Ms") : 0;
-        var playbackDecodeMaxMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackDecodeMaxMs") : 0;
-        var playbackMaxDecodePhaseAtEnd = playbackSessionMetrics.Observed ? GetString(playbackEndSnapshot, "FlashbackPlaybackMaxDecodePhase") ?? string.Empty : string.Empty;
-        var playbackMaxDecodeReceiveMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeReceiveMs") : 0;
-        var playbackMaxDecodeFeedMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeFeedMs") : 0;
-        var playbackMaxDecodeReadMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeReadMs") : 0;
-        var playbackMaxDecodeSendMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeSendMs") : 0;
-        var playbackMaxDecodeAudioMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeAudioMs") : 0;
-        var playbackMaxDecodeConvertMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeConvertMs") : 0;
-        var playbackMaxDecodeUtcUnixMsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeUtcUnixMs") ?? 0 : 0;
-        var playbackMaxDecodePositionMsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackMaxDecodePositionMs") ?? 0 : 0;
-        var playbackFrameCountAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackFrameCount") ?? 0 : 0;
-        var playbackLateFramesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackLateFrames") ?? 0 : 0;
-        var playbackSlowFramesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSlowFrames") ?? 0 : 0;
-        var playbackSlowFramePercentAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackSlowFramePercent") : 0;
-        var playbackDroppedFramesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackDroppedFrames") ?? 0 : 0;
-        var playbackAudioMasterDelayDoublesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterDelayDoubles") ?? 0 : 0;
-        var playbackAudioMasterDelayShrinksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterDelayShrinks") ?? 0 : 0;
-        var playbackAudioMasterFallbacksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0 : 0;
-        var playbackAudioMasterUnavailableFallbacksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterUnavailableFallbacks") ?? 0 : 0;
-        var playbackAudioMasterStaleFallbacksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterStaleFallbacks") ?? 0 : 0;
-        var playbackAudioMasterDriftOutlierFallbacksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterDriftOutlierFallbacks") ?? 0 : 0;
-        var playbackAudioMasterLastFallbackReasonAtEnd = playbackSessionMetrics.Observed ? GetString(playbackEndSnapshot, "FlashbackPlaybackAudioMasterLastFallbackReason") ?? string.Empty : string.Empty;
-        var playbackAudioMasterLastFallbackClockAgeMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackAudioMasterLastFallbackClockAgeMs") : 0;
-        var playbackSubmitFailuresAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSubmitFailures") ?? 0 : 0;
-        var playbackSegmentSwitchesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSegmentSwitches") ?? 0 : 0;
-        var playbackFmp4ReopensAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackFmp4Reopens") ?? 0 : 0;
-        var playbackWriteHeadWaitsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackWriteHeadWaits") ?? 0 : 0;
-        var playbackNearLiveSnapsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackNearLiveSnaps") ?? 0 : 0;
-        var playbackDecodeErrorSnapsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackDecodeErrorSnaps") ?? 0 : 0;
-        var playbackLastWriteHeadWaitGapMsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs") ?? 0 : 0;
-        var playbackSeekForwardDecodeCapHitsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSeekForwardDecodeCapHits") ?? 0 : 0;
-        var playbackSeekForwardDecodeCapHitsDelta = playbackSessionMetrics.Observed
-            ? GetCounterDelta(playbackEndSnapshot, initialSnapshot, "FlashbackPlaybackSeekForwardDecodeCapHits")
-            : 0;
-        var playbackLastSeekHitForwardDecodeCapAtEnd = playbackSessionMetrics.Observed &&
-                                                      GetBool(playbackEndSnapshot, "FlashbackPlaybackLastSeekHitForwardDecodeCap");
-        if (playbackSeekForwardDecodeCapHitsDelta > 0)
+        var playbackResultMetrics = BuildFlashbackPlaybackResultMetrics(playbackSessionMetrics);
+        if (playbackResultMetrics.SeekForwardDecodeCapHitsDelta > 0)
         {
             warnings.Add(
                 "flashback playback seek forward-decode cap hit during session " +
-                $"delta={playbackSeekForwardDecodeCapHitsDelta} total={playbackSeekForwardDecodeCapHitsAtEnd}");
+                $"delta={playbackResultMetrics.SeekForwardDecodeCapHitsDelta} " +
+                $"total={playbackResultMetrics.SeekForwardDecodeCapHitsAtEnd}");
         }
         var flashbackExportForceRotateFallbacksAtEnd = GetNullableLong(lastSnapshot, "FlashbackExportForceRotateFallbacks") ?? 0;
         var flashbackExportForceRotateFallbacksDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "FlashbackExportForceRotateFallbacks");
@@ -851,7 +796,7 @@ public static class DiagnosticSessionRunner
         if (runFlashbackPlayback)
         {
             ValidateFlashbackPlaybackSession(
-                playbackSessionMetrics.Observed ? playbackEndSnapshot : lastSnapshot,
+                playbackSessionMetrics.Observed ? playbackResultMetrics.EndSnapshot : lastSnapshot,
                 playbackSessionMetrics,
                 visualCadenceMetrics,
                 durationSeconds,
@@ -1058,22 +1003,22 @@ public static class DiagnosticSessionRunner
             DetectedSourceFrameRateArgAtEnd = GetString(lastSnapshot, "DetectedSourceFrameRateArg") ?? string.Empty,
             SourceIsHdrAtEnd = GetBool(lastSnapshot, "SourceIsHdr"),
             SourceTelemetrySummaryAtEnd = GetString(lastSnapshot, "SourceTelemetrySummaryText") ?? string.Empty,
-            FlashbackPlaybackPendingCommandsAtEnd = playbackPendingAtEnd,
-            FlashbackPlaybackMaxPendingCommandsObserved = playbackMaxPendingObserved,
-            FlashbackPlaybackMaxCommandQueueLatencyMsObserved = playbackMaxLatencyObserved,
-            FlashbackPlaybackMaxCommandQueueLatencyCommandObserved = playbackMaxLatencyCommandObserved,
-            FlashbackPlaybackCommandsDroppedAtEnd = playbackDroppedAtEnd,
-            FlashbackPlaybackCommandsSkippedNotReadyAtEnd = playbackSkippedAtEnd,
-            FlashbackPlaybackScrubUpdatesCoalescedAtEnd = playbackScrubCoalescedAtEnd,
-            FlashbackPlaybackSeekCommandsCoalescedAtEnd = playbackSeekCoalescedAtEnd,
-            FlashbackPlaybackLastCommandFailureAtEnd = playbackLastCommandFailureAtEnd,
-            FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd = playbackLastCommandFailureUtcUnixMsAtEnd,
-            FlashbackPlaybackObservedFpsAtEnd = playbackObservedFpsAtEnd,
+            FlashbackPlaybackPendingCommandsAtEnd = playbackResultMetrics.PendingCommandsAtEnd,
+            FlashbackPlaybackMaxPendingCommandsObserved = playbackResultMetrics.MaxPendingCommandsObserved,
+            FlashbackPlaybackMaxCommandQueueLatencyMsObserved = playbackResultMetrics.MaxCommandQueueLatencyMsObserved,
+            FlashbackPlaybackMaxCommandQueueLatencyCommandObserved = playbackResultMetrics.MaxCommandQueueLatencyCommandObserved,
+            FlashbackPlaybackCommandsDroppedAtEnd = playbackResultMetrics.CommandsDroppedAtEnd,
+            FlashbackPlaybackCommandsSkippedNotReadyAtEnd = playbackResultMetrics.CommandsSkippedNotReadyAtEnd,
+            FlashbackPlaybackScrubUpdatesCoalescedAtEnd = playbackResultMetrics.ScrubUpdatesCoalescedAtEnd,
+            FlashbackPlaybackSeekCommandsCoalescedAtEnd = playbackResultMetrics.SeekCommandsCoalescedAtEnd,
+            FlashbackPlaybackLastCommandFailureAtEnd = playbackResultMetrics.LastCommandFailureAtEnd,
+            FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd = playbackResultMetrics.LastCommandFailureUtcUnixMsAtEnd,
+            FlashbackPlaybackObservedFpsAtEnd = playbackResultMetrics.ObservedFpsAtEnd,
             FlashbackPlaybackMinObservedFpsObserved = playbackSessionMetrics.MinObservedFpsObserved,
-            FlashbackPlaybackAvgFrameMsAtEnd = playbackAvgFrameMsAtEnd,
-            FlashbackPlaybackP99FrameMsAtEnd = playbackP99FrameMsAtEnd,
-            FlashbackPlaybackMaxFrameMsAtEnd = playbackMaxFrameMsAtEnd,
-            FlashbackPlaybackOnePercentLowFpsAtEnd = playbackOnePercentLowFpsAtEnd,
+            FlashbackPlaybackAvgFrameMsAtEnd = playbackResultMetrics.AvgFrameMsAtEnd,
+            FlashbackPlaybackP99FrameMsAtEnd = playbackResultMetrics.P99FrameMsAtEnd,
+            FlashbackPlaybackMaxFrameMsAtEnd = playbackResultMetrics.MaxFrameMsAtEnd,
+            FlashbackPlaybackOnePercentLowFpsAtEnd = playbackResultMetrics.OnePercentLowFpsAtEnd,
             FlashbackPlaybackMinOnePercentLowFpsObserved = playbackSessionMetrics.MinOnePercentLowFpsObserved,
             FlashbackPlaybackOnePercentLowSampleWindowObserved = playbackSessionMetrics.OnePercentLowSampleWindowObserved,
             FlashbackPlaybackOnePercentLowMinimumFrames = playbackSessionMetrics.MinimumOnePercentLowFrameCount,
@@ -1089,19 +1034,19 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackMaxP99FrameMsObserved = playbackSessionMetrics.MaxP99FrameMsObserved,
             FlashbackPlaybackMaxFrameMsObserved = playbackSessionMetrics.MaxFrameMsObserved,
             FlashbackPlaybackMaxSlowFramePercentObserved = playbackSessionMetrics.MaxSlowFramePercentObserved,
-            FlashbackPlaybackDecodeAvgMsAtEnd = playbackDecodeAvgMsAtEnd,
-            FlashbackPlaybackDecodeP95MsAtEnd = playbackDecodeP95MsAtEnd,
-            FlashbackPlaybackDecodeP99MsAtEnd = playbackDecodeP99MsAtEnd,
-            FlashbackPlaybackDecodeMaxMsAtEnd = playbackDecodeMaxMsAtEnd,
-            FlashbackPlaybackMaxDecodePhaseAtEnd = playbackMaxDecodePhaseAtEnd,
-            FlashbackPlaybackMaxDecodeReceiveMsAtEnd = playbackMaxDecodeReceiveMsAtEnd,
-            FlashbackPlaybackMaxDecodeFeedMsAtEnd = playbackMaxDecodeFeedMsAtEnd,
-            FlashbackPlaybackMaxDecodeReadMsAtEnd = playbackMaxDecodeReadMsAtEnd,
-            FlashbackPlaybackMaxDecodeSendMsAtEnd = playbackMaxDecodeSendMsAtEnd,
-            FlashbackPlaybackMaxDecodeAudioMsAtEnd = playbackMaxDecodeAudioMsAtEnd,
-            FlashbackPlaybackMaxDecodeConvertMsAtEnd = playbackMaxDecodeConvertMsAtEnd,
-            FlashbackPlaybackMaxDecodeUtcUnixMsAtEnd = playbackMaxDecodeUtcUnixMsAtEnd,
-            FlashbackPlaybackMaxDecodePositionMsAtEnd = playbackMaxDecodePositionMsAtEnd,
+            FlashbackPlaybackDecodeAvgMsAtEnd = playbackResultMetrics.DecodeAvgMsAtEnd,
+            FlashbackPlaybackDecodeP95MsAtEnd = playbackResultMetrics.DecodeP95MsAtEnd,
+            FlashbackPlaybackDecodeP99MsAtEnd = playbackResultMetrics.DecodeP99MsAtEnd,
+            FlashbackPlaybackDecodeMaxMsAtEnd = playbackResultMetrics.DecodeMaxMsAtEnd,
+            FlashbackPlaybackMaxDecodePhaseAtEnd = playbackResultMetrics.MaxDecodePhaseAtEnd,
+            FlashbackPlaybackMaxDecodeReceiveMsAtEnd = playbackResultMetrics.MaxDecodeReceiveMsAtEnd,
+            FlashbackPlaybackMaxDecodeFeedMsAtEnd = playbackResultMetrics.MaxDecodeFeedMsAtEnd,
+            FlashbackPlaybackMaxDecodeReadMsAtEnd = playbackResultMetrics.MaxDecodeReadMsAtEnd,
+            FlashbackPlaybackMaxDecodeSendMsAtEnd = playbackResultMetrics.MaxDecodeSendMsAtEnd,
+            FlashbackPlaybackMaxDecodeAudioMsAtEnd = playbackResultMetrics.MaxDecodeAudioMsAtEnd,
+            FlashbackPlaybackMaxDecodeConvertMsAtEnd = playbackResultMetrics.MaxDecodeConvertMsAtEnd,
+            FlashbackPlaybackMaxDecodeUtcUnixMsAtEnd = playbackResultMetrics.MaxDecodeUtcUnixMsAtEnd,
+            FlashbackPlaybackMaxDecodePositionMsAtEnd = playbackResultMetrics.MaxDecodePositionMsAtEnd,
             FlashbackPlaybackMaxDecodeP99MsObserved = playbackSessionMetrics.MaxDecodeP99MsObserved,
             FlashbackPlaybackMaxDecodeMsObserved = playbackSessionMetrics.MaxDecodeMsObserved,
             FlashbackPlaybackMaxDecodePhaseObserved = playbackSessionMetrics.MaxDecodePhaseObserved,
@@ -1113,37 +1058,37 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackMaxDecodeConvertMsObserved = playbackSessionMetrics.MaxDecodeConvertMsObserved,
             FlashbackPlaybackMaxDecodeUtcUnixMsObserved = playbackSessionMetrics.MaxDecodeUtcUnixMsObserved,
             FlashbackPlaybackMaxDecodePositionMsObserved = playbackSessionMetrics.MaxDecodePositionMsObserved,
-            FlashbackPlaybackFrameCountAtEnd = playbackFrameCountAtEnd,
-            FlashbackPlaybackLateFramesAtEnd = playbackLateFramesAtEnd,
-            FlashbackPlaybackSlowFramesAtEnd = playbackSlowFramesAtEnd,
-            FlashbackPlaybackSlowFramePercentAtEnd = playbackSlowFramePercentAtEnd,
-            FlashbackPlaybackDroppedFramesAtEnd = playbackDroppedFramesAtEnd,
+            FlashbackPlaybackFrameCountAtEnd = playbackResultMetrics.FrameCountAtEnd,
+            FlashbackPlaybackLateFramesAtEnd = playbackResultMetrics.LateFramesAtEnd,
+            FlashbackPlaybackSlowFramesAtEnd = playbackResultMetrics.SlowFramesAtEnd,
+            FlashbackPlaybackSlowFramePercentAtEnd = playbackResultMetrics.SlowFramePercentAtEnd,
+            FlashbackPlaybackDroppedFramesAtEnd = playbackResultMetrics.DroppedFramesAtEnd,
             FlashbackPlaybackDroppedFramesDelta = playbackSessionMetrics.DroppedFramesDelta,
-            FlashbackPlaybackAudioMasterDelayDoublesAtEnd = playbackAudioMasterDelayDoublesAtEnd,
-            FlashbackPlaybackAudioMasterDelayShrinksAtEnd = playbackAudioMasterDelayShrinksAtEnd,
-            FlashbackPlaybackAudioMasterFallbacksAtEnd = playbackAudioMasterFallbacksAtEnd,
-            FlashbackPlaybackAudioMasterUnavailableFallbacksAtEnd = playbackAudioMasterUnavailableFallbacksAtEnd,
-            FlashbackPlaybackAudioMasterStaleFallbacksAtEnd = playbackAudioMasterStaleFallbacksAtEnd,
-            FlashbackPlaybackAudioMasterDriftOutlierFallbacksAtEnd = playbackAudioMasterDriftOutlierFallbacksAtEnd,
-            FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd = playbackAudioMasterLastFallbackReasonAtEnd,
-            FlashbackPlaybackAudioMasterLastFallbackClockAgeMsAtEnd = playbackAudioMasterLastFallbackClockAgeMsAtEnd,
+            FlashbackPlaybackAudioMasterDelayDoublesAtEnd = playbackResultMetrics.AudioMasterDelayDoublesAtEnd,
+            FlashbackPlaybackAudioMasterDelayShrinksAtEnd = playbackResultMetrics.AudioMasterDelayShrinksAtEnd,
+            FlashbackPlaybackAudioMasterFallbacksAtEnd = playbackResultMetrics.AudioMasterFallbacksAtEnd,
+            FlashbackPlaybackAudioMasterUnavailableFallbacksAtEnd = playbackResultMetrics.AudioMasterUnavailableFallbacksAtEnd,
+            FlashbackPlaybackAudioMasterStaleFallbacksAtEnd = playbackResultMetrics.AudioMasterStaleFallbacksAtEnd,
+            FlashbackPlaybackAudioMasterDriftOutlierFallbacksAtEnd = playbackResultMetrics.AudioMasterDriftOutlierFallbacksAtEnd,
+            FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd = playbackResultMetrics.AudioMasterLastFallbackReasonAtEnd,
+            FlashbackPlaybackAudioMasterLastFallbackClockAgeMsAtEnd = playbackResultMetrics.AudioMasterLastFallbackClockAgeMsAtEnd,
             FlashbackPlaybackMaxAudioMasterDelayDoublesObserved = playbackSessionMetrics.MaxAudioMasterDelayDoublesObserved,
             FlashbackPlaybackMaxAudioMasterDelayShrinksObserved = playbackSessionMetrics.MaxAudioMasterDelayShrinksObserved,
             FlashbackPlaybackMaxAudioMasterFallbacksObserved = playbackSessionMetrics.MaxAudioMasterFallbacksObserved,
             FlashbackPlaybackMaxAudioBufferedDurationMsObserved = playbackSessionMetrics.MaxAudioBufferedDurationMsObserved,
             FlashbackPlaybackMaxAudioQueueDurationMsObserved = playbackSessionMetrics.MaxAudioQueueDurationMsObserved,
             FlashbackPlaybackMaxAbsAvDriftMsObserved = playbackSessionMetrics.MaxAbsAvDriftMsObserved,
-            FlashbackPlaybackSubmitFailuresAtEnd = playbackSubmitFailuresAtEnd,
+            FlashbackPlaybackSubmitFailuresAtEnd = playbackResultMetrics.SubmitFailuresAtEnd,
             FlashbackPlaybackSubmitFailuresDelta = playbackSessionMetrics.SubmitFailuresDelta,
-            FlashbackPlaybackSegmentSwitchesAtEnd = playbackSegmentSwitchesAtEnd,
-            FlashbackPlaybackFmp4ReopensAtEnd = playbackFmp4ReopensAtEnd,
-            FlashbackPlaybackWriteHeadWaitsAtEnd = playbackWriteHeadWaitsAtEnd,
-            FlashbackPlaybackNearLiveSnapsAtEnd = playbackNearLiveSnapsAtEnd,
-            FlashbackPlaybackDecodeErrorSnapsAtEnd = playbackDecodeErrorSnapsAtEnd,
-            FlashbackPlaybackLastWriteHeadWaitGapMsAtEnd = playbackLastWriteHeadWaitGapMsAtEnd,
-            FlashbackPlaybackSeekForwardDecodeCapHitsAtEnd = playbackSeekForwardDecodeCapHitsAtEnd,
-            FlashbackPlaybackSeekForwardDecodeCapHitsDelta = playbackSeekForwardDecodeCapHitsDelta,
-            FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd = playbackLastSeekHitForwardDecodeCapAtEnd,
+            FlashbackPlaybackSegmentSwitchesAtEnd = playbackResultMetrics.SegmentSwitchesAtEnd,
+            FlashbackPlaybackFmp4ReopensAtEnd = playbackResultMetrics.Fmp4ReopensAtEnd,
+            FlashbackPlaybackWriteHeadWaitsAtEnd = playbackResultMetrics.WriteHeadWaitsAtEnd,
+            FlashbackPlaybackNearLiveSnapsAtEnd = playbackResultMetrics.NearLiveSnapsAtEnd,
+            FlashbackPlaybackDecodeErrorSnapsAtEnd = playbackResultMetrics.DecodeErrorSnapsAtEnd,
+            FlashbackPlaybackLastWriteHeadWaitGapMsAtEnd = playbackResultMetrics.LastWriteHeadWaitGapMsAtEnd,
+            FlashbackPlaybackSeekForwardDecodeCapHitsAtEnd = playbackResultMetrics.SeekForwardDecodeCapHitsAtEnd,
+            FlashbackPlaybackSeekForwardDecodeCapHitsDelta = playbackResultMetrics.SeekForwardDecodeCapHitsDelta,
+            FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd = playbackResultMetrics.LastSeekHitForwardDecodeCapAtEnd,
             FlashbackRecordingBackendObserved = recordingMetrics.BackendObserved,
             FlashbackRecordingFileGrowthObserved = recordingMetrics.FileGrowthObserved,
             FlashbackRecordingVideoFramesSubmittedDelta = recordingMetrics.VideoFramesSubmittedDelta,
