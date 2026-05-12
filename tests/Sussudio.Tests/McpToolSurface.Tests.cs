@@ -1295,12 +1295,17 @@ static partial class Program
         AssertContains(stressText, "internal const long FlashbackStressAudioUnavailableFallbackAllowance = 4;");
         AssertContains(stressText, "internal const int FlashbackScrubStressMaxPlaybackPendingCommands = 20;");
         AssertContains(stressText, "internal static async Task RunFlashbackStressAsync(");
+        AssertContains(stressText, "internal static async Task RunFlashbackScrubStressAsync(");
         AssertContains(stressText, "WaitForFlashbackStressBufferReadyAsync(");
+        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
+        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
+        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = positions[^1] }");
         AssertContains(stressText, "CreateFlashbackExportVerifyPayload(exportPath)");
         AssertContains(stressText, "internal static string? ClassifyFlashbackStressAudioMasterFallbackWarning(");
         AssertContains(stressText, "\"flashback stress: audio-master harmful fallbacks increased during warmed playback \"");
         AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackStressScenario;");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackStressAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackScrubStressAsync(");
         AssertDoesNotContain(runnerText, "private static string? ClassifyFlashbackStressAudioMasterFallbackWarning(");
         AssertDoesNotContain(runnerText, "private const int FlashbackStressMaxPlaybackPendingCommands = 4;");
 

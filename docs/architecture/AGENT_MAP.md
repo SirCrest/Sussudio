@@ -159,8 +159,9 @@ Primary owners:
   playable-boundary headroom waits. Do not add state-mutating scenario steps
   there.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns the
-  Flashback stress command sequence, playback-command thresholds, and
-  audio-master fallback classifier shared by stress diagnostics.
+  Flashback stress and scrub-stress command sequences, playback-command
+  thresholds, and audio-master fallback classifier shared by stress
+  diagnostics.
 - `tools/Common/DiagnosticSessionFlashbackWaits.cs` owns read-only snapshot
   polling waits used by Flashback diagnostic scenarios, including playback
   state, playback warmup, preview active, Flashback active, and Flashback

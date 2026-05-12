@@ -1048,7 +1048,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyMsObserved = maxCommandQueueLatencyMs;");
         AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyCommandObserved = GetString(snapshot, \"FlashbackPlaybackMaxCommandQueueLatencyCommand\") ?? string.Empty;");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackStressAsync(");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackScrubStressAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackScrubStressAsync(");
         AssertContains(diagnosticSessionText, "flashback scrub stress begin requested");
         AssertContains(diagnosticSessionText, "flashback scrub stress update burst requested");
         AssertContains(diagnosticSessionText, "flashback scrub stress end requested");

@@ -110,9 +110,9 @@ and recording-ready checks while the runner keeps scenario command sequencing.
 
 Diagnostic-session Flashback stress orchestration now lives in
 `tools/Common/DiagnosticSessionFlashbackStressScenario.cs`. It owns the stress
-command sequence, playback-command thresholds, warm-playback budget, and
-audio-master fallback classification while the runner only starts the scenario
-task.
+and scrub-stress command sequences, playback-command thresholds,
+warm-playback budget, and audio-master fallback classification while the runner
+only starts the scenario tasks.
 
 Diagnostic-session Flashback validation now lives in
 `tools/Common/DiagnosticSessionFlashbackValidation.cs`. It owns recording,
