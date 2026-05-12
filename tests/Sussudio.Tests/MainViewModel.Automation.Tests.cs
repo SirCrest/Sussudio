@@ -716,6 +716,8 @@ static partial class Program
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionSampler.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionText.cs")
                 .Replace("\r\n", "\n");
         var diagnosticSessionModelsText = ReadRepoFile("tools/Common/DiagnosticSessionModels.cs")
             .Replace("\r\n", "\n");

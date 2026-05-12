@@ -609,6 +609,9 @@ static partial class Program
                 "Diagnostic session result formatting has a named owner",
                 DiagnosticSessionResultFormatter_OwnsFormattedSummaryText),
             await RunCheckAsync(
+                "Diagnostic session shared text helpers have a named owner",
+                DiagnosticSessionText_OwnsSharedFormattingHelpers),
+            await RunCheckAsync(
                 "Diagnostic session pipe retry policy has a named owner",
                 DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification),
             await RunCheckAsync(

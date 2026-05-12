@@ -2,6 +2,7 @@ using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
+using static Sussudio.Tools.DiagnosticSessionText;
 
 namespace Sussudio.Tools;
 
@@ -177,8 +178,4 @@ internal static class DiagnosticSessionFlashbackValidation
         }
     }
 
-    private static string FormatOptional(string value)
-    {
-        return string.IsNullOrWhiteSpace(value) ? "none" : value;
-    }
 }

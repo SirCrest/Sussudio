@@ -1076,6 +1076,30 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionText_OwnsSharedFormattingHelpers()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var formatterText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
+            .Replace("\r\n", "\n");
+        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
+            .Replace("\r\n", "\n");
+        var textHelpersText = ReadRepoFile("tools/Common/DiagnosticSessionText.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(textHelpersText, "internal static class DiagnosticSessionText");
+        AssertContains(textHelpersText, "internal static string FormatOptional(string value)");
+        AssertContains(textHelpersText, "string.IsNullOrWhiteSpace(value) ? \"none\" : value");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionText;");
+        AssertContains(formatterText, "using static Sussudio.Tools.DiagnosticSessionText;");
+        AssertContains(validationText, "using static Sussudio.Tools.DiagnosticSessionText;");
+        AssertDoesNotContain(runnerText, "private static string FormatOptional(");
+        AssertDoesNotContain(formatterText, "private static string FormatOptional(");
+        AssertDoesNotContain(validationText, "private static string FormatOptional(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")

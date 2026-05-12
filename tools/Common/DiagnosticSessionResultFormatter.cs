@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
+using static Sussudio.Tools.DiagnosticSessionText;
 
 namespace Sussudio.Tools;
 
@@ -243,11 +244,6 @@ public static class DiagnosticSessionResultFormatter
         }
 
         return builder.ToString().TrimEnd();
-    }
-
-    private static string FormatOptional(string value)
-    {
-        return string.IsNullOrWhiteSpace(value) ? "none" : value;
     }
 
     private static string FormatFrameRate(double fps, string friendlyFps, string exactArg)

@@ -174,6 +174,8 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultFormatter.cs` owns the human-readable
   diagnostic-session text used by ssctl and MCP. Keep
   `DiagnosticSessionRunner.Format(...)` as the stable compatibility wrapper.
+- `tools/Common/DiagnosticSessionText.cs` owns shared diagnostic-session text
+  helpers used by the runner, formatter, and validation policies.
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
   connect retry classification and local failure-response envelopes.
 

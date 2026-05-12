@@ -58,6 +58,11 @@ Diagnostic-session result text now lives in
 `Format(...)` as a compatibility wrapper so existing ssctl and MCP callers do
 not need to know about the formatter owner.
 
+Shared diagnostic-session text helpers now live in
+`tools/Common/DiagnosticSessionText.cs`. Keep cross-cutting string helpers
+there instead of reintroducing private duplicates in the runner, formatter, or
+validation policy files.
+
 Diagnostic-session pipe retry/error classification now lives in
 `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a
 permanent failure and connect failed/timeout responses retryable.
@@ -130,6 +135,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionSampler.cs`
+- `DiagnosticSessionText.cs`
 - `DiagnosticSessionRunner.cs`
 - `AutomationSnapshotFormatter.cs`
 - `AutomationResponseState.cs`

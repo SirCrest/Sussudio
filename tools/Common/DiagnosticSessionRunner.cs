@@ -13,6 +13,7 @@ using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
 using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;
 using static Sussudio.Tools.DiagnosticSessionSampler;
+using static Sussudio.Tools.DiagnosticSessionText;
 
 namespace Sussudio.Tools;
 
@@ -3892,11 +3893,6 @@ public static class DiagnosticSessionRunner
         {
             warnings.Add("flashback lifecycle: Flashback did not report active after re-enable");
         }
-    }
-
-    private static string FormatOptional(string value)
-    {
-        return string.IsNullOrWhiteSpace(value) ? "none" : value;
     }
 
     private static bool IsPreviewCycleScenario(
