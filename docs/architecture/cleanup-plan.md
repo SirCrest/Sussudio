@@ -9,7 +9,7 @@ capture, preview, recording, Flashback, or automation behavior by vibes alone.
 Performance and runtime semantics stay primary; file layout changes must earn
 their keep with smaller ownership boundaries and passing checks.
 
-## Current Slice
+## Completed Slices
 
 Automation contracts have been extracted into `Sussudio.Automation.Contracts/`.
 This removes the old linked-source arrangement where app and tools compiled
@@ -22,6 +22,14 @@ Changed ownership:
 - `AutomationPipeProtocol.cs`
 - `AutomationPipeSecurityPolicy.cs`
 
+Diagnostic session scenario names and scenario-level metadata now live in
+`tools/Common/DiagnosticSessionScenarios.cs`; the runner still owns execution
+flow and summary writing.
+
+Fullscreen transition mechanics now live in
+`Sussudio/Controllers/FullScreenController.cs`. `MainWindow.FullScreen.cs`
+remains the XAML event adapter and Flashback keyboard/scrub bridge.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
@@ -33,12 +41,11 @@ Remaining `tools/Common` ownership:
 
 ## Next Slices
 
-1. Split diagnostic-session runner by scenario family.
+1. Continue splitting diagnostic-session runner by scenario family.
 
-   `tools/Common/DiagnosticSessionRunner.cs` is currently the largest source
-   file in the repo. Extract a scenario catalog first, then move preview,
-   recording, Flashback, and cleanup scenarios behind small runner classes.
-   Keep JSON summary shape unchanged.
+   `tools/Common/DiagnosticSessionRunner.cs` is still large. Scenario catalog
+   ownership is extracted; next, move preview, recording, Flashback, and cleanup
+   scenarios behind small runner classes. Keep JSON summary shape unchanged.
 
 2. Reduce custom regression harness size.
 
@@ -53,11 +60,11 @@ Remaining `tools/Common` ownership:
    validate legal transitions only; it should not touch Media Foundation,
    D3D11, WASAPI, FFmpeg, or Flashback resources.
 
-4. Convert MainWindow partial concerns into controllers.
+4. Continue converting MainWindow partial concerns into controllers.
 
-   Start with `FullScreen`, `StatsOverlay`, `AudioMeter`, and `Screenshot`
-   because they are easier to isolate than preview startup and close/recording
-   lifecycle. Keep XAML bindings stable.
+   `FullScreen` is extracted. Next candidates are `StatsOverlay`, `AudioMeter`,
+   and `Screenshot` because they are easier to isolate than preview startup and
+   close/recording lifecycle. Keep XAML bindings stable.
 
 5. Move MainViewModel feature state behind a facade.
 

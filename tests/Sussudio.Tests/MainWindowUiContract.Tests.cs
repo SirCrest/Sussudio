@@ -117,17 +117,23 @@ static partial class Program
     {
         var fullScreenSource = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs")
             .Replace("\r\n", "\n");
+        var fullScreenControllerSource = ReadRepoFile("Sussudio/Controllers/FullScreenController.cs")
+            .Replace("\r\n", "\n");
         var windowManagementSource = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(fullScreenSource, "public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => InvokeOnUiThreadAsync(\n            enabled ? EnterFullScreenAsync : ExitFullScreenAsync,");
-        AssertContains(fullScreenSource, "private async Task EnterFullScreenAsync()");
-        AssertContains(fullScreenSource, "private async Task ExitFullScreenAsync()");
-        AssertContains(fullScreenSource, "await AnimateFullScreenRectAsync(");
-        AssertContains(fullScreenSource, "private Task AnimateFullScreenRectAsync(");
-        AssertContains(fullScreenSource, "return completion.Task;");
+        AssertContains(fullScreenSource, "public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => InvokeOnUiThreadAsync(\n            () => _fullScreenController.SetEnabledAsync(enabled),");
+        AssertContains(fullScreenSource, "private Task EnterFullScreenAsync()\n        => _fullScreenController.EnterAsync();");
+        AssertContains(fullScreenSource, "private Task ExitFullScreenAsync()\n        => _fullScreenController.ExitAsync();");
+        AssertContains(fullScreenControllerSource, "internal sealed class FullScreenController");
+        AssertContains(fullScreenControllerSource, "public async Task EnterAsync()");
+        AssertContains(fullScreenControllerSource, "public async Task ExitAsync()");
+        AssertContains(fullScreenControllerSource, "await AnimateFullScreenRectAsync(");
+        AssertContains(fullScreenControllerSource, "private Task AnimateFullScreenRectAsync(");
+        AssertContains(fullScreenControllerSource, "return completion.Task;");
         AssertDoesNotContain(fullScreenSource, "private async void EnterFullScreen");
         AssertDoesNotContain(fullScreenSource, "private async void ExitFullScreen");
+        AssertDoesNotContain(fullScreenControllerSource, "async void");
         AssertContains(windowManagementSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
         AssertContains(windowManagementSource, "await action().ConfigureAwait(true);");
         AssertDoesNotContain(windowManagementSource, "registration.Dispose();\n                registration = default;\n\n                if (cancellationToken.IsCancellationRequested)");

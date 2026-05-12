@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Tools;
 using Sussudio.ViewModels;
+using Sussudio.Controllers;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -34,7 +35,7 @@ using Sussudio.Services.Telemetry;
 namespace Sussudio;
 
 // Main window composition root. This partial owns construction and service
-// wiring; feature-specific UI behavior lives in the sibling MainWindow.* files.
+// wiring; feature-specific UI behavior lives in sibling partials/controllers.
 public sealed partial class MainWindow : Window, IAutomationWindowControl
 {
     private enum PreviewStartupState
@@ -149,19 +150,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private TimeSpan? _lastScrubPointerPosition;
     private bool _suppressFlashbackTimelineToggle;
     private bool _suppressFlashbackEnabledToggle;
-    private bool _isFullScreen;
-    private bool _isFullScreenTransitioning;
-    private Windows.Graphics.RectInt32 _preFullScreenBounds;
-    private Windows.Graphics.PointInt32 _preFullScreenPosition;
-    private bool _preFullScreenSettingsVisible;
-    private bool _preFullScreenStatsDockVisible;
-    private bool _fullScreenControlsVisible;
-    private DispatcherQueueTimer? _fullScreenAutoHideTimer;
-    private bool _fullScreenPointerOverControls;
-    private Brush? _preFullScreenControlBarBackground;
-    private Brush? _preFullScreenFlashbackTimelineBackground;
-    private const int FullScreenAutoHideDelayMs = 3000;
-    private const double FullScreenHotZoneHeight = 150;
+    private FullScreenController _fullScreenController = null!;
     private bool _captureSettingsNarrow;
     private const double ControlBarLabelThreshold = 900.0;
     private const int MinWindowWidth = 900;
@@ -402,8 +391,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         // ESC key exits fullscreen
         ((FrameworkElement)Content).KeyDown += OnContentKeyDown;
 
+        InitializeFullScreenController();
+
         // Fullscreen overlay: show controls when mouse enters bottom hot zone
-        ElementCompositionPreview.SetIsTranslationEnabled(FullScreenControlsOverlay, true);
         ((UIElement)Content).PointerMoved += OnFullScreenPointerActivity;
         FullScreenControlsOverlay.PointerEntered += OnFullScreenControlsPointerEntered;
         FullScreenControlsOverlay.PointerExited += OnFullScreenControlsPointerExited;

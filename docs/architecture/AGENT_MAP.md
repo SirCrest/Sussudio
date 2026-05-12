@@ -93,6 +93,10 @@ Primary current owners:
 
 - `Sussudio/MainWindow.*.cs` for shell, renderer, fullscreen, screenshots,
   animations, and window lifecycle.
+- `Sussudio/Controllers/FullScreenController.cs` owns fullscreen transition
+  state, overlay reparenting, button state, and auto-hide timer behavior. Keep
+  `MainWindow.FullScreen.cs` as the XAML-facing adapter and Flashback shortcut
+  bridge.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility.
 
