@@ -14,7 +14,7 @@ folder.
 
 | Area | Current large files | Preferred next owner |
 |------|---------------------|----------------------|
-| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog plus per-scenario runners |
+| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Snapshots.cs` | transition state machine, snapshot builder, resource managers |
 | Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` | diagnostic collectors and evaluation policies |
@@ -136,6 +136,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionModels.cs` owns diagnostic session options,
   result, and sample DTOs. Keep summary/live JSON shape changes there rather
   than expanding the runner header.
+- `tools/Common/DiagnosticSessionResultFormatter.cs` owns the human-readable
+  diagnostic-session text used by ssctl and MCP. Keep
+  `DiagnosticSessionRunner.Format(...)` as the stable compatibility wrapper.
 
 Invariants:
 
@@ -145,6 +148,8 @@ Invariants:
   shorter client defaults.
 - Diagnostic sessions are evidence surfaces; preserve summary JSON stability
   when refactoring runners.
+- Preserve result text compatibility when refactoring diagnostic-session
+  formatting; ssctl and MCP both flow through `DiagnosticSessionRunner.Format`.
 - Add new diagnostic-session scenario names in
   `tools/Common/DiagnosticSessionScenarios.cs` before wiring scenario behavior
   into `DiagnosticSessionRunner`.

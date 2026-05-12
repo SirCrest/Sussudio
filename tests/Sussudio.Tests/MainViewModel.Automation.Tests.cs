@@ -692,7 +692,9 @@ static partial class Program
         AssertContains(sourceReaderText, "lock (_cadenceLock)");
 
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
+                .Replace("\r\n", "\n");
         var diagnosticSessionModelsText = ReadRepoFile("tools/Common/DiagnosticSessionModels.cs")
             .Replace("\r\n", "\n");
         var diagnosticScenariosText = ReadRepoFile("tools/Common/DiagnosticSessionScenarios.cs")

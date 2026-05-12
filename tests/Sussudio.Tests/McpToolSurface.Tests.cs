@@ -1032,6 +1032,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionResultFormatter_OwnsFormattedSummaryText()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var formatterText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(formatterText, "public static class DiagnosticSessionResultFormatter");
+        AssertContains(formatterText, "public static string Format(DiagnosticSessionResult result)");
+        AssertContains(formatterText, "== Diagnostic Session:");
+        AssertContains(formatterText, "\"Flashback Playback Perf: \"");
+        AssertContains(formatterText, "private static string FormatFrameRate(");
+        AssertContains(runnerText, "return DiagnosticSessionResultFormatter.Format(result);");
+        AssertDoesNotContain(runnerText, "== Diagnostic Session:");
+        AssertDoesNotContain(runnerText, "\"Flashback Playback Perf: \"");
+        AssertDoesNotContain(runnerText, "private static string FormatFrameRate(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));

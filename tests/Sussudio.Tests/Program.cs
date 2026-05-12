@@ -606,6 +606,9 @@ static partial class Program
                 "Diagnostic session model ownership is split from runner behavior",
                 DiagnosticSessionModels_AreSplitFromRunnerBehavior),
             await RunCheckAsync(
+                "Diagnostic session result formatting has a named owner",
+                DiagnosticSessionResultFormatter_OwnsFormattedSummaryText),
+            await RunCheckAsync(
                 "Diagnostic session runner verifies flashback export during playback",
                 DiagnosticSessionRunner_VerifiesFlashbackExportPlaybackCommandFlow),
             await RunCheckAsync(

@@ -53,10 +53,16 @@ Diagnostic session DTOs now live in
 owns orchestration and scenario execution, but the public options/result/sample
 contracts are separated from runner behavior.
 
+Diagnostic-session result text now lives in
+`tools/Common/DiagnosticSessionResultFormatter.cs`. The runner keeps
+`Format(...)` as a compatibility wrapper so existing ssctl and MCP callers do
+not need to know about the formatter owner.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
 - `DiagnosticSessionModels.cs`
+- `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionRunner.cs`
 - `AutomationSnapshotFormatter.cs`
 - `AutomationResponseState.cs`
