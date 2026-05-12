@@ -615,6 +615,9 @@ static partial class Program
                 "Diagnostic session JSON artifacts have a named owner",
                 DiagnosticSessionJsonArtifacts_OwnsArtifactsAndResponseExtraction),
             await RunCheckAsync(
+                "Diagnostic session sampler has a named owner",
+                DiagnosticSessionSampler_OwnsSampleLoopOrdering),
+            await RunCheckAsync(
                 "Diagnostic session runner verifies flashback export during playback",
                 DiagnosticSessionRunner_VerifiesFlashbackExportPlaybackCommandFlow),
             await RunCheckAsync(

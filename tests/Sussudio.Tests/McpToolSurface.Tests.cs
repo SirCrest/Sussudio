@@ -1093,6 +1093,25 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionSampler_OwnsSampleLoopOrdering()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var samplerText = ReadRepoFile("tools/Common/DiagnosticSessionSampler.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(samplerText, "internal static class DiagnosticSessionSampler");
+        AssertContains(samplerText, "internal static async Task SampleLoopAsync(");
+        AssertContains(samplerText, "var response = await sendCommandAsync(\"GetSnapshot\", null, null)");
+        AssertContains(samplerText, "samples.Add(new DiagnosticSessionSample");
+        AssertContains(samplerText, "await sampleCheckpointAsync().ConfigureAwait(false);");
+        AssertOccursBefore(samplerText, "samples.Add(new DiagnosticSessionSample", "await sampleCheckpointAsync().ConfigureAwait(false);");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionSampler;");
+        AssertDoesNotContain(runnerText, "private static async Task SampleLoopAsync(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));

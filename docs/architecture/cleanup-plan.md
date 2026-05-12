@@ -67,6 +67,11 @@ Diagnostic-session JSON artifact helpers now live in
 session lifecycle, but JSON writing, frame-ledger extraction, and snapshot /
 verification response extraction have a smaller home.
 
+Diagnostic-session sampling now lives in
+`tools/Common/DiagnosticSessionSampler.cs`. Keep the sample append before the
+optional checkpoint callback so checkpoint failures cannot orphan an unseen
+sample.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
@@ -74,6 +79,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionModels.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionResultFormatter.cs`
+- `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionRunner.cs`
 - `AutomationSnapshotFormatter.cs`
 - `AutomationResponseState.cs`

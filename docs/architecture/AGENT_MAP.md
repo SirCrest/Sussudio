@@ -140,6 +140,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionJsonArtifacts.cs` owns diagnostic-session JSON
   artifact writing, frame-ledger extraction, and automation response shape
   helpers.
+- `tools/Common/DiagnosticSessionSampler.cs` owns snapshot sample collection.
+  Preserve its ordering: append the cloned sample before running checkpoint
+  callbacks.
 - `tools/Common/DiagnosticSessionResultFormatter.cs` owns the human-readable
   diagnostic-session text used by ssctl and MCP. Keep
   `DiagnosticSessionRunner.Format(...)` as the stable compatibility wrapper.
@@ -157,6 +160,8 @@ Invariants:
 - Preserve diagnostic-session artifact filenames and JSON shapes when moving
   artifact helpers; tests read `summary.json`, `session-live.json`, samples,
   frame ledger, and timeline outputs.
+- Preserve sampler checkpoint ordering; checkpoint callbacks are allowed to
+  observe the sample that was just appended.
 - Preserve result text compatibility when refactoring diagnostic-session
   formatting; ssctl and MCP both flow through `DiagnosticSessionRunner.Format`.
 - Preserve pipe error-code semantics when refactoring diagnostic-session retry:
