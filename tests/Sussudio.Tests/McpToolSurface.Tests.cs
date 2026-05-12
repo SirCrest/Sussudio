@@ -1159,6 +1159,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackCycleScenarios_OwnCycleFlows()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var cyclesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(cyclesText, "internal static class DiagnosticSessionFlashbackCycleScenarios");
+        AssertContains(cyclesText, "internal static async Task RunFlashbackRestartCycleAsync(");
+        AssertContains(cyclesText, "\"RestartFlashback\"");
+        AssertContains(cyclesText, "\"flashback-restart-cycle-export.mp4\"");
+        AssertContains(cyclesText, "flashback restart cycle export verified");
+        AssertContains(cyclesText, "internal static async Task RunFlashbackEncoderCycleAsync(");
+        AssertContains(cyclesText, "var cycledPreset = string.Equals(originalPreset, \"P1\", StringComparison.OrdinalIgnoreCase) ? \"P2\" : \"P1\";");
+        AssertContains(cyclesText, "\"flashback-encoder-cycle-export.mp4\"");
+        AssertContains(cyclesText, "flashback encoder preset restored to");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackCycleScenarios;");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRestartCycleAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackEncoderCycleAsync(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionSampler_OwnsSampleLoopOrdering()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")

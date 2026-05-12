@@ -695,6 +695,8 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs")
@@ -1057,9 +1059,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback scrub stress: playback did not settle live with an empty queue within 10s");
         AssertDoesNotContain(diagnosticSessionText, "flashback scrub stress: playback worker still alive after drain wait");
         AssertContains(diagnosticSessionText, "GetString(lastSnapshot, \"FlashbackPlaybackState\")");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRestartCycleAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRestartCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback restart cycle export verified");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackEncoderCycleAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackEncoderCycleAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-encoder-cycle-export.mp4\"");
         AssertContains(diagnosticSessionText, "flashback encoder preset restored to");
         AssertContains(diagnosticSessionText, "flashback encoder cycle export verified");

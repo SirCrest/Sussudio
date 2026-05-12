@@ -77,6 +77,11 @@ Diagnostic-session cleanup restore validation now lives in
 Flashback, and playback state that remain active after the runner attempts
 cleanup.
 
+Diagnostic-session Flashback cycle scenarios now live in
+`tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs`. They own the
+restart-cycle and encoder-cycle command flows, export verification, and preset
+restoration while the runner only starts the scenario tasks.
+
 Diagnostic-session sampling now lives in
 `tools/Common/DiagnosticSessionSampler.cs`. Keep the sample append before the
 optional checkpoint callback so checkpoint failures cannot orphan an unseen
@@ -129,6 +134,7 @@ Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
 - `DiagnosticSessionCleanupPolicy.cs`
+- `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackSegments.cs`

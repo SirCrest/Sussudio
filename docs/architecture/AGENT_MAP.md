@@ -143,6 +143,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionCleanupPolicy.cs` owns cleanup restore
   validation after diagnostic sessions stop recording, preview, Flashback, or
   playback state.
+- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback
+  diagnostic restart-cycle and encoder-cycle command flows, including export
+  verification and preset restoration.
 - `tools/Common/DiagnosticSessionMetrics.cs` owns read-only projection from
   diagnostic snapshots into session metrics: source cadence, preview cadence,
   visual cadence, D3D slow-frame summaries, playback command health, and
