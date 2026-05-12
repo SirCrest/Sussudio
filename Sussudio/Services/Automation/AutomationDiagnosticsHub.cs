@@ -372,8 +372,46 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         }
 
         _disposed = true;
-        StopAsync().GetAwaiter().GetResult();
-        _currentProcess.Dispose();
+
+        // Never block the UI thread on a Task that may itself need the UI thread
+        // to make progress (StopAsync awaits items that may have dispatched back).
+        // Task.Run breaks the ambient SynchronizationContext so StopAsync can
+        // complete without re-entering a captured UI dispatcher.  The budget is
+        // 12 s: StopAsync has two consecutive 5 s Task.WhenAny waits internally
+        // (loopTask + autoVerificationTask), so 12 s covers both with margin.
+        // Callers that need deterministic teardown should call DisposeAsync.
+        var stoppedCleanly = false;
+        try
+        {
+            var stop = Task.Run(() => StopAsync());
+            if (stop.Wait(TimeSpan.FromSeconds(12)))
+            {
+                stoppedCleanly = true;
+            }
+            else
+            {
+                Logger.Log("DIAGHUB_DISPOSE_TIMEOUT msg='StopAsync did not complete within 12 s; abandoning'");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"DIAGHUB_DISPOSE_FAULT type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+
+        if (stoppedCleanly)
+        {
+            _currentProcess.Dispose();
+        }
+        else
+        {
+            // StopAsync did not complete within the budget; the abandoned RunLoopAsync
+            // may still call _currentProcess.Refresh() / WorkingSet64. Disposing the
+            // handle here would race with those reads and produce ObjectDisposedException
+            // churn on the loop thread. Skip the dispose; the kernel reclaims the
+            // process handle when the host process exits (Dispose is only invoked from
+            // teardown paths, so the leak is bounded).
+            Logger.Log("DIAGHUB_DISPOSE_SKIPPED_PROCESS_HANDLE reason=stop_timeout");
+        }
     }
 
     public async ValueTask DisposeAsync()

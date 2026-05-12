@@ -1368,7 +1368,10 @@ static partial class Program
 
         AssertContains(captureServiceText, "Unified video recording stop failed");
         AssertContains(captureServiceText, "FinalizeResult.Failure(fallbackOutputPath, $\"Unified video recording stop failed: {ex.Message}\");");
-        AssertContains(captureServiceText, "var sinkResult = await sink.StopAsync(cancellationToken).ConfigureAwait(false);");
+        // Fix #12: sink dispatch became a ternary so the emergency flag can route to libAvSink.StopAsync(emergency, ct).
+        AssertContains(captureServiceText, "var sinkResult = libAvSink != null");
+        AssertContains(captureServiceText, "? await libAvSink.StopAsync(emergency, cancellationToken).ConfigureAwait(false)");
+        AssertContains(captureServiceText, ": await sink.StopAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(captureServiceText, "if (result.Succeeded)\n                {\n                    result = sinkResult;");
 
         return Task.CompletedTask;
@@ -1475,7 +1478,9 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(captureText, "internal Task StopRecordingForEmergencyAsync");
-        AssertContains(captureText, "=> _sessionCoordinator.StopRecordingAsync(cancellationToken);");
+        // Fix #12: emergency stop now routes through the coordinator's emergency-flagged path
+        // so LibAvRecordingSink applies EmergencyStopTimeoutMs (5s) instead of StopTimeoutMs (30s).
+        AssertContains(captureText, "=> _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);");
         AssertContains(appText, "var task = viewModel.StopRecordingForEmergencyAsync();");
         AssertContains(appText, "if (e.IsTerminating || !recoverable)");
         AssertDoesNotContain(appText, "Task.Run(async () =>");

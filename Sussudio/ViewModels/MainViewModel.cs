@@ -4,11 +4,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Sussudio.Models;
 using Microsoft.UI.Dispatching;
+using Microsoft.Win32;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
@@ -497,6 +499,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.StatusChanged += OnCaptureStatusChanged;
         _captureService.ErrorOccurred += OnCaptureError;
         _captureService.PreCleanupRequested += OnCapturePreCleanupRequested;
+
+        // Subscribe to system power events to recover capture after sleep/hibernate
+        // resume. SystemEvents.PowerModeChanged is the standard .NET desktop API for
+        // S3/S4 wake notifications — Microsoft.Windows.System.Power.PowerManager has
+        // no Resuming event (only battery/display/effective-power-mode changes), so
+        // this is the only managed surface that delivers the wake signal we need.
+        // The event fires on a system thread-pool thread; the handler dispatches the
+        // actual reinit to the UI thread via EnqueueUiOperation.
+        SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;
         _captureService.FrameCaptured += OnFrameCaptured;
         _captureService.AudioLevelUpdated += OnAudioLevelUpdated;
         _captureService.MicrophoneAudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
@@ -846,10 +857,63 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
             UpdateLiveCaptureInfo(runtimeSnapshot);
             UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
+
+            // AUDCLNT_E_DEVICE_INVALIDATED (0x88890004) arrives when the audio
+            // engine is reset independently of a full system suspend — e.g. monitor
+            // power-off, USB hot-unplug, or wake events that don't trigger
+            // PowerManager.SystemResuming. Trigger a full rebind so the user does
+            // not have to manually re-pick the device. The IsRecording guard inside
+            // ReinitializeDeviceAsync (fix #1) prevents this path from running
+            // mid-recording; EnqueueUiOperation serializes with any in-flight
+            // PowerManager-triggered reinit from OnSystemResuming.
+            unchecked
+            {
+                const int AudclntDeviceInvalidated = (int)0x88890004;
+                if (ex is COMException comEx &&
+                    comEx.HResult == AudclntDeviceInvalidated &&
+                    IsPreviewing &&
+                    !IsRecording)
+                {
+                    Logger.Log("AUDCLNT_E_DEVICE_INVALIDATED received — scheduling audio rebind.");
+                    EnqueueUiOperation(
+                        () => ReinitializeDeviceAsync("audio device invalidated"),
+                        "audio device invalidated reinit");
+                }
+            }
         }))
         {
             Logger.Log($"CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
         }
+    }
+
+    // PowerModeChanged fires on the system thread pool — must not touch UI properties
+    // directly. We act only on PowerModes.Resume; Suspend/StatusChange are ignored
+    // (Suspend arrives just before the OS freezes the process so there's nothing
+    // useful to do, and StatusChange fires on AC/battery transitions which don't
+    // affect capture). All UI-state reads happen inside the EnqueueUiOperation
+    // lambda, which executes on the DispatcherQueue thread. ReinitializeDeviceAsync's
+    // IsRecording guard (fix #1) keeps this safe to call regardless of state.
+    private void OnSystemPowerModeChanged(object? sender, PowerModeChangedEventArgs e)
+    {
+        if (e.Mode != PowerModes.Resume)
+        {
+            return;
+        }
+
+        Logger.Log("SYSTEM_RESUMING_EVENT received — scheduling capture rebind if previewing.");
+        EnqueueUiOperation(() =>
+        {
+            if (!IsPreviewing || !IsInitialized || IsRecording)
+            {
+                Logger.Log(
+                    $"SYSTEM_RESUMING_REINIT_SKIP previewing={IsPreviewing} " +
+                    $"initialized={IsInitialized} recording={IsRecording}");
+                return Task.CompletedTask;
+            }
+
+            Logger.Log("SYSTEM_RESUMING_REINIT_SCHEDULED");
+            return ReinitializeDeviceAsync("system resume");
+        }, "system resume reinit");
     }
 
     private void OnCapturePreCleanupRequested()
@@ -1367,6 +1431,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _deviceAudioRefreshCts?.Cancel();
         _timer?.Stop();
         _deviceService.FormatProbeCompleted -= OnDeviceFormatProbeCompleted;
+        SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;
         _captureService.StatusChanged -= OnCaptureStatusChanged;
         _captureService.ErrorOccurred -= OnCaptureError;
         _captureService.PreCleanupRequested -= OnCapturePreCleanupRequested;

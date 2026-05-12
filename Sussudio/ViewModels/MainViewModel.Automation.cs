@@ -1272,18 +1272,36 @@ public partial class MainViewModel
         var request = await InvokeOnUiThreadAsync(
             () => (
                 IsRecording,
+                CurrentMicEnabled: IsMicrophoneEnabled,
                 DeviceId: SelectedMicrophoneDevice?.Id,
                 DeviceName: SelectedMicrophoneDevice?.Name),
             cancellationToken).ConfigureAwait(false);
 
-        if (!request.IsRecording)
+        if (request.IsRecording)
         {
-            await _sessionCoordinator.UpdateMicrophoneMonitorAsync(
-                enabled,
-                request.DeviceId,
-                request.DeviceName,
-                cancellationToken).ConfigureAwait(false);
+            if (enabled == request.CurrentMicEnabled)
+            {
+                // Idempotent reassertion during recording: automation clients often
+                // re-issue desired state. The mic wiring is already where the caller
+                // wants it, so succeed as a no-op rather than throwing — the failure
+                // shape would break otherwise-safe scripts for no functional reason.
+                Logger.Log($"MIC_TOGGLE_NOOP reason=recording_active_idempotent requested={enabled}");
+                return;
+            }
+
+            // Real state transition while recording: refuse. UpdateMicrophoneMonitorAsync
+            // cannot rewire the device mid-recording, so setting IsMicrophoneEnabled
+            // here would leave UI state lying about the actual device wiring.
+            Logger.Log($"MIC_TOGGLE_REFUSED reason=recording_active requested={enabled} current={request.CurrentMicEnabled}");
+            throw new InvalidOperationException(
+                "Cannot change microphone enable state while recording. Stop the recording first.");
         }
+
+        await _sessionCoordinator.UpdateMicrophoneMonitorAsync(
+            enabled,
+            request.DeviceId,
+            request.DeviceName,
+            cancellationToken).ConfigureAwait(false);
 
         await InvokeOnUiThreadAsync(
             () =>

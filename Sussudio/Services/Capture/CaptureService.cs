@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -330,9 +331,17 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     /// <summary>
     /// Updates encoding-related fields in the active capture settings so that
     /// <see cref="RestartFlashbackAsync"/> picks up the latest bitrate/quality/preset.
+    /// Must only be called from within a <see cref="RunTransitionAsync"/> delegate
+    /// (i.e. with <c>_sessionTransitionLock</c> held) to prevent concurrent UI toggles
+    /// from tearing <c>_currentSettings</c> between the snapshot and the encoder rebuild.
     /// </summary>
-    // REVIEWED 2026-04-07: same threading rationale as UpdateFlashbackSettings above.
-    public void UpdateEncodingSettings(CaptureSettings source)
+    // REVIEWED 2026-05-11: method is private; the only call site is RestartFlashbackAsync(settings),
+    // which already executes inside RunTransitionAsync and therefore holds _sessionTransitionLock.
+    // Making this public (as it was before) allowed any caller to bypass the transition gate and
+    // race with concurrent flashback restarts — the root cause of the rapid-settings segment-purge
+    // data loss (Gate 4 #1, Gate 2 §551/§553). SemaphoreSlim is not re-entrant, so we must NOT
+    // acquire the lock here; callers are responsible for holding it (enforced by private access).
+    private void UpdateEncodingSettings(CaptureSettings source)
     {
         if (_currentSettings == null) return;
         _currentSettings.Format = source.Format;
@@ -2919,6 +2928,23 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     private void BeginFlashbackBackendCleanup(Exception ex)
     {
+        // Centralised TDR guard: if the triggering exception is a GPU device-loss
+        // (DXGI_ERROR_DEVICE_REMOVED / _HUNG / _RESET), preserve flashback segments
+        // BEFORE entering the async cleanup task. This mirrors the sibling pattern at
+        // buffer_cycle_failed / recording_finalize_failed, which both call
+        // PreserveRecoverySegments before invoking BeginFlashbackBackendCleanup.
+        // PreserveRecoverySegments is idempotent (sets a bool flag), so the
+        // double-call from buffer_cycle_failed is harmless. The flag causes
+        // ResolveSegmentPurge (inside DisposeFlashbackPreviewBackendAsync) to
+        // short-circuit the purge regardless of the purgeSegments argument, and
+        // MarkSessionPreservedForRecovery suppresses Directory.Delete in
+        // FlashbackBufferManager.Dispose so segment files survive on disk.
+        if (IsGpuDeviceLost(ex))
+        {
+            _flashbackBackend.PreserveRecoverySegments("device_lost");
+            Logger.Log($"FLASHBACK_BACKEND_FATAL_DEVICE_LOST type={ex.GetType().Name} preserving_segments=true");
+        }
+
         if (Volatile.Read(ref _fatalCleanupInProgress) != 0 ||
             Interlocked.Exchange(ref _flashbackCleanupInProgress, 1) != 0)
         {
@@ -2962,6 +2988,42 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 Interlocked.Exchange(ref _flashbackCleanupInProgress, 0);
             }
         });
+    }
+
+    /// <summary>
+    /// Returns true when <paramref name="ex"/> represents a GPU device-removed /
+    /// hung / reset condition (TDR). In these cases the flashback rolling buffer
+    /// (CPU-resident file data, independent of GPU state) is intact and must NOT
+    /// be purged during backend cleanup.
+    ///
+    /// Covers one level of <see cref="AggregateException"/> unwrap, matching
+    /// <c>App.IsRecoverableUnhandled</c>. Deeper unwrap is a separate policy
+    /// decision tracked as a deferred follow-up so both classifiers move together.
+    ///
+    /// DEVICE_HUNG (0x887A0006) is included alongside DEVICE_REMOVED and
+    /// DEVICE_RESET because a hung GPU is treated by the driver as a TDR reset:
+    /// the OS kills and recreates the device, leaving buffer data intact.
+    /// AUDCLNT_E_DEVICE_INVALIDATED and MF_E_* are intentionally excluded —
+    /// they are not GPU TDR events and would not flow through this path.
+    /// </summary>
+    private static bool IsGpuDeviceLost(Exception ex)
+    {
+        if (ex is AggregateException agg && agg.InnerExceptions.Count == 1 && agg.InnerException is not null)
+        {
+            ex = agg.InnerException;
+        }
+
+        if (ex is COMException com)
+        {
+            unchecked
+            {
+                return com.HResult == (int)0x887A0005   // DXGI_ERROR_DEVICE_REMOVED
+                    || com.HResult == (int)0x887A0006   // DXGI_ERROR_DEVICE_HUNG
+                    || com.HResult == (int)0x887A0007;  // DXGI_ERROR_DEVICE_RESET
+            }
+        }
+
+        return false;
     }
 
     public SourceSignalTelemetrySnapshot GetLatestSourceTelemetrySnapshot() => _latestSourceTelemetry;
@@ -4380,7 +4442,15 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
         }, cancellationToken);
 
+    // Public path used by normal recording-stop (UI Stop button, automation StopRecording).
     public Task StopRecordingAsync(CancellationToken cancellationToken = default)
+        => StopRecordingAsync(emergency: false, cancellationToken);
+
+    // Internal overload used by CaptureSessionCoordinator.StopRecordingForEmergencyAsync.
+    // Threads `emergency` through StopAndDisposeRecordingBackendAsync to LibAvRecordingSink
+    // so the sink applies EmergencyStopTimeoutMs (5s) instead of StopTimeoutMs (30s) — fits
+    // inside App.TryEmergencyStopRecording's 8s wrapper (fix #12).
+    internal Task StopRecordingAsync(bool emergency, CancellationToken cancellationToken = default)
         => RunTransitionAsync(CaptureSessionState.Ready, async transitionToken =>
         {
             if (!_isRecording && _recordingSink == null && _libavSink == null)
@@ -4388,7 +4458,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 return;
             }
 
-            var result = await StopAndDisposeRecordingBackendAsync("Stopped", transitionToken).ConfigureAwait(false);
+            var result = await StopAndDisposeRecordingBackendAsync("Stopped", emergency, transitionToken).ConfigureAwait(false);
             // Preview continues running on the active source-reader/WASAPI sessions - no resume needed.
             StatusChanged?.Invoke(this, result.StatusMessage);
             if (!result.Succeeded)
@@ -4628,6 +4698,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 var result = await StopAndDisposeRecordingBackendAsync(
                     "Stopped during cleanup",
+                    emergency: false,
                     transitionToken).ConfigureAwait(false);
                 if (!result.Succeeded)
                 {
@@ -4734,7 +4805,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(string fallbackStatusMessage, CancellationToken cancellationToken)
+    private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(string fallbackStatusMessage, bool emergency, CancellationToken cancellationToken)
     {
         // --- Unified flashback recording path: remux from .ts, cycle buffer ---
         if (IsFlashbackRecordingBackendActive())
@@ -4978,7 +5049,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             try
             {
-                var sinkResult = await sink.StopAsync(cancellationToken).ConfigureAwait(false);
+                // Use the typed LibAvRecordingSink reference (when available) so the
+                // emergency flag can select EmergencyStopTimeoutMs (5s) vs the public
+                // StopAsync's 30s budget. The plain IRecordingSink overload is the
+                // fallback for non-LibAv sinks (unused in practice but kept for safety).
+                var sinkResult = libAvSink != null
+                    ? await libAvSink.StopAsync(emergency, cancellationToken).ConfigureAwait(false)
+                    : await sink.StopAsync(cancellationToken).ConfigureAwait(false);
                 if (result.Succeeded)
                 {
                     result = sinkResult;

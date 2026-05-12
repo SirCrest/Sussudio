@@ -271,7 +271,7 @@ public partial class MainViewModel
         => InvokeOnUiThreadAsync(() => StopRecordingAndWaitOnUiThreadAsync(cancellationToken), cancellationToken);
 
     internal Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
-        => _sessionCoordinator.StopRecordingAsync(cancellationToken);
+        => _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);
 
     private Task StopRecordingAndWaitOnUiThreadAsync(CancellationToken cancellationToken)
         => SetRecordingDesiredStateOnUiThreadAsync(enabled: false, cancellationToken);
