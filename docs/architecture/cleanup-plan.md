@@ -48,6 +48,13 @@ Stats dock and frame-time overlay lifecycle now live in
 still renders metric values and dynamic diagnostic rows, but polling, visibility
 state, and dock animations are out of the shell fields.
 
+Flashback timeline visibility, lockout, toggle synchronization, and show/hide
+animation state now live in
+`Sussudio/Controllers/FlashbackTimelineController.cs`.
+`MainWindow.FlashbackTimeline.cs` is the XAML-facing adapter; scrub/playback
+commands and CTI rendering remain in `MainWindow.Flashback.cs` for later
+slices.
+
 Diagnostic session DTOs now live in
 `tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
 owns orchestration and scenario execution, but the public options/result/sample

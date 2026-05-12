@@ -140,13 +140,6 @@ public sealed partial class MainWindow
         return ViewModel.IsFlashbackEnabled && ViewModel.IsFlashbackTimelineVisible;
     }
 
-    private void ResetFlashbackTimelineAnimationForFullScreen()
-    {
-        _flashbackTimelineStoryboard?.Stop();
-        _flashbackTimelineStoryboard = null;
-        _isFlashbackTimelineAnimating = false;
-    }
-
     private void EndFlashbackScrubForFullScreen()
     {
         if (!_isFlashbackScrubbing)

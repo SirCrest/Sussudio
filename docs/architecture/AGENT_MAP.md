@@ -112,6 +112,11 @@ Primary current owners:
   frame-time overlay visibility, polling lifetime, and dock show/hide
   animations. `MainWindow.StatsOverlay.cs` still owns metric text projection,
   dynamic diagnostic row pools, and snapshot assembly for now.
+- `Sussudio/Controllers/FlashbackTimelineController.cs` owns Flashback
+  timeline visibility, lockout, toggle synchronization, and show/hide
+  animation state. `MainWindow.FlashbackTimeline.cs` is the XAML-facing
+  adapter; keep scrub/playback commands and CTI rendering in
+  `MainWindow.Flashback.cs` until those concerns are split separately.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets

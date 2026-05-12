@@ -600,6 +600,10 @@ static partial class Program
     {
         var flashbackWindowText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
+        var flashbackTimelineText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs")
+            .Replace("\r\n", "\n");
+        var flashbackTimelineControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackTimelineController.cs")
+            .Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
@@ -609,24 +613,35 @@ static partial class Program
         var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(mainWindowText, "private bool _suppressFlashbackTimelineToggle;");
         AssertContains(mainWindowText, "private bool _suppressFlashbackEnabledToggle;");
-        AssertContains(mainWindowText, "private Storyboard? _flashbackTimelineStoryboard;");
+        AssertContains(mainWindowText, "InitializeFlashbackTimelineController();");
         AssertContains(viewModelText, "partial void OnIsFlashbackEnabledChanged(bool value)");
         AssertContains(viewModelText, "IsFlashbackTimelineVisible = false;");
         AssertContains(bindingsText, "FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;");
         AssertContains(bindingsText, "ApplyFlashbackTimelineLockout();");
         AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackEnabled):\n                ApplyFlashbackTimelineLockout();");
         AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):\n                ApplyFlashbackTimelineVisibility(ViewModel.IsFlashbackTimelineVisible);");
-        AssertContains(flashbackWindowText, "if (!ViewModel.IsFlashbackEnabled)\n        {\n            ApplyFlashbackTimelineLockout();\n            return;\n        }");
-        AssertContains(flashbackWindowText, "ViewModel.IsFlashbackTimelineVisible = true;");
-        AssertContains(flashbackWindowText, "ViewModel.IsFlashbackTimelineVisible = false;");
-        AssertContains(flashbackWindowText, "private void ApplyFlashbackTimelineLockout()");
-        AssertContains(flashbackWindowText, "FlashbackToggle.IsEnabled = flashbackEnabled;");
-        AssertContains(flashbackWindowText, "FlashbackTimelinePanel.IsHitTestVisible = flashbackEnabled;");
-        AssertContains(flashbackWindowText, "SyncFlashbackTimelineToggle(isVisible: false);");
-        AssertContains(flashbackWindowText, "CollapseFlashbackTimelineImmediately();");
-        AssertContains(flashbackWindowText, "_flashbackTimelineStoryboard?.Stop();");
+        AssertContains(flashbackTimelineText, "private FlashbackTimelineController _flashbackTimelineController = null!;");
+        AssertContains(flashbackTimelineText, "FlashbackToggle = FlashbackToggle,");
+        AssertContains(flashbackTimelineText, "FlashbackTimelinePanel = FlashbackTimelinePanel,");
+        AssertContains(flashbackTimelineText, "SnapPlayheadOnNextOpen = () => _snapFlashbackPlayheadOnNextUpdate = true,");
+        AssertContains(flashbackTimelineText, "ClearScrubInteraction = ClearFlashbackScrubInteractionForLockout,");
+        AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.OnToggleChecked();");
+        AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.ApplyLockout();");
+        AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.ResetAnimationForFullScreen();");
+        AssertContains(flashbackTimelineText, "_isFlashbackScrubbing = false;");
+        AssertContains(flashbackTimelineControllerText, "internal sealed class FlashbackTimelineController");
+        AssertContains(flashbackTimelineControllerText, "private Storyboard? _timelineStoryboard;");
+        AssertContains(flashbackTimelineControllerText, "private bool _suppressToggle;");
+        AssertContains(flashbackTimelineControllerText, "if (!_context.ViewModel.IsFlashbackEnabled)\n        {\n            ApplyLockout();\n            return;\n        }");
+        AssertContains(flashbackTimelineControllerText, "_context.ViewModel.IsFlashbackTimelineVisible = true;");
+        AssertContains(flashbackTimelineControllerText, "_context.ViewModel.IsFlashbackTimelineVisible = false;");
+        AssertContains(flashbackTimelineControllerText, "_context.FlashbackToggle.IsEnabled = flashbackEnabled;");
+        AssertContains(flashbackTimelineControllerText, "_context.FlashbackTimelinePanel.IsHitTestVisible = flashbackEnabled;");
+        AssertContains(flashbackTimelineControllerText, "SyncToggle(isVisible: false);");
+        AssertContains(flashbackTimelineControllerText, "_context.ClearScrubInteraction();");
+        AssertContains(flashbackTimelineControllerText, "CollapseImmediately();");
+        AssertContains(flashbackTimelineControllerText, "_timelineStoryboard?.Stop();");
         AssertContains(flashbackWindowText, "if (_suppressFlashbackEnabledToggle)");
         AssertContains(flashbackWindowText, "var requestedEnabled = FlashbackEnabledToggle.IsOn;");
         AssertContains(flashbackWindowText, "ApplyFlashbackEnabledToggleAsync(requestedEnabled)");
