@@ -11,6 +11,8 @@ namespace Sussudio.Tests;
 // recognizes the file as exercised.
 public class CapturePoliciesTests
 {
+    private const string DisabledTelemetryProviderType = "Sussudio.Services.Telemetry.DisabledSourceSignalTelemetryProvider";
+
     [Fact]
     public void Sussudio_Services_Capture_HdrOutputPolicy_GatesOnHdrEnabledAndMode()
     {
@@ -38,15 +40,9 @@ public class CapturePoliciesTests
         var enabledHdr10 = Activator.CreateInstance(settingsType)!;
         hdrEnabledProp.SetValue(enabledHdr10, true);
         hdrModeProp.SetValue(enabledHdr10, Enum.Parse(modeType, "Hdr10Pq"));
-        var previousForceOff = Environment.GetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF");
-        try
+        using (EnvVarScope.Push("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", null))
         {
-            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", null);
             Assert.True((bool)isEnabled.Invoke(null, new object?[] { enabledHdr10 })!);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", previousForceOff);
         }
     }
 
@@ -54,14 +50,14 @@ public class CapturePoliciesTests
     public async Task Sussudio_Services_Telemetry_DisabledSourceSignalTelemetryProvider_ReturnsUnavailableSnapshotWithDisabledReason()
     {
         var asm = SussudioAssembly.Load();
-        var providerType = asm.GetType("Sussudio.Services.Telemetry.DisabledSourceSignalTelemetryProvider", throwOnError: true)!;
+        var providerType = asm.GetType(DisabledTelemetryProviderType, throwOnError: true)!;
         var deviceType = asm.GetType("Sussudio.Models.CaptureDevice", throwOnError: true)!;
         Assert.NotNull(deviceType);
 
         var provider = Activator.CreateInstance(providerType)!;
         var readAsync = providerType.GetMethod("ReadAsync")!;
         var task = (Task)readAsync.Invoke(provider, new object?[] { null, CancellationToken.None })!;
-        await task.ConfigureAwait(false);
+        await task;
 
         var resultProp = task.GetType().GetProperty("Result")!;
         var snapshot = resultProp.GetValue(task)!;
@@ -81,7 +77,7 @@ public class CapturePoliciesTests
     public void Sussudio_Services_Telemetry_DisabledSourceSignalTelemetryProvider_HonorsCancellation()
     {
         var asm = SussudioAssembly.Load();
-        var providerType = asm.GetType("Sussudio.Services.Telemetry.DisabledSourceSignalTelemetryProvider", throwOnError: true)!;
+        var providerType = asm.GetType(DisabledTelemetryProviderType, throwOnError: true)!;
         var provider = Activator.CreateInstance(providerType)!;
         var readAsync = providerType.GetMethod("ReadAsync")!;
 

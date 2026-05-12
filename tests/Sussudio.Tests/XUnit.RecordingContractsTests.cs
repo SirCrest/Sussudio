@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using Xunit;
 
@@ -88,5 +89,29 @@ internal static class LinqShim
     public static System.Collections.Generic.IEnumerable<T> Cast<T>(this System.Collections.IEnumerable source)
     {
         foreach (var item in source) yield return (T)item;
+    }
+}
+
+internal static class ReflectionFlags
+{
+    public const BindingFlags Static = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+    public const BindingFlags Instance = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+}
+
+internal static class EnvVarScope
+{
+    public static IDisposable Push(string name, string? value)
+    {
+        var previous = Environment.GetEnvironmentVariable(name);
+        Environment.SetEnvironmentVariable(name, value);
+        return new Restore(name, previous);
+    }
+
+    private sealed class Restore : IDisposable
+    {
+        private readonly string _name;
+        private readonly string? _previous;
+        public Restore(string name, string? previous) { _name = name; _previous = previous; }
+        public void Dispose() => Environment.SetEnvironmentVariable(_name, _previous);
     }
 }

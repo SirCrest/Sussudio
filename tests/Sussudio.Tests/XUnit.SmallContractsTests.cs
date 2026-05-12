@@ -1,5 +1,3 @@
-using System;
-using System.Reflection;
 using Xunit;
 
 namespace Sussudio.Tests;
@@ -17,20 +15,14 @@ public class SmallContractsTests
         var asm = SussudioAssembly.Load();
         var contextType = asm.GetType("Sussudio.LoggingJsonContext", throwOnError: true)!;
 
-        var defaultProp = contextType.GetProperty(
-            "Default",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+        var defaultProp = contextType.GetProperty("Default", ReflectionFlags.Static);
         Assert.NotNull(defaultProp);
 
         var defaultInstance = defaultProp!.GetValue(null);
         Assert.NotNull(defaultInstance);
 
-        Assert.NotNull(contextType.GetProperty(
-            "CaptureHealthSnapshot",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
-        Assert.NotNull(contextType.GetProperty(
-            "CaptureDiagnosticsSnapshot",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance));
+        Assert.NotNull(contextType.GetProperty("CaptureHealthSnapshot", ReflectionFlags.Instance));
+        Assert.NotNull(contextType.GetProperty("CaptureDiagnosticsSnapshot", ReflectionFlags.Instance));
     }
 
     [Fact]
@@ -39,20 +31,13 @@ public class SmallContractsTests
         var asm = SussudioAssembly.Load();
         var type = asm.GetType("Sussudio.Services.Automation.DiagnosticThresholds", throwOnError: true)!;
 
-        var minSamples = (int)type.GetField(
-            "RendererDropWarningMinSamples",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+        var minSamples = (int)type.GetField("RendererDropWarningMinSamples", ReflectionFlags.Static)!.GetValue(null)!;
         Assert.Equal(120, minSamples);
 
-        var pctConst = (double)type.GetField(
-            "RendererDropWarningPercent",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+        var pctConst = (double)type.GetField("RendererDropWarningPercent", ReflectionFlags.Static)!.GetValue(null)!;
         Assert.Equal(0.25, pctConst);
 
-        var calc = type.GetMethod(
-            "CalculatePercent",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
-            new[] { typeof(long), typeof(long) })!;
+        var calc = type.GetMethod("CalculatePercent", ReflectionFlags.Static, new[] { typeof(long), typeof(long) })!;
 
         Assert.Equal(0.0, (double)calc.Invoke(null, new object[] { 5L, 0L })!);
         Assert.Equal(25.0, (double)calc.Invoke(null, new object[] { 25L, 100L })!);
@@ -64,8 +49,6 @@ public class SmallContractsTests
     {
         // Compile-included into Sussudio.Tests so the type is reachable directly
         // (the production copy lives in tools/Common/AutomationPipeSecurityPolicy.cs).
-        var localType = typeof(Sussudio.Tools.AutomationPipeSecurityPolicy);
-        Assert.NotNull(localType);
 
         // Non-Windows: never disable, regardless of other flags.
         AssertResult(false, isWindows: false, hasExplicitSecurityDescriptor: false, explicitSecurityFailed: true, authTokenRequired: false);
