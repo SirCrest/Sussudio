@@ -558,21 +558,35 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
                 // Give the encoding task a brief window to unblock from its
                 // cancellation-token wait and exit cleanly.  DisposeTimeoutMs (1 s)
-                // is sufficient: the encoding loop only holds the token-wait site.
-                await Task.WhenAny(_encodingTask, Task.Delay(DisposeTimeoutMs)).ConfigureAwait(false);
-
-                // Best-effort: flush whatever frames made it through and write the
-                // moov atom so the file is at least playable up to the truncation
-                // point.  If FlushAndClose itself throws (e.g. the encoder is in a
-                // broken state) we log and swallow — the file is still truncated but
-                // the error has been surfaced to the caller via Failure below.
-                try
+                // is sufficient when the encoding loop is parked at its token-aware
+                // wait site (_workAvailable.Wait), but the loop does NOT poll
+                // cancellation inside the inner drain loops — if it's wedged in a
+                // native libav call (avcodec_send_frame, av_interleaved_write_frame),
+                // the grace expires while the loop is still touching _encoder /
+                // _videoCodecCtx / _formatCtx. Flushing concurrently in that case
+                // races on unsynchronized native state and can corrupt the file or
+                // raise an SEH access violation that managed `catch` cannot intercept.
+                // Gate the flush on _encodingTask having actually completed; if it
+                // hasn't, skip the flush and accept a cleanly-truncated output.
+                var graceResult = await Task.WhenAny(_encodingTask, Task.Delay(DisposeTimeoutMs)).ConfigureAwait(false);
+                if (ReferenceEquals(graceResult, _encodingTask))
                 {
-                    _encoder.FlushAndClose();
+                    // Encoder loop has exited — safe to flush. Wrap in try/catch
+                    // since FlushAndClose can itself throw if the encoder is in a
+                    // broken state; in that case the file is still truncated but
+                    // the error has been surfaced to the caller via Failure below.
+                    try
+                    {
+                        _encoder.FlushAndClose();
+                    }
+                    catch (Exception flushEx)
+                    {
+                        Logger.Log($"LIBAV_SINK_STOP_DRAIN_FLUSH_FAIL type={flushEx.GetType().Name} msg={flushEx.Message}");
+                    }
                 }
-                catch (Exception flushEx)
+                else
                 {
-                    Logger.Log($"LIBAV_SINK_STOP_DRAIN_FLUSH_FAIL type={flushEx.GetType().Name} msg={flushEx.Message}");
+                    Logger.Log("LIBAV_SINK_STOP_DRAIN_FLUSH_SKIPPED reason=encoder_task_still_running");
                 }
 
                 return FinalizeResult.Failure(outputPath, "Stopped (libav encode drain timed out; emergency flush attempted)");
