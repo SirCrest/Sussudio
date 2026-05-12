@@ -1249,6 +1249,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackRejectedExports_OwnRejectionFlows()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var rejectedText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(rejectedText, "internal static class DiagnosticSessionFlashbackRejectedExports");
+        AssertContains(rejectedText, "internal static async Task RunFlashbackExportRejectedAsync(");
+        AssertContains(rejectedText, "\"flashback-rejected-export.mp4\"");
+        AssertContains(rejectedText, "BufferInactive");
+        AssertContains(rejectedText, "Flashback buffer not active");
+        AssertContains(rejectedText, "internal static async Task RunFlashbackRecordingExportRejectedAsync(");
+        AssertContains(rejectedText, "\"flashback-recording-rejected-export.mp4\"");
+        AssertContains(rejectedText, "UnavailableDuringRecording");
+        AssertContains(rejectedText, "recording backend changed after rejected export");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackRejectedExports;");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackExportRejectedAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRecordingExportRejectedAsync(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackExports_OwnsExportHelpers()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
