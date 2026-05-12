@@ -111,8 +111,8 @@ Primary owners:
 - `tools/ssctl/` for the preferred CLI.
 - `tools/McpServer/` for MCP bridge tools.
 - `tools/Common/` for shared tool helpers that are not contracts, including
-  pipe client, snapshot formatting, diagnostic sessions, PresentMon probing,
-  and shared JSON options.
+  pipe client, snapshot formatting, diagnostic sessions, diagnostic scenario
+  cataloging, PresentMon probing, and shared JSON options.
 
 Invariants:
 
@@ -122,3 +122,6 @@ Invariants:
   shorter client defaults.
 - Diagnostic sessions are evidence surfaces; preserve summary JSON stability
   when refactoring runners.
+- Add new diagnostic-session scenario names in
+  `tools/Common/DiagnosticSessionScenarios.cs` before wiring scenario behavior
+  into `DiagnosticSessionRunner`.

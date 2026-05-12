@@ -226,9 +226,9 @@ public sealed class DiagnosticSessionSample
 
 public static class DiagnosticSessionRunner
 {
-    // Scenario names are intentionally normalized into booleans once near the
-    // top of RunAsync. The rest of the runner reads like a phase plan: setup,
-    // optional background scenario task, sampling loop, cleanup, then summary.
+    // Scenario names and broad requirements live in DiagnosticSessionScenarios.
+    // RunAsync reads like a phase plan: setup, optional background scenario
+    // task, sampling loop, cleanup, then summary.
     private const int FlashbackStressMaxPlaybackPendingCommands = 4;
     private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;
     private const double FlashbackStressPlaybackWarmSeconds = 10.0;
@@ -272,7 +272,7 @@ public static class DiagnosticSessionRunner
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(sendCommandAsync);
 
-        var scenario = NormalizeScenario(options.Scenario);
+        var scenario = DiagnosticSessionScenarios.Normalize(options.Scenario);
         var durationSeconds = Math.Clamp(options.DurationSeconds, 0, 24 * 60 * 60);
         var sampleIntervalMs = Math.Clamp(options.SampleIntervalMs, 100, 60_000);
         var sessionId = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
@@ -428,12 +428,12 @@ public static class DiagnosticSessionRunner
             }
             else
             {
-            if (ScenarioNeedsFlashback(scenario) && !GetBool(initialSnapshot, "FlashbackActive"))
-            {
-                await SendAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, null).ConfigureAwait(false);
-                enabledFlashback = true;
-                actions.Add("flashback enabled");
-            }
+                if (DiagnosticSessionScenarios.NeedsFlashback(scenario) && !GetBool(initialSnapshot, "FlashbackActive"))
+                {
+                    await SendAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, null).ConfigureAwait(false);
+                    enabledFlashback = true;
+                    actions.Add("flashback enabled");
+                }
 
             if (runFlashbackExportRejected && GetBool(initialSnapshot, "FlashbackActive"))
             {
@@ -442,7 +442,7 @@ public static class DiagnosticSessionRunner
                 actions.Add("flashback disabled for rejected export");
             }
 
-            if (ScenarioNeedsPreview(scenario) && !GetBool(initialSnapshot, "IsPreviewing"))
+            if (DiagnosticSessionScenarios.NeedsPreview(scenario) && !GetBool(initialSnapshot, "IsPreviewing"))
             {
                 await SendAsync("SetPreviewEnabled", new Dictionary<string, object?> { ["enabled"] = true }, null).ConfigureAwait(false);
                 startedPreview = true;
@@ -450,7 +450,7 @@ public static class DiagnosticSessionRunner
                 await TryWaitAsync("VideoFramesFlowing", 15_000).ConfigureAwait(false);
             }
 
-            if (ScenarioNeedsRecording(scenario) && !GetBool(initialSnapshot, "IsRecording"))
+            if (DiagnosticSessionScenarios.NeedsRecording(scenario) && !GetBool(initialSnapshot, "IsRecording"))
             {
                 if ((runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected) &&
                     !await WaitForFlashbackStressBufferReadyAsync(
@@ -939,7 +939,7 @@ public static class DiagnosticSessionRunner
             }
         }
 
-        var hasFlashbackExportVerificationPath = TryGetFlashbackExportVerificationPath(
+        var hasFlashbackExportVerificationPath = DiagnosticSessionScenarios.TryGetFlashbackExportVerificationPath(
             scenario,
             outputDirectory,
             out var flashbackExportVerificationPath);
@@ -6154,50 +6154,5 @@ public static class DiagnosticSessionRunner
                snapshot.TryGetProperty("LastVerification", out verification) &&
                verification.ValueKind == JsonValueKind.Object;
     }
-
-    private static bool TryGetFlashbackExportVerificationPath(
-        string scenario,
-        string outputDirectory,
-        out string exportPath)
-    {
-        exportPath = scenario switch
-        {
-            "flashback" or "flashback-stress" => Path.Combine(outputDirectory, "flashback-stress-export.mp4"),
-            "flashback-restart-cycle" => Path.Combine(outputDirectory, "flashback-restart-cycle-export.mp4"),
-            "flashback-encoder-cycle" => Path.Combine(outputDirectory, "flashback-encoder-cycle-export.mp4"),
-            "flashback-export-playback" => Path.Combine(outputDirectory, "flashback-export-playback.mp4"),
-            "flashback-range-export" => Path.Combine(outputDirectory, "flashback-range-export.mp4"),
-            "flashback-range-export-audio-switch" => Path.Combine(outputDirectory, "flashback-range-export-audio-switch.mp4"),
-            "flashback-export-concurrent" => Path.Combine(outputDirectory, "flashback-concurrent-a.mp4"),
-            "flashback-disable-during-export" => Path.Combine(outputDirectory, "flashback-disable-during-export.mp4"),
-            "flashback-rotated-export" => Path.Combine(outputDirectory, "flashback-rotated-export.mp4"),
-            "flashback-preview-cycle" => Path.Combine(outputDirectory, "flashback-preview-off-export.mp4"),
-            "flashback-playback-preview-cycle" => Path.Combine(outputDirectory, "flashback-playback-preview-cycle.mp4"),
-            _ => string.Empty
-        };
-
-        return exportPath.Length > 0;
-    }
-
-    private static string NormalizeScenario(string? scenario)
-    {
-        var normalized = string.IsNullOrWhiteSpace(scenario)
-            ? "observe"
-            : scenario.Trim().ToLowerInvariant();
-        return normalized switch
-        {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-range-export-audio-switch" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-playback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "flashback-export-rejected" or "combined" => normalized,
-            _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
-        };
-    }
-
-    private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-range-export-audio-switch" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-playback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
-
-    private static bool ScenarioNeedsRecording(string scenario)
-        => scenario is "recording-only" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
-
-    private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-range-export-audio-switch" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-playback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
 }

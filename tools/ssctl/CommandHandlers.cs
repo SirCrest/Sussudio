@@ -159,7 +159,7 @@ internal static class CommandHandlers
         var includePresentMon = ConsumeFlag(context.Rest, "--presentmon");
         var verify = ConsumeFlag(context.Rest, "--verify");
         var leaveRunning = ConsumeFlag(context.Rest, "--leave-running");
-        EnsureNoArgs(context.Rest, "diagnostic-session [--scenario observe|preview-only|recording-only|flashback|flashback-playback|flashback-stress|flashback-scrub-stress|flashback-restart-cycle|flashback-encoder-cycle|flashback-export-playback|flashback-segment-playback|flashback-range-export|flashback-range-export-audio-switch|flashback-lifecycle|flashback-export-concurrent|flashback-disable-during-export|flashback-rotated-export|flashback-preview-cycle|flashback-playback-preview-cycle|flashback-recording|flashback-recording-preview-cycle|flashback-recording-settings-deferred|flashback-recording-export-rejected|flashback-export-rejected|combined] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
+        EnsureNoArgs(context.Rest, $"diagnostic-session [--scenario {DiagnosticSessionScenarios.HelpList}] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
 
         var result = await DiagnosticSessionRunner.RunAsync(
                 new DiagnosticSessionOptions
