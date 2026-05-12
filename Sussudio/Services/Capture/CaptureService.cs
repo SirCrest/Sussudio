@@ -3221,6 +3221,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            CaptureSessionTransitionPolicy.ThrowIfDisallowed(_sessionState, transitionState);
             Interlocked.Increment(ref _sessionGeneration);
             _sessionState = transitionState;
             await action(cancellationToken).ConfigureAwait(false);
@@ -3246,10 +3247,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     private CaptureSessionState ResolveSteadyState()
     {
-        if (_isDisposed != 0) return CaptureSessionState.Disposed;
-        if (_isRecording) return CaptureSessionState.Recording;
-        if (_isVideoPreviewActive || _isAudioPreviewActive) return CaptureSessionState.Previewing;
-        return _isInitialized ? CaptureSessionState.Ready : CaptureSessionState.Uninitialized;
+        return CaptureSessionTransitionPolicy.ResolveSteadyState(
+            _isDisposed != 0,
+            _isRecording,
+            _isVideoPreviewActive,
+            _isAudioPreviewActive,
+            _isInitialized);
     }
 
     private SourceSignalTelemetrySnapshot BuildFallbackTelemetry()

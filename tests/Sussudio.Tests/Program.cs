@@ -360,6 +360,15 @@ static partial class Program
                 "Capture session snapshot exposes lifecycle contract",
                 CaptureSessionCoordinator_CaptureSessionSnapshot_HasFullContract),
             await RunCheckAsync(
+                "Capture session transition policy defines core lifecycle rules",
+                CaptureSessionTransitionPolicy_DefinesCoreLifecycleRules),
+            await RunCheckAsync(
+                "Capture session transition policy resolves steady state",
+                CaptureSessionTransitionPolicy_ResolvesSteadyStateFromRuntimeFlags),
+            await RunCheckAsync(
+                "Capture service transition lock uses transition policy",
+                CaptureService_RunTransition_UsesTransitionPolicy),
+            await RunCheckAsync(
                 "Capture session coordinator accounts canceled queued commands",
                 CaptureSessionCoordinator_CanceledQueuedCommandUpdatesAccounting),
             await RunCheckAsync(

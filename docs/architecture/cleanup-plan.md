@@ -38,6 +38,11 @@ Audio and microphone meter rendering now lives in
 `Sussudio/Controllers/AudioMeterController.cs`. The broader control-bar binding
 and microphone-row animation code remains in `MainWindow.Bindings.cs`.
 
+Capture session transition legality now lives in
+`Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs`. `CaptureService`
+uses it before entering a transition and delegates steady-state resolution to
+the same pure policy; resource ownership has not moved in this slice.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
@@ -61,24 +66,24 @@ Remaining `tools/Common` ownership:
    but new checks should land in focused xUnit files. Move low-risk contract
    tests first.
 
-3. Create capture transition policy.
-
-   Add a pure state/transition policy used by `CaptureSessionCoordinator` and
-   `CaptureService` before moving resource lifetimes. The first pass should
-   validate legal transitions only; it should not touch Media Foundation,
-   D3D11, WASAPI, FFmpeg, or Flashback resources.
-
-4. Continue converting MainWindow partial concerns into controllers.
+3. Continue converting MainWindow partial concerns into controllers.
 
    `FullScreen`, automation `Screenshot`, and audio meter rendering are
    extracted. Next candidate is `StatsOverlay`; keep its D3D/NVML dependencies
    explicit if it moves. Keep XAML bindings stable.
 
-5. Move MainViewModel feature state behind a facade.
+4. Move MainViewModel feature state behind a facade.
 
    Preserve the root `MainViewModel` public surface while introducing feature
    view models or adapters for capture selection, recording, audio, Flashback,
    diagnostics, and automation.
+
+5. Extract capture resource owners behind the transition policy.
+
+   The policy is now the legality/steady-state owner. The next deeper capture
+   slices should keep it authoritative while introducing smaller owners for
+   audio graph, recording controller, Flashback backend resources, and video
+   pipeline lifetime.
 
 ## Guardrails
 

@@ -56,6 +56,8 @@ Primary current owner: `Sussudio/Services/Capture/`
 Important entry points:
 
 - `CaptureSessionCoordinator.cs` serializes lifecycle mutations.
+- `CaptureSessionTransitionPolicy.cs` owns pure transition legality and
+  steady-state resolution for `CaptureService`.
 - `CaptureService.cs` still owns too many resource lifetimes and should not
   receive unrelated UI, Flashback, or diagnostics behavior.
 - `CaptureService.Snapshots.cs` builds runtime snapshots consumed by UI and
@@ -65,6 +67,8 @@ Invariants:
 
 - Starting or stopping recording must not restart live preview unless the
   transition explicitly requires it.
+- Capture lifecycle legality should be expressed in
+  `CaptureSessionTransitionPolicy`, not scattered through ad hoc boolean checks.
 - Mutating capture lifecycle state should go through serialized coordinator or
   transition-lock paths.
 - Snapshot display state should be derived from service/runtime snapshots, not
