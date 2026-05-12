@@ -115,7 +115,9 @@ Primary current owners:
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets
-  out of the root facade file.
+  out of the root facade file. `MainViewModel.Dispatching.cs` owns shared
+  dispatcher enqueue/invoke helpers and preview event fan-out for the partial
+  family.
 
 Refactor direction:
 

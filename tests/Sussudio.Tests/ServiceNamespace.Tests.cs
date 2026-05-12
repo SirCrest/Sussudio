@@ -102,13 +102,15 @@ static partial class Program
         AssertContains(audioControlsText, "IsCurrentSelectedDevice(device)");
 
         var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
-        AssertContains(mainViewModelText, "private bool EnqueueUiOperation");
+        var mainViewModelDispatchingText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs"));
+        AssertContains(mainViewModelDispatchingText, "private bool EnqueueUiOperation");
+        AssertContains(mainViewModelDispatchingText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing");
+        AssertContains(mainViewModelDispatchingText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing_after_enqueue");
+        AssertContains(mainViewModelDispatchingText, "UI_OPERATION_ENQUEUE_FAILED op='{operationName}'");
+        AssertContains(mainViewModelDispatchingText, "INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=async");
+        AssertContains(mainViewModelDispatchingText, "INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=value");
+        AssertDoesNotContain(mainViewModelText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelText, "allowDuringDispose: true");
-        AssertContains(mainViewModelText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing");
-        AssertContains(mainViewModelText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing_after_enqueue");
-        AssertContains(mainViewModelText, "UI_OPERATION_ENQUEUE_FAILED op='{operationName}'");
-        AssertContains(mainViewModelText, "INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=async");
-        AssertContains(mainViewModelText, "INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=value");
         AssertContains(mainViewModelText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
         AssertContains(mainViewModelText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
         var deviceManagementText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs"));

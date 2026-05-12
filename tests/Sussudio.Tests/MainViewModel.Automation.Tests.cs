@@ -93,7 +93,9 @@ static partial class Program
         var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
             .Replace("\r\n", "\n");
         var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.Dispatching.cs")
+                .Replace("\r\n", "\n");
         var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
         var pipeServerText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")

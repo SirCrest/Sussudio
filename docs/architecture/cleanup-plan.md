@@ -239,7 +239,8 @@ Remaining `tools/Common` ownership:
    view models or adapters for capture selection, recording, audio, Flashback,
    diagnostics, and automation. The live audio/microphone meter callback state
    now has a named owner in `MainViewModel.AudioMeters.cs`; keep future meter
-   behavior there instead of growing the root facade file.
+   behavior there instead of growing the root facade file. Shared dispatcher
+   enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`.
 
 5. Extract capture resource owners behind the transition policy.
 
