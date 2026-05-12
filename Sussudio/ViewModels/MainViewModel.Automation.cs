@@ -1276,14 +1276,21 @@ public partial class MainViewModel
                 DeviceName: SelectedMicrophoneDevice?.Name),
             cancellationToken).ConfigureAwait(false);
 
-        if (!request.IsRecording)
+        if (request.IsRecording)
         {
-            await _sessionCoordinator.UpdateMicrophoneMonitorAsync(
-                enabled,
-                request.DeviceId,
-                request.DeviceName,
-                cancellationToken).ConfigureAwait(false);
+            // Refuse the toggle while recording: UpdateMicrophoneMonitorAsync cannot
+            // rewire the device mid-recording, so setting IsMicrophoneEnabled here
+            // would leave UI state lying about the actual device wiring.
+            Logger.Log($"MIC_TOGGLE_REFUSED reason=recording_active requested={enabled}");
+            throw new InvalidOperationException(
+                "Cannot change microphone enable state while recording. Stop the recording first.");
         }
+
+        await _sessionCoordinator.UpdateMicrophoneMonitorAsync(
+            enabled,
+            request.DeviceId,
+            request.DeviceName,
+            cancellationToken).ConfigureAwait(false);
 
         await InvokeOnUiThreadAsync(
             () =>
