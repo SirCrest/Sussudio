@@ -88,9 +88,9 @@ Diagnostic-session Flashback segment handling now lives in
 headroom waits while the runner keeps scenario command sequencing.
 
 Diagnostic-session Flashback validation now lives in
-`tools/Common/DiagnosticSessionFlashbackValidation.cs`. It owns playback and
-preview-scheduler warning thresholds over already projected metrics while the
-runner retains scenario orchestration.
+`tools/Common/DiagnosticSessionFlashbackValidation.cs`. It owns recording,
+playback, and preview-scheduler warning thresholds over already projected
+metrics while the runner retains scenario orchestration.
 
 Diagnostic-session health policy now lives in
 `tools/Common/DiagnosticSessionHealthPolicy.cs`. It owns health severity,

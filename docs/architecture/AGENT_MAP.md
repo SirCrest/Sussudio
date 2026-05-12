@@ -152,7 +152,8 @@ Primary owners:
   playable-boundary headroom waits. Do not add state-mutating scenario steps
   there.
 - `tools/Common/DiagnosticSessionFlashbackValidation.cs` owns Flashback
-  diagnostic-session warning policy for playback and preview scheduler metrics.
+  diagnostic-session warning policy for recording, playback, and preview
+  scheduler metrics.
 - `tools/Common/DiagnosticSessionHealthPolicy.cs` owns diagnostic-session health
   severity, warmup filtering, sparse-cadence tolerance, and tolerated Flashback
   warning classification.

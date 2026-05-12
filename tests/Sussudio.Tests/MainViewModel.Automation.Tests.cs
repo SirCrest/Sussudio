@@ -1115,7 +1115,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback lifecycle: pending commands remained after disable");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportRejectedAsync(");
         AssertContains(diagnosticSessionText, "private static async Task<bool> WaitForFlashbackStressBufferReadyAsync(");
-        AssertContains(diagnosticSessionText, "private static void ValidateFlashbackRecordingSession(");
+        AssertContains(diagnosticSessionText, "internal static void ValidateFlashbackRecordingSession(");
         AssertContains(diagnosticSessionText, "\"flashback recording: RecordingBackend never reported Flashback\"");
         AssertContains(diagnosticSessionText, "\"flashback recording: no Flashback video frames submitted to encoder\"");
         AssertContains(diagnosticSessionText, "submittedDelta");
