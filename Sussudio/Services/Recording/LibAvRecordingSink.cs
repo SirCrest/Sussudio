@@ -532,8 +532,32 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             if (!ReferenceEquals(completedTask, _encodingTask))
             {
                 cancellationToken.ThrowIfCancellationRequested();
+
+                // Cancel the encoding loop so it stops processing new frames and
+                // exits via OperationCanceledException — this must happen before
+                // FlushAndClose so the two don't race on _encoder state.
                 _cts?.Cancel();
-                return FinalizeResult.Failure(outputPath, "Stopped (libav encode drain timed out)");
+
+                // Give the encoding task a brief window to unblock from its
+                // cancellation-token wait and exit cleanly.  DisposeTimeoutMs (1 s)
+                // is sufficient: the encoding loop only holds the token-wait site.
+                await Task.WhenAny(_encodingTask, Task.Delay(DisposeTimeoutMs)).ConfigureAwait(false);
+
+                // Best-effort: flush whatever frames made it through and write the
+                // moov atom so the file is at least playable up to the truncation
+                // point.  If FlushAndClose itself throws (e.g. the encoder is in a
+                // broken state) we log and swallow — the file is still truncated but
+                // the error has been surfaced to the caller via Failure below.
+                try
+                {
+                    _encoder.FlushAndClose();
+                }
+                catch (Exception flushEx)
+                {
+                    Logger.Log($"LIBAV_SINK_STOP_DRAIN_FLUSH_FAIL type={flushEx.GetType().Name} msg={flushEx.Message}");
+                }
+
+                return FinalizeResult.Failure(outputPath, "Stopped (libav encode drain timed out; emergency flush attempted)");
             }
 
             try
