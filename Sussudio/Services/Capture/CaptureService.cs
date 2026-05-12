@@ -330,9 +330,17 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     /// <summary>
     /// Updates encoding-related fields in the active capture settings so that
     /// <see cref="RestartFlashbackAsync"/> picks up the latest bitrate/quality/preset.
+    /// Must only be called from within a <see cref="RunTransitionAsync"/> delegate
+    /// (i.e. with <c>_sessionTransitionLock</c> held) to prevent concurrent UI toggles
+    /// from tearing <c>_currentSettings</c> between the snapshot and the encoder rebuild.
     /// </summary>
-    // REVIEWED 2026-04-07: same threading rationale as UpdateFlashbackSettings above.
-    public void UpdateEncodingSettings(CaptureSettings source)
+    // REVIEWED 2026-05-11: method is private; the only call site is RestartFlashbackAsync(settings),
+    // which already executes inside RunTransitionAsync and therefore holds _sessionTransitionLock.
+    // Making this public (as it was before) allowed any caller to bypass the transition gate and
+    // race with concurrent flashback restarts — the root cause of the rapid-settings segment-purge
+    // data loss (Gate 4 #1, Gate 2 §551/§553). SemaphoreSlim is not re-entrant, so we must NOT
+    // acquire the lock here; callers are responsible for holding it (enforced by private access).
+    private void UpdateEncodingSettings(CaptureSettings source)
     {
         if (_currentSettings == null) return;
         _currentSettings.Format = source.Format;
