@@ -10,7 +10,11 @@ namespace Sussudio.Tests;
 // so we resolve types through the Sussudio.dll built for net8.0-windows.
 public class RuntimeHelpersTests
 {
-    private const BindingFlags StaticFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+    private const string AtomicMaxType = "Sussudio.Services.Runtime.AtomicMax";
+    private const string TelemetryAgeHelperType = "Sussudio.Services.Runtime.TelemetryAgeHelper";
+    private const string EnvironmentHelpersType = "Sussudio.Services.Runtime.EnvironmentHelpers";
+    private const string RingBufferHelpersType = "Sussudio.Services.Runtime.RingBufferHelpers";
+    private const string DeviceSymbolicLinkMatcherType = "Sussudio.Services.Capture.DeviceSymbolicLinkMatcher";
 
     [Fact]
     public void AtomicMax_Int_UpdatesWhenCandidateIsGreater()
@@ -97,7 +101,7 @@ public class RuntimeHelpersTests
     {
         var method = ResolveGetIntFromEnv();
         var name = NewEnvVarName("INT_UNSET");
-        using var _ = TempEnv(name, null);
+        using var _ = EnvVarScope.Push(name, null);
         var result = method.Invoke(null, new object[] { name, 50, 0, 100 });
         Assert.Equal(50, (int)result!);
     }
@@ -108,17 +112,17 @@ public class RuntimeHelpersTests
         var method = ResolveGetIntFromEnv();
         var name = NewEnvVarName("INT_CLAMP");
 
-        using (TempEnv(name, "200"))
+        using (EnvVarScope.Push(name, "200"))
         {
             Assert.Equal(100, (int)method.Invoke(null, new object[] { name, 50, 0, 100 })!);
         }
 
-        using (TempEnv(name, "-50"))
+        using (EnvVarScope.Push(name, "-50"))
         {
             Assert.Equal(0, (int)method.Invoke(null, new object[] { name, 50, 0, 100 })!);
         }
 
-        using (TempEnv(name, "75"))
+        using (EnvVarScope.Push(name, "75"))
         {
             Assert.Equal(75, (int)method.Invoke(null, new object[] { name, 50, 0, 100 })!);
         }
@@ -175,9 +179,7 @@ public class RuntimeHelpersTests
     [Fact]
     public void DeviceSymbolicLinkMatcher_MatchesIsCaseInsensitiveAndAcceptsSubstrings()
     {
-        var asm = SussudioAssembly.Load();
-        var type = asm.GetType("Sussudio.Services.Capture.DeviceSymbolicLinkMatcher", throwOnError: true)!;
-        var method = type.GetMethod("Matches", StaticFlags, new[] { typeof(string), typeof(string) })!;
+        var method = ResolveStatic(DeviceSymbolicLinkMatcherType, "Matches", new[] { typeof(string), typeof(string) });
 
         Assert.True((bool)method.Invoke(null, new object?[] { "DEVICE_A", "device_a" })!);
         Assert.True((bool)method.Invoke(null, new object?[] { "core", "PREFIX-core-SUFFIX" })!);
@@ -187,51 +189,36 @@ public class RuntimeHelpersTests
         Assert.False((bool)method.Invoke(null, new object?[] { "anything", null })!);
     }
 
-    private static MethodInfo ResolveAtomicMaxInt()
+    private static MethodInfo ResolveStatic(string typeName, string methodName, Type[] signature)
     {
-        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Runtime.AtomicMax", throwOnError: true)!;
-        return type.GetMethod("Update", StaticFlags, new[] { typeof(int).MakeByRefType(), typeof(int) })!;
+        var type = SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+        return type.GetMethod(methodName, ReflectionFlags.Static, signature)!;
     }
+
+    private static MethodInfo ResolveAtomicMaxInt()
+        => ResolveStatic(AtomicMaxType, "Update", new[] { typeof(int).MakeByRefType(), typeof(int) });
 
     private static MethodInfo ResolveAtomicMaxLong()
-    {
-        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Runtime.AtomicMax", throwOnError: true)!;
-        return type.GetMethod("Update", StaticFlags, new[] { typeof(long).MakeByRefType(), typeof(long) })!;
-    }
+        => ResolveStatic(AtomicMaxType, "Update", new[] { typeof(long).MakeByRefType(), typeof(long) });
 
     private static MethodInfo ResolveTimestampOverload()
-    {
-        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Runtime.TelemetryAgeHelper", throwOnError: true)!;
-        return type.GetMethod("ComputeAgeSeconds", StaticFlags, new[] { typeof(DateTimeOffset?), typeof(DateTimeOffset) })!;
-    }
+        => ResolveStatic(TelemetryAgeHelperType, "ComputeAgeSeconds", new[] { typeof(DateTimeOffset?), typeof(DateTimeOffset) });
 
     private static MethodInfo ResolveReportedOverload()
-    {
-        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Runtime.TelemetryAgeHelper", throwOnError: true)!;
-        return type.GetMethod("ComputeAgeSeconds", StaticFlags, new[] { typeof(int?), typeof(DateTimeOffset?), typeof(DateTimeOffset) })!;
-    }
+        => ResolveStatic(TelemetryAgeHelperType, "ComputeAgeSeconds", new[] { typeof(int?), typeof(DateTimeOffset?), typeof(DateTimeOffset) });
 
     private static MethodInfo ResolveGetIntFromEnv()
-    {
-        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Runtime.EnvironmentHelpers", throwOnError: true)!;
-        return type.GetMethod("GetIntFromEnv", StaticFlags, new[] { typeof(string), typeof(int), typeof(int), typeof(int) })!;
-    }
+        => ResolveStatic(EnvironmentHelpersType, "GetIntFromEnv", new[] { typeof(string), typeof(int), typeof(int), typeof(int) });
 
     private static MethodInfo ResolveTryGetBoolFromEnv()
-    {
-        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Runtime.EnvironmentHelpers", throwOnError: true)!;
-        return type.GetMethod("TryGetBoolFromEnv", StaticFlags, new[] { typeof(string), typeof(bool).MakeByRefType() })!;
-    }
+        => ResolveStatic(EnvironmentHelpersType, "TryGetBoolFromEnv", new[] { typeof(string), typeof(bool).MakeByRefType() });
 
     private static MethodInfo ResolveCopyDouble()
-    {
-        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Runtime.RingBufferHelpers", throwOnError: true)!;
-        return type.GetMethod("Copy", StaticFlags, new[] { typeof(double[]), typeof(int), typeof(int), typeof(int?) })!;
-    }
+        => ResolveStatic(RingBufferHelpersType, "Copy", new[] { typeof(double[]), typeof(int), typeof(int), typeof(int?) });
 
     private static void AssertBoolEnv(MethodInfo method, string name, string? raw, bool expectedReturn, bool expectedValue)
     {
-        using var _ = TempEnv(name, raw);
+        using var _ = EnvVarScope.Push(name, raw);
         var args = new object?[] { name, false };
         var ok = (bool)method.Invoke(null, args)!;
         Assert.Equal(expectedReturn, ok);
@@ -240,19 +227,4 @@ public class RuntimeHelpersTests
 
     private static string NewEnvVarName(string suffix)
         => $"SUSSUDIO_TEST_{suffix}_{Guid.NewGuid():N}";
-
-    private static IDisposable TempEnv(string name, string? value)
-    {
-        var previous = Environment.GetEnvironmentVariable(name);
-        Environment.SetEnvironmentVariable(name, value);
-        return new EnvScope(name, previous);
-    }
-
-    private sealed class EnvScope : IDisposable
-    {
-        private readonly string _name;
-        private readonly string? _previous;
-        public EnvScope(string name, string? previous) { _name = name; _previous = previous; }
-        public void Dispose() => Environment.SetEnvironmentVariable(_name, _previous);
-    }
 }
