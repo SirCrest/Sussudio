@@ -693,6 +693,8 @@ static partial class Program
 
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
@@ -1068,7 +1070,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRangeExportAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-range-export.mp4\"");
         AssertContains(diagnosticSessionText, "\"flashback-range-export-audio-switch.mp4\"");
-        AssertContains(diagnosticSessionText, "ToggleAudioEnabledDuringFlashbackExportAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
         AssertContains(diagnosticSessionText, "\"SetAudioEnabled\"");
         AssertContains(diagnosticSessionText, "FlashbackExportActive");
         AssertContains(diagnosticSessionText, "[\"useSelectionRange\"] = true");
@@ -1141,7 +1143,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = positions[^1] }");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"seconds\"] = 1, [\"outputPath\"] = exportPath }");
-        AssertContains(diagnosticSessionText, "CreateFlashbackExportVerifyPayload(exportPath)");
+        AssertContains(diagnosticSessionText, "internal static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath)");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s \"");
         AssertContains(diagnosticSessionText, "$\"maxPending={GetInt(lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")} \"");
         AssertContains(diagnosticSessionText, "$\"maxLatencyMs={GetInt(lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")} \"");

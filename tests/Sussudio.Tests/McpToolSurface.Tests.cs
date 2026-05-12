@@ -1184,6 +1184,33 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackExports_OwnsExportHelpers()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var exportsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(exportsText, "internal static class DiagnosticSessionFlashbackExports");
+        AssertContains(exportsText, "internal static int? TryParseFlashbackExportSegmentCount(");
+        AssertContains(exportsText, "const string marker = \" from \";");
+        AssertContains(exportsText, "suffix.Contains(\"segment\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(exportsText, "internal static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath)");
+        AssertContains(exportsText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertContains(exportsText, "internal static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
+        AssertContains(exportsText, "\"SetAudioEnabled\"");
+        AssertContains(exportsText, "internal static async Task CleanupFlashbackSelectionAsync(");
+        AssertContains(exportsText, "\"clear-in-out-points\"");
+        AssertContains(exportsText, "\"go-live\"");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExports;");
+        AssertDoesNotContain(runnerText, "private static int? TryParseFlashbackExportSegmentCount(");
+        AssertDoesNotContain(runnerText, "private static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(");
+        AssertDoesNotContain(runnerText, "private static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task CleanupFlashbackSelectionAsync(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackSegments_OwnsSegmentWaitsAndParsing()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")

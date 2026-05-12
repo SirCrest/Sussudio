@@ -77,6 +77,12 @@ Diagnostic-session metric projection now lives in
 for source cadence, preview cadence, visual cadence, D3D slow-frame summaries,
 playback command health, and reset-aware counter deltas.
 
+Diagnostic-session Flashback export helpers now live in
+`tools/Common/DiagnosticSessionFlashbackExports.cs`. They own strict export
+verification payload construction, rotated-export segment-count parsing,
+range-selection cleanup, and the range export audio-switch companion command
+while the runner keeps scenario command sequencing.
+
 Diagnostic-session Flashback metric projection now lives in
 `tools/Common/DiagnosticSessionFlashbackMetrics.cs`. It owns snapshot-only
 recording, playback, and export metric projection while the runner retains
@@ -106,6 +112,7 @@ emission.
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
+- `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackWaits.cs`

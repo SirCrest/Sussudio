@@ -144,6 +144,10 @@ Primary owners:
   diagnostic snapshots into session metrics: source cadence, preview cadence,
   visual cadence, D3D slow-frame summaries, playback command health, and
   counter deltas.
+- `tools/Common/DiagnosticSessionFlashbackExports.cs` owns Flashback export
+  diagnostic helpers: strict export verification payloads, rotated-export
+  segment-count parsing, range-selection cleanup, and the audio-toggle
+  companion used by the range export audio-switch scenario.
 - `tools/Common/DiagnosticSessionFlashbackMetrics.cs` owns read-only
   diagnostic-session Flashback metric projection for recording, playback, and
   export sessions.
