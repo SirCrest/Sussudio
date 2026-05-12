@@ -21,6 +21,6 @@
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\tools\Common\AutomationPipeSecurityPolicy.cs" Link="Common\AutomationPipeSecurityPolicy.cs" />
+    <ProjectReference Include="..\..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj" />
   </ItemGroup>
 </Project>

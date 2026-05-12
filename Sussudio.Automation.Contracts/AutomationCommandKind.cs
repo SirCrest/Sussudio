@@ -4,7 +4,7 @@ namespace Sussudio.Models;
 // generic AutomationClient. The pipe protocol serializes the numeric value, so
 // these IDs are part of the on-wire contract.
 //
-// MAINTAINERS — STRICT ORDERING RULES:
+// MAINTAINERS - STRICT ORDERING RULES:
 //   1. APPEND new members at the end with the next sequential explicit value.
 //      Do NOT insert a new member in the middle, even if "the next value is
 //      free". Inserting reorders the source but keeps explicit values stable;
@@ -14,7 +14,7 @@ namespace Sussudio.Models;
 //      will silently misroute commands (e.g. SetRecordingFormat -> SetQuality)
 //      and corrupt user recording profiles.
 //   3. NEVER reuse a value freed by a deleted member. Reserve the gap or
-//      replace the deleted entry with a sentinel — old clients still encode
+//      replace the deleted entry with a sentinel. Old clients still encode
 //      the old value, and reuse would route them to the wrong handler.
 //   4. When you add/remove/rename ANY member, bump
 //      AutomationPipeProtocol.CommandManifestRevision by exactly +1. The

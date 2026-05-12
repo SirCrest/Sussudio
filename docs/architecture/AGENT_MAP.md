@@ -1,0 +1,124 @@
+# Sussudio Agent Map
+
+Last reviewed: 2026-05-12.
+
+This file maps the current repo shape to named owners, entry points, invariants,
+and fast checks. It is intentionally mechanical so future agents can find the
+right file without guessing from old chat transcripts.
+
+## High-Risk Large Files
+
+These files are allowed to be large today, but they are not good expansion
+targets. Prefer extracting new behavior into a named collaborator or feature
+folder.
+
+| Area | Current large files | Preferred next owner |
+|------|---------------------|----------------------|
+| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog plus per-scenario runners |
+| Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests |
+| Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Snapshots.cs` | transition state machine, snapshot builder, resource managers |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` | diagnostic collectors and evaluation policies |
+| Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvRecordingSink.cs` | encoder option policy, sink lifecycle, verifier/finalizer |
+| Flashback | `FlashbackPlaybackController.cs`, `FlashbackEncoderSink.cs`, `FlashbackExporter.cs` | playback, buffer, encoder, export modules |
+| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.Rendering.cs` | renderer host, present cadence, screenshot capture, timing models |
+| UI shell | `MainWindow.*.cs` partial family | named controllers under an app shell folder |
+| Presentation | `MainViewModel.*.cs` partial family | feature view models behind the root facade |
+
+## Automation
+
+Primary owner: `Sussudio.Automation.Contracts/`
+
+Entry points:
+
+- `AutomationCommandKind.cs` owns numeric command IDs. Append only; never
+  renumber or reuse values.
+- `AutomationCommandCatalog.cs` owns command metadata, payload shape, readiness
+  gating, timeout policy, path policy, CLI help, and MCP descriptions.
+- `AutomationPipeProtocol.cs` owns pipe names, auth env var, manifest revision,
+  command resolution, and request envelope shape.
+- `AutomationPipeSecurityPolicy.cs` owns the fallback-security predicate shared
+  by app and tests.
+
+Do not reintroduce linked source for these files from `tools/Common`. Consumers
+should reference `Sussudio.Automation.Contracts`.
+
+Fast checks:
+
+```powershell
+dotnet build Sussudio.slnx -p:Platform=x64 --no-restore
+dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore
+```
+
+## Capture Runtime
+
+Primary current owner: `Sussudio/Services/Capture/`
+
+Important entry points:
+
+- `CaptureSessionCoordinator.cs` serializes lifecycle mutations.
+- `CaptureService.cs` still owns too many resource lifetimes and should not
+  receive unrelated UI, Flashback, or diagnostics behavior.
+- `CaptureService.Snapshots.cs` builds runtime snapshots consumed by UI and
+  automation.
+
+Invariants:
+
+- Starting or stopping recording must not restart live preview unless the
+  transition explicitly requires it.
+- Mutating capture lifecycle state should go through serialized coordinator or
+  transition-lock paths.
+- Snapshot display state should be derived from service/runtime snapshots, not
+  hand-updated independently in multiple event handlers.
+
+## Flashback
+
+Primary current owner: `Sussudio/Services/Flashback/`
+
+Entry points:
+
+- `FlashbackBackendResources.cs` owns backend resource grouping.
+- `FlashbackBufferManager.cs` owns segment retention and buffer state.
+- `FlashbackPlaybackController*.cs` owns playback and scrub control.
+- `FlashbackExporter.cs` owns export path validation and temp-file finalization.
+
+Invariants:
+
+- Disable means the timeline should be hidden/locked out.
+- Scrub frames must not contaminate live/playback cadence metrics.
+- Export must not overwrite without the explicit force path.
+
+## UI Shell And Presentation
+
+Primary current owners:
+
+- `Sussudio/MainWindow.*.cs` for shell, renderer, fullscreen, screenshots,
+  animations, and window lifecycle.
+- `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
+  automation-facing compatibility.
+
+Refactor direction:
+
+- Keep `MainWindow.xaml.cs` as a shell/composition root over time.
+- Prefer named controllers for fullscreen, preview startup, screenshots, stats
+  overlay, audio meters, and timeline UI.
+- Keep `MainViewModel` as a compatibility facade while moving feature state to
+  capture, recording, audio, Flashback, diagnostics, and automation adapters.
+
+## Tooling And Diagnostics
+
+Primary owners:
+
+- `tools/ssctl/` for the preferred CLI.
+- `tools/McpServer/` for MCP bridge tools.
+- `tools/Common/` for shared tool helpers that are not contracts, including
+  pipe client, snapshot formatting, diagnostic sessions, PresentMon probing,
+  and shared JSON options.
+
+Invariants:
+
+- Do not add new automation metadata to tool-specific files if it belongs in
+  `Sussudio.Automation.Contracts`.
+- Long-running Flashback operations must use catalog timeouts, not hard-coded
+  shorter client defaults.
+- Diagnostic sessions are evidence surfaces; preserve summary JSON stability
+  when refactoring runners.

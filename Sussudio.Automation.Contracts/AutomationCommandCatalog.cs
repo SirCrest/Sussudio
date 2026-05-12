@@ -8,7 +8,7 @@ using Sussudio.Models;
 
 namespace Sussudio.Tools;
 
-internal enum AutomationCommandPathPolicy
+public enum AutomationCommandPathPolicy
 {
     None,
     ReadFile,
@@ -16,7 +16,7 @@ internal enum AutomationCommandPathPolicy
     Directory
 }
 
-internal enum AutomationPayloadFieldType
+public enum AutomationPayloadFieldType
 {
     String,
     Boolean,
@@ -26,12 +26,12 @@ internal enum AutomationPayloadFieldType
     Array
 }
 
-internal sealed record AutomationPayloadFieldMetadata(
+public sealed record AutomationPayloadFieldMetadata(
     string Name,
     AutomationPayloadFieldType Type,
     bool Required);
 
-internal sealed record AutomationCommandMetadata(
+public sealed record AutomationCommandMetadata(
     AutomationCommandKind Kind,
     string Name,
     string PayloadShape,
@@ -42,11 +42,11 @@ internal sealed record AutomationCommandMetadata(
     string CliHelp,
     string McpDescription);
 
-internal sealed record AutomationManifest(
+public sealed record AutomationManifest(
     int SchemaVersion,
     IReadOnlyList<AutomationManifestCommand> Commands);
 
-internal sealed record AutomationManifestCommand(
+public sealed record AutomationManifestCommand(
     int Id,
     string Name,
     string PayloadShape,
@@ -57,7 +57,7 @@ internal sealed record AutomationManifestCommand(
     string CliHelp,
     string McpDescription);
 
-internal sealed record AutomationManifestPayloadField(
+public sealed record AutomationManifestPayloadField(
     string Name,
     string Type,
     bool Required);
@@ -65,11 +65,11 @@ internal sealed record AutomationManifestPayloadField(
 // Shared command metadata used to keep the app server, ssctl, MCP, and raw
 // automation client from drifting on readiness gates, path-bearing payloads,
 // and long-running command timeout policy.
-internal static class AutomationCommandCatalog
+public static class AutomationCommandCatalog
 {
     private static readonly JsonSerializerOptions ManifestJsonOptions = new();
 
-    internal static IReadOnlyList<AutomationCommandMetadata> Entries { get; } =
+    public static IReadOnlyList<AutomationCommandMetadata> Entries { get; } =
         BuildEntries()
             .OrderBy(entry => (int)entry.Kind)
             .ToArray();
@@ -77,7 +77,7 @@ internal static class AutomationCommandCatalog
     private static IReadOnlyDictionary<AutomationCommandKind, AutomationCommandMetadata> EntriesByKind { get; } =
         Entries.ToDictionary(entry => entry.Kind);
 
-    internal static AutomationCommandMetadata Get(AutomationCommandKind kind)
+    public static AutomationCommandMetadata Get(AutomationCommandKind kind)
     {
         if (EntriesByKind.TryGetValue(kind, out var metadata))
         {
@@ -87,7 +87,7 @@ internal static class AutomationCommandCatalog
         throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown automation command kind.");
     }
 
-    internal static AutomationManifest CreateManifest()
+    public static AutomationManifest CreateManifest()
         => new(
             SchemaVersion: 1,
             Commands: Entries
@@ -108,10 +108,10 @@ internal static class AutomationCommandCatalog
                     McpDescription: entry.McpDescription))
                 .ToArray());
 
-    internal static string CreateManifestJson()
+    public static string CreateManifestJson()
         => JsonSerializer.Serialize(CreateManifest(), ManifestJsonOptions);
 
-    internal static bool TryGet(string commandName, out AutomationCommandMetadata metadata)
+    public static bool TryGet(string commandName, out AutomationCommandMetadata metadata)
     {
         if (TryResolveKind(commandName, out var kind))
         {
@@ -123,7 +123,7 @@ internal static class AutomationCommandCatalog
         return false;
     }
 
-    internal static string ValidatePath(
+    public static string ValidatePath(
         AutomationCommandKind kind,
         string payloadKey,
         string path)

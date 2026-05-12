@@ -387,7 +387,7 @@ static partial class Program
                 "Service namespaces follow service folders",
                 ServiceNamespaces_FollowServiceFolders),
             await RunCheckAsync(
-                "AutomationCommandKind source ownership is model-aligned",
+                "AutomationCommandKind source ownership is contract-aligned",
                 AutomationCommandKind_SourceOwnership_IsModelAligned),
             await RunCheckAsync(
                 "Diagnostics snapshot refresh is serialized for recording responses",
@@ -2264,11 +2264,11 @@ static partial class Program
     {
         var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
         var protocolType = RequireType("Sussudio.Tools.AutomationPipeProtocol");
-        var protocolText = ReadRepoFile("tools/Common/AutomationPipeProtocol.cs");
+        var protocolText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs");
         var scriptText = ReadRepoFile("tools/send-automation-command.ps1");
         var resolveCommand = protocolType.GetMethod(
             "ResolveCommand",
-            BindingFlags.Static | BindingFlags.NonPublic)
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("AutomationPipeProtocol.ResolveCommand not found.");
 
         foreach (var (name, ordinal) in new[]
@@ -5273,7 +5273,7 @@ static partial class Program
 
         var commandMapProperty = protocolType.GetProperty(
             "CommandMap",
-            BindingFlags.Static | BindingFlags.NonPublic)
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("AutomationPipeProtocol.CommandMap not found.");
         var commandMap = commandMapProperty.GetValue(null) as IReadOnlyDictionary<string, int>
             ?? throw new InvalidOperationException("AutomationPipeProtocol.CommandMap has an unexpected shape.");
@@ -5790,8 +5790,40 @@ static partial class Program
             throw new InvalidOperationException("Target assembly is not loaded.");
         }
 
-        return _assembly.GetType(typeName)
-               ?? throw new InvalidOperationException($"Type '{typeName}' not found in target assembly.");
+        var type = _assembly.GetType(typeName);
+        if (type != null)
+        {
+            return type;
+        }
+
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            type = assembly.GetType(typeName);
+            if (type != null)
+            {
+                return type;
+            }
+        }
+
+        foreach (var reference in _assembly.GetReferencedAssemblies())
+        {
+            try
+            {
+                var referencedAssembly = Assembly.Load(reference);
+                type = referencedAssembly.GetType(typeName);
+                if (type != null)
+                {
+                    return type;
+                }
+            }
+            catch
+            {
+                // Keep the original missing-type error below; unrelated
+                // platform references do not matter to this offline runner.
+            }
+        }
+
+        throw new InvalidOperationException($"Type '{typeName}' not found in target assembly or referenced assemblies.");
     }
 
     private static object ParseEnum(string typeName, string value)
@@ -6232,7 +6264,7 @@ static partial class Program
         var inputFiles = inputDirectories
             .SelectMany(Directory.EnumerateFiles)
             .Concat(EnumerateToolProjectCompileIncludes(projectDirectory))
-            .Append(Path.Combine(root, "Sussudio", "Models", "Automation", "AutomationCommandKind.cs"))
+            .Concat(Directory.EnumerateFiles(Path.Combine(root, "Sussudio.Automation.Contracts"), "*.cs"))
             .Where(file => File.Exists(file) && IsToolInputFile(file))
             .Distinct(StringComparer.OrdinalIgnoreCase);
 

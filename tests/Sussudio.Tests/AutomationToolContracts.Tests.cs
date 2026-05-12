@@ -84,7 +84,7 @@ static partial class Program
         var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
         var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
         var pathPolicyType = RequireType("Sussudio.Tools.AutomationCommandPathPolicy");
-        var entriesProperty = catalogType.GetProperty("Entries", BindingFlags.Static | BindingFlags.NonPublic)
+        var entriesProperty = catalogType.GetProperty("Entries", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("AutomationCommandCatalog.Entries not found.");
         var entries = ((System.Collections.IEnumerable)entriesProperty.GetValue(null)!)
             .Cast<object>()
@@ -694,18 +694,18 @@ static partial class Program
 
     private static T GetConstant<T>(Type type, string name)
     {
-        var field = type.GetField(name, BindingFlags.Static | BindingFlags.NonPublic)
+        var field = type.GetField(name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"{type.FullName}.{name} was not found.");
         return (T)field.GetRawConstantValue()!;
     }
 
     private static MethodInfo RequireNonPublicStaticMethod(Type type, string name)
-        => type.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic)
+        => type.GetMethod(name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
            ?? throw new InvalidOperationException($"{type.FullName}.{name} was not found.");
 
     private static object[] GetCatalogEntries(Type catalogType)
     {
-        var entriesProperty = catalogType.GetProperty("Entries", BindingFlags.Static | BindingFlags.NonPublic)
+        var entriesProperty = catalogType.GetProperty("Entries", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("AutomationCommandCatalog.Entries not found.");
         return ((System.Collections.IEnumerable)entriesProperty.GetValue(null)!)
             .Cast<object>()

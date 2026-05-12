@@ -1,7 +1,7 @@
 namespace Sussudio.Tools;
 
 // Security fallback policy for the named-pipe server.
-internal static class AutomationPipeSecurityPolicy
+public static class AutomationPipeSecurityPolicy
 {
     public static bool ShouldDisableDefaultSecurityFallback(
         bool isWindows,

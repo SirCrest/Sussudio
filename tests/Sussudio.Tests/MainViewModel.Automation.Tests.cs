@@ -1253,19 +1253,19 @@ static partial class Program
 
     private static Task AutomationProtocol_SetRecordingUsesRecordingSizedTimeout()
     {
-        var protocolText = ReadRepoFile("tools/Common/AutomationPipeProtocol.cs")
+        var protocolText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs")
             .Replace("\r\n", "\n");
         var clientText = ReadRepoFile("tools/AutomationClient/Program.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(protocolText, "internal const int DefaultResponseTimeoutMs = 15000;");
-        AssertContains(protocolText, "internal const int ExtendedResponseTimeoutMs = 60000;");
-        AssertContains(protocolText, "internal const int RecordingResponseTimeoutMs = 150000;");
-        AssertContains(protocolText, "internal const int FlashbackMutationResponseTimeoutMs = 305000;");
+        AssertContains(protocolText, "public const int DefaultResponseTimeoutMs = 15000;");
+        AssertContains(protocolText, "public const int ExtendedResponseTimeoutMs = 60000;");
+        AssertContains(protocolText, "public const int RecordingResponseTimeoutMs = 150000;");
+        AssertContains(protocolText, "public const int FlashbackMutationResponseTimeoutMs = 305000;");
         AssertContains(protocolText, "commandName = ResolveCanonicalCommandName(commandName);");
         AssertContains(protocolText, "AutomationCommandCatalog.TryGet(commandName, out var metadata)");
         AssertContains(protocolText, "? metadata.ResponseTimeoutMs");
-        var catalogText = ReadRepoFile("tools/Common/AutomationCommandCatalog.cs")
+        var catalogText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
             .Replace("\r\n", "\n");
         AssertContains(catalogText, "AutomationCommandKind.SetRecordingEnabled");
         AssertContains(catalogText, "AutomationPipeProtocol.RecordingResponseTimeoutMs");
@@ -1282,7 +1282,7 @@ static partial class Program
         var protocolType = RequireType("Sussudio.Tools.AutomationPipeProtocol");
         var getDefaultResponseTimeout = protocolType.GetMethod(
             "GetDefaultResponseTimeout",
-            BindingFlags.Static | BindingFlags.NonPublic)
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("AutomationPipeProtocol.GetDefaultResponseTimeout not found.");
 
         foreach (var acceptedName in new[] { "SetRecordingEnabled", "setrecordingenabled", "set-recording-enabled", "17" })

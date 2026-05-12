@@ -4,7 +4,7 @@ namespace Sussudio.Tests;
 
 // xUnit slice for three small contract / policy types that the legacy
 // reflection runner already covers (LoggingJsonContext.Tests.cs,
-// AutomationPipeSecurityPolicy reachable via Common\ Compile Include,
+// AutomationPipeSecurityPolicy reachable via Sussudio.Automation.Contracts,
 // DiagnosticThresholds covered indirectly through snapshot tests).
 // Lives here so each file is reachable through the xUnit discovery path too.
 public class SmallContractsTests
@@ -47,8 +47,8 @@ public class SmallContractsTests
     [Fact]
     public void Sussudio_Tools_AutomationPipeSecurityPolicy_DisablesFallbackOnlyWhenWindowsAndUnauthenticated()
     {
-        // Compile-included into Sussudio.Tests so the type is reachable directly
-        // (the production copy lives in tools/Common/AutomationPipeSecurityPolicy.cs).
+        // Referenced from Sussudio.Automation.Contracts so the production
+        // policy is tested without linking source into the test project.
 
         // Non-Windows: never disable, regardless of other flags.
         AssertResult(false, isWindows: false, hasExplicitSecurityDescriptor: false, explicitSecurityFailed: true, authTokenRequired: false);

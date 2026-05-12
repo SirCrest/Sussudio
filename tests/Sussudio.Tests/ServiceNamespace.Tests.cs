@@ -163,19 +163,30 @@ static partial class Program
     private static Task AutomationCommandKind_SourceOwnership_IsModelAligned()
     {
         var repoRoot = GetRepoRoot();
-        var automationKindPath = Path.Combine(repoRoot, "Sussudio", "Models", "Automation", "AutomationCommandKind.cs");
-        AssertEqual(true, File.Exists(automationKindPath), "AutomationCommandKind model source exists");
+        var automationContractsProject = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "Sussudio.Automation.Contracts.csproj");
+        var automationKindPath = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "AutomationCommandKind.cs");
+        AssertEqual(true, File.Exists(automationContractsProject), "Automation contracts project exists");
+        AssertEqual(true, File.Exists(automationKindPath), "AutomationCommandKind contract source exists");
         AssertContains(File.ReadAllText(automationKindPath), "namespace Sussudio.Models;");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationCommandKind.cs")),
-            "tools/Common no longer owns AutomationCommandKind");
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Models", "Automation", "AutomationCommandKind.cs")),
+            "app project no longer owns AutomationCommandKind");
 
         var appIncludes = ReadCompileIncludes(Path.Combine(repoRoot, "Sussudio", "Sussudio.csproj"));
+        var appReferences = ReadProjectReferences(Path.Combine(repoRoot, "Sussudio", "Sussudio.csproj"));
         AssertEqual(
             0,
             CountCompileInclude(appIncludes, @"..\tools\Common\AutomationCommandKind.cs"),
             "app project must not link AutomationCommandKind from tools/Common");
+        AssertEqual(
+            0,
+            CountCompileInclude(appIncludes, @"..\tools\Common\AutomationCommandCatalog.cs"),
+            "app project must not link AutomationCommandCatalog from tools/Common");
+        AssertEqual(
+            1,
+            CountProjectReference(appReferences, @"..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj"),
+            "app project references automation contracts exactly once");
 
         foreach (var toolProject in new[]
         {
@@ -185,10 +196,15 @@ static partial class Program
         })
         {
             var includes = ReadCompileIncludes(toolProject);
+            var references = ReadProjectReferences(toolProject);
+            AssertEqual(
+                0,
+                CountCompileInclude(includes, @"..\..\Sussudio\Models\Automation\AutomationCommandKind.cs"),
+                $"{Path.GetFileName(toolProject)} must not link app-owned AutomationCommandKind source");
             AssertEqual(
                 1,
-                CountCompileInclude(includes, @"..\..\Sussudio\Models\Automation\AutomationCommandKind.cs"),
-                $"{Path.GetFileName(toolProject)} links app-owned AutomationCommandKind source exactly once");
+                CountProjectReference(references, @"..\..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj"),
+                $"{Path.GetFileName(toolProject)} references automation contracts exactly once");
         }
 
         return Task.CompletedTask;
@@ -209,6 +225,18 @@ static partial class Program
 
     private static int CountCompileInclude(IEnumerable<string> includes, string include)
         => includes.Count(value => string.Equals(value, NormalizeProjectInclude(include), StringComparison.OrdinalIgnoreCase));
+
+    private static string[] ReadProjectReferences(string projectPath)
+        => XDocument.Load(projectPath)
+            .Descendants()
+            .Where(element => element.Name.LocalName == "ProjectReference")
+            .Select(element => element.Attribute("Include")?.Value)
+            .Where(include => !string.IsNullOrWhiteSpace(include))
+            .Select(include => NormalizeProjectInclude(include!))
+            .ToArray();
+
+    private static int CountProjectReference(IEnumerable<string> references, string include)
+        => references.Count(value => string.Equals(value, NormalizeProjectInclude(include), StringComparison.OrdinalIgnoreCase));
 
     private static string NormalizeProjectInclude(string include)
         => include.Trim().Replace('\\', '/');

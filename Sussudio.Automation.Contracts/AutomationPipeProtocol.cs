@@ -8,27 +8,28 @@ namespace Sussudio.Tools;
 
 // Shared automation protocol constants, command names, and timeout policy used
 // by ssctl, MCP, diagnostic sessions, and the generic automation client.
-internal static class AutomationPipeProtocol
+public static class AutomationPipeProtocol
 {
-    internal const string DefaultPipeName = "SussudioAutomation";
-    internal const string AutomationKeyEnvVar = "SUSSUDIO_AUTOMATION_TOKEN";
+    public const string DefaultPipeName = "SussudioAutomation";
+    public const string AutomationKeyEnvVar = "SUSSUDIO_AUTOMATION_TOKEN";
 
     // Wire-format revision for the AutomationCommandKind numeric ID table.
     // Bump by +1 whenever AutomationCommandKind gains, loses, or renames a
     // member. The server uses this to reject clients that were built against
     // a different manifest revision before they can misroute a command. See
-    // Sussudio/Models/AutomationCommandKind.cs for the maintainer rules.
-    internal const int CommandManifestRevision = 1;
+    // Sussudio.Automation.Contracts/AutomationCommandKind.cs for the
+    // maintainer rules.
+    public const int CommandManifestRevision = 1;
 
-    internal const int DefaultConnectTimeoutMs = 5000;
-    internal const int DefaultResponseTimeoutMs = 15000;
-    internal const int ExtendedResponseTimeoutMs = 60000;
-    internal const int RecordingResponseTimeoutMs = 150000;
-    internal const int FlashbackMutationResponseTimeoutMs = 305000;
-    internal const int DefaultNotReadyRetries = 15;
-    internal const int DefaultNotReadyDelayMs = 1000;
+    public const int DefaultConnectTimeoutMs = 5000;
+    public const int DefaultResponseTimeoutMs = 15000;
+    public const int ExtendedResponseTimeoutMs = 60000;
+    public const int RecordingResponseTimeoutMs = 150000;
+    public const int FlashbackMutationResponseTimeoutMs = 305000;
+    public const int DefaultNotReadyRetries = 15;
+    public const int DefaultNotReadyDelayMs = 1000;
 
-    internal static IReadOnlyDictionary<string, int> CommandMap { get; } =
+    public static IReadOnlyDictionary<string, int> CommandMap { get; } =
         Enum.GetValues<AutomationCommandKind>()
             .ToDictionary(
                 command => command.ToString(),
@@ -40,7 +41,7 @@ internal static class AutomationPipeProtocol
             entry => entry.Value,
             entry => entry.Key);
 
-    internal static string? GetConfiguredAuthToken(string? explicitAuthToken = null)
+    public static string? GetConfiguredAuthToken(string? explicitAuthToken = null)
     {
         if (!string.IsNullOrWhiteSpace(explicitAuthToken))
         {
@@ -51,7 +52,7 @@ internal static class AutomationPipeProtocol
         return string.IsNullOrWhiteSpace(envToken) ? null : envToken;
     }
 
-    internal static int GetDefaultResponseTimeout(string commandName)
+    public static int GetDefaultResponseTimeout(string commandName)
     {
         commandName = ResolveCanonicalCommandName(commandName);
         return AutomationCommandCatalog.TryGet(commandName, out var metadata)
@@ -85,10 +86,10 @@ internal static class AutomationPipeProtocol
         return commandName;
     }
 
-    internal static bool TryGetCommandValue(string commandName, out int commandValue)
+    public static bool TryGetCommandValue(string commandName, out int commandValue)
         => CommandMap.TryGetValue(commandName, out commandValue);
 
-    internal static bool TryGetCommandName(int commandValue, out string commandName)
+    public static bool TryGetCommandName(int commandValue, out string commandName)
     {
         if (CommandNamesByValue.TryGetValue(commandValue, out var resolvedName))
         {
@@ -100,7 +101,7 @@ internal static class AutomationPipeProtocol
         return false;
     }
 
-    internal static Dictionary<string, object?> CreateRequestEnvelope(
+    public static Dictionary<string, object?> CreateRequestEnvelope(
         int commandValue,
         object? payload = null,
         string? authToken = null)
@@ -115,7 +116,7 @@ internal static class AutomationPipeProtocol
         };
     }
 
-    internal static int ResolveCommand(string command)
+    public static int ResolveCommand(string command)
     {
         if (int.TryParse(command, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numeric))
         {
