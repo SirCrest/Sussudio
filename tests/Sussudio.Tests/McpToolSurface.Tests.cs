@@ -1072,6 +1072,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionJsonArtifacts_OwnsArtifactsAndResponseExtraction()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var artifactsText = ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(artifactsText, "internal static class DiagnosticSessionJsonArtifacts");
+        AssertContains(artifactsText, "internal static JsonElement CreateEmptyJsonObject()");
+        AssertContains(artifactsText, "internal static async Task WriteJsonAsync<T>(");
+        AssertContains(artifactsText, "internal static object BuildFrameLedgerTrace(");
+        AssertContains(artifactsText, "internal static bool TryGetSnapshot(");
+        AssertContains(artifactsText, "internal static bool TryGetVerification(");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
+        AssertDoesNotContain(runnerText, "private static async Task WriteJsonAsync<T>(");
+        AssertDoesNotContain(runnerText, "private static bool TryGetSnapshot(");
+        AssertDoesNotContain(runnerText, "private static bool TryGetVerification(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));

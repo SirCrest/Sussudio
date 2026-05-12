@@ -62,9 +62,15 @@ Diagnostic-session pipe retry/error classification now lives in
 `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a
 permanent failure and connect failed/timeout responses retryable.
 
+Diagnostic-session JSON artifact helpers now live in
+`tools/Common/DiagnosticSessionJsonArtifacts.cs`. The runner still owns the
+session lifecycle, but JSON writing, frame-ledger extraction, and snapshot /
+verification response extraction have a smaller home.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
+- `DiagnosticSessionJsonArtifacts.cs`
 - `DiagnosticSessionModels.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionResultFormatter.cs`
