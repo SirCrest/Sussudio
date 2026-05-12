@@ -103,6 +103,7 @@ static partial class Program
 
         var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
         var mainViewModelDispatchingText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs"));
+        var mainViewModelRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Runtime.cs"));
         AssertContains(mainViewModelDispatchingText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelDispatchingText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing");
         AssertContains(mainViewModelDispatchingText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing_after_enqueue");
@@ -111,8 +112,9 @@ static partial class Program
         AssertContains(mainViewModelDispatchingText, "INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=value");
         AssertDoesNotContain(mainViewModelText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelText, "allowDuringDispose: true");
-        AssertContains(mainViewModelText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
-        AssertContains(mainViewModelText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
+        AssertContains(mainViewModelRuntimeText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
+        AssertContains(mainViewModelRuntimeText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
+        AssertDoesNotContain(mainViewModelText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
         var deviceManagementText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs"));
         AssertContains(deviceManagementText, "CancelPendingAudioControlWork");
         AssertContains(deviceManagementText, "_deviceAudioModeCts");

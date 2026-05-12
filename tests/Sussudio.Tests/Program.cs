@@ -2674,7 +2674,8 @@ static partial class Program
 
     private static Task LivePixelFormatSurfaces_PreferReaderSourceSubtype()
     {
-        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Runtime.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "runtime.ReaderSourceSubtype ??");
         AssertContains(mainViewModelText, "runtime.LatestObservedFramePixelFormat ??");
@@ -3051,7 +3052,8 @@ static partial class Program
 
     private static Task CaptureErrors_RefreshViewModelRuntimeFlags()
     {
-        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Runtime.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "IsInitialized = _captureService.IsInitialized;");
         AssertContains(mainViewModelText, "IsPreviewing = _captureService.IsVideoPreviewActive;");
