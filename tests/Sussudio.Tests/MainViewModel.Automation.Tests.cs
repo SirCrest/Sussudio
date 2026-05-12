@@ -693,6 +693,8 @@ static partial class Program
 
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs")
@@ -743,6 +745,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(diagnosticSessionText, "var scenario = DiagnosticSessionScenarios.Normalize(options.Scenario);");
         AssertContains(diagnosticSessionText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
+        AssertContains(diagnosticSessionText, "var backgroundTasks = new DiagnosticSessionBackgroundTasks();");
         AssertContains(diagnosticSessionText, "DiagnosticSessionScenarios.NeedsFlashback(scenario)");
         AssertContains(diagnosticSessionText, "DiagnosticSessionScenarios.NeedsPreview(scenario)");
         AssertContains(diagnosticSessionText, "DiagnosticSessionScenarios.NeedsRecording(scenario)");
@@ -751,6 +754,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesSourceSignalHealthWarning");
         AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesFlashbackForceRotateDrainWarning");
         AssertContains(diagnosticSessionText, "scenarioPlan.IsPreviewCycleScenario");
+        AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionBackgroundTasks");
+        AssertContains(diagnosticSessionText, "backgroundTasks.AwaitScenarioTasksAsync()");
+        AssertContains(diagnosticSessionText, "backgroundTasks.ObserveAfterFaultAsync(");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<string> All { get; }");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackPlayback = \"flashback-playback\";");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackStress = \"flashback-stress\";");

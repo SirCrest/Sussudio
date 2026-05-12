@@ -140,6 +140,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionJsonArtifacts.cs` owns diagnostic-session JSON
   artifact writing, frame-ledger extraction, and automation response shape
   helpers.
+- `tools/Common/DiagnosticSessionBackgroundTasks.cs` owns diagnostic-session
+  background task registration, deterministic await/drain order, PresentMon
+  task completion, and interrupted-task warning collection.
 - `tools/Common/DiagnosticSessionCleanupPolicy.cs` owns cleanup restore
   validation after diagnostic sessions stop recording, preview, Flashback, or
   playback state.
@@ -229,6 +232,9 @@ Invariants:
   must still ignore only transient low-severity Flashback startup observations.
 - Preserve sampler checkpoint ordering; checkpoint callbacks are allowed to
   observe the sample that was just appended.
+- Preserve diagnostic-session background task await order when moving scenario
+  tasks; interrupted-task warnings are evidence and should keep stable stage
+  names.
 - Preserve result text compatibility when refactoring diagnostic-session
   formatting; ssctl and MCP both flow through `DiagnosticSessionRunner.Format`.
 - Preserve pipe error-code semantics when refactoring diagnostic-session retry:

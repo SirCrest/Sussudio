@@ -1164,6 +1164,33 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionBackgroundTasks_OwnTaskDraining()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var tasksText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(tasksText, "internal sealed class DiagnosticSessionBackgroundTasks");
+        AssertContains(tasksText, "internal void AddScenario(int awaitOrder, string stage, Task task)");
+        AssertContains(tasksText, "internal async Task AwaitScenarioTasksAsync()");
+        AssertContains(tasksText, "internal async Task<PresentMonProbeResult?> AwaitPresentMonAsync(");
+        AssertContains(tasksText, "internal async Task<DiagnosticSessionBackgroundTaskDrainResult> ObserveAfterFaultAsync(");
+        AssertContains(tasksText, "presentmon-task: task still running after diagnostic interruption");
+        AssertContains(tasksText, "flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
+        AssertContains(tasksText, "internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(");
+        AssertContains(runnerText, "var backgroundTasks = new DiagnosticSessionBackgroundTasks();");
+        AssertContains(runnerText, "backgroundTasks.AddScenario(");
+        AssertContains(runnerText, "backgroundTasks.AwaitScenarioTasksAsync()");
+        AssertContains(runnerText, "backgroundTasks.ObserveAfterFaultAsync(");
+        AssertDoesNotContain(runnerText, "Task? flashbackStressTask");
+        AssertDoesNotContain(runnerText, "Task<PresentMonProbeResult>? presentMonTask");
+        AssertDoesNotContain(runnerText, "async Task ObserveBackgroundTasksAfterFaultAsync()");
+        AssertDoesNotContain(runnerText, "async Task ObserveTaskAfterFaultAsync(Task? task, string stage)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionCleanupPolicy_OwnsRestoreWarnings()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
