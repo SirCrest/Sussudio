@@ -109,7 +109,9 @@ static partial class Program
         AssertEqual("snapshot ready after retry", retryResponse.GetProperty("Message").GetString(), "PipeTransport retry final message");
         AssertEqual(2, retryResponse.GetProperty("Data").GetProperty("attempt").GetInt32(), "PipeTransport retry final data");
 
-        Exception? invalidJsonException = null;
+        // Round 1 behavior change: invalid JSON no longer throws; instead SendCommandAsync
+        // catches JsonException and returns a synthetic {Success:false} error envelope.
+        JsonElement invalidJsonResponse = default;
         var invalidPipeName = $"ssctl-pipe-invalid-{Guid.NewGuid():N}";
         var invalidTransport = Activator.CreateInstance(transportType, invalidPipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for invalid JSON test.");
@@ -117,25 +119,22 @@ static partial class Program
                 invalidPipeName,
                 async () =>
                 {
-                    try
-                    {
-                        await InvokePipeTransportSendCommandAsync(
-                                sendCommandAsync,
-                                invalidTransport,
-                                "GetSnapshot",
-                                null,
-                                null)
-                            .ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        invalidJsonException = ex;
-                    }
+                    invalidJsonResponse = await InvokePipeTransportSendCommandAsync(
+                            sendCommandAsync,
+                            invalidTransport,
+                            "GetSnapshot",
+                            null,
+                            null)
+                        .ConfigureAwait(false);
                 },
                 "not-json")
             .ConfigureAwait(false);
         AssertEqual(1, invalidRequest.GetProperty("command").GetInt32(), "PipeTransport invalid JSON request command id");
-        AssertEqual(typeof(JsonException), invalidJsonException?.GetType(), "PipeTransport invalid JSON exception type");
+        AssertEqual(false, invalidJsonResponse.GetProperty("Success").GetBoolean(), "PipeTransport invalid JSON response Success=false");
+        AssertEqual("pipe-invalid-json", invalidJsonResponse.GetProperty("ErrorCode").GetString(), "PipeTransport invalid JSON response ErrorCode");
+        var invalidJsonMessage = invalidJsonResponse.GetProperty("Message").GetString() ?? "";
+        Assert(invalidJsonMessage.Contains("invalid JSON", StringComparison.OrdinalIgnoreCase) || invalidJsonMessage.Contains("pipe-invalid-json", StringComparison.OrdinalIgnoreCase),
+            $"PipeTransport invalid JSON response Message should mention invalid JSON, got: {invalidJsonMessage}");
 
         var usageTransport = Activator.CreateInstance(transportType, $"ssctl-pipe-usage-{Guid.NewGuid():N}", (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for usage test.");
