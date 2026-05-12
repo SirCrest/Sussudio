@@ -144,6 +144,9 @@ Primary owners:
   diagnostic snapshots into session metrics: source cadence, preview cadence,
   visual cadence, D3D slow-frame summaries, playback command health, and
   counter deltas.
+- `tools/Common/DiagnosticSessionFlashbackMetrics.cs` owns read-only
+  diagnostic-session Flashback metric projection for recording, playback, and
+  export sessions.
 - `tools/Common/DiagnosticSessionSampler.cs` owns snapshot sample collection.
   Preserve its ordering: append the cloned sample before running checkpoint
   callbacks.
@@ -166,6 +169,9 @@ Invariants:
   frame ledger, and timeline outputs.
 - Preserve diagnostic metric projection semantics; these helpers must stay
   read-only over sampled snapshots and must not send automation commands.
+- Preserve Flashback metric projection semantics; this helper should only read
+  sampled snapshots and derive deltas/statuses, not mutate playback/export
+  state.
 - Preserve sampler checkpoint ordering; checkpoint callbacks are allowed to
   observe the sample that was just appended.
 - Preserve result text compatibility when refactoring diagnostic-session

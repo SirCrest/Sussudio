@@ -621,6 +621,9 @@ static partial class Program
                 "Diagnostic session metrics have a named owner",
                 DiagnosticSessionMetrics_OwnsSessionMetricProjection),
             await RunCheckAsync(
+                "Diagnostic session Flashback metrics have a named owner",
+                DiagnosticSessionFlashbackMetrics_OwnsFlashbackSessionMetricProjection),
+            await RunCheckAsync(
                 "Diagnostic session runner verifies flashback export during playback",
                 DiagnosticSessionRunner_VerifiesFlashbackExportPlaybackCommandFlow),
             await RunCheckAsync(

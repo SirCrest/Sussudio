@@ -77,9 +77,15 @@ Diagnostic-session metric projection now lives in
 for source cadence, preview cadence, visual cadence, D3D slow-frame summaries,
 playback command health, and reset-aware counter deltas.
 
+Diagnostic-session Flashback metric projection now lives in
+`tools/Common/DiagnosticSessionFlashbackMetrics.cs`. It owns snapshot-only
+recording, playback, and export metric projection while the runner retains
+scenario control and validation warning policy.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
+- `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionModels.cs`

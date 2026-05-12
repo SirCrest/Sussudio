@@ -1136,6 +1136,30 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackMetrics_OwnsFlashbackSessionMetricProjection()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var metricsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(metricsText, "internal static class DiagnosticSessionFlashbackMetrics");
+        AssertContains(metricsText, "internal sealed class FlashbackRecordingSessionMetrics");
+        AssertContains(metricsText, "internal sealed class FlashbackPlaybackSessionMetrics");
+        AssertContains(metricsText, "internal sealed class FlashbackExportSessionMetrics");
+        AssertContains(metricsText, "internal static FlashbackRecordingSessionMetrics BuildFlashbackRecordingMetrics(");
+        AssertContains(metricsText, "internal static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(");
+        AssertContains(metricsText, "internal static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(");
+        AssertContains(metricsText, "private static bool IsPlaybackSnapshotActive(");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;");
+        AssertDoesNotContain(runnerText, "private sealed class FlashbackPlaybackSessionMetrics");
+        AssertDoesNotContain(runnerText, "private sealed class FlashbackExportSessionMetrics");
+        AssertDoesNotContain(runnerText, "private static FlashbackRecordingSessionMetrics BuildFlashbackRecordingMetrics(");
+        AssertDoesNotContain(runnerText, "private static bool IsPlaybackSnapshotActive(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
