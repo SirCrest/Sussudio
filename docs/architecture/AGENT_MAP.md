@@ -126,8 +126,9 @@ Primary current owners:
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing snapshot,
   probe, and options projection. `MainViewModel.FlashbackPlayback.cs` owns
   Flashback playback commands, marker commands, and buffer/bitrate status
-  projection; Flashback export and other command mutation code remain in
-  `MainViewModel.Automation.cs`.
+  projection. `MainViewModel.FlashbackExport.cs` owns Flashback UI/automation
+  export flow, progress/cancellation state, and segment projection; remaining
+  automation command mutation code stays in `MainViewModel.Automation.cs`.
 
 Refactor direction:
 

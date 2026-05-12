@@ -248,8 +248,10 @@ Remaining `tools/Common` ownership:
    in `MainViewModel.Disposal.cs`. Automation-facing snapshot/probe/options
    projection now lives in `MainViewModel.AutomationSnapshots.cs`. Flashback
    playback commands, marker commands, and buffer/bitrate status projection now
-   live in `MainViewModel.FlashbackPlayback.cs`; keep Flashback export and other
-   command mutation code in `MainViewModel.Automation.cs`.
+   live in `MainViewModel.FlashbackPlayback.cs`. Flashback UI/automation export
+   flow, progress/cancellation state, and segment projection now live in
+   `MainViewModel.FlashbackExport.cs`; keep the remaining command mutation code
+   in `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.
 
