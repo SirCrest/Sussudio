@@ -246,8 +246,10 @@ Remaining `tools/Common` ownership:
    and live runtime text/timer/status/error handling now lives in
    `MainViewModel.Runtime.cs`. Bounded teardown and event unsubscription now live
    in `MainViewModel.Disposal.cs`. Automation-facing snapshot/probe/options
-   projection now lives in `MainViewModel.AutomationSnapshots.cs`; keep command
-   mutation code in `MainViewModel.Automation.cs`.
+   projection now lives in `MainViewModel.AutomationSnapshots.cs`. Flashback
+   playback commands, marker commands, and buffer/bitrate status projection now
+   live in `MainViewModel.FlashbackPlayback.cs`; keep Flashback export and other
+   command mutation code in `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.
 

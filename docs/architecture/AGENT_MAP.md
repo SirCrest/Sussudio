@@ -124,7 +124,9 @@ Primary current owners:
   callbacks. `MainViewModel.Disposal.cs` owns bounded teardown, event
   unsubscription, and export-cancellation cleanup.
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing snapshot,
-  probe, and options projection; keep command mutation code in
+  probe, and options projection. `MainViewModel.FlashbackPlayback.cs` owns
+  Flashback playback commands, marker commands, and buffer/bitrate status
+  projection; Flashback export and other command mutation code remain in
   `MainViewModel.Automation.cs`.
 
 Refactor direction:
