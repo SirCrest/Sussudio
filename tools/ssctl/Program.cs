@@ -1,7 +1,7 @@
 using System.Globalization;
 using Sussudio.Tools;
 
-namespace EcCtl;
+namespace Sussudio.Tools.Ssctl;
 
 // Entry point for ssctl, the local CLI over Sussudio's automation pipe. It owns
 // process-level argument parsing and exit codes; command behavior is delegated
@@ -46,6 +46,8 @@ internal static class Program
             }
         };
         Console.CancelKeyPress += cancelHandler;
+
+        var verbose = args.Contains("--verbose");
         try
         {
             var options = CliOptions.Parse(args);
@@ -74,13 +76,32 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine(ex.Message);
+            Console.Error.WriteLine(verbose ? ex.ToString() : FormatExceptionChain(ex));
             return 1;
         }
         finally
         {
             Console.CancelKeyPress -= cancelHandler;
         }
+    }
+
+    // Without --verbose, emit the full inner-exception chain (not just the
+    // outer message) so operators see why a transport call failed without
+    // needing to re-run with --verbose to get the stack trace.
+    private static string FormatExceptionChain(Exception ex)
+    {
+        var sb = new System.Text.StringBuilder();
+        var current = ex;
+        while (current != null)
+        {
+            if (sb.Length > 0)
+            {
+                sb.Append(" → ");
+            }
+            sb.Append(current.GetType().Name).Append(": ").Append(current.Message);
+            current = current.InnerException;
+        }
+        return sb.ToString();
     }
 
     private static void WriteHelp()
@@ -169,6 +190,7 @@ internal static class Program
         Console.WriteLine("  --json            Print raw JSON responses where supported");
         Console.WriteLine("  --pipe NAME       Named pipe (default: SussudioAutomation)");
         Console.WriteLine("  --timeout MS      Response timeout override for pipe calls");
+        Console.WriteLine("  --verbose         On error, print full stack trace + InnerException chain to stderr");
         Console.WriteLine("  --help            Show this help");
     }
 
@@ -197,6 +219,9 @@ internal static class Program
                 {
                     case "--json":
                         options.Json = true;
+                        continue;
+                    case "--verbose":
+                        // Handled directly in Main so it survives Parse() throwing.
                         continue;
                     case "--pipe":
                         options.PipeName = NextValue(args, ref i, arg);

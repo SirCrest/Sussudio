@@ -8,12 +8,12 @@ static partial class Program
     {
         var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
         var ssctlAssembly = LoadToolAssembly(assemblyPath);
-        var transportType = ssctlAssembly.GetType("EcCtl.PipeTransport")
-            ?? throw new InvalidOperationException("EcCtl.PipeTransport type not found.");
-        var commandHandlersType = ssctlAssembly.GetType("EcCtl.CommandHandlers")
-            ?? throw new InvalidOperationException("EcCtl.CommandHandlers type not found.");
+        var transportType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.PipeTransport")
+            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.PipeTransport type not found.");
+        var commandHandlersType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.CommandHandlers")
+            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.CommandHandlers type not found.");
         var executeAsync = commandHandlersType.GetMethod("ExecuteAsync", BindingFlags.Public | BindingFlags.Static)
-            ?? throw new InvalidOperationException("EcCtl.CommandHandlers.ExecuteAsync not found.");
+            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.CommandHandlers.ExecuteAsync not found.");
 
         var devicePipeName = $"ssctl-device-audio-{Guid.NewGuid():N}";
         var deviceTransport = Activator.CreateInstance(transportType, devicePipeName, (int?)null)

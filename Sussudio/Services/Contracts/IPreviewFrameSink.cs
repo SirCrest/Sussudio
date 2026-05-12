@@ -1,23 +1,6 @@
 using System;
-using Sussudio.Services.Capture;
 
-namespace Sussudio.Services.Preview;
-
-internal readonly record struct PreviewDisplayClockSnapshot(
-    long LastPresentTick,
-    long FrameIntervalTicks,
-    double ExpectedFrameIntervalMs,
-    int SampleCount);
-
-internal interface IPreviewDisplayClock
-{
-    bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot);
-}
-
-internal interface IPreviewFrameQueueControl
-{
-    int DropPendingFrames(string reason);
-}
+namespace Sussudio.Services.Contracts;
 
 internal interface IPreviewFrameSink
 {
@@ -31,22 +14,17 @@ internal interface IPreviewFrameSink
         int width,
         int height,
         bool isHdr,
-        long arrivalTick = 0,
-        long sourceSequenceNumber = -1,
-        long previewPresentId = 0,
-        long schedulerSubmitTick = 0,
-        long sourcePtsTicks = 0,
-        bool countForPresentCadence = true);
+        PreviewFrameTracking tracking);
 
     /// <summary>
     /// Submit a leased CPU-resident frame. Callee owns and disposes the lease.
+    /// ArrivalTick and SourceSequenceNumber on <paramref name="tracking"/> are
+    /// ignored — the lease's own ArrivalTick / SequenceNumber are authoritative.
     /// </summary>
     void SubmitRawFrameLease(
         PooledVideoFrameLease frame,
         bool isHdr,
-        long previewPresentId = 0,
-        long schedulerSubmitTick = 0,
-        bool countForPresentCadence = true);
+        PreviewFrameTracking tracking);
 
     /// <summary>
     /// Submit a D3D11 texture. Callee calls AddRef on the COM pointer;
@@ -58,12 +36,7 @@ internal interface IPreviewFrameSink
         int width,
         int height,
         bool isHdr,
-        long arrivalTick = 0,
-        long schedulerSubmitTick = 0,
-        long sourceSequenceNumber = -1,
-        long previewPresentId = 0,
-        long sourcePtsTicks = 0,
-        bool countForPresentCadence = true);
+        PreviewFrameTracking tracking);
 
     /// <summary>
     /// Submit split NV12 plane textures (Y + UV). Callee calls AddRef on
@@ -77,11 +50,6 @@ internal interface IPreviewFrameSink
         IntPtr uvTexturePtr,
         int width,
         int height,
-        bool isHdr = false,
-        long arrivalTick = 0,
-        long schedulerSubmitTick = 0,
-        long sourceSequenceNumber = -1,
-        long previewPresentId = 0,
-        long sourcePtsTicks = 0,
-        bool countForPresentCadence = true);
+        bool isHdr,
+        PreviewFrameTracking tracking);
 }

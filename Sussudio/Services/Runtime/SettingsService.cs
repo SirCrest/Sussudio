@@ -2,9 +2,8 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Sussudio.Services.Runtime;
 
-namespace Sussudio.Services.Configuration;
+namespace Sussudio.Services.Runtime;
 
 // Persisted user preferences. Missing nullable values mean "use current app
 // defaults" so new settings can be added without breaking older installs.

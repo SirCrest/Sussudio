@@ -294,6 +294,9 @@ static partial class Program
                 "Automation dispatcher flashback failures return playback diagnostics",
                 AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics),
             await RunCheckAsync(
+                "Automation dispatcher handles every AutomationCommandKind value",
+                AutomationCommandDispatcher_AllCommandKinds_AreHandled),
+            await RunCheckAsync(
                 "Automation pipe server gates default security fallback on auth token",
                 NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken),
             await RunCheckAsync(
@@ -1644,7 +1647,7 @@ static partial class Program
 
     private static Task AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields()
     {
-        var contractsText = ReadRepoFile("Sussudio/Models/AutomationContracts.cs").Replace("\r\n", "\n");
+        var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeSnapshots.cs").Replace("\r\n", "\n");
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs").Replace("\r\n", "\n");
 
         AssertContains(contractsText, "public string? SourceFirmware { get; init; }");
@@ -2353,7 +2356,7 @@ static partial class Program
     private static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
         var settingsPartialText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Settings.cs").Replace("\r\n", "\n");
-        var settingsServiceText = ReadRepoFile("Sussudio/Services/Configuration/SettingsService.cs").Replace("\r\n", "\n");
+        var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? ShowAllCaptureOptions { get; set; }");
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
@@ -2519,10 +2522,10 @@ static partial class Program
 
     private static Task AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry()
     {
-        var traceModelsText = ReadRepoFile("Sussudio/Models/AudioRampTraceModels.cs").Replace("\r\n", "\n");
+        var traceModelsText = ReadRepoFile("Sussudio/Models/Audio/AudioRampTraceModels.cs").Replace("\r\n", "\n");
         var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs").Replace("\r\n", "\n");
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
-        var runtimeContractsText = ReadRepoFile("Sussudio/Models/AutomationContracts.cs").Replace("\r\n", "\n");
+        var runtimeContractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeSnapshots.cs").Replace("\r\n", "\n");
         var runtimeSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs").Replace("\r\n", "\n");
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs").Replace("\r\n", "\n");
         var automationInterfaceText = ReadRepoFile("Sussudio/Services/Automation/IAutomationViewModel.cs").Replace("\r\n", "\n");
@@ -2677,7 +2680,7 @@ static partial class Program
         AssertContains(statsOverlayText, "UpdateFrameTimeExpectedLine");
         AssertContains(mainWindowXaml, "x:Name=\"FrameTime_ExpectedLine\"");
 
-        var presentationType = RequireType("Sussudio.StatsPresentationBuilder");
+        var presentationType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
         var resolveRange = presentationType.GetMethod("ResolveFrameTimeRange", BindingFlags.Static | BindingFlags.Public)
             ?? throw new InvalidOperationException("ResolveFrameTimeRange was not found.");
 
@@ -2732,8 +2735,8 @@ static partial class Program
 
         var emitMethod = unifiedVideoCapture.GetType().GetMethod("OnMjpegPipelineFrameEmitted", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("OnMjpegPipelineFrameEmitted method not found.");
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
         var rentMethod = frameType.GetMethod("Rent", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("PooledVideoFrame.Rent method not found.");
         var frame = rentMethod.Invoke(
@@ -2941,7 +2944,7 @@ static partial class Program
 
     private static Task FinalizeResult_Success_ProducesEmptyPreservedList()
     {
-        var resultType = RequireType("Sussudio.Services.Recording.FinalizeResult");
+        var resultType = RequireType("Sussudio.Services.Contracts.FinalizeResult");
         var successMethod = resultType.GetMethod("Success", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("FinalizeResult.Success not found");
         var result = successMethod.Invoke(null, new object[] { "/path/output.mp4", "Stopped" })!;
@@ -2957,7 +2960,7 @@ static partial class Program
 
     private static Task FinalizeResult_Failure_DeduplicatesAndFiltersArtifacts()
     {
-        var resultType = RequireType("Sussudio.Services.Recording.FinalizeResult");
+        var resultType = RequireType("Sussudio.Services.Contracts.FinalizeResult");
         var failureMethod = resultType.GetMethod("Failure", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("FinalizeResult.Failure not found");
 
@@ -3133,7 +3136,7 @@ static partial class Program
         var rollbackMethod = manager.GetType().GetMethod("RollbackAsync")
             ?? throw new InvalidOperationException("RollbackAsync not found");
 
-        var contextType = RequireType("Sussudio.Services.Recording.RecordingContext");
+        var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
         var task = rollbackMethod.Invoke(manager, new object?[] { null, CancellationToken.None }) as Task
             ?? throw new InvalidOperationException("RollbackAsync did not return Task");
         task.GetAwaiter().GetResult();
@@ -3543,6 +3546,8 @@ static partial class Program
     {
         var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
+        var cleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(source, "var maxTicks = Math.Max(0, _options.BufferDuration.Ticks);");
         AssertContains(source, "var duration = NonNegativeDeltaTicks(ptsTicks, startTicks);");
@@ -3555,9 +3560,9 @@ static partial class Program
         AssertContains(source, "var totalDuration = NonNegativeDeltaTicks(latestTicks, startTicks);");
         AssertContains(source, "var evictTicks = ToNonNegativeLongSaturated(excessBytes / bytesPerTick);");
         AssertContains(source, "var newStart = AddNonNegativeSaturated(Math.Max(0, startTicks), evictTicks);");
-        AssertContains(source, "directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);");
-        AssertContains(source, "totalCacheBytes = AddNonNegativeSaturated(totalCacheBytes, directoryBytes);");
-        AssertContains(source, "totalCacheBytes = SubtractNonNegative(totalCacheBytes, candidate.SizeBytes);");
+        AssertContains(cleanupSource, "directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);");
+        AssertContains(cleanupSource, "totalCacheBytes = AddNonNegativeSaturated(totalCacheBytes, directoryBytes);");
+        AssertContains(cleanupSource, "totalCacheBytes = SubtractNonNegative(totalCacheBytes, candidate.SizeBytes);");
 
         return Task.CompletedTask;
     }
@@ -4287,14 +4292,14 @@ static partial class Program
         {
             SetPrivateField(manager, "_activeSegmentPath", null);
             var startingIndex = (int)GetPrivateField(manager, "_nextSegmentIndex")!;
-            var getFilePath = manager.GetType().GetMethod("GetFilePath", new[] { typeof(bool).MakeByRefType() })
-                ?? throw new InvalidOperationException("FlashbackBufferManager.GetFilePath(out bool) not found.");
+            var getFilePath = manager.GetType().GetMethod("AcquireSegmentPath", new[] { typeof(bool).MakeByRefType() })
+                ?? throw new InvalidOperationException("FlashbackBufferManager.AcquireSegmentPath(out bool) not found.");
             var abandonGenerated = manager.GetType().GetMethod("AbandonGeneratedSegmentPath")
                 ?? throw new InvalidOperationException("FlashbackBufferManager.AbandonGeneratedSegmentPath not found.");
 
             object?[] args = { false };
             var generatedPath = (string)getFilePath.Invoke(manager, args)!;
-            AssertEqual(true, (bool)args[0]!, "Fresh GetFilePath reports generated path");
+            AssertEqual(true, (bool)args[0]!, "Fresh AcquireSegmentPath reports generated path");
             AssertEqual(generatedPath, (string)GetPrivateField(manager, "_activeSegmentPath")!, "Generated path becomes raw active segment");
             AssertEqual(startingIndex + 1, (int)GetPrivateField(manager, "_nextSegmentIndex")!, "Generated path advances segment index");
 
@@ -4574,8 +4579,8 @@ static partial class Program
             Directory.SetLastWriteTimeUtc(staleFlashbackSession, staleTime);
             Directory.SetLastWriteTimeUtc(unrelatedEmptyDirectory, staleTime);
 
-            var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
-            var cleanup = managerType.GetMethod("CleanupStaleSessionDirectories", BindingFlags.Static | BindingFlags.NonPublic)
+            var cleanupType = RequireType("Sussudio.Services.Flashback.FlashbackStartupCacheCleanup");
+            var cleanup = cleanupType.GetMethod("CleanupStaleSessionDirectories", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
                 ?? throw new InvalidOperationException("CleanupStaleSessionDirectories not found.");
 
             cleanup.Invoke(null, new object[] { tempDir, currentSession });
@@ -4584,11 +4589,13 @@ static partial class Program
             AssertEqual(false, Directory.Exists(staleFlashbackSession), "Plausible stale empty flashback session removed");
             AssertEqual(true, Directory.Exists(unrelatedEmptyDirectory), "Unrelated stale empty directory preserved");
 
-            var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.cs"))
+            var cleanupSource = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackStartupCacheCleanup.cs"))
                 .Replace("\r\n", "\n");
-            AssertContains(source, "FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir");
-            AssertContains(source, "private static bool IsPlausibleFlashbackSessionDirectoryName(string name)");
-            AssertContains(source, "private static bool IsLowerHexString(ReadOnlySpan<char> value)");
+            var scannerSource = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackSessionRecoveryScanner.cs"))
+                .Replace("\r\n", "\n");
+            AssertContains(cleanupSource, "FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir");
+            AssertContains(scannerSource, "internal static bool IsPlausibleFlashbackSessionDirectoryName(string name)");
+            AssertContains(scannerSource, "internal static bool IsLowerHexString(ReadOnlySpan<char> value)");
         }
         finally
         {
@@ -4628,8 +4635,8 @@ static partial class Program
             File.SetLastWriteTimeUtc(Path.Combine(oldSession, "fb_old_0001.ts"), now - TimeSpan.FromHours(2));
             File.SetLastWriteTimeUtc(Path.Combine(recentSession, "fb_recent_0001.ts"), now - TimeSpan.FromMinutes(5));
 
-            var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
-            var cleanup = managerType.GetMethod("CleanupSessionCacheBudget", BindingFlags.Static | BindingFlags.NonPublic)
+            var cleanupType = RequireType("Sussudio.Services.Flashback.FlashbackStartupCacheCleanup");
+            var cleanup = cleanupType.GetMethod("CleanupSessionCacheBudget", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
                 ?? throw new InvalidOperationException("CleanupSessionCacheBudget not found.");
 
             cleanup.Invoke(null, new object[] { tempDir, currentSession, 25L });
@@ -4739,7 +4746,7 @@ static partial class Program
 
     private static Task GpuPipelineHandles_None_ReturnsZeroedStruct()
     {
-        var handlesType = RequireType("Sussudio.Services.Recording.GpuPipelineHandles");
+        var handlesType = RequireType("Sussudio.Services.Contracts.GpuPipelineHandles");
         var noneProp = handlesType.GetProperty("None", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("GpuPipelineHandles.None not found");
         var none = noneProp.GetValue(null)!;
@@ -4754,7 +4761,7 @@ static partial class Program
 
     private static Task RecordingContextRequest_DefaultsMatchRecordingContextDefaults()
     {
-        var request = CreateInstance("Sussudio.Services.Recording.RecordingContextRequest");
+        var request = CreateInstance("Sussudio.Services.Contracts.RecordingContextRequest");
         AssertEqual("30", GetStringProperty(request, "FrameRateArg"), "FrameRateArg default");
         AssertEqual("nv12", GetStringProperty(request, "VideoInputPixelFormat"), "VideoInputPixelFormat default");
         AssertEqual(false, GetBoolProperty(request, "IsFullRangeInput"), "IsFullRangeInput default");
@@ -5596,27 +5603,20 @@ static partial class Program
         string? finalPath = null)
     {
         var settings = BuildSettings(hdrEnabled: false);
-        // Build a RecordingContextRequest and use the RecordingContext constructor
-        var requestType = RequireType("Sussudio.Services.Recording.RecordingContextRequest");
-        var request = RuntimeHelpers.GetUninitializedObject(requestType);
-        SetPropertyBackingField(request, "Settings", settings);
-        SetPropertyBackingField(request, "UsePostMuxAudio", usePostMuxAudio);
-        SetPropertyBackingField(request, "EffectiveFrameRate", 60.0);
-        SetPropertyBackingField(request, "FrameRateArg", "60");
-        SetPropertyBackingField(request, "EffectiveWidth", 1920u);
-        SetPropertyBackingField(request, "EffectiveHeight", 1080u);
-        SetPropertyBackingField(request, "VideoInputPixelFormat", "nv12");
-
-        var contextType = RequireType("Sussudio.Services.Recording.RecordingContext");
-        var ctor = contextType.GetConstructors()[0];
-        return ctor.Invoke(new object?[]
-        {
-            request,
-            videoPath ?? "/tmp/video.mp4",
-            finalPath ?? "/tmp/final.mp4",
-            audioTempPath,
-            false // hdrPipelineActive
-        });
+        var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
+        var context = RuntimeHelpers.GetUninitializedObject(contextType);
+        SetPropertyBackingField(context, "Settings", settings);
+        SetPropertyBackingField(context, "UsePostMuxAudio", usePostMuxAudio);
+        SetPropertyBackingField(context, "EffectiveFrameRate", 60.0);
+        SetPropertyBackingField(context, "FrameRateArg", "60");
+        SetPropertyBackingField(context, "EffectiveWidth", 1920u);
+        SetPropertyBackingField(context, "EffectiveHeight", 1080u);
+        SetPropertyBackingField(context, "VideoInputPixelFormat", "nv12");
+        SetPropertyBackingField(context, "VideoOutputPath", videoPath ?? "/tmp/video.mp4");
+        SetPropertyBackingField(context, "FinalOutputPath", finalPath ?? "/tmp/final.mp4");
+        SetPropertyBackingField(context, "AudioTempPath", audioTempPath);
+        SetPropertyBackingField(context, "HdrPipelineActive", false);
+        return context;
     }
 
     private static void SetPropertyBackingField(object instance, string propertyName, object? value)
@@ -6229,7 +6229,7 @@ static partial class Program
         var inputFiles = inputDirectories
             .SelectMany(Directory.EnumerateFiles)
             .Concat(EnumerateToolProjectCompileIncludes(projectDirectory))
-            .Append(Path.Combine(root, "Sussudio", "Models", "AutomationCommandKind.cs"))
+            .Append(Path.Combine(root, "Sussudio", "Models", "Automation", "AutomationCommandKind.cs"))
             .Where(file => File.Exists(file) && IsToolInputFile(file))
             .Distinct(StringComparer.OrdinalIgnoreCase);
 

@@ -10,10 +10,16 @@ static partial class Program
         var flashbackSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs");
         var flashbackBackendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
         var flashbackBufferSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs");
-        var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
+        var flashbackCleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs");
+        var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs");
         var captureSnapshotsSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs");
         var unifiedVideoCaptureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs");
-        var recordingContractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs");
+        var recordingContractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
+            + "\n"
+            + ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs");
 
         AssertDoesNotContain(libAvSource, "LIBAV_SINK_BURST_EVICT");
         AssertDoesNotContain(flashbackSource, "FLASHBACK_SINK_BURST_EVICT");
@@ -200,8 +206,8 @@ static partial class Program
         AssertContains(flashbackBufferSource, "private bool IsSessionPreservedForRecoveryUnsafe()");
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY");
-        AssertContains(flashbackBufferSource, "FLASHBACK_STALE_SESSION_PRESERVE_SKIP");
-        AssertContains(flashbackBufferSource, "File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName))");
+        AssertContains(flashbackCleanupSource, "FLASHBACK_STALE_SESSION_PRESERVE_SKIP");
+        AssertContains(flashbackCleanupSource, "File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName))");
         AssertContains(flashbackBufferSource, "DeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"valid_window\")");
         AssertContains(flashbackBufferSource, "DeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"disk_budget\")");
         AssertContains(flashbackBufferSource, "private static bool DeleteEvictedFile");
@@ -259,7 +265,7 @@ static partial class Program
         var restartFlashbackCore = ExtractSourceBlock(
             captureServiceSource,
             "private async Task RestartFlashbackCoreAsync",
-            "/// <summary>\n    /// Updates the recording format");
+            "    private async Task EnsureFlashbackAudioInputsAsync");
         AssertContains(restartFlashbackCore, "var committedRestartToken = CancellationToken.None;");
         AssertContains(restartFlashbackCore, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, committedRestartToken).ConfigureAwait(false);");
         AssertContains(restartFlashbackCore, "Logger.Log(\"FLASHBACK_RESTART_OK\");\n        cancellationToken.ThrowIfCancellationRequested();");
@@ -449,7 +455,7 @@ static partial class Program
         var cycleFlashbackBuffer = ExtractSourceBlock(
             captureServiceSource,
             "private async Task CycleFlashbackBufferAsync",
-            "private void OnFlashbackFrameEncoded");
+            "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync");
         AssertContains(cycleFlashbackBuffer, "var committedCycleToken = CancellationToken.None;");
         AssertContains(cycleFlashbackBuffer, "FLASHBACK_CYCLE_STOP_CANCEL_DEFERRED");
         AssertContains(cycleFlashbackBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
@@ -655,7 +661,9 @@ static partial class Program
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
-        var contractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
+        var contractsSource = (ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
+                + "\n"
+                + ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs"))
             .Replace("\r\n", "\n");
         var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");
@@ -708,7 +716,11 @@ static partial class Program
     private static Task CaptureService_FlashbackBackendOwnershipUsesResourceAggregate()
     {
         var captureSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+                .Replace("\r\n", "\n");
         var backendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
             .Replace("\r\n", "\n");
 

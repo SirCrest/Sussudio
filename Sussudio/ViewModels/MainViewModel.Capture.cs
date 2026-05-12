@@ -7,7 +7,6 @@ using Windows.Storage.Pickers;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
-using Sussudio.Services.Configuration;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
@@ -671,8 +670,8 @@ public partial class MainViewModel
             FlashbackBufferMinutes = FlashbackBufferMinutes,
             Format = format,
             Quality = quality,
-            NvencPreset = SelectedPreset,
-            SplitEncodeMode = SelectedSplitEncodeMode,
+            NvencPreset = NvencPresetParser.Parse(SelectedPreset),
+            SplitEncodeMode = SplitEncodeModeParser.Parse(SelectedSplitEncodeMode),
             CustomBitrateMbps = CustomBitrateMbps,
             HdrEnabled = IsHdrEnabled,
             HdrOutputMode = IsHdrEnabled ? HdrOutputMode.Hdr10Pq : HdrOutputMode.Off,

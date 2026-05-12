@@ -30,6 +30,21 @@ public static class Logger
     private static int _systemInfoLogged;
     private static long _droppedLogMessages;
 
+    // Categorized init outcome so callers can distinguish "log file isn't being
+    // written" from "log file rotation failed but writer started anyway".
+    // Keeps the static-ctor-must-not-throw invariant by *recording* failure
+    // rather than rethrowing. AccessViolationException remains uncatchable per
+    // CLAUDE.md — this enum only covers ordinary I/O.
+    public enum LoggerInitState
+    {
+        NotInitialized = 0,
+        Healthy,
+        FileIoFailed,
+        WriterStartFailed,
+    }
+
+    public static LoggerInitState InitState { get; private set; } = LoggerInitState.NotInitialized;
+
     static Logger()
     {
 #if DEBUG
@@ -37,15 +52,29 @@ public static class Logger
 #else
         VerboseEnabled = false;
 #endif
+        var fileIoOk = true;
         try
         {
             RotatePriorLog();
             var header = $"=== Sussudio Debug Log ===\nStarted: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPID: {Environment.ProcessId}\n\n";
             File.WriteAllText(LogFilePath, header);
         }
-        catch { /* Best-effort: Logger init must not throw — if the log file is locked we proceed without it */ }
+        catch
+        {
+            // Best-effort: Logger init must not throw — if the log file is
+            // locked we proceed without it. The InitState below records this.
+            fileIoOk = false;
+        }
 
-        _ = Task.Run(RunLogWriterAsync);
+        try
+        {
+            _ = Task.Run(RunLogWriterAsync);
+            InitState = fileIoOk ? LoggerInitState.Healthy : LoggerInitState.FileIoFailed;
+        }
+        catch
+        {
+            InitState = LoggerInitState.WriterStartFailed;
+        }
     }
 
     public static void Log(string message, [CallerMemberName] string caller = "")

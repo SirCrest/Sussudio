@@ -550,8 +550,9 @@ public static class PresentMonProbe
         {
             return await task.WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex)
         {
+            Trace.TraceWarning($"PresentMonProbe.TryReadAsync swallowed: {ex.GetType().Name}: {ex.Message}");
             return string.Empty;
         }
     }
@@ -565,8 +566,9 @@ public static class PresentMonProbe
                 process.Kill(entireProcessTree: true);
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Trace.TraceWarning($"PresentMonProbe.TryKill swallowed: {ex.GetType().Name}: {ex.Message}");
         }
     }
 
@@ -1070,8 +1072,9 @@ public static class PresentMonProbe
         {
             File.Delete(path);
         }
-        catch
+        catch (Exception ex)
         {
+            Trace.TraceWarning($"PresentMonProbe.TryDelete swallowed for '{path}': {ex.GetType().Name}: {ex.Message}");
         }
     }
 

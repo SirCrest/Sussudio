@@ -4,7 +4,7 @@ using System.Globalization;
 using Sussudio.Models;
 using Sussudio.Services.Automation;
 
-namespace Sussudio;
+namespace Sussudio.ViewModels;
 
 internal static class StatsPresentationBuilder
 {

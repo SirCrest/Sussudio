@@ -61,12 +61,25 @@ public sealed class RecordingArtifactManager
         string? audioTempPath,
         bool hdrPipelineActive)
     {
-        return new RecordingContext(
-            request,
-            videoOutputPath,
-            finalOutputPath,
-            audioTempPath,
-            hdrPipelineActive);
+        return new RecordingContext
+        {
+            Settings = request.Settings,
+            UsePostMuxAudio = request.UsePostMuxAudio,
+            AudioDeviceName = request.AudioDeviceName,
+            MicrophoneDeviceName = request.MicrophoneDeviceName,
+            EffectiveFrameRate = request.EffectiveFrameRate,
+            FrameRateArg = request.FrameRateArg,
+            EffectiveWidth = request.EffectiveWidth,
+            EffectiveHeight = request.EffectiveHeight,
+            VideoInputPixelFormat = request.VideoInputPixelFormat,
+            IsFullRangeInput = request.IsFullRangeInput,
+            GpuHandles = request.GpuHandles,
+            FileNameFormatOverride = request.FileNameFormatOverride,
+            VideoOutputPath = videoOutputPath,
+            FinalOutputPath = finalOutputPath,
+            AudioTempPath = audioTempPath,
+            HdrPipelineActive = hdrPipelineActive,
+        };
     }
 
     public FinalizeResult FinalizeContext(

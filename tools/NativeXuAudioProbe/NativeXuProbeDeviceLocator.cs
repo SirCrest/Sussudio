@@ -1,5 +1,5 @@
 using Sussudio.Models;
-using Sussudio.Services.Devices;
+using Sussudio.Services.Capture;
 
 // CLI-only device locator for NativeXuAudioProbe. It finds supported Elgato
 // KS/XU interfaces and turns the selected interface path into a lightweight

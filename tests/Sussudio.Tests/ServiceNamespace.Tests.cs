@@ -50,7 +50,7 @@ static partial class Program
         AssertDoesNotContain(nativeXuProbeProjectText, "Sussudio.csproj");
         AssertContains(nativeXuProbeProjectText, "NativeXuAudioControlService.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.cs");
-        AssertContains(File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Models", "CaptureDevice.cs")), "NativeXuInterfacePath");
+        AssertContains(File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Models", "Capture", "CaptureDevice.cs")), "NativeXuInterfacePath");
         AssertContains(File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "ToolCaptureDevice.cs")), "NativeXuInterfacePath");
         var deviceServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.cs"));
         AssertContains(deviceServiceText, "NativeXuInterfacePath = ResolveNativeXuInterfacePath(videoDevice.SymbolicLink)");
@@ -163,7 +163,7 @@ static partial class Program
     private static Task AutomationCommandKind_SourceOwnership_IsModelAligned()
     {
         var repoRoot = GetRepoRoot();
-        var automationKindPath = Path.Combine(repoRoot, "Sussudio", "Models", "AutomationCommandKind.cs");
+        var automationKindPath = Path.Combine(repoRoot, "Sussudio", "Models", "Automation", "AutomationCommandKind.cs");
         AssertEqual(true, File.Exists(automationKindPath), "AutomationCommandKind model source exists");
         AssertContains(File.ReadAllText(automationKindPath), "namespace Sussudio.Models;");
         AssertEqual(
@@ -187,7 +187,7 @@ static partial class Program
             var includes = ReadCompileIncludes(toolProject);
             AssertEqual(
                 1,
-                CountCompileInclude(includes, @"..\..\Sussudio\Models\AutomationCommandKind.cs"),
+                CountCompileInclude(includes, @"..\..\Sussudio\Models\Automation\AutomationCommandKind.cs"),
                 $"{Path.GetFileName(toolProject)} links app-owned AutomationCommandKind source exactly once");
         }
 

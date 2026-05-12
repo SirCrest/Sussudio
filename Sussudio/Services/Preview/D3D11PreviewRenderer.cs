@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Runtime;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
@@ -25,10 +26,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private const int FrameCaptureTimeoutMs = 5000;
     private const string RendererModeNone = "None";
     private const string RendererModeVideoProcessor = "D3D11VideoProcessor";
-    private const string RendererModeNv12Shader = "Nv12Shader";
-    private const string RendererModeHdrShader = "HdrShader";
     private const string RendererModeHdrPassthrough = "HdrPassthrough";
-    private static readonly uint[] PngCrc32Table = InitPngCrc32Table();
 
     [ComImport]
     [Guid("63aad0b8-7c24-40ff-85a8-640d944cc325")]
@@ -65,146 +63,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
     [DllImport("dwmapi.dll", ExactSpelling = true)]
     private static extern int DwmFlush();
-
-    private const string FullscreenVertexShaderSource = """
-        struct VSOutput {
-            float4 position : SV_POSITION;
-            float2 texcoord : TEXCOORD0;
-        };
-
-        VSOutput main(uint vertexId : SV_VertexID) {
-            VSOutput output;
-            output.texcoord = float2((vertexId << 1) & 2, vertexId & 2);
-            output.position = float4(output.texcoord * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
-            return output;
-        }
-        """;
-
-    private const string HdrTonemapPixelShaderSource = """
-        cbuffer ViewportInfo : register(b0) {
-            float2 vpOrigin;
-            float2 vpSize;
-        };
-
-        Texture2D<float> yPlane : register(t0);
-        Texture2D<float2> uvPlane : register(t1);
-        SamplerState bilinearSampler : register(s0);
-
-        static const float PQ_m1 = 0.1593017578125;
-        static const float PQ_m2 = 78.84375;
-        static const float PQ_c1 = 0.8359375;
-        static const float PQ_c2 = 18.8515625;
-        static const float PQ_c3 = 18.6875;
-
-        float3 PQ_EOTF(float3 N) {
-            float3 Np = pow(max(N, 0.0), 1.0 / PQ_m2);
-            float3 numerator = max(Np - PQ_c1, 0.0);
-            float3 denominator = PQ_c2 - PQ_c3 * Np;
-            return pow(numerator / denominator, 1.0 / PQ_m1);
-        }
-
-        float3 BT2020_to_BT709(float3 c) {
-            return float3(
-                 1.6605 * c.r - 0.5877 * c.g - 0.0728 * c.b,
-                -0.1246 * c.r + 1.1329 * c.g - 0.0083 * c.b,
-                -0.0182 * c.r - 0.1006 * c.g + 1.1187 * c.b
-            );
-        }
-
-        float3 LinearToSRGB(float3 c) {
-            float3 lo = 12.92 * c;
-            float3 hi = 1.055 * pow(max(c, 1e-6), 1.0 / 2.4) - 0.055;
-            return float3(
-                c.r <= 0.0031308 ? lo.r : hi.r,
-                c.g <= 0.0031308 ? lo.g : hi.g,
-                c.b <= 0.0031308 ? lo.b : hi.b
-            );
-        }
-
-        float4 main(float4 pos : SV_Position) : SV_Target {
-            float2 uv = (pos.xy - vpOrigin) / vpSize;
-
-            float y_raw = yPlane.Sample(bilinearSampler, uv);
-            float2 uv_raw = uvPlane.Sample(bilinearSampler, uv);
-
-            float Y = saturate((y_raw - 64.0 / 1023.0) * 1023.0 / (940.0 - 64.0));
-            float Cb = (uv_raw.x - 512.0 / 1023.0) * 1023.0 / (960.0 - 64.0);
-            float Cr = (uv_raw.y - 512.0 / 1023.0) * 1023.0 / (960.0 - 64.0);
-
-            float3 rgb;
-            rgb.r = Y + 1.4746 * Cr;
-            rgb.g = Y - 0.16455 * Cb - 0.57135 * Cr;
-            rgb.b = Y + 1.8814 * Cb;
-            rgb = saturate(rgb);
-
-            float3 linearScene = PQ_EOTF(rgb) * 10000.0;
-            linearScene /= 100.0;
-
-            float3 bt709 = BT2020_to_BT709(linearScene);
-            bt709 = max(bt709, 0.0);
-
-            float3 tonemapped = bt709 / (1.0 + bt709);
-            float3 srgb = LinearToSRGB(tonemapped);
-            return float4(saturate(srgb), 1.0);
-        }
-        """;
-
-    private const string HdrPassthroughPixelShaderSource = """
-        cbuffer ViewportInfo : register(b0) {
-            float2 vpOrigin;
-            float2 vpSize;
-        };
-
-        Texture2D<float> yPlane : register(t0);
-        Texture2D<float2> uvPlane : register(t1);
-        SamplerState bilinearSampler : register(s0);
-
-        float4 main(float4 pos : SV_Position) : SV_Target {
-            float2 uv = (pos.xy - vpOrigin) / vpSize;
-
-            float y_raw = yPlane.Sample(bilinearSampler, uv);
-            float2 uv_raw = uvPlane.Sample(bilinearSampler, uv);
-
-            // Narrow-range P010 to normalized YCbCr (same as tonemap shader)
-            float Y = saturate((y_raw - 64.0 / 1023.0) * 1023.0 / (940.0 - 64.0));
-            float Cb = (uv_raw.x - 512.0 / 1023.0) * 1023.0 / (960.0 - 64.0);
-            float Cr = (uv_raw.y - 512.0 / 1023.0) * 1023.0 / (960.0 - 64.0);
-
-            // BT.2020 YCbCr to RGB (preserve PQ encoding, no EOTF/tonemap/OETF)
-            float3 rgb;
-            rgb.r = Y + 1.4746 * Cr;
-            rgb.g = Y - 0.16455 * Cb - 0.57135 * Cr;
-            rgb.b = Y + 1.8814 * Cb;
-            return float4(saturate(rgb), 1.0);
-        }
-        """;
-
-    private const string Nv12PixelShaderSource = """
-        cbuffer ViewportInfo : register(b0)
-        {
-            float2 vpOrigin;
-            float2 vpSize;
-        };
-
-        Texture2D<float> yPlane : register(t0);
-        Texture2D<float2> uvPlane : register(t1);
-        SamplerState bilinear : register(s0);
-
-        float4 main(float4 pos : SV_Position) : SV_Target
-        {
-            float2 uv = (pos.xy - vpOrigin) / vpSize;
-
-            float y = yPlane.Sample(bilinear, uv).r;
-            float2 uv2 = uvPlane.Sample(bilinear, uv);
-            float cb = uv2.r - 0.501960784f;
-            float cr = uv2.g - 0.501960784f;
-
-            float r = saturate(y + 1.57480f * cr);
-            float g = saturate(y - 0.18732f * cb - 0.46812f * cr);
-            float b = saturate(y + 1.85560f * cb);
-            return float4(r, g, b, 1.0f);
-        }
-        """;
 
     private sealed class PendingFrame : IDisposable
     {
@@ -973,12 +831,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         int width,
         int height,
         bool isHdr,
-        long arrivalTick = 0,
-        long sourceSequenceNumber = -1,
-        long previewPresentId = 0,
-        long schedulerSubmitTick = 0,
-        long sourcePtsTicks = 0,
-        bool countForPresentCadence = true)
+        PreviewFrameTracking tracking)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1009,21 +862,19 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             width,
             height,
             isHdr,
-            arrivalTick,
-            sourceSequenceNumber,
-            previewPresentId,
-            schedulerSubmitTick,
-            sourcePtsTicks,
-            countForPresentCadence: countForPresentCadence);
+            tracking.ArrivalTick,
+            tracking.SourceSequenceNumber,
+            tracking.PreviewPresentId,
+            tracking.SchedulerSubmitTick,
+            tracking.SourcePtsTicks,
+            countForPresentCadence: tracking.CountForPresentCadence);
         EnqueuePendingFrame(frame);
     }
 
     public void SubmitRawFrameLease(
         PooledVideoFrameLease frame,
         bool isHdr,
-        long previewPresentId = 0,
-        long schedulerSubmitTick = 0,
-        bool countForPresentCadence = true)
+        PreviewFrameTracking tracking)
     {
         ArgumentNullException.ThrowIfNull(frame);
 
@@ -1049,11 +900,11 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             isHdr,
             frame.ArrivalTick,
             frame.SequenceNumber,
-            previewPresentId,
-            schedulerSubmitTick,
+            tracking.PreviewPresentId,
+            tracking.SchedulerSubmitTick,
             sourcePtsTicks: 0,
             frameLease: frame,
-            countForPresentCadence: countForPresentCadence));
+            countForPresentCadence: tracking.CountForPresentCadence));
     }
 
     public void SubmitTexture(
@@ -1062,12 +913,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         int width,
         int height,
         bool isHdr,
-        long arrivalTick = 0,
-        long schedulerSubmitTick = 0,
-        long sourceSequenceNumber = -1,
-        long previewPresentId = 0,
-        long sourcePtsTicks = 0,
-        bool countForPresentCadence = true)
+        PreviewFrameTracking tracking)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1111,12 +957,12 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             width,
             height,
             isHdr,
-            arrivalTick,
-            sourceSequenceNumber,
-            previewPresentId,
-            schedulerSubmitTick,
-            sourcePtsTicks,
-            countForPresentCadence: countForPresentCadence);
+            tracking.ArrivalTick,
+            tracking.SourceSequenceNumber,
+            tracking.PreviewPresentId,
+            tracking.SchedulerSubmitTick,
+            tracking.SourcePtsTicks,
+            countForPresentCadence: tracking.CountForPresentCadence);
         EnqueuePendingFrame(frame);
     }
 
@@ -1125,13 +971,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         IntPtr uvTexturePtr,
         int width,
         int height,
-        bool isHdr = false,
-        long arrivalTick = 0,
-        long schedulerSubmitTick = 0,
-        long sourceSequenceNumber = -1,
-        long previewPresentId = 0,
-        long sourcePtsTicks = 0,
-        bool countForPresentCadence = true)
+        bool isHdr,
+        PreviewFrameTracking tracking)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1190,12 +1031,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 width,
                 height,
                 isHdr,
-                arrivalTick,
-                schedulerSubmitTick,
-                sourceSequenceNumber,
-                previewPresentId,
-                sourcePtsTicks,
-                countForPresentCadence);
+                tracking);
         }
         catch
         {
@@ -1223,12 +1059,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         int width,
         int height,
         bool isHdr,
-        long arrivalTick,
-        long schedulerSubmitTick,
-        long sourceSequenceNumber,
-        long previewPresentId,
-        long sourcePtsTicks,
-        bool countForPresentCadence)
+        PreviewFrameTracking tracking)
     {
         var frame = new PendingFrame(
             d3dTexture: null,
@@ -1238,16 +1069,16 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             width: width,
             height: height,
             isHdr: isHdr,
-            arrivalTick: arrivalTick,
-            sourceSequenceNumber: sourceSequenceNumber,
-            previewPresentId: previewPresentId,
-            schedulerSubmitTick: schedulerSubmitTick,
-            sourcePtsTicks: sourcePtsTicks,
+            arrivalTick: tracking.ArrivalTick,
+            sourceSequenceNumber: tracking.SourceSequenceNumber,
+            previewPresentId: tracking.PreviewPresentId,
+            schedulerSubmitTick: tracking.SchedulerSubmitTick,
+            sourcePtsTicks: tracking.SourcePtsTicks,
             d3dTextureY: yTexturePtr,
             d3dTextureUV: uvTexturePtr,
             d3dTextureYObject: yTexture,
             d3dTextureUVObject: uvTexture,
-            countForPresentCadence: countForPresentCadence);
+            countForPresentCadence: tracking.CountForPresentCadence);
         EnqueuePendingFrame(frame);
     }
 

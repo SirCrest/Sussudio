@@ -145,11 +145,15 @@ static partial class Program
         var audioPathModeType = RequireType("Sussudio.Models.AudioPathMode");
         var pipelineOptionsType = RequireType("Sussudio.Models.RecordingPipelineOptions");
         var splitEncodeSupportType = RequireType("Sussudio.Models.SplitEncodeSupport");
+        var nvencPresetType = RequireType("Sussudio.Models.NvencPreset");
+        var splitEncodeModeType = RequireType("Sussudio.Models.SplitEncodeMode");
 
         AssertEnumValues(recordingFormatType, ("H264Mp4", 0), ("HevcMp4", 1), ("Av1Mp4", 2));
         AssertEnumValues(videoQualityType, ("Auto", 0), ("Low", 1), ("Medium", 2), ("High", 3), ("SuperHigh", 4), ("Custom", 5));
         AssertEnumValues(hdrOutputModeType, ("Off", 0), ("Hdr10Pq", 1));
         AssertEnumValues(previewModeType, ("GpuFast", 0), ("TrueHdr", 1));
+        AssertEnumValues(nvencPresetType, ("Auto", 0), ("P1", 1), ("P2", 2), ("P3", 3), ("P4", 4), ("P5", 5), ("P6", 6), ("P7", 7), ("Fast", 8), ("Slow", 9));
+        AssertEnumValues(splitEncodeModeType, ("Auto", 0), ("Disabled", 1), ("TwoWay", 2), ("ThreeWay", 3), ("ForcedOn", 4));
 
         AssertDeclaredConfigProperties(
             settingsType,
@@ -164,8 +168,8 @@ static partial class Program
                 ConfigString("RequestedPixelFormat", ConfigSetterExpectation.Set, ConfigNullability.Nullable),
                 ConfigProperty("Format", recordingFormatType, ConfigSetterExpectation.Set),
                 ConfigProperty("Quality", videoQualityType, ConfigSetterExpectation.Set),
-                ConfigString("NvencPreset", ConfigSetterExpectation.Set, ConfigNullability.NotNull),
-                ConfigString("SplitEncodeMode", ConfigSetterExpectation.Set, ConfigNullability.NotNull),
+                ConfigProperty("NvencPreset", nvencPresetType, ConfigSetterExpectation.Set),
+                ConfigProperty("SplitEncodeMode", splitEncodeModeType, ConfigSetterExpectation.Set),
                 ConfigProperty("CustomBitrateMbps", typeof(double), ConfigSetterExpectation.Set),
                 ConfigProperty("HdrEnabled", typeof(bool), ConfigSetterExpectation.Set),
                 ConfigProperty("HdrOutputMode", hdrOutputModeType, ConfigSetterExpectation.Set),

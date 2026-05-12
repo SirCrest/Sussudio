@@ -9,7 +9,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
-public static class PreviewColorProbeTool
+public static class PreviewColorProbeTools
 {
     [McpServerTool, Description("Probe the active preview renderer mode, negotiated subtype, and available color metadata. Reports D3D11 input/output color spaces when available; extended MF attributes are shown only when provided by the active pipeline.")]
     public static async Task<CallToolResult> probe_preview_color(PipeClient pipeClient)

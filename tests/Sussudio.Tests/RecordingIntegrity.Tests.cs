@@ -128,7 +128,7 @@ static partial class Program
             "Sussudio",
             "Services",
             "Capture",
-            "CaptureService.cs"));
+            "CaptureService.RecordingFinalizeRecord.cs"));
 
         AssertContains(unifiedText, "public long FlashbackRecordingSequenceGaps");
         AssertContains(unifiedText, "TrackFlashbackRecordingAcceptedSequence(sourceSequence)");

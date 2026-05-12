@@ -43,7 +43,7 @@ static partial class Program
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveEncoderOutputPixelFormat not found.");
 
-        var contextType = RequireType("Sussudio.Services.Recording.RecordingContext");
+        var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
         var settingsType = RequireType("Sussudio.Models.CaptureSettings");
 
         // HDR active context → yuv420p10le
@@ -180,7 +180,7 @@ static partial class Program
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveEncoderVideoProfile not found.");
 
-        var contextType = RequireType("Sussudio.Services.Recording.RecordingContext");
+        var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
         var settingsType = RequireType("Sussudio.Models.CaptureSettings");
         var formatType = RequireType("Sussudio.Models.RecordingFormat");
 

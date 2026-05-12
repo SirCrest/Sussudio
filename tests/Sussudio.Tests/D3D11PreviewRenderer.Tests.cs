@@ -44,17 +44,18 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // ── D3D11PreviewRenderer: CountLeadingBlackEdges / CountTrailingBlackEdges ──
+    // ── PreviewScreenshotCapture: CountLeadingBlackEdges / CountTrailingBlackEdges ──
 
     private static Task D3D11PreviewRenderer_BlackEdgeCounting_WorksCorrectly()
     {
-        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
+        // Extracted to PreviewScreenshotCapture; reflect on the new type.
+        var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
 
-        var leadingMethod = rendererType.GetMethod("CountLeadingBlackEdges",
-            BindingFlags.Static | BindingFlags.NonPublic)
+        var leadingMethod = captureType.GetMethod("CountLeadingBlackEdges",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("CountLeadingBlackEdges not found.");
-        var trailingMethod = rendererType.GetMethod("CountTrailingBlackEdges",
-            BindingFlags.Static | BindingFlags.NonPublic)
+        var trailingMethod = captureType.GetMethod("CountTrailingBlackEdges",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("CountTrailingBlackEdges not found.");
 
         // [true, true, false, true, false] → leading = 2, trailing = 0
@@ -139,8 +140,19 @@ static partial class Program
         var getMetrics = rendererType.GetMethod("GetPresentCadenceMetrics", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("GetPresentCadenceMetrics not found.");
 
+        // Use a deterministic fake clock: advance _lastPresentTick by a fixed step
+        // (one 60 fps frame at the system frequency) before each TrackPresentCadence
+        // call so the interval calculation is fully predictable without Thread.Sleep.
+        var fakeStepTicks = System.Diagnostics.Stopwatch.Frequency / 60;
+
+        // Call 1: establish baseline. _lastPresentTick starts at 0 (uninitialized
+        // long), so the method sees previousTick <= 0 and returns 0.
+        SetPrivateField(renderer, "_lastPresentTick", 0L);
         InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true });
-        System.Threading.Thread.Sleep(2);
+
+        // Call 2: _lastPresentTick was just written by call 1 (real Stopwatch.GetTimestamp).
+        // Prime it to a known value that is one step in the past so the interval is fakeStepTicks.
+        SetPrivateField(renderer, "_lastPresentTick", System.Diagnostics.Stopwatch.GetTimestamp() - fakeStepTicks);
         var firstInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true }));
         AssertEqual(true, firstInterval > 0, "first measured cadence interval is recorded");
 
@@ -148,7 +160,8 @@ static partial class Program
             ?? throw new InvalidOperationException("GetPresentCadenceMetrics returned null.");
         AssertEqual(1, Convert.ToInt32(GetPropertyValue(metrics, "SampleCount")), "sample count after first measured interval");
 
-        System.Threading.Thread.Sleep(2);
+        // Call 3: suppressed present — advance the fake clock, result must be 0.0.
+        SetPrivateField(renderer, "_lastPresentTick", System.Diagnostics.Stopwatch.GetTimestamp() - fakeStepTicks);
         var suppressedInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { false }));
         AssertEqual(0.0, suppressedInterval, "suppressed present does not report interval");
         metrics = getMetrics.Invoke(renderer, new object[] { 8.333 })
@@ -156,7 +169,8 @@ static partial class Program
         AssertEqual(1, Convert.ToInt32(GetPropertyValue(metrics, "SampleCount")), "suppressed present does not add a sample");
         AssertEqual(1L, GetLongPrivateField(renderer, "_presentCadenceBaselinePending"), "suppressed present marks baseline pending");
 
-        System.Threading.Thread.Sleep(2);
+        // Call 4: first measured present after suppression — resets baseline, returns 0.
+        SetPrivateField(renderer, "_lastPresentTick", System.Diagnostics.Stopwatch.GetTimestamp() - fakeStepTicks);
         var baselineInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true }));
         AssertEqual(0.0, baselineInterval, "first measured present after suppression resets baseline");
         metrics = getMetrics.Invoke(renderer, new object[] { 8.333 })
@@ -164,7 +178,8 @@ static partial class Program
         AssertEqual(1, Convert.ToInt32(GetPropertyValue(metrics, "SampleCount")), "baseline reset does not add transition gap sample");
         AssertEqual(0L, GetLongPrivateField(renderer, "_presentCadenceBaselinePending"), "baseline pending flag clears after measured present");
 
-        System.Threading.Thread.Sleep(2);
+        // Call 5: resumed measured present — should record a valid interval.
+        SetPrivateField(renderer, "_lastPresentTick", System.Diagnostics.Stopwatch.GetTimestamp() - fakeStepTicks);
         var resumedInterval = Convert.ToDouble(InvokeNonPublicInstanceMethod(renderer, "TrackPresentCadence", new object?[] { true }));
         AssertEqual(true, resumedInterval > 0, "second measured present after suppression records interval");
         metrics = getMetrics.Invoke(renderer, new object[] { 8.333 })
@@ -174,13 +189,14 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // ── D3D11PreviewRenderer: InitPngCrc32Table ──
+    // ── PreviewScreenshotCapture: InitPngCrc32Table ──
 
     private static Task D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries()
     {
-        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
-        var method = rendererType.GetMethod("InitPngCrc32Table",
-            BindingFlags.Static | BindingFlags.NonPublic)
+        // Extracted to PreviewScreenshotCapture; reflect on the new type.
+        var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
+        var method = captureType.GetMethod("InitPngCrc32Table",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("InitPngCrc32Table not found.");
 
         var table = (uint[])method.Invoke(null, null)!;
@@ -257,9 +273,9 @@ static partial class Program
         AssertContains(captureSource, "queueControl.DropPendingFrames(reason)");
         AssertContains(captureSource, "private long _livePreviewPresentId;");
         AssertContains(captureSource, "var previewPresentId = Interlocked.Increment(ref _livePreviewPresentId);");
-        AssertContains(captureSource, "sourceSequenceNumber: sourceSequence");
-        AssertContains(captureSource, "previewPresentId: previewPresentId");
-        AssertContains(captureSource, "schedulerSubmitTick: submitTick");
+        AssertContains(captureSource, "SourceSequenceNumber = sourceSequence");
+        AssertContains(captureSource, "PreviewPresentId = previewPresentId");
+        AssertContains(captureSource, "SchedulerSubmitTick = submitTick");
         AssertNotNull(rendererType.GetProperty("SwapChainAddress", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.SwapChainAddress");
         AssertNotNull(rendererType.GetMethod("DropPendingFrames", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.DropPendingFrames");
         AssertNotNull(rendererType.GetMethod("GetRenderCpuTimingMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetRenderCpuTimingMetrics");
@@ -293,17 +309,18 @@ static partial class Program
         }
 
         var ownershipMetricsType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer+FrameOwnershipMetrics");
-        var previewSinkType = RequireType("Sussudio.Services.Preview.IPreviewFrameSink");
+        var previewSinkType = RequireType("Sussudio.Services.Contracts.IPreviewFrameSink");
+        var trackingType = RequireType("Sussudio.Services.Contracts.PreviewFrameTracking");
+        foreach (var prop in new[] { "SourceSequenceNumber", "PreviewPresentId", "SourcePtsTicks", "ArrivalTick", "SchedulerSubmitTick", "CountForPresentCadence" })
+        {
+            AssertNotNull(trackingType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PreviewFrameTracking.{prop}");
+        }
         var submitTexture = previewSinkType.GetMethod("SubmitTexture", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("IPreviewFrameSink.SubmitTexture was not found.");
-        AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.Name == "sourceSequenceNumber"), "SubmitTexture source identity parameter");
-        AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.Name == "previewPresentId"), "SubmitTexture present identity parameter");
-        AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.Name == "sourcePtsTicks"), "SubmitTexture PTS identity parameter");
+        AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.ParameterType == trackingType), "SubmitTexture tracking parameter");
         var submitNv12PlaneTextures = previewSinkType.GetMethod("SubmitNv12PlaneTextures", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("IPreviewFrameSink.SubmitNv12PlaneTextures was not found.");
-        AssertEqual(true, submitNv12PlaneTextures.GetParameters().Any(parameter => parameter.Name == "sourceSequenceNumber"), "SubmitNv12PlaneTextures source identity parameter");
-        AssertEqual(true, submitNv12PlaneTextures.GetParameters().Any(parameter => parameter.Name == "previewPresentId"), "SubmitNv12PlaneTextures present identity parameter");
-        AssertEqual(true, submitNv12PlaneTextures.GetParameters().Any(parameter => parameter.Name == "sourcePtsTicks"), "SubmitNv12PlaneTextures PTS identity parameter");
+        AssertEqual(true, submitNv12PlaneTextures.GetParameters().Any(parameter => parameter.ParameterType == trackingType), "SubmitNv12PlaneTextures tracking parameter");
         foreach (var prop in new[]
                  {
                      "LastSubmittedPreviewPresentId",
@@ -767,7 +784,9 @@ static partial class Program
         var managerText = ReadRepoFile("Sussudio/Services/Preview/SharedD3DDeviceManager.cs")
             .Replace("\r\n", "\n");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+                .Replace("\r\n", "\n");
         var duplicateMethod = ExtractTextBetween(
             managerText,
             "public bool TryCreateDeviceReference",

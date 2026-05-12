@@ -5,9 +5,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!--
+      Dual-stack test runner. The legacy custom Program.cs Main runs ~400
+      tests via reflection ('dotnet run' with the Sussudio.dll path); xUnit
+      cases land via 'dotnet test' once VSTest discovers the Fact/Theory
+      members. Migration is incremental, see tests/Sussudio.Tests/MIGRATION.md.
+    -->
+    <IsTestProject>true</IsTestProject>
+    <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="9.0.1" />
+    <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\tools\Common\AutomationPipeSecurityPolicy.cs" Link="Common\AutomationPipeSecurityPolicy.cs" />

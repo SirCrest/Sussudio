@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
@@ -240,14 +241,16 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         {
             await capture.InitializeAsync(
                 deviceSymbolicLink,
-                width,
-                height,
-                fps,
-                requireP010,
-                requestedPixelFormat,
-                useMjpegHighFrameRateMode,
-                useExternalMjpegDecode ? IntPtr.Zero : dxgiDeviceManagerPtr,
-                useExternalMjpegDecode).ConfigureAwait(false);
+                new VideoCaptureNegotiationOptions(
+                    Width: width,
+                    Height: height,
+                    Fps: fps,
+                    RequireP010: requireP010,
+                    RequestedPixelFormat: requestedPixelFormat,
+                    UseMjpegHighFrameRateMode: useMjpegHighFrameRateMode,
+                    DxgiDeviceManager: useExternalMjpegDecode ? IntPtr.Zero : dxgiDeviceManagerPtr,
+                    UseExternalMjpegDecode: useExternalMjpegDecode))
+                .ConfigureAwait(false);
         }
         catch
         {
@@ -706,8 +709,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             previewSink.SubmitRawFrameLease(
                 ownedFrame,
                 isHdr: false,
-                previewPresentId: previewPresentId,
-                schedulerSubmitTick: submitTick);
+                PreviewFrameTracking.Default with
+                {
+                    PreviewPresentId = previewPresentId,
+                    SchedulerSubmitTick = submitTick,
+                });
             ownedFrame = null;
         }
         finally
@@ -766,10 +772,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                         width,
                         height,
                         isP010,
-                        arrivalTick,
-                        schedulerSubmitTick: submitTick,
-                        sourceSequenceNumber: sourceSequence,
-                        previewPresentId: previewPresentId);
+                        PreviewFrameTracking.Default with
+                        {
+                            ArrivalTick = arrivalTick,
+                            SourceSequenceNumber = sourceSequence,
+                            PreviewPresentId = previewPresentId,
+                            SchedulerSubmitTick = submitTick,
+                        });
                     _frameLedger.RecordEvent(
                         sourceSequence,
                         FrameLedgerStage.PreviewEnqueued,
@@ -1028,10 +1037,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                     width,
                     height,
                     isP010,
-                    arrivalTick,
-                    sourceSequenceNumber: sourceSequence,
-                    previewPresentId: previewPresentId,
-                    schedulerSubmitTick: submitTick);
+                    PreviewFrameTracking.Default with
+                    {
+                        ArrivalTick = arrivalTick,
+                        SourceSequenceNumber = sourceSequence,
+                        PreviewPresentId = previewPresentId,
+                        SchedulerSubmitTick = submitTick,
+                    });
             }
             _frameLedger.RecordEvent(
                 sourceSequence,

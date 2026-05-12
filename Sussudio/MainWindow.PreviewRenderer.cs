@@ -23,7 +23,6 @@ using WinRT.Interop;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
-using Sussudio.Services.Configuration;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
@@ -39,12 +38,12 @@ public sealed partial class MainWindow
 {
     private void OnD3DRendererFirstFrameRendered()
     {
-        Logger.Log($"PREVIEW_D3D_FIRST_FRAME attempt={_previewStartupAttemptId ?? "none"}");
+        Logger.Log($"PREVIEW_D3D11_FIRST_FRAME attempt={_previewStartupAttemptId ?? "none"}");
         ConfirmPreviewFirstVisual("D3D11FirstFrame");
     }
     private void OnD3DRendererRenderThreadFailed(string reason)
     {
-        Logger.Log($"PREVIEW_D3D_RENDER_THREAD_FAILED attempt={_previewStartupAttemptId ?? "none"} reason={reason}");
+        Logger.Log($"PREVIEW_D3D11_RENDER_THREAD_FAILED attempt={_previewStartupAttemptId ?? "none"} reason={reason}");
         if (!ViewModel.IsPreviewing || _previewFirstVisualConfirmed)
         {
             return;

@@ -255,10 +255,11 @@ static partial class Program
         AssertContains(dispatcherText, "if (string.IsNullOrWhiteSpace(_authToken))\n        {\n            return true;\n        }");
         AssertContains(dispatcherText, "var providedToken = request.AuthToken;");
         AssertContains(dispatcherText, "providedToken = GetString(request.Payload, \"authToken\");");
-        AssertContains(dispatcherText, "return string.Equals(_authToken, providedToken, StringComparison.Ordinal);");
+        AssertContains(dispatcherText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
+        AssertContains(dispatcherText, "Logger.LogEvent(\"AUTH_FAILED\"");
         AssertContains(dispatcherText, "errorCode: authorized ? null : \"unauthorized\"");
         AssertContains(dispatcherText, "errorCode: \"unauthorized\"");
-        AssertContains(dispatcherText, "status: authorized ? \"ok\" : \"error\"");
+        AssertContains(dispatcherText, "status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error");
 
     }
 
@@ -292,8 +293,8 @@ static partial class Program
     private static async Task AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics()
     {
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
-        var diagnosticsType = RequireType("Sussudio.Services.Automation.IAutomationDiagnosticsHub");
-        var windowControlType = RequireType("Sussudio.Services.Automation.IAutomationWindowControl");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
         var actionType = RequireType("Sussudio.Models.AutomationFlashbackAction");
 
@@ -354,8 +355,8 @@ static partial class Program
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
-        var diagnosticsType = RequireType("Sussudio.Services.Automation.IAutomationDiagnosticsHub");
-        var windowControlType = RequireType("Sussudio.Services.Automation.IAutomationWindowControl");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
         var constructor = dispatcherType.GetConstructors()
             .Single(ctor => ctor.GetParameters().Length == 4);
 
@@ -463,7 +464,9 @@ static partial class Program
     {
         AssertEqual(success, (bool)GetPublicProperty(response, "Success")!, $"{scenario}: Success");
         AssertEqual(errorCode, (string?)GetPublicProperty(response, "ErrorCode"), $"{scenario}: ErrorCode");
-        AssertEqual(status, (string)GetPublicProperty(response, "Status")!, $"{scenario}: Status");
+        var actualStatus = GetPublicProperty(response, "Status")!;
+        var actualStatusName = JsonNamingPolicy.SnakeCaseLower.ConvertName(actualStatus.ToString()!);
+        AssertEqual(status, actualStatusName, $"{scenario}: Status");
     }
 
     private static object? GetPublicProperty(object instance, string propertyName)
@@ -471,6 +474,34 @@ static partial class Program
         var property = instance.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)
                        ?? throw new InvalidOperationException($"{instance.GetType().Name}.{propertyName} was not found.");
         return property.GetValue(instance);
+    }
+
+    private static Task AutomationCommandDispatcher_AllCommandKinds_AreHandled()
+    {
+        // Every AutomationCommandKind value must be explicitly handled: either
+        // as the pre-switch Authenticate check, as a TrivialHandlers key, or as
+        // a case label in the switch. This test reads the dispatcher source and
+        // verifies each enum name appears in at least one of those locations.
+        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
+            .Replace("\r\n", "\n");
+
+        var commandKindType = RequireType("Sussudio.Models.AutomationCommandKind");
+        var names = Enum.GetNames(commandKindType);
+
+        foreach (var name in names)
+        {
+            var inTrivialHandlers = dispatcherText.Contains($"[AutomationCommandKind.{name}]");
+            var inSwitchCase = dispatcherText.Contains($"case AutomationCommandKind.{name}:");
+            var isAuthenticate = name == "Authenticate" &&
+                dispatcherText.Contains("request.Command == AutomationCommandKind.Authenticate");
+
+            AssertEqual(
+                true,
+                inTrivialHandlers || inSwitchCase || isAuthenticate,
+                $"AutomationCommandKind.{name} must be handled in TrivialHandlers, a switch case, or the pre-switch Authenticate check");
+        }
+
+        return Task.CompletedTask;
     }
 
     public class ConfiguredAutomationProxy : DispatchProxy

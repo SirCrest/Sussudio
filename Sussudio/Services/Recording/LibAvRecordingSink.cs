@@ -458,6 +458,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
     {
         // Hot WASAPI callback path: copy/enqueue only, never await or block.
+        cancellationToken.ThrowIfCancellationRequested();
         var queue = _audioQueue;
         if (_disposed || !_started || !_audioEnabled || queue == null || samples.IsEmpty)
         {
@@ -485,6 +486,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
     {
         // Hot WASAPI callback path: copy/enqueue only, never await or block.
+        cancellationToken.ThrowIfCancellationRequested();
         var queue = _microphoneQueue;
         if (_disposed || !_started || !_microphoneEnabled || queue == null || samples.IsEmpty)
         {
@@ -919,8 +921,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             FrameRateDenominator = frameRateDenominator,
             BitRate = context.Settings.GetTargetBitrate(),
             IsP010 = context.HdrPipelineActive,
-            NvencPreset = context.Settings.NvencPreset,
-            SplitEncodeMode = context.Settings.SplitEncodeMode,
+            NvencPreset = context.Settings.NvencPreset.ToString(),
+            SplitEncodeMode = SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode),
             HdrEnabled = context.HdrPipelineActive,
             IsFullRangeInput = context.IsFullRangeInput,
             HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,

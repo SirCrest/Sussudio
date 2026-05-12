@@ -1,4 +1,4 @@
-namespace Sussudio.Services.Automation;
+namespace Sussudio.Tools;
 
 // Security fallback policy for the named-pipe server.
 internal static class AutomationPipeSecurityPolicy

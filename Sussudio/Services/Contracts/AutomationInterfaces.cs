@@ -3,12 +3,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
-using Sussudio.Services.Recording;
-using Sussudio.Services.Runtime;
-using Sussudio.Services.Telemetry;
 
-namespace Sussudio.Services.Automation;
+namespace Sussudio.Services.Contracts;
 
 // Window operations that automation can request without reaching into WinUI
 // implementation details.
@@ -36,8 +32,8 @@ public interface IAutomationDiagnosticsHub : IDisposable, IAsyncDisposable
     Task<RecordingVerificationResult> VerifyLastRecordingAsync(CancellationToken cancellationToken = default);
     Task<RecordingVerificationResult> VerifyFileAsync(
         string filePath,
-        CancellationToken cancellationToken = default,
-        string? verificationProfile = null);
+        string? verificationProfile = null,
+        CancellationToken cancellationToken = default);
     void Start();
     Task StopAsync(CancellationToken cancellationToken = default);
     event EventHandler<AutomationSnapshot>? SnapshotUpdated;

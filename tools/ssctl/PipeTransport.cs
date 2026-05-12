@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Sussudio.Tools;
 
-namespace EcCtl;
+namespace Sussudio.Tools.Ssctl;
 
 // ssctl transport wrapper that applies command-specific timeouts and converts
 // all transport and protocol errors into the same structured {Success:false}

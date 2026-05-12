@@ -2824,7 +2824,7 @@ public static class DiagnosticSessionRunner
             JsonSerializer.Serialize(new Dictionary<string, object?>
             {
                 ["Success"] = false,
-                ["Status"] = "failed",
+                ["Status"] = "error",
                 ["CommandLifecycle"] = "failed",
                 ["Message"] = $"{command}: {message}"
             }));

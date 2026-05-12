@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Runtime;
 
@@ -632,8 +633,11 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                     sink.SubmitRawFrameLease(
                         lease,
                         isHdr: false,
-                        previewPresentId: previewPresentId,
-                        schedulerSubmitTick: submitTick);
+                        PreviewFrameTracking.Default with
+                        {
+                            PreviewPresentId = previewPresentId,
+                            SchedulerSubmitTick = submitTick,
+                        });
                     lease = null;
                 }
                 finally
@@ -660,10 +664,13 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                             frame.Width,
                             frame.Height,
                             false,
-                            frame.ArrivalTick,
-                            sourceSequenceNumber: frame.SequenceNumber,
-                            previewPresentId: previewPresentId,
-                            schedulerSubmitTick: submitTick);
+                            PreviewFrameTracking.Default with
+                            {
+                                ArrivalTick = frame.ArrivalTick,
+                                SourceSequenceNumber = frame.SequenceNumber,
+                                PreviewPresentId = previewPresentId,
+                                SchedulerSubmitTick = submitTick,
+                            });
                     }
                 }
             }

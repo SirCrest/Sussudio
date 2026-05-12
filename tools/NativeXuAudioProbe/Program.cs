@@ -1,7 +1,8 @@
 using System.Globalization;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
-using Sussudio.Services.Devices;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Telemetry;
 
 const int CmdAudioFormat = 0x04;

@@ -77,6 +77,7 @@ tools/RtkIoShim/*.obj
 .desloppify/
 .duat/
 presentmon*.json
+rtk_io_shim.log
 
 # Local Codex/session accounting exports
 docs/codex-token-audit/

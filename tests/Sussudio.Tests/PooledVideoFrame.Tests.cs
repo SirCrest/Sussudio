@@ -11,8 +11,8 @@ static partial class Program
 {
     private static Task PooledVideoFrame_LeaseLifecycle_ReturnsBufferAfterLastRelease()
     {
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -56,8 +56,8 @@ static partial class Program
 
     private static Task PooledVideoFrame_AddLeaseAfterReturn_Throws()
     {
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -81,8 +81,8 @@ static partial class Program
 
     private static Task PooledVideoFrame_OwnerDisposeClosesNewLeasesButExistingLeaseRemainsReadable()
     {
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -112,11 +112,11 @@ static partial class Program
 
     private static Task MjpegPooledFrameFanout_ExposesLeaseContracts()
     {
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var leaseType = RequireType("Sussudio.Services.Capture.PooledVideoFrameLease");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var leaseType = RequireType("Sussudio.Services.Contracts.PooledVideoFrameLease");
         var leaseEncoderType = RequireType("Sussudio.Services.Recording.IRawVideoFrameLeaseEncoder");
         var pipelineEmitCallbackType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+EmitFrameCallback");
-        var previewSinkType = RequireType("Sussudio.Services.Preview.IPreviewFrameSink");
+        var previewSinkType = RequireType("Sussudio.Services.Contracts.IPreviewFrameSink");
         var jitterBufferType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var libAvSinkType = RequireType("Sussudio.Services.Recording.LibAvRecordingSink");
@@ -136,13 +136,14 @@ static partial class Program
             modifiers: null);
         AssertNotNull(previewLeaseEnqueue, "MjpegPreviewJitterBuffer.Enqueue(PooledVideoFrameLease)");
 
+        var trackingType = previewSinkType.Assembly.GetType("Sussudio.Services.Contracts.PreviewFrameTracking", throwOnError: true)!;
         var rendererLeaseSubmit = previewSinkType.GetMethod(
             "SubmitRawFrameLease",
             BindingFlags.Public | BindingFlags.Instance,
             binder: null,
-            types: new[] { leaseType, typeof(bool), typeof(long), typeof(long), typeof(bool) },
+            types: new[] { leaseType, typeof(bool), trackingType },
             modifiers: null);
-        AssertNotNull(rendererLeaseSubmit, "IPreviewFrameSink.SubmitRawFrameLease(PooledVideoFrameLease, bool, long, long, bool)");
+        AssertNotNull(rendererLeaseSubmit, "IPreviewFrameSink.SubmitRawFrameLease(PooledVideoFrameLease, bool, PreviewFrameTracking)");
         AssertEqual(true, previewSinkType.IsAssignableFrom(rendererType), "D3D11PreviewRenderer implements preview lease sink");
         AssertEqual(true, leaseEncoderType.IsAssignableFrom(libAvSinkType), "LibAvRecordingSink implements lease encoder");
         AssertEqual(true, leaseEncoderType.IsAssignableFrom(flashbackSinkType), "FlashbackEncoderSink implements lease encoder");
@@ -254,8 +255,8 @@ static partial class Program
     private static Task MjpegPreviewJitter_SkipsMissingPreviewSequenceAfterDeadline()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -291,8 +292,8 @@ static partial class Program
     private static Task MjpegPreviewJitter_LateSequenceDoesNotCountAsQueued()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -323,8 +324,8 @@ static partial class Program
     private static Task MjpegPreviewJitter_ClearResetsPreviewSequence()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -371,8 +372,8 @@ static partial class Program
     private static Task MjpegPreviewJitter_ReprimesAfterSuppressionResume()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -439,9 +440,9 @@ static partial class Program
 
     private static Task D3DPreviewPendingFrame_ReleasesQueuedLease()
     {
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
-        var leaseType = RequireType("Sussudio.Services.Capture.PooledVideoFrameLease");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
+        var leaseType = RequireType("Sussudio.Services.Contracts.PooledVideoFrameLease");
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var pendingFrameType = RequireNestedType(rendererType, "PendingFrame");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
@@ -484,9 +485,9 @@ static partial class Program
 
     private static void AssertLeasedPacketReturnDisposesLease(string sinkTypeName, string packetTypeName)
     {
-        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
-        var leaseType = RequireType("Sussudio.Services.Capture.PooledVideoFrameLease");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
+        var leaseType = RequireType("Sussudio.Services.Contracts.PooledVideoFrameLease");
         var sinkType = RequireType(sinkTypeName);
         var packetType = RequireType(packetTypeName);
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)

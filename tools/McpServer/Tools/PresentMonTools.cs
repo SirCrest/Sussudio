@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -11,7 +12,7 @@ namespace McpServer.Tools;
 public static class PresentMonTools
 {
     [McpServerTool, Description("Capture OS-level present/frame pacing metrics for Sussudio using the PresentMon console executable.")]
-    public static async Task<string> capture_presentmon(
+    public static async Task<CallToolResult> capture_presentmon(
         PipeClient pipeClient,
         [Description("Capture duration in seconds. Defaults to 10; clamped to 1-300.")] int seconds = 10,
         [Description("Optional target process id. Defaults to the newest Sussudio process.")] int? processId = null,
@@ -45,7 +46,7 @@ public static class PresentMonTools
             TrackGpuVideo = trackGpuVideo
         }).ConfigureAwait(false);
 
-        return PresentMonProbe.Format(result);
+        return McpToolResultFactory.FromText(PresentMonProbe.Format(result));
     }
 
     [McpServerTool(UseStructuredContent = true), Description("Capture raw structured PresentMon frame pacing summary for Sussudio.")]
@@ -102,12 +103,14 @@ public static class PresentMonTools
                 GetNonNegativeLong(snapshot, "PreviewD3DLastRenderedSourceSequenceNumber"),
                 GetPositiveLong(snapshot, "PreviewD3DLastRenderedUtcUnixMs"));
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            System.Diagnostics.Trace.TraceWarning($"GetExpectedSwapChainAsync: malformed snapshot JSON: {ex.Message}");
             return default;
         }
-        catch (IOException)
+        catch (IOException ex)
         {
+            System.Diagnostics.Trace.TraceWarning($"GetExpectedSwapChainAsync: pipe IO failure: {ex.Message}");
             return default;
         }
     }

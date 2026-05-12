@@ -165,6 +165,12 @@ internal static class AutomationCommandCatalog
             case AutomationCommandPathPolicy.Directory:
                 Directory.CreateDirectory(fullPath);
                 break;
+            case AutomationCommandPathPolicy.ReadFile:
+                if (!File.Exists(fullPath))
+                {
+                    throw new InvalidOperationException($"{metadata.Name} payload '{payloadKey}' must reference an existing file: '{fullPath}'.");
+                }
+                break;
         }
 
         return path;

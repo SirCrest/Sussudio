@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Sussudio.Tools;
 
-namespace EcCtl;
+namespace Sussudio.Tools.Ssctl;
 
 // CLI command layer over the shared automation pipe. Handlers keep console
 // parsing, command payload shape, and human-readable output together while

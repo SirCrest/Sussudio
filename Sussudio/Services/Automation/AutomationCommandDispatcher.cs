@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,6 +36,54 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
     private const int DefaultWaitTimeoutMs = 10_000;
     private const int DefaultWaitPollMs = 250;
+
+    // Trivial handlers: RequireBool/RequireDouble/RequireString → SetXxxAsync → CreateAcknowledgedResponse.
+    // Commands that need extra validation, multi-parameter payloads, custom response shapes, or
+    // non-standard primitives (GetBool+throw, ValidatePathPayload, snapshot refresh) stay as case bodies.
+    private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler> TrivialHandlers =
+        new Dictionary<AutomationCommandKind, AutomationCommandHandler>
+        {
+            [AutomationCommandKind.SetCustomAudioInput] = AutomationCommandHandler.Bool(
+                (vm, v, ct) => vm.SetCustomAudioInputEnabledAsync(v, ct), "enabled"),
+            [AutomationCommandKind.SetResolution] = AutomationCommandHandler.String(
+                (vm, v, ct) => vm.SetResolutionAsync(v, ct), "resolution"),
+            [AutomationCommandKind.SetFrameRate] = AutomationCommandHandler.Double(
+                (vm, v, ct) => vm.SetFrameRateAsync(v, ct), "frameRate"),
+            [AutomationCommandKind.SetVideoFormat] = AutomationCommandHandler.String(
+                (vm, v, ct) => vm.SetVideoFormatAsync(v, ct), "videoFormat"),
+            [AutomationCommandKind.SetPreset] = AutomationCommandHandler.String(
+                (vm, v, ct) => vm.SetPresetAsync(v, ct), "preset"),
+            [AutomationCommandKind.SetSplitEncodeMode] = AutomationCommandHandler.String(
+                (vm, v, ct) => vm.SetSplitEncodeModeAsync(v, ct), "splitEncodeMode"),
+            [AutomationCommandKind.SetShowAllCaptureOptions] = AutomationCommandHandler.Bool(
+                (vm, v, ct) => vm.SetShowAllCaptureOptionsAsync(v, ct), "enabled"),
+            [AutomationCommandKind.SetPreviewVolume] = AutomationCommandHandler.Double(
+                (vm, v, ct) => vm.SetPreviewVolumeAsync(v, ct), "previewVolumePercent"),
+            [AutomationCommandKind.SetStatsVisible] = AutomationCommandHandler.Bool(
+                (vm, v, ct) => vm.SetStatsVisibleAsync(v, ct), "visible"),
+            [AutomationCommandKind.SetSettingsVisible] = AutomationCommandHandler.Bool(
+                (vm, v, ct) => vm.SetSettingsVisibleAsync(v, ct), "visible"),
+            [AutomationCommandKind.SetFrameTimeOverlayVisible] = AutomationCommandHandler.Bool(
+                (vm, v, ct) => vm.SetFrameTimeOverlayVisibleAsync(v, ct), "visible"),
+            [AutomationCommandKind.SetFlashbackTimelineVisible] = AutomationCommandHandler.Bool(
+                (vm, v, ct) => vm.SetFlashbackTimelineVisibleAsync(v, ct), "visible"),
+            [AutomationCommandKind.SetRecordingFormat] = AutomationCommandHandler.String(
+                (vm, v, ct) => vm.SetRecordingFormatAsync(v, ct), "format"),
+            [AutomationCommandKind.SetQuality] = AutomationCommandHandler.String(
+                (vm, v, ct) => vm.SetQualityAsync(v, ct), "quality"),
+            [AutomationCommandKind.SetCustomBitrate] = AutomationCommandHandler.Double(
+                (vm, v, ct) => vm.SetCustomBitrateAsync(v, ct), "bitrateMbps"),
+            [AutomationCommandKind.SetHdrEnabled] = AutomationCommandHandler.Bool(
+                (vm, v, ct) => vm.SetHdrEnabledAsync(v, ct), "enabled"),
+            [AutomationCommandKind.SetTrueHdrPreviewEnabled] = AutomationCommandHandler.Bool(
+                (vm, v, ct) => vm.SetTrueHdrPreviewEnabledAsync(v, ct), "enabled"),
+            [AutomationCommandKind.SetAudioEnabled] = AutomationCommandHandler.Bool(
+                (vm, v, ct) => vm.SetAudioEnabledAsync(v, ct), "enabled"),
+            [AutomationCommandKind.SetAudioPreviewEnabled] = AutomationCommandHandler.Bool(
+                (vm, v, ct) => vm.SetAudioPreviewEnabledAsync(v, ct), "enabled"),
+            [AutomationCommandKind.SetPreviewEnabled] = AutomationCommandHandler.Bool(
+                (vm, v, ct) => vm.SetPreviewEnabledAsync(v, ct), "enabled"),
+        };
 
     public AutomationCommandDispatcher(
         IAutomationViewModel viewModel,
@@ -73,7 +123,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         "Rebuild ssctl/MCP/StreamDeck against the current Sussudio source to refresh the numeric command IDs.",
                         errorCode: "manifest-mismatch",
                         success: false,
-                        status: "error",
+                        status: AutomationResponseStatus.Error,
                         includeSnapshot: false);
                 }
             }
@@ -94,7 +144,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         : "Authentication rejected.",
                     errorCode: authorized ? null : "unauthorized",
                     success: authorized,
-                    status: authorized ? "ok" : "error",
+                    status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                     includeSnapshot: false);
             }
 
@@ -105,7 +155,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     "Unauthorized command request.",
                     errorCode: "unauthorized",
                     success: false,
-                    status: "error",
+                    status: AutomationResponseStatus.Error,
                     includeSnapshot: false);
             }
 
@@ -116,11 +166,18 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     "Automation is still initializing devices; retry shortly.",
                     errorCode: "not-ready",
                     success: false,
-                    status: "not_ready",
+                    status: AutomationResponseStatus.NotReady,
                     retryAfterMs: 1000);
             }
 
             var payload = request.Payload;
+
+            if (TrivialHandlers.TryGetValue(request.Command, out var trivialHandler))
+            {
+                await trivialHandler.InvokeAsync(_viewModel, payload, cancellationToken).ConfigureAwait(false);
+                return CreateAcknowledgedResponse(correlationId, trivialHandler.AcknowledgeMessage(request.Command, payload));
+            }
+
             switch (request.Command)
             {
                 case AutomationCommandKind.GetSnapshot:
@@ -174,52 +231,10 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     return CreateAcknowledgedResponse(correlationId, "Audio input device selection requested.");
                 }
 
-                case AutomationCommandKind.SetCustomAudioInput:
-                {
-                    var enabled = RequireBool(payload, "enabled");
-                    await _viewModel.SetCustomAudioInputEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Custom audio input {(enabled ? "enable" : "disable")} requested.");
-                }
-
-                case AutomationCommandKind.SetResolution:
-                {
-                    var resolution = RequireString(payload, "resolution");
-                    await _viewModel.SetResolutionAsync(resolution, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Resolution change requested: {resolution}.");
-                }
-
-                case AutomationCommandKind.SetFrameRate:
-                {
-                    var frameRate = RequireDouble(payload, "frameRate");
-                    await _viewModel.SetFrameRateAsync(frameRate, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Frame rate change requested: {frameRate:0.###}.");
-                }
-
-                case AutomationCommandKind.SetVideoFormat:
-                {
-                    var videoFormat = RequireString(payload, "videoFormat");
-                    await _viewModel.SetVideoFormatAsync(videoFormat, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Video format change requested: {videoFormat}.");
-                }
-
                 case AutomationCommandKind.GetCaptureOptions:
                 {
                     var options = await _viewModel.GetAutomationOptionsSnapshotAsync(cancellationToken).ConfigureAwait(false);
                     return CreateResponse(correlationId, "Capture options retrieved.", data: options);
-                }
-
-                case AutomationCommandKind.SetPreset:
-                {
-                    var preset = RequireString(payload, "preset");
-                    await _viewModel.SetPresetAsync(preset, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Preset change requested: {preset}.");
-                }
-
-                case AutomationCommandKind.SetSplitEncodeMode:
-                {
-                    var splitEncodeMode = RequireString(payload, "splitEncodeMode");
-                    await _viewModel.SetSplitEncodeModeAsync(splitEncodeMode, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Split encode mode change requested: {splitEncodeMode}.");
                 }
 
                 case AutomationCommandKind.SetMjpegDecoderCount:
@@ -232,27 +247,6 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
                     await _viewModel.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken).ConfigureAwait(false);
                     return CreateAcknowledgedResponse(correlationId, $"MJPEG decoder count change requested: {decoderCount.Value}.");
-                }
-
-                case AutomationCommandKind.SetShowAllCaptureOptions:
-                {
-                    var enabled = RequireBool(payload, "enabled");
-                    await _viewModel.SetShowAllCaptureOptionsAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Show-all capture options {(enabled ? "enable" : "disable")} requested.");
-                }
-
-                case AutomationCommandKind.SetPreviewVolume:
-                {
-                    var previewVolumePercent = RequireDouble(payload, "previewVolumePercent");
-                    await _viewModel.SetPreviewVolumeAsync(previewVolumePercent, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Preview volume change requested: {previewVolumePercent:0.###}%.");
-                }
-
-                case AutomationCommandKind.SetStatsVisible:
-                {
-                    var visible = RequireBool(payload, "visible");
-                    await _viewModel.SetStatsVisibleAsync(visible, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Stats visibility {(visible ? "show" : "hide")} requested.");
                 }
 
                 case AutomationCommandKind.SetStatsSectionVisible:
@@ -275,27 +269,6 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var gain = RequireDouble(payload, "gain");
                     await _viewModel.SetAnalogAudioGainAsync(gain, cancellationToken).ConfigureAwait(false);
                     return CreateResponse(correlationId, $"Analog audio gain set to {gain:0.###}%.");
-                }
-
-                case AutomationCommandKind.SetSettingsVisible:
-                {
-                    var visible = RequireBool(payload, "visible");
-                    await _viewModel.SetSettingsVisibleAsync(visible, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Settings panel {(visible ? "shown" : "hidden")}.");
-                }
-
-                case AutomationCommandKind.SetFrameTimeOverlayVisible:
-                {
-                    var visible = RequireBool(payload, "visible");
-                    await _viewModel.SetFrameTimeOverlayVisibleAsync(visible, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Frametime graph {(visible ? "shown" : "hidden")}.");
-                }
-
-                case AutomationCommandKind.SetFlashbackTimelineVisible:
-                {
-                    var visible = RequireBool(payload, "visible");
-                    await _viewModel.SetFlashbackTimelineVisibleAsync(visible, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Flashback timeline {(visible ? "shown" : "hidden")}.");
                 }
 
                 case AutomationCommandKind.FlashbackAction:
@@ -396,7 +369,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: exportResult.Succeeded ? null : "export-failed",
                         success: exportResult.Succeeded,
-                        status: exportResult.Succeeded ? "ok" : "error");
+                        status: exportResult.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error);
                 }
 
                 case AutomationCommandKind.FlashbackGetSegments:
@@ -417,7 +390,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var verificationProfile = GetString(payload, "verificationProfile");
                     var verifyStartedAt = Stopwatch.GetTimestamp();
                     var verification = await _diagnosticsHub
-                        .VerifyFileAsync(filePath, cancellationToken, verificationProfile)
+                        .VerifyFileAsync(filePath, verificationProfile, cancellationToken)
                         .ConfigureAwait(false);
                     var elapsedMs = (long)Math.Round(Stopwatch.GetElapsedTime(verifyStartedAt).TotalMilliseconds);
                     return CreateResponse(
@@ -430,57 +403,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: verification.Succeeded ? null : "verification-failed",
                         success: verification.Succeeded,
-                        status: verification.Succeeded ? "ok" : "error",
+                        status: verification.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         elapsedMs: elapsedMs);
-                }
-
-                case AutomationCommandKind.SetRecordingFormat:
-                {
-                    var format = RequireString(payload, "format");
-                    await _viewModel.SetRecordingFormatAsync(format, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Recording format change requested: {format}.");
-                }
-
-                case AutomationCommandKind.SetQuality:
-                {
-                    var quality = RequireString(payload, "quality");
-                    await _viewModel.SetQualityAsync(quality, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Quality change requested: {quality}.");
-                }
-
-                case AutomationCommandKind.SetCustomBitrate:
-                {
-                    var bitrate = RequireDouble(payload, "bitrateMbps");
-                    await _viewModel.SetCustomBitrateAsync(bitrate, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Custom bitrate change requested: {bitrate:0.###} Mbps.");
-                }
-
-                case AutomationCommandKind.SetHdrEnabled:
-                {
-                    var enabled = RequireBool(payload, "enabled");
-                    await _viewModel.SetHdrEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"HDR {(enabled ? "enable" : "disable")} requested.");
-                }
-
-                case AutomationCommandKind.SetTrueHdrPreviewEnabled:
-                {
-                    var enabled = RequireBool(payload, "enabled");
-                    await _viewModel.SetTrueHdrPreviewEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"True HDR preview {(enabled ? "enable" : "disable")} requested.");
-                }
-
-                case AutomationCommandKind.SetAudioEnabled:
-                {
-                    var enabled = RequireBool(payload, "enabled");
-                    await _viewModel.SetAudioEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Audio capture {(enabled ? "enable" : "disable")} requested.");
-                }
-
-                case AutomationCommandKind.SetAudioPreviewEnabled:
-                {
-                    var enabled = RequireBool(payload, "enabled");
-                    await _viewModel.SetAudioPreviewEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Audio preview {(enabled ? "enable" : "disable")} requested.");
                 }
 
                 case AutomationCommandKind.SetOutputPath:
@@ -491,13 +415,6 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         RequireString(payload, "outputPath"));
                     await _viewModel.SetOutputPathAsync(outputPath, cancellationToken).ConfigureAwait(false);
                     return CreateAcknowledgedResponse(correlationId, $"Output path change requested: {outputPath}.");
-                }
-
-                case AutomationCommandKind.SetPreviewEnabled:
-                {
-                    var enabled = RequireBool(payload, "enabled");
-                    await _viewModel.SetPreviewEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Preview {(enabled ? "enable" : "disable")} requested.");
                 }
 
                 case AutomationCommandKind.SetRecordingEnabled:
@@ -537,7 +454,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                                 "Window close is disallowed until ArmClose is requested.",
                                 errorCode: "window-close-not-armed",
                                 success: false,
-                                status: "error");
+                                status: AutomationResponseStatus.Error);
                         }
 
                         await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);
@@ -569,7 +486,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: met ? null : "timeout",
                         success: met,
-                        status: met ? "ok" : "error",
+                        status: met ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         snapshot: snapshot);
                 }
 
@@ -588,7 +505,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: verification.Succeeded ? null : "verification-failed",
                         success: verification.Succeeded,
-                        status: verification.Succeeded ? "ok" : "error",
+                        status: verification.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         elapsedMs: elapsedMs);
                 }
 
@@ -619,7 +536,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: passed ? null : "assertion-failed",
                         success: passed,
-                        status: passed ? "ok" : "error",
+                        status: passed ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         snapshot: snapshot);
                 }
 
@@ -648,7 +565,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         result.Message,
                         data: result,
                         success: result.Succeeded,
-                        status: result.Succeeded ? "ok" : "error",
+                        status: result.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         errorCode: result.Succeeded ? null : "capture-failed");
                 }
 
@@ -665,7 +582,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         result.Message,
                         data: result,
                         success: result.Succeeded,
-                        status: result.Succeeded ? "ok" : "error",
+                        status: result.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                         errorCode: result.Succeeded ? null : "capture-failed");
                 }
 
@@ -709,7 +626,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         $"Unsupported command: {request.Command}",
                         errorCode: "unsupported-command",
                         success: false,
-                        status: "error");
+                        status: AutomationResponseStatus.Error);
             }
         }
         catch (OperationCanceledException)
@@ -719,7 +636,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 "Command canceled.",
                 errorCode: "canceled",
                 success: false,
-                status: "error",
+                status: AutomationResponseStatus.Error,
                 includeSnapshot: false);
         }
         catch (Exception ex)
@@ -737,7 +654,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 message,
                 errorCode: "command-failed",
                 success: false,
-                status: "error",
+                status: AutomationResponseStatus.Error,
                 elapsedMs: (long)Math.Round(Stopwatch.GetElapsedTime(commandStartedAt).TotalMilliseconds));
         }
     }
@@ -749,13 +666,15 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string? errorCode = null,
         bool success = true,
         bool includeSnapshot = true,
-        string status = "ok",
-        string? commandLifecycle = null,
+        AutomationResponseStatus status = AutomationResponseStatus.Ok,
+        AutomationCommandLifecycle? commandLifecycle = null,
         int? retryAfterMs = null,
         long? elapsedMs = null,
         AutomationSnapshot? snapshot = null)
     {
-        var lifecycle = commandLifecycle ?? (success ? "completed" : "failed");
+        var lifecycle = commandLifecycle ?? (success
+            ? AutomationCommandLifecycle.Completed
+            : AutomationCommandLifecycle.Failed);
         return new AutomationCommandResponse
         {
             Success = success,
@@ -782,8 +701,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             message,
             data: data,
             includeSnapshot: includeSnapshot,
-            status: "ok",
-            commandLifecycle: "acknowledged");
+            status: AutomationResponseStatus.Ok,
+            commandLifecycle: AutomationCommandLifecycle.Acknowledged);
     }
 
     private AutomationCommandResponse CreateFlashbackActionRejectedResponse(
@@ -813,7 +732,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             },
             errorCode: "flashback-action-failed",
             success: false,
-            status: "error",
+            status: AutomationResponseStatus.Error,
             snapshot: snapshot);
     }
 
@@ -1136,7 +1055,18 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             providedToken = GetString(request.Payload, "authToken");
         }
 
-        return string.Equals(_authToken, providedToken, StringComparison.Ordinal);
+        // Constant-time comparison: even on a local pipe, sidechannel timing
+        // hardening is cheap insurance and matches how token comparison is
+        // expected to work in any future remote/transport variant.
+        var expected = Encoding.UTF8.GetBytes(_authToken);
+        var actual = Encoding.UTF8.GetBytes(providedToken ?? string.Empty);
+        var ok = expected.Length == actual.Length
+            && CryptographicOperations.FixedTimeEquals(expected, actual);
+        if (!ok)
+        {
+            Logger.LogEvent("AUTH_FAILED", $"command={request.Command} correlationId={request.CorrelationId ?? "<none>"}");
+        }
+        return ok;
     }
 
     private static string RequireString(JsonElement payload, string propertyName)
@@ -1251,5 +1181,111 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         }
 
         return null;
+    }
+}
+
+// Holds a single trivial-handler delegate and the payload property name needed to
+// extract the typed argument. Factory methods (Bool, String, Double) capture the
+// delegate and property name; InvokeAsync reads and validates the property then
+// calls the delegate. AcknowledgeMessage returns a stable ack string for the
+// response, using the command name because trivial handlers do not retain the
+// formatted per-command strings from the old case bodies.
+internal sealed record AutomationCommandHandler(
+    Func<IAutomationViewModel, JsonElement, CancellationToken, Task> Invoke,
+    Func<AutomationCommandKind, JsonElement, string> AcknowledgeMessage)
+{
+    public Task InvokeAsync(IAutomationViewModel viewModel, JsonElement payload, CancellationToken cancellationToken)
+        => Invoke(viewModel, payload, cancellationToken);
+
+    public static AutomationCommandHandler Bool(
+        Func<IAutomationViewModel, bool, CancellationToken, Task> action,
+        string propertyName)
+        => new(
+            (vm, payload, ct) =>
+            {
+                var value = GetBoolRequired(payload, propertyName);
+                return action(vm, value, ct);
+            },
+            (command, _) => $"{command} acknowledged.");
+
+    public static AutomationCommandHandler String(
+        Func<IAutomationViewModel, string, CancellationToken, Task> action,
+        string propertyName)
+        => new(
+            (vm, payload, ct) =>
+            {
+                var value = GetStringRequired(payload, propertyName);
+                return action(vm, value, ct);
+            },
+            (command, _) => $"{command} acknowledged.");
+
+    public static AutomationCommandHandler Double(
+        Func<IAutomationViewModel, double, CancellationToken, Task> action,
+        string propertyName)
+        => new(
+            (vm, payload, ct) =>
+            {
+                var value = GetDoubleRequired(payload, propertyName);
+                return action(vm, value, ct);
+            },
+            (command, _) => $"{command} acknowledged.");
+
+    private static bool GetBoolRequired(JsonElement payload, string propertyName)
+    {
+        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
+        {
+            throw new InvalidOperationException($"Missing required boolean property '{propertyName}'.");
+        }
+
+        var result = property.ValueKind switch
+        {
+            JsonValueKind.True => (bool?)true,
+            JsonValueKind.False => false,
+            JsonValueKind.String when bool.TryParse(property.GetString(), out var parsed) => parsed,
+            JsonValueKind.Number when property.TryGetInt32(out var number) => number != 0,
+            _ => null
+        };
+
+        return result ?? throw new InvalidOperationException($"Missing required boolean property '{propertyName}'.");
+    }
+
+    private static string GetStringRequired(JsonElement payload, string propertyName)
+    {
+        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
+        {
+            throw new InvalidOperationException($"Missing required string property '{propertyName}'.");
+        }
+
+        var value = property.ValueKind == JsonValueKind.String
+            ? property.GetString()
+            : property.ValueKind != JsonValueKind.Null ? property.ToString() : null;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidOperationException($"Missing required string property '{propertyName}'.");
+        }
+
+        return value;
+    }
+
+    private static double GetDoubleRequired(JsonElement payload, string propertyName)
+    {
+        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
+        {
+            throw new InvalidOperationException($"Missing required numeric property '{propertyName}'.");
+        }
+
+        if (property.ValueKind == JsonValueKind.Number && property.TryGetDouble(out var numeric))
+        {
+            return numeric;
+        }
+
+        if (property.ValueKind == JsonValueKind.String &&
+            double.TryParse(property.GetString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new InvalidOperationException($"Missing required numeric property '{propertyName}'.");
     }
 }

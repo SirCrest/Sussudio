@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-namespace Sussudio.Services.Devices;
+namespace Sussudio.Services.Capture;
 
 // Kernel Streaming extension-unit helper. It enumerates capture/video device
 // interfaces and issues KSPROPERTY topology GET/SET calls used by the native XU

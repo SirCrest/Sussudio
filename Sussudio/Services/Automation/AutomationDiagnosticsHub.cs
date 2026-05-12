@@ -17,7 +17,7 @@ namespace Sussudio.Services.Automation;
 // builds a single snapshot from UI state, capture runtime state, verifier
 // results, and health counters, then turns sustained bad signals into recent
 // diagnostic events and performance-timeline samples.
-public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
+public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 {
     private readonly IAutomationViewModel _viewModel;
     private readonly Func<CancellationToken, Task<PreviewRuntimeSnapshot>> _previewSnapshotProvider;
@@ -280,8 +280,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
     public async Task<RecordingVerificationResult> VerifyFileAsync(
         string filePath,
-        CancellationToken cancellationToken = default,
-        string? verificationProfile = null)
+        string? verificationProfile = null,
+        CancellationToken cancellationToken = default)
     {
         await _verificationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         Interlocked.Increment(ref _verificationInProgress);
@@ -1792,75 +1792,6 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             recentScheduleLateCount > 0 ? Math.Max(0, lastScheduleLateMs) : Math.Max(0, lastScheduleLateMs - previousLastScheduleLateMs));
     }
 
-    private MjpegRecentCounters UpdateMjpegRecentCounters(
-        CaptureHealthSnapshot health,
-        long nowTick)
-    {
-        var totalDropped = Math.Max(0, health.MjpegTotalDropped);
-        var decodeFailures = Math.Max(0, health.MjpegDecodeFailures);
-        var emitFailures = Math.Max(0, health.MjpegEmitFailures);
-        var compressedQueueDrops = Math.Max(0, health.MjpegCompressedDropsQueueFull);
-        var previousTick = Interlocked.Exchange(ref _lastMjpegEvalTick, nowTick);
-        var previousTotalDropped = Interlocked.Exchange(ref _lastMjpegTotalDropped, totalDropped);
-        var previousDecodeFailures = Interlocked.Exchange(ref _lastMjpegDecodeFailures, decodeFailures);
-        var previousEmitFailures = Interlocked.Exchange(ref _lastMjpegEmitFailures, emitFailures);
-        var previousCompressedQueueDrops = Interlocked.Exchange(ref _lastMjpegCompressedDropsQueueFull, compressedQueueDrops);
-
-        if (previousTick == 0 || nowTick < previousTick)
-        {
-            return MjpegRecentCounters.Empty;
-        }
-
-        return new MjpegRecentCounters(
-            Math.Max(0, totalDropped - previousTotalDropped),
-            Math.Max(0, decodeFailures - previousDecodeFailures),
-            Math.Max(0, emitFailures - previousEmitFailures),
-            Math.Max(0, compressedQueueDrops - previousCompressedQueueDrops));
-    }
-
-    private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(
-        PreviewRuntimeSnapshot previewRuntime,
-        long nowTick)
-    {
-        var submitted = Math.Max(0, previewRuntime.D3DFramesSubmitted);
-        var rendered = Math.Max(0, previewRuntime.D3DFramesRendered);
-        var dropped = Math.Max(0, previewRuntime.D3DFramesDropped);
-        var previousTick = Interlocked.Exchange(ref _lastD3DRendererEvalTick, nowTick);
-        var previousSubmitted = Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted);
-        var previousRendered = Interlocked.Exchange(ref _lastD3DFramesRendered, rendered);
-        var previousDropped = Interlocked.Exchange(ref _lastD3DFramesDropped, dropped);
-
-        if (previousTick <= 0)
-        {
-            return D3DRendererRecentCounters.Empty;
-        }
-
-        return new D3DRendererRecentCounters(
-            Math.Max(0, submitted - previousSubmitted),
-            Math.Max(0, rendered - previousRendered),
-            Math.Max(0, dropped - previousDropped));
-    }
-
-    private (long RecentMissedRefreshes, long RecentFailures) UpdateD3DFrameStatsRecentCounters(
-        PreviewRuntimeSnapshot previewRuntime,
-        long nowTick)
-    {
-        var missedRefreshes = Math.Max(0, previewRuntime.D3DFrameStatsMissedRefreshCount);
-        var failures = Math.Max(0, previewRuntime.D3DFrameStatsFailureCount);
-        var previousTick = Interlocked.Exchange(ref _lastD3DFrameStatsEvalTick, nowTick);
-        var previousMissedRefreshes = Interlocked.Exchange(ref _lastD3DFrameStatsMissedRefreshes, missedRefreshes);
-        var previousFailures = Interlocked.Exchange(ref _lastD3DFrameStatsFailures, failures);
-
-        if (previousTick == 0 || nowTick < previousTick)
-        {
-            return (0, 0);
-        }
-
-        return (
-            Math.Max(0, missedRefreshes - previousMissedRefreshes),
-            Math.Max(0, failures - previousFailures));
-    }
-
     private long UpdateD3DFrameLatencyWaitRecentCounters(
         PreviewRuntimeSnapshot previewRuntime,
         long nowTick)
@@ -1875,36 +1806,6 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         }
 
         return Math.Max(0, timeouts - previousTimeouts);
-    }
-
-    private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(
-        CaptureHealthSnapshot snapshot,
-        long nowTick)
-    {
-        var droppedFrames = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackDroppedFrames) : 0;
-        var encoderDroppedFrames = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackVideoEncoderDroppedFrames) : 0;
-        var sequenceGaps = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackVideoSequenceGaps) : 0;
-        var gpuFramesDropped = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackGpuFramesDropped) : 0;
-        var backpressureEvents = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackVideoBackpressureEvents) : 0;
-
-        var previousTick = Interlocked.Exchange(ref _lastFlashbackRecordingEvalTick, nowTick);
-        var previousDroppedFrames = Interlocked.Exchange(ref _lastFlashbackDroppedFrames, droppedFrames);
-        var previousEncoderDroppedFrames = Interlocked.Exchange(ref _lastFlashbackVideoEncoderDroppedFrames, encoderDroppedFrames);
-        var previousSequenceGaps = Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps);
-        var previousGpuFramesDropped = Interlocked.Exchange(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped);
-        var previousBackpressureEvents = Interlocked.Exchange(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents);
-
-        if (previousTick == 0 || nowTick < previousTick)
-        {
-            return FlashbackRecordingRecentCounters.Empty;
-        }
-
-        return new FlashbackRecordingRecentCounters(
-            Math.Max(0, droppedFrames - previousDroppedFrames),
-            Math.Max(0, encoderDroppedFrames - previousEncoderDroppedFrames),
-            Math.Max(0, sequenceGaps - previousSequenceGaps),
-            Math.Max(0, gpuFramesDropped - previousGpuFramesDropped),
-            Math.Max(0, backpressureEvents - previousBackpressureEvents));
     }
 
     private double CalculateProcessCpuPercent(double processCpuTotalMs)
@@ -2530,60 +2431,6 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         =>
             string.Equals(reason, "force_rotate_draining", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(reason, "force_rotate_queue_guard", StringComparison.OrdinalIgnoreCase);
-
-    private readonly record struct DiagnosticEvaluation(
-        string HealthStatus,
-        string LikelyStage,
-        string Summary,
-        string Evidence,
-        string SourceLane,
-        string DecodeLane,
-        string PreviewLane,
-        string RenderLane,
-        string PresentLane,
-        string RecordingLane,
-        string AudioLane);
-
-    private readonly record struct PerformanceEvaluation(double Score, bool PerfectionMet, string Summary);
-
-    private readonly record struct FlashbackRecordingRecentCounters(
-        long DroppedFrames,
-        long EncoderDroppedFrames,
-        long SequenceGaps,
-        long GpuFramesDropped,
-        long BackpressureEvents)
-    {
-        public static FlashbackRecordingRecentCounters Empty { get; } = new(0, 0, 0, 0, 0);
-    }
-
-    private readonly record struct D3DRendererRecentCounters(
-        long Submitted,
-        long Rendered,
-        long Dropped)
-    {
-        public static D3DRendererRecentCounters Empty { get; } = new(0, 0, 0);
-    }
-
-    private readonly record struct PreviewJitterRecentCounters(
-        long Dropped,
-        long Underflows,
-        long DeadlineDrops,
-        long ScheduleLateCount,
-        double ScheduleLateMs)
-    {
-        public static PreviewJitterRecentCounters Empty { get; } = new(0, 0, 0, 0, 0);
-    }
-
-    private readonly record struct MjpegRecentCounters(
-        long TotalDropped,
-        long DecodeFailures,
-        long EmitFailures,
-        long CompressedQueueDrops)
-    {
-        public static MjpegRecentCounters Empty { get; } = new(0, 0, 0, 0);
-
-        public long Failures => DecodeFailures + EmitFailures + CompressedQueueDrops;
-    }
 
     private static DiagnosticEvaluation BuildDiagnosticEvaluation(
         CaptureHealthSnapshot health,

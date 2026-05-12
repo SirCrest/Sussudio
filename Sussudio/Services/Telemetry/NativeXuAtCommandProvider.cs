@@ -8,7 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Microsoft.Win32.SafeHandles;
-using Sussudio.Services.Devices;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Contracts;
 
 namespace Sussudio.Services.Telemetry;
 

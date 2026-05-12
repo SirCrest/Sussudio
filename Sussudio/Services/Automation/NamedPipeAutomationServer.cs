@@ -583,7 +583,8 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
     {
         Success = false,
         CorrelationId = Guid.NewGuid().ToString("N"),
-        Status = "error",
+        Status = AutomationResponseStatus.Error,
+        CommandLifecycle = AutomationCommandLifecycle.Failed,
         Message = message,
         ErrorCode = errorCode
     };

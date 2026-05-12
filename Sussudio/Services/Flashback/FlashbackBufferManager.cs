@@ -17,14 +17,6 @@ namespace Sussudio.Services.Flashback;
 /// </summary>
 internal sealed class FlashbackBufferManager : IDisposable
 {
-    private static readonly TimeSpan StaleSessionMinAge = TimeSpan.FromHours(12);
-    private const int MaxStaleSessionDirectoryScansPerInit = 64;
-    private const int MaxStaleSessionDirectoriesPerInit = 16;
-    private const int MaxStartupCacheSessionDirectoryScansPerInit = 256;
-    private const int MaxStartupCacheSessionDirectoriesPerInit = 32;
-    private const long StartupCacheBudgetMultiplier = 2;
-    private const int MaxStaleRootSegmentFileScansPerInit = 512;
-    private const int MaxStaleRootSegmentFilesPerInit = 128;
     private const string RecoveryPreserveMarkerFileName = ".flashback-recovery-preserve";
     private readonly object _indexLock = new();
     private readonly FlashbackBufferOptions _options;
@@ -57,14 +49,6 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         public bool AllowSamePathExtension { get; init; }
     }
-    private record StartupCacheCandidate(string Path, DateTime LastActivityUtc, long SizeBytes);
-    private record StartupCacheCleanupResult(
-        long BudgetBytes,
-        long RemainingBytes,
-        int SessionCount,
-        int DeletedSessionCount,
-        long FreedBytes);
-
     public FlashbackBufferManager(FlashbackBufferOptions? options = null)
     {
         _options = options ?? new FlashbackBufferOptions();
@@ -130,7 +114,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
-    public long TempDriveAvailableFreeBytes => TryGetTempDriveAvailableFreeBytes(_options.TempDirectory);
+    public long TempDriveAvailableFreeBytes => FlashbackStartupCacheCleanup.TryGetTempDriveAvailableFreeBytes(_options.TempDirectory);
 
     public TimeSpan LatestPts
     {
@@ -197,7 +181,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     /// <summary>
     /// Prepares the buffer for a sink-only cycle (new encoder, same buffer).
-    /// Nulls the active segment path so the next <see cref="GetFilePath"/> generates
+    /// Nulls the active segment path so the next <see cref="AcquireSegmentPath"/> generates
     /// a fresh file instead of reusing/overwriting the previous sink's segment.
     /// </summary>
     public void FinalizeActiveSegmentForCycle()
@@ -249,7 +233,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 if (TryDeleteFile(_activeSegmentPath))
                 {
                     freedBytes = AddNonNegativeSaturated(freedBytes, activeSegmentBytes);
-                    _activeSegmentPath = null; // Force new path generation on next GetFilePath()
+                    _activeSegmentPath = null; // Force new path generation on next AcquireSegmentPath()
                     Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
                     _previousActiveSegmentBytes = 0;
                 }
@@ -411,7 +395,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     /// <summary>Sets the file extension for new segments (e.g. ".ts" or ".mp4").</summary>
     public void SetSegmentExtension(string extension)
     {
-        var normalizedExtension = NormalizeSegmentExtension(extension);
+        var normalizedExtension = FlashbackSessionRecoveryScanner.NormalizeSegmentExtension(extension);
         lock (_indexLock)
         {
             ThrowIfDisposed();
@@ -432,17 +416,17 @@ internal sealed class FlashbackBufferManager : IDisposable
 
             var tempDirectory = Path.GetFullPath(_options.TempDirectory);
             Directory.CreateDirectory(tempDirectory);
-            var sessionDirectory = BuildSessionDirectory(tempDirectory, sessionId);
+            var sessionDirectory = FlashbackSessionRecoveryScanner.BuildSessionDirectory(tempDirectory, sessionId);
             Directory.CreateDirectory(sessionDirectory);
 
             // Clean up orphaned export temp files from previous sessions
             FlashbackExporter.CleanupOrphanedTempFiles(tempDirectory);
-            CleanupStaleRootSegmentFiles(tempDirectory);
-            CleanupStaleSessionDirectories(tempDirectory, sessionDirectory);
-            var cacheCleanup = CleanupSessionCacheBudget(
+            FlashbackStartupCacheCleanup.CleanupStaleRootSegmentFiles(tempDirectory);
+            FlashbackStartupCacheCleanup.CleanupStaleSessionDirectories(tempDirectory, sessionDirectory);
+            var cacheCleanup = FlashbackStartupCacheCleanup.CleanupSessionCacheBudget(
                 tempDirectory,
                 sessionDirectory,
-                CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));
+                FlashbackStartupCacheCleanup.CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));
 
             _activeSegmentPath = null;
             Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
@@ -474,12 +458,16 @@ internal sealed class FlashbackBufferManager : IDisposable
     }
 
     /// <summary>
-    /// Gets the active .ts segment path for this session. Generates the first segment on first call.
+    /// Returns the active .ts segment path, generating a new one on first call
+    /// after <see cref="StartCaptureAsync"/> or after segment rotation. The
+    /// "Acquire" prefix flags the side effect (segment-index increment and
+    /// active-path assignment); callers that just want to peek at the current
+    /// path without creating one should add a peek API rather than reuse this.
     /// </summary>
-    public string GetFilePath()
-        => GetFilePath(out _);
+    public string AcquireSegmentPath()
+        => AcquireSegmentPath(out _);
 
-    public string GetFilePath(out bool generated)
+    public string AcquireSegmentPath(out bool generated)
     {
         lock (_indexLock)
         {
@@ -574,436 +562,6 @@ internal sealed class FlashbackBufferManager : IDisposable
             }
         }
     }
-
-    private static void CleanupStaleSessionDirectories(string tempDirectory, string currentSessionDirectory)
-    {
-        try
-        {
-            var tempRoot = EnsureTrailingDirectorySeparator(Path.GetFullPath(tempDirectory));
-            var currentFullPath = Path.GetFullPath(currentSessionDirectory);
-            var nowUtc = DateTime.UtcNow;
-            var scannedCount = 0;
-            var deletedCount = 0;
-            long freedBytes = 0;
-
-            foreach (var directory in Directory.EnumerateDirectories(tempDirectory))
-            {
-                if (scannedCount >= MaxStaleSessionDirectoryScansPerInit ||
-                    deletedCount >= MaxStaleSessionDirectoriesPerInit)
-                {
-                    break;
-                }
-
-                scannedCount++;
-
-                var fullPath = Path.GetFullPath(directory);
-                if (!IsPathUnderDirectory(fullPath, tempRoot))
-                {
-                    Logger.Log($"FLASHBACK_STALE_SESSION_SKIP reason=outside_temp dir='{fullPath}'");
-                    continue;
-                }
-
-                if (string.Equals(fullPath, currentFullPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                var info = new DirectoryInfo(fullPath);
-                if (!info.Exists)
-                {
-                    continue;
-                }
-
-                if (IsReparsePoint(info))
-                {
-                    Logger.Log($"FLASHBACK_STALE_SESSION_SKIP reason=reparse_point dir='{fullPath}'");
-                    continue;
-                }
-
-                if (File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName)))
-                {
-                    Logger.Log($"FLASHBACK_STALE_SESSION_PRESERVE_SKIP dir='{fullPath}'");
-                    continue;
-                }
-
-                var latestActivityUtc = info.LastWriteTimeUtc;
-                long directoryBytes = 0;
-                var looksLikeFlashbackSession = false;
-                foreach (var file in info.EnumerateFiles("fb_*", SearchOption.TopDirectoryOnly))
-                {
-                    looksLikeFlashbackSession = true;
-                    latestActivityUtc = latestActivityUtc > file.LastWriteTimeUtc
-                        ? latestActivityUtc
-                        : file.LastWriteTimeUtc;
-                    directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);
-                }
-
-                if (!looksLikeFlashbackSession)
-                {
-                    if (info.EnumerateFileSystemInfos().Any())
-                    {
-                        continue;
-                    }
-
-                    if (!IsPlausibleFlashbackSessionDirectoryName(info.Name))
-                    {
-                        Logger.Log($"FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir dir='{fullPath}'");
-                        continue;
-                    }
-                }
-
-                if (nowUtc - latestActivityUtc < StaleSessionMinAge)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    Directory.Delete(fullPath, recursive: true);
-                    deletedCount++;
-                    freedBytes = AddNonNegativeSaturated(freedBytes, directoryBytes);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"FLASHBACK_STALE_SESSION_DELETE_WARN dir='{fullPath}' type={ex.GetType().Name} msg={ex.Message}");
-                }
-            }
-
-            if (deletedCount > 0)
-            {
-                Logger.Log($"FLASHBACK_STALE_SESSION_CLEANUP deleted={deletedCount} freed_bytes={freedBytes}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_STALE_SESSION_CLEANUP_WARN type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private static long CalculateStartupTempCacheBudgetBytes(long sessionMaxDiskBytes)
-    {
-        if (sessionMaxDiskBytes <= 0)
-        {
-            return 0;
-        }
-
-        return sessionMaxDiskBytes > long.MaxValue / StartupCacheBudgetMultiplier
-            ? long.MaxValue
-            : sessionMaxDiskBytes * StartupCacheBudgetMultiplier;
-    }
-
-    private static StartupCacheCleanupResult CleanupSessionCacheBudget(string tempDirectory, string currentSessionDirectory, long maxCacheBytes)
-    {
-        if (maxCacheBytes <= 0)
-        {
-            return new StartupCacheCleanupResult(0, 0, 0, 0, 0);
-        }
-
-        try
-        {
-            var tempRoot = EnsureTrailingDirectorySeparator(Path.GetFullPath(tempDirectory));
-            var currentFullPath = Path.GetFullPath(currentSessionDirectory);
-            var candidates = new List<StartupCacheCandidate>();
-            var scannedCount = 0;
-            var deletedCount = 0;
-            var sessionCount = 0;
-            long freedBytes = 0;
-            long totalCacheBytes = TryGetFlashbackSessionDirectoryStats(
-                currentFullPath,
-                out _,
-                out var currentBytes,
-                out _)
-                ? currentBytes
-                : 0;
-            if (currentBytes > 0)
-            {
-                sessionCount++;
-            }
-
-            foreach (var directory in Directory.EnumerateDirectories(tempDirectory))
-            {
-                if (scannedCount >= MaxStartupCacheSessionDirectoryScansPerInit)
-                {
-                    break;
-                }
-
-                scannedCount++;
-
-                var fullPath = Path.GetFullPath(directory);
-                if (!IsPathUnderDirectory(fullPath, tempRoot))
-                {
-                    Logger.Log($"FLASHBACK_CACHE_BUDGET_SKIP reason=outside_temp dir='{fullPath}'");
-                    continue;
-                }
-
-                if (string.Equals(fullPath, currentFullPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                if (File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName)))
-                {
-                    Logger.Log($"FLASHBACK_CACHE_BUDGET_PRESERVE_SKIP dir='{fullPath}'");
-                    continue;
-                }
-
-                if (!TryGetFlashbackSessionDirectoryStats(fullPath, out var latestActivityUtc, out var directoryBytes, out var hasFiles))
-                {
-                    continue;
-                }
-
-                if (!hasFiles || directoryBytes <= 0)
-                {
-                    continue;
-                }
-
-                totalCacheBytes = AddNonNegativeSaturated(totalCacheBytes, directoryBytes);
-                sessionCount++;
-                candidates.Add(new StartupCacheCandidate(fullPath, latestActivityUtc, directoryBytes));
-            }
-
-            if (totalCacheBytes <= maxCacheBytes)
-            {
-                return new StartupCacheCleanupResult(maxCacheBytes, totalCacheBytes, sessionCount, 0, 0);
-            }
-
-            foreach (var candidate in candidates.OrderBy(candidate => candidate.LastActivityUtc))
-            {
-                if (deletedCount >= MaxStartupCacheSessionDirectoriesPerInit || totalCacheBytes <= maxCacheBytes)
-                {
-                    break;
-                }
-
-                try
-                {
-                    Directory.Delete(candidate.Path, recursive: true);
-                    deletedCount++;
-                    freedBytes = AddNonNegativeSaturated(freedBytes, candidate.SizeBytes);
-                    totalCacheBytes = SubtractNonNegative(totalCacheBytes, candidate.SizeBytes);
-                    sessionCount = Math.Max(0, sessionCount - 1);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"FLASHBACK_CACHE_BUDGET_DELETE_WARN dir='{candidate.Path}' type={ex.GetType().Name} msg={ex.Message}");
-                }
-            }
-
-            if (deletedCount > 0)
-            {
-                Logger.Log($"FLASHBACK_CACHE_BUDGET_CLEANUP deleted={deletedCount} freed_bytes={freedBytes} remaining_bytes={totalCacheBytes} budget_bytes={maxCacheBytes}");
-            }
-
-            return new StartupCacheCleanupResult(maxCacheBytes, totalCacheBytes, sessionCount, deletedCount, freedBytes);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_CACHE_BUDGET_CLEANUP_WARN type={ex.GetType().Name} msg={ex.Message}");
-            return new StartupCacheCleanupResult(maxCacheBytes, 0, 0, 0, 0);
-        }
-    }
-
-    private static long TryGetTempDriveAvailableFreeBytes(string tempDirectory)
-    {
-        try
-        {
-            var root = Path.GetPathRoot(Path.GetFullPath(tempDirectory));
-            if (string.IsNullOrWhiteSpace(root))
-            {
-                return -1;
-            }
-
-            return new DriveInfo(root).AvailableFreeSpace;
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_TEMP_DRIVE_FREE_SPACE_WARN dir='{tempDirectory}' type={ex.GetType().Name} msg={ex.Message}");
-            return -1;
-        }
-    }
-
-    private static bool TryGetFlashbackSessionDirectoryStats(
-        string fullPath,
-        out DateTime latestActivityUtc,
-        out long directoryBytes,
-        out bool hasFiles)
-    {
-        latestActivityUtc = DateTime.MinValue;
-        directoryBytes = 0;
-        hasFiles = false;
-
-        try
-        {
-            var info = new DirectoryInfo(fullPath);
-            if (!info.Exists)
-            {
-                return false;
-            }
-
-            if (IsReparsePoint(info))
-            {
-                Logger.Log($"FLASHBACK_SESSION_STATS_SKIP reason=reparse_point dir='{fullPath}'");
-                return false;
-            }
-
-            latestActivityUtc = info.LastWriteTimeUtc;
-            var looksLikeFlashbackSession = false;
-            foreach (var file in info.EnumerateFiles("fb_*", SearchOption.TopDirectoryOnly))
-            {
-                looksLikeFlashbackSession = true;
-                hasFiles = true;
-                latestActivityUtc = latestActivityUtc > file.LastWriteTimeUtc
-                    ? latestActivityUtc
-                    : file.LastWriteTimeUtc;
-                directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);
-            }
-
-            if (!looksLikeFlashbackSession)
-            {
-                if (info.EnumerateFileSystemInfos().Any())
-                {
-                    return false;
-                }
-
-                return IsPlausibleFlashbackSessionDirectoryName(info.Name);
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_SESSION_STATS_WARN dir='{fullPath}' type={ex.GetType().Name} msg={ex.Message}");
-            return false;
-        }
-    }
-
-    private static void CleanupStaleRootSegmentFiles(string tempDirectory)
-    {
-        try
-        {
-            var nowUtc = DateTime.UtcNow;
-            var scannedCount = 0;
-            var deletedCount = 0;
-            long freedBytes = 0;
-
-            foreach (var filePath in Directory.EnumerateFiles(tempDirectory, "fb_*", SearchOption.TopDirectoryOnly))
-            {
-                if (scannedCount >= MaxStaleRootSegmentFileScansPerInit ||
-                    deletedCount >= MaxStaleRootSegmentFilesPerInit)
-                {
-                    break;
-                }
-
-                scannedCount++;
-
-                var info = new FileInfo(filePath);
-                if (!info.Exists || nowUtc - info.LastWriteTimeUtc < StaleSessionMinAge)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    var length = info.Length;
-                    info.Delete();
-                    deletedCount++;
-                    freedBytes = AddNonNegativeSaturated(freedBytes, length);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"FLASHBACK_STALE_ROOT_SEGMENT_DELETE_WARN file='{filePath}' type={ex.GetType().Name} msg={ex.Message}");
-                }
-            }
-
-            if (deletedCount > 0)
-            {
-                Logger.Log($"FLASHBACK_STALE_ROOT_SEGMENT_CLEANUP deleted={deletedCount} freed_bytes={freedBytes}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_STALE_ROOT_SEGMENT_CLEANUP_WARN type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private static string BuildSessionDirectory(string tempDirectory, string sessionId)
-    {
-        if (Path.IsPathRooted(sessionId) ||
-            sessionId.IndexOf(Path.DirectorySeparatorChar) >= 0 ||
-            sessionId.IndexOf(Path.AltDirectorySeparatorChar) >= 0 ||
-            sessionId.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
-        {
-            throw new ArgumentException("Session id must be a simple file-name component.", nameof(sessionId));
-        }
-
-        var tempRoot = EnsureTrailingDirectorySeparator(Path.GetFullPath(tempDirectory));
-        var sessionDirectory = Path.GetFullPath(Path.Combine(tempRoot, sessionId));
-        if (!IsPathUnderDirectory(sessionDirectory, tempRoot))
-        {
-            throw new ArgumentException("Session id must resolve inside the flashback temp directory.", nameof(sessionId));
-        }
-
-        return sessionDirectory;
-    }
-
-    private static string NormalizeSegmentExtension(string extension)
-    {
-        if (string.Equals(extension, ".ts", StringComparison.OrdinalIgnoreCase))
-        {
-            return ".ts";
-        }
-
-        if (string.Equals(extension, ".mp4", StringComparison.OrdinalIgnoreCase))
-        {
-            return ".mp4";
-        }
-
-        throw new ArgumentException("Flashback segment extension must be .ts or .mp4.", nameof(extension));
-    }
-
-    private static string EnsureTrailingDirectorySeparator(string path)
-        => Path.EndsInDirectorySeparator(path) ? path : path + Path.DirectorySeparatorChar;
-
-    private static bool IsPlausibleFlashbackSessionDirectoryName(string name)
-    {
-        if (name.Length == 32)
-        {
-            return IsLowerHexString(name);
-        }
-
-        var underscore = name.IndexOf('_');
-        return underscore > 0 &&
-               underscore < name.Length - 1 &&
-               IsLowerHexString(name.AsSpan(0, underscore)) &&
-               name.AsSpan(underscore + 1).Length == 32 &&
-               IsLowerHexString(name.AsSpan(underscore + 1));
-    }
-
-    private static bool IsLowerHexString(ReadOnlySpan<char> value)
-    {
-        if (value.IsEmpty)
-        {
-            return false;
-        }
-
-        foreach (var ch in value)
-        {
-            if (!IsLowerHexDigit(ch))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static bool IsLowerHexDigit(char value)
-        => value is >= '0' and <= '9' or >= 'a' and <= 'f';
-
-    private static bool IsPathUnderDirectory(string fullPath, string fullDirectoryRoot)
-        => fullPath.StartsWith(fullDirectoryRoot, StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsReparsePoint(FileSystemInfo info)
-        => (info.Attributes & FileAttributes.ReparsePoint) != 0;
 
     public void OnSegmentCompleted(string path, TimeSpan startPts, TimeSpan endPts, long sizeBytes)
     {
@@ -1207,9 +765,9 @@ internal sealed class FlashbackBufferManager : IDisposable
 
         try
         {
-            var sessionRoot = EnsureTrailingDirectorySeparator(Path.GetFullPath(_sessionDirectory));
+            var sessionRoot = FlashbackSessionRecoveryScanner.EnsureTrailingDirectorySeparator(Path.GetFullPath(_sessionDirectory));
             var fullPath = Path.GetFullPath(path);
-            return IsPathUnderDirectory(fullPath, sessionRoot);
+            return FlashbackSessionRecoveryScanner.IsPathUnderDirectory(fullPath, sessionRoot);
         }
         catch (Exception ex)
         {
@@ -1760,7 +1318,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         string fullPath;
         try
         {
-            sessionRoot = EnsureTrailingDirectorySeparator(Path.GetFullPath(_sessionDirectory));
+            sessionRoot = FlashbackSessionRecoveryScanner.EnsureTrailingDirectorySeparator(Path.GetFullPath(_sessionDirectory));
             fullPath = Path.GetFullPath(filePath);
         }
         catch (Exception ex)
@@ -1774,7 +1332,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason)
     {
-        if (!IsPathUnderDirectory(fullPath, sessionRoot))
+        if (!FlashbackSessionRecoveryScanner.IsPathUnderDirectory(fullPath, sessionRoot))
         {
             Logger.Log($"FLASHBACK_BUFFER_EVICT_DELETE_SKIP reason=outside_session path='{fullPath}'");
             return false;

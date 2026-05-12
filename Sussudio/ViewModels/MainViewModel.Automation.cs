@@ -10,7 +10,6 @@ using Windows.Storage.Pickers;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
-using Sussudio.Services.Configuration;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
@@ -68,7 +67,10 @@ public partial class MainViewModel
         => _sessionCoordinator.GetFlashbackPlaybackSnapshot();
 
     /// <summary>
-    /// Returns the active flashback playback controller if it exists and is not disabled.
+    /// Forwards a scrub-begin command to the active flashback playback controller.
+    /// Returns true when the controller accepted the command (timeline was
+    /// running and not stopped); false when flashback is disabled or the
+    /// controller refused.
     /// </summary>
     public bool FlashbackBeginScrub(TimeSpan position)
     {
@@ -289,7 +291,7 @@ public partial class MainViewModel
 
         // UI flow: the file picker already confirmed any overwrite with the user.
         // Pass force=true so the exporter does not refuse the user-chosen path.
-        var (result, errorMessage, isCurrent) = await ExportFlashbackCoreAsync(async (progress, ct) =>
+        var outcome = await ExportFlashbackCoreAsync(async (progress, ct) =>
             await _sessionCoordinator.ExportFlashbackRangeAsync(
                 inPoint,
                 outPoint,
@@ -299,17 +301,18 @@ public partial class MainViewModel
                 playback.InPointFilePts,
                 playback.OutPointFilePts,
                 force: true));
-        if (!isCurrent) return;
-
-        if (errorMessage != null)
+        switch (outcome)
         {
-            StatusText = $"Export error: {errorMessage}";
-        }
-        else
-        {
-            StatusText = result!.Succeeded
-                ? $"Export complete: {file.Path}"
-                : $"Export failed: {result.StatusMessage}";
+            case ExportFlashbackOutcome.Stale:
+                return;
+            case ExportFlashbackOutcome.Failed failed:
+                StatusText = $"Export error: {failed.ErrorMessage}";
+                break;
+            case ExportFlashbackOutcome.Succeeded succeeded:
+                StatusText = succeeded.Result.Succeeded
+                    ? $"Export complete: {file.Path}"
+                    : $"Export failed: {succeeded.Result.StatusMessage}";
+                break;
         }
     }
 
@@ -324,19 +327,20 @@ public partial class MainViewModel
         if (file == null) return;
 
         // UI flow: the file picker already confirmed any overwrite with the user.
-        var (result, errorMessage, isCurrent) = await ExportFlashbackCoreAsync(async (progress, ct) =>
+        var outcome = await ExportFlashbackCoreAsync(async (progress, ct) =>
             await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(300, file.Path, progress, ct, force: true));
-        if (!isCurrent) return;
-
-        if (errorMessage != null)
+        switch (outcome)
         {
-            StatusText = $"Save error: {errorMessage}";
-        }
-        else
-        {
-            StatusText = result!.Succeeded
-                ? $"Saved last 5 minutes: {file.Path}"
-                : $"Save failed: {result.StatusMessage}";
+            case ExportFlashbackOutcome.Stale:
+                return;
+            case ExportFlashbackOutcome.Failed failed:
+                StatusText = $"Save error: {failed.ErrorMessage}";
+                break;
+            case ExportFlashbackOutcome.Succeeded succeeded:
+                StatusText = succeeded.Result.Succeeded
+                    ? $"Saved last 5 minutes: {file.Path}"
+                    : $"Save failed: {succeeded.Result.StatusMessage}";
+                break;
         }
     }
 
@@ -362,7 +366,14 @@ public partial class MainViewModel
         return false;
     }
 
-    private async Task<(FinalizeResult? Result, string? ErrorMessage, bool IsCurrent)> ExportFlashbackCoreAsync(
+    private abstract record ExportFlashbackOutcome
+    {
+        public sealed record Succeeded(FinalizeResult Result) : ExportFlashbackOutcome;
+        public sealed record Failed(string ErrorMessage) : ExportFlashbackOutcome;
+        public sealed record Stale : ExportFlashbackOutcome;
+    }
+
+    private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync(
         Func<IProgress<ExportProgress>, CancellationToken, Task<FinalizeResult>> exportAction)
     {
         // Export snapshots the flashback backend under CaptureService locks, then runs
@@ -393,12 +404,16 @@ public partial class MainViewModel
             });
 
             var result = await exportAction(progress, ct);
-            return (result, null, IsCurrentFlashbackExport(exportId, exportCts));
+            return IsCurrentFlashbackExport(exportId, exportCts)
+                ? new ExportFlashbackOutcome.Succeeded(result)
+                : new ExportFlashbackOutcome.Stale();
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
-            return (null, ex.Message, IsCurrentFlashbackExport(exportId, exportCts));
+            return IsCurrentFlashbackExport(exportId, exportCts)
+                ? new ExportFlashbackOutcome.Failed(ex.Message)
+                : new ExportFlashbackOutcome.Stale();
         }
         finally
         {
@@ -442,12 +457,12 @@ public partial class MainViewModel
     }
 
     public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
-        double seconds, string outputPath, bool useSelectionRange, bool force, CancellationToken ct)
+        double seconds, string outputPath, bool useSelectionRange, bool force, CancellationToken cancellationToken = default)
     {
         var exportId = Interlocked.Increment(ref _flashbackExportOperationId);
         var oldExportCts = _exportCts;
         CancelFlashbackExportCts(oldExportCts);
-        _exportCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        _exportCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var exportCts = _exportCts;
 
         if (!_dispatcherQueue.TryEnqueue(() =>

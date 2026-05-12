@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Sussudio.Models;
+using Sussudio.ViewModels;
 
 namespace Sussudio;
 

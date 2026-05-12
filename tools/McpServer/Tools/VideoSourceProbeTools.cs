@@ -9,7 +9,7 @@ namespace McpServer.Tools;
 
 [McpServerToolType]
 // MCP tool for probing the live source signal and capture-card telemetry.
-public static class VideoSourceProbeTool
+public static class VideoSourceProbeTools
 {
     [McpServerTool, Description("Query the live video source's supported formats during preview. Shows P010/NV12 availability, current format, memory preference, and full format table without starting recording.")]
     public static async Task<CallToolResult> probe_video_source(PipeClient pipeClient)

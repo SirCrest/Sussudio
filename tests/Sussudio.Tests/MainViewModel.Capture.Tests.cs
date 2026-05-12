@@ -198,8 +198,12 @@ static partial class Program
 
     private static Task CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+                .Replace("\r\n", "\n");
 
         var rangeExport = ExtractTextBetween(
             captureServiceText,
@@ -368,8 +372,8 @@ static partial class Program
         AssertContains(rawAutomationText, "EnsureFlashbackActiveForExport(\"save_last_5m\")");
         AssertContains(rawAutomationText, "FLASHBACK_EXPORT_UI_REJECTED op={operation} reason=inactive");
         AssertContains(rawAutomationText, "Flashback export unavailable: flashback is not active.");
-        AssertMemberContains(automationText, "ExportFlashbackAsync", "if (!isCurrent) return;");
-        AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "if (!isCurrent) return;");
+        AssertMemberContains(automationText, "ExportFlashbackAsync", "case ExportFlashbackOutcome.Stale:");
+        AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "case ExportFlashbackOutcome.Stale:");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _flashbackExportOperationId;");
         AssertContains(viewModelFiles["MainViewModel.cs"], "Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(viewModelFiles["MainViewModel.cs"], "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
@@ -386,7 +390,7 @@ static partial class Program
         AssertContains(rawCaptureText, "catch (TimeoutException ex)\n            {\n                Logger.Log($\"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}\");");
         AssertContains(rawCaptureText, "REINIT_WAIT_FLASHBACK_CYCLE_FAULT");
         AssertContains(viewModelFiles["MainViewModel.Capture.cs"], "if (ReferenceEquals(_pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)\n            {\n                _pendingFlashbackCycleTask = null;\n            }");
-        AssertContains(automationText, "private async Task<(FinalizeResult? Result, string? ErrorMessage, bool IsCurrent)> ExportFlashbackCoreAsync");
+        AssertContains(automationText, "private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync");
         AssertContains(automationText, "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(automationText, "CancelFlashbackExportCts(oldExportCts);");
         AssertContains(automationText, "IsCurrentFlashbackExport(exportId, exportCts)");
@@ -398,7 +402,7 @@ static partial class Program
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "CancelFlashbackExportCts(oldExportCts);");
-        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "CancellationTokenSource.CreateLinkedTokenSource(ct)");
+        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "IsCurrentFlashbackExport(exportId, exportCts)");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "FlashbackExportProgress = p.Percent;");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "exportCts.Token");
@@ -629,9 +633,12 @@ static partial class Program
 
     private static Task CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange()
     {
-        var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.cs");
+        var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.cs")
+            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs");
         var captureServiceRawText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
+                .Replace("\r\n", "\n");
         var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
         var viewModelCaptureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
@@ -840,8 +847,12 @@ static partial class Program
             .Where(path => File.ReadAllText(path).Contains("FLASHBACK_", StringComparison.Ordinal))
             .Select(path => File.ReadAllText(path).Replace("\r\n", "\n"))
             .ToArray();
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
+                .Replace("\r\n", "\n");
         var flashbackText = string.Join("\n", flashbackTexts);
 
         AssertNoRegex(
@@ -893,7 +904,7 @@ static partial class Program
         AssertContains(encoderSettingsChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
         AssertContains(encoderSettingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED");
         AssertContains(encoderSettingsChange, "string? splitEncodeMode = null");
-        AssertContains(encoderSettingsChange, "_currentSettings.SplitEncodeMode = splitEncodeMode;");
+        AssertContains(encoderSettingsChange, "_currentSettings.SplitEncodeMode = parsedSplitMode;");
         AssertContains(
             encoderSettingsChange,
             "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
@@ -901,7 +912,7 @@ static partial class Program
         var formatChange = ExtractTextBetween(
             captureServiceText,
             "public Task UpdateRecordingFormatAsync",
-            "/// <summary>\n    /// Cycles the flashback encoder");
+            "    public Task CycleFlashbackEncoderSettingsAsync");
         AssertContains(formatChange, "var cycleFailed = false;");
         AssertContains(formatChange, "var previousSettings = CloneCaptureSettings(_currentSettings);");
         AssertContains(formatChange, "cycleFailed = true;");
@@ -933,7 +944,7 @@ static partial class Program
         var createFlashbackSessionContext = ExtractTextBetween(
             captureServiceText,
             "private FlashbackSessionContext CreateFlashbackSessionContext",
-            "    private async Task EnsureFlashbackPreviewBackendAsync");
+            "    private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts");
         AssertContains(createFlashbackSessionContext, "var frameRateParts = ResolveFlashbackSessionFrameRateParts(settings, frameRate);");
         AssertContains(createFlashbackSessionContext, "frameRate = frameRateParts.EffectiveFrameRate;");
         AssertContains(createFlashbackSessionContext, "FrameRateNumerator = fpsNum");
@@ -961,7 +972,7 @@ static partial class Program
         AssertDoesNotContain(captureServiceText, "? RecordingFormat.HevcMp4.ToString()");
         AssertContains(createFlashbackSessionContext, "var flashbackNvencPreset = settings.NvencPreset;");
         AssertContains(createFlashbackSessionContext, "NvencPreset = flashbackNvencPreset");
-        AssertContains(createFlashbackSessionContext, "SplitEncodeMode = settings.SplitEncodeMode");
+        AssertContains(createFlashbackSessionContext, "SplitEncodeMode = SplitEncodeModeParser.ToWireString(settings.SplitEncodeMode)");
         // Flashback must honor user codec/preset settings directly. The legacy snapshot
         // field remains for compatibility, but the old silent AV1->HEVC path must stay gone.
         AssertDoesNotContain(createFlashbackSessionContext, "FLASHBACK_CODEC_DOWNGRADE");
@@ -974,7 +985,7 @@ static partial class Program
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
         AssertContains(snapshotsText, "FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),");
-        var contractsText = ReadRepoFile("Sussudio/Models/AutomationContracts.cs")
+        var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         AssertContains(contractsText, "public string? FlashbackExportVerificationFormat { get; init; }");
         AssertContains(contractsText, "public string? FlashbackCodecDowngradeReason { get; init; }");
@@ -1059,8 +1070,10 @@ static partial class Program
 
     private static Task CaptureService_FlashbackEnableDisable_PreservesPreviewState()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+                .Replace("\r\n", "\n");
         var setFlashbackEnabled = ExtractTextBetween(
             captureServiceText,
             "public Task SetFlashbackEnabledAsync",

@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using FFmpeg.AutoGen;
-using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Gpu;
 
@@ -47,7 +47,7 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
             throw new ArgumentOutOfRangeException(nameof(width), "Width and height must be positive.");
         }
 
-        LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+        FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
 
         var codec = ffmpeg.avcodec_find_decoder_by_name("mjpeg");
         if (codec == null)
