@@ -87,6 +87,11 @@ Diagnostic-session Flashback segment handling now lives in
 `FlashbackGetSegments` parsing, completed-segment waits, and playable-boundary
 headroom waits while the runner keeps scenario command sequencing.
 
+Diagnostic-session Flashback snapshot waits now live in
+`tools/Common/DiagnosticSessionFlashbackWaits.cs`. They own read-only polling
+loops for playback state, playback warmup, preview active, Flashback active,
+and recording-ready checks while the runner keeps scenario command sequencing.
+
 Diagnostic-session Flashback validation now lives in
 `tools/Common/DiagnosticSessionFlashbackValidation.cs`. It owns recording,
 playback, and preview-scheduler warning thresholds over already projected
@@ -103,6 +108,7 @@ Remaining `tools/Common` ownership:
 - `AutomationPipeClient.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackSegments.cs`
+- `DiagnosticSessionFlashbackWaits.cs`
 - `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionJsonArtifacts.cs`

@@ -699,6 +699,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
@@ -1097,12 +1099,12 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback playback preview cycle preview stopped during playback");
         AssertContains(diagnosticSessionText, "flashback playback preview cycle: playback did not return live after preview stop");
         AssertContains(diagnosticSessionText, "flashback playback preview cycle export verified");
-        AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForPreviewActiveAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task<JsonElement?> WaitForPreviewActiveAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback recording preview cycle preview stopped");
         AssertContains(diagnosticSessionText, "const int recordingCleanupTimeoutMs = 300_000;");
         AssertContains(diagnosticSessionText, "SetRecordingEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, recordingCleanupTimeoutMs");
-        AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
         AssertContains(diagnosticSessionText, "private static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
         AssertContains(diagnosticSessionText, "flashback recording settings deferred post-stop buffer verified");
         AssertContains(diagnosticSessionText, "flashback recording settings deferred preset restored to");
@@ -1114,7 +1116,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback lifecycle: playback worker still alive after disable");
         AssertContains(diagnosticSessionText, "flashback lifecycle: pending commands remained after disable");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportRejectedAsync(");
-        AssertContains(diagnosticSessionText, "private static async Task<bool> WaitForFlashbackStressBufferReadyAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task<bool> WaitForFlashbackStressBufferReadyAsync(");
         AssertContains(diagnosticSessionText, "internal static void ValidateFlashbackRecordingSession(");
         AssertContains(diagnosticSessionText, "\"flashback recording: RecordingBackend never reported Flashback\"");
         AssertContains(diagnosticSessionText, "\"flashback recording: no Flashback video frames submitted to encoder\"");
@@ -1196,8 +1198,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback-rejected-export.mp4\"");
         AssertContains(diagnosticSessionText, "$\"flashback export rejected: expected Failed status, got {status}\"");
         AssertContains(diagnosticSessionText, "message.Contains(\"Flashback buffer not active\", StringComparison.OrdinalIgnoreCase)");
-        AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForFlashbackPlaybackBoundaryCrossAsync(");
-        AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackBoundaryCrossAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(");
         AssertContains(diagnosticSessionText, "actions.Add(\n            \"flashback segment playback observed \"");
         AssertDoesNotContain(diagnosticSessionText, "flashback segment playback: excessive late frames");
         AssertContains(diagnosticSessionText, "var diagnosticHealthObservation = BuildSessionDiagnosticHealthObservation(");

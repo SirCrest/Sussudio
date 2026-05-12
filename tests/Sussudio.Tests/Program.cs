@@ -627,6 +627,9 @@ static partial class Program
                 "Diagnostic session Flashback segment waits have a named owner",
                 DiagnosticSessionFlashbackSegments_OwnsSegmentWaitsAndParsing),
             await RunCheckAsync(
+                "Diagnostic session Flashback snapshot waits have a named owner",
+                DiagnosticSessionFlashbackWaits_OwnsSnapshotPollingWaits),
+            await RunCheckAsync(
                 "Diagnostic session Flashback validation has a named owner",
                 DiagnosticSessionFlashbackValidation_OwnsFlashbackWarningPolicy),
             await RunCheckAsync(

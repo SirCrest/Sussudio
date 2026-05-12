@@ -1212,6 +1212,38 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackWaits_OwnsSnapshotPollingWaits()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var waitsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(waitsText, "internal static class DiagnosticSessionFlashbackWaits");
+        AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackBoundaryCrossAsync(");
+        AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(");
+        AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackWarmSampleAsync(");
+        AssertContains(waitsText, "internal static async Task<bool> WaitForFlashbackPlaybackPositionAsync(");
+        AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForFlashbackActiveAsync(");
+        AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForPreviewActiveAsync(");
+        AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
+        AssertContains(waitsText, "internal static async Task<bool> WaitForFlashbackStressBufferReadyAsync(");
+        AssertContains(waitsText, "FlashbackPlaybackPendingCommands");
+        AssertContains(waitsText, "FlashbackPlaybackFrameCount");
+        AssertContains(waitsText, "RecordingBackend");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;");
+        AssertDoesNotContain(runnerText, "private static async Task<JsonElement?> WaitForFlashbackPlaybackBoundaryCrossAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task<JsonElement?> WaitForFlashbackPlaybackWarmSampleAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task<bool> WaitForFlashbackPlaybackPositionAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task<JsonElement?> WaitForFlashbackActiveAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task<JsonElement?> WaitForPreviewActiveAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task<bool> WaitForFlashbackStressBufferReadyAsync(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackValidation_OwnsFlashbackWarningPolicy()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
