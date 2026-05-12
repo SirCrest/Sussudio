@@ -372,7 +372,27 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         }
 
         _disposed = true;
-        StopAsync().GetAwaiter().GetResult();
+
+        // Never block the UI thread on a Task that may itself need the UI thread
+        // to make progress (StopAsync awaits items that may have dispatched back).
+        // Task.Run breaks the ambient SynchronizationContext so StopAsync can
+        // complete without re-entering a captured UI dispatcher.  The budget is
+        // 12 s: StopAsync has two consecutive 5 s Task.WhenAny waits internally
+        // (loopTask + autoVerificationTask), so 12 s covers both with margin.
+        // Callers that need deterministic teardown should call DisposeAsync.
+        try
+        {
+            var stop = Task.Run(() => StopAsync());
+            if (!stop.Wait(TimeSpan.FromSeconds(12)))
+            {
+                Logger.Log("DIAGHUB_DISPOSE_TIMEOUT msg='StopAsync did not complete within 12 s; abandoning'");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"DIAGHUB_DISPOSE_FAULT type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+
         _currentProcess.Dispose();
     }
 
