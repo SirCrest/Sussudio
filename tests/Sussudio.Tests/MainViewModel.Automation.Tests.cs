@@ -699,6 +699,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs")
@@ -1067,7 +1069,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback-encoder-cycle-export.mp4\"");
         AssertContains(diagnosticSessionText, "flashback encoder preset restored to");
         AssertContains(diagnosticSessionText, "flashback encoder cycle export verified");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportPlaybackAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackExportPlaybackAsync(");
         AssertContains(diagnosticSessionText, "flashback export during playback verified");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackSegmentPlaybackAsync(");
         AssertContains(diagnosticSessionText, "internal static async Task<FlashbackSegmentProbe?> WaitForFlashbackCompletedSegmentAsync(");
@@ -1077,7 +1079,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback segment playback started near boundary");
         AssertContains(diagnosticSessionText, "frameCount >= 180");
         AssertContains(diagnosticSessionText, "playback FPS below source-rate target after warm sample");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRangeExportAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRangeExportAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-range-export.mp4\"");
         AssertContains(diagnosticSessionText, "\"flashback-range-export-audio-switch.mp4\"");
         AssertContains(diagnosticSessionText, "internal static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
@@ -1086,18 +1088,18 @@ static partial class Program
         AssertContains(diagnosticSessionText, "[\"useSelectionRange\"] = true");
         AssertContains(diagnosticSessionText, "actions.Add($\"{scenarioLabel} verified\")");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackLifecycleAsync(");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportConcurrentAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackExportConcurrentAsync(");
         AssertContains(diagnosticSessionText, "async Task<JsonElement> SendRawWithConnectRetryAsync(");
         AssertContains(diagnosticSessionText, "var exportTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout(\"FlashbackExport\");");
         AssertContains(diagnosticSessionText, "var exportTaskA = sendCommandAsync(\"FlashbackExport\", exportPayloadA, exportTimeoutMs);");
         AssertContains(diagnosticSessionText, "var exportTaskB = sendCommandAsync(\"FlashbackExport\", exportPayloadB, exportTimeoutMs);");
         AssertContains(diagnosticSessionText, "flashback concurrent exports verified");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackDisableDuringExportAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackDisableDuringExportAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-disable-during-export.mp4\"");
         AssertContains(diagnosticSessionText, "var disableTask = SendCommandWithConnectRetryAsync(");
         AssertContains(diagnosticSessionText, "flashback disable/export requests issued");
         AssertContains(diagnosticSessionText, "flashback disable during export verified");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRotatedExportAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRotatedExportAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-rotated-export.mp4\"");
         AssertContains(diagnosticSessionText, "flashback rotated segment observed");
         AssertContains(diagnosticSessionText, "TryParseFlashbackExportSegmentCount(exportMessage)");

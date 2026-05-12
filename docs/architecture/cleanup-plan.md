@@ -96,7 +96,13 @@ Diagnostic-session Flashback export helpers now live in
 `tools/Common/DiagnosticSessionFlashbackExports.cs`. They own strict export
 verification payload construction, rotated-export segment-count parsing,
 range-selection cleanup, and the range export audio-switch companion command
-while the runner keeps scenario command sequencing.
+while scenario command sequencing lives in a separate owner.
+
+Diagnostic-session Flashback export scenarios now live in
+`tools/Common/DiagnosticSessionFlashbackExportScenarios.cs`. They own
+concurrent export, disable-during-export, rotated export, export during
+playback, and selection-range export flows while the runner only starts the
+scenario tasks.
 
 Diagnostic-session Flashback metric projection now lives in
 `tools/Common/DiagnosticSessionFlashbackMetrics.cs`. It owns snapshot-only
@@ -141,6 +147,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
+- `DiagnosticSessionFlashbackExportScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackSegments.cs`

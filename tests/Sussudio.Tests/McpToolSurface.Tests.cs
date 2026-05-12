@@ -1272,6 +1272,36 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackExportScenarios_OwnExportFlows()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var scenariosText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(scenariosText, "internal static class DiagnosticSessionFlashbackExportScenarios");
+        AssertContains(scenariosText, "internal static async Task RunFlashbackExportConcurrentAsync(");
+        AssertContains(scenariosText, "\"flashback-concurrent-a.mp4\"");
+        AssertContains(scenariosText, "flashback concurrent exports verified");
+        AssertContains(scenariosText, "internal static async Task RunFlashbackDisableDuringExportAsync(");
+        AssertContains(scenariosText, "\"flashback-disable-during-export.mp4\"");
+        AssertContains(scenariosText, "SendCommandWithConnectRetryAsync(");
+        AssertContains(scenariosText, "internal static async Task RunFlashbackRotatedExportAsync(");
+        AssertContains(scenariosText, "TryParseFlashbackExportSegmentCount(exportMessage)");
+        AssertContains(scenariosText, "internal static async Task RunFlashbackExportPlaybackAsync(");
+        AssertContains(scenariosText, "flashback export during playback verified");
+        AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
+        AssertContains(scenariosText, "[\"useSelectionRange\"] = true");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExportScenarios;");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackExportConcurrentAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackDisableDuringExportAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRotatedExportAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackExportPlaybackAsync(");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRangeExportAsync(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackExports_OwnsExportHelpers()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")

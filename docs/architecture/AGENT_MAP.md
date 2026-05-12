@@ -154,6 +154,9 @@ Primary owners:
   diagnostic helpers: strict export verification payloads, rotated-export
   segment-count parsing, range-selection cleanup, and the audio-toggle
   companion used by the range export audio-switch scenario.
+- `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs` owns Flashback
+  export diagnostic command flows: concurrent exports, disable-during-export,
+  rotated exports, export during playback, and selection-range exports.
 - `tools/Common/DiagnosticSessionFlashbackMetrics.cs` owns read-only
   diagnostic-session Flashback metric projection for recording, playback, and
   export sessions.
