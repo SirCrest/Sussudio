@@ -1011,6 +1011,27 @@ static partial class Program
         }
     }
 
+    private static Task DiagnosticSessionModels_AreSplitFromRunnerBehavior()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var modelText = ReadRepoFile("tools/Common/DiagnosticSessionModels.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(modelText, "public sealed class DiagnosticSessionOptions");
+        AssertContains(modelText, "public sealed class DiagnosticSessionResult");
+        AssertContains(modelText, "public sealed class DiagnosticSessionSample");
+        AssertContains(modelText, "public string TerminalState { get; set; }");
+        AssertContains(modelText, "public JsonElement Snapshot { get; init; }");
+        AssertContains(runnerText, "public static class DiagnosticSessionRunner");
+        AssertContains(runnerText, "public static async Task<DiagnosticSessionResult> RunAsync(");
+        AssertDoesNotContain(runnerText, "public sealed class DiagnosticSessionResult");
+        AssertDoesNotContain(runnerText, "public sealed class DiagnosticSessionOptions");
+        AssertDoesNotContain(runnerText, "public sealed class DiagnosticSessionSample");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));

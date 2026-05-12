@@ -48,9 +48,15 @@ Stats dock and frame-time overlay lifecycle now live in
 still renders metric values and dynamic diagnostic rows, but polling, visibility
 state, and dock animations are out of the shell fields.
 
+Diagnostic session DTOs now live in
+`tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
+owns orchestration and scenario execution, but the public options/result/sample
+contracts are separated from runner behavior.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
+- `DiagnosticSessionModels.cs`
 - `DiagnosticSessionRunner.cs`
 - `AutomationSnapshotFormatter.cs`
 - `AutomationResponseState.cs`

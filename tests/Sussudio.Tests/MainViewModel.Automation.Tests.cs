@@ -693,6 +693,8 @@ static partial class Program
 
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var diagnosticSessionModelsText = ReadRepoFile("tools/Common/DiagnosticSessionModels.cs")
+            .Replace("\r\n", "\n");
         var diagnosticScenariosText = ReadRepoFile("tools/Common/DiagnosticSessionScenarios.cs")
             .Replace("\r\n", "\n");
         AssertContains(diagnosticSessionText, "var scenario = DiagnosticSessionScenarios.Normalize(options.Scenario);");
@@ -724,7 +726,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "catch (AutomationPipeException ex) when (ex is not AutomationPipeConnectException)");
         AssertContains(diagnosticSessionText, "return BuildLocalFailureResponse(command, ex.Message);");
         AssertContains(diagnosticSessionText, "catch (JsonException ex)");
-        AssertContains(diagnosticSessionText, "public string TerminalState { get; set; }");
+        AssertContains(diagnosticSessionModelsText, "public sealed class DiagnosticSessionResult");
+        AssertContains(diagnosticSessionModelsText, "public string TerminalState { get; set; }");
         AssertContains(diagnosticSessionText, "var livePath = Path.Combine(outputDirectory, \"session-live.json\");");
         AssertContains(diagnosticSessionText, "var initialSnapshotKnown = false;");
         AssertContains(diagnosticSessionText, "skipped state-mutating scenario");

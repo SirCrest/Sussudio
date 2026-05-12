@@ -603,6 +603,9 @@ static partial class Program
                 "Diagnostic session runner writes terminal artifacts on final snapshot failure",
                 DiagnosticSessionRunner_FinalSnapshotFailureWritesTerminalArtifacts),
             await RunCheckAsync(
+                "Diagnostic session model ownership is split from runner behavior",
+                DiagnosticSessionModels_AreSplitFromRunnerBehavior),
+            await RunCheckAsync(
                 "Diagnostic session runner verifies flashback export during playback",
                 DiagnosticSessionRunner_VerifiesFlashbackExportPlaybackCommandFlow),
             await RunCheckAsync(

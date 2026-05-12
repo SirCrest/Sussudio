@@ -133,6 +133,9 @@ Primary owners:
 - `tools/Common/` for shared tool helpers that are not contracts, including
   pipe client, snapshot formatting, diagnostic sessions, diagnostic scenario
   cataloging, PresentMon probing, and shared JSON options.
+- `tools/Common/DiagnosticSessionModels.cs` owns diagnostic session options,
+  result, and sample DTOs. Keep summary/live JSON shape changes there rather
+  than expanding the runner header.
 
 Invariants:
 
