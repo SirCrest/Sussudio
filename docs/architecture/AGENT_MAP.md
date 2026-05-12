@@ -119,7 +119,8 @@ Primary current owners:
   dispatcher enqueue/invoke helpers and preview event fan-out for the partial
   family. `MainViewModel.Runtime.cs` owns live runtime text, timer refreshes,
   recording bitrate display, capture status/error fan-out, and resume cleanup
-  callbacks.
+  callbacks. `MainViewModel.Disposal.cs` owns bounded teardown, event
+  unsubscription, and export-cancellation cleanup.
 
 Refactor direction:
 

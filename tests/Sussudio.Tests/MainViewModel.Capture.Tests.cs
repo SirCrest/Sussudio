@@ -311,7 +311,10 @@ static partial class Program
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelText = string.Join("\n", viewModelFiles.Values);
         var automationText = viewModelFiles["MainViewModel.Automation.cs"];
+        var disposalText = viewModelFiles["MainViewModel.Disposal.cs"];
         var rawViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var rawDisposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs")
             .Replace("\r\n", "\n");
         var rawAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
             .Replace("\r\n", "\n");
@@ -375,10 +378,10 @@ static partial class Program
         AssertMemberContains(automationText, "ExportFlashbackAsync", "case ExportFlashbackOutcome.Stale:");
         AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "case ExportFlashbackOutcome.Stale:");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _flashbackExportOperationId;");
-        AssertContains(viewModelFiles["MainViewModel.cs"], "Interlocked.Increment(ref _flashbackExportOperationId);");
-        AssertContains(viewModelFiles["MainViewModel.cs"], "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
-        AssertContains(viewModelFiles["MainViewModel.cs"], "CancelFlashbackExportCts(exportCts);");
-        AssertContains(rawViewModelText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
+        AssertContains(disposalText, "Interlocked.Increment(ref _flashbackExportOperationId);");
+        AssertContains(disposalText, "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
+        AssertContains(disposalText, "CancelFlashbackExportCts(exportCts);");
+        AssertContains(rawDisposalText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private const int PreviewReinitializeDebounceMs = 250;");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _previewReinitializeGeneration;");

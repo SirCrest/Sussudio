@@ -242,7 +242,8 @@ Remaining `tools/Common` ownership:
    behavior there instead of growing the root facade file. Shared dispatcher
    enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`, and live
    runtime text/timer/status/error handling now lives in
-   `MainViewModel.Runtime.cs`.
+   `MainViewModel.Runtime.cs`. Bounded teardown and event unsubscription now
+   live in `MainViewModel.Disposal.cs`.
 
 5. Extract capture resource owners behind the transition policy.
 
