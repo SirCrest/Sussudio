@@ -2620,6 +2620,7 @@ static partial class Program
     {
         var traceModelsText = ReadRepoFile("Sussudio/Models/Audio/AudioRampTraceModels.cs").Replace("\r\n", "\n");
         var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs").Replace("\r\n", "\n");
+        var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs").Replace("\r\n", "\n");
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
         var runtimeContractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeSnapshots.cs").Replace("\r\n", "\n");
         var runtimeSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs").Replace("\r\n", "\n");
@@ -2633,15 +2634,15 @@ static partial class Program
         AssertContains(traceModelsText, "public double PlaybackCurrentVolumePercent { get; init; }");
         AssertContains(traceModelsText, "public long PlaybackOutputAgeMs { get; init; }");
 
-        AssertContains(audioControlsText, "private const int AudioRampTraceSampleIntervalMs = 10;");
+        AssertContains(audioRampTraceText, "private const int AudioRampTraceSampleIntervalMs = 10;");
         AssertContains(audioControlsText, "BeginAudioRampTraceSession(");
         AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"volume-set\")");
         AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"primed\"");
         AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"monitoring-started\"");
         AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"monitoring-stopped\"");
-        AssertContains(audioControlsText, "RunAudioRampTraceSamplerAsync");
-        AssertContains(audioControlsText, "Task.Delay(AudioRampTraceSampleIntervalMs");
-        AssertContains(audioControlsText, "GetAudioRampTraceSnapshotAsync");
+        AssertContains(audioRampTraceText, "RunAudioRampTraceSamplerAsync");
+        AssertContains(audioRampTraceText, "Task.Delay(AudioRampTraceSampleIntervalMs");
+        AssertContains(audioRampTraceText, "GetAudioRampTraceSnapshotAsync");
 
         AssertContains(playbackText, "UpdateOutputLevel(destinationSpan);");
         AssertContains(playbackText, "public float TargetVolume => _targetVolume;");
