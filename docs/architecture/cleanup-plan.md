@@ -72,6 +72,11 @@ Diagnostic-session JSON artifact helpers now live in
 session lifecycle, but JSON writing, frame-ledger extraction, and snapshot /
 verification response extraction have a smaller home.
 
+Diagnostic-session scenario flagging now lives in
+`tools/Common/DiagnosticSessionScenarioPlan.cs`. It owns normalized scenario
+booleans plus grouped warning/validation policy switches so the runner does not
+grow direct scenario string comparisons.
+
 Diagnostic-session cleanup restore validation now lives in
 `tools/Common/DiagnosticSessionCleanupPolicy.cs`. It owns warnings for preview,
 Flashback, and playback state that remain active after the runner attempts
@@ -186,6 +191,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionSampler.cs`
+- `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionText.cs`
 - `DiagnosticSessionRunner.cs`
 - `AutomationSnapshotFormatter.cs`

@@ -201,6 +201,10 @@ Primary owners:
   helpers used by the runner, formatter, and validation policies.
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
   connect retry classification and local failure-response envelopes.
+- `tools/Common/DiagnosticSessionScenarioPlan.cs` owns normalized scenario
+  flags and grouped warning/validation policies used by the runner. Keep new
+  scenario booleans there instead of adding string comparisons in
+  `DiagnosticSessionRunner`.
 
 Invariants:
 
@@ -232,3 +236,6 @@ Invariants:
 - Add new diagnostic-session scenario names in
   `tools/Common/DiagnosticSessionScenarios.cs` before wiring scenario behavior
   into `DiagnosticSessionRunner`.
+- Keep diagnostic-session scenario flag derivation in
+  `tools/Common/DiagnosticSessionScenarioPlan.cs`; the runner should consume
+  named properties instead of comparing normalized scenario strings directly.

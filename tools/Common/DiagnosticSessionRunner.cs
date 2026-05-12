@@ -96,26 +96,27 @@ public static class DiagnosticSessionRunner
         var disabledFlashback = false;
         var startedFlashbackPlayback = false;
         var stoppedRecordingForVerification = false;
-        var runFlashbackPlayback = scenario == "flashback-playback";
-        var runFlashbackStress = scenario == "flashback-stress";
-        var runFlashbackScrubStress = scenario == "flashback-scrub-stress";
-        var runFlashbackRestartCycle = scenario == "flashback-restart-cycle";
-        var runFlashbackEncoderCycle = scenario == "flashback-encoder-cycle";
-        var runFlashbackExportPlayback = scenario == "flashback-export-playback";
-        var runFlashbackSegmentPlayback = scenario == "flashback-segment-playback";
-        var runFlashbackRangeExport = scenario == "flashback-range-export";
-        var runFlashbackRangeExportAudioSwitch = scenario == "flashback-range-export-audio-switch";
-        var runFlashbackLifecycle = scenario == "flashback-lifecycle";
-        var runFlashbackExportConcurrent = scenario == "flashback-export-concurrent";
-        var runFlashbackDisableDuringExport = scenario == "flashback-disable-during-export";
-        var runFlashbackRotatedExport = scenario == "flashback-rotated-export";
-        var runFlashbackPreviewCycle = scenario == "flashback-preview-cycle";
-        var runFlashbackPlaybackPreviewCycle = scenario == "flashback-playback-preview-cycle";
-        var runFlashbackRecording = scenario == "flashback-recording";
-        var runFlashbackRecordingPreviewCycle = scenario == "flashback-recording-preview-cycle";
-        var runFlashbackRecordingSettingsDeferred = scenario == "flashback-recording-settings-deferred";
-        var runFlashbackRecordingExportRejected = scenario == "flashback-recording-export-rejected";
-        var runFlashbackExportRejected = scenario == "flashback-export-rejected";
+        var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);
+        var runFlashbackPlayback = scenarioPlan.RunFlashbackPlayback;
+        var runFlashbackStress = scenarioPlan.RunFlashbackStress;
+        var runFlashbackScrubStress = scenarioPlan.RunFlashbackScrubStress;
+        var runFlashbackRestartCycle = scenarioPlan.RunFlashbackRestartCycle;
+        var runFlashbackEncoderCycle = scenarioPlan.RunFlashbackEncoderCycle;
+        var runFlashbackExportPlayback = scenarioPlan.RunFlashbackExportPlayback;
+        var runFlashbackSegmentPlayback = scenarioPlan.RunFlashbackSegmentPlayback;
+        var runFlashbackRangeExport = scenarioPlan.RunFlashbackRangeExport;
+        var runFlashbackRangeExportAudioSwitch = scenarioPlan.RunFlashbackRangeExportAudioSwitch;
+        var runFlashbackLifecycle = scenarioPlan.RunFlashbackLifecycle;
+        var runFlashbackExportConcurrent = scenarioPlan.RunFlashbackExportConcurrent;
+        var runFlashbackDisableDuringExport = scenarioPlan.RunFlashbackDisableDuringExport;
+        var runFlashbackRotatedExport = scenarioPlan.RunFlashbackRotatedExport;
+        var runFlashbackPreviewCycle = scenarioPlan.RunFlashbackPreviewCycle;
+        var runFlashbackPlaybackPreviewCycle = scenarioPlan.RunFlashbackPlaybackPreviewCycle;
+        var runFlashbackRecording = scenarioPlan.RunFlashbackRecording;
+        var runFlashbackRecordingPreviewCycle = scenarioPlan.RunFlashbackRecordingPreviewCycle;
+        var runFlashbackRecordingSettingsDeferred = scenarioPlan.RunFlashbackRecordingSettingsDeferred;
+        var runFlashbackRecordingExportRejected = scenarioPlan.RunFlashbackRecordingExportRejected;
+        var runFlashbackExportRejected = scenarioPlan.RunFlashbackExportRejected;
         FlashbackRecordingSettingsDeferredPresetState flashbackRecordingSettingsDeferredPresetState = default;
         var commandSendGate = new SemaphoreSlim(1, 1);
         using var scenarioCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -188,7 +189,7 @@ public static class DiagnosticSessionRunner
         try
         {
             SetStage("scenario-setup");
-            if (!initialSnapshotKnown && scenario != "observe")
+            if (!initialSnapshotKnown && scenario != DiagnosticSessionScenarios.Observe)
             {
                 commandFailureCount++;
                 warnings.Add($"initial-snapshot: skipped state-mutating scenario '{scenario}' because the initial app state is unknown");
@@ -219,7 +220,7 @@ public static class DiagnosticSessionRunner
 
             if (DiagnosticSessionScenarios.NeedsRecording(scenario) && !GetBool(initialSnapshot, "IsRecording"))
             {
-                if ((runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected) &&
+                if (scenarioPlan.RequiresFlashbackRecordingReadiness &&
                     !await WaitForFlashbackStressBufferReadyAsync(
                         (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
                         scenarioCancellationToken).ConfigureAwait(false))
@@ -751,7 +752,7 @@ public static class DiagnosticSessionRunner
             actions.Add("recording verification skipped: scenario does not produce a recording or export artifact");
         }
 
-        if (runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected)
+        if (scenarioPlan.RequiresFlashbackRecordingValidation)
         {
             try
             {
@@ -915,28 +916,7 @@ public static class DiagnosticSessionRunner
             .Append(GetDouble(lastSnapshot, "MjpegPreviewJitterMaxScheduleLateMs"))
             .DefaultIfEmpty(0)
             .Max();
-        var isFlashbackScenario =
-            runFlashbackPlayback ||
-            runFlashbackStress ||
-            runFlashbackScrubStress ||
-            runFlashbackRestartCycle ||
-            runFlashbackEncoderCycle ||
-            runFlashbackExportPlayback ||
-            runFlashbackSegmentPlayback ||
-            runFlashbackRangeExport ||
-            runFlashbackRangeExportAudioSwitch ||
-            runFlashbackLifecycle ||
-            runFlashbackExportConcurrent ||
-            runFlashbackDisableDuringExport ||
-            runFlashbackRotatedExport ||
-            runFlashbackPreviewCycle ||
-            runFlashbackPlaybackPreviewCycle ||
-            runFlashbackRecording ||
-            runFlashbackRecordingPreviewCycle ||
-            runFlashbackRecordingSettingsDeferred ||
-            runFlashbackRecordingExportRejected ||
-            runFlashbackExportRejected ||
-            scenario == "combined";
+        var isFlashbackScenario = scenarioPlan.UsesFlashbackScenarioWarningPolicy;
         ValidateCleanupLifecycleRestored(
             options.LeaveRunning,
             startedPreview,
@@ -945,14 +925,7 @@ public static class DiagnosticSessionRunner
             initialSnapshot,
             healthSnapshot,
             warnings);
-        var toleratesSourceSignalHealthWarning =
-            runFlashbackRangeExport ||
-            runFlashbackRangeExportAudioSwitch ||
-            runFlashbackExportConcurrent ||
-            runFlashbackDisableDuringExport ||
-            runFlashbackRotatedExport ||
-            runFlashbackPreviewCycle ||
-            runFlashbackPlaybackPreviewCycle;
+        var toleratesSourceSignalHealthWarning = scenarioPlan.ToleratesSourceSignalHealthWarning;
         if (isFlashbackScenario)
         {
             var previewTargetFps = GetDouble(lastSnapshot, "ExpectedCaptureFrameRate");
@@ -963,8 +936,7 @@ public static class DiagnosticSessionRunner
 
             var visualCadenceHealthy = IsVisualCadenceSessionHealthy(visualCadenceMetrics, previewTargetFps);
             var toleratesPreviewCycleSchedulerSettling =
-                (runFlashbackPreviewCycle || runFlashbackPlaybackPreviewCycle || runFlashbackRecordingPreviewCycle) &&
-                visualCadenceHealthy;
+                scenarioPlan.IsPreviewCycleScenario && visualCadenceHealthy;
             var toleratesSparsePreviewSchedulerDeadlineDrops =
                 IsSparsePreviewSchedulerDeadlineDropRun(
                     previewSchedulerDeadlineDropsDelta,
@@ -972,7 +944,7 @@ public static class DiagnosticSessionRunner
                     durationSeconds,
                     visualCadenceHealthy);
             var toleratesSparseScrubSchedulerTransitions =
-                (runFlashbackScrubStress || runFlashbackSegmentPlayback) &&
+                scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions &&
                 IsSparsePreviewSchedulerStressRun(
                     previewSchedulerDeadlineDropsDelta,
                     previewSchedulerUnderflowsDelta,
@@ -1005,14 +977,7 @@ public static class DiagnosticSessionRunner
                 videoIngestErrorsDelta,
                 durationSeconds,
                 IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate")));
-        var toleratesFlashbackForceRotateDrainWarning =
-            runFlashbackExportPlayback ||
-            runFlashbackScrubStress ||
-            runFlashbackRangeExport ||
-            runFlashbackRangeExportAudioSwitch ||
-            runFlashbackExportConcurrent ||
-            runFlashbackDisableDuringExport ||
-            runFlashbackRotatedExport;
+        var toleratesFlashbackForceRotateDrainWarning = scenarioPlan.ToleratesFlashbackForceRotateDrainWarning;
         var diagnosticHealthTolerated =
             (toleratesSourceSignalHealthWarning &&
              IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)) ||
@@ -1020,7 +985,7 @@ public static class DiagnosticSessionRunner
              IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)) ||
             sparseSourceCaptureCadenceWarning ||
             (isFlashbackScenario &&
-              IsPreviewCycleScenario(runFlashbackPreviewCycle, runFlashbackPlaybackPreviewCycle, runFlashbackRecordingPreviewCycle) &&
+             scenarioPlan.IsPreviewCycleScenario &&
              IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate")) &&
              IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)) ||
             (isFlashbackScenario &&
@@ -1068,7 +1033,7 @@ public static class DiagnosticSessionRunner
                                              warning,
                                              toleratesSourceSignalHealthWarning,
                                              toleratesFlashbackForceRotateDrainWarning,
-                                              runFlashbackPreviewCycle || runFlashbackPlaybackPreviewCycle || runFlashbackRecordingPreviewCycle));
+                                             scenarioPlan.IsPreviewCycleScenario));
 
         var processCpuMaxPercentObserved = samples
             .Select(sample => GetDouble(sample.Snapshot, "ProcessCpuPercent"))

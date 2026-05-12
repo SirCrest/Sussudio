@@ -733,6 +733,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionSampler.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionText.cs")
                 .Replace("\r\n", "\n");
         var diagnosticSessionModelsText = ReadRepoFile("tools/Common/DiagnosticSessionModels.cs")
@@ -740,9 +742,15 @@ static partial class Program
         var diagnosticScenariosText = ReadRepoFile("tools/Common/DiagnosticSessionScenarios.cs")
             .Replace("\r\n", "\n");
         AssertContains(diagnosticSessionText, "var scenario = DiagnosticSessionScenarios.Normalize(options.Scenario);");
+        AssertContains(diagnosticSessionText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
         AssertContains(diagnosticSessionText, "DiagnosticSessionScenarios.NeedsFlashback(scenario)");
         AssertContains(diagnosticSessionText, "DiagnosticSessionScenarios.NeedsPreview(scenario)");
         AssertContains(diagnosticSessionText, "DiagnosticSessionScenarios.NeedsRecording(scenario)");
+        AssertContains(diagnosticSessionText, "scenarioPlan.RequiresFlashbackRecordingReadiness");
+        AssertContains(diagnosticSessionText, "scenarioPlan.UsesFlashbackScenarioWarningPolicy");
+        AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesSourceSignalHealthWarning");
+        AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesFlashbackForceRotateDrainWarning");
+        AssertContains(diagnosticSessionText, "scenarioPlan.IsPreviewCycleScenario");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<string> All { get; }");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackPlayback = \"flashback-playback\";");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackStress = \"flashback-stress\";");
@@ -764,7 +772,7 @@ static partial class Program
         AssertContains(diagnosticScenariosText, "internal const string FlashbackRecordingSettingsDeferred = \"flashback-recording-settings-deferred\";");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackRecordingExportRejected = \"flashback-recording-export-rejected\";");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackExportRejected = \"flashback-export-rejected\";");
-        AssertContains(diagnosticSessionText, "runFlashbackExportRejected ||\n            scenario == \"combined\";");
+        AssertContains(diagnosticSessionText, "internal readonly record struct DiagnosticSessionScenarioPlan(");
         AssertContains(diagnosticSessionText, "catch (AutomationPipeException ex) when (ex is not AutomationPipeConnectException)");
         AssertContains(diagnosticSessionText, "return BuildLocalFailureResponse(command, ex.Message);");
         AssertContains(diagnosticSessionText, "catch (JsonException ex)");
@@ -1190,13 +1198,13 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback preview: D3D frame stats failures increased delta=");
         AssertContains(diagnosticSessionText, "\"flashback preview: present/display pressure \"");
         AssertContains(diagnosticSessionText, "var toleratesPreviewCycleSchedulerSettling =");
-        AssertContains(diagnosticSessionText, "runFlashbackPreviewCycle || runFlashbackPlaybackPreviewCycle || runFlashbackRecordingPreviewCycle");
+        AssertContains(diagnosticSessionText, "scenarioPlan.IsPreviewCycleScenario && visualCadenceHealthy");
         AssertContains(diagnosticSessionText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
         AssertContains(diagnosticSessionText, "IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(diagnosticSessionText, "internal static bool IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(diagnosticSessionText, "var allowedDrops = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 10.0));");
         AssertContains(diagnosticSessionText, "var toleratesSparseScrubSchedulerTransitions =");
-        AssertContains(diagnosticSessionText, "(runFlashbackScrubStress || runFlashbackSegmentPlayback) &&");
+        AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions &&");
         AssertContains(diagnosticSessionText, "IsSparsePreviewSchedulerStressRun(");
         AssertContains(diagnosticSessionText, "internal static bool IsSparsePreviewSchedulerStressRun(");
         AssertContains(diagnosticSessionText, "var allowedDeadlineDrops = Math.Max(6, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 45.0));");
@@ -1244,7 +1252,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static DiagnosticHealthObservation BuildWorstDiagnosticHealthObservationAfterOffset(");
         AssertContains(diagnosticSessionText, "diagnosticHealthSucceeded &&");
         AssertContains(diagnosticSessionText, "var toleratesSourceSignalHealthWarning =");
-        AssertContains(diagnosticSessionText, "runFlashbackRangeExportAudioSwitch");
+        AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesSourceSignalHealthWarning");
         AssertContains(diagnosticSessionText, "IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)");
         AssertContains(diagnosticSessionText, "diagnostic health source-signal warning tolerated for export reliability scenario");
         AssertContains(diagnosticSessionText, "IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)");

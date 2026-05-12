@@ -1141,6 +1141,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionScenarioPlan_OwnsScenarioFlags()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var planText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(planText, "internal readonly record struct DiagnosticSessionScenarioPlan(");
+        AssertContains(planText, "internal static DiagnosticSessionScenarioPlan From(string scenario)");
+        AssertContains(planText, "scenario == DiagnosticSessionScenarios.FlashbackPlayback");
+        AssertContains(planText, "internal bool RequiresFlashbackRecordingReadiness");
+        AssertContains(planText, "internal bool UsesFlashbackScenarioWarningPolicy");
+        AssertContains(planText, "internal bool ToleratesSourceSignalHealthWarning");
+        AssertContains(planText, "internal bool ToleratesFlashbackForceRotateDrainWarning");
+        AssertContains(planText, "internal bool IsPreviewCycleScenario");
+        AssertContains(runnerText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
+        AssertDoesNotContain(runnerText, "scenario == \"flashback-playback\"");
+        AssertDoesNotContain(runnerText, "scenario == \"flashback-stress\"");
+        AssertDoesNotContain(runnerText, "scenario == \"combined\"");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionCleanupPolicy_OwnsRestoreWarnings()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
