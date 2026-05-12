@@ -701,6 +701,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.cs")
@@ -1045,7 +1047,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "if (maxCommandQueueLatencyMs > metrics.MaxCommandQueueLatencyMsObserved)");
         AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyMsObserved = maxCommandQueueLatencyMs;");
         AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyCommandObserved = GetString(snapshot, \"FlashbackPlaybackMaxCommandQueueLatencyCommand\") ?? string.Empty;");
-        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackStressAsync(");
+        AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackStressAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackScrubStressAsync(");
         AssertContains(diagnosticSessionText, "flashback scrub stress begin requested");
         AssertContains(diagnosticSessionText, "flashback scrub stress update burst requested");
@@ -1152,10 +1154,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "$\"maxPending={GetInt(lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")} \"");
         AssertContains(diagnosticSessionText, "$\"maxLatencyMs={GetInt(lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")} \"");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxCommandQueueLatencyCommand");
-        AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackPendingCommands = 4;");
-        AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
-        AssertContains(diagnosticSessionText, "private const double FlashbackStressPlaybackWarmSeconds = 10.0;");
-        AssertContains(diagnosticSessionText, "private const long FlashbackStressAudioUnavailableFallbackAllowance = 4;");
+        AssertContains(diagnosticSessionText, "internal const int FlashbackStressMaxPlaybackPendingCommands = 4;");
+        AssertContains(diagnosticSessionText, "internal const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
+        AssertContains(diagnosticSessionText, "internal const double FlashbackStressPlaybackWarmSeconds = 10.0;");
+        AssertContains(diagnosticSessionText, "internal const long FlashbackStressAudioUnavailableFallbackAllowance = 4;");
         AssertContains(diagnosticSessionText, "var playbackBaselineSnapshot = await WaitForFlashbackPlaybackStateAsync(");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback did not enter Playing before warm sample\"");
         AssertContains(diagnosticSessionText, "var warmBaselineSnapshot = playbackBaselineSnapshot?.ValueKind == JsonValueKind.Object");

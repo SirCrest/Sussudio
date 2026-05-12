@@ -636,6 +636,9 @@ static partial class Program
                 "Diagnostic session Flashback segment waits have a named owner",
                 DiagnosticSessionFlashbackSegments_OwnsSegmentWaitsAndParsing),
             await RunCheckAsync(
+                "Diagnostic session Flashback stress scenario has a named owner",
+                DiagnosticSessionFlashbackStressScenario_OwnsStressFlow),
+            await RunCheckAsync(
                 "Diagnostic session Flashback snapshot waits have a named owner",
                 DiagnosticSessionFlashbackWaits_OwnsSnapshotPollingWaits),
             await RunCheckAsync(
@@ -663,8 +666,8 @@ static partial class Program
                 "Diagnostic session runner rejects concurrent invocation on same output directory",
                 DiagnosticSessionRunner_RejectsConcurrentInvocationOnSameOutputDirectory),
             await RunCheckAsync(
-                "Diagnostic session runner classifies flashback stress audio-master fallbacks",
-                DiagnosticSessionRunner_ClassifiesFlashbackStressAudioMasterFallbacks),
+                "Diagnostic session Flashback stress scenario classifies audio-master fallbacks",
+                DiagnosticSessionFlashbackStressScenario_ClassifiesAudioMasterFallbacks),
             await RunCheckAsync(
                 "MCP performance timeline exposes D3D P99 stage timing",
                 McpPerformanceTimelineTool_ExposesD3DP99StageTiming),

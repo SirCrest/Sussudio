@@ -108,6 +108,12 @@ Diagnostic-session Flashback snapshot waits now live in
 loops for playback state, playback warmup, preview active, Flashback active,
 and recording-ready checks while the runner keeps scenario command sequencing.
 
+Diagnostic-session Flashback stress orchestration now lives in
+`tools/Common/DiagnosticSessionFlashbackStressScenario.cs`. It owns the stress
+command sequence, playback-command thresholds, warm-playback budget, and
+audio-master fallback classification while the runner only starts the scenario
+task.
+
 Diagnostic-session Flashback validation now lives in
 `tools/Common/DiagnosticSessionFlashbackValidation.cs`. It owns recording,
 playback, and preview-scheduler warning thresholds over already projected
@@ -126,6 +132,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackSegments.cs`
+- `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionFlashbackWaits.cs`
 - `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`

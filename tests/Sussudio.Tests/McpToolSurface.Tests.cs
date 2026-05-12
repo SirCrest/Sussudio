@@ -1281,6 +1281,32 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionFlashbackStressScenario_OwnsStressFlow()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var stressText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(stressText, "internal static class DiagnosticSessionFlashbackStressScenario");
+        AssertContains(stressText, "internal const int FlashbackStressMaxPlaybackPendingCommands = 4;");
+        AssertContains(stressText, "internal const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
+        AssertContains(stressText, "internal const double FlashbackStressPlaybackWarmSeconds = 10.0;");
+        AssertContains(stressText, "internal const long FlashbackStressAudioUnavailableFallbackAllowance = 4;");
+        AssertContains(stressText, "internal const int FlashbackScrubStressMaxPlaybackPendingCommands = 20;");
+        AssertContains(stressText, "internal static async Task RunFlashbackStressAsync(");
+        AssertContains(stressText, "WaitForFlashbackStressBufferReadyAsync(");
+        AssertContains(stressText, "CreateFlashbackExportVerifyPayload(exportPath)");
+        AssertContains(stressText, "internal static string? ClassifyFlashbackStressAudioMasterFallbackWarning(");
+        AssertContains(stressText, "\"flashback stress: audio-master harmful fallbacks increased during warmed playback \"");
+        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackStressScenario;");
+        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackStressAsync(");
+        AssertDoesNotContain(runnerText, "private static string? ClassifyFlashbackStressAudioMasterFallbackWarning(");
+        AssertDoesNotContain(runnerText, "private const int FlashbackStressMaxPlaybackPendingCommands = 4;");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackWaits_OwnsSnapshotPollingWaits()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
@@ -2004,12 +2030,12 @@ static partial class Program
         }
     }
 
-    private static Task DiagnosticSessionRunner_ClassifiesFlashbackStressAudioMasterFallbacks()
+    private static Task DiagnosticSessionFlashbackStressScenario_ClassifiesAudioMasterFallbacks()
     {
         var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
-        var runnerType = assembly.GetType("Sussudio.Tools.DiagnosticSessionRunner")
-            ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
-        var classify = runnerType.GetMethod(
+        var stressScenarioType = assembly.GetType("Sussudio.Tools.DiagnosticSessionFlashbackStressScenario")
+            ?? throw new InvalidOperationException("DiagnosticSessionFlashbackStressScenario type was not found.");
+        var classify = stressScenarioType.GetMethod(
                 "ClassifyFlashbackStressAudioMasterFallbackWarning",
                 BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("Audio-master fallback classifier was not found.");
