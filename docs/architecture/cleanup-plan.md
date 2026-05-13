@@ -264,8 +264,11 @@ Flashback exporter infrastructure now lives in
 lock/disposal helpers, progress normalization and throttling, native cleanup,
 cancellation-source handling, FFmpeg error strings, timestamp math, and orphan
 temp cleanup there so `FlashbackExporter.cs` stays focused on export
-orchestration and packet-copy/remux loops. Temp output validation, atomic
-replacement, overwrite policy, and invalid final-output cleanup live in
+orchestration and packet-copy/remux loops. Packet timestamp normalization,
+segment boundary timestamp repair, packet clone/free helpers, and buffered
+packet flushes live in
+`Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`. Temp output
+validation, atomic replacement, overwrite policy, and invalid final-output cleanup live in
 `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
 
 D3D preview renderer metrics now live in
