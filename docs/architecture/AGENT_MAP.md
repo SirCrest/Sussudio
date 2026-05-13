@@ -130,6 +130,9 @@ Primary current owners:
 - `Sussudio/Controllers/PreviewAudioFadeController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
   save suppression. `MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
+- `Sussudio/Controllers/MicrophoneControlsController.cs` owns microphone volume
+  slider synchronization, save triggers, shelf enablement, and mic-meter row
+  animation state. `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets

@@ -72,10 +72,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private NvmlMonitor? _nvmlMonitor;
     private SpriteVisual? _videoShadowVisual;
     private SpriteVisual? _controlBarShadowVisual;
-    private Storyboard? _micMeterRowStoryboard;
-    private Storyboard? _showMicMeterRowStoryboard;
-    private Storyboard? _hideMicMeterRowStoryboard;
-    private const double MicMeterRowHeight = 14;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
@@ -142,7 +138,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private const int MinWindowHeight = 500;
     private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
     private IntPtr _hwnd;
-    private bool _syncingMicrophoneVolumeControls;
     private int _selectedDecoderCount = 4;
     private readonly List<DiagnosticRowSlot> _decodeRowPool = new();
     private readonly List<DiagnosticRowSlot> _gpuRowPool = new();
@@ -321,6 +316,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeSplashLoadingPhraseController();
         InitializeLiveSignalInfoController();
         InitializePreviewAudioFadeController();
+        InitializeMicrophoneControlsController();
 
         // Cloak the window to prevent white flash before XAML renders
         int cloakTrue = 1;

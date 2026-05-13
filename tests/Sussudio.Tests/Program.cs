@@ -501,6 +501,9 @@ static partial class Program
                 "Preview audio fade state lives in controller",
                 PreviewAudioFadeState_LivesInController),
             await RunCheckAsync(
+                "Microphone controls live in controller",
+                MicrophoneControls_LiveInController),
+            await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
@@ -2881,6 +2884,47 @@ static partial class Program
         AssertDoesNotContain(animationsText, "private void PrimePreviewAudioFadeIn()");
         AssertDoesNotContain(animationsText, "private void CompletePreviewAudioFadeIn(");
         AssertDoesNotContain(animationsText, "private async Task StartPreviewAudioFadeOutAsync(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task MicrophoneControls_LiveInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.MicrophoneControls.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/MicrophoneControlsController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private MicrophoneControlsController _microphoneControlsController = null!;");
+        AssertContains(adapterText, "private void InitializeMicrophoneControlsController()");
+        AssertContains(adapterText, "=> _microphoneControlsController.AttachVolumeBindings();");
+        AssertContains(adapterText, "=> _microphoneControlsController.SyncVolumeControls(volumePercent);");
+        AssertContains(adapterText, "=> _microphoneControlsController.ApplyInitialVisibility();");
+        AssertContains(adapterText, "=> _microphoneControlsController.UpdateVisibility();");
+        AssertContains(adapterText, "=> _microphoneControlsController.StopRowAnimation();");
+        AssertContains(mainWindowText, "InitializeMicrophoneControlsController();");
+        AssertContains(bindingsText, "SetupMicrophoneVolumeBindings();");
+        AssertContains(bindingsText, "ApplyInitialMicrophoneControlsVisibility();");
+        AssertContains(propertyChangedText, "UpdateMicrophoneControlsVisibility();");
+        AssertContains(propertyChangedText, "SyncMicrophoneVolumeControls(ViewModel.MicrophoneVolume);");
+        AssertContains(windowManagementText, "StopMicMeterRowAnimation();");
+        AssertContains(controllerText, "internal sealed class MicrophoneControlsController");
+        AssertContains(controllerText, "private bool _syncingVolumeControls;");
+        AssertContains(controllerText, "private Storyboard? _activeRowStoryboard;");
+        AssertContains(controllerText, "public void AttachVolumeBindings()");
+        AssertContains(controllerText, "public void SyncVolumeControls(double volumePercent)");
+        AssertContains(controllerText, "public void ApplyInitialVisibility()");
+        AssertContains(controllerText, "public void UpdateVisibility()");
+        AssertContains(controllerText, "public void StopRowAnimation()");
+        AssertContains(controllerText, "private Storyboard CreateRowStoryboard(bool showing)");
+        AssertDoesNotContain(mainWindowText, "private Storyboard? _micMeterRowStoryboard;");
+        AssertDoesNotContain(mainWindowText, "private bool _syncingMicrophoneVolumeControls;");
+        AssertDoesNotContain(mainWindowText, "private const double MicMeterRowHeight = 14;");
+        AssertDoesNotContain(bindingsText, "MicVolumeSlider.ValueChanged +=");
+        AssertDoesNotContain(bindingsText, "private void SyncMicrophoneVolumeControls(double volumePercent)");
+        AssertDoesNotContain(bindingsText, "private Storyboard CreateMicMeterRowStoryboard(bool showing)");
 
         return Task.CompletedTask;
     }
