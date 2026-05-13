@@ -127,8 +127,11 @@ Primary current owners:
   Close/finalize behavior stays with `MainWindow.CloseLifecycle.cs`.
 - `Sussudio/MainWindow.WindowTitle.cs` owns window title base/build-stamp
   formatting and the recording-time suffix used by property changes.
-- `Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`, `Closed`,
-  automation close completion, and recording-aware shutdown protection.
+- `Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`,
+  automation close completion, and recording-aware pre-close protection.
+- `Sussudio/MainWindow.ShutdownCleanup.cs` owns `Closed` shutdown cleanup:
+  timer stops, event detaches, preview shutdown, automation diagnostics disposal,
+  NVML disposal, and ViewModel disposal.
 - `Sussudio/MainWindow.NativeWindow.cs` owns native `AppWindow` lookup and DWM
   cloak/dark-mode helpers used by shell startup and automation controllers.
 - `Sussudio/MainWindow.Dispatching.cs` owns UI-thread enqueue helpers and

@@ -69,8 +69,10 @@ Window title base/build-stamp formatting and the recording-time suffix now live
 in `Sussudio/MainWindow.WindowTitle.cs`.
 
 Window close lifecycle and native window helpers are now explicit:
-`Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`, `Closed`,
-automation close completion, and recording-aware shutdown protection, while
+`Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`, automation
+close completion, and recording-aware pre-close protection. `MainWindow.ShutdownCleanup.cs`
+owns `Closed` shutdown cleanup: timer stops, event detaches, preview shutdown,
+automation diagnostics disposal, NVML disposal, and ViewModel disposal.
 `Sussudio/MainWindow.NativeWindow.cs` owns native `AppWindow` lookup and DWM
 cloak/dark-mode helpers.
 
