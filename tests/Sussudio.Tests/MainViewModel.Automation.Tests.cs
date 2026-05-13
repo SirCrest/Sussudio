@@ -294,6 +294,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs")
             .Replace("\r\n", "\n");
+        var diagnosticsEvaluationPolicyText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.EvaluationPolicy.cs")
+            .Replace("\r\n", "\n");
         var diagnosticsAlertsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs")
             .Replace("\r\n", "\n");
         var diagnosticsVerificationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.cs")
@@ -310,12 +312,13 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsTimelineText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText;
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
-        AssertContains(diagnosticsEvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
+        AssertContains(diagnosticsEvaluationPolicyText, "private static string FormatPreviewSlowFrameAlertDetail");
+        AssertDoesNotContain(diagnosticsEvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
         AssertContains(diagnosticsEvaluationText, "private PerformanceEvaluation EvaluatePerformance(");
         AssertContains(diagnosticsEvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertDoesNotContain(diagnosticsHubText, "private PerformanceEvaluation EvaluatePerformance(");
