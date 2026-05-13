@@ -378,6 +378,12 @@ Flashback playback public command entry points now live in
 scrub, seek, play/pause, go-live, and nudge request gating there; keep command
 queue coalescing and playback-thread execution in the queue/thread partials.
 
+Flashback playback component lifecycle now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs`. Keep
+initialization, audio/preview component reference updates, preview-detach
+cleanup, deferred reattach, and disposal there; keep decoder file handling and
+playback pacing in the controller core/thread partials.
+
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
 `MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing
