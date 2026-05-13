@@ -215,7 +215,8 @@ static partial class Program
     private static Task D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming()
     {
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
-        var source = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs");
+        var source = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs");
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs");
         var captureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs");
         AssertContains(source, "SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");

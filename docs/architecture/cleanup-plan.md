@@ -231,6 +231,13 @@ validation, native cleanup, cancellation-source handling, FFmpeg error strings,
 timestamp math, and orphan temp cleanup there so `FlashbackExporter.cs` stays
 focused on export orchestration and packet-copy/remux loops.
 
+D3D preview renderer metrics now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep present
+cadence, pipeline latency, render CPU timing, DXGI frame statistics, frame
+ownership, slow-frame diagnostics, display-clock estimates, and metric reset
+logic there; keep queueing/lifecycle in the root renderer and GPU drawing work
+in `D3D11PreviewRenderer.Rendering.cs`.
+
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
