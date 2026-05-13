@@ -33,9 +33,10 @@ refresh and read-only snapshot access. `AutomationDiagnosticsHub.Timeline.cs`
 owns performance-timeline reads and snapshot-to-timeline entry projection.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert publication, alert state, event
 throttling, Flashback export completion events, and recent event storage.
-`AutomationDiagnosticsHub.Evaluation.cs` owns diagnostic lane policy and
-performance scoring. `AutomationDiagnosticsHub.EvaluationPolicy.cs` owns
-shared alert-detail formatting and health classifiers used by both alerts and
+`AutomationDiagnosticsHub.DiagnosticEvaluation.cs` owns diagnostic lane policy
+and diagnostic summaries. `AutomationDiagnosticsHub.Evaluation.cs` owns
+performance scoring. `AutomationDiagnosticsHub.EvaluationPolicy.cs` owns shared
+alert-detail formatting and health classifiers used by both alerts and
 diagnostic evaluation.
 `AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification.
 `AutomationDiagnosticsHub.Lifecycle.cs` owns start/stop/dispose and the polling

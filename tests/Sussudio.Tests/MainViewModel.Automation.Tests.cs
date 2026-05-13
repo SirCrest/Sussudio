@@ -296,6 +296,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsEvaluationPolicyText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.EvaluationPolicy.cs")
             .Replace("\r\n", "\n");
+        var diagnosticsDiagnosticEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluation.cs")
+            .Replace("\r\n", "\n");
         var diagnosticsAlertsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs")
             .Replace("\r\n", "\n");
         var diagnosticsVerificationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.cs")
@@ -312,7 +314,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsTimelineText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText;
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
@@ -320,7 +322,8 @@ static partial class Program
         AssertContains(diagnosticsEvaluationPolicyText, "private static string FormatPreviewSlowFrameAlertDetail");
         AssertDoesNotContain(diagnosticsEvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
         AssertContains(diagnosticsEvaluationText, "private PerformanceEvaluation EvaluatePerformance(");
-        AssertContains(diagnosticsEvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
+        AssertContains(diagnosticsDiagnosticEvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
+        AssertDoesNotContain(diagnosticsEvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertDoesNotContain(diagnosticsHubText, "private PerformanceEvaluation EvaluatePerformance(");
         AssertDoesNotContain(diagnosticsHubText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertContains(diagnosticsAlertsText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
