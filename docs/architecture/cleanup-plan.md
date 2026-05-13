@@ -414,9 +414,11 @@ in the core/thread partials.
 
 Flashback playback decoder file handling now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs`.
-Keep decoder creation, active segment file identity, file open/reopen/seek
-fallback, and decoder cleanup there; keep seek-display and playback pacing in
-the controller core/thread partials.
+Keep decoder creation, active segment file identity, file open checks, and
+decoder cleanup there. Active fMP4 reopen retry, adjacent-segment seek fallback,
+and keyframe-reopen recovery now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs`.
+Keep seek-display and playback pacing in the controller core/thread partials.
 
 Flashback playback seek/scrub frame display now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplay.cs`.
