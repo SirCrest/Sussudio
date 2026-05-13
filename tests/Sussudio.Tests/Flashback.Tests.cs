@@ -3852,6 +3852,23 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackDecoder_AudioSetupLivesInAudioOutputPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var audioOutputText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs")
+            .Replace("\r\n", "\n");
+
+        AssertDoesNotContain(rootText, "private void InitializeAudioDecoder()");
+        AssertDoesNotContain(rootText, "private void InitializeAudioResampler()");
+        AssertContains(audioOutputText, "private void InitializeAudioDecoder()");
+        AssertContains(audioOutputText, "private void InitializeAudioResampler()");
+        AssertContains(audioOutputText, "FLASHBACK_DECODER_AUDIO codec=");
+        AssertContains(audioOutputText, "swr_alloc_set_opts2");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackDecoder_SoftwareFramePlanesAreValidated()
     {
         var sourceText = ReadFlashbackDecoderSource();

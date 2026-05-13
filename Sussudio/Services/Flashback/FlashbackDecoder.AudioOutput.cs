@@ -1,13 +1,93 @@
 using System;
 using System.Buffers;
+using System.Runtime.InteropServices;
 using FFmpeg.AutoGen;
-using Sussudio.Services.Audio;
 
 namespace Sussudio.Services.Flashback;
 
 internal sealed unsafe partial class FlashbackDecoder
 {
     // --- Audio packet delivery and output conversion ---
+
+    private void InitializeAudioDecoder()
+    {
+        var audioStream = _formatCtx->streams[_audioStreamIndex];
+        _audioTimeBase = audioStream->time_base;
+
+        var codecPar = audioStream->codecpar;
+
+        var codec = ffmpeg.avcodec_find_decoder(codecPar->codec_id);
+        if (codec == null)
+        {
+            Logger.Log($"FLASHBACK_DECODER_AUDIO_WARN no decoder for codec_id={codecPar->codec_id}, audio disabled");
+            _audioStreamIndex = -1;
+            return;
+        }
+
+        _audioCodecCtx = ffmpeg.avcodec_alloc_context3(codec);
+        if (_audioCodecCtx == null)
+        {
+            throw CreateException("Failed to allocate audio codec context.");
+        }
+
+        ThrowIfError(
+            ffmpeg.avcodec_parameters_to_context(_audioCodecCtx, codecPar),
+            "avcodec_parameters_to_context(audio)");
+
+        ThrowIfError(
+            ffmpeg.avcodec_open2(_audioCodecCtx, codec, null),
+            "avcodec_open2(audio)");
+
+        // Allocate audio decode frame
+        _audioFrame = ffmpeg.av_frame_alloc();
+        if (_audioFrame == null)
+        {
+            throw CreateException("Failed to allocate audio frame.");
+        }
+
+        // Set up SwrContext: decoded format (typically fltp) → f32le interleaved stereo 48kHz
+        InitializeAudioResampler();
+
+        var audioCodecName = codec->name != null ? Marshal.PtrToStringAnsi((IntPtr)codec->name) : "?";
+        Logger.Log($"FLASHBACK_DECODER_AUDIO codec={audioCodecName} " +
+                   $"sample_rate={_audioCodecCtx->sample_rate} sample_fmt={_audioCodecCtx->sample_fmt} " +
+                   $"channels={_audioCodecCtx->ch_layout.nb_channels}");
+    }
+
+    private void InitializeAudioResampler()
+    {
+        AVChannelLayout outputLayout = default;
+        ffmpeg.av_channel_layout_default(&outputLayout, OutputAudioChannels);
+
+        var swrCtx = _swrCtx;
+
+        try
+        {
+            var result = ffmpeg.swr_alloc_set_opts2(
+                &swrCtx,
+                &outputLayout,                              // output layout: stereo
+                AVSampleFormat.AV_SAMPLE_FMT_FLT,           // output format: f32le interleaved
+                OutputAudioSampleRate,                       // output sample rate: 48kHz
+                &_audioCodecCtx->ch_layout,                 // input layout: from codec
+                _audioCodecCtx->sample_fmt,                 // input format: from codec (typically fltp)
+                _audioCodecCtx->sample_rate,                // input sample rate: from codec
+                0,
+                null);
+            _swrCtx = swrCtx;
+            ThrowIfError(result, "swr_alloc_set_opts2(decode)");
+
+            if (_swrCtx == null)
+            {
+                throw CreateException("Failed to allocate audio resampler.");
+            }
+
+            ThrowIfError(ffmpeg.swr_init(_swrCtx), "swr_init(decode)");
+        }
+        finally
+        {
+            ffmpeg.av_channel_layout_uninit(&outputLayout);
+        }
+    }
 
     /// <summary>
     /// Sends an audio packet to the decoder and delivers any resulting chunks

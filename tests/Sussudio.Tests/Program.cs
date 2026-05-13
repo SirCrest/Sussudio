@@ -1342,6 +1342,9 @@ static partial class Program
                 "Flashback decoder audio output buffers are bounded",
                 FlashbackDecoder_AudioOutputBuffersAreBounded),
             await RunCheckAsync(
+                "Flashback decoder audio setup lives in audio output partial",
+                FlashbackDecoder_AudioSetupLivesInAudioOutputPartial),
+            await RunCheckAsync(
                 "Flashback decoder software frame planes are validated",
                 FlashbackDecoder_SoftwareFramePlanesAreValidated),
             await RunCheckAsync(
