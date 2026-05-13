@@ -517,6 +517,13 @@ Primary owners:
   flags and grouped warning/validation policies used by the runner. Keep new
   scenario booleans there instead of adding string comparisons in
   `DiagnosticSessionRunner`.
+- `tools/Common/PresentMonProbe.Models.cs` owns PresentMon option/result,
+  summary, swap-chain, correlation, and metric DTOs.
+- `tools/Common/PresentMonProbe.Format.cs` owns PresentMon result text
+  rendering used by diagnostic-session output surfaces.
+- `tools/Common/PresentMonProbe.cs` owns PresentMon process execution, path
+  resolution, CSV parsing, swap-chain selection, and statistical aggregation
+  until those remaining parser/runner responsibilities are split.
 
 Invariants:
 

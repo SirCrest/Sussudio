@@ -808,6 +808,13 @@ Flashback warmup filtering, sparse cadence tolerances, and tolerated warning
 classification while the runner still owns scenario execution and warning
 emission.
 
+PresentMon model and text ownership is split from the probe runner.
+`tools/Common/PresentMonProbe.Models.cs` owns PresentMon options, result,
+summary, swap-chain, correlation, and metric DTOs.
+`tools/Common/PresentMonProbe.Format.cs` owns result text formatting while
+`PresentMonProbe.cs` keeps process execution, path resolution, CSV parsing,
+swap-chain selection, and statistical aggregation for now.
+
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
