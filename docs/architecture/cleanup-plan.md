@@ -229,6 +229,11 @@ Flashback encoder export force-rotation now lives in
 `ForceRotateForExport`, request timeout/cancellation handling, pending-request
 cleanup, and force-rotate drain abort classification there.
 
+Flashback encoder stop/dispose ownership now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Lifetime.cs`. Keep `StopAsync`,
+`Dispose`/`DisposeAsync`, deferred cleanup, cancellation/disposal helpers, and
+stop-drain timeout classification there.
+
 Flashback encoder retroactive recording lifecycle now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.cs`. Keep the
 `IRecordingSink.StartAsync` adapter, `CanBeginRecording`, recording begin/cancel/end,
