@@ -49,20 +49,24 @@ static partial class Program
                 .Replace("\r\n", "\n");
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
+            .Replace("\r\n", "\n");
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(captureText, "internal Task SetRecordingDesiredStateAsync");
-        AssertContains(captureText, "public Task ToggleRecordingAsync()\n        => SetRecordingDesiredStateAsync(!IsRecording);");
-        AssertContains(captureText, "Recording transition already in progress.");
-        AssertContains(captureText, "await inFlight;");
-        AssertContains(captureText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(captureText, "var task = RecordingTransitionInnerAsync(enabled, cancellationToken);");
-        AssertContains(captureText, "await StartRecordingAsync(cancellationToken);");
-        AssertContains(captureText, "await StopRecordingAsync(cancellationToken);");
-        AssertContains(captureText, "await BeginRecordingTransitionAsync(enabled, cancellationToken);");
-        AssertContains(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
-        AssertContains(captureText, "await _sessionCoordinator.StopRecordingAsync(cancellationToken);");
+        AssertContains(recordingLifecycleText, "internal Task SetRecordingDesiredStateAsync");
+        AssertContains(recordingLifecycleText, "public Task ToggleRecordingAsync()\n        => SetRecordingDesiredStateAsync(!IsRecording);");
+        AssertContains(recordingLifecycleText, "Recording transition already in progress.");
+        AssertContains(recordingLifecycleText, "await inFlight;");
+        AssertContains(recordingLifecycleText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(recordingLifecycleText, "var task = RecordingTransitionInnerAsync(enabled, cancellationToken);");
+        AssertContains(recordingLifecycleText, "await StartRecordingAsync(cancellationToken);");
+        AssertContains(recordingLifecycleText, "await StopRecordingAsync(cancellationToken);");
+        AssertContains(recordingLifecycleText, "await BeginRecordingTransitionAsync(enabled, cancellationToken);");
+        AssertContains(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
+        AssertContains(recordingLifecycleText, "await _sessionCoordinator.StopRecordingAsync(cancellationToken);");
+        AssertDoesNotContain(captureText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertContains(automationText, "return SetRecordingDesiredStateAsync(enabled, cancellationToken);");
         AssertContains(dispatcherText, "return CreateResponse(correlationId, $\"Recording {(enabled ? \"started\" : \"stopped\")}.\"");
         AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");
@@ -1376,26 +1380,26 @@ static partial class Program
 
     private static Task MainViewModelCapture_RecordingFailuresPropagateToCallers()
     {
-        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(captureText, "Logger.LogException(ex);");
-        AssertContains(captureText, "IsRecording = _sessionCoordinator.Snapshot.IsRecording;");
+        AssertContains(recordingLifecycleText, "Logger.LogException(ex);");
+        AssertContains(recordingLifecycleText, "IsRecording = _sessionCoordinator.Snapshot.IsRecording;");
         AssertContains(
-            captureText,
+            recordingLifecycleText,
             "catch (OperationCanceledException ex)\n            {\n                transitionError = ex;\n                Logger.Log($\"Recording transition wait canceled: {ex.Message}\");\n            }");
         AssertContains(
-            captureText,
+            recordingLifecycleText,
             "if (transitionError is OperationCanceledException transitionCanceled && inFlightTarget == (enabled ? 1 : 0))\n            {\n                throw transitionCanceled;\n            }");
         AssertContains(
-            captureText,
+            recordingLifecycleText,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            IsRecording = _sessionCoordinator.Snapshot.IsRecording;\n            StatusText = \"Recording start canceled\";\n            throw;\n        }");
         AssertContains(
-            captureText,
+            recordingLifecycleText,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            IsRecording = _sessionCoordinator.Snapshot.IsRecording;\n            StatusText = \"Stop recording canceled\";\n            throw;\n        }");
-        AssertContains(captureText, "StatusText = $\"Recording failed: {ex.Message}\";");
-        AssertContains(captureText, "StatusText = $\"Stop recording failed: {ex.Message}\";");
-        AssertContains(captureText, "throw;");
+        AssertContains(recordingLifecycleText, "StatusText = $\"Recording failed: {ex.Message}\";");
+        AssertContains(recordingLifecycleText, "StatusText = $\"Stop recording failed: {ex.Message}\";");
+        AssertContains(recordingLifecycleText, "throw;");
 
         return Task.CompletedTask;
     }
@@ -1559,17 +1563,20 @@ static partial class Program
             .Replace("\r\n", "\n");
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
+            .Replace("\r\n", "\n");
 
-        AssertContains(captureText, "internal Task StopRecordingForEmergencyAsync");
+        AssertContains(recordingLifecycleText, "internal Task StopRecordingForEmergencyAsync");
         // Fix #12: emergency stop now routes through the coordinator's emergency-flagged path
         // so LibAvRecordingSink applies EmergencyStopTimeoutMs (5s) instead of StopTimeoutMs (30s).
-        AssertContains(captureText, "=> _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);");
+        AssertContains(recordingLifecycleText, "=> _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);");
         AssertContains(appText, "var task = viewModel.StopRecordingForEmergencyAsync();");
         AssertContains(appText, "if (e.IsTerminating || !recoverable)");
         AssertDoesNotContain(appText, "Task.Run(async () =>");
         AssertDoesNotContain(appText, "StopRecordingAndWaitAsync().ConfigureAwait(false)");
         AssertDoesNotContain(appText, "viewModel == null || !viewModel.IsRecording");
-        AssertDoesNotContain(captureText, "if (!IsRecording)");
+        AssertDoesNotContain(recordingLifecycleText, "if (!IsRecording)");
+        AssertDoesNotContain(captureText, "internal Task StopRecordingForEmergencyAsync");
 
         return Task.CompletedTask;
     }

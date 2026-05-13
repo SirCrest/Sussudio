@@ -41,6 +41,8 @@ static partial class Program
     {
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
+            .Replace("\r\n", "\n");
         var captureSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSettings.cs")
             .Replace("\r\n", "\n");
 
@@ -53,7 +55,8 @@ static partial class Program
         AssertContains(captureSettingsText, "private bool ShouldForceMjpegDecode()");
         AssertDoesNotContain(captureText, "private CaptureSettings BuildCaptureSettings()");
         AssertContains(captureText, "await _sessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken)");
-        AssertContains(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
+        AssertContains(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
+        AssertDoesNotContain(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
 
         return Task.CompletedTask;
     }
@@ -282,7 +285,7 @@ static partial class Program
         var stopPreview = ExtractTextBetween(
             captureText,
             "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
-            "\n\n    public Task ToggleRecordingAsync()");
+            "\n\n    public async Task BrowseOutputPathAsync()");
         AssertContains(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);");
         AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "PreviewStopRequested?.Invoke(this, EventArgs.Empty);");
         AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _sessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
@@ -932,7 +935,7 @@ static partial class Program
         var stopPreviewBlock = ExtractTextBetween(
             viewModelCaptureText,
             "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
-            "    public Task ToggleRecordingAsync()");
+            "    public async Task BrowseOutputPathAsync()");
         AssertContains(stopPreviewBlock, "var commitStoppedState = false;");
         AssertContains(stopPreviewBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
         AssertContains(stopPreviewBlock, "if (commitStoppedState)\n            {\n                IsPreviewing = false;\n            }");

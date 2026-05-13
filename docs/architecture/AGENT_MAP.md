@@ -268,6 +268,10 @@ Primary current owners:
   recording bitrate display, capture status/error fan-out, and resume cleanup
   callbacks. `MainViewModel.CaptureSettings.cs` owns capture settings
   projection from UI selection and observed runtime/source state.
+  `MainViewModel.Capture.cs` owns device initialization, preview start/stop,
+  selected-device apply, output-path browsing, and preview reinitialization.
+  `MainViewModel.RecordingLifecycle.cs` owns recording toggle serialization,
+  graceful stop, emergency stop, and start/stop recording transitions.
   `MainViewModel.Disposal.cs` owns bounded teardown, event unsubscription, and
   export-cancellation cleanup.
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing snapshot,
