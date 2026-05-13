@@ -108,6 +108,10 @@ Primary current owners:
   automation plus the recordings-folder command. `MainWindow.WindowAutomation.cs`
   is the `IAutomationWindowControl` adapter; recording-aware close handling
   stays with `MainWindow.WindowManagement.cs`.
+- `Sussudio/MainWindow.Startup.cs` owns first-load startup, first-frame
+  uncloaking, initial ViewModel/device refresh, automation pipe hosting, and
+  the launch entrance trigger. Close/finalize behavior stays in
+  `MainWindow.WindowManagement.cs`.
 - `Sussudio/MainWindow.Dispatching.cs` owns UI-thread enqueue helpers and
   guarded async event-handler execution used by automation adapters and XAML
   event handlers.

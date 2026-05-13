@@ -61,7 +61,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private readonly bool _automationTokenRequired;
     private readonly string _automationPipeName;
-    private int _automationServicesStarted;
     private readonly string _windowTitleBase;
     private long _lastRendererStopTick;
     private long _rendererReinitUnsafeWindows;

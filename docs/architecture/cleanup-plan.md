@@ -43,6 +43,11 @@ UI-thread dispatching helpers and guarded async event-handler execution now
 live in `Sussudio/MainWindow.Dispatching.cs`. Window close completion and
 recording-aware close handling remain in `MainWindow.WindowManagement.cs`.
 
+First-load startup, first-frame uncloaking, initial ViewModel/device refresh,
+automation pipe hosting, and the launch entrance trigger now live in
+`Sussudio/MainWindow.Startup.cs`. Window close completion and recording-aware
+close handling remain in `MainWindow.WindowManagement.cs`.
+
 Audio and microphone meter rendering now lives in
 `Sussudio/Controllers/AudioMeterController.cs`. The broader control-bar binding
 and microphone-row animation code remains in `MainWindow.Bindings.cs`.

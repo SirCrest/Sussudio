@@ -126,15 +126,15 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
+        var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);");
         AssertContains(mainWindowText, "_automationTokenRequired = !string.IsNullOrWhiteSpace(automationToken);");
         AssertContains(mainWindowText, "new NamedPipeAutomationServer(\n            automationDispatcher,\n            _automationPipeName,\n            _automationTokenRequired)");
-        AssertContains(windowManagementText, "if (_automationPipeServer.Start())\n        {\n            _automationDiagnosticsHub.Start();");
-        AssertContains(windowManagementText, "Automation control ready on pipe");
-        AssertContains(windowManagementText, "Automation control disabled on pipe");
+        AssertContains(startupText, "if (_automationPipeServer.Start())\n        {\n            _automationDiagnosticsHub.Start();");
+        AssertContains(startupText, "Automation control ready on pipe");
+        AssertContains(startupText, "Automation control disabled on pipe");
 
         return Task.CompletedTask;
     }

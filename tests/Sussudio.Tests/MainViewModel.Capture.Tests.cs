@@ -128,7 +128,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
             .Replace("\r\n", "\n");
-        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
+        var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs")
             .Replace("\r\n", "\n");
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
             .Replace("\r\n", "\n");
@@ -187,7 +187,7 @@ static partial class Program
         var previewButtonClick = ExtractMemberCode(eventHandlersText, "PreviewButton_Click");
         AssertContains(previewButtonClick, "if (!ViewModel.IsPreviewing)\n                {\n                    RevealPreviewUnavailablePlaceholder();\n                }");
 
-        var mainWindowLoaded = ExtractMemberCode(windowManagementText, "MainWindow_Loaded");
+        var mainWindowLoaded = ExtractMemberCode(startupText, "MainWindow_Loaded");
         AssertOccursBefore(mainWindowLoaded, "PrimePreviewAudioFadeIn();", "await ViewModel.RefreshDevicesAsync();");
         AssertContains(mainWindowLoaded, "RevealPreviewUnavailablePlaceholder();");
 

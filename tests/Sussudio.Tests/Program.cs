@@ -513,6 +513,9 @@ static partial class Program
                 "Launch entrance animation lives in controller",
                 LaunchEntranceAnimation_LivesInController),
             await RunCheckAsync(
+                "MainWindow startup hosting lives in startup partial",
+                MainWindowStartupHosting_LivesInStartupPartial),
+            await RunCheckAsync(
                 "Control bar hover animations live in controller",
                 ControlBarHoverAnimations_LiveInController),
             await RunCheckAsync(
@@ -2888,7 +2891,7 @@ static partial class Program
     {
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.LaunchEntrance.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
 
@@ -2900,7 +2903,7 @@ static partial class Program
         AssertContains(adapterText, "FadeInControlBarShadow = () => FadeInShadow(_controlBarShadowVisual, delayMs: 400, durationMs: 500),");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PlaySplashAndEntrance();");
         AssertContains(mainWindowText, "InitializeLaunchEntranceAnimationController();");
-        AssertContains(windowManagementText, "PlaySplashAndEntrance();");
+        AssertContains(startupText, "PlaySplashAndEntrance();");
         AssertContains(controllerText, "internal sealed class LaunchEntranceAnimationController");
         AssertContains(controllerText, "private bool _played;");
         AssertContains(controllerText, "private Storyboard? _activeStoryboard;");
@@ -2912,6 +2915,35 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private Storyboard? _entranceStoryboard;");
         AssertDoesNotContain(animationsText, "private void PlaySplashAndEntrance()");
         AssertDoesNotContain(animationsText, "private void PlayEntranceAnimation()");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task MainWindowStartupHosting_LivesInStartupPartial()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs").Replace("\r\n", "\n");
+        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+
+        AssertContains(startupText, "private int _automationServicesStarted;");
+        AssertContains(startupText, "private void MainWindow_Loaded(object sender, RoutedEventArgs e)");
+        AssertContains(startupText, "Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += uncloakOnFirstFrame;");
+        AssertContains(startupText, "DwmSetWindowAttribute(_hwnd, DWMWA_CLOAK, ref cloakFalse, sizeof(int));");
+        AssertContains(startupText, "await ViewModel.InitializeAsync();");
+        AssertContains(startupText, "PrimePreviewAudioFadeIn();");
+        AssertContains(startupText, "await ViewModel.RefreshDevicesAsync();");
+        AssertContains(startupText, "RevealPreviewUnavailablePlaceholder();");
+        AssertContains(startupText, "StartAutomationServices();");
+        AssertContains(startupText, "PlaySplashAndEntrance();");
+        AssertContains(startupText, "private void StartAutomationServices()");
+        AssertContains(startupText, "_automationDiagnosticsHub.Start();");
+        AssertContains(startupText, "Automation control ready on pipe");
+        AssertContains(startupText, "Automation control disabled on pipe");
+        AssertContains(mainWindowText, "mainContent.Loaded += MainWindow_Loaded;");
+        AssertDoesNotContain(mainWindowText, "private int _automationServicesStarted;");
+        AssertDoesNotContain(windowManagementText, "private void MainWindow_Loaded(");
+        AssertDoesNotContain(windowManagementText, "private void StartAutomationServices()");
+        AssertDoesNotContain(windowManagementText, "_automationServicesStarted");
 
         return Task.CompletedTask;
     }
