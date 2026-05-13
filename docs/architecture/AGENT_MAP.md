@@ -149,6 +149,9 @@ Primary current owners:
   decode/GPU/diagnostic row pools, empty-state rows, group headers, and
   diagnostic row style updates. `MainWindow.StatsOverlay.cs` still owns metric
   text assignment and snapshot assembly for now.
+- `Sussudio/MainWindow.FrameTimeOverlay.cs` owns compact frame-time overlay
+  text projection and graph line drawing. Keep frame-time canvas math there,
+  while `StatsPresentationBuilder` owns the range/sample text policy.
 - `Sussudio/Controllers/FlashbackTimelineController.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, and show/hide
   animation state. `MainWindow.FlashbackTimeline.cs` is the XAML-facing

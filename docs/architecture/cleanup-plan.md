@@ -90,6 +90,9 @@ Stats dock and frame-time overlay lifecycle now live in
 still renders metric values and assembles snapshots, but polling, visibility
 state, dynamic diagnostic row pools, and dock animations are out of the shell
 fields.
+Frame-time overlay graph drawing now lives in
+`Sussudio/MainWindow.FrameTimeOverlay.cs`; `MainWindow.StatsOverlay.cs` keeps
+the stats dock projection and snapshot adapter.
 
 Dynamic stats diagnostic row pools now live in
 `Sussudio/Controllers/StatsDiagnosticRowsController.cs`. It owns decode/GPU
@@ -403,9 +406,9 @@ Remaining `tools/Common` ownership:
 3. Continue converting MainWindow partial concerns into controllers.
 
    `FullScreen`, automation `Screenshot`, and audio meter rendering are
-   extracted. `StatsOverlay` lifecycle is extracted; next UI candidates are
-   preview startup, Flashback timeline UI, and the remaining stats row/snapshot
-   projection. Keep XAML bindings stable.
+   extracted. `StatsOverlay` lifecycle and frame-time overlay drawing are
+   extracted; next UI candidates are preview startup, Flashback timeline UI,
+   and the remaining stats row/snapshot projection. Keep XAML bindings stable.
 
 4. Move MainViewModel feature state behind a facade.
 
