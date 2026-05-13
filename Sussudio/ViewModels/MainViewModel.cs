@@ -456,5 +456,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Runtime status/timers: MainViewModel.Runtime.cs
     // Source telemetry: MainViewModel.Telemetry.cs
     // Settings persistence: MainViewModel.Settings.cs
+    // Flashback settings reactions: MainViewModel.FlashbackSettings.cs
     // Recording option refresh: MainViewModel.RecordingOptionsRefresh.cs
 }

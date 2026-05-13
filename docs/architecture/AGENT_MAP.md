@@ -297,7 +297,10 @@ Primary current owners:
   `MainViewModel.ResolutionSelectionPolicy.cs` owns source-aware, HDR-aware,
   and SDR fallback resolution selection helpers. `MainViewModel.ResolutionOptions.cs`
   owns the resolution dropdown rebuild and effective resolution display/query
-  helpers. `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
+  helpers. `MainViewModel.Settings.cs` owns settings load/save and simple
+  persistence reactions. `MainViewModel.FlashbackSettings.cs` owns active
+  Flashback reactions to recording-format, encoder, buffer, and GPU-decode
+  setting changes. `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
   for stats/settings visibility, frame-time overlay display, Flashback timeline
   visibility, show-all capture options, and preview volume persistence.
   `MainViewModel.AutomationCaptureMode.cs` owns automation mutators for

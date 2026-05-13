@@ -472,6 +472,10 @@ Remaining `tools/Common` ownership:
    Source-aware, HDR-aware, and SDR fallback resolution selection policy now
    lives in `MainViewModel.ResolutionSelectionPolicy.cs`; keep dropdown rebuild
    and effective resolution display in `MainViewModel.ResolutionOptions.cs`.
+   Settings persistence and load/save option restoration stay in
+   `MainViewModel.Settings.cs`; active Flashback reactions to recording format,
+   encoder quality/preset/split/bitrate, and buffer/GPU decode changes now live
+   in `MainViewModel.FlashbackSettings.cs`.
    UI-only automation mutators now live in `MainViewModel.AutomationUi.cs`.
    Recording format, encoder preset/quality/split-mode/custom-bitrate, and
    output-path automation mutators now live in
