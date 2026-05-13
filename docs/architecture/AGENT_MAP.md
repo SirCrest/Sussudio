@@ -295,7 +295,8 @@ Primary current owners:
   visibility, show-all capture options, and preview volume persistence.
   `MainViewModel.AutomationRecordingSettings.cs` owns recording format,
   encoder preset/quality/split-mode/custom-bitrate, and output-path automation
-  mutators.
+  mutators. `MainViewModel.RecordingOptionsRefresh.cs` owns startup refresh for
+  FFmpeg-backed recording formats and split-encode modes.
   Remaining automation command mutation code stays in `MainViewModel.Automation.cs`.
 
 Refactor direction:

@@ -471,6 +471,8 @@ Remaining `tools/Common` ownership:
    Recording format, encoder preset/quality/split-mode/custom-bitrate, and
    output-path automation mutators now live in
    `MainViewModel.AutomationRecordingSettings.cs`.
+   Startup refresh for FFmpeg-backed recording formats and split-encode modes
+   now lives in `MainViewModel.RecordingOptionsRefresh.cs`.
    Keep the remaining command mutation code in `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.
