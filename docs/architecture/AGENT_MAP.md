@@ -199,6 +199,9 @@ Primary current owners:
   `MainWindow.PropertyChangedPreview.cs` owns preview-specific ViewModel events
   and property-change projections for preview start/stop/reinit state. Keep
   preview startup fields out of the composition root.
+- `Sussudio/MainWindow.PropertyChangedRecording.cs` owns recording-specific
+  property-change projections for the record button, recording glow, and
+  recording-time control lockouts.
 - `Sussudio/Controllers/MicrophoneControlsController.cs` owns microphone volume
   slider synchronization, save triggers, shelf enablement, and mic-meter row
   animation state. `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.

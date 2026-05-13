@@ -177,6 +177,10 @@ Preview-specific ViewModel events and property-change projections now live in
 `MainWindow.PropertyChanged.cs` dispatcher still routes `PropertyChanged`
 notifications, but preview start/stop/reinit choreography has a named owner.
 
+Recording-specific ViewModel property projections now live in
+`Sussudio/MainWindow.PropertyChangedRecording.cs`: record-button morphing,
+recording glow, and the recording-time lockout state for capture/audio controls.
+
 Microphone volume slider synchronization, save triggers, shelf enablement, and
 mic-meter row animation state now live in
 `Sussudio/Controllers/MicrophoneControlsController.cs`.

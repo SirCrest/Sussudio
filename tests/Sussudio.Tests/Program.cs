@@ -3238,6 +3238,7 @@ static partial class Program
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var recordingPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.RecordButtonAnimations.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/RecordButtonAnimationController.cs").Replace("\r\n", "\n");
 
@@ -3246,8 +3247,10 @@ static partial class Program
         AssertContains(adapterText, "RecordButton = RecordButton,");
         AssertContains(adapterText, "=> _recordButtonAnimationController.AnimateWidth(from, to, onCompleted);");
         AssertContains(mainWindowText, "InitializeRecordButtonAnimationController();");
-        AssertContains(propertyChangedText, "AnimateRecordButtonWidth(36, targetWidth);");
-        AssertContains(propertyChangedText, "AnimateRecordButtonWidth(currentWidth, 36, () =>");
+        AssertContains(propertyChangedText, "HandleRecordingChanged();");
+        AssertContains(recordingPropertyChangedText, "Recording-specific ViewModel property projections");
+        AssertContains(recordingPropertyChangedText, "AnimateRecordButtonWidth(36, targetWidth);");
+        AssertContains(recordingPropertyChangedText, "AnimateRecordButtonWidth(currentWidth, 36, () =>");
         AssertContains(controllerText, "internal sealed class RecordButtonAnimationController");
         AssertContains(controllerText, "public void AnimateWidth(double from, double to, Action? onCompleted = null)");
         AssertContains(controllerText, "Storyboard.SetTarget(anim, _context.RecordButton);");
