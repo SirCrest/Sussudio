@@ -758,7 +758,9 @@ static partial class Program
             "public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath, CancellationToken cancellationToken)",
             "    public void SetSharedDevice");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Probes.cs")
+                .Replace("\r\n", "\n");
 
         AssertContains(captureMethod, "if (cancellationToken.IsCancellationRequested)");
         AssertContains(captureMethod, "Preview frame capture canceled.");

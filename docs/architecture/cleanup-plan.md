@@ -110,6 +110,11 @@ volume/mute application, audio level events, mic monitor setup/teardown, WASAPI
 playback attach/detach, audio-preview start/stop, and live audio input
 switching while preserving the root service transition lock.
 
+Capture read-only automation probes now live in
+`Sussudio/Services/Capture/CaptureService.Probes.cs`. Video source probing,
+preview color probing, and preview-frame screenshot waits are separated from
+runtime lifecycle mutation code.
+
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
 still renders metric values and assembles snapshots, but polling, visibility
