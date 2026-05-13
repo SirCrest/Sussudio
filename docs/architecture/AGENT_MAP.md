@@ -120,6 +120,10 @@ Primary current owners:
 - `Sussudio/Controllers/SettingsShelfController.cs` owns settings shelf
   visibility, the animation gate, and show/hide storyboard construction.
   `MainWindow.SettingsShelf.cs` is the XAML-facing adapter.
+- `Sussudio/Controllers/SplashLoadingPhraseController.cs` owns splash phrase
+  loading, timer pacing, and two-line text animation. `MainWindow.SplashLoading.cs`
+  is the XAML-facing adapter; `MainWindow.Animations.cs` still owns the broader
+  entrance choreography.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets

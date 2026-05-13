@@ -492,6 +492,9 @@ static partial class Program
                 "Settings shelf lifecycle lives in controller",
                 SettingsShelfLifecycle_LivesInController),
             await RunCheckAsync(
+                "Splash loading phrases live in controller",
+                SplashLoadingPhrases_LiveInController),
+            await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
@@ -2773,6 +2776,37 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private bool _isSettingsShelfAnimating;");
         AssertDoesNotContain(animationsText, "private void AnimateSettingsShelf(");
         AssertDoesNotContain(eventHandlersText, "private void SettingsToggleButton_Click(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task SplashLoadingPhrases_LiveInController()
+    {
+        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var splashAdapterText = ReadRepoFile("Sussudio/MainWindow.SplashLoading.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/SplashLoadingPhraseController.cs").Replace("\r\n", "\n");
+
+        AssertContains(splashAdapterText, "private SplashLoadingPhraseController _splashLoadingPhraseController = null!;");
+        AssertContains(splashAdapterText, "private void InitializeSplashLoadingPhraseController()");
+        AssertContains(splashAdapterText, "SplashLoadingTextA = SplashLoadingTextA,");
+        AssertContains(splashAdapterText, "SplashLoadingTransformB = SplashLoadingTransformB,");
+        AssertContains(splashAdapterText, "=> _splashLoadingPhraseController.Start();");
+        AssertContains(splashAdapterText, "=> _splashLoadingPhraseController.Stop();");
+        AssertContains(mainWindowText, "InitializeSplashLoadingPhraseController();");
+        AssertContains(animationsText, "StartSplashLoadingPhrases();");
+        AssertContains(animationsText, "StopSplashLoadingPhrases();");
+        AssertContains(controllerText, "internal sealed class SplashLoadingPhraseController");
+        AssertContains(controllerText, "private static readonly string[] DefaultSplashLoadingPhrases");
+        AssertContains(controllerText, "private DispatcherTimer? _splashPhraseTimer;");
+        AssertContains(controllerText, "private static string[] LoadSplashPhrases()");
+        AssertContains(controllerText, "private TimeSpan NextSplashPhraseInterval()");
+        AssertContains(controllerText, "private void CyclePhrase()");
+        AssertContains(controllerText, "Path.Combine(AppContext.BaseDirectory, \"SplashPhrases.md\")");
+        AssertContains(controllerText, "storyboard.Begin();");
+        AssertDoesNotContain(animationsText, "private DispatcherTimer? _splashPhraseTimer;");
+        AssertDoesNotContain(animationsText, "private static string[] LoadSplashPhrases()");
+        AssertDoesNotContain(animationsText, "private void CycleSplashPhrase()");
 
         return Task.CompletedTask;
     }

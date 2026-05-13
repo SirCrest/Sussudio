@@ -324,6 +324,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeWindowScreenshotController();
         InitializeFlashbackTimelineController();
         InitializeSettingsShelfController();
+        InitializeSplashLoadingPhraseController();
 
         // Cloak the window to prevent white flash before XAML renders
         int cloakTrue = 1;

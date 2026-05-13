@@ -60,6 +60,11 @@ construction now live in
 `Sussudio/Controllers/SettingsShelfController.cs`. `MainWindow.SettingsShelf.cs`
 is the XAML-facing adapter.
 
+Splash phrase loading, randomized timer pacing, and the two-line splash text
+animation now live in `Sussudio/Controllers/SplashLoadingPhraseController.cs`.
+`MainWindow.SplashLoading.cs` is the XAML-facing adapter; the broader entrance
+animation remains in `MainWindow.Animations.cs`.
+
 Diagnostic session DTOs now live in
 `tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
 owns orchestration and scenario execution, but the public options/result/sample
