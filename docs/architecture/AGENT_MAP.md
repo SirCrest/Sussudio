@@ -278,6 +278,9 @@ Primary current owners:
   `MainViewModel.FrameRateOptions.cs` owns frame-rate option rebuilding,
   source-rate filtering, and automatic frame-rate selection; device enumeration
   and selected-device capability rebuilds stay in `MainViewModel.DeviceManagement.cs`.
+  `MainViewModel.DeviceFormatProbes.cs` owns late device-format probe
+  reconciliation, capability refresh after background probes, and active-preview
+  HDR/SDR/session-mismatch retarget checks.
   `MainViewModel.AutoResolutionOptions.cs` owns automatic resolution ranking,
   source-aware auto-selection, and auto-resolved dimension/frame-rate state.
   `MainViewModel.ResolutionSelectionPolicy.cs` owns source-aware, HDR-aware,

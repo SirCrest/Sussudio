@@ -458,6 +458,8 @@ Remaining `tools/Common` ownership:
    filtering, and automatic frame-rate selection now live in
    `MainViewModel.FrameRateOptions.cs`; keep device enumeration and selected
    device capability rebuilds in `MainViewModel.DeviceManagement.cs`.
+   Late-arriving device format probe reconciliation and active-preview retarget
+   checks now live in `MainViewModel.DeviceFormatProbes.cs`.
    Automatic resolution ranking, source-aware auto-selection, and auto-resolved
    dimension/frame-rate state now live in `MainViewModel.AutoResolutionOptions.cs`.
    Source-aware, HDR-aware, and SDR fallback resolution selection policy now
