@@ -8,7 +8,6 @@ using static Sussudio.Tools.DiagnosticSessionFlashbackRecordingSettingsScenarios
 using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackStressScenario;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
-using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 
 namespace Sussudio.Tools;
 
@@ -29,24 +28,14 @@ internal static class DiagnosticSessionScenarioStartup
     {
         var startedFlashbackPlayback = false;
 
-        if (options.IncludePresentMon)
-        {
-            var correlationSnapshotResponse = await sendAsync("GetSnapshot", null, null).ConfigureAwait(false);
-            TryGetSnapshot(correlationSnapshotResponse, out var correlationSnapshot);
-            backgroundTasks.SetPresentMon(PresentMonProbe.RunAsync(new PresentMonProbeOptions
-            {
-                ProcessName = "Sussudio",
-                DurationSeconds = Math.Max(1, durationSeconds),
-                PresentMonPath = options.PresentMonPath,
-                OutputFile = Path.Combine(outputDirectory, "presentmon.csv"),
-                ExpectedSwapChainAddress = GetString(correlationSnapshot, "PreviewD3DSwapChainAddress"),
-                AppPresentId = GetNullableLong(correlationSnapshot, "PreviewD3DLastRenderedPreviewPresentId"),
-                AppSourceSequenceNumber = GetNullableLong(correlationSnapshot, "PreviewD3DLastRenderedSourceSequenceNumber"),
-                AppPresentUtcUnixMs = GetNullableLong(correlationSnapshot, "PreviewD3DLastRenderedUtcUnixMs"),
-                KeepCsv = true
-            }));
-            actions.Add("presentmon capture started");
-        }
+        await DiagnosticSessionPresentMonStartup.StartAsync(
+                options,
+                durationSeconds,
+                outputDirectory,
+                backgroundTasks,
+                actions,
+                sendAsync)
+            .ConfigureAwait(false);
 
         if (scenarioPlan.RunFlashbackStress)
         {

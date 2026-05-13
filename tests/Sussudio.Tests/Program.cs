@@ -750,6 +750,9 @@ static partial class Program
                 "Diagnostic session background tasks have a named owner",
                 DiagnosticSessionBackgroundTasks_OwnTaskDraining),
             await RunCheckAsync(
+                "Diagnostic session PresentMon startup has a named owner",
+                DiagnosticSessionPresentMonStartup_OwnsPresentMonLaunch),
+            await RunCheckAsync(
                 "Diagnostic session cleanup policy has a named owner",
                 DiagnosticSessionCleanupPolicy_OwnsRestoreWarnings),
             await RunCheckAsync(

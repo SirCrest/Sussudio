@@ -1348,6 +1348,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
             .Replace("\r\n", "\n");
+        var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
+            .Replace("\r\n", "\n");
         var tasksText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
             .Replace("\r\n", "\n");
 
@@ -1364,7 +1366,8 @@ static partial class Program
         AssertContains(tasksText, "internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(");
         AssertContains(runnerText, "var backgroundTasks = new DiagnosticSessionBackgroundTasks();");
         AssertContains(startupText, "backgroundTasks.AddScenario(");
-        AssertContains(startupText, "backgroundTasks.SetPresentMon(");
+        AssertContains(startupText, "DiagnosticSessionPresentMonStartup.StartAsync(");
+        AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(");
         AssertContains(startupText, "backgroundTasks.SetRecordingSettingsDeferred(");
         AssertContains(runnerText, "DiagnosticSessionScenarioStartup.StartAsync(");
         AssertContains(runnerText, "startedFlashbackPlayback = scenarioStartup.StartedFlashbackPlayback;");
@@ -1374,6 +1377,31 @@ static partial class Program
         AssertDoesNotContain(runnerText, "Task<PresentMonProbeResult>? presentMonTask");
         AssertDoesNotContain(runnerText, "async Task ObserveBackgroundTasksAfterFaultAsync()");
         AssertDoesNotContain(runnerText, "async Task ObserveTaskAfterFaultAsync(Task? task, string stage)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task DiagnosticSessionPresentMonStartup_OwnsPresentMonLaunch()
+    {
+        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
+            .Replace("\r\n", "\n");
+        var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(presentMonStartupText, "internal static class DiagnosticSessionPresentMonStartup");
+        AssertContains(presentMonStartupText, "internal static async Task StartAsync(");
+        AssertContains(presentMonStartupText, "if (!options.IncludePresentMon)");
+        AssertContains(presentMonStartupText, "var correlationSnapshotResponse = await sendAsync(\"GetSnapshot\", null, null)");
+        AssertContains(presentMonStartupText, "TryGetSnapshot(correlationSnapshotResponse, out var correlationSnapshot)");
+        AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(PresentMonProbe.RunAsync(new PresentMonProbeOptions");
+        AssertContains(presentMonStartupText, "ProcessName = \"Sussudio\"");
+        AssertContains(presentMonStartupText, "OutputFile = Path.Combine(outputDirectory, \"presentmon.csv\")");
+        AssertContains(presentMonStartupText, "ExpectedSwapChainAddress = GetString(correlationSnapshot, \"PreviewD3DSwapChainAddress\")");
+        AssertContains(presentMonStartupText, "AppPresentId = GetNullableLong(correlationSnapshot, \"PreviewD3DLastRenderedPreviewPresentId\")");
+        AssertContains(presentMonStartupText, "actions.Add(\"presentmon capture started\")");
+        AssertContains(startupText, "DiagnosticSessionPresentMonStartup.StartAsync(");
+        AssertDoesNotContain(startupText, "PresentMonProbe.RunAsync(new PresentMonProbeOptions");
+        AssertDoesNotContain(startupText, "PreviewD3DSwapChainAddress");
 
         return Task.CompletedTask;
     }

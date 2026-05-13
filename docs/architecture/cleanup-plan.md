@@ -844,10 +844,15 @@ interrupted-task warning collection.
 
 Diagnostic-session scenario startup now lives in
 `tools/Common/DiagnosticSessionScenarioStartup.cs`. It owns optional
-background startup: PresentMon launch, Flashback scenario task registration,
-deferred recording-settings task registration, and the direct Flashback
-playback start command. The runner now delegates startup and keeps the
+background startup: Flashback scenario task registration, deferred
+recording-settings task registration, and the direct Flashback playback start
+command. The runner now delegates startup and keeps the
 setup/sampling/cleanup/summary phase flow.
+
+Diagnostic-session PresentMon startup now lives in
+`tools/Common/DiagnosticSessionPresentMonStartup.cs`. It owns optional
+PresentMon launch, correlation snapshot capture, and `presentmon.csv` output
+selection while scenario startup keeps scenario task registration.
 
 Diagnostic-session scenario setup now lives in
 `tools/Common/DiagnosticSessionScenarioSetup.cs`. It owns initial state
@@ -1010,6 +1015,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioSetup.cs`
 - `DiagnosticSessionScenarioStartup.cs`
+- `DiagnosticSessionPresentMonStartup.cs`
 - `DiagnosticSessionText.cs`
 - `DiagnosticSessionRunner.cs`
 - `AutomationSnapshotFormatter.cs`
