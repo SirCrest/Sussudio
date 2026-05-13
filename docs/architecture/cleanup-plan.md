@@ -390,6 +390,12 @@ Keep frame validation, preview submission, held-frame ownership/release, and
 live-restore-after-submit-failure helpers there; keep seek and playback loops
 in the core/thread partials.
 
+Flashback playback decoder file handling now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs`.
+Keep decoder creation, active segment file identity, file open/reopen/seek
+fallback, and decoder cleanup there; keep seek-display and playback pacing in
+the controller core/thread partials.
+
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
 `MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing
