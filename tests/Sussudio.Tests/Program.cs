@@ -1857,6 +1857,7 @@ static partial class Program
         var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs").Replace("\r\n", "\n");
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs").Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs").Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs").Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs").Replace("\r\n", "\n");
 
         AssertContains(contractsText, "public string? SourceFirmware { get; init; }");

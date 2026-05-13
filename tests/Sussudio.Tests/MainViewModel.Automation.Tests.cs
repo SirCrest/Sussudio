@@ -308,6 +308,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsSnapshotsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
             .Replace("\r\n", "\n");
+        var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
+            .Replace("\r\n", "\n");
         var diagnosticsSnapshotStateText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotState.cs")
             .Replace("\r\n", "\n");
         var diagnosticsPreviewPacingText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.PreviewPacing.cs")
@@ -318,7 +320,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsTimelineText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText;
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotProjectionText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
@@ -354,6 +356,11 @@ static partial class Program
         AssertContains(diagnosticsSnapshotsText, "var previewHdrState = BuildPreviewHdrState(captureRuntime, viewModelSnapshot, previewRuntime);");
         AssertDoesNotContain(diagnosticsSnapshotsText, "var previewHdrInputDetected =");
         AssertContains(diagnosticsSnapshotsText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
+        AssertContains(diagnosticsSnapshotProjectionText, "private AutomationSnapshot BuildAutomationSnapshot(");
+        AssertContains(diagnosticsSnapshotProjectionText, "new AutomationSnapshot");
+        AssertContains(diagnosticsSnapshotProjectionText, "PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage");
+        AssertContains(diagnosticsSnapshotsText, "var snapshot = BuildAutomationSnapshot(");
+        AssertDoesNotContain(diagnosticsSnapshotsText, "new AutomationSnapshot");
         AssertContains(diagnosticsSnapshotsText, "AppendPerformanceTimelineEntry(snapshot);");
         AssertContains(diagnosticsSnapshotStateText, "private AudioSignalState UpdateAudioSignalState(");
         AssertContains(diagnosticsSnapshotStateText, "private bool UpdateRecordingFileGrowthState(");

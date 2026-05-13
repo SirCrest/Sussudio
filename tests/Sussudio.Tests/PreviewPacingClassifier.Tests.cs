@@ -117,9 +117,11 @@ static partial class Program
     {
         var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs");
         var diagnosticsSnapshotsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
+        var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
         var diagnosticsPreviewPacingText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.PreviewPacing.cs");
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + diagnosticsSnapshotsText
+            + "\n" + diagnosticsSnapshotProjectionText
             + "\n" + diagnosticsPreviewPacingText
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs");
 
@@ -128,6 +130,7 @@ static partial class Program
         AssertContains(contractsText, "public string PreviewPacingSlowStageEvidence { get; init; }");
         AssertContains(diagnosticsSnapshotsText, "var previewPacingClassification = ClassifyPreviewPacing(");
         AssertDoesNotContain(diagnosticsSnapshotsText, "new PreviewPacingClassificationInput");
+        AssertContains(diagnosticsSnapshotProjectionText, "PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage");
         AssertContains(diagnosticsPreviewPacingText, "private static PreviewPacingClassification ClassifyPreviewPacing(");
         AssertContains(diagnosticsPreviewPacingText, "PreviewPacingSlowStageClassifier.Classify");
         AssertContains(diagnosticsHubText, "PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps");
