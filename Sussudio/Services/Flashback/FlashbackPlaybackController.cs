@@ -256,7 +256,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     // and audio prebuffer extracted to partials)
     // See: FlashbackPlaybackController.CommandQueue.cs, .CommandTelemetry.cs, .DecoderFiles.cs,
     // .Thread.cs, .ThreadCleanup.cs, .ThreadTimer.cs, .PlaybackLoop.cs, .PlaybackTiming.cs,
-    // .AudioRouting.cs, .AudioPrebuffer.cs
+    // .AudioMasterPacing.cs, .AudioRouting.cs, .AudioPrebuffer.cs
 
     // --- State management ---
 

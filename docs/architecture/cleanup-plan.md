@@ -430,8 +430,10 @@ separate timing-owner slice.
 Flashback playback timing and cadence now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs`.
 Keep frame-rate resolution, pause-from-live target calculation,
-audio-master pacing and fallback accounting, wall-clock sleep/spin pacing,
 software-decode budget snaps, and decoded PTS/cadence tracking there.
+Audio-master pacing, fallback accounting, clock-drift calculation, and
+wall-clock sleep/spin pacing now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs`.
 Decoder close best-effort handling now lives with decoder file ownership, and
 decode-error snap-to-live recovery lives with the continuous playback loop, so
 the root controller can remain a field/property facade plus shared state setter.
