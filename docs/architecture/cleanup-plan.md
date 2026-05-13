@@ -41,8 +41,10 @@ diagnostic evaluation.
 `AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification.
 `AutomationDiagnosticsHub.Lifecycle.cs` owns start/stop/dispose and the polling
 loop. `AutomationDiagnosticsHub.OutputFiles.cs` owns cached last-output file
-existence and size probing. `AutomationDiagnosticsHub.ProcessMetrics.cs` owns
-process CPU, memory, GC, and thread-pool sampling.
+existence and size probing. `AutomationDiagnosticsHub.PreviewPacing.cs` owns
+automation snapshot input projection for preview pacing stage classification.
+`AutomationDiagnosticsHub.ProcessMetrics.cs` owns process CPU, memory, GC, and
+thread-pool sampling.
 `AutomationDiagnosticsHub.Verification.cs` owns recording/file verification
 commands and verification-profile adaptation.
 
