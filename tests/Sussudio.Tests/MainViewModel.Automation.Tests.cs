@@ -298,7 +298,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsLifecycleText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Lifecycle.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText;
+        var diagnosticsHdrText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Hdr.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
@@ -318,6 +320,9 @@ static partial class Program
         AssertContains(diagnosticsLifecycleText, "public void Start()");
         AssertContains(diagnosticsLifecycleText, "private async Task RunLoopAsync(CancellationToken cancellationToken)");
         AssertDoesNotContain(diagnosticsHubText, "public void Start()");
+        AssertContains(diagnosticsHdrText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
+        AssertContains(diagnosticsHdrText, "private static bool IsHdrSubtype(string? subtype)");
+        AssertDoesNotContain(diagnosticsHubText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
         AssertContains(diagnosticsText, "private readonly SemaphoreSlim _refreshGate = new(1, 1);");
         AssertContains(diagnosticsText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(diagnosticsText, "return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);");

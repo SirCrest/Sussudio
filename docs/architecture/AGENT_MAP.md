@@ -17,7 +17,7 @@ folder.
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Snapshots.cs` | transition state machine, snapshot builder, resource managers |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Lifecycle.cs`, `AutomationDiagnosticsHub.Verification.cs` | additional collectors/controllers when hub orchestration grows |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Hdr.cs`, `AutomationDiagnosticsHub.Lifecycle.cs`, `AutomationDiagnosticsHub.Verification.cs` | additional collectors/controllers when hub orchestration grows |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvRecordingSink.cs` | encoder option policy, sink lifecycle, verifier/finalizer |
 | Flashback | `FlashbackPlaybackController.cs`, `FlashbackEncoderSink.cs`, `FlashbackExporter.cs` | playback, buffer, encoder, export modules |
 | Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.Rendering.cs` | renderer host, present cadence, screenshot capture, timing models |
@@ -57,6 +57,8 @@ Automation diagnostics ownership:
   publication, alert state, event throttling, and recent event storage.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` owns
   diagnostic lane evaluation, alert-detail formatting, and health classifiers.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Hdr.cs` owns HDR truth
+  classification and HDR pixel-format helpers used by automation snapshots.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Lifecycle.cs` owns
   diagnostics hub start/stop/dispose behavior and the polling loop.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.cs` owns
