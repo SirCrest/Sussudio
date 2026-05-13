@@ -463,6 +463,7 @@ Remaining `tools/Common` ownership:
    Source-aware, HDR-aware, and SDR fallback resolution selection policy now
    lives in `MainViewModel.ResolutionSelectionPolicy.cs`; keep dropdown rebuild
    and effective resolution display in `MainViewModel.ResolutionOptions.cs`.
+   UI-only automation mutators now live in `MainViewModel.AutomationUi.cs`.
    Keep the remaining command mutation code in `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.
