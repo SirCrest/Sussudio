@@ -16,7 +16,7 @@ folder.
 |------|---------------------|----------------------|
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
-| Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Snapshots.cs`, `CaptureService.Telemetry.cs` | transition state machine, snapshot builder, telemetry owner, resource managers |
+| Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.Snapshots.cs`, `CaptureService.Telemetry.cs` | transition state machine, audio owner, snapshot builder, telemetry owner, resource managers |
 | Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Hdr.cs`, `AutomationDiagnosticsHub.Lifecycle.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.Verification.cs` | additional collectors/controllers when hub orchestration grows |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvRecordingSink.cs` | encoder option policy, sink lifecycle, verifier/finalizer |
 | Flashback | `FlashbackPlaybackController.cs`, `FlashbackEncoderSink.cs`, `FlashbackExporter.cs` | playback, buffer, encoder, export modules |
@@ -77,6 +77,8 @@ Important entry points:
   steady-state resolution for `CaptureService`.
 - `CaptureService.cs` still owns too many resource lifetimes and should not
   receive unrelated UI, Flashback, or diagnostics behavior.
+- `CaptureService.Audio.cs` owns audio preview, microphone monitoring, live
+  audio input switching, and WASAPI playback attach/detach order.
 - `CaptureService.Snapshots.cs` builds runtime snapshots consumed by UI and
   automation.
 - `CaptureService.Telemetry.cs` owns source telemetry polling, fallback merge,

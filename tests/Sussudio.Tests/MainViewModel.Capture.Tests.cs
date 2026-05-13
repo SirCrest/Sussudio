@@ -439,7 +439,9 @@ static partial class Program
         var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
+                .Replace("\r\n", "\n");
 
         AssertContains(coordinatorText, "if (controller is { IsDisposed: false, IsInitialized: true, State: not FlashbackPlaybackState.Disabled })\n        {\n            return true;\n        }");
         AssertMemberContains(flashbackPlaybackText, "GetFlashbackPlaybackSnapshot", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
@@ -783,9 +785,12 @@ static partial class Program
     private static Task CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange()
     {
         var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.cs")
+            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.Audio.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs");
         var captureServiceRawText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
                 .Replace("\r\n", "\n");
         var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
@@ -877,7 +882,7 @@ static partial class Program
         var updateAudioInput = ExtractTextBetween(
             captureServiceText,
             "public Task UpdateAudioInputAsync",
-            "public Task CleanupAsync");
+            "        }, cancellationToken);\n}");
         AssertContains(updateAudioInput, "var committedSwitchToken = CancellationToken.None;");
         AssertContains(updateAudioInput, "await newCapture.InitializeAsync(resolvedId, committedSwitchToken)");
         AssertContains(updateAudioInput, "await StartWasapiPlaybackAsync(committedSwitchToken)");
@@ -905,7 +910,7 @@ static partial class Program
         var updateAudioInputRaw = ExtractTextBetween(
             captureServiceRawText,
             "public Task UpdateAudioInputAsync",
-            "public Task CleanupAsync");
+            "        }, cancellationToken);\n}");
         AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN");
         AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN");
         AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_CANCEL_DEFERRED");
@@ -1043,7 +1048,7 @@ static partial class Program
         var encoderSettingsChange = ExtractTextBetween(
             captureServiceText,
             "public Task CycleFlashbackEncoderSettingsAsync",
-            "public void SetPreviewVolume");
+            "private void ReleaseFlashbackBackendLeaseIfHeld");
         AssertContains(encoderSettingsChange, "var cycleFailed = false;");
         AssertContains(encoderSettingsChange, "var previousSettings = CloneCaptureSettings(_currentSettings);");
         AssertContains(encoderSettingsChange, "cycleFailed = true;");

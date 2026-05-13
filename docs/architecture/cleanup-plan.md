@@ -104,6 +104,12 @@ service still owns runtime resources, but telemetry polling, fallback merging,
 NTSC frame-rate correction, and pixel-format counters are no longer embedded in
 the lifecycle/orchestration file.
 
+Capture audio preview and microphone monitoring now live in
+`Sussudio/Services/Capture/CaptureService.Audio.cs`. This includes preview
+volume/mute application, audio level events, mic monitor setup/teardown, WASAPI
+playback attach/detach, audio-preview start/stop, and live audio input
+switching while preserving the root service transition lock.
+
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
 still renders metric values and assembles snapshots, but polling, visibility

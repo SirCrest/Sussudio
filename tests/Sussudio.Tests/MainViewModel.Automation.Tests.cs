@@ -137,7 +137,9 @@ static partial class Program
         var deviceManagementText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceManagement.cs")
             .Replace("\r\n", "\n");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
+                .Replace("\r\n", "\n");
 
         AssertDoesNotContain(interfaceText, "bool FlashbackPlay();");
         AssertDoesNotContain(interfaceText, "bool FlashbackPause();");
@@ -584,6 +586,8 @@ static partial class Program
 
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
@@ -1532,7 +1536,9 @@ static partial class Program
     private static Task PreviewStopCompatibilityOverloads_ArePreserved()
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
+                .Replace("\r\n", "\n");
         var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
         var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
