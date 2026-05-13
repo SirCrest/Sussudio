@@ -499,7 +499,7 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.PreviewVolume):
-                if (!_isVolumeFadingIn)
+                if (!IsPreviewAudioFadeInActive)
                 {
                     var volumePct = ViewModel.PreviewVolume * 100;
                     if (PreviewVolumeSlider.Value != volumePct)

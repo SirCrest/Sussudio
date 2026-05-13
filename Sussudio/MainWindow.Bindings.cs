@@ -408,7 +408,7 @@ public sealed partial class MainWindow
         };
         PreviewVolumeSlider.PointerCaptureLost += (s, e) =>
         {
-            if (_isVolumeFadingIn || _previewVolumeFadeStoryboard != null)
+            if (IsPreviewAudioFadeInActive || IsPreviewAudioFadeAnimationActive)
             {
                 // User explicitly grabbed the slider during a preview volume fade.
                 // Pause the volume animation so it doesn't overwrite their choice

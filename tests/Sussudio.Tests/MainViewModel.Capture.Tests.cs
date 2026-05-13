@@ -88,6 +88,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
             .Replace("\r\n", "\n");
+        var previewAudioFadeText = ReadRepoFile("Sussudio/MainWindow.PreviewAudioFade.cs")
+            .Replace("\r\n", "\n");
+        var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/PreviewAudioFadeController.cs")
+            .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
             .Replace("\r\n", "\n");
         var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
@@ -119,14 +123,20 @@ static partial class Program
         AssertContains(revealUnavailable, "AnimatePreviewShellInAsync(300)");
         AssertContains(revealUnavailable, "FadeInElement(NoDevicePlaceholder);");
 
-        var primeAudio = ExtractMemberCode(animationsText, "PrimePreviewAudioFadeIn");
-        AssertContains(primeAudio, "ViewModel.VolumeSaveOverride = volumeTarget;");
-        AssertContains(primeAudio, "ViewModel.PreviewVolume = 0;");
-        AssertContains(primeAudio, "PreviewVolumeSlider.Value = 0;");
+        var primeAudioAdapter = ExtractMemberCode(previewAudioFadeText, "PrimePreviewAudioFadeIn");
+        AssertContains(primeAudioAdapter, "_previewAudioFadeController.PrimeFadeIn();");
 
-        var startAudioFade = ExtractMemberCode(animationsText, "StartPreviewAudioFadeIn");
-        AssertContains(startAudioFade, "Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);");
-        AssertContains(startAudioFade, "CompletePreviewAudioFadeIn(applyTarget: true)");
+        var primeAudio = ExtractMemberCode(previewAudioFadeControllerText, "PrimeFadeIn");
+        AssertContains(primeAudio, "_context.ViewModel.VolumeSaveOverride = volumeTarget;");
+        AssertContains(primeAudio, "_context.ViewModel.PreviewVolume = 0;");
+        AssertContains(primeAudio, "_context.PreviewVolumeSlider.Value = 0;");
+
+        var startAudioFadeAdapter = ExtractMemberCode(previewAudioFadeText, "StartPreviewAudioFadeIn");
+        AssertContains(startAudioFadeAdapter, "_previewAudioFadeController.StartFadeIn(durationMs);");
+
+        var startAudioFade = ExtractMemberCode(previewAudioFadeControllerText, "StartFadeIn");
+        AssertContains(startAudioFade, "Storyboard.SetTarget(volumeAnimation, _context.PreviewVolumeSlider);");
+        AssertContains(startAudioFade, "CompleteFadeIn(applyTarget: true)");
 
         var schedulePreviewFadeIn = ExtractMemberCode(previewStartupText, "SchedulePreviewFadeIn");
         AssertContains(schedulePreviewFadeIn, "StartPreviewAudioFadeIn();");
@@ -150,7 +160,7 @@ static partial class Program
 
     private static Task PreviewStop_RampsAudioDownBeforePreviewTeardown()
     {
-        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs")
+        var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/PreviewAudioFadeController.cs")
             .Replace("\r\n", "\n");
         var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs")
             .Replace("\r\n", "\n");
@@ -167,10 +177,10 @@ static partial class Program
         AssertContains(previewButtonClick, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);");
         AssertOccursBefore(previewButtonClick, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);", "await ViewModel.StopPreviewAsync(userInitiated: true);");
 
-        var uiFadeOut = ExtractMemberCode(animationsText, "StartPreviewAudioFadeOutAsync");
-        AssertContains(uiFadeOut, "ViewModel.VolumeSaveOverride = volumeTarget;");
+        var uiFadeOut = ExtractMemberCode(previewAudioFadeControllerText, "StartFadeOutAsync");
+        AssertContains(uiFadeOut, "_context.ViewModel.VolumeSaveOverride = volumeTarget;");
         AssertContains(uiFadeOut, "To = 0,");
-        AssertContains(uiFadeOut, "ViewModel.PreviewVolume = 0;");
+        AssertContains(uiFadeOut, "_context.ViewModel.PreviewVolume = 0;");
         AssertContains(uiFadeOut, "PREVIEW_AUDIO_FADE_OUT_STARTED");
 
         var vmStopRamp = ExtractMemberCode(audioControlsText, "RampPreviewVolumeDownForStopAsync");

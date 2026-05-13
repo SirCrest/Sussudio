@@ -70,6 +70,11 @@ scale/fade animation now live in
 `Sussudio/Controllers/LiveSignalInfoController.cs`. `MainWindow.LiveSignalInfo.cs`
 is the XAML-facing adapter.
 
+Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
+and volume save suppression now live in
+`Sussudio/Controllers/PreviewAudioFadeController.cs`.
+`MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
+
 Diagnostic session DTOs now live in
 `tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
 owns orchestration and scenario execution, but the public options/result/sample

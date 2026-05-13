@@ -498,6 +498,9 @@ static partial class Program
                 "Live signal info presentation lives in controller",
                 LiveSignalInfoPresentation_LivesInController),
             await RunCheckAsync(
+                "Preview audio fade state lives in controller",
+                PreviewAudioFadeState_LivesInController),
+            await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
@@ -2842,6 +2845,42 @@ static partial class Program
         AssertDoesNotContain(animationsText, "private void UpdateLiveSignalInfoVisibility()");
         AssertDoesNotContain(animationsText, "private void AnimateLiveSignalInfoIn()");
         AssertDoesNotContain(animationsText, "private void AnimateLiveSignalInfoOut()");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewAudioFadeState_LivesInController()
+    {
+        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewAudioFade.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewAudioFadeController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private PreviewAudioFadeController _previewAudioFadeController = null!;");
+        AssertContains(adapterText, "private bool IsPreviewAudioFadeInActive => _previewAudioFadeController.IsFadingIn;");
+        AssertContains(adapterText, "private bool IsPreviewAudioFadeAnimationActive => _previewAudioFadeController.IsAnimationActive;");
+        AssertContains(adapterText, "private void InitializePreviewAudioFadeController()");
+        AssertContains(adapterText, "=> _previewAudioFadeController.PrimeFadeIn();");
+        AssertContains(adapterText, "=> _previewAudioFadeController.StartFadeIn(durationMs);");
+        AssertContains(adapterText, "=> _previewAudioFadeController.StartFadeOutAsync(durationMs);");
+        AssertContains(adapterText, "=> _previewAudioFadeController.CancelFadeInForUser();");
+        AssertContains(mainWindowText, "InitializePreviewAudioFadeController();");
+        AssertContains(bindingsText, "IsPreviewAudioFadeInActive || IsPreviewAudioFadeAnimationActive");
+        AssertContains(propertyChangedText, "if (!IsPreviewAudioFadeInActive)");
+        AssertContains(controllerText, "internal sealed class PreviewAudioFadeController");
+        AssertContains(controllerText, "private double _savedPreviewVolume;");
+        AssertContains(controllerText, "private Storyboard? _volumeFadeStoryboard;");
+        AssertContains(controllerText, "public void PrimeFadeIn()");
+        AssertContains(controllerText, "public async Task StartFadeOutAsync(int durationMs = 450)");
+        AssertContains(controllerText, "Sussudio.Logger.Log(\"PREVIEW_AUDIO_FADE_OUT_COMPLETED\");");
+        AssertDoesNotContain(mainWindowText, "private double _savedPreviewVolume;");
+        AssertDoesNotContain(mainWindowText, "private bool _isVolumeFadingIn;");
+        AssertDoesNotContain(mainWindowText, "private Storyboard? _previewVolumeFadeStoryboard;");
+        AssertDoesNotContain(animationsText, "private void PrimePreviewAudioFadeIn()");
+        AssertDoesNotContain(animationsText, "private void CompletePreviewAudioFadeIn(");
+        AssertDoesNotContain(animationsText, "private async Task StartPreviewAudioFadeOutAsync(");
 
         return Task.CompletedTask;
     }
