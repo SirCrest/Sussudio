@@ -350,6 +350,12 @@ P/Invoke declarations, constants/HRESULTs/GUIDs, and flattened COM interface
 layouts there; keep behavioral source-reader logic in the root and negotiation
 partials.
 
+Media Foundation source cadence metrics now live in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs`. Keep the
+public cadence snapshot record, expected-rate/window sizing, stop-time cadence
+reset, timestamp interval tracking, and percentile/drop estimate calculations
+there; keep sample reading and frame delivery in the root source-reader file.
+
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`: `AutomationSnapshot.cs`,
 `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,
