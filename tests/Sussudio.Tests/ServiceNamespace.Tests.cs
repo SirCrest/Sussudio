@@ -83,12 +83,13 @@ static partial class Program
         AssertContains(nativeXuAudioServiceText, "EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath)");
 
         var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.cs"));
-        AssertContains(captureServiceText, "pollGeneration != Volatile.Read(ref _telemetryPollGeneration)");
+        var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs"));
+        AssertContains(captureServiceTelemetryText, "pollGeneration != Volatile.Read(ref _telemetryPollGeneration)");
         AssertContains(captureServiceText, "_telemetryPollSync");
-        AssertContains(captureServiceText, "lock (_telemetryPollSync)");
-        AssertContains(captureServiceText, "StartTelemetryPollCoreLocked");
-        AssertContains(captureServiceText, "StartTelemetryPollCore");
-        AssertContains(captureServiceText, "Telemetry poll start deferred until canceled poll exits");
+        AssertContains(captureServiceTelemetryText, "lock (_telemetryPollSync)");
+        AssertContains(captureServiceTelemetryText, "StartTelemetryPollCoreLocked");
+        AssertContains(captureServiceTelemetryText, "StartTelemetryPollCore");
+        AssertContains(captureServiceTelemetryText, "Telemetry poll start deferred until canceled poll exits");
 
         var audioControlsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioControls.cs"));
         AssertContains(audioControlsText, "RefreshDeviceAudioControlsAsync(");

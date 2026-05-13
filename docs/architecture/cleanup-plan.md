@@ -98,6 +98,12 @@ Capture session transition legality now lives in
 uses it before entering a transition and delegates steady-state resolution to
 the same pure policy; resource ownership has not moved in this slice.
 
+Capture service source telemetry and observed pixel-format accounting now live
+in `Sussudio/Services/Capture/CaptureService.Telemetry.cs`. The root capture
+service still owns runtime resources, but telemetry polling, fallback merging,
+NTSC frame-rate correction, and pixel-format counters are no longer embedded in
+the lifecycle/orchestration file.
+
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
 still renders metric values and assembles snapshots, but polling, visibility
