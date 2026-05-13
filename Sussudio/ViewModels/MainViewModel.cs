@@ -829,6 +829,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Automation / flashback: MainViewModel.Automation.cs
     // Audio controls: MainViewModel.AudioControls.cs
     // Device management: MainViewModel.DeviceManagement.cs
+    // Frame-rate options: MainViewModel.FrameRateOptions.cs
     // Disposal / teardown: MainViewModel.Disposal.cs
     // Runtime status/timers: MainViewModel.Runtime.cs
     // Source telemetry: MainViewModel.Telemetry.cs

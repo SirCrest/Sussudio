@@ -2603,7 +2603,7 @@ static partial class Program
 
     private static Task ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates()
     {
-        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceManagement.cs").Replace("\r\n", "\n");
+        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "options = ShowAllCaptureOptions");
         AssertContains(mainViewModelText, "!IsSourceFilteredFrameRateDisableReason(option.DisableReason)");

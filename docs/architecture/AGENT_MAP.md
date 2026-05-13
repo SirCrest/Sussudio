@@ -268,8 +268,11 @@ Primary current owners:
   probe, and options projection. `MainViewModel.FlashbackPlayback.cs` owns
   Flashback playback commands, marker commands, and buffer/bitrate status
   projection. `MainViewModel.FlashbackExport.cs` owns Flashback UI/automation
-  export flow, progress/cancellation state, and segment projection; remaining
-  automation command mutation code stays in `MainViewModel.Automation.cs`.
+  export flow, progress/cancellation state, and segment projection.
+  `MainViewModel.FrameRateOptions.cs` owns frame-rate option rebuilding,
+  source-rate filtering, and automatic frame-rate selection; device enumeration
+  and selected-device capability rebuilds stay in `MainViewModel.DeviceManagement.cs`.
+  Remaining automation command mutation code stays in `MainViewModel.Automation.cs`.
 
 Refactor direction:
 
