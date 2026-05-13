@@ -308,6 +308,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _hwnd = WindowNative.GetWindowHandle(this);
         ViewModel.SetWindowHandle(_hwnd);
         InitializeWindowScreenshotController();
+        InitializeFlashbackPollingController();
         InitializeFlashbackTimelineController();
         InitializeSettingsShelfController();
         InitializeSplashLoadingPhraseController();

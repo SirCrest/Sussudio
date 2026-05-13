@@ -55,6 +55,11 @@ animation state now live in
 commands and CTI rendering remain in `MainWindow.Flashback.cs` for later
 slices.
 
+Flashback status and playback-position polling timers now live in
+`Sussudio/Controllers/FlashbackPollingController.cs`.
+`MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing
+stays with playhead motion.
+
 Settings shelf visibility, the animation gate, and show/hide storyboard
 construction now live in
 `Sussudio/Controllers/SettingsShelfController.cs`. `MainWindow.SettingsShelf.cs`

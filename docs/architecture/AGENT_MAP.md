@@ -117,6 +117,9 @@ Primary current owners:
   animation state. `MainWindow.FlashbackTimeline.cs` is the XAML-facing
   adapter; keep scrub/playback commands and CTI rendering in
   `MainWindow.Flashback.cs` until those concerns are split separately.
+- `Sussudio/Controllers/FlashbackPollingController.cs` owns Flashback status
+  and playback-position polling timers. `MainWindow.FlashbackPolling.cs` is the
+  XAML-facing adapter; CTI anchor timing stays with playhead motion.
 - `Sussudio/Controllers/SettingsShelfController.cs` owns settings shelf
   visibility, the animation gate, and show/hide storyboard construction.
   `MainWindow.SettingsShelf.cs` is the XAML-facing adapter.

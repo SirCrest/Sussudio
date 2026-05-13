@@ -330,6 +330,9 @@ static partial class Program
                 "Main window flashback toggle rolls back UI state on failure",
                 MainWindowFlashbackToggle_RollsBackUiStateOnFailure),
             await RunCheckAsync(
+                "Flashback polling timers live in controller",
+                FlashbackPollingTimers_LiveInController),
+            await RunCheckAsync(
                 "Flashback mutations route through capture coordinator",
                 MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator),
             await RunCheckAsync(
@@ -2961,6 +2964,46 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private const double ControlBarLabelThreshold = 900.0;");
         AssertDoesNotContain(bindingsText, "private void UpdateToggleLabelVisibility(");
         AssertDoesNotContain(bindingsText, "private void CaptureSettingsGrid_SizeChanged(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackPollingTimers_LiveInController()
+    {
+        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPolling.cs").Replace("\r\n", "\n");
+        var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs").Replace("\r\n", "\n");
+        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/FlashbackPollingController.cs").Replace("\r\n", "\n");
+
+        AssertContains(pollingAdapterText, "private FlashbackPollingController _flashbackPollingController = null!;");
+        AssertContains(pollingAdapterText, "private void InitializeFlashbackPollingController()");
+        AssertContains(pollingAdapterText, "IsWindowClosing = () => _isWindowClosing,");
+        AssertContains(pollingAdapterText, "=> _flashbackPollingController.StartStatusPolling();");
+        AssertContains(pollingAdapterText, "_flashbackPollingController.StopStatusPolling();");
+        AssertContains(pollingAdapterText, "StopFlashbackCtiAnchorTimer();");
+        AssertContains(pollingAdapterText, "=> _flashbackPollingController.StartPlaybackPolling();");
+        AssertContains(pollingAdapterText, "=> _flashbackPollingController.StopPlaybackPolling();");
+        AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
+        AssertContains(timelineAdapterText, "StartStatusPolling = StartFlashbackStatusPolling,");
+        AssertContains(windowManagementText, "StopFlashbackStatusPolling();");
+        AssertContains(flashbackText, "StartFlashbackPlaybackPolling();");
+        AssertContains(flashbackText, "StopFlashbackPlaybackPolling();");
+        AssertContains(controllerText, "internal sealed class FlashbackPollingController");
+        AssertContains(controllerText, "private DispatcherQueueTimer? _statusTimer;");
+        AssertContains(controllerText, "private DispatcherQueueTimer? _playbackTimer;");
+        AssertContains(controllerText, "public void StartStatusPolling()");
+        AssertContains(controllerText, "public void StopStatusPolling()");
+        AssertContains(controllerText, "public void StartPlaybackPolling()");
+        AssertContains(controllerText, "public void StopPlaybackPolling()");
+        AssertContains(controllerText, "_context.ViewModel.UpdateFlashbackBufferStatus();");
+        AssertContains(controllerText, "_context.ViewModel.FlashbackPlaybackPosition = playback.PlaybackPosition;");
+        AssertContains(controllerText, "FLASHBACK_STATUS_TIMER_FAIL");
+        AssertContains(controllerText, "FLASHBACK_PLAYBACK_TIMER_FAIL");
+        AssertDoesNotContain(flashbackText, "private DispatcherQueueTimer? _flashbackStatusTimer;");
+        AssertDoesNotContain(flashbackText, "private void FlashbackStatusTimer_Tick(");
+        AssertDoesNotContain(flashbackText, "private void FlashbackPlaybackTimer_Tick(");
 
         return Task.CompletedTask;
     }
