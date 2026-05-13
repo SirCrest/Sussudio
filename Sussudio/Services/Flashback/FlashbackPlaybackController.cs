@@ -1649,49 +1649,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         }
     }
 
-    /// <summary>
-    /// Submits a decoded frame to the preview renderer — GPU texture or raw CPU data.
-    /// </summary>
-    private static void SubmitFrame(
-        IPreviewFrameSink previewSink,
-        DecodedVideoFrame frame,
-        long previewPresentId,
-        bool countForPresentCadence)
-    {
-        var submitTick = Stopwatch.GetTimestamp();
-        if (frame.IsD3D11Texture)
-        {
-            if (frame.TexturePtr == IntPtr.Zero)
-            {
-                Logger.Log("FLASHBACK_PLAYBACK_SUBMIT_SKIP reason=null_texture");
-                return;
-            }
-            previewSink.SubmitTexture(
-                frame.TexturePtr, frame.SubresourceIndex,
-                frame.Width, frame.Height, frame.IsHdr,
-                new PreviewFrameTracking(
-                    ArrivalTick: submitTick,
-                    SourceSequenceNumber: -1,
-                    PreviewPresentId: previewPresentId,
-                    SchedulerSubmitTick: submitTick,
-                    SourcePtsTicks: frame.Pts.Ticks,
-                    CountForPresentCadence: countForPresentCadence));
-        }
-        else
-        {
-            previewSink.SubmitRawFrame(
-                frame.Data, frame.DataLength,
-                frame.Width, frame.Height, frame.IsHdr,
-                new PreviewFrameTracking(
-                    ArrivalTick: submitTick,
-                    SourceSequenceNumber: -1,
-                    PreviewPresentId: previewPresentId,
-                    SchedulerSubmitTick: submitTick,
-                    SourcePtsTicks: frame.Pts.Ticks,
-                    CountForPresentCadence: countForPresentCadence));
-        }
-    }
-
     // --- State management ---
 
     private void SetState(FlashbackPlaybackState newState)
