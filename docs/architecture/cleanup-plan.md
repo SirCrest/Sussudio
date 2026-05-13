@@ -138,6 +138,12 @@ public Flashback state, segment access, enable/settings mutations, restarts,
 recording-format changes, and encoder-setting cycles while backend resource
 construction stays in the Flashback orchestration partial.
 
+Flashback recording policy and session-context helpers now live in
+`Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`. That file owns
+Flashback backend ownership checks, audio attach, session-context construction,
+frame-rate rational inference, codec/HDR guardrails, encoded-frame forwarding,
+and recording topology validation.
+
 Preview sink and MJPEG timing handoff now lives in
 `Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs`. That file owns
 preview-frame sink attachment, late Flashback playback preview wiring, shared
