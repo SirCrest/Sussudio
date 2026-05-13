@@ -34,7 +34,9 @@ owns `AutomationSnapshot` DTO property projection from runtime/view-model
 snapshots and diagnostic classifiers. `AutomationDiagnosticsHub.SnapshotState.cs`
 owns stateful snapshot bookkeeping for audio mute suspicion and recording file
 growth tracking. `AutomationDiagnosticsHub.Timeline.cs`
-owns performance-timeline reads and snapshot-to-timeline entry projection.
+owns performance-timeline ring reads and append mechanics.
+`AutomationDiagnosticsHub.TimelineProjection.cs` owns `AutomationSnapshot` to
+`PerformanceTimelineEntry` projection.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation and active-alert
 transitions. `AutomationDiagnosticsHub.SignalAlerts.cs` owns preview, capture,
 audio-signal, and recording-growth alert rules.

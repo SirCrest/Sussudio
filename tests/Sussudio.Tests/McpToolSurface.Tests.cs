@@ -2354,7 +2354,8 @@ static partial class Program
         var source = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
         var diagnosticsHubSource = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs");
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs");
         var entryType = RequireType("Sussudio.Models.PerformanceTimelineEntry");
 
         AssertContains(source, "PreviewD3DInputUploadCpuP99Ms");

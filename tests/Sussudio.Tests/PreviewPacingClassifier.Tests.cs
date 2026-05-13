@@ -123,7 +123,8 @@ static partial class Program
             + "\n" + diagnosticsSnapshotsText
             + "\n" + diagnosticsSnapshotProjectionText
             + "\n" + diagnosticsPreviewPacingText
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs");
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs");
 
         AssertContains(contractsText, "public string PreviewPacingLikelySlowStage { get; init; }");
         AssertContains(contractsText, "public string PreviewPacingSlowStageConfidence { get; init; }");
