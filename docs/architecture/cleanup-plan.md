@@ -1,6 +1,6 @@
 # Architecture Cleanup Plan
 
-Last reviewed: 2026-05-12.
+Last reviewed: 2026-05-13.
 
 ## Objective
 
@@ -181,6 +181,12 @@ LibAv encoder A/V sync diagnostics now live in
 `Sussudio/Services/Recording/LibAvEncoder.AvSync.cs`. Keep drift-correction
 thresholds, sync counters, current-drift reporting, and sync warning logs there
 so the root encoder stays focused on stream setup, send paths, and teardown.
+
+Native XU source telemetry detail presentation now lives in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs`.
+Keep telemetry detail rows, display formatting, HDR transfer labels, and
+flash-audio source interpretation there so the root provider stays focused on
+transport gating, rolling command polling, and snapshot construction.
 
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns

@@ -14,5 +14,6 @@
     <Compile Include="..\..\Sussudio\Services\Capture\KsExtensionUnitNative.cs" Link="Shared\Services\Capture\KsExtensionUnitNative.cs" />
     <Compile Include="..\..\Sussudio\Services\Contracts\ISourceSignalTelemetryProvider.cs" Link="Shared\Services\Contracts\ISourceSignalTelemetryProvider.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.cs" />
+    <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.cs" />
   </ItemGroup>
 </Project>

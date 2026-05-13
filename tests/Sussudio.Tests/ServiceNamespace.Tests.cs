@@ -50,6 +50,7 @@ static partial class Program
         AssertDoesNotContain(nativeXuProbeProjectText, "Sussudio.csproj");
         AssertContains(nativeXuProbeProjectText, "NativeXuAudioControlService.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.cs");
+        AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.cs");
         AssertContains(File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Models", "Capture", "CaptureDevice.cs")), "NativeXuInterfacePath");
         AssertContains(File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "ToolCaptureDevice.cs")), "NativeXuInterfacePath");
         var deviceServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.cs"));
