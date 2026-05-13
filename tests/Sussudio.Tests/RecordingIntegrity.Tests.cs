@@ -122,7 +122,7 @@ static partial class Program
             "Sussudio",
             "Services",
             "Capture",
-            "CaptureService.Snapshots.cs"));
+            "CaptureService.RecordingIntegrity.cs"));
         var serviceText = System.IO.File.ReadAllText(System.IO.Path.Combine(
             GetRepoRoot(),
             "Sussudio",

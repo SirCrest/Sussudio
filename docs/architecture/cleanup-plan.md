@@ -150,6 +150,12 @@ preview-frame sink attachment, late Flashback playback preview wiring, shared
 D3D preview-device handoff, negotiated video getters, and cached MJPEG pipeline
 timing details.
 
+Recording integrity policy now lives in
+`Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs`. That file
+owns recording/video/audio counter snapshots, baseline deltas, integrity summary
+classification, and the structured `RECORDING_INTEGRITY` log line; the snapshot
+partial now consumes that policy instead of containing it.
+
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
 still renders metric values and assembles snapshots, but polling, visibility
