@@ -213,6 +213,11 @@ Keep audio source switching, analog gain writes, named SET wrappers, and
 probe-facing raw AT reads there. The root provider remains responsible for
 telemetry polling and snapshot assembly.
 
+Native XU reference full-snapshot reads now live in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.FullSnapshot.cs`. Keep
+the legacy all-command source snapshot path there; the root provider owns the
+active rolling poll path and shared command/cache state.
+
 Flashback encoder sink options and packet helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs`. Keep
 recording-context mapping, encoder option creation, segment extension policy,
