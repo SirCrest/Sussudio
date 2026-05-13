@@ -229,6 +229,11 @@ Flashback encoder export force-rotation now lives in
 `ForceRotateForExport`, request timeout/cancellation handling, pending-request
 cleanup, and force-rotate drain abort classification there.
 
+Flashback encoder producer entry points now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs`. Keep raw/lease/GPU
+video enqueue entry points, audio/microphone enqueue entry points, force-rotate
+input rejection guards, and hot WASAPI writer adapters there.
+
 Flashback encoder stop/dispose ownership now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Lifetime.cs`. Keep `StopAsync`,
 `Dispose`/`DisposeAsync`, deferred cleanup, cancellation/disposal helpers, and
