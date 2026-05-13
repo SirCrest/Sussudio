@@ -62,6 +62,7 @@ static partial class Program
         var parts = new[]
         {
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs").Replace("\r\n", "\n"),

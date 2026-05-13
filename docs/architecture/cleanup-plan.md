@@ -282,6 +282,13 @@ start/end retention boundaries there. The root buffer manager keeps session
 setup, segment indexing/lookups, byte/PTS accounting helpers, recovery marker
 checks, and dispose coordination.
 
+Flashback exporter execution scheduling now lives in
+`Sussudio/Services/Flashback/FlashbackExporter.Execution.cs`. Keep the
+single/multi-segment task wrappers, linked cancellation source disposal,
+background thread priority, adaptive throttle provider scoping, and segment
+snapshots there so the root exporter can keep public request routing and native
+export cores.
+
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
 lock/disposal helpers, progress normalization and throttling, native cleanup,
