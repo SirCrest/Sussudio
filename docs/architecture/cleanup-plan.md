@@ -182,6 +182,13 @@ LibAv encoder A/V sync diagnostics now live in
 thresholds, sync counters, current-drift reporting, and sync warning logs there
 so the root encoder stays focused on stream setup, send paths, and teardown.
 
+LibAv encoder video setup now lives in
+`Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs`. Keep video codec
+context configuration, NVENC private option application, D3D11/CUDA hardware
+frames setup, texture-pool creation, and video bitstream-filter initialization
+there; leave per-frame send paths, audio setup/drain, rotation, and finalization
+in `LibAvEncoder.cs`.
+
 Native XU source telemetry detail presentation now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs`.
 Keep telemetry detail rows, display formatting, HDR transfer labels, and
