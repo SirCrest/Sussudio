@@ -52,9 +52,12 @@ cadence, audio pacing, and submit-failure alert rules.
 publication, event throttling, Flashback export completion events, and recent
 event storage.
 `AutomationDiagnosticsHub.DiagnosticEvaluation.cs` owns diagnostic verdict
-orchestration and non-Flashback diagnostic summaries.
+orchestration and the final healthy/mixed fallback.
 `AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs` owns Flashback-specific
 diagnostic verdict ordering and summaries.
+`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs` owns idle, warmup,
+recording/audio, source/MJPEG, preview, renderer, and present/display
+diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs` owns diagnostic lane text
 formatting used by diagnostic verdicts.
 `AutomationDiagnosticsHub.Evaluation.cs` owns performance scoring.
