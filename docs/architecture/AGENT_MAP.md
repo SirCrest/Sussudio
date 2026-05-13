@@ -559,6 +559,10 @@ Primary owners:
   optional background startup: PresentMon launch, Flashback scenario task
   registration, deferred recording-settings task registration, and the direct
   Flashback playback start command. Keep task stage names stable there.
+- `tools/Common/DiagnosticSessionCleanupActions.cs` owns diagnostic-session
+  cleanup mutations: recording stop for verification, Flashback playback
+  go-live restore, preview stop, and Flashback enable-state restore. Keep
+  cleanup stage/action names stable there.
 - `tools/Common/DiagnosticSessionCleanupPolicy.cs` owns cleanup restore
   validation after diagnostic sessions stop recording, preview, Flashback, or
   playback state.
@@ -664,6 +668,9 @@ Invariants:
 - Preserve diagnostic-session background task await order when moving scenario
   startup; interrupted-task warnings are evidence and should keep stable stage
   names.
+- Preserve diagnostic-session cleanup stage/action names when moving cleanup
+  mutations; downstream result text and failure reports use those names as
+  evidence.
 - Preserve result text compatibility when refactoring diagnostic-session
   formatting; ssctl and MCP both flow through `DiagnosticSessionRunner.Format`.
 - Preserve pipe error-code semantics when refactoring diagnostic-session retry:

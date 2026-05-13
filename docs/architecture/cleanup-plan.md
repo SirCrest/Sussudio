@@ -834,6 +834,12 @@ deferred recording-settings task registration, and the direct Flashback
 playback start command. The runner now delegates startup and keeps the
 setup/sampling/cleanup/summary phase flow.
 
+Diagnostic-session cleanup mutations now live in
+`tools/Common/DiagnosticSessionCleanupActions.cs`. It owns recording stop for
+verification, Flashback playback go-live restore, preview stop, and Flashback
+enable-state restore while `DiagnosticSessionCleanupPolicy.cs` remains the
+post-cleanup warning validator.
+
 Diagnostic-session scenario flagging now lives in
 `tools/Common/DiagnosticSessionScenarioPlan.cs`. It owns normalized scenario
 booleans plus grouped warning/validation policy switches so the runner does not
@@ -942,6 +948,7 @@ Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
+- `DiagnosticSessionCleanupActions.cs`
 - `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
@@ -978,9 +985,9 @@ Remaining `tools/Common` ownership:
 1. Continue splitting diagnostic-session runner by scenario family.
 
    `tools/Common/DiagnosticSessionRunner.cs` is still large. Scenario catalog
-   and optional scenario startup ownership are extracted; next, move preview,
-   recording, Flashback cleanup, and result-summary construction behind small
-   runner helpers. Keep JSON summary shape unchanged.
+   optional scenario startup, and cleanup mutation ownership are extracted;
+   next, move preview, recording, post-run verification, and result-summary
+   construction behind small runner helpers. Keep JSON summary shape unchanged.
 
 2. Reduce custom regression harness size.
 

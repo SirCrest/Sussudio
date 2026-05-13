@@ -902,6 +902,8 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionRunState.cs")
@@ -1001,7 +1003,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var initialSnapshotKnown = false;");
         AssertContains(diagnosticSessionText, "skipped state-mutating scenario");
         AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs))");
-        AssertContains(diagnosticSessionText, "SetRecordingEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, recordingCleanupTimeoutMs");
+        AssertContains(diagnosticSessionText, "\"SetRecordingEnabled\",");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"enabled\"] = false }");
+        AssertContains(diagnosticSessionText, "recordingCleanupTimeoutMs,");
         AssertContains(diagnosticSessionText, "var shouldStopRecordingForVerification = startedRecording && options.VerifyRecording;");
         AssertContains(diagnosticSessionText, "if (startedRecording && (shouldStopRecordingForVerification || !options.LeaveRunning))");
         AssertContains(diagnosticSessionText, "recording stopped for verification");
@@ -1353,7 +1357,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback recording preview cycle preview stopped");
         AssertContains(diagnosticSessionText, "const int recordingCleanupTimeoutMs = 300_000;");
-        AssertContains(diagnosticSessionText, "SetRecordingEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, recordingCleanupTimeoutMs");
+        AssertContains(diagnosticSessionText, "\"SetRecordingEnabled\",");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"enabled\"] = false }");
+        AssertContains(diagnosticSessionText, "recordingCleanupTimeoutMs,");
         AssertContains(diagnosticSessionText, "internal static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
         AssertContains(diagnosticSessionText, "internal static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
         AssertContains(diagnosticSessionText, "flashback recording settings deferred post-stop buffer verified");

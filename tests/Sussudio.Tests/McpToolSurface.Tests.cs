@@ -1251,15 +1251,32 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var cleanupActionsText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.cs")
+            .Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(cleanupActionsText, "internal static class DiagnosticSessionCleanupActions");
+        AssertContains(cleanupActionsText, "internal static async Task<DiagnosticSessionCleanupResult> RunAsync(");
+        AssertContains(cleanupActionsText, "internal readonly record struct DiagnosticSessionCleanupResult(bool StoppedRecordingForVerification)");
+        AssertContains(cleanupActionsText, "setStage(\"cleanup-stop-recording\")");
+        AssertContains(cleanupActionsText, "recordTerminalException(ex, \"cleanup-stop-recording\")");
+        AssertContains(cleanupActionsText, "setStage(\"cleanup-go-live\")");
+        AssertContains(cleanupActionsText, "setStage(\"cleanup-stop-preview\")");
+        AssertContains(cleanupActionsText, "setStage(\"cleanup-restore-flashback-off\")");
+        AssertContains(cleanupActionsText, "setStage(\"cleanup-restore-flashback-on\")");
         AssertContains(cleanupText, "internal static class DiagnosticSessionCleanupPolicy");
         AssertContains(cleanupText, "internal static void ValidateCleanupLifecycleRestored(");
         AssertContains(cleanupText, "cleanup: preview remained active after restore");
         AssertContains(cleanupText, "cleanup: Flashback remained active after restore");
         AssertContains(cleanupText, "cleanup: playback did not return live state={state}");
+        AssertContains(runnerText, "DiagnosticSessionCleanupActions.RunAsync(");
+        AssertContains(runnerText, "stoppedRecordingForVerification = cleanupResult.StoppedRecordingForVerification;");
         AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;");
+        AssertDoesNotContain(runnerText, "setStage(\"cleanup-stop-recording\")");
+        AssertDoesNotContain(runnerText, "setStage(\"cleanup-go-live\")");
+        AssertDoesNotContain(runnerText, "setStage(\"cleanup-stop-preview\")");
+        AssertDoesNotContain(runnerText, "setStage(\"cleanup-restore-flashback-off\")");
         AssertDoesNotContain(runnerText, "private static void ValidateCleanupLifecycleRestored(");
 
         return Task.CompletedTask;

@@ -248,95 +248,21 @@ public static class DiagnosticSessionRunner
         }
         finally
         {
-            var shouldStopRecordingForVerification = startedRecording && options.VerifyRecording;
-            if (startedRecording && (shouldStopRecordingForVerification || !options.LeaveRunning))
-            {
-                try
-                {
-                    SetStage("cleanup-stop-recording");
-                    const int recordingCleanupTimeoutMs = 300_000;
-                    using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs));
-                    var stopResponse = await SendWithTokenAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = false }, recordingCleanupTimeoutMs, false, cleanupCts.Token).ConfigureAwait(false);
-                    actions.Add(shouldStopRecordingForVerification && options.LeaveRunning
-                        ? "recording stopped for verification"
-                        : "recording stopped");
-                    stoppedRecordingForVerification = shouldStopRecordingForVerification &&
-                                                       AutomationSnapshotFormatter.IsSuccess(stopResponse);
-                    if (AutomationSnapshotFormatter.IsSuccess(stopResponse))
-                    {
-                        await TryWaitWithTokenAsync("RecordingStopped", recordingCleanupTimeoutMs, cleanupCts.Token).ConfigureAwait(false);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    RecordTerminalException(ex, "cleanup-stop-recording");
-                }
-            }
-
-            if (!options.LeaveRunning)
-            {
-                if (startedFlashbackPlayback)
-                {
-                    try
-                    {
-                        SetStage("cleanup-go-live");
-                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
-                        await SendWithTokenAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, 15_000, false, cleanupCts.Token).ConfigureAwait(false);
-                        actions.Add("flashback playback returned live");
-                    }
-                    catch (Exception ex)
-                    {
-                        RecordTerminalException(ex, "cleanup-go-live");
-                    }
-                }
-
-                if (startedPreview && !GetBool(initialSnapshot, "IsPreviewing"))
-                {
-                    try
-                    {
-                        SetStage("cleanup-stop-preview");
-                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
-                        await SendWithTokenAsync("SetPreviewEnabled", new Dictionary<string, object?> { ["enabled"] = false }, 15_000, false, cleanupCts.Token).ConfigureAwait(false);
-                        actions.Add("preview stopped");
-                    }
-                    catch (Exception ex)
-                    {
-                        RecordTerminalException(ex, "cleanup-stop-preview");
-                    }
-                }
-
-                if (enabledFlashback && !GetBool(initialSnapshot, "FlashbackActive"))
-                {
-                    try
-                    {
-                        SetStage("cleanup-restore-flashback-off");
-                        var cleanupTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackEnabled");
-                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs));
-                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = false }, cleanupTimeoutMs, false, cleanupCts.Token).ConfigureAwait(false);
-                        actions.Add("flashback restored off");
-                    }
-                    catch (Exception ex)
-                    {
-                        RecordTerminalException(ex, "cleanup-restore-flashback-off");
-                    }
-                }
-
-                if (disabledFlashback && GetBool(initialSnapshot, "FlashbackActive"))
-                {
-                    try
-                    {
-                        SetStage("cleanup-restore-flashback-on");
-                        var cleanupTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackEnabled");
-                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs));
-                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, cleanupTimeoutMs, false, cleanupCts.Token).ConfigureAwait(false);
-                        actions.Add("flashback restored on");
-                    }
-                    catch (Exception ex)
-                    {
-                        RecordTerminalException(ex, "cleanup-restore-flashback-on");
-                    }
-                }
-            }
+            var cleanupResult = await DiagnosticSessionCleanupActions.RunAsync(
+                    options,
+                    initialSnapshot,
+                    startedRecording,
+                    startedPreview,
+                    enabledFlashback,
+                    disabledFlashback,
+                    startedFlashbackPlayback,
+                    actions,
+                    SendWithTokenAsync,
+                    TryWaitWithTokenAsync,
+                    SetStage,
+                    RecordTerminalException)
+                .ConfigureAwait(false);
+            stoppedRecordingForVerification = cleanupResult.StoppedRecordingForVerification;
 
             await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
         }
@@ -984,9 +910,6 @@ public static class DiagnosticSessionRunner
                 warnings.Add($"wait {condition}: {AutomationSnapshotFormatter.Get(response, "Message", "not met")}");
             }
         }
-
-        static CancellationTokenSource CreateCleanupCts(TimeSpan timeout)
-            => new(timeout);
         }
         finally
         {

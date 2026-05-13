@@ -239,6 +239,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var diagnosticSessionCleanupActionsText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(scriptText, "$testProjectPath = Join-Path $repoRoot \"tests\\Sussudio.Tests\\Sussudio.Tests.csproj\"");
         AssertContains(scriptText, "$ssctlProjectPath = Join-Path $repoRoot \"tools\\ssctl\\ssctl.csproj\"");
@@ -251,10 +253,10 @@ static partial class Program
         AssertContains(scriptText, "Build, tool, and offline regression gates passed.");
         AssertDoesNotContain(scriptText, "docs/testing/README.md");
 
-        AssertContains(diagnosticSessionText, "var cleanupTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout(\"SetFlashbackEnabled\");");
-        AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs))");
-        AssertContains(diagnosticSessionText, "await SendWithTokenAsync(\"SetFlashbackEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, cleanupTimeoutMs");
-        AssertContains(diagnosticSessionText, "await SendWithTokenAsync(\"SetFlashbackEnabled\", new Dictionary<string, object?> { [\"enabled\"] = true }, cleanupTimeoutMs");
+        AssertContains(diagnosticSessionCleanupActionsText, "var cleanupTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout(\"SetFlashbackEnabled\");");
+        AssertContains(diagnosticSessionCleanupActionsText, "CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs))");
+        AssertContains(diagnosticSessionCleanupActionsText, "new Dictionary<string, object?> { [\"enabled\"] = false }");
+        AssertContains(diagnosticSessionCleanupActionsText, "new Dictionary<string, object?> { [\"enabled\"] = true }");
         return Task.CompletedTask;
     }
 
