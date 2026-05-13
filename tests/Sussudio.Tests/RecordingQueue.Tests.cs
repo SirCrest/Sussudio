@@ -14,6 +14,7 @@ static partial class Program
         var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs");

@@ -786,10 +786,13 @@ static partial class Program
     {
         var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.Audio.cs")
+            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs");
         var captureServiceRawText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
                 .Replace("\r\n", "\n");
@@ -1237,7 +1240,7 @@ static partial class Program
         var stopAndDisposeRecordingBackend = ExtractTextBetween(
             captureServiceText,
             "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync",
-            "private void TryApplySharedPreviewDevice");
+            "private async Task DisposeTransientRecordingBackendAsync");
 
         AssertContains(setFlashbackEnabled, "_pendingFlashbackEnableAfterRecording = false;");
         AssertContains(setFlashbackEnabled, "if (_flashbackEnabled == enabled)");

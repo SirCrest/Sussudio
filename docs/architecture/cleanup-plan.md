@@ -120,6 +120,12 @@ Fatal capture and backend failure handling now lives in
 error callbacks, last-failure telemetry, GPU device-lost classification, and
 the async cleanup launchers that move the service into faulted states.
 
+Preview sink and MJPEG timing handoff now lives in
+`Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs`. That file owns
+preview-frame sink attachment, late Flashback playback preview wiring, shared
+D3D preview-device handoff, negotiated video getters, and cached MJPEG pipeline
+timing details.
+
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
 still renders metric values and assembles snapshots, but polling, visibility
