@@ -402,6 +402,13 @@ Keep keyframe seek display, displayed-frame PTS mapping, adjacent-segment
 fallback for seek display, and seek-display failure accounting there; keep
 continuous playback pacing in the controller core/thread partials.
 
+Flashback continuous playback progression now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs`.
+Keep playback frame reads, A/V skip decisions, segment switching, fMP4
+write-head waits, and near-live snap handling there; keep cadence and
+audio-master timing math in the controller core unless it is split as a
+separate timing-owner slice.
+
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
 `MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing

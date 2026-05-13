@@ -1644,7 +1644,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var scannerText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackSessionRecoveryScanner.cs")
             .Replace("\r\n", "\n");
-        var playbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
+        var playbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs")
             .Replace("\r\n", "\n");
 
         // Constants/definitions now live in the extracted helper classes
