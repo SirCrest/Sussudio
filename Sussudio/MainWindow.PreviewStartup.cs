@@ -51,8 +51,6 @@ public sealed partial class MainWindow
     private const int PreviewStartupDefaultVisualTimeoutMs = 10000;
     private const int PreviewStartupMinVisualTimeoutMs = 1000;
     private const int PreviewStartupMaxVisualTimeoutMs = 15000;
-    private const int PreviewFadeInFrameThreshold = 3;
-
     // Lazy<int> instead of static readonly so per-test env overrides work:
     // tests that flip SUSSUDIO_PREVIEW_START_TIMEOUT_MS before constructing
     // MainWindow get the override on the first read instead of a value
@@ -66,7 +64,6 @@ public sealed partial class MainWindow
 
     private DispatcherQueueTimer? _previewStartupWatchdogTimer;
     private DispatcherQueueTimer? _previewStartupTelemetryTimer;
-    private DispatcherQueueTimer? _previewFadeInTimer;
     private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;
     private string? _previewStartupAttemptId;
     private DateTimeOffset? _previewStartupRequestedUtc;
@@ -305,61 +302,6 @@ public sealed partial class MainWindow
         Logger.Log(
             $"PREVIEW_FIRST_VISUAL_CONFIRMED attempt={_previewStartupAttemptId ?? "none"} " +
             $"source={source} elapsedMs={elapsedMs:0} recovery={_previewRecoveryAttemptCount}");
-    }
-    private void SchedulePreviewFadeIn()
-    {
-        StopPreviewFadeInTimer();
-
-        var renderer = _d3dRenderer;
-        if (renderer == null)
-        {
-            // CPU fallback path — no frame counter, just animate in after a short delay
-            _previewFadeInTimer = _dispatcherQueue.CreateTimer();
-            _previewFadeInTimer.Interval = TimeSpan.FromMilliseconds(50);
-            _previewFadeInTimer.IsRepeating = false;
-            _previewFadeInTimer.Tick += (_, _) =>
-            {
-                StopPreviewFadeInTimer();
-                _ = AnimatePreviewInAsync();
-                StartPreviewAudioFadeIn();
-            };
-            _previewFadeInTimer.Start();
-            return;
-        }
-
-        // Wait until the renderer has rendered enough frames for the signal to stabilize.
-        // Poll every ~16ms (one vsync) and check FramesRendered.
-        var baselineFrames = renderer.FramesRendered;
-        _previewFadeInTimer = _dispatcherQueue.CreateTimer();
-        _previewFadeInTimer.Interval = TimeSpan.FromMilliseconds(16);
-        _previewFadeInTimer.IsRepeating = true;
-        _previewFadeInTimer.Tick += (_, _) =>
-        {
-            var current = _d3dRenderer;
-            if (current == null || current != renderer)
-            {
-                // Renderer changed or gone — fade in now to avoid being stuck invisible
-                StopPreviewFadeInTimer();
-                _ = AnimatePreviewInAsync();
-                StartPreviewAudioFadeIn();
-                return;
-            }
-
-            var rendered = current.FramesRendered - baselineFrames;
-            if (rendered >= PreviewFadeInFrameThreshold)
-            {
-                StopPreviewFadeInTimer();
-                Logger.Log($"PREVIEW_FADE_IN_READY framesRendered={rendered} baseline={baselineFrames}");
-                _ = AnimatePreviewInAsync();
-                StartPreviewAudioFadeIn();
-            }
-        };
-        _previewFadeInTimer.Start();
-    }
-    private void StopPreviewFadeInTimer()
-    {
-        _previewFadeInTimer?.Stop();
-        _previewFadeInTimer = null;
     }
     private void ResetPreviewStartupTracking(bool keepRecoveryCount = false, bool preserveReinitAnimation = false)
     {

@@ -173,13 +173,16 @@ and volume save suppression now live in
 `Sussudio/Controllers/PreviewAudioFadeController.cs`.
 `MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
 
-Preview startup state, watchdog/telemetry/fade-in timers, and first-visual
-timeout recovery now live in `Sussudio/MainWindow.PreviewStartup.cs` instead
-of the composition-root constructor partial. Readiness-signal collection,
+Preview startup state, watchdog/telemetry timers, first-visual confirmation,
+and timeout recovery now live in `Sussudio/MainWindow.PreviewStartup.cs`
+instead of the composition-root constructor partial. Readiness-signal collection,
 missing-signal formatting, and playback-progress diagnostics live in
 `Sussudio/MainWindow.PreviewStartupSignals.cs`. This keeps the root shell
 focused on wiring while leaving the existing startup state machine behavior
 unchanged.
+Delayed preview reveal after first visual now lives in
+`Sussudio/MainWindow.PreviewFadeIn.cs`; watchdog/timeout recovery remains in
+`MainWindow.PreviewStartup.cs`.
 
 Preview-specific ViewModel events and property-change projections now live in
 `Sussudio/MainWindow.PropertyChangedPreview.cs`. The broad

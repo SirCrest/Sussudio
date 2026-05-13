@@ -202,12 +202,15 @@ Primary current owners:
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
   save suppression. `MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
 - `Sussudio/MainWindow.PreviewStartup.cs` owns preview startup state,
-  watchdog/telemetry/fade-in timers, first-visual confirmation, and timeout
-  recovery. `MainWindow.PreviewStartupSignals.cs` owns readiness-signal
+  watchdog/telemetry timers, first-visual confirmation, and timeout recovery.
+  `MainWindow.PreviewStartupSignals.cs` owns readiness-signal
   collection, missing-signal formatting, and playback-progress diagnostics.
   `MainWindow.PropertyChangedPreview.cs` owns preview-specific ViewModel events
   and property-change projections for preview start/stop/reinit state. Keep
   preview startup fields out of the composition root.
+- `Sussudio/MainWindow.PreviewFadeIn.cs` owns delayed reveal after first visual:
+  the rendered-frame threshold, fade-in timer, and preview-audio fade start.
+  Keep timeout/watchdog recovery in `MainWindow.PreviewStartup.cs`.
 - `Sussudio/MainWindow.PropertyChangedRecording.cs` owns recording-specific
   property-change projections for the record button, recording glow, and
   recording-time control lockouts.
