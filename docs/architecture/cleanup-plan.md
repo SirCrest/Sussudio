@@ -238,6 +238,13 @@ ownership, slow-frame diagnostics, display-clock estimates, and metric reset
 logic there; keep queueing/lifecycle in the root renderer and GPU drawing work
 in `D3D11PreviewRenderer.Rendering.cs`.
 
+D3D preview renderer resource management now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep device
+initialization, shared-device handoff, pipeline texture/view setup, swap-chain
+RTV creation, color-space application, panel binding/unbinding, and composition
+scale transforms there; keep per-frame rendering and draw paths in
+`D3D11PreviewRenderer.Rendering.cs`.
+
 Media Foundation source-reader negotiation now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs`. Keep
 DXGI manager attachment, device-source open/enumeration fallback, native
