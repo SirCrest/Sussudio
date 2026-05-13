@@ -796,6 +796,12 @@ Diagnostic-session result text now lives in
 `Format(...)` as a compatibility wrapper so existing ssctl and MCP callers do
 not need to know about the formatter owner.
 
+Diagnostic-session result construction now lives in
+`tools/Common/DiagnosticSessionResultBuilder.cs`. It owns result analysis,
+diagnostic warning enrichment, artifact path construction, summary JSON
+construction, and summary-write failure handling while the runner keeps the
+phase sequence.
+
 Shared diagnostic-session text helpers now live in
 `tools/Common/DiagnosticSessionText.cs`. Keep cross-cutting string helpers
 there instead of reintroducing private duplicates in the runner, formatter, or
@@ -980,6 +986,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionModels.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
+- `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionSampler.cs`
@@ -999,8 +1006,9 @@ Remaining `tools/Common` ownership:
 
    `tools/Common/DiagnosticSessionRunner.cs` is still large. Scenario catalog
    initial scenario setup, optional scenario startup, cleanup mutation
-   ownership, and post-cleanup recording checks are extracted; next, move
-   result-summary construction behind small runner helpers. Keep JSON summary
+   ownership, post-cleanup recording checks, and result construction are
+   extracted; next, move the remaining timeline/final-snapshot post-run fetches
+   behind a small helper or pivot to the next large owner. Keep JSON summary
    shape unchanged.
 
 2. Reduce custom regression harness size.

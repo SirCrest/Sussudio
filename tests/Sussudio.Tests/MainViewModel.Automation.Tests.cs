@@ -908,6 +908,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionRunState.cs")
@@ -1015,7 +1017,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "recording stopped for verification");
         AssertContains(diagnosticSessionText, "var stoppedRecordingForVerification = false;");
         AssertContains(diagnosticSessionText, "stoppedRecordingForVerification = shouldStopRecordingForVerification &&");
-        AssertContains(diagnosticSessionText, "var diagnosticHealthSnapshot = stoppedRecordingForVerification");
+        AssertContains(diagnosticSessionText, "var diagnosticHealthSnapshot = request.StoppedRecordingForVerification");
         AssertContains(diagnosticSessionText, ".WaitAsync(cancellationToken)");
         AssertContains(diagnosticSessionText, "scenarioCts.Cancel();");
         AssertContains(diagnosticSessionText, "WriteSamplingLiveStateBestEffortAsync");

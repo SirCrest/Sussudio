@@ -1015,6 +1015,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+            .Replace("\r\n", "\n");
         var policyText = ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
             .Replace("\r\n", "\n");
 
@@ -1027,7 +1029,7 @@ static partial class Program
         AssertContains(policyText, "internal static bool IsSparsePreviewSchedulerStressRun(");
         AssertContains(policyText, "internal static bool IsToleratedFlashbackScenarioWarning(");
         AssertContains(policyText, "private const double FlashbackDiagnosticWarmupFraction = 0.20;");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionHealthPolicy;");
+        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionHealthPolicy;");
         AssertDoesNotContain(runnerText, "private readonly record struct DiagnosticHealthObservation");
         AssertDoesNotContain(runnerText, "private static DiagnosticHealthObservation BuildSessionDiagnosticHealthObservation(");
         AssertDoesNotContain(runnerText, "private static bool IsSparseSourceCaptureCadenceWarningRun(");
@@ -1060,6 +1062,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+            .Replace("\r\n", "\n");
         var formatterText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
             .Replace("\r\n", "\n");
 
@@ -1076,9 +1080,39 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(builderText, "internal static class DiagnosticSessionResultBuilder");
+        AssertContains(builderText, "internal static async Task<DiagnosticSessionResult> BuildAndWriteAsync(");
+        AssertContains(builderText, "internal sealed record DiagnosticSessionResultBuildRequest(");
+        AssertContains(builderText, "runState.SetStage(\"result-analysis\")");
+        AssertContains(builderText, "var result = new DiagnosticSessionResult");
+        AssertContains(builderText, "runState.WriteArtifactBestEffortAsync(\"write-samples\", samplesPath, samples)");
+        AssertContains(builderText, "runState.WriteArtifactBestEffortAsync(\"write-frame-ledger\", frameLedgerPath, BuildFrameLedgerTrace(request.SessionId, samples))");
+        AssertContains(builderText, "runState.WriteArtifactBestEffortAsync(\"write-timeline\", timelinePath, request.Timeline)");
+        AssertContains(builderText, "runState.SetStage(\"summary\")");
+        AssertContains(builderText, "runState.RecordTerminalException(ex, \"summary-write\")");
+        AssertContains(builderText, "runState.SetStage(\"summary-written\")");
+        AssertContains(runnerText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
+        AssertContains(runnerText, "new DiagnosticSessionResultBuildRequest(");
+        AssertDoesNotContain(runnerText, "SetStage(\"result-analysis\")");
+        AssertDoesNotContain(runnerText, "var result = new DiagnosticSessionResult");
+        AssertDoesNotContain(runnerText, "WriteArtifactBestEffortAsync(\"write-samples\"");
+        AssertDoesNotContain(runnerText, "RecordTerminalException(ex, \"summary-write\")");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionText_OwnsSharedFormattingHelpers()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var formatterText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
             .Replace("\r\n", "\n");
@@ -1090,7 +1124,7 @@ static partial class Program
         AssertContains(textHelpersText, "internal static class DiagnosticSessionText");
         AssertContains(textHelpersText, "internal static string FormatOptional(string value)");
         AssertContains(textHelpersText, "string.IsNullOrWhiteSpace(value) ? \"none\" : value");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionText;");
+        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionText;");
         AssertContains(formatterText, "using static Sussudio.Tools.DiagnosticSessionText;");
         AssertContains(validationText, "using static Sussudio.Tools.DiagnosticSessionText;");
         AssertDoesNotContain(runnerText, "private static string FormatOptional(");
@@ -1285,6 +1319,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+            .Replace("\r\n", "\n");
         var cleanupActionsText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.cs")
             .Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
@@ -1306,7 +1342,7 @@ static partial class Program
         AssertContains(cleanupText, "cleanup: playback did not return live state={state}");
         AssertContains(runnerText, "DiagnosticSessionCleanupActions.RunAsync(");
         AssertContains(runnerText, "stoppedRecordingForVerification = cleanupResult.StoppedRecordingForVerification;");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;");
+        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;");
         AssertDoesNotContain(runnerText, "setStage(\"cleanup-stop-recording\")");
         AssertDoesNotContain(runnerText, "setStage(\"cleanup-go-live\")");
         AssertDoesNotContain(runnerText, "setStage(\"cleanup-stop-preview\")");
@@ -1396,6 +1432,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+            .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("tools/Common/DiagnosticSessionMetrics.cs")
             .Replace("\r\n", "\n");
 
@@ -1407,7 +1445,7 @@ static partial class Program
         AssertContains(metricsText, "internal static PlaybackCommandHealth BuildPlaybackCommandHealth(");
         AssertContains(metricsText, "internal static long GetResetAwareCounterDelta(");
         AssertContains(metricsText, "internal static bool IsVisualCadenceSessionHealthy(");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionMetrics;");
+        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionMetrics;");
         AssertDoesNotContain(runnerText, "private sealed class SourceCadenceSessionMetrics");
         AssertDoesNotContain(runnerText, "private sealed class PreviewD3DMetrics");
         AssertDoesNotContain(runnerText, "private static PlaybackCommandHealth BuildPlaybackCommandHealth(");
@@ -1419,6 +1457,8 @@ static partial class Program
     private static Task DiagnosticSessionFlashbackMetrics_OwnsFlashbackSessionMetricProjection()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs")
             .Replace("\r\n", "\n");
@@ -1433,8 +1473,8 @@ static partial class Program
         AssertContains(metricsText, "internal static FlashbackPlaybackResultMetrics BuildFlashbackPlaybackResultMetrics(");
         AssertContains(metricsText, "internal static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(");
         AssertContains(metricsText, "private static bool IsPlaybackSnapshotActive(");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;");
-        AssertContains(runnerText, "var playbackResultMetrics = BuildFlashbackPlaybackResultMetrics(playbackSessionMetrics);");
+        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;");
+        AssertContains(builderText, "var playbackResultMetrics = BuildFlashbackPlaybackResultMetrics(playbackSessionMetrics);");
         AssertDoesNotContain(runnerText, "private sealed class FlashbackPlaybackSessionMetrics");
         AssertDoesNotContain(runnerText, "GetString(playbackEndSnapshot,");
         AssertDoesNotContain(runnerText, "private sealed class FlashbackExportSessionMetrics");
@@ -1754,6 +1794,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+            .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
             .Replace("\r\n", "\n");
 
@@ -1766,7 +1808,7 @@ static partial class Program
         AssertContains(validationText, "internal static void ValidateFlashbackPreviewScheduler(");
         AssertContains(validationText, "\"flashback preview: present/display pressure \"");
         AssertContains(validationText, "latestSlowReason={FormatOptional(previewD3DMetrics.LatestSlowFrameReason)}");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;");
+        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;");
         AssertDoesNotContain(runnerText, "private static void ValidateFlashbackRecordingSession(");
         AssertDoesNotContain(runnerText, "private static void ValidateFlashbackPlaybackSession(");
         AssertDoesNotContain(runnerText, "private static void ValidateFlashbackPreviewScheduler(");

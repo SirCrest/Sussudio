@@ -543,6 +543,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionModels.cs` owns diagnostic session options,
   result, and sample DTOs. Keep summary/live JSON shape changes there rather
   than expanding the runner header.
+- `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
+  result analysis, artifact path construction, summary JSON construction, and
+  summary-write failure handling. Keep `summary.json` field shape stable there.
 - `tools/Common/DiagnosticSessionJsonArtifacts.cs` owns diagnostic-session JSON
   artifact writing, frame-ledger extraction, and automation response shape
   helpers.
