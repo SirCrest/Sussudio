@@ -1,9 +1,7 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -254,8 +252,11 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         }
     }
 
-    // (Command dispatch, decoder files, playback loop/timing, and audio prebuffer extracted to partials)
-    // See: FlashbackPlaybackController.CommandQueue.cs, .CommandTelemetry.cs, .DecoderFiles.cs, .Thread.cs, .ThreadCleanup.cs, .PlaybackLoop.cs, .PlaybackTiming.cs, .AudioPrebuffer.cs
+    // (Command dispatch, decoder files, playback loop/timing, audio routing,
+    // and audio prebuffer extracted to partials)
+    // See: FlashbackPlaybackController.CommandQueue.cs, .CommandTelemetry.cs, .DecoderFiles.cs,
+    // .Thread.cs, .ThreadCleanup.cs, .ThreadTimer.cs, .PlaybackLoop.cs, .PlaybackTiming.cs,
+    // .AudioRouting.cs, .AudioPrebuffer.cs
 
     // --- State management ---
 

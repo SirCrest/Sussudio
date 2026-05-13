@@ -385,6 +385,16 @@ Playback thread exit cleanup now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs`.
 Keep repeated live-restore cleanup and playback CTS disposal warnings there
 instead of duplicating teardown blocks inside the worker loop.
+Playback timer-resolution P/Invoke now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadTimer.cs`;
+keep it isolated from thread command execution and audio prebuffer logic.
+
+Flashback playback audio routing now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs`.
+Keep decoder audio callbacks, playback chunk validation/return, live audio
+suppress/restore, preview submission suppression, and audio renderer pause/
+resume/flush helpers there; keep decode-ahead prebuffer and rewind behavior in
+the audio prebuffer partial.
 
 Flashback playback component lifecycle now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs`. Keep
