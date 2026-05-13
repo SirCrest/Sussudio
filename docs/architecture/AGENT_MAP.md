@@ -117,10 +117,10 @@ Primary current owners:
   the launch entrance trigger. Close/finalize behavior stays in
   `MainWindow.CloseLifecycle.cs`.
 - `Sussudio/MainWindow.WindowSizing.cs` owns top-level shell resize telemetry
-  for preview compositor transforms. Preview surface sizing stays with
-  `MainWindow.PreviewRenderer.cs`, including preview renderer instances,
-  preview source/shadow visuals, frame counters, expected-present interval,
-  and renderer cadence state.
+  for preview compositor transforms. `MainWindow.PreviewRenderer.cs` owns
+  preview renderer instances, frame counters, expected-present interval, and
+  renderer cadence state. `MainWindow.PreviewSurface.cs` owns preview surface
+  sizing, GPU panel visibility, and video/control-bar composition shadows.
 - `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
   preview snapshot provider that dispatches to the renderer/startup snapshot
   projection, plus the read-only preview runtime snapshot construction.

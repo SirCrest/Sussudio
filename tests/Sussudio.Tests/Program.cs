@@ -3026,13 +3026,18 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
+        var previewSurfaceText = ReadRepoFile("Sussudio/MainWindow.PreviewSurface.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
 
         AssertContains(previewRendererText, "private SoftwareBitmapSource? _previewSource;");
         AssertContains(previewRendererText, "private D3D11PreviewRenderer? _d3dRenderer;");
-        AssertContains(previewRendererText, "private SpriteVisual? _videoShadowVisual;");
-        AssertContains(previewRendererText, "private SpriteVisual? _controlBarShadowVisual;");
+        AssertContains(previewSurfaceText, "Preview surface presentation");
+        AssertContains(previewSurfaceText, "private SpriteVisual? _videoShadowVisual;");
+        AssertContains(previewSurfaceText, "private SpriteVisual? _controlBarShadowVisual;");
+        AssertContains(previewSurfaceText, "private void UpdateVideoContentOverlays()");
+        AssertContains(previewSurfaceText, "private void SetupVideoFrameShadow()");
+        AssertContains(previewSurfaceText, "private void SetupControlBarShadow()");
         AssertContains(previewRendererText, "private long _previewFramesArrived;");
         AssertContains(previewRendererText, "private long _previewFramesDisplayed;");
         AssertContains(previewRendererText, "private long _previewFramesDropped;");
@@ -3056,6 +3061,8 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private D3D11PreviewRenderer? _d3dRenderer;");
         AssertDoesNotContain(mainWindowText, "private SpriteVisual? _videoShadowVisual;");
         AssertDoesNotContain(mainWindowText, "private SpriteVisual? _controlBarShadowVisual;");
+        AssertDoesNotContain(previewRendererText, "private SpriteVisual? _videoShadowVisual;");
+        AssertDoesNotContain(previewRendererText, "private SpriteVisual? _controlBarShadowVisual;");
         AssertDoesNotContain(mainWindowText, "private long _previewFramesArrived;");
         AssertDoesNotContain(mainWindowText, "private long _previewFramesDisplayed;");
         AssertDoesNotContain(mainWindowText, "private long _previewFramesDropped;");

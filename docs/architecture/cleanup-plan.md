@@ -55,10 +55,11 @@ automation pipe hosting, and the launch entrance trigger now live in
 close handling remain in `MainWindow.CloseLifecycle.cs`.
 
 Top-level shell resize telemetry for preview compositor transforms now lives in
-`Sussudio/MainWindow.WindowSizing.cs`. Preview surface sizing remains in
-`MainWindow.PreviewRenderer.cs`, including preview renderer instances, preview
-source/shadow visuals, frame counters, expected-present interval, renderer
-cadence state.
+`Sussudio/MainWindow.WindowSizing.cs`. Preview surface sizing, GPU panel
+visibility, and video/control-bar composition shadows now live in
+`Sussudio/MainWindow.PreviewSurface.cs`. `MainWindow.PreviewRenderer.cs` keeps
+preview renderer instances, frame counters, expected-present interval, and
+renderer cadence state.
 `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
 preview snapshot provider and read-only preview runtime snapshot construction.
 Close/finalize handling remains in
