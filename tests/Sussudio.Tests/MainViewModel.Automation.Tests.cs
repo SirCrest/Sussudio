@@ -588,6 +588,8 @@ static partial class Program
 
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Coordination.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")

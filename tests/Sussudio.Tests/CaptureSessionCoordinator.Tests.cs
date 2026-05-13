@@ -179,7 +179,7 @@ static partial class Program
 
     private static Task CaptureService_RunTransition_UsesTransitionPolicy()
     {
-        var serviceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
+        var serviceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Coordination.cs");
 
         AssertContains(
             serviceText,

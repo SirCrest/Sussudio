@@ -110,6 +110,12 @@ volume/mute application, audio level events, mic monitor setup/teardown, WASAPI
 playback attach/detach, audio-preview start/stop, and live audio input
 switching while preserving the root service transition lock.
 
+Capture transition coordination and disposal now live in
+`Sussudio/Services/Capture/CaptureService.Coordination.cs`. That file owns
+`RunTransitionAsync`, steady-state resolution, initialization/disposal guards,
+async disposal cleanup, and best-effort semaphore/eviction cleanup helpers used
+by the other capture-service partials.
+
 Capture read-only automation probes now live in
 `Sussudio/Services/Capture/CaptureService.Probes.cs`. Video source probing,
 preview color probing, and preview-frame screenshot waits are separated from
