@@ -13,6 +13,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AvSync.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.FrameCopy.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs").Replace("\r\n", "\n")
         };
@@ -396,6 +397,22 @@ static partial class Program
         AssertDoesNotContain(rootText, "private void WriteFilteredPackets()");
         AssertDoesNotContain(rootText, "private void DrainBsfPackets()");
         AssertDoesNotContain(rootText, "private void WritePacket(AVPacket* packet, bool useBsfTimeBase)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task LibAvEncoder_FrameCopyLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
+            .Replace("\r\n", "\n");
+        var frameCopyText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.FrameCopy.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(frameCopyText, "private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)");
+        AssertContains(frameCopyText, "private static void CopyPlane(byte* sourceStart, byte* destinationStart, int destinationStride, int rowBytes, int rowCount)");
+        AssertContains(frameCopyText, "Buffer.MemoryCopy(");
+        AssertDoesNotContain(rootText, "private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)");
+        AssertDoesNotContain(rootText, "private static void CopyPlane(byte* sourceStart, byte* destinationStart, int destinationStride, int rowBytes, int rowCount)");
 
         return Task.CompletedTask;
     }

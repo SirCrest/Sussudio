@@ -225,6 +225,9 @@ static partial class Program
                 "LibAv encoder packet writing lives in focused partial",
                 LibAvEncoder_PacketWritingLivesInFocusedPartial),
             await RunCheckAsync(
+                "LibAv encoder frame copy lives in focused partial",
+                LibAvEncoder_FrameCopyLivesInFocusedPartial),
+            await RunCheckAsync(
                 "Flashback integrity uses recording-scoped sequence gaps",
                 FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps),
             await RunCheckAsync(

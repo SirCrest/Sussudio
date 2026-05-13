@@ -275,6 +275,10 @@ packet drains, bitstream-filter packet drains, timestamp rescaling, packet
 stream-index assignment, packet write accounting, and interleaved video packet
 writes there.
 
+LibAv encoder packed software-frame copy helpers now live in
+`Sussudio/Services/Recording/LibAvEncoder.FrameCopy.cs`. Keep packed NV12/P010
+plane sizing, source-buffer validation, and stride-aware plane copies there.
+
 LibAv encoder audio stream handling now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone send
 entry points, AAC stream setup, resamplers, packet writing, pending-sample
