@@ -296,7 +296,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsVerificationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText;
+        var diagnosticsLifecycleText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Lifecycle.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
@@ -313,6 +315,9 @@ static partial class Program
         AssertContains(diagnosticsVerificationText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
         AssertContains(diagnosticsVerificationText, "private static CaptureRuntimeSnapshot ApplyVerificationProfile(");
         AssertDoesNotContain(diagnosticsHubText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
+        AssertContains(diagnosticsLifecycleText, "public void Start()");
+        AssertContains(diagnosticsLifecycleText, "private async Task RunLoopAsync(CancellationToken cancellationToken)");
+        AssertDoesNotContain(diagnosticsHubText, "public void Start()");
         AssertContains(diagnosticsText, "private readonly SemaphoreSlim _refreshGate = new(1, 1);");
         AssertContains(diagnosticsText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(diagnosticsText, "return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);");
