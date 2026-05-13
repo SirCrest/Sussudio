@@ -132,6 +132,12 @@ Fatal capture and backend failure handling now lives in
 error callbacks, last-failure telemetry, GPU device-lost classification, and
 the async cleanup launchers that move the service into faulted states.
 
+Flashback-facing capture controls now live in
+`Sussudio/Services/Capture/CaptureService.FlashbackControls.cs`. That file owns
+public Flashback state, segment access, enable/settings mutations, restarts,
+recording-format changes, and encoder-setting cycles while backend resource
+construction stays in the Flashback orchestration partial.
+
 Preview sink and MJPEG timing handoff now lives in
 `Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs`. That file owns
 preview-frame sink attachment, late Flashback playback preview wiring, shared

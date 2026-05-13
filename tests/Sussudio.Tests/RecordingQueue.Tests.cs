@@ -12,6 +12,7 @@ static partial class Program
         var flashbackBufferSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs");
         var flashbackCleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs");
         var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs")
