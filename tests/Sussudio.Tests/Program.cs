@@ -1078,6 +1078,9 @@ static partial class Program
                 "FlashbackBufferManager math helpers live in focused partial",
                 FlashbackBufferManager_MathHelpersLiveInFocusedPartial),
             await RunCheckAsync(
+                "FlashbackBufferManager segment query helpers live in focused partial",
+                FlashbackBufferManager_SegmentQueriesLiveInFocusedPartial),
+            await RunCheckAsync(
                 "FlashbackBufferManager latest PTS clamps invalid buffer duration",
                 FlashbackBufferManager_UpdateLatestPts_ClampsInvalidBufferDuration),
             await RunCheckAsync(
@@ -4426,6 +4429,33 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static long AddNonNegativeSaturated(long left, long right)");
         AssertDoesNotContain(rootText, "private long GetCompletedSegmentBytesSaturated()");
         AssertDoesNotContain(rootText, "private static bool IsSameSegmentPath(string? left, string? right)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_SegmentQueriesLiveInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+        var queryText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(queryText, "public int SegmentCount");
+        AssertContains(queryText, "public string? ActiveFilePath");
+        AssertContains(queryText, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)");
+        AssertContains(queryText, "public string? GetValidSegmentFileForPosition(TimeSpan absolutePts)");
+        AssertContains(queryText, "private string? GetOldestExistingSegmentPath()");
+        AssertContains(queryText, "private bool IsPathInSessionDirectory(string path)");
+        AssertContains(queryText, "public string? GetNextSegmentFile(string currentPath)");
+        AssertContains(queryText, "public TimeSpan? GetSegmentStartPts(string path)");
+        AssertContains(queryText, "public IReadOnlyList<string> GetValidSegmentPaths(TimeSpan inPoint, TimeSpan outPoint)");
+        AssertContains(queryText, "private TimeSpan GetActiveSegmentStartPts()");
+        AssertContains(queryText, "private TimeSpan GetDefaultActiveSegmentStartPts()");
+        AssertContains(queryText, "public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()");
+        AssertDoesNotContain(rootText, "public int SegmentCount");
+        AssertDoesNotContain(rootText, "public string? ActiveFilePath");
+        AssertDoesNotContain(rootText, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)");
+        AssertDoesNotContain(rootText, "public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()");
 
         return Task.CompletedTask;
     }
