@@ -325,19 +325,28 @@ start/end retention boundaries there. The root buffer manager keeps session
 setup, segment indexing/lookups, byte/PTS accounting helpers, recovery marker
 checks, and dispose coordination.
 
+Flashback exporter request routing now lives in
+`Sussudio/Services/Flashback/FlashbackExporter.Requests.cs`. Keep the public
+`ExportAsync` null/disposed guards, segment path normalization, adaptive
+throttle provider handoff, and single-versus-segment export selection there.
+
+Flashback exporter lifetime behavior now lives in
+`Sussudio/Services/Flashback/FlashbackExporter.Lifetime.cs`. Keep public
+`Dispose`, active export cancellation, native-state cleanup on dispose, and
+dispose-timeout logging there.
+
 Flashback exporter execution scheduling now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Execution.cs`. Keep the
 single/multi-segment task wrappers, linked cancellation source disposal,
 background thread priority, adaptive throttle provider scoping, and segment
-snapshots there so the root exporter can keep public request routing and native
-export cores.
+snapshots there so the root exporter can keep native export cores.
 
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
 lock/disposal helpers, progress normalization and throttling, native cleanup,
 cancellation-source handling, FFmpeg error strings, timestamp math, and orphan
 temp cleanup there so `FlashbackExporter.cs` stays focused on export
-orchestration and packet-copy/remux loops. Packet timestamp normalization,
+packet-copy/remux loops. Packet timestamp normalization,
 segment boundary timestamp repair, packet clone/free helpers, and buffered
 packet flushes live in
 `Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`. FFmpeg input

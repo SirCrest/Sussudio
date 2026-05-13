@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Sussudio.Models;
 using FFmpeg.AutoGen;
 using Sussudio.Services.Recording;
@@ -41,112 +40,6 @@ internal sealed unsafe partial class FlashbackExporter : IDisposable
     private AVFormatContext* _activeOutputContext;
     private string? _activeTempPath;
     private bool _disposed;
-
-    /// <summary>
-    /// Exports a flashback range to .mp4 based on the request parameters.
-    /// Uses multi-segment export when <see cref="FlashbackExportRequest.Segments"/> or
-    /// <see cref="FlashbackExportRequest.SegmentPaths"/> is set,
-    /// otherwise falls back to single-file export from <see cref="FlashbackExportRequest.InputTsPath"/>.
-    /// </summary>
-    public Task<FinalizeResult> ExportAsync(
-        FlashbackExportRequest request,
-        IProgress<ExportProgress>? progress,
-        CancellationToken ct)
-    {
-        if (request == null)
-        {
-            return Task.FromResult(FinalizeResult.Failure(
-                string.Empty,
-                "Flashback export failed: request is required."));
-        }
-
-        lock (_lifetimeSync)
-        {
-            if (_disposed)
-            {
-                return Task.FromResult(CreateDisposedExportResult(request.OutputPath));
-            }
-        }
-
-        if (request.Segments is { Count: > 0 })
-        {
-            SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
-            return ExportSegmentsAsync(request.Segments, request.InPoint, request.OutPoint,
-                request.OutputPath, request.FastStart, request.Force, progress, ct);
-        }
-
-        if (request.SegmentPaths is { Count: > 0 })
-        {
-            SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
-            return ExportSegmentsAsync(
-                request.SegmentPaths.Select(path => new FlashbackExportSegment { Path = path }).ToArray(),
-                request.InPoint,
-                request.OutPoint,
-                request.OutputPath,
-                request.FastStart,
-                request.Force,
-                progress,
-                ct);
-        }
-
-        SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
-        return ExportSingleAsync(request.InputTsPath!, request.InPoint, request.OutPoint,
-            request.OutputPath, request.FastStart, request.Force, progress, ct);
-    }
-
-    public void Dispose()
-    {
-        CancellationTokenSource? disposeCts;
-        lock (_lifetimeSync)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            disposeCts = _disposeCts;
-        }
-
-        Logger.Log("FLASHBACK_EXPORT_DISPOSE");
-
-        // Signal any running export to cancel — ExportCore/ExportSegmentsCore will exit
-        // via OperationCanceledException, clean up native state in their own finally block,
-        // and release _exportLock before we acquire it.
-        try { disposeCts?.Cancel(); }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_EXPORT_DISPOSE_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'");
-        }
-
-        // Wait for the export task to release the lock. The CTS is cancelled so
-        // the task should exit promptly. Timeout prevents app hang if FFmpeg is stuck.
-        var lockAcquired = _exportLock.Wait(TimeSpan.FromSeconds(10));
-        if (!lockAcquired)
-        {
-            Logger.Log("FLASHBACK_EXPORT_DISPOSE: timed out waiting for export lock (10s)");
-            Logger.Log("FLASHBACK_EXPORT_DISPOSE_TIMEOUT cleanup_invoked=false");
-            Logger.Log("FLASHBACK_EXPORT_DISPOSE_TIMEOUT_OK");
-            DisposeLinkedCtsBestEffort(disposeCts, "dispose_timeout");
-            ClearDisposeCtsReference(disposeCts);
-            GC.SuppressFinalize(this);
-            return;
-        }
-        try
-        {
-            CleanupNativeState();
-        }
-        finally
-        {
-            if (lockAcquired)
-                ReleaseExportLockBestEffort("dispose");
-        }
-
-        DisposeExportLockBestEffort();
-        DisposeLinkedCtsBestEffort(disposeCts, "dispose");
-        ClearDisposeCtsReference(disposeCts);
-        GC.SuppressFinalize(this);
-    }
 
     private FinalizeResult ExportCore(
         string inputTsPath,

@@ -61,6 +61,8 @@ static partial class Program
     {
         var parts = new[]
         {
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Requests.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifetime.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs").Replace("\r\n", "\n"),
@@ -797,6 +799,25 @@ static partial class Program
         AssertDoesNotContain(sourceText, "catch (ObjectDisposedException) { }");
         AssertDoesNotContain(sourceText, "}, linkedCts.Token);");
         AssertDoesNotContain(sourceText, "_disposeCts!.Token");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackExporter_RequestAndLifetimeOwnersAreSplit()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+        var requestsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Requests.cs")
+            .Replace("\r\n", "\n");
+        var lifetimeText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifetime.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
+        AssertContains(requestsText, "request.SegmentPaths.Select(path => new FlashbackExportSegment");
+        AssertContains(lifetimeText, "public void Dispose()");
+        AssertContains(lifetimeText, "FLASHBACK_EXPORT_DISPOSE_TIMEOUT_OK");
+        AssertDoesNotContain(rootText, "public Task<FinalizeResult> ExportAsync(");
+        AssertDoesNotContain(rootText, "public void Dispose()");
 
         return Task.CompletedTask;
     }
