@@ -238,6 +238,14 @@ ownership, slow-frame diagnostics, display-clock estimates, and metric reset
 logic there; keep queueing/lifecycle in the root renderer and GPU drawing work
 in `D3D11PreviewRenderer.Rendering.cs`.
 
+Media Foundation source-reader negotiation now lives in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs`. Keep
+DXGI manager attachment, device-source open/enumeration fallback, native
+media-type selection, converted-type construction, frame-size/frame-rate
+attribute reads, and optional media-attribute copy helpers there; keep the read
+loop, frame delivery, DXGI buffer extraction, and YUV copy helpers in the root
+source-reader file.
+
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
