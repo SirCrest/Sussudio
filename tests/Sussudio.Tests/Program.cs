@@ -750,6 +750,9 @@ static partial class Program
                 "Diagnostic session recording checks have a named owner",
                 DiagnosticSessionRecordingChecks_OwnPostRunRecordingVerification),
             await RunCheckAsync(
+                "Diagnostic session post-run snapshots have a named owner",
+                DiagnosticSessionPostRunSnapshots_OwnTimelineAndFinalSnapshot),
+            await RunCheckAsync(
                 "Diagnostic session Flashback cycle scenarios have a named owner",
                 DiagnosticSessionFlashbackCycleScenarios_OwnCycleFlows),
             await RunCheckAsync(

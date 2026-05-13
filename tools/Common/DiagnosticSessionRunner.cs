@@ -49,7 +49,6 @@ public static class DiagnosticSessionRunner
             () => cancellationToken.IsCancellationRequested,
             warnings);
         var livePath = runState.LivePath;
-        JsonElement? timeline = null;
         JsonElement? verification = null;
         PresentMonProbeResult? presentMon = null;
         var commandFailureCount = 0;
@@ -252,40 +251,13 @@ public static class DiagnosticSessionRunner
             .ConfigureAwait(false);
         verification = recordingCheckResult.Verification;
 
-        try
-        {
-            SetStage("timeline");
-            var timelineResponse = await SendAsync(
-                    "GetPerformanceTimeline",
-                    new Dictionary<string, object?> { ["maxEntries"] = 240 },
-                    null)
-                .ConfigureAwait(false);
-            if (timelineResponse.TryGetProperty("Data", out var timelineData))
-            {
-                timeline = timelineData.Clone();
-            }
-        }
-        catch (Exception ex)
-        {
-            RecordTerminalException(ex, "timeline");
-        }
-
-        var lastSnapshot = samples.Count > 0
-            ? samples[^1].Snapshot
-            : initialSnapshot;
-        var healthSnapshot = lastSnapshot;
-        try
-        {
-            SetStage("final-snapshot");
-            var finalSnapshotResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
-            healthSnapshot = TryGetSnapshot(finalSnapshotResponse, out var finalSnapshot)
-                ? finalSnapshot
-                : lastSnapshot;
-        }
-        catch (Exception ex)
-        {
-            RecordTerminalException(ex, "final-snapshot");
-        }
+        var postRunSnapshots = await DiagnosticSessionPostRunSnapshots.CaptureAsync(
+                samples,
+                initialSnapshot,
+                (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                SetStage,
+                RecordTerminalException)
+            .ConfigureAwait(false);
 
         var result = await DiagnosticSessionResultBuilder.BuildAndWriteAsync(
                 new DiagnosticSessionResultBuildRequest(
@@ -302,8 +274,8 @@ public static class DiagnosticSessionRunner
                     commandFailureCount,
                     samples,
                     initialSnapshot,
-                    healthSnapshot,
-                    timeline,
+                    postRunSnapshots.HealthSnapshot,
+                    postRunSnapshots.Timeline,
                     verification,
                     presentMon,
                     startedPreview,

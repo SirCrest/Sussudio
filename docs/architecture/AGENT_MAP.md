@@ -14,7 +14,7 @@ folder.
 
 | Area | Current large files | Preferred next owner |
 |------|---------------------|----------------------|
-| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, startup/cleanup/recording-check helpers, result formatter, plus per-scenario runners |
+| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackExportDiagnostics.cs`, `CaptureService.FlashbackExportFailureClassification.cs`, `CaptureService.FlashbackExportOperations.cs`, `CaptureService.FlashbackExportPlanning.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.Snapshots.cs`, `CaptureService.SnapshotAvSync.cs`, `CaptureService.SnapshotTelemetry.cs`, `CaptureService.Telemetry.cs` | lifecycle owner, audio owner, cleanup owner, transition/disposal owner, deferred cleanup owner, failure owner, Flashback control owner, Flashback export diagnostics/progress owner, Flashback export failure taxonomy, Flashback export entry/core owner, Flashback export planning/throttle owner, Flashback recording policy owner, health snapshot builder, preview lifecycle owner, preview pipeline owner, probe owner, recording integrity owner, runtime snapshot builder, shared snapshot helper policy, A/V sync snapshot policy, source telemetry snapshot policy, telemetry owner, resource managers |
 | Capture source reader | `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`, `MfSourceReaderVideoCapture.Cadence.cs`, `MfSourceReaderVideoCapture.Diagnostics.cs`, `MfSourceReaderVideoCapture.Negotiation.cs`, `MfSourceReaderVideoCapture.Interop.cs` | Media Foundation read loop/frame delivery, source cadence metrics, debug-only COM diagnostics, device opening and media-type negotiation, MF P/Invoke and COM interface definitions |
@@ -576,6 +576,10 @@ Primary owners:
   recording validation. Keep the `settings-deferred-restore`,
   `recording-verification`, and `recording-validation` stage names stable
   there.
+- `tools/Common/DiagnosticSessionPostRunSnapshots.cs` owns post-run
+  diagnostic-session snapshot fetches: performance timeline collection and
+  final health snapshot refresh. Keep the `timeline` and `final-snapshot` stage
+  names stable there.
 - `tools/Common/DiagnosticSessionCleanupPolicy.cs` owns cleanup restore
   validation after diagnostic sessions stop recording, preview, Flashback, or
   playback state.

@@ -857,6 +857,11 @@ recording-settings restore, last-recording or Flashback export verification,
 and Flashback recording validation while the runner keeps the high-level
 post-cleanup phase order.
 
+Diagnostic-session post-run snapshot fetches now live in
+`tools/Common/DiagnosticSessionPostRunSnapshots.cs`. It owns performance
+timeline artifact input and final health snapshot refresh while the runner
+keeps the high-level post-cleanup phase order.
+
 Diagnostic-session scenario flagging now lives in
 `tools/Common/DiagnosticSessionScenarioPlan.cs`. It owns normalized scenario
 booleans plus grouped warning/validation policy switches so the runner does not
@@ -986,6 +991,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionModels.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
+- `DiagnosticSessionPostRunSnapshots.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionRunState.cs`
@@ -1006,9 +1012,9 @@ Remaining `tools/Common` ownership:
 
    `tools/Common/DiagnosticSessionRunner.cs` is still large. Scenario catalog
    initial scenario setup, optional scenario startup, cleanup mutation
-   ownership, post-cleanup recording checks, and result construction are
-   extracted; next, move the remaining timeline/final-snapshot post-run fetches
-   behind a small helper or pivot to the next large owner. Keep JSON summary
+   ownership, post-cleanup recording checks, post-run snapshot fetches, and
+   result construction are extracted; next, split remaining runner command
+   plumbing/send helpers or pivot to the next large owner. Keep JSON summary
    shape unchanged.
 
 2. Reduce custom regression harness size.

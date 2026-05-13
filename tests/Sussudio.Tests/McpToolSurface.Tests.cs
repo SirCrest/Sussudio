@@ -1382,6 +1382,35 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionPostRunSnapshots_OwnTimelineAndFinalSnapshot()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var postRunText = ReadRepoFile("tools/Common/DiagnosticSessionPostRunSnapshots.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(postRunText, "internal static class DiagnosticSessionPostRunSnapshots");
+        AssertContains(postRunText, "internal static async Task<DiagnosticSessionPostRunSnapshotResult> CaptureAsync(");
+        AssertContains(postRunText, "internal readonly record struct DiagnosticSessionPostRunSnapshotResult(");
+        AssertContains(postRunText, "JsonElement HealthSnapshot,");
+        AssertContains(postRunText, "setStage(\"timeline\")");
+        AssertContains(postRunText, "\"GetPerformanceTimeline\"");
+        AssertContains(postRunText, "new Dictionary<string, object?> { [\"maxEntries\"] = 240 }");
+        AssertContains(postRunText, "recordTerminalException(ex, \"timeline\")");
+        AssertContains(postRunText, "setStage(\"final-snapshot\")");
+        AssertContains(postRunText, "sendAsync(\"GetSnapshot\", null, null)");
+        AssertContains(postRunText, "TryGetSnapshot(finalSnapshotResponse, out var finalSnapshot)");
+        AssertContains(postRunText, "recordTerminalException(ex, \"final-snapshot\")");
+        AssertContains(runnerText, "DiagnosticSessionPostRunSnapshots.CaptureAsync(");
+        AssertContains(runnerText, "postRunSnapshots.HealthSnapshot");
+        AssertContains(runnerText, "postRunSnapshots.Timeline");
+        AssertDoesNotContain(runnerText, "SetStage(\"timeline\")");
+        AssertDoesNotContain(runnerText, "\"GetPerformanceTimeline\"");
+        AssertDoesNotContain(runnerText, "RecordTerminalException(ex, \"final-snapshot\")");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackCycleScenarios_OwnCycleFlows()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
