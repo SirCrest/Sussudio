@@ -64,6 +64,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Requests.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifetime.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs").Replace("\r\n", "\n"),
@@ -811,7 +812,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackExporter_RequestAndLifetimeOwnersAreSplit()
+    private static Task FlashbackExporter_OwnershipIsSplitAcrossFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
@@ -821,6 +822,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs")
             .Replace("\r\n", "\n");
+        var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
         AssertContains(requestsText, "request.SegmentPaths.Select(path => new FlashbackExportSegment");
@@ -828,9 +831,12 @@ static partial class Program
         AssertContains(lifetimeText, "FLASHBACK_EXPORT_DISPOSE_TIMEOUT_OK");
         AssertContains(singleFileText, "private FinalizeResult ExportCore(");
         AssertContains(singleFileText, "ReleaseExportLockBestEffort(\"single_export\");");
+        AssertContains(segmentsText, "private FinalizeResult ExportSegmentsCore(");
+        AssertContains(segmentsText, "ReleaseExportLockBestEffort(\"segment_export\");");
         AssertDoesNotContain(rootText, "public Task<FinalizeResult> ExportAsync(");
         AssertDoesNotContain(rootText, "public void Dispose()");
         AssertDoesNotContain(rootText, "private FinalizeResult ExportCore(");
+        AssertDoesNotContain(rootText, "private FinalizeResult ExportSegmentsCore(");
 
         return Task.CompletedTask;
     }

@@ -1432,8 +1432,8 @@ static partial class Program
                 "Flashback exporter task wrappers dispose linked cancellation",
                 FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
             await RunCheckAsync(
-                "Flashback exporter request and lifetime owners are split",
-                FlashbackExporter_RequestAndLifetimeOwnersAreSplit),
+                "Flashback exporter ownership is split across focused partials",
+                FlashbackExporter_OwnershipIsSplitAcrossFocusedPartials),
             await RunCheckAsync(
                 "Flashback exporter rejects null requests",
                 FlashbackExporter_RejectsNullRequests),
