@@ -89,10 +89,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly bool _automationTokenRequired;
     private readonly string _automationPipeName;
     private int _automationServicesStarted;
-    private readonly int[] _selectionSyncQueued = new int[9];
-    private const int SyncDevice = 0, SyncAudio = 1, SyncResolution = 2, SyncFrameRate = 3,
-                       SyncFormat = 4, SyncQuality = 5, SyncPreset = 6, SyncSplitEncode = 7,
-                       SyncMicrophone = 8;
     private readonly string _windowTitleBase;
     private DispatcherQueueTimer? _previewStartupWatchdogTimer;
     private DispatcherQueueTimer? _previewStartupTelemetryTimer;
@@ -317,6 +313,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializePreviewAudioFadeController();
         InitializeMicrophoneControlsController();
         InitializeResponsiveShellLayoutController();
+        InitializeCaptureSelectionBindingController();
 
         // Cloak the window to prevent white flash before XAML renders
         int cloakTrue = 1;

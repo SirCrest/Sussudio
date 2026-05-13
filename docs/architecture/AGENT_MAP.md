@@ -143,6 +143,11 @@ Primary current owners:
 - `Sussudio/Controllers/ResponsiveShellLayoutController.cs` owns control-bar
   label visibility and capture-settings narrow/wide grid placement.
   `MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
+- `Sussudio/Controllers/CaptureSelectionBindingController.cs` owns
+  capture/audio/microphone/encoder selection synchronization, collection-change
+  debounce, pending-device apply state, and device-audio mode/gain control
+  projection. `MainWindow.CaptureSelectionBindings.cs` is the XAML-facing
+  adapter.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets

@@ -94,6 +94,12 @@ Control-bar label visibility and capture-settings narrow/wide grid placement
 now live in `Sussudio/Controllers/ResponsiveShellLayoutController.cs`.
 `MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
 
+Capture, audio, microphone, and encoder selection synchronization now lives in
+`Sussudio/Controllers/CaptureSelectionBindingController.cs`. It owns
+collection-change debounce, pending-device apply state, and device-audio
+mode/gain projection while `MainWindow.CaptureSelectionBindings.cs` keeps the
+old method names for `PropertyChanged` and button handlers.
+
 Diagnostic session DTOs now live in
 `tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
 owns orchestration and scenario execution, but the public options/result/sample

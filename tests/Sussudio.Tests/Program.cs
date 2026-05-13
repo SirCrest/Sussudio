@@ -513,6 +513,9 @@ static partial class Program
                 "Responsive shell layout lives in controller",
                 ResponsiveShellLayout_LivesInController),
             await RunCheckAsync(
+                "Capture selection binding sync lives in controller",
+                CaptureSelectionBindingSync_LivesInController),
+            await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
@@ -2967,6 +2970,43 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private const double ControlBarLabelThreshold = 900.0;");
         AssertDoesNotContain(bindingsText, "private void UpdateToggleLabelVisibility(");
         AssertDoesNotContain(bindingsText, "private void CaptureSettingsGrid_SizeChanged(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureSelectionBindingSync_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.CaptureSelectionBindings.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private CaptureSelectionBindingController _captureSelectionBindingController = null!;");
+        AssertContains(adapterText, "private void InitializeCaptureSelectionBindingController()");
+        AssertContains(adapterText, "DeviceComboBox = DeviceComboBox,");
+        AssertContains(adapterText, "AnalogAudioGainValueTextBlock = AnalogAudioGainValueTextBlock");
+        AssertContains(adapterText, "private void EnsureDeviceSelection()");
+        AssertContains(adapterText, "=> _captureSelectionBindingController.EnsureDeviceSelection();");
+        AssertContains(adapterText, "private void UpdateDeviceApplyButtonState()");
+        AssertContains(mainWindowText, "InitializeCaptureSelectionBindingController();");
+        AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
+        AssertContains(propertyChangedText, "EnsureResolutionSelection();");
+        AssertContains(propertyChangedText, "ApplyDeviceAudioControlState();");
+        AssertContains(eventHandlersText, "UpdateDeviceApplyButtonState();");
+        AssertContains(controllerText, "internal sealed class CaptureSelectionBindingController");
+        AssertContains(controllerText, "private readonly int[] _selectionSyncQueued = new int[9];");
+        AssertContains(controllerText, "public void AttachCollectionBindings()");
+        AssertContains(controllerText, "_context.DeviceComboBox.ItemsSource = _context.ViewModel.Devices;");
+        AssertContains(controllerText, "AttachCollectionSync(_context.ViewModel.AvailableFrameRates, QueueFrameRateSelectionSync);");
+        AssertContains(controllerText, "public void ApplyDeviceAudioControlState()");
+        AssertContains(controllerText, "public bool HasPendingDeviceSelection()");
+        AssertContains(controllerText, "private void QueueSelectionSync(int syncIndex, Action ensureMethod)");
+        AssertDoesNotContain(mainWindowText, "_selectionSyncQueued");
+        AssertDoesNotContain(bindingsText, "private void QueueSelectionSync(");
+        AssertDoesNotContain(bindingsText, "private static void AttachCollectionSync(");
+        AssertDoesNotContain(bindingsText, "private void EnsureDeviceSelection()");
 
         return Task.CompletedTask;
     }
