@@ -269,6 +269,12 @@ LibAv encoder A/V sync diagnostics now live in
 thresholds, sync counters, current-drift reporting, and sync warning logs there
 so the root encoder stays focused on video send paths, lifecycle, and teardown.
 
+LibAv encoder packet writing now lives in
+`Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs`. Keep video encoder
+packet drains, bitstream-filter packet drains, timestamp rescaling, packet
+stream-index assignment, packet write accounting, and interleaved video packet
+writes there.
+
 LibAv encoder audio stream handling now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone send
 entry points, AAC stream setup, resamplers, packet writing, pending-sample

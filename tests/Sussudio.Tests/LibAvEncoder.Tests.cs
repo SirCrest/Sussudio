@@ -12,6 +12,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Audio.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AvSync.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs").Replace("\r\n", "\n")
         };
@@ -376,6 +377,25 @@ static partial class Program
         AssertContains(suppressionText, "message.Contains(\"First slice in a frame missing\", StringComparison.Ordinal)");
         AssertContains(suppressionText, "message.Contains(\"PPS id out of range\", StringComparison.Ordinal)");
         AssertContains(suppressionText, "FFMPEG_LOG_RECOVERABLE_SEEK_SUPPRESSED");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task LibAvEncoder_PacketWritingLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
+            .Replace("\r\n", "\n");
+        var packetWritingText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(packetWritingText, "private void DrainEncoderPackets()");
+        AssertContains(packetWritingText, "private void WriteFilteredPackets()");
+        AssertContains(packetWritingText, "private void DrainBsfPackets()");
+        AssertContains(packetWritingText, "private void WritePacket(AVPacket* packet, bool useBsfTimeBase)");
+        AssertDoesNotContain(rootText, "private void DrainEncoderPackets()");
+        AssertDoesNotContain(rootText, "private void WriteFilteredPackets()");
+        AssertDoesNotContain(rootText, "private void DrainBsfPackets()");
+        AssertDoesNotContain(rootText, "private void WritePacket(AVPacket* packet, bool useBsfTimeBase)");
 
         return Task.CompletedTask;
     }

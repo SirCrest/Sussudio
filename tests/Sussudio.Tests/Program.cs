@@ -222,6 +222,9 @@ static partial class Program
                 "LibAv encoder dumps MPEG-TS headers for rotated flashback segments",
                 LibAvEncoder_MpegTsNvencDumpsHeadersForRotatedSegments),
             await RunCheckAsync(
+                "LibAv encoder packet writing lives in focused partial",
+                LibAvEncoder_PacketWritingLivesInFocusedPartial),
+            await RunCheckAsync(
                 "Flashback integrity uses recording-scoped sequence gaps",
                 FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps),
             await RunCheckAsync(
