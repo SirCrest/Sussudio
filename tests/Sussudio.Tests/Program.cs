@@ -1075,6 +1075,9 @@ static partial class Program
                 "FlashbackBufferManager segment diagnostics clamp active counters",
                 FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters),
             await RunCheckAsync(
+                "FlashbackBufferManager math helpers live in focused partial",
+                FlashbackBufferManager_MathHelpersLiveInFocusedPartial),
+            await RunCheckAsync(
                 "FlashbackBufferManager latest PTS clamps invalid buffer duration",
                 FlashbackBufferManager_UpdateLatestPts_ClampsInvalidBufferDuration),
             await RunCheckAsync(
@@ -4404,6 +4407,27 @@ static partial class Program
 
         var segment = Activator.CreateInstance(csType, path, seqNum, startPts, endPts, sizeBytes)!;
         addMethod.Invoke(list, new[] { segment });
+    }
+
+    private static Task FlashbackBufferManager_MathHelpersLiveInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+        var mathText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Math.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(mathText, "private static long AddNonNegativeSaturated(long left, long right)");
+        AssertContains(mathText, "private static long SubtractNonNegative(long left, long right)");
+        AssertContains(mathText, "private long GetCompletedSegmentBytesSaturated()");
+        AssertContains(mathText, "private static long NonNegativeDeltaTicks(long latestTicks, long startTicks)");
+        AssertContains(mathText, "private static TimeSpan ClampEndPtsToStart(TimeSpan startPts, TimeSpan endPts)");
+        AssertContains(mathText, "private static bool IsSameSegmentPath(string? left, string? right)");
+        AssertContains(mathText, "private static long ToNonNegativeLongSaturated(double value)");
+        AssertDoesNotContain(rootText, "private static long AddNonNegativeSaturated(long left, long right)");
+        AssertDoesNotContain(rootText, "private long GetCompletedSegmentBytesSaturated()");
+        AssertDoesNotContain(rootText, "private static bool IsSameSegmentPath(string? left, string? right)");
+
+        return Task.CompletedTask;
     }
 
     private static Task FlashbackBufferManager_GetSegmentFileForPosition_ReturnsCorrectSegment()
