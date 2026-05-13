@@ -224,6 +224,11 @@ Flashback encoder queue helpers now live in
 completion/signaling, queue-depth accounting, enqueue rejection guards/logging,
 hot audio packet enqueue, and queued-buffer cleanup there.
 
+Flashback encoder rolling segment rotation now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.SegmentRotation.cs`. Keep
+active-segment completion/registration, disk-byte refresh after rotation, and
+rotation-failure recovery there.
+
 Flashback encoder export force-rotation now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs`. Keep
 `ForceRotateForExport`, request timeout/cancellation handling, pending-request
