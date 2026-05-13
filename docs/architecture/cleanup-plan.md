@@ -177,6 +177,11 @@ validation, bitstream-filter selection, NVENC preset/split-encode mapping,
 frame-size math, sample-format support, and rational conversion helpers there;
 leave live send/drain/finalize paths in `LibAvEncoder.cs`.
 
+LibAv encoder A/V sync diagnostics now live in
+`Sussudio/Services/Recording/LibAvEncoder.AvSync.cs`. Keep drift-correction
+thresholds, sync counters, current-drift reporting, and sync warning logs there
+so the root encoder stays focused on stream setup, send paths, and teardown.
+
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
