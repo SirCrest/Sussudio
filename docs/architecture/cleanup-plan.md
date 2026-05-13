@@ -149,6 +149,11 @@ collection-change debounce, pending-device apply state, and device-audio
 mode/gain projection while `MainWindow.CaptureSelectionBindings.cs` keeps the
 old method names for `PropertyChanged` and button handlers.
 
+Presentation-only rules for capture option affordances now live in
+`Sussudio/MainWindow.CaptureOptionPresentation.cs`: HDR readiness hints, FPS
+telemetry tooltips, MJPEG decoder count visibility, bitrate mode visibility,
+and audio clipping visibility.
+
 Diagnostic session DTOs now live in
 `tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
 owns orchestration and scenario execution, but the public options/result/sample

@@ -546,6 +546,9 @@ static partial class Program
                 "Capture selection binding sync lives in controller",
                 CaptureSelectionBindingSync_LivesInController),
             await RunCheckAsync(
+                "Capture option presentation lives in focused partial",
+                CaptureOptionPresentation_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
@@ -3288,6 +3291,40 @@ static partial class Program
         AssertDoesNotContain(bindingsText, "private void QueueSelectionSync(");
         AssertDoesNotContain(bindingsText, "private static void AttachCollectionSync(");
         AssertDoesNotContain(bindingsText, "private void EnsureDeviceSelection()");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureOptionPresentation_LivesInFocusedPartial()
+    {
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var captureOptionText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionPresentation.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+
+        AssertContains(captureOptionText, "private void UpdateDecoderCountVisibility()");
+        AssertContains(captureOptionText, "private double GetSelectedFriendlyFrameRate()");
+        AssertContains(captureOptionText, "private void RefreshHdrHintText()");
+        AssertContains(captureOptionText, "private void UpdateFpsTelemetryTooltip()");
+        AssertContains(captureOptionText, "private void ApplyHdrToggleEnabledState()");
+        AssertContains(captureOptionText, "private void ApplyBitrateVisibility()");
+        AssertContains(captureOptionText, "private void ApplyAudioClipVisibility()");
+        AssertContains(captureOptionText, "ViewModel.SelectedFormat?.PixelFormat");
+        AssertContains(captureOptionText, "Stop recording before switching between HDR and SDR pipelines.");
+        AssertContains(captureOptionText, "ViewModel.SourceTelemetrySummaryText");
+        AssertContains(bindingsText, "ApplyHdrToggleEnabledState();");
+        AssertContains(bindingsText, "RefreshHdrHintText();");
+        AssertContains(bindingsText, "UpdateFpsTelemetryTooltip();");
+        AssertContains(bindingsText, "ApplyBitrateVisibility();");
+        AssertContains(bindingsText, "ApplyAudioClipVisibility();");
+        AssertContains(propertyChangedText, "UpdateOutputPathDisplay();");
+        AssertContains(propertyChangedText, "ApplyAudioClipVisibility();");
+        AssertContains(propertyChangedText, "ApplyHdrToggleEnabledState();");
+        AssertContains(propertyChangedText, "RefreshHdrHintText();");
+        AssertContains(propertyChangedText, "UpdateFpsTelemetryTooltip();");
+        AssertContains(propertyChangedText, "ApplyBitrateVisibility();");
+        AssertDoesNotContain(bindingsText, "private void UpdateDecoderCountVisibility()");
+        AssertDoesNotContain(bindingsText, "private void RefreshHdrHintText()");
+        AssertDoesNotContain(bindingsText, "private void ApplyBitrateVisibility()");
 
         return Task.CompletedTask;
     }

@@ -182,6 +182,10 @@ Primary current owners:
   debounce, pending-device apply state, and device-audio mode/gain control
   projection. `MainWindow.CaptureSelectionBindings.cs` is the XAML-facing
   adapter.
+- `Sussudio/MainWindow.CaptureOptionPresentation.cs` owns presentation-only
+  rules for capture option affordances: HDR readiness hints, FPS telemetry
+  tooltips, MJPEG decoder count visibility, bitrate mode visibility, and audio
+  clipping visibility.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets
