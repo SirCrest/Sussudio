@@ -171,6 +171,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeMicrophoneControlsController();
         InitializeResponsiveShellLayoutController();
         InitializeCaptureSelectionBindingController();
+        InitializeOutputPathDisplayController();
 
         // Cloak the window to prevent white flash before XAML renders
         int cloakTrue = 1;

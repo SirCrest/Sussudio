@@ -549,6 +549,9 @@ static partial class Program
                 "Capture option presentation lives in focused partial",
                 CaptureOptionPresentation_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Output path display lives in controller",
+                OutputPathDisplay_LivesInController),
+            await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
@@ -3325,6 +3328,39 @@ static partial class Program
         AssertDoesNotContain(bindingsText, "private void UpdateDecoderCountVisibility()");
         AssertDoesNotContain(bindingsText, "private void RefreshHdrHintText()");
         AssertDoesNotContain(bindingsText, "private void ApplyBitrateVisibility()");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task OutputPathDisplay_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.OutputPathDisplay.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/OutputPathDisplayController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private OutputPathDisplayController _outputPathDisplayController = null!;");
+        AssertContains(adapterText, "private void InitializeOutputPathDisplayController()");
+        AssertContains(adapterText, "OutputPathTextBox = OutputPathTextBox,");
+        AssertContains(adapterText, "GetOutputPath = () => ViewModel.OutputPath,");
+        AssertContains(adapterText, "private void AttachOutputPathDisplay()");
+        AssertContains(adapterText, "=> _outputPathDisplayController.Attach();");
+        AssertContains(adapterText, "private void UpdateOutputPathDisplay()");
+        AssertContains(adapterText, "=> _outputPathDisplayController.Update();");
+        AssertContains(mainWindowText, "InitializeOutputPathDisplayController();");
+        AssertContains(bindingsText, "AttachOutputPathDisplay();");
+        AssertContains(propertyChangedText, "UpdateOutputPathDisplay();");
+        AssertContains(controllerText, "internal sealed class OutputPathDisplayController");
+        AssertContains(controllerText, "public void Attach()");
+        AssertContains(controllerText, "public void Update()");
+        AssertContains(controllerText, "ToolTipService.SetToolTip(_context.OutputPathTextBox, path);");
+        AssertContains(controllerText, "var maxChars = (int)((availableWidth - 20) / 7);");
+        AssertContains(controllerText, "var parts = path.Split('\\\\', '/');");
+        AssertContains(controllerText, "var candidate = $\"{root}\\\\...\\\\{tail}\";");
+        AssertDoesNotContain(bindingsText, "OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();");
+        AssertDoesNotContain(bindingsText, "private void UpdateOutputPathDisplay()");
+        AssertDoesNotContain(bindingsText, "ToolTipService.SetToolTip(OutputPathTextBox, path);");
 
         return Task.CompletedTask;
     }

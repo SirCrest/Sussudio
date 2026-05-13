@@ -154,6 +154,11 @@ Presentation-only rules for capture option affordances now live in
 telemetry tooltips, MJPEG decoder count visibility, bitrate mode visibility,
 and audio clipping visibility.
 
+Recording output-path truncation and tooltip updates now live in
+`Sussudio/Controllers/OutputPathDisplayController.cs`.
+`MainWindow.OutputPathDisplay.cs` is the XAML-facing adapter used by binding
+setup and property changes.
+
 Diagnostic session DTOs now live in
 `tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
 owns orchestration and scenario execution, but the public options/result/sample

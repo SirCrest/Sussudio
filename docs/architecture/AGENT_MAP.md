@@ -186,6 +186,9 @@ Primary current owners:
   rules for capture option affordances: HDR readiness hints, FPS telemetry
   tooltips, MJPEG decoder count visibility, bitrate mode visibility, and audio
   clipping visibility.
+- `Sussudio/Controllers/OutputPathDisplayController.cs` owns recording output-
+  path truncation and tooltip updates. `MainWindow.OutputPathDisplay.cs` is the
+  XAML-facing adapter used by binding setup and property changes.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets

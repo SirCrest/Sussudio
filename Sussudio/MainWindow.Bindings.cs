@@ -274,56 +274,8 @@ public sealed partial class MainWindow
         AudioMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
         MicMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
         SetupResponsiveShellLayoutBindings();
-        OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();
+        AttachOutputPathDisplay();
         ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);
-    }
-    private void UpdateOutputPathDisplay()
-    {
-        var path = ViewModel.OutputPath;
-        if (string.IsNullOrEmpty(path))
-        {
-            OutputPathTextBox.Text = string.Empty;
-            return;
-        }
-
-        ToolTipService.SetToolTip(OutputPathTextBox, path);
-
-        var availableWidth = OutputPathTextBox.ActualWidth;
-        if (availableWidth <= 0)
-        {
-            OutputPathTextBox.Text = path;
-            return;
-        }
-
-        // FontSize 12 ≈ 7px per char, minus internal padding
-        var maxChars = (int)((availableWidth - 20) / 7);
-        if (path.Length <= maxChars)
-        {
-            OutputPathTextBox.Text = path;
-            return;
-        }
-
-        var parts = path.Split('\\', '/');
-        if (parts.Length <= 2)
-        {
-            OutputPathTextBox.Text = path;
-            return;
-        }
-
-        // Progressively truncate: keep root, show as many trailing segments as fit
-        var root = parts[0];
-        for (int tailCount = parts.Length - 1; tailCount >= 1; tailCount--)
-        {
-            var tail = string.Join("\\", parts[^tailCount..]);
-            var candidate = $"{root}\\...\\{tail}";
-            if (candidate.Length <= maxChars)
-            {
-                OutputPathTextBox.Text = candidate;
-                return;
-            }
-        }
-
-        OutputPathTextBox.Text = $"{root}\\...\\{parts[^1]}";
     }
     private void DecoderCountComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
