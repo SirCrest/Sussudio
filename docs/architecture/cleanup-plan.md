@@ -451,8 +451,7 @@ Media Foundation source-reader negotiation now lives in
 DXGI manager attachment, device-source open/enumeration fallback, native
 media-type selection, converted-type construction, frame-size/frame-rate
 attribute reads, and optional media-attribute copy helpers there; keep the read
-loop, frame delivery, DXGI buffer extraction, and YUV copy helpers in the root
-source-reader file.
+loop, frame delivery, and DXGI buffer extraction in the root source-reader file.
 
 Media Foundation interop declarations now live in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Interop.cs`. Keep MF
@@ -469,7 +468,13 @@ there; keep sample reading and frame delivery in the root source-reader file.
 Media Foundation source-reader diagnostics now live in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Diagnostics.cs`. Keep the
 debug-only COM vtable diagnostic there; keep sample reading, frame delivery,
-DXGI buffer extraction, and YUV copy helpers in the root source-reader file.
+and DXGI buffer extraction in the root source-reader file.
+
+Media Foundation packed-frame layout helpers now live in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs`. Keep
+frame-size/row-byte calculation, packed-stride inference, stride-aware YUV
+copying, and source subtype labels there; keep frame delivery and reader
+lifecycle in the root source-reader file.
 
 Unified capture diagnostic metric projection now lives in
 `Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs`. Keep MJPEG timing
