@@ -188,6 +188,11 @@ Keep telemetry detail rows, display formatting, HDR transfer labels, and
 flash-audio source interpretation there so the root provider stays focused on
 transport gating, rolling command polling, and snapshot construction.
 
+Native XU diagnostic summary strings now live in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DiagnosticSummary.cs`.
+Keep the `nativexu:` token contract and extended AT result field formatting in
+that file.
+
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
