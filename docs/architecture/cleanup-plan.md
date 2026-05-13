@@ -336,6 +336,13 @@ RTV creation, color-space application, panel binding/unbinding, and composition
 scale transforms there; keep per-frame rendering and draw paths in
 `D3D11PreviewRenderer.Rendering.cs`.
 
+D3D preview pending-frame queue ownership now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs`. Keep
+enqueue, backlog trimming, frame-ready signal/reset wrappers, explicit pending
+drains, and pending-count accounting there; keep render-loop consumption in
+`D3D11PreviewRenderer.Rendering.cs` and frame ownership metrics in
+`D3D11PreviewRenderer.Metrics.cs`.
+
 Media Foundation source-reader negotiation now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs`. Keep
 DXGI manager attachment, device-source open/enumeration fallback, native
