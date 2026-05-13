@@ -726,6 +726,9 @@ static partial class Program
                 "Diagnostic session pipe retry policy has a named owner",
                 DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification),
             await RunCheckAsync(
+                "Diagnostic session command channel has a named owner",
+                DiagnosticSessionCommandChannel_OwnsSerializedCommandSending),
+            await RunCheckAsync(
                 "Diagnostic session JSON artifacts have a named owner",
                 DiagnosticSessionJsonArtifacts_OwnsArtifactsAndResponseExtraction),
             await RunCheckAsync(

@@ -205,6 +205,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var diagnosticSessionCommandChannelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
+            .Replace("\r\n", "\n");
         var diagnosticSessionPipeRetryText = ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
             .Replace("\r\n", "\n");
 
@@ -221,7 +223,9 @@ static partial class Program
         AssertContains(mcpPipeText, "CreateSyntheticError(ex.Message, ex.ErrorCode)");
         AssertDoesNotContain(mcpPipeText, "Sussudio is not running or not responding. Start the app and try again.");
 
-        AssertContains(diagnosticSessionText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
+        AssertContains(diagnosticSessionCommandChannelText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
+        AssertContains(diagnosticSessionCommandChannelText, "SendCommandWithConnectRetryAsync(");
+        AssertDoesNotContain(diagnosticSessionText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
         AssertContains(diagnosticSessionPipeRetryText, "internal static class DiagnosticSessionPipeRetryPolicy");
         AssertContains(diagnosticSessionPipeRetryText, "internal static async Task<JsonElement?> SendCommandWithConnectRetryAsync(");
         AssertContains(diagnosticSessionPipeRetryText, "\"pipe-connect-failed\"");

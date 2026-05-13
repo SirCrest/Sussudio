@@ -642,6 +642,9 @@ Primary owners:
   helpers used by the runner, formatter, and validation policies.
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
   connect retry classification and local failure-response envelopes.
+- `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized
+  diagnostic-session automation command sending, connect-retry wrapping,
+  command failure accounting, and `WaitForCondition` command payload shaping.
 - `tools/Common/DiagnosticSessionScenarioPlan.cs` owns normalized scenario
   flags and grouped warning/validation policies used by the runner. Keep new
   scenario booleans there instead of adding string comparisons in

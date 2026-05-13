@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text.Json;
 using static Sussudio.Tools.DiagnosticSessionFlashbackRejectedExports;
 using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
-using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;
 using static Sussudio.Tools.DiagnosticSessionSampler;
 
 namespace Sussudio.Tools;
@@ -30,10 +29,8 @@ public static class DiagnosticSessionRunner
             : Path.GetFullPath(options.OutputDirectory);
         Directory.CreateDirectory(outputDirectory);
 
-        var sessionLock = DiagnosticSessionOutputLock.Acquire(outputDirectory);
+        using var sessionLock = DiagnosticSessionOutputLock.Acquire(outputDirectory);
 
-        try
-        {
         var startedUtc = DateTimeOffset.UtcNow;
         var runnerProcessId = Environment.ProcessId;
 
@@ -51,7 +48,6 @@ public static class DiagnosticSessionRunner
         var livePath = runState.LivePath;
         JsonElement? verification = null;
         PresentMonProbeResult? presentMon = null;
-        var commandFailureCount = 0;
         var startedPreview = false;
         var startedRecording = false;
         var enabledFlashback = false;
@@ -63,33 +59,10 @@ public static class DiagnosticSessionRunner
         var runFlashbackRecordingExportRejected = scenarioPlan.RunFlashbackRecordingExportRejected;
         var runFlashbackExportRejected = scenarioPlan.RunFlashbackExportRejected;
         FlashbackRecordingSettingsDeferredPresetState flashbackRecordingSettingsDeferredPresetState = default;
-        var commandSendGate = new SemaphoreSlim(1, 1);
         using var scenarioCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var scenarioCancellationToken = scenarioCts.Token;
+        using var commandChannel = new DiagnosticSessionCommandChannel(sendCommandAsync, scenarioCancellationToken, warnings);
         var backgroundTasks = new DiagnosticSessionBackgroundTasks();
-
-        async Task<JsonElement> SendRawWithConnectRetryAsync(
-            string command,
-            Dictionary<string, object?>? payload,
-            int? responseTimeoutMs)
-            => await SendRawWithConnectRetryWithTokenAsync(command, payload, responseTimeoutMs, scenarioCancellationToken).ConfigureAwait(false);
-
-        async Task<JsonElement> SendRawWithConnectRetryWithTokenAsync(
-            string command,
-            Dictionary<string, object?>? payload,
-            int? responseTimeoutMs,
-            CancellationToken commandCancellationToken)
-        {
-            var response = await SendCommandWithConnectRetryAsync(
-                    sendCommandAsync,
-                    command,
-                    payload,
-                    responseTimeoutMs,
-                    TimeSpan.FromSeconds(30),
-                    commandCancellationToken)
-                .ConfigureAwait(false);
-            return response ?? BuildLocalFailureResponse(command, "no response after connect retry");
-        }
 
         JsonElement initialSnapshot = CreateEmptyJsonObject();
         var initialSnapshotKnown = false;
@@ -97,7 +70,7 @@ public static class DiagnosticSessionRunner
         try
         {
             SetStage("initial-snapshot");
-            var initialResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            var initialResponse = await commandChannel.SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
             if (TryGetSnapshot(initialResponse, out var initial))
             {
                 initialSnapshot = initial;
@@ -105,8 +78,7 @@ public static class DiagnosticSessionRunner
             }
             else
             {
-                commandFailureCount++;
-                warnings.Add("initial-snapshot: baseline snapshot unavailable; state-mutating scenarios will be skipped");
+                commandChannel.RecordFailure("initial-snapshot: baseline snapshot unavailable; state-mutating scenarios will be skipped");
             }
         }
         catch (Exception ex)
@@ -120,8 +92,7 @@ public static class DiagnosticSessionRunner
             SetStage("scenario-setup");
             if (!initialSnapshotKnown && scenario != DiagnosticSessionScenarios.Observe)
             {
-                commandFailureCount++;
-                warnings.Add($"initial-snapshot: skipped state-mutating scenario '{scenario}' because the initial app state is unknown");
+                commandChannel.RecordFailure($"initial-snapshot: skipped state-mutating scenario '{scenario}' because the initial app state is unknown");
             }
             else
             {
@@ -131,8 +102,8 @@ public static class DiagnosticSessionRunner
                     initialSnapshot,
                     actions,
                     warnings,
-                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    TryWaitAsync,
+                    commandChannel.SendAsync,
+                    commandChannel.TryWaitAsync,
                     scenarioCancellationToken)
                 .ConfigureAwait(false);
             startedPreview = setupResult.StartedPreview;
@@ -148,9 +119,9 @@ public static class DiagnosticSessionRunner
                     backgroundTasks,
                     actions,
                     warnings,
-                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    SendRawWithConnectRetryAsync,
-                    (command, payload, timeoutMs, allowFailure) => SendAsync(command, payload, timeoutMs, allowFailure),
+                    commandChannel.SendAsync,
+                    commandChannel.SendRawWithConnectRetryAsync,
+                    commandChannel.SendAsync,
                     scenarioCancellationToken)
                 .ConfigureAwait(false);
             startedFlashbackPlayback = scenarioStartup.StartedFlashbackPlayback;
@@ -161,7 +132,7 @@ public static class DiagnosticSessionRunner
                     durationSeconds,
                     sampleIntervalMs,
                     samples,
-                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                    commandChannel.SendAsync,
                     scenarioCancellationToken,
                     WriteSamplingLiveStateBestEffortAsync)
                 .ConfigureAwait(false);
@@ -177,7 +148,7 @@ public static class DiagnosticSessionRunner
                         outputDirectory,
                         actions,
                         warnings,
-                        (command, payload, timeoutMs, allowFailure) => SendAsync(command, payload, timeoutMs, allowFailure),
+                        commandChannel.SendAsync,
                         cancellationToken)
                     .ConfigureAwait(false);
             }
@@ -188,7 +159,7 @@ public static class DiagnosticSessionRunner
                         outputDirectory,
                         actions,
                         warnings,
-                        (command, payload, timeoutMs, allowFailure) => SendAsync(command, payload, timeoutMs, allowFailure),
+                        commandChannel.SendAsync,
                         cancellationToken)
                     .ConfigureAwait(false);
             }
@@ -223,8 +194,8 @@ public static class DiagnosticSessionRunner
                     disabledFlashback,
                     startedFlashbackPlayback,
                     actions,
-                    SendWithTokenAsync,
-                    TryWaitWithTokenAsync,
+                    commandChannel.SendWithTokenAsync,
+                    commandChannel.TryWaitWithTokenAsync,
                     SetStage,
                     RecordTerminalException)
                 .ConfigureAwait(false);
@@ -244,7 +215,7 @@ public static class DiagnosticSessionRunner
                 flashbackRecordingSettingsDeferredPresetState,
                 actions,
                 warnings,
-                (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                commandChannel.SendAsync,
                 SetStage,
                 RecordTerminalException,
                 cancellationToken)
@@ -254,7 +225,7 @@ public static class DiagnosticSessionRunner
         var postRunSnapshots = await DiagnosticSessionPostRunSnapshots.CaptureAsync(
                 samples,
                 initialSnapshot,
-                (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                commandChannel.SendAsync,
                 SetStage,
                 RecordTerminalException)
             .ConfigureAwait(false);
@@ -271,7 +242,7 @@ public static class DiagnosticSessionRunner
                     livePath,
                     startedUtc,
                     runnerProcessId,
-                    commandFailureCount,
+                    commandChannel.FailureCount,
                     samples,
                     initialSnapshot,
                     postRunSnapshots.HealthSnapshot,
@@ -305,7 +276,7 @@ public static class DiagnosticSessionRunner
             await runState.WriteLiveStateBestEffortAsync(
                     samples,
                     initialSnapshot,
-                    commandFailureCount,
+                    commandChannel.FailureCount,
                     completedUtcOverride,
                     terminalStateOverride)
                 .ConfigureAwait(false);
@@ -316,68 +287,8 @@ public static class DiagnosticSessionRunner
             await runState.WriteSamplingLiveStateBestEffortAsync(
                     samples,
                     initialSnapshot,
-                    commandFailureCount)
+                    commandChannel.FailureCount)
                 .ConfigureAwait(false);
-        }
-
-        async Task<JsonElement> SendAsync(
-            string command,
-            Dictionary<string, object?>? payload,
-            int? responseTimeoutMs,
-            bool allowFailure = false)
-            => await SendWithTokenAsync(command, payload, responseTimeoutMs, allowFailure, scenarioCancellationToken).ConfigureAwait(false);
-
-        async Task<JsonElement> SendWithTokenAsync(
-            string command,
-            Dictionary<string, object?>? payload,
-            int? responseTimeoutMs,
-            bool allowFailure,
-            CancellationToken commandCancellationToken)
-        {
-            await commandSendGate.WaitAsync(commandCancellationToken).ConfigureAwait(false);
-            try
-            {
-                var response = await SendRawWithConnectRetryWithTokenAsync(command, payload, responseTimeoutMs, commandCancellationToken).ConfigureAwait(false);
-                if (!AutomationSnapshotFormatter.IsSuccess(response) && !allowFailure)
-                {
-                    commandFailureCount++;
-                    warnings.Add($"{command}: {AutomationSnapshotFormatter.Get(response, "Message", "command failed")}");
-                }
-
-                return response.Clone();
-            }
-            finally
-            {
-                commandSendGate.Release();
-            }
-        }
-
-        async Task TryWaitAsync(string condition, int timeoutMs)
-            => await TryWaitWithTokenAsync(condition, timeoutMs, scenarioCancellationToken).ConfigureAwait(false);
-
-        async Task TryWaitWithTokenAsync(string condition, int timeoutMs, CancellationToken waitCancellationToken)
-        {
-            var response = await SendWithTokenAsync(
-                    "WaitForCondition",
-                    new Dictionary<string, object?>
-                    {
-                        ["condition"] = condition,
-                        ["timeoutMs"] = timeoutMs,
-                        ["pollMs"] = 250
-                    },
-                    timeoutMs + 2_000,
-                    false,
-                    waitCancellationToken)
-                .ConfigureAwait(false);
-            if (!AutomationSnapshotFormatter.IsSuccess(response))
-            {
-                warnings.Add($"wait {condition}: {AutomationSnapshotFormatter.Get(response, "Message", "not met")}");
-            }
-        }
-        }
-        finally
-        {
-            sessionLock.Dispose();
         }
     }
 

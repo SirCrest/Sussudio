@@ -1138,6 +1138,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var channelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
+            .Replace("\r\n", "\n");
         var retryText = ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
             .Replace("\r\n", "\n");
 
@@ -1146,10 +1148,43 @@ static partial class Program
         AssertContains(retryText, "\"pipe-connect-failed\"");
         AssertContains(retryText, "\"pipe-connect-timeout\"");
         AssertContains(retryText, "\"pipe-access-denied\"");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
+        AssertContains(channelText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
+        AssertContains(channelText, "SendCommandWithConnectRetryAsync(");
+        AssertDoesNotContain(runnerText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
         AssertDoesNotContain(runnerText, "private static bool IsSyntheticPipeConnectFailure(");
         AssertDoesNotContain(runnerText, "private static bool IsPermanentPipeConnectFailure(");
         AssertDoesNotContain(runnerText, "private static JsonElement BuildLocalFailureResponse(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task DiagnosticSessionCommandChannel_OwnsSerializedCommandSending()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var channelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(channelText, "internal sealed class DiagnosticSessionCommandChannel : IDisposable");
+        AssertContains(channelText, "private readonly SemaphoreSlim _sendGate = new(1, 1);");
+        AssertContains(channelText, "internal int FailureCount => _failureCount;");
+        AssertContains(channelText, "internal void RecordFailure(string warning)");
+        AssertContains(channelText, "internal async Task<JsonElement> SendRawWithConnectRetryAsync(");
+        AssertContains(channelText, "internal async Task<JsonElement> SendWithTokenAsync(");
+        AssertContains(channelText, "BuildLocalFailureResponse(command, \"no response after connect retry\")");
+        AssertContains(channelText, "RecordFailure($\"{command}:");
+        AssertContains(channelText, "Get(response, \"Message\", \"command failed\")");
+        AssertContains(channelText, "internal async Task TryWaitWithTokenAsync(");
+        AssertContains(channelText, "\"WaitForCondition\"");
+        AssertContains(channelText, "[\"pollMs\"] = 250");
+        AssertContains(runnerText, "using var commandChannel = new DiagnosticSessionCommandChannel(");
+        AssertContains(runnerText, "commandChannel.SendAsync");
+        AssertContains(runnerText, "commandChannel.SendWithTokenAsync");
+        AssertContains(runnerText, "commandChannel.FailureCount");
+        AssertDoesNotContain(runnerText, "var commandFailureCount = 0;");
+        AssertDoesNotContain(runnerText, "var commandSendGate = new SemaphoreSlim(1, 1);");
+        AssertDoesNotContain(runnerText, "async Task<JsonElement> SendAsync(");
+        AssertDoesNotContain(runnerText, "async Task TryWaitAsync(");
 
         return Task.CompletedTask;
     }
@@ -1213,8 +1248,8 @@ static partial class Program
         AssertContains(lockText, "FileShare.None");
         AssertContains(lockText, "FileOptions.DeleteOnClose");
         AssertContains(lockText, "Another diagnostic session is already running");
-        AssertContains(runnerText, "var sessionLock = DiagnosticSessionOutputLock.Acquire(outputDirectory);");
-        AssertContains(runnerText, "sessionLock.Dispose();");
+        AssertContains(runnerText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(outputDirectory);");
+        AssertDoesNotContain(runnerText, "sessionLock.Dispose();");
         AssertDoesNotContain(runnerText, "var lockPath = Path.Combine(outputDirectory, \".sussudio-diag.lock\")");
         AssertDoesNotContain(runnerText, "FileShare.None");
         AssertDoesNotContain(runnerText, "FileOptions.DeleteOnClose");

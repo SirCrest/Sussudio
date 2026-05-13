@@ -811,6 +811,11 @@ Diagnostic-session pipe retry/error classification now lives in
 `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a
 permanent failure and connect failed/timeout responses retryable.
 
+Diagnostic-session command sending now lives in
+`tools/Common/DiagnosticSessionCommandChannel.cs`. It owns serialized command
+execution, connect-retry wrapping, command failure accounting, and
+`WaitForCondition` payload shaping while the runner keeps phase orchestration.
+
 Diagnostic-session JSON artifact helpers now live in
 `tools/Common/DiagnosticSessionJsonArtifacts.cs`. The runner still owns the
 session lifecycle, but JSON writing, frame-ledger extraction, and snapshot /
@@ -991,6 +996,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionModels.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
+- `DiagnosticSessionCommandChannel.cs`
 - `DiagnosticSessionPostRunSnapshots.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultFormatter.cs`
@@ -1012,10 +1018,10 @@ Remaining `tools/Common` ownership:
 
    `tools/Common/DiagnosticSessionRunner.cs` is still large. Scenario catalog
    initial scenario setup, optional scenario startup, cleanup mutation
-   ownership, post-cleanup recording checks, post-run snapshot fetches, and
-   result construction are extracted; next, split remaining runner command
-   plumbing/send helpers or pivot to the next large owner. Keep JSON summary
-   shape unchanged.
+   ownership, post-cleanup recording checks, post-run snapshot fetches, command
+   send/failure plumbing, and result construction are extracted; next, split
+   remaining scenario startup families or pivot to the next large owner. Keep
+   JSON summary shape unchanged.
 
 2. Reduce custom regression harness size.
 
