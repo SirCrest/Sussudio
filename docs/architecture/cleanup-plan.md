@@ -172,6 +172,11 @@ missing-signal formatting, and playback-progress diagnostics live in
 focused on wiring while leaving the existing startup state machine behavior
 unchanged.
 
+Preview-specific ViewModel events and property-change projections now live in
+`Sussudio/MainWindow.PropertyChangedPreview.cs`. The broad
+`MainWindow.PropertyChanged.cs` dispatcher still routes `PropertyChanged`
+notifications, but preview start/stop/reinit choreography has a named owner.
+
 Microphone volume slider synchronization, save triggers, shelf enablement, and
 mic-meter row animation state now live in
 `Sussudio/Controllers/MicrophoneControlsController.cs`.

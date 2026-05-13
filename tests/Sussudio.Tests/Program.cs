@@ -3328,6 +3328,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewAudioFade.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewAudioFadeController.cs").Replace("\r\n", "\n");
 
@@ -3341,7 +3342,9 @@ static partial class Program
         AssertContains(adapterText, "=> _previewAudioFadeController.CancelFadeInForUser();");
         AssertContains(mainWindowText, "InitializePreviewAudioFadeController();");
         AssertContains(bindingsText, "IsPreviewAudioFadeInActive || IsPreviewAudioFadeAnimationActive");
+        AssertContains(propertyChangedText, "await HandlePreviewingChangedAsync();");
         AssertContains(propertyChangedText, "if (!IsPreviewAudioFadeInActive)");
+        AssertContains(previewPropertyChangedText, "PrimePreviewAudioFadeIn();");
         AssertContains(controllerText, "internal sealed class PreviewAudioFadeController");
         AssertContains(controllerText, "private double _savedPreviewVolume;");
         AssertContains(controllerText, "private Storyboard? _volumeFadeStoryboard;");
