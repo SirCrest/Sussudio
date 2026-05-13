@@ -81,6 +81,11 @@ animation now live in `Sussudio/Controllers/SplashLoadingPhraseController.cs`.
 `MainWindow.SplashLoading.cs` is the XAML-facing adapter; the broader entrance
 animation remains in `MainWindow.Animations.cs`.
 
+Control-bar button ownership and hover/press/release scale behavior now live in
+`Sussudio/Controllers/ControlBarAnimationController.cs`.
+`MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter; the broader
+entrance storyboard still lives in `MainWindow.Animations.cs`.
+
 Live-signal pill visibility state, show/hide debounce timers, and the small
 scale/fade animation now live in
 `Sussudio/Controllers/LiveSignalInfoController.cs`. `MainWindow.LiveSignalInfo.cs`

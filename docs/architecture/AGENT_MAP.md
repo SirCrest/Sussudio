@@ -135,6 +135,9 @@ Primary current owners:
   loading, timer pacing, and two-line text animation. `MainWindow.SplashLoading.cs`
   is the XAML-facing adapter; `MainWindow.Animations.cs` still owns the broader
   entrance choreography.
+- `Sussudio/Controllers/ControlBarAnimationController.cs` owns the control-bar
+  button list used by entrance animation plus hover/press/release scale
+  behavior. `MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/LiveSignalInfoController.cs` owns live-signal pill
   visibility state, show/hide debounce timers, and the small scale/fade
   animation. `MainWindow.LiveSignalInfo.cs` is the XAML-facing adapter.

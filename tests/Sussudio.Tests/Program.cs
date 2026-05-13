@@ -507,6 +507,9 @@ static partial class Program
                 "Splash loading phrases live in controller",
                 SplashLoadingPhrases_LiveInController),
             await RunCheckAsync(
+                "Control bar hover animations live in controller",
+                ControlBarHoverAnimations_LiveInController),
+            await RunCheckAsync(
                 "Live signal info presentation lives in controller",
                 LiveSignalInfoPresentation_LivesInController),
             await RunCheckAsync(
@@ -2864,6 +2867,33 @@ static partial class Program
         AssertDoesNotContain(animationsText, "private DispatcherTimer? _splashPhraseTimer;");
         AssertDoesNotContain(animationsText, "private static string[] LoadSplashPhrases()");
         AssertDoesNotContain(animationsText, "private void CycleSplashPhrase()");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ControlBarHoverAnimations_LiveInController()
+    {
+        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBarAnimations.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/ControlBarAnimationController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private ControlBarAnimationController _controlBarAnimationController = null!;");
+        AssertContains(adapterText, "private void InitializeControlBarAnimationController()");
+        AssertContains(adapterText, "SettingsToggleButton,");
+        AssertContains(adapterText, "FrameTimeOverlayToggle,");
+        AssertContains(adapterText, "=> _controlBarAnimationController.AttachHoverAnimations();");
+        AssertContains(adapterText, "=> _controlBarAnimationController.EntranceButtons;");
+        AssertContains(mainWindowText, "InitializeControlBarAnimationController();");
+        AssertContains(mainWindowText, "SetupButtonHoverAnimations();");
+        AssertContains(animationsText, "var buttons = GetEntranceButtons();");
+        AssertContains(controllerText, "internal sealed class ControlBarAnimationController");
+        AssertContains(controllerText, "public IReadOnlyList<FrameworkElement> EntranceButtons");
+        AssertContains(controllerText, "public void AttachHoverAnimations()");
+        AssertContains(controllerText, "private static void AnimateScale(");
+        AssertDoesNotContain(animationsText, "private FrameworkElement[] GetControlBarButtons()");
+        AssertDoesNotContain(animationsText, "private void SetupButtonHoverAnimations()");
+        AssertDoesNotContain(animationsText, "private static void AnimateScale(");
 
         return Task.CompletedTask;
     }

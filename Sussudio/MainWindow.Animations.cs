@@ -23,65 +23,6 @@ namespace Sussudio;
 // state changes legible without becoming the source of truth.
 public sealed partial class MainWindow
 {
-    private FrameworkElement[] GetControlBarButtons() => new FrameworkElement[]
-    {
-        SettingsToggleButton,
-        OpenRecordingsButton,
-        ScreenshotButton,
-        RecordButton,
-        PreviewButton,
-        HdrToggle,
-        AudioRecordToggle,
-        TrueHdrPreviewToggle,
-        AudioPreviewToggle,
-        StatsToggle,
-        FrameTimeOverlayToggle
-    };
-    private void SetupButtonHoverAnimations()
-    {
-        foreach (var button in GetControlBarButtons())
-        {
-            var isHovered = false;
-            button.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
-            button.RenderTransform = new ScaleTransform { ScaleX = 1, ScaleY = 1 };
-
-            button.PointerEntered += (_, _) =>
-            {
-                isHovered = true;
-                if (button.RenderTransform is ScaleTransform transform)
-                {
-                    AnimateScale(transform, 1.08, TimeSpan.FromMilliseconds(100));
-                }
-            };
-
-            button.PointerExited += (_, _) =>
-            {
-                isHovered = false;
-                if (button.RenderTransform is ScaleTransform transform)
-                {
-                    AnimateScale(transform, 1.0, TimeSpan.FromMilliseconds(100));
-                }
-            };
-
-            button.PointerPressed += (_, _) =>
-            {
-                if (button.RenderTransform is ScaleTransform transform)
-                {
-                    AnimateScale(transform, 0.95, TimeSpan.FromMilliseconds(60));
-                }
-            };
-
-            button.PointerReleased += (_, _) =>
-            {
-                if (button.RenderTransform is ScaleTransform transform)
-                {
-                    AnimateScale(transform, isHovered ? 1.08 : 1.0, TimeSpan.FromMilliseconds(60));
-                }
-            };
-        }
-    }
-    private FrameworkElement[] GetEntranceButtons() => GetControlBarButtons();
-
     private void PlaySplashAndEntrance()
     {
         if (_entranceAnimationPlayed) return;
@@ -180,7 +121,7 @@ public sealed partial class MainWindow
 
         // 2. Buttons stagger: 50ms offset, 200ms each (starting at 150ms)
         var buttons = GetEntranceButtons();
-        for (var i = 0; i < buttons.Length; i++)
+        for (var i = 0; i < buttons.Count; i++)
         {
             var button = buttons[i];
             var beginTime = TimeSpan.FromMilliseconds(150 + (i * 50));
@@ -347,35 +288,6 @@ public sealed partial class MainWindow
             onCompleted?.Invoke();
         };
         sb.Begin();
-    }
-    private static void AnimateScale(ScaleTransform target, double to, TimeSpan duration)
-    {
-        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
-
-        var scaleX = new DoubleAnimation
-        {
-            To = to,
-            Duration = new Duration(duration),
-            EasingFunction = easing,
-            EnableDependentAnimation = true
-        };
-        Storyboard.SetTarget(scaleX, target);
-        Storyboard.SetTargetProperty(scaleX, "ScaleX");
-
-        var scaleY = new DoubleAnimation
-        {
-            To = to,
-            Duration = new Duration(duration),
-            EasingFunction = easing,
-            EnableDependentAnimation = true
-        };
-        Storyboard.SetTarget(scaleY, target);
-        Storyboard.SetTargetProperty(scaleY, "ScaleY");
-
-        var storyboard = new Storyboard();
-        storyboard.Children.Add(scaleX);
-        storyboard.Children.Add(scaleY);
-        storyboard.Begin();
     }
     private void ResetPreviewContentTransform()
     {
