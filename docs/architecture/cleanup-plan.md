@@ -261,10 +261,12 @@ fatal-error callback registration, and the frame-encoded event surface there.
 
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
-lock/disposal helpers, progress normalization and throttling, output/temp
-validation, native cleanup, cancellation-source handling, FFmpeg error strings,
-timestamp math, and orphan temp cleanup there so `FlashbackExporter.cs` stays
-focused on export orchestration and packet-copy/remux loops.
+lock/disposal helpers, progress normalization and throttling, native cleanup,
+cancellation-source handling, FFmpeg error strings, timestamp math, and orphan
+temp cleanup there so `FlashbackExporter.cs` stays focused on export
+orchestration and packet-copy/remux loops. Temp output validation, atomic
+replacement, overwrite policy, and invalid final-output cleanup live in
+`Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
 
 D3D preview renderer metrics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep present
