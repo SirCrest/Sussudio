@@ -531,6 +531,9 @@ static partial class Program
                 "Record button width animation lives in controller",
                 RecordButtonWidthAnimation_LivesInController),
             await RunCheckAsync(
+                "Recording button action lives in controller",
+                RecordingButtonAction_LivesInController),
+            await RunCheckAsync(
                 "Live signal info presentation lives in controller",
                 LiveSignalInfoPresentation_LivesInController),
             await RunCheckAsync(
@@ -3124,6 +3127,38 @@ static partial class Program
         AssertContains(controllerText, "_context.RecordButton.Width = to == 36 ? 36 : double.NaN;");
         AssertDoesNotContain(animationsText, "private void AnimateRecordButtonWidth(");
         AssertDoesNotContain(animationsText, "Storyboard.SetTarget(anim, RecordButton);");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task RecordingButtonAction_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.RecordingActions.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/RecordingButtonActionController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private RecordingButtonActionController _recordingButtonActionController = null!;");
+        AssertContains(adapterText, "private void InitializeRecordingButtonActionController()");
+        AssertContains(adapterText, "ViewModel = ViewModel,");
+        AssertContains(adapterText, "GetPreviewActivitySnapshot = () => new RecordingPreviewActivitySnapshot(");
+        AssertContains(adapterText, "_d3dRenderer != null && PreviewSwapChainPanel.Visibility == Visibility.Visible");
+        AssertContains(adapterText, "_previewSource != null && PreviewImage.Visibility == Visibility.Visible");
+        AssertContains(adapterText, "NoDevicePlaceholder.Visibility == Visibility.Visible");
+        AssertContains(adapterText, "private Task ToggleRecordingFromButtonAsync()");
+        AssertContains(adapterText, "=> _recordingButtonActionController.ToggleRecordingAsync();");
+        AssertContains(mainWindowText, "InitializeRecordingButtonActionController();");
+        AssertContains(eventHandlersText, "_ = RunUiEventHandlerAsync(() => ToggleRecordingFromButtonAsync(), nameof(RecordButton_Click));");
+        AssertContains(controllerText, "internal readonly record struct RecordingPreviewActivitySnapshot");
+        AssertContains(controllerText, "public bool RendererActive => GpuActive || CpuActive;");
+        AssertContains(controllerText, "public async Task ToggleRecordingAsync()");
+        AssertContains(controllerText, "await _context.ViewModel.ToggleRecordingAsync();");
+        AssertContains(controllerText, "if (!_context.ViewModel.IsRecording)");
+        AssertContains(controllerText, "PreviewStateDuringRecording: rendererActive={snapshot.RendererActive}");
+        AssertContains(controllerText, "WARNING: preview renderer appears inactive while recording.");
+        AssertDoesNotContain(eventHandlersText, "ViewModel.ToggleRecordingAsync();");
+        AssertDoesNotContain(eventHandlersText, "PreviewStateDuringRecording");
+        AssertDoesNotContain(eventHandlersText, "WARNING: preview renderer appears inactive while recording.");
 
         return Task.CompletedTask;
     }

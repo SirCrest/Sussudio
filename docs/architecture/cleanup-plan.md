@@ -124,6 +124,10 @@ Record-button circle/pill width animation now lives in
 `Sussudio/Controllers/RecordButtonAnimationController.cs`.
 `MainWindow.RecordButtonAnimations.cs` is the XAML-facing adapter.
 
+Recording button command execution and preview-state logging after a recording
+start now live in `Sussudio/Controllers/RecordingButtonActionController.cs`.
+`MainWindow.RecordingActions.cs` is the XAML-facing adapter.
+
 Live-signal pill visibility state, show/hide debounce timers, and the small
 scale/fade animation now live in
 `Sussudio/Controllers/LiveSignalInfoController.cs`. `MainWindow.LiveSignalInfo.cs`

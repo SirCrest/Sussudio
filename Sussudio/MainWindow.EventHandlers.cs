@@ -1,34 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
-using Sussudio.Models;
-using Sussudio.ViewModels;
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Composition;
-using Microsoft.UI.Xaml.Hosting;
-using System.Numerics;
-using WinRT.Interop;
-using Sussudio.Services.Audio;
-using Sussudio.Services.Automation;
-using Sussudio.Services.Capture;
-using Sussudio.Services.Flashback;
-using Sussudio.Services.Gpu;
-using Sussudio.Services.Preview;
-using Sussudio.Services.Recording;
-using Sussudio.Services.Runtime;
-using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
@@ -87,27 +58,7 @@ public sealed partial class MainWindow
     }
     private void RecordButton_Click(object sender, RoutedEventArgs e)
     {
-        _ = RunUiEventHandlerAsync(async () =>
-        {
-            await ViewModel.ToggleRecordingAsync();
-
-            if (ViewModel.IsRecording)
-            {
-                var gpuActive = _d3dRenderer != null && PreviewSwapChainPanel.Visibility == Visibility.Visible;
-                var cpuActive = _previewSource != null && PreviewImage.Visibility == Visibility.Visible;
-                var rendererActive = gpuActive || cpuActive;
-                var placeholderVisible = NoDevicePlaceholder.Visibility == Visibility.Visible;
-                Logger.Log(
-                    $"PreviewStateDuringRecording: rendererActive={rendererActive}, " +
-                    $"gpuActive={gpuActive}, cpuActive={cpuActive}, " +
-                    $"placeholderVisible={placeholderVisible}");
-
-                if (!rendererActive || placeholderVisible)
-                {
-                    Logger.Log("WARNING: preview renderer appears inactive while recording.");
-                }
-            }
-        }, nameof(RecordButton_Click));
+        _ = RunUiEventHandlerAsync(() => ToggleRecordingFromButtonAsync(), nameof(RecordButton_Click));
     }
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {

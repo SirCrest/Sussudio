@@ -166,6 +166,9 @@ Primary current owners:
 - `Sussudio/Controllers/RecordButtonAnimationController.cs` owns the recording
   button circle/pill width morph used by recording state changes.
   `MainWindow.RecordButtonAnimations.cs` is the XAML-facing adapter.
+- `Sussudio/Controllers/RecordingButtonActionController.cs` owns the recording
+  button command workflow and preview-state logging after a start.
+  `MainWindow.RecordingActions.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/LiveSignalInfoController.cs` owns live-signal pill
   visibility state, show/hide debounce timers, and the small scale/fade
   animation. `MainWindow.LiveSignalInfo.cs` is the XAML-facing adapter.
