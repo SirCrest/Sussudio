@@ -370,8 +370,10 @@ math, active fMP4 segment detection, and playback path comparison.
 
 Flashback playback diagnostics now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs`. That
-partial owns playback counters, cadence/decode summary records, percentile
-math, decode timing wrappers, and metric reset behavior.
+partial owns public playback counters plus cadence/decode summary records.
+Private metric collection, percentile math, seek-cap telemetry, decode timing
+wrappers, and metric reset behavior now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.MetricsCollection.cs`.
 
 Flashback playback public command entry points now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Commands.cs`. Keep
