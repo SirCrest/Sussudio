@@ -516,6 +516,9 @@ static partial class Program
                 "MainWindow startup hosting lives in startup partial",
                 MainWindowStartupHosting_LivesInStartupPartial),
             await RunCheckAsync(
+                "MainWindow shell resize telemetry lives in sizing partial",
+                MainWindowShellResizeTelemetry_LivesInSizingPartial),
+            await RunCheckAsync(
                 "Control bar hover animations live in controller",
                 ControlBarHoverAnimations_LiveInController),
             await RunCheckAsync(
@@ -2944,6 +2947,31 @@ static partial class Program
         AssertDoesNotContain(windowManagementText, "private void MainWindow_Loaded(");
         AssertDoesNotContain(windowManagementText, "private void StartAutomationServices()");
         AssertDoesNotContain(windowManagementText, "_automationServicesStarted");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task MainWindowShellResizeTelemetry_LivesInSizingPartial()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var windowSizingText = ReadRepoFile("Sussudio/MainWindow.WindowSizing.cs").Replace("\r\n", "\n");
+        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+        var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
+
+        AssertContains(windowSizingText, "private long _previewLastResizeLogTick;");
+        AssertContains(windowSizingText, "private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)");
+        AssertContains(windowSizingText, "if (!ViewModel.IsPreviewing ||");
+        AssertContains(windowSizingText, "_d3dRenderer == null ||");
+        AssertContains(windowSizingText, "PreviewSwapChainPanel.Visibility != Visibility.Visible");
+        AssertContains(windowSizingText, "Interlocked.Read(ref _previewLastResizeLogTick)");
+        AssertContains(windowSizingText, "Interlocked.CompareExchange(ref _previewLastResizeLogTick, nowTick, lastLogTick)");
+        AssertContains(windowSizingText, "Preview resize active. Updating compositor transform without resizing swap-chain buffers.");
+        AssertContains(mainWindowText, "mainContent.SizeChanged += MainWindow_SizeChanged;");
+        AssertContains(windowManagementText, "mainContent.SizeChanged -= MainWindow_SizeChanged;");
+        AssertContains(previewRendererText, "_previewLastResizeLogTick = 0;");
+        AssertDoesNotContain(mainWindowText, "private long _previewLastResizeLogTick;");
+        AssertDoesNotContain(windowManagementText, "private void MainWindow_SizeChanged(");
+        AssertDoesNotContain(windowManagementText, "_previewLastResizeLogTick");
 
         return Task.CompletedTask;
     }

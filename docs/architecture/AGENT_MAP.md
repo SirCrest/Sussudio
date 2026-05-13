@@ -112,6 +112,10 @@ Primary current owners:
   uncloaking, initial ViewModel/device refresh, automation pipe hosting, and
   the launch entrance trigger. Close/finalize behavior stays in
   `MainWindow.WindowManagement.cs`.
+- `Sussudio/MainWindow.WindowSizing.cs` owns top-level shell resize telemetry
+  for preview compositor transforms. Preview surface sizing stays with
+  `MainWindow.PreviewRenderer.cs`; close/finalize behavior stays with
+  `MainWindow.WindowManagement.cs`.
 - `Sussudio/MainWindow.Dispatching.cs` owns UI-thread enqueue helpers and
   guarded async event-handler execution used by automation adapters and XAML
   event handlers.

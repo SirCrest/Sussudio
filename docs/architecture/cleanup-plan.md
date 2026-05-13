@@ -48,6 +48,11 @@ automation pipe hosting, and the launch entrance trigger now live in
 `Sussudio/MainWindow.Startup.cs`. Window close completion and recording-aware
 close handling remain in `MainWindow.WindowManagement.cs`.
 
+Top-level shell resize telemetry for preview compositor transforms now lives in
+`Sussudio/MainWindow.WindowSizing.cs`. Preview surface sizing remains in
+`MainWindow.PreviewRenderer.cs`, and close/finalize handling remains in
+`MainWindow.WindowManagement.cs`.
+
 Audio and microphone meter rendering now lives in
 `Sussudio/Controllers/AudioMeterController.cs`. The broader control-bar binding
 and microphone-row animation code remains in `MainWindow.Bindings.cs`.

@@ -36,27 +36,6 @@ namespace Sussudio;
 // should not live here; this partial only owns the native window shell.
 public sealed partial class MainWindow
 {
-    private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        var nowTick = Environment.TickCount64;
-        if (!ViewModel.IsPreviewing ||
-            _d3dRenderer == null ||
-            PreviewSwapChainPanel.Visibility != Visibility.Visible)
-        {
-            return;
-        }
-
-        var lastLogTick = Interlocked.Read(ref _previewLastResizeLogTick);
-        if (nowTick - lastLogTick < 1000)
-        {
-            return;
-        }
-
-        if (Interlocked.CompareExchange(ref _previewLastResizeLogTick, nowTick, lastLogTick) == lastLogTick)
-        {
-            Logger.Log("Preview resize active. Updating compositor transform without resizing swap-chain buffers.");
-        }
-    }
     private async void MainWindow_Closing(
         Microsoft.UI.Windowing.AppWindow sender,
         Microsoft.UI.Windowing.AppWindowClosingEventArgs args)

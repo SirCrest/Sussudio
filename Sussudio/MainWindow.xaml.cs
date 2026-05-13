@@ -48,7 +48,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
-    private long _previewLastResizeLogTick;
     private long _previewLastPresentedTick;
     private int _windowCloseRequested;
     private int _windowCloseCleanupStarted;
