@@ -288,13 +288,19 @@ static partial class Program
 
     private static Task DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses()
     {
-        var diagnosticsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
+        var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             .Replace("\r\n", "\n");
+        var diagnosticsEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(diagnosticsEvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
+        AssertContains(diagnosticsEvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
+        AssertDoesNotContain(diagnosticsHubText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertContains(diagnosticsText, "private readonly SemaphoreSlim _refreshGate = new(1, 1);");
         AssertContains(diagnosticsText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(diagnosticsText, "return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);");

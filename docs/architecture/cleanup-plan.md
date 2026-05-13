@@ -26,6 +26,12 @@ Diagnostic session scenario names and scenario-level metadata now live in
 `tools/Common/DiagnosticSessionScenarios.cs`; the runner still owns execution
 flow and summary writing.
 
+Automation diagnostic evaluation now lives in
+`Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs`. The hub
+still owns snapshot refresh, alert publication, counters, and event flow, while
+the evaluation partial owns diagnostic lane policy, alert-detail formatting,
+and health classifiers.
+
 Fullscreen transition mechanics now live in
 `Sussudio/Controllers/FullScreenController.cs`. `MainWindow.FullScreen.cs`
 remains the XAML event adapter and Flashback keyboard/scrub bridge.

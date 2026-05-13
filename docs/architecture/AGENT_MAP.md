@@ -17,7 +17,7 @@ folder.
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Snapshots.cs` | transition state machine, snapshot builder, resource managers |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` | diagnostic collectors and evaluation policies |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs` | additional collectors/controllers when hub orchestration grows |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvRecordingSink.cs` | encoder option policy, sink lifecycle, verifier/finalizer |
 | Flashback | `FlashbackPlaybackController.cs`, `FlashbackEncoderSink.cs`, `FlashbackExporter.cs` | playback, buffer, encoder, export modules |
 | Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.Rendering.cs` | renderer host, present cadence, screenshot capture, timing models |
@@ -48,6 +48,13 @@ Fast checks:
 dotnet build Sussudio.slnx -p:Platform=x64 --no-restore
 dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore
 ```
+
+Automation diagnostics ownership:
+
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` owns polling,
+  snapshot refresh serialization, alert publication, counters, and event flow.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` owns
+  diagnostic lane evaluation, alert-detail formatting, and health classifiers.
 
 ## Capture Runtime
 
