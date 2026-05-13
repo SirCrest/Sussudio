@@ -234,6 +234,11 @@ Flashback encoder retroactive recording lifecycle now lives in
 `IRecordingSink.StartAsync` adapter, `CanBeginRecording`, recording begin/cancel/end,
 recording PTS boundaries, and recording eviction-pause handshake there.
 
+Flashback encoder public runtime state now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.RuntimeState.cs`. Keep public
+counters, queue-depth/status projections, encoder format summaries,
+fatal-error callback registration, and the frame-encoded event surface there.
+
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
 lock/disposal helpers, progress normalization and throttling, output/temp
