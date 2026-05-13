@@ -789,12 +789,15 @@ static partial class Program
     private static Task CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange()
     {
         var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.cs")
+            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.Audio.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs");
         var captureServiceRawText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
@@ -803,6 +806,10 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
                 .Replace("\r\n", "\n");
+        var captureServiceRootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
+        var previewLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
+            .Replace("\r\n", "\n");
         var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
         var viewModelCaptureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
@@ -824,6 +831,10 @@ static partial class Program
             "public Task StartAudioPreviewAsync",
             "public Task StopAudioPreviewAsync");
 
+        AssertDoesNotContain(captureServiceRootText, "public Task StartVideoPreviewAsync");
+        AssertDoesNotContain(captureServiceRootText, "private async Task DisposePreviewPipelineAsync");
+        AssertContains(previewLifecycleText, "public Task StartVideoPreviewAsync");
+        AssertContains(previewLifecycleText, "private async Task DisposePreviewPipelineAsync");
         AssertContains(startVideoPreview, "var previousSettings = _flashbackBackendSettings ?? _currentSettings;");
         AssertContains(startVideoPreview, "CanReuseFlashbackBackend(previousSettings, settings)");
         AssertOccursBefore(startVideoPreview, "var previousSettings = _flashbackBackendSettings ?? _currentSettings;", "_currentSettings = settings;");
@@ -972,14 +983,14 @@ static partial class Program
 
     private static Task CaptureService_DeviceSwitchTeardown_StopsVideoBeforeFlashbackDisposal()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
             .Replace("\r\n", "\n");
         var unifiedVideoCaptureText = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
             .Replace("\r\n", "\n");
         var disposePreviewPipeline = ExtractTextBetween(
             captureServiceText,
             "private async Task DisposePreviewPipelineAsync",
-            "public Task StartRecordingAsync");
+            "\n}");
         var unifiedDisposeCore = ExtractTextBetween(
             unifiedVideoCaptureText,
             "private async ValueTask DisposeCoreAsync",

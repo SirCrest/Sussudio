@@ -184,6 +184,12 @@ preview-frame sink attachment, late Flashback playback preview wiring, shared
 D3D preview-device handoff, negotiated video getters, and cached MJPEG pipeline
 timing details.
 
+Preview start/stop lifecycle now lives in
+`Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`. That file owns
+video-preview start/stop transitions, retained-backend reuse checks, Flashback
+backend reuse policy, preview-start rollback, and preview pipeline disposal
+ordering.
+
 Recording integrity policy now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs`. That file
 owns recording/video/audio counter snapshots, baseline deltas, integrity summary

@@ -2691,7 +2691,7 @@ static partial class Program
 
     private static Task PreviewStartup_ToleratesMissingAudioCaptureDevices()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "if (settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId))");
         AssertContains(captureServiceText, "Audio preview requested but no audio capture device is available; continuing with video-only preview.");
@@ -2820,7 +2820,7 @@ static partial class Program
 
     private static Task PreviewBackendLog_ReflectsVideoOnlyFallback()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "_wasapiAudioCapture != null");
         AssertContains(captureServiceText, "\"Preview backend active: IMFSourceReader video + WASAPI audio ingest.\"");
