@@ -423,8 +423,11 @@ Flashback buffer retention now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs`. Keep segment
 purge, eviction, guarded file deletion, disk-warning state, and recording
 start/end retention boundaries there. The root buffer manager keeps session
-setup, segment mutation, byte/PTS accounting helpers, recovery marker checks,
-and dispose coordination.
+live counters, segment mutation, byte/PTS accounting helpers, and PTS/disk
+updates.
+Flashback buffer initialization, segment-extension setup, recovery-preserve
+markers, disposal, and disposed-state guards now live in
+`Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`.
 Flashback buffer segment counts, active-path projection, segment file lookup,
 start-PTS lookup, and segment-info projection now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentQueries.cs`.

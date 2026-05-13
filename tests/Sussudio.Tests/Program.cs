@@ -1081,6 +1081,9 @@ static partial class Program
                 "FlashbackBufferManager segment query helpers live in focused partial",
                 FlashbackBufferManager_SegmentQueriesLiveInFocusedPartial),
             await RunCheckAsync(
+                "FlashbackBufferManager lifecycle helpers live in focused partial",
+                FlashbackBufferManager_LifecycleHelpersLiveInFocusedPartial),
+            await RunCheckAsync(
                 "FlashbackBufferManager latest PTS clamps invalid buffer duration",
                 FlashbackBufferManager_UpdateLatestPts_ClampsInvalidBufferDuration),
             await RunCheckAsync(
@@ -4456,6 +4459,29 @@ static partial class Program
         AssertDoesNotContain(rootText, "public string? ActiveFilePath");
         AssertDoesNotContain(rootText, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)");
         AssertDoesNotContain(rootText, "public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_LifecycleHelpersLiveInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+        var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(lifecycleText, "public bool IsSessionPreservedForRecovery");
+        AssertContains(lifecycleText, "public void MarkSessionPreservedForRecovery()");
+        AssertContains(lifecycleText, "public void SetSegmentExtension(string extension)");
+        AssertContains(lifecycleText, "public void Initialize(string sessionId)");
+        AssertContains(lifecycleText, "private bool IsSessionPreservedForRecoveryUnsafe()");
+        AssertContains(lifecycleText, "public void Dispose()");
+        AssertContains(lifecycleText, "private void ThrowIfDisposed()");
+        AssertDoesNotContain(rootText, "public void MarkSessionPreservedForRecovery()");
+        AssertDoesNotContain(rootText, "public void SetSegmentExtension(string extension)");
+        AssertDoesNotContain(rootText, "public void Initialize(string sessionId)");
+        AssertDoesNotContain(rootText, "public void Dispose()");
+        AssertDoesNotContain(rootText, "private void ThrowIfDisposed()");
 
         return Task.CompletedTask;
     }
