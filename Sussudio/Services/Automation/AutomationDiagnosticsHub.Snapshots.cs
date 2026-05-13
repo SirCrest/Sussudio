@@ -994,12 +994,7 @@ public sealed partial class AutomationDiagnosticsHub
             LastExportMessage = health.LastExportMessage
         };
 
-        var verificationIdle = Volatile.Read(ref _verificationInProgress) == 0 &&
-                               Volatile.Read(ref _autoVerificationScheduled) == 0;
-        var shouldAutoVerify = !snapshot.IsRecording &&
-                               _wasRecording &&
-                               !string.IsNullOrWhiteSpace(snapshot.LastOutputPath) &&
-                               verificationIdle;
+        var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);
 
         UpdateAlerts(snapshot, recentFlashbackRecording);
 
@@ -1012,42 +1007,7 @@ public sealed partial class AutomationDiagnosticsHub
         SnapshotUpdated?.Invoke(this, snapshot);
         _wasRecording = snapshot.IsRecording;
 
-        if (shouldAutoVerify &&
-            _cts is { IsCancellationRequested: false } cts &&
-            Interlocked.CompareExchange(ref _autoVerificationScheduled, 1, 0) == 0)
-        {
-            AddEvent(
-                DiagnosticsSeverity.Info,
-                DiagnosticsCategory.Verification,
-                "Automatic recording verification started.");
-            _autoVerificationTask = Task.Run(async () =>
-            {
-                try
-                {
-                    if (cts.IsCancellationRequested)
-                    {
-                        return;
-                    }
-
-                    await VerifyLastRecordingAsync(cts.Token).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    /* Expected during shutdown — auto-verification cancelled */
-                }
-                catch (Exception ex)
-                {
-                    AddEvent(
-                        DiagnosticsSeverity.Error,
-                        DiagnosticsCategory.Verification,
-                        $"Automatic recording verification failed: {ex.Message}");
-                }
-                finally
-                {
-                    Interlocked.Exchange(ref _autoVerificationScheduled, 0);
-                }
-            });
-        }
+        ScheduleAutoVerificationIfNeeded(shouldAutoVerify);
 
         return snapshot;
     }

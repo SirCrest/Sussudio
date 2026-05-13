@@ -105,7 +105,8 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs` owns
   performance-timeline reads and snapshot-to-timeline entry projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.cs` owns
-  recording/file verification commands and verification-profile adaptation.
+  recording/file verification commands, automatic post-recording verification
+  scheduling, and verification-profile adaptation.
 
 ## Capture Runtime
 
