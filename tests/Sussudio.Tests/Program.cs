@@ -342,6 +342,9 @@ static partial class Program
                 "Flashback playhead motion lives in focused partial",
                 FlashbackPlayheadMotion_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Flashback marker presentation lives in focused partial",
+                FlashbackMarkerPresentation_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Flashback mutations route through capture coordinator",
                 MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator),
             await RunCheckAsync(
@@ -3695,6 +3698,27 @@ static partial class Program
         AssertDoesNotContain(flashbackText, "private Visual? _flashbackPlayheadVisual;");
         AssertDoesNotContain(flashbackText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
         AssertDoesNotContain(flashbackText, "private void RefreshFlashbackCtiMotion(string reason)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackMarkerPresentation_LivesInFocusedPartial()
+    {
+        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var markerText = ReadRepoFile("Sussudio/MainWindow.FlashbackMarkers.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+
+        AssertContains(markerText, "Flashback timeline marker presentation");
+        AssertContains(markerText, "private static string FormatFlashbackDuration(TimeSpan ts)");
+        AssertContains(markerText, "private void UpdateFlashbackMarkers()");
+        AssertContains(markerText, "FlashbackInPointMarker.Visibility = Visibility.Visible;");
+        AssertContains(markerText, "FlashbackOutPointMarker.Visibility = Visibility.Visible;");
+        AssertContains(markerText, "FlashbackSelectionRegion.Visibility = Visibility.Visible;");
+        AssertContains(flashbackText, "UpdateFlashbackMarkers();");
+        AssertContains(flashbackText, "FormatFlashbackDuration(bufferDuration)");
+        AssertContains(propertyChangedText, "UpdateFlashbackMarkers();");
+        AssertDoesNotContain(flashbackText, "private void UpdateFlashbackMarkers()");
+        AssertDoesNotContain(flashbackText, "private static string FormatFlashbackDuration(TimeSpan ts)");
 
         return Task.CompletedTask;
     }

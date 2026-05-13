@@ -156,6 +156,8 @@ Primary current owners:
 - `Sussudio/MainWindow.FlashbackPlayhead.cs` owns Flashback current-time-
   indicator compositor visuals, magnetic scrub movement, long-horizon linear
   playhead extrapolation, and CTI anchor timing.
+- `Sussudio/MainWindow.FlashbackMarkers.cs` owns Flashback marker placement,
+  selection-region layout, and compact duration text formatting.
 - `Sussudio/Controllers/FlashbackPollingController.cs` owns Flashback status
   and playback-position polling timers. `MainWindow.FlashbackPolling.cs` is the
   XAML-facing adapter; CTI anchor timing stays with playhead motion.

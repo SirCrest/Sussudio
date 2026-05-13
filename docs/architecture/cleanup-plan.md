@@ -107,8 +107,11 @@ geometry helpers that marker and playhead presentation share.
 Flashback CTI/playhead compositor state now lives in
 `Sussudio/MainWindow.FlashbackPlayhead.cs`. It owns magnetic scrub movement,
 long-horizon linear playhead extrapolation, and CTI anchor timing; the broader
-Flashback partial keeps command handling, markers, toggle/apply workflows, and
-duration formatting.
+Flashback partial keeps command handling and toggle/apply workflows.
+
+Flashback marker placement and compact duration text now live in
+`Sussudio/MainWindow.FlashbackMarkers.cs`, including in/out marker visibility,
+selection-region layout, and `m:ss` formatting.
 
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
