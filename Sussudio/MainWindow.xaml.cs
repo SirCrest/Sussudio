@@ -132,14 +132,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
     private IntPtr _hwnd;
     private int _selectedDecoderCount = 4;
-    private readonly List<DiagnosticRowSlot> _decodeRowPool = new();
-    private readonly List<DiagnosticRowSlot> _gpuRowPool = new();
-    private readonly List<DiagnosticsPoolSlot> _diagnosticsRowPool = new();
-    private TextBlock? _diagnosticsEmptyStateTextBlock;
-
-    private const int MaxExpectedDecodeRowCount = 14;
-    private const int FixedGpuRowCount = 10;
-
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;
 

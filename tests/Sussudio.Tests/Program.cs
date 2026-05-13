@@ -495,6 +495,9 @@ static partial class Program
                 "Stats overlay lifecycle lives in controller",
                 StatsOverlayLifecycle_LivesInController),
             await RunCheckAsync(
+                "Stats diagnostic row pooling lives in controller",
+                StatsDiagnosticRowPooling_LivesInController),
+            await RunCheckAsync(
                 "Settings shelf lifecycle lives in controller",
                 SettingsShelfLifecycle_LivesInController),
             await RunCheckAsync(
@@ -2766,6 +2769,36 @@ static partial class Program
         AssertContains(controllerText, "STATS_POLL_TIMER_FAIL");
         AssertDoesNotContain(statsOverlayText, "private void StatsPollTimer_Tick(");
         AssertDoesNotContain(statsOverlayText, "private Storyboard CreateStatsDockStoryboard(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task StatsDiagnosticRowPooling_LivesInController()
+    {
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
+
+        AssertContains(statsOverlayText, "private StatsDiagnosticRowsController _statsDiagnosticRowsController = null!;");
+        AssertContains(statsOverlayText, "_statsDiagnosticRowsController = new StatsDiagnosticRowsController");
+        AssertContains(statsOverlayText, "ResourceOwner = StatsDockPanel,");
+        AssertContains(statsOverlayText, "DiagnosticsContent = Diagnostics_Content");
+        AssertContains(statsOverlayText, "_statsDiagnosticRowsController.CollapseDecodeRows(Decode_Content);");
+        AssertContains(statsOverlayText, "_statsDiagnosticRowsController.UpdateDecodeRows(Decode_Content, rows);");
+        AssertContains(statsOverlayText, "_statsDiagnosticRowsController.UpdateGpuRows(GPU_Content, rows);");
+        AssertContains(statsOverlayText, "_statsDiagnosticRowsController.UpdateDiagnostics(presentation);");
+        AssertContains(controllerText, "internal sealed class StatsDiagnosticRowsController");
+        AssertContains(controllerText, "private const int MaxExpectedDecodeRowCount = 14;");
+        AssertContains(controllerText, "private const int FixedGpuRowCount = 10;");
+        AssertContains(controllerText, "private readonly List<DiagnosticRowSlot> _decodeRowPool = new();");
+        AssertContains(controllerText, "private TextBlock? _diagnosticsEmptyStateTextBlock;");
+        AssertContains(controllerText, "public void UpdateDiagnostics(StatsDiagnosticRowsPresentation presentation)");
+        AssertContains(controllerText, "private Border CreateDiagnosticRow(string label, string value, bool alt)");
+        AssertDoesNotContain(mainWindowText, "_decodeRowPool");
+        AssertDoesNotContain(mainWindowText, "_diagnosticsRowPool");
+        AssertDoesNotContain(statsOverlayText, "private sealed record DiagnosticRowSlot(");
+        AssertDoesNotContain(statsOverlayText, "private void EnsureDiagnosticRowPool(");
+        AssertDoesNotContain(statsOverlayText, "private Border CreateDiagnosticRow(");
 
         return Task.CompletedTask;
     }

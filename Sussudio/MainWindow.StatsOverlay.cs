@@ -17,6 +17,7 @@ namespace Sussudio;
 public sealed partial class MainWindow
 {
     private StatsOverlayController _statsOverlayController = null!;
+    private StatsDiagnosticRowsController _statsDiagnosticRowsController = null!;
 
     private void InitializeStatsOverlayController()
     {
@@ -30,6 +31,11 @@ public sealed partial class MainWindow
             UpdateStatsDock = UpdateStatsDock,
             UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,
             Log = message => Logger.Log(message)
+        });
+        _statsDiagnosticRowsController = new StatsDiagnosticRowsController(new StatsDiagnosticRowsControllerContext
+        {
+            ResourceOwner = StatsDockPanel,
+            DiagnosticsContent = Diagnostics_Content
         });
     }
 
@@ -196,19 +202,16 @@ public sealed partial class MainWindow
         if (mjpegMetrics is not { DecoderCount: > 0 } mjpeg)
         {
             DecodeSection.Visibility = Visibility.Collapsed;
-            CollapseDiagnosticRows(_decodeRowPool);
+            _statsDiagnosticRowsController.CollapseDecodeRows(Decode_Content);
             return;
         }
 
         DecodeSection.Visibility = Visibility.Visible;
-        EnsureDiagnosticRowPool(Decode_Content, _decodeRowPool, MaxExpectedDecodeRowCount);
+        var rows = new List<StatsDiagnosticSimpleRow>();
 
-        var rowIndex = 0;
         void SetRow(string label, string value)
         {
-            EnsureDiagnosticRowPool(Decode_Content, _decodeRowPool, rowIndex + 1);
-            UpdateDiagnosticRowSlot(_decodeRowPool[rowIndex], label, value, alt: (rowIndex % 2) != 0);
-            rowIndex++;
+            rows.Add(new StatsDiagnosticSimpleRow(label, value));
         }
 
         var effectiveFrameTimeMs = mjpeg.DecodeAvgMs / mjpeg.DecoderCount;
@@ -240,24 +243,22 @@ public sealed partial class MainWindow
             SetRow($"Thread {worker.WorkerIndex}", $"{worker.AvgMs:0.00} / {worker.P95Ms:0.00}ms");
         }
 
-        CollapseDiagnosticRows(_decodeRowPool, startIndex: rowIndex);
+        _statsDiagnosticRowsController.UpdateDecodeRows(Decode_Content, rows);
     }
     private void UpdateGpuSection()
     {
         var nvml = _nvmlMonitor?.GetLatestSnapshot();
-        EnsureDiagnosticRowPool(GPU_Content, _gpuRowPool, FixedGpuRowCount);
+        var rows = new List<StatsDiagnosticSimpleRow>();
 
-        var rowIndex = 0;
         void SetRow(string label, string value)
         {
-            UpdateDiagnosticRowSlot(_gpuRowPool[rowIndex], label, value, alt: (rowIndex % 2) != 0);
-            rowIndex++;
+            rows.Add(new StatsDiagnosticSimpleRow(label, value));
         }
 
         if (nvml == null)
         {
             SetRow("Status", "NVML not available");
-            CollapseDiagnosticRows(_gpuRowPool, startIndex: rowIndex);
+            _statsDiagnosticRowsController.UpdateGpuRows(GPU_Content, rows);
             return;
         }
 
@@ -271,7 +272,7 @@ public sealed partial class MainWindow
         SetRow("Temperature", $"{nvml.GpuTemperatureC ?? 0}°C");
         SetRow("Power", $"{nvml.GpuPowerW ?? 0:0.0}W");
         SetRow("Clocks", $"{nvml.GpuClockMHz ?? 0} MHz (Mem: {nvml.GpuMemClockMHz ?? 0} MHz)");
-        CollapseDiagnosticRows(_gpuRowPool, startIndex: rowIndex);
+        _statsDiagnosticRowsController.UpdateGpuRows(GPU_Content, rows);
     }
     private void UpdateDiagnosticsSection(IReadOnlyList<SourceTelemetryDetailEntry> telemetryDetails, string? diagnosticSummary)
     {
@@ -280,31 +281,8 @@ public sealed partial class MainWindow
             return;
         }
 
-        EnsureDiagnosticsEmptyState();
-
         var presentation = StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary);
-        if (presentation.IsEmpty)
-        {
-            SetVisibilityIfChanged(_diagnosticsEmptyStateTextBlock!, Visibility.Visible);
-            CollapseDiagnosticsPoolSlots();
-            return;
-        }
-
-        var slotIndex = 0;
-        foreach (var row in presentation.Rows)
-        {
-            EnsureDiagnosticsPoolCapacity(slotIndex + 1);
-            UpdateDiagnosticsPoolSlot(
-                _diagnosticsRowPool[slotIndex],
-                row.GroupHeader,
-                row.Label,
-                row.Value,
-                row.IsAlternate);
-            slotIndex++;
-        }
-
-        SetVisibilityIfChanged(_diagnosticsEmptyStateTextBlock!, Visibility.Collapsed);
-        CollapseDiagnosticsPoolSlots(startIndex: slotIndex);
+        _statsDiagnosticRowsController.UpdateDiagnostics(presentation);
     }
 
     private bool IsFrameTimeOverlayVisible()
@@ -384,117 +362,11 @@ public sealed partial class MainWindow
         };
     }
 
-    private sealed record DiagnosticRowSlot(Border Row, TextBlock Label, TextBlock Value);
-    private sealed record DiagnosticsPoolSlot(
-        Border Row,
-        TextBlock? GroupHeader,
-        TextBlock Label,
-        TextBlock Value);
-
     private static void SetVisibilityIfChanged(UIElement element, Visibility visibility)
     {
         if (element.Visibility != visibility)
         {
             element.Visibility = visibility;
-        }
-    }
-    private void EnsureDiagnosticRowPool(StackPanel container, List<DiagnosticRowSlot> pool, int requiredCount)
-    {
-        while (pool.Count < requiredCount)
-        {
-            var row = CreateDiagnosticRow("", "", alt: false);
-            var grid = (Grid)row.Child;
-            var labelBlock = (TextBlock)grid.Children[0];
-            var valueBlock = (TextBlock)grid.Children[1];
-            pool.Add(new DiagnosticRowSlot(row, labelBlock, valueBlock));
-            container.Children.Add(row);
-        }
-    }
-    private void UpdateDiagnosticRowSlot(DiagnosticRowSlot slot, string label, string value, bool alt)
-    {
-        SetTextIfChanged(slot.Label, label);
-        SetTextIfChanged(slot.Value, value);
-        var targetStyle = (Style)StatsDockPanel.Resources[alt ? "DockStatsRowAltStyle" : "DockStatsRowStyle"];
-        if (!ReferenceEquals(slot.Row.Style, targetStyle))
-        {
-            slot.Row.Style = targetStyle;
-        }
-
-        SetVisibilityIfChanged(slot.Row, Visibility.Visible);
-    }
-    private static void CollapseDiagnosticRows(List<DiagnosticRowSlot> pool, int startIndex = 0)
-    {
-        for (var i = startIndex; i < pool.Count; i++)
-        {
-            SetVisibilityIfChanged(pool[i].Row, Visibility.Collapsed);
-        }
-    }
-    private void EnsureDiagnosticsEmptyState()
-    {
-        if (_diagnosticsEmptyStateTextBlock != null) return;
-        _diagnosticsEmptyStateTextBlock = new TextBlock
-        {
-            Text = "No diagnostics available",
-            Style = (Style)StatsDockPanel.Resources["DockStatsLabelStyle"],
-            Visibility = Visibility.Collapsed
-        };
-        Diagnostics_Content.Children.Add(_diagnosticsEmptyStateTextBlock);
-    }
-    private void EnsureDiagnosticsPoolCapacity(int requiredCount)
-    {
-        while (_diagnosticsRowPool.Count < requiredCount)
-        {
-            var row = CreateDiagnosticRow("", "", alt: false);
-            var grid = (Grid)row.Child;
-            var labelBlock = (TextBlock)grid.Children[0];
-            var valueBlock = (TextBlock)grid.Children[1];
-            var header = CreateDiagnosticGroupHeader("");
-            header.Visibility = Visibility.Collapsed;
-            Diagnostics_Content.Children.Add(header);
-            Diagnostics_Content.Children.Add(row);
-            _diagnosticsRowPool.Add(new DiagnosticsPoolSlot(row, header, labelBlock, valueBlock));
-        }
-    }
-    private void UpdateDiagnosticsPoolSlot(
-        DiagnosticsPoolSlot slot,
-        string? groupHeader,
-        string label,
-        string value,
-        bool alt)
-    {
-        if (slot.GroupHeader != null)
-        {
-            if (groupHeader != null)
-            {
-                SetTextIfChanged(slot.GroupHeader, groupHeader);
-                SetVisibilityIfChanged(slot.GroupHeader, Visibility.Visible);
-            }
-            else
-            {
-                SetVisibilityIfChanged(slot.GroupHeader, Visibility.Collapsed);
-            }
-        }
-
-        SetTextIfChanged(slot.Label, label);
-        SetTextIfChanged(slot.Value, value);
-        var targetStyle = (Style)StatsDockPanel.Resources[alt ? "DockStatsRowAltStyle" : "DockStatsRowStyle"];
-        if (!ReferenceEquals(slot.Row.Style, targetStyle))
-        {
-            slot.Row.Style = targetStyle;
-        }
-
-        SetVisibilityIfChanged(slot.Row, Visibility.Visible);
-    }
-    private void CollapseDiagnosticsPoolSlots(int startIndex = 0)
-    {
-        for (var i = startIndex; i < _diagnosticsRowPool.Count; i++)
-        {
-            var slot = _diagnosticsRowPool[i];
-            SetVisibilityIfChanged(slot.Row, Visibility.Collapsed);
-            if (slot.GroupHeader != null)
-            {
-                SetVisibilityIfChanged(slot.GroupHeader, Visibility.Collapsed);
-            }
         }
     }
     private static void SetTextIfChanged(TextBlock target, string value)
@@ -529,44 +401,5 @@ public sealed partial class MainWindow
         var viewState = new StatsSnapshotViewState(ViewModel.IsPreviewing, ViewModel.IsRecording);
 
         return StatsSnapshotBuilder.Build(health, renderer, viewState);
-    }
-
-    private TextBlock CreateDiagnosticGroupHeader(string title)
-    {
-        return new TextBlock
-        {
-            Text = title,
-            Margin = new Thickness(0, 8, 0, 2),
-            Style = (Style)StatsDockPanel.Resources["DockStatsSectionHeaderStyle"]
-        };
-    }
-    private Border CreateDiagnosticRow(string label, string value, bool alt)
-    {
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-        var labelBlock = new TextBlock
-        {
-            Text = label,
-            Style = (Style)StatsDockPanel.Resources["DockStatsLabelStyle"]
-        };
-
-        var valueBlock = new TextBlock
-        {
-            Text = value,
-            Style = (Style)StatsDockPanel.Resources["DockStatsValueStyle"],
-            HorizontalAlignment = HorizontalAlignment.Right
-        };
-        Grid.SetColumn(valueBlock, 1);
-
-        grid.Children.Add(labelBlock);
-        grid.Children.Add(valueBlock);
-
-        return new Border
-        {
-            Style = (Style)StatsDockPanel.Resources[alt ? "DockStatsRowAltStyle" : "DockStatsRowStyle"],
-            Child = grid
-        };
     }
 }

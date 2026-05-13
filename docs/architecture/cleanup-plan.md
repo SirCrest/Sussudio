@@ -50,8 +50,14 @@ the same pure policy; resource ownership has not moved in this slice.
 
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
-still renders metric values and dynamic diagnostic rows, but polling, visibility
-state, and dock animations are out of the shell fields.
+still renders metric values and assembles snapshots, but polling, visibility
+state, dynamic diagnostic row pools, and dock animations are out of the shell
+fields.
+
+Dynamic stats diagnostic row pools now live in
+`Sussudio/Controllers/StatsDiagnosticRowsController.cs`. It owns decode/GPU
+row reuse, telemetry diagnostics empty state, group headers, and diagnostic row
+style updates.
 
 Flashback timeline visibility, lockout, toggle synchronization, and show/hide
 animation state now live in

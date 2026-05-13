@@ -114,8 +114,12 @@ Primary current owners:
   binding surface is split separately.
 - `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility,
   frame-time overlay visibility, polling lifetime, and dock show/hide
-  animations. `MainWindow.StatsOverlay.cs` still owns metric text projection,
-  dynamic diagnostic row pools, and snapshot assembly for now.
+  animations. `MainWindow.StatsOverlay.cs` still owns metric text projection
+  and snapshot assembly for now.
+- `Sussudio/Controllers/StatsDiagnosticRowsController.cs` owns dynamic
+  decode/GPU/diagnostic row pools, empty-state rows, group headers, and
+  diagnostic row style updates. `MainWindow.StatsOverlay.cs` still owns metric
+  text assignment and snapshot assembly for now.
 - `Sussudio/Controllers/FlashbackTimelineController.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, and show/hide
   animation state. `MainWindow.FlashbackTimeline.cs` is the XAML-facing
