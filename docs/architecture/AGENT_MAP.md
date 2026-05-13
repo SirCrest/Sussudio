@@ -20,7 +20,7 @@ folder.
 | Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Hdr.cs`, `AutomationDiagnosticsHub.Lifecycle.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.Verification.cs` | additional collectors/controllers when hub orchestration grows |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvRecordingSink.cs` | encoder option policy, sink lifecycle, verifier/finalizer |
 | Flashback | `FlashbackPlaybackController.cs`, `FlashbackEncoderSink.cs`, `FlashbackExporter.cs` | playback, buffer, encoder, export modules |
-| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.Rendering.cs` | renderer host, present cadence, screenshot capture, timing models |
+| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.Rendering.cs`, `D3D11PreviewRenderer.ScreenshotCapture.cs`, `D3D11PreviewRenderer.ShaderSources.cs` | renderer host, present cadence, screenshot capture, shader source, timing models |
 | UI shell | `MainWindow.*.cs` partial family | named controllers under an app shell folder |
 | Presentation | `MainViewModel.*.cs` partial family | feature view models behind the root facade |
 

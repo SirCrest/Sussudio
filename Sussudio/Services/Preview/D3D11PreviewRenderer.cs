@@ -23,7 +23,6 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreviewFrameQueueControl, IPreviewDisplayClock, IDisposable
 {
-    private const int FrameCaptureTimeoutMs = 5000;
     private const string RendererModeNone = "None";
     private const string RendererModeVideoProcessor = "D3D11VideoProcessor";
     private const string RendererModeHdrPassthrough = "HdrPassthrough";
@@ -365,9 +364,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private string _lastDropReason = string.Empty;
     private string _submissionGenerationDropReason = "transition";
 
-    private TaskCompletionSource<PreviewFrameCaptureResult>? _frameCaptureRequest;
-    private int _frameCaptureEncodeInProgress;
-    private string? _frameCaptureOutputPath;
 
     private string _inputColorSpaceLabel = "Unknown";
     private string _outputColorSpaceLabel = "Unknown";
@@ -426,10 +422,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private readonly ID3D11ShaderResourceView[] _srvNullArray2 = { null!, null! };
     private readonly ID3D11Buffer[] _cbArray = new ID3D11Buffer[1];
 
-    // Persistent staging texture for frame capture (avoids GPU resource churn)
-    private ID3D11Texture2D? _captureStagingTexture;
-    private int _captureStagingWidth;
-    private int _captureStagingHeight;
 
     private int _configuredInputWidth;
     private int _configuredInputHeight;
@@ -493,84 +485,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Interlocked.Exchange(ref _hdrPassthroughEnabled, enabled ? 1 : 0);
         Interlocked.Exchange(ref _swapChainColorSpaceDirty, 1);
         SignalFrameReady("hdr_passthrough");
-    }
-
-    public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath)
-        => CaptureNextFrameAsync(outputPath, CancellationToken.None);
-
-    public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath, CancellationToken cancellationToken)
-    {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return Task.FromResult(CreateFrameCaptureError("Preview frame capture canceled."));
-        }
-
-        if (!IsRendering || _device == null || _swapChain == null || Volatile.Read(ref _stopRequested) != 0)
-        {
-            return Task.FromResult(CreateFrameCaptureError("No active preview renderer."));
-        }
-
-        if (Volatile.Read(ref _frameCaptureEncodeInProgress) != 0)
-        {
-            return Task.FromResult(CreateFrameCaptureError("A preview frame capture is already pending."));
-        }
-
-        var resolvedOutputPath = string.IsNullOrWhiteSpace(outputPath)
-            ? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}.bmp")
-            : outputPath;
-
-        var request = new TaskCompletionSource<PreviewFrameCaptureResult>(
-            state: resolvedOutputPath,
-            creationOptions: TaskCreationOptions.RunContinuationsAsynchronously);
-        if (Interlocked.CompareExchange(ref _frameCaptureRequest, request, null) != null)
-        {
-            return Task.FromResult(CreateFrameCaptureError("A preview frame capture is already pending."));
-        }
-
-        CancellationTokenRegistration cancellationRegistration = default;
-        if (cancellationToken.CanBeCanceled)
-        {
-            cancellationRegistration = cancellationToken.Register(
-                static state =>
-                {
-                    var (renderer, request) = ((D3D11PreviewRenderer Renderer, TaskCompletionSource<PreviewFrameCaptureResult> Request))state!;
-                    var pending = Interlocked.CompareExchange(ref renderer._frameCaptureRequest, null, request);
-                    if (!ReferenceEquals(pending, request))
-                    {
-                        return;
-                    }
-
-                    Interlocked.Exchange(ref renderer._frameCaptureOutputPath, null);
-                    request.TrySetResult(CreateFrameCaptureError("Preview frame capture canceled."));
-                    Logger.Log("PREVIEW_FRAME_CAPTURE_CANCELED");
-                },
-                (this, request));
-            _ = request.Task.ContinueWith(
-                _ => cancellationRegistration.Dispose(),
-                CancellationToken.None,
-                TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
-        }
-
-        Volatile.Write(ref _frameCaptureOutputPath, resolvedOutputPath);
-        _ = Task.Delay(FrameCaptureTimeoutMs).ContinueWith(
-            _ =>
-            {
-                var pending = Interlocked.CompareExchange(ref _frameCaptureRequest, null, request);
-                if (!ReferenceEquals(pending, request))
-                {
-                    return;
-                }
-
-                Interlocked.Exchange(ref _frameCaptureOutputPath, null);
-                request.TrySetResult(CreateFrameCaptureError("Timed out waiting for the next rendered preview frame."));
-                Logger.Log("PREVIEW_FRAME_CAPTURE_TIMEOUT missing=RenderedFrame");
-            },
-            CancellationToken.None,
-            TaskContinuationOptions.ExecuteSynchronously,
-            TaskScheduler.Default);
-
-        return request.Task;
     }
 
     public void SetSharedDevice(ID3D11Device sharedDevice)
