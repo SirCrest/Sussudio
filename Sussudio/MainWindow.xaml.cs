@@ -66,7 +66,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private const int MinWindowHeight = 500;
     private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
     private IntPtr _hwnd;
-    private int _selectedDecoderCount = 4;
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;
 

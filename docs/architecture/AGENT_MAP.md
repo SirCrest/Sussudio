@@ -184,8 +184,8 @@ Primary current owners:
   adapter.
 - `Sussudio/MainWindow.CaptureOptionPresentation.cs` owns presentation-only
   rules for capture option affordances: HDR readiness hints, FPS telemetry
-  tooltips, MJPEG decoder count visibility, bitrate mode visibility, and audio
-  clipping visibility.
+  tooltips, MJPEG decoder count selection/visibility, bitrate mode visibility,
+  and audio clipping visibility.
 - `Sussudio/Controllers/OutputPathDisplayController.cs` owns recording output-
   path truncation and tooltip updates. `MainWindow.OutputPathDisplay.cs` is the
   XAML-facing adapter used by binding setup and property changes.

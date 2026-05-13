@@ -11,6 +11,8 @@ namespace Sussudio;
 // status.
 public sealed partial class MainWindow
 {
+    private int _selectedDecoderCount = 4;
+
     private void UpdateDecoderCountVisibility()
     {
         var selectedFormat = VideoFormatComboBox.SelectedItem as string ?? ViewModel.SelectedVideoFormat;
@@ -45,6 +47,18 @@ public sealed partial class MainWindow
         }
 
         return ViewModel.SelectedFrameRate;
+    }
+
+    private void DecoderCountComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DecoderCountComboBox.SelectedItem is int count)
+        {
+            _selectedDecoderCount = count;
+            if (ViewModel.MjpegDecoderCount != count)
+            {
+                ViewModel.MjpegDecoderCount = count;
+            }
+        }
     }
 
     private void RefreshHdrHintText()

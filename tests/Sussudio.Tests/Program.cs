@@ -3305,6 +3305,9 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
 
         AssertContains(captureOptionText, "private void UpdateDecoderCountVisibility()");
+        AssertContains(captureOptionText, "private int _selectedDecoderCount = 4;");
+        AssertContains(captureOptionText, "private void DecoderCountComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)");
+        AssertContains(captureOptionText, "ViewModel.MjpegDecoderCount = count;");
         AssertContains(captureOptionText, "private double GetSelectedFriendlyFrameRate()");
         AssertContains(captureOptionText, "private void RefreshHdrHintText()");
         AssertContains(captureOptionText, "private void UpdateFpsTelemetryTooltip()");
@@ -3326,8 +3329,10 @@ static partial class Program
         AssertContains(propertyChangedText, "UpdateFpsTelemetryTooltip();");
         AssertContains(propertyChangedText, "ApplyBitrateVisibility();");
         AssertDoesNotContain(bindingsText, "private void UpdateDecoderCountVisibility()");
+        AssertDoesNotContain(bindingsText, "private void DecoderCountComboBox_SelectionChanged(");
         AssertDoesNotContain(bindingsText, "private void RefreshHdrHintText()");
         AssertDoesNotContain(bindingsText, "private void ApplyBitrateVisibility()");
+        AssertDoesNotContain(ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n"), "private int _selectedDecoderCount = 4;");
 
         return Task.CompletedTask;
     }

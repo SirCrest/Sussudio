@@ -277,15 +277,4 @@ public sealed partial class MainWindow
         AttachOutputPathDisplay();
         ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);
     }
-    private void DecoderCountComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (DecoderCountComboBox.SelectedItem is int count)
-        {
-            _selectedDecoderCount = count;
-            if (ViewModel.MjpegDecoderCount != count)
-            {
-                ViewModel.MjpegDecoderCount = count;
-            }
-        }
-    }
 }

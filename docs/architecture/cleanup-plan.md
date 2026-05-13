@@ -151,8 +151,8 @@ old method names for `PropertyChanged` and button handlers.
 
 Presentation-only rules for capture option affordances now live in
 `Sussudio/MainWindow.CaptureOptionPresentation.cs`: HDR readiness hints, FPS
-telemetry tooltips, MJPEG decoder count visibility, bitrate mode visibility,
-and audio clipping visibility.
+telemetry tooltips, MJPEG decoder count selection/visibility, bitrate mode
+visibility, and audio clipping visibility.
 
 Recording output-path truncation and tooltip updates now live in
 `Sussudio/Controllers/OutputPathDisplayController.cs`.
