@@ -887,6 +887,15 @@ static partial class Program
             "ClassifyFlashbackExportFailureKind",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("CaptureService.ClassifyFlashbackExportFailureKind was not found.");
+        var exportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
+            .Replace("\r\n", "\n");
+        var classifierText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportFailureClassification.cs")
+            .Replace("\r\n", "\n");
+
+        AssertDoesNotContain(exportText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
+        AssertContains(classifierText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
+        AssertContains(classifierText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
+        AssertContains(classifierText, "private static bool ContainsFlashbackExportFailureText(string statusMessage, string value)");
 
         AssertEqual(
             "BufferInactive",

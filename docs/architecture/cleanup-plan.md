@@ -178,6 +178,11 @@ Flashback backend ownership checks, audio attach, session-context construction,
 frame-rate rational inference, codec/HDR guardrails, encoded-frame forwarding,
 and recording topology validation.
 
+Flashback export failure classification now lives in
+`Sussudio/Services/Capture/CaptureService.FlashbackExportFailureClassification.cs`.
+Keep the export failure-kind taxonomy there because automation responses and
+capture diagnostics both consume it.
+
 Preview sink and MJPEG timing handoff now lives in
 `Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs`. That file owns
 preview-frame sink attachment, late Flashback playback preview wiring, shared
