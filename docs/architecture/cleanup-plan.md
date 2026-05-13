@@ -38,6 +38,8 @@ owns performance-timeline reads and snapshot-to-timeline entry projection.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation and active-alert
 transitions. `AutomationDiagnosticsHub.SignalAlerts.cs` owns preview, capture,
 audio-signal, and recording-growth alert rules.
+`AutomationDiagnosticsHub.FlashbackAlerts.cs` owns Flashback export, recording,
+and playback alert rules.
 `AutomationDiagnosticsHub.DiagnosticEvents.cs` owns diagnostics event
 publication, event throttling, Flashback export completion events, and recent
 event storage.
