@@ -451,8 +451,10 @@ Remaining `tools/Common` ownership:
    `MainViewModel.FlashbackExport.cs`. Frame-rate option rebuilding, source-rate
    filtering, and automatic frame-rate selection now live in
    `MainViewModel.FrameRateOptions.cs`; keep device enumeration and selected
-   device capability rebuilds in `MainViewModel.DeviceManagement.cs`. Keep the
-   remaining command mutation code in `MainViewModel.Automation.cs`.
+   device capability rebuilds in `MainViewModel.DeviceManagement.cs`.
+   Automatic resolution ranking, source-aware auto-selection, and auto-resolved
+   dimension/frame-rate state now live in `MainViewModel.AutoResolutionOptions.cs`.
+   Keep the remaining command mutation code in `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.
 
