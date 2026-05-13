@@ -131,9 +131,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private bool _isWindowClosing;
     private bool _toggleLabelsVisible;
     private bool _entranceAnimationPlayed;
-    private bool _liveSignalInfoVisible;
-    private DispatcherQueueTimer? _liveSignalDebounceTimer;
-    private DispatcherQueueTimer? _liveSignalHideDebounceTimer;
     private double _savedPreviewVolume;
     private bool _isVolumeFadingIn;
     private Storyboard? _entranceStoryboard;
@@ -325,6 +322,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeFlashbackTimelineController();
         InitializeSettingsShelfController();
         InitializeSplashLoadingPhraseController();
+        InitializeLiveSignalInfoController();
 
         // Cloak the window to prevent white flash before XAML renders
         int cloakTrue = 1;

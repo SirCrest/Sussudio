@@ -252,10 +252,7 @@ public sealed partial class MainWindow
         ViewModel.AudioMeterActivated -= EnsureAudioMeterTimerRunning;
         ViewModel.MicrophoneMeterActivated -= EnsureAudioMeterTimerRunning;
         StopAudioMeterTimer();
-        _liveSignalDebounceTimer?.Stop();
-        _liveSignalDebounceTimer = null;
-        _liveSignalHideDebounceTimer?.Stop();
-        _liveSignalHideDebounceTimer = null;
+        StopLiveSignalInfoTimers();
         StopFullScreenAutoHideTimer();
         StopFlashbackStatusPolling();
         StopStatsDockPolling();

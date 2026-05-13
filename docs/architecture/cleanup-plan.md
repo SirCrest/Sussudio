@@ -65,6 +65,11 @@ animation now live in `Sussudio/Controllers/SplashLoadingPhraseController.cs`.
 `MainWindow.SplashLoading.cs` is the XAML-facing adapter; the broader entrance
 animation remains in `MainWindow.Animations.cs`.
 
+Live-signal pill visibility state, show/hide debounce timers, and the small
+scale/fade animation now live in
+`Sussudio/Controllers/LiveSignalInfoController.cs`. `MainWindow.LiveSignalInfo.cs`
+is the XAML-facing adapter.
+
 Diagnostic session DTOs now live in
 `tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
 owns orchestration and scenario execution, but the public options/result/sample

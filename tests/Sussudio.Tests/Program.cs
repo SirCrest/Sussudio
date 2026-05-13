@@ -495,6 +495,9 @@ static partial class Program
                 "Splash loading phrases live in controller",
                 SplashLoadingPhrases_LiveInController),
             await RunCheckAsync(
+                "Live signal info presentation lives in controller",
+                LiveSignalInfoPresentation_LivesInController),
+            await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
@@ -2807,6 +2810,38 @@ static partial class Program
         AssertDoesNotContain(animationsText, "private DispatcherTimer? _splashPhraseTimer;");
         AssertDoesNotContain(animationsText, "private static string[] LoadSplashPhrases()");
         AssertDoesNotContain(animationsText, "private void CycleSplashPhrase()");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task LiveSignalInfoPresentation_LivesInController()
+    {
+        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var liveSignalAdapterText = ReadRepoFile("Sussudio/MainWindow.LiveSignalInfo.cs").Replace("\r\n", "\n");
+        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/LiveSignalInfoController.cs").Replace("\r\n", "\n");
+
+        AssertContains(liveSignalAdapterText, "private LiveSignalInfoController _liveSignalInfoController = null!;");
+        AssertContains(liveSignalAdapterText, "private void InitializeLiveSignalInfoController()");
+        AssertContains(liveSignalAdapterText, "=> _liveSignalInfoController.Update(");
+        AssertContains(liveSignalAdapterText, "ViewModel.LiveResolution,");
+        AssertContains(liveSignalAdapterText, "private void StopLiveSignalInfoTimers()");
+        AssertContains(liveSignalAdapterText, "=> _liveSignalInfoController.StopTimers();");
+        AssertContains(mainWindowText, "InitializeLiveSignalInfoController();");
+        AssertContains(windowManagementText, "StopLiveSignalInfoTimers();");
+        AssertContains(controllerText, "internal sealed class LiveSignalInfoController");
+        AssertContains(controllerText, "private DispatcherQueueTimer? _showDebounceTimer;");
+        AssertContains(controllerText, "private DispatcherQueueTimer? _hideDebounceTimer;");
+        AssertContains(controllerText, "public void Update(string liveResolution, string liveFrameRate, string livePixelFormat)");
+        AssertContains(controllerText, "private bool HasCompleteLiveSignal()");
+        AssertContains(controllerText, "private void AnimateIn()");
+        AssertContains(controllerText, "private void AnimateOut()");
+        AssertDoesNotContain(mainWindowText, "private bool _liveSignalInfoVisible;");
+        AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _liveSignalDebounceTimer;");
+        AssertDoesNotContain(animationsText, "private void UpdateLiveSignalInfoVisibility()");
+        AssertDoesNotContain(animationsText, "private void AnimateLiveSignalInfoIn()");
+        AssertDoesNotContain(animationsText, "private void AnimateLiveSignalInfoOut()");
 
         return Task.CompletedTask;
     }
