@@ -344,6 +344,12 @@ attribute reads, and optional media-attribute copy helpers there; keep the read
 loop, frame delivery, DXGI buffer extraction, and YUV copy helpers in the root
 source-reader file.
 
+Media Foundation interop declarations now live in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Interop.cs`. Keep MF
+P/Invoke declarations, constants/HRESULTs/GUIDs, and flattened COM interface
+layouts there; keep behavioral source-reader logic in the root and negotiation
+partials.
+
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`: `AutomationSnapshot.cs`,
 `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,
