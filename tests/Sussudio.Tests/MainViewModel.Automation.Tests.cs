@@ -292,7 +292,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText;
+        var diagnosticsAlertsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsAlertsText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
@@ -301,6 +303,9 @@ static partial class Program
         AssertContains(diagnosticsEvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
         AssertContains(diagnosticsEvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertDoesNotContain(diagnosticsHubText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
+        AssertContains(diagnosticsAlertsText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
+        AssertContains(diagnosticsAlertsText, "private void AddEventThrottled(");
+        AssertDoesNotContain(diagnosticsHubText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
         AssertContains(diagnosticsText, "private readonly SemaphoreSlim _refreshGate = new(1, 1);");
         AssertContains(diagnosticsText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(diagnosticsText, "return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);");
