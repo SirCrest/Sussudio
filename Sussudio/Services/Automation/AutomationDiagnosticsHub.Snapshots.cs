@@ -61,16 +61,7 @@ public sealed partial class AutomationDiagnosticsHub
             recordingStarted,
             nowTick);
 
-        RecordingVerificationResult? lastVerification;
-        lock (_stateLock)
-        {
-            if (recordingStarted)
-            {
-                _lastVerification = null;
-            }
-
-            lastVerification = _lastVerification;
-        }
+        var lastVerification = CaptureLastVerificationForSnapshot(recordingStarted);
         var visualCadenceHealthy =
             IsVisualCadenceHealthy(
                 health.ExpectedFrameRate,

@@ -118,6 +118,19 @@ public sealed partial class AutomationDiagnosticsHub
                verificationIdle;
     }
 
+    private RecordingVerificationResult? CaptureLastVerificationForSnapshot(bool recordingStarted)
+    {
+        lock (_stateLock)
+        {
+            if (recordingStarted)
+            {
+                _lastVerification = null;
+            }
+
+            return _lastVerification;
+        }
+    }
+
     private void ScheduleAutoVerificationIfNeeded(bool shouldAutoVerify)
     {
         if (!shouldAutoVerify ||

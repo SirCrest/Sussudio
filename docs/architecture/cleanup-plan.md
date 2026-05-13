@@ -50,7 +50,7 @@ automation snapshot input projection for preview pacing stage classification.
 thread-pool sampling.
 `AutomationDiagnosticsHub.Verification.cs` owns recording/file verification
 commands, automatic post-recording verification scheduling, and
-verification-profile adaptation.
+recording-start verification reset, and verification-profile adaptation.
 
 Automation command dispatch now keeps the root router focused on switch bodies,
 the trivial-handler table, and initialization readiness. Named partials own

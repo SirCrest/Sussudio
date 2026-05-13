@@ -337,6 +337,7 @@ static partial class Program
         AssertContains(diagnosticsVerificationText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
         AssertContains(diagnosticsVerificationText, "private static CaptureRuntimeSnapshot ApplyVerificationProfile(");
         AssertContains(diagnosticsVerificationText, "private bool ShouldAutoVerifySnapshot(");
+        AssertContains(diagnosticsVerificationText, "private RecordingVerificationResult? CaptureLastVerificationForSnapshot(");
         AssertContains(diagnosticsVerificationText, "private void ScheduleAutoVerificationIfNeeded(");
         AssertDoesNotContain(diagnosticsHubText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
         AssertContains(diagnosticsPreviewPacingText, "private static PreviewPacingClassification ClassifyPreviewPacing(");
@@ -369,6 +370,8 @@ static partial class Program
         AssertContains(diagnosticsTimelineText, "private void AppendPerformanceTimelineEntry(AutomationSnapshot snapshot)");
         AssertDoesNotContain(diagnosticsHubText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnosticsSnapshotsText, "var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);");
+        AssertContains(diagnosticsSnapshotsText, "var lastVerification = CaptureLastVerificationForSnapshot(recordingStarted);");
+        AssertDoesNotContain(diagnosticsSnapshotsText, "_lastVerification = null;");
         AssertContains(diagnosticsSnapshotsText, "ScheduleAutoVerificationIfNeeded(shouldAutoVerify);");
         AssertDoesNotContain(diagnosticsSnapshotsText, "Automatic recording verification started.");
         AssertDoesNotContain(diagnosticsSnapshotsText, "new FileInfo(lastOutputPath).Length");
