@@ -258,6 +258,9 @@ static partial class Program
                 "MainWindow full-screen automation awaits transition tasks",
                 MainWindowFullScreenAutomation_AwaitsTransitionTask),
             await RunCheckAsync(
+                "MainWindow window automation commands live in controller",
+                MainWindowWindowAutomationCommands_LiveInController),
+            await RunCheckAsync(
                 "Automation dispatcher extracts string payload fields",
                 AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload),
             await RunCheckAsync(

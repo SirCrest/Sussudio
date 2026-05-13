@@ -140,6 +140,39 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task MainWindowWindowAutomationCommands_LiveInController()
+    {
+        var mainWindowSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
+            .Replace("\r\n", "\n");
+        var windowManagementSource = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
+            .Replace("\r\n", "\n");
+        var adapterSource = ReadRepoFile("Sussudio/MainWindow.WindowAutomation.cs")
+            .Replace("\r\n", "\n");
+        var controllerSource = ReadRepoFile("Sussudio/Controllers/WindowAutomationController.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(adapterSource, "private WindowAutomationController _windowAutomationController = null!;");
+        AssertContains(adapterSource, "private void InitializeWindowAutomationController()");
+        AssertContains(adapterSource, "GetAppWindow = GetAppWindow,");
+        AssertContains(adapterSource, "GetWindowHandle = () => _hwnd,");
+        AssertContains(adapterSource, "InvokeOnUiThreadAsync = InvokeOnUiThreadAsync");
+        AssertContains(adapterSource, "=> _windowAutomationController.MinimizeAsync(cancellationToken);");
+        AssertContains(adapterSource, "=> _windowAutomationController.OpenRecordingsFolderAsync(cancellationToken);");
+        AssertContains(adapterSource, "=> _windowAutomationController.SnapToRegionAsync(region, cancellationToken);");
+        AssertContains(mainWindowSource, "InitializeWindowAutomationController();");
+        AssertContains(controllerSource, "internal sealed class WindowAutomationController");
+        AssertContains(controllerSource, "public Task MoveToAsync(int x, int y, CancellationToken cancellationToken = default)");
+        AssertContains(controllerSource, "public Task ResizeToAsync(int width, int height, CancellationToken cancellationToken = default)");
+        AssertContains(controllerSource, "public Task SnapToRegionAsync(AutomationWindowAction region, CancellationToken cancellationToken = default)");
+        AssertContains(controllerSource, "DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary)");
+        AssertContains(controllerSource, "Process.Start(\"explorer.exe\", path);");
+        AssertContains(windowManagementSource, "public Task CloseAsync(CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(windowManagementSource, "public Task MinimizeAsync(");
+        AssertDoesNotContain(windowManagementSource, "public Task OpenRecordingsFolderAsync(");
+        AssertDoesNotContain(windowManagementSource, "public Task SnapToRegionAsync(");
+        return Task.CompletedTask;
+    }
+
     private static Task StatsSnapshotConstruction_LivesInFocusedBuilder()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");

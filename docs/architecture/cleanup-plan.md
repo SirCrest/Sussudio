@@ -34,6 +34,11 @@ Automation whole-window screenshot capture now lives in
 `Sussudio/Controllers/WindowScreenshotController.cs`. `MainWindow.Screenshot.cs`
 is only the automation adapter.
 
+Window geometry automation and the recordings-folder command now live in
+`Sussudio/Controllers/WindowAutomationController.cs`.
+`MainWindow.WindowAutomation.cs` is the `IAutomationWindowControl` adapter.
+Recording-aware close behavior remains in `MainWindow.WindowManagement.cs`.
+
 Audio and microphone meter rendering now lives in
 `Sussudio/Controllers/AudioMeterController.cs`. The broader control-bar binding
 and microphone-row animation code remains in `MainWindow.Bindings.cs`.

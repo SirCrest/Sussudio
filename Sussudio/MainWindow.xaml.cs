@@ -307,6 +307,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         // Set window handle for folder picker
         _hwnd = WindowNative.GetWindowHandle(this);
         ViewModel.SetWindowHandle(_hwnd);
+        InitializeWindowAutomationController();
         InitializeWindowScreenshotController();
         InitializeFlashbackPollingController();
         InitializeFlashbackTimelineController();
