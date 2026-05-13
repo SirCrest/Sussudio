@@ -123,6 +123,18 @@ static partial class Program
             "Services",
             "Capture",
             "CaptureService.RecordingIntegrity.cs"));
+        var snapshotHelpersText = System.IO.File.ReadAllText(System.IO.Path.Combine(
+            GetRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.Snapshots.cs"));
+        var snapshotAvSyncText = System.IO.File.ReadAllText(System.IO.Path.Combine(
+            GetRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.SnapshotAvSync.cs"));
         var serviceText = System.IO.File.ReadAllText(System.IO.Path.Combine(
             GetRepoRoot(),
             "Sussudio",
@@ -136,6 +148,9 @@ static partial class Program
         AssertContains(snapshotsText, "videoCapture.FlashbackRecordingSequenceGaps");
         AssertContains(serviceText, "CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, flashbackVideoCapture)");
         AssertContains(snapshotsText, "if (sink.TryGetEncoderAvSyncDrift(out var driftMs, out var correctionSamples))");
+        AssertDoesNotContain(snapshotHelpersText, "private (double? DriftMs, double? RateMsPerSec) ComputeAvSyncDrift()");
+        AssertContains(snapshotAvSyncText, "private (double? DriftMs, double? RateMsPerSec) ComputeAvSyncDrift()");
+        AssertContains(snapshotAvSyncText, "private (double? EncoderDriftMs, long? EncoderCorrectionSamples) GetEncoderAvSyncDrift()");
         AssertContains(snapshotsText, "encoderAvSyncDriftMs = driftMs;");
         AssertContains(snapshotsText, "encoderAvSyncCorrectionSamples = correctionSamples;");
         AssertContains(snapshotsText, "avSyncDriftMs: null,\n            avSyncDriftRateMsPerSec: null,\n            encoderAvSyncDriftMs: null,\n            encoderAvSyncCorrectionSamples: null");
