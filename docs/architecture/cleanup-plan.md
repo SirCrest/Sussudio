@@ -264,9 +264,12 @@ Flashback decoder audio output now lives in
 delivery, audio callback failure handling, resampler output conversion, and
 bounded audio sample/byte sizing there. D3D11VA decoder selection and hardware
 configuration diagnostics now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs`. Keep file open/close,
-seek/decode control flow, video output, and native cleanup in the root decoder
-until those areas get their own focused slices.
+`Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs`. Decoded video frame
+output, D3D11/software frame validation, plane copies, and YUV-to-NV12/P010
+conversion now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs`. Keep file
+open/close, seek/decode control flow, shared timestamp helpers, and native
+cleanup in the root decoder until those areas get their own focused slices.
 
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
