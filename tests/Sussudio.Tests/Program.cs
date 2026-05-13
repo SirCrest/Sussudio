@@ -720,6 +720,9 @@ static partial class Program
                 "Diagnostic session result construction has a named owner",
                 DiagnosticSessionResultBuilder_OwnsSummaryConstruction),
             await RunCheckAsync(
+                "Diagnostic session result artifacts have a named owner",
+                DiagnosticSessionResultArtifacts_OwnPreSummaryWrites),
+            await RunCheckAsync(
                 "Diagnostic session shared text helpers have a named owner",
                 DiagnosticSessionText_OwnsSharedFormattingHelpers),
             await RunCheckAsync(

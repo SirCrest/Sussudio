@@ -1092,10 +1092,13 @@ static partial class Program
         AssertContains(builderText, "internal sealed record DiagnosticSessionResultBuildRequest(");
         AssertContains(builderText, "runState.SetStage(\"result-analysis\")");
         AssertContains(builderText, "var result = new DiagnosticSessionResult");
-        AssertContains(builderText, "runState.WriteArtifactBestEffortAsync(\"write-samples\", samplesPath, samples)");
-        AssertContains(builderText, "runState.WriteArtifactBestEffortAsync(\"write-frame-ledger\", frameLedgerPath, BuildFrameLedgerTrace(request.SessionId, samples))");
-        AssertContains(builderText, "runState.WriteArtifactBestEffortAsync(\"write-timeline\", timelinePath, request.Timeline)");
+        AssertContains(builderText, "var artifactPaths = await WritePreSummaryAsync(");
+        AssertContains(builderText, "SummaryPath = artifactPaths.SummaryPath");
+        AssertContains(builderText, "SamplesPath = artifactPaths.SamplesPath");
+        AssertContains(builderText, "FrameLedgerPath = artifactPaths.FrameLedgerPath");
+        AssertContains(builderText, "TimelinePath = artifactPaths.TimelinePath");
         AssertContains(builderText, "runState.SetStage(\"summary\")");
+        AssertContains(builderText, "await WriteJsonAsync(artifactPaths.SummaryPath, result, CancellationToken.None)");
         AssertContains(builderText, "runState.RecordTerminalException(ex, \"summary-write\")");
         AssertContains(builderText, "runState.SetStage(\"summary-written\")");
         AssertContains(runnerText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
@@ -1104,6 +1107,31 @@ static partial class Program
         AssertDoesNotContain(runnerText, "var result = new DiagnosticSessionResult");
         AssertDoesNotContain(runnerText, "WriteArtifactBestEffortAsync(\"write-samples\"");
         AssertDoesNotContain(runnerText, "RecordTerminalException(ex, \"summary-write\")");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task DiagnosticSessionResultArtifacts_OwnPreSummaryWrites()
+    {
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+            .Replace("\r\n", "\n");
+        var artifactsText = ReadRepoFile("tools/Common/DiagnosticSessionResultArtifacts.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(artifactsText, "internal static class DiagnosticSessionResultArtifacts");
+        AssertContains(artifactsText, "internal static async Task<DiagnosticSessionResultArtifactPaths> WritePreSummaryAsync(");
+        AssertContains(artifactsText, "internal readonly record struct DiagnosticSessionResultArtifactPaths(");
+        AssertContains(artifactsText, "SummaryPath: Path.Combine(outputDirectory, \"summary.json\")");
+        AssertContains(artifactsText, "SamplesPath: Path.Combine(outputDirectory, \"samples.json\")");
+        AssertContains(artifactsText, "FrameLedgerPath: Path.Combine(outputDirectory, \"frame-ledger.json\")");
+        AssertContains(artifactsText, "TimelinePath: Path.Combine(outputDirectory, \"timeline.json\")");
+        AssertContains(artifactsText, "runState.WriteArtifactBestEffortAsync(\"write-samples\", paths.SamplesPath, samples)");
+        AssertContains(artifactsText, "runState.WriteArtifactBestEffortAsync(\"write-frame-ledger\", paths.FrameLedgerPath, BuildFrameLedgerTrace(sessionId, samples))");
+        AssertContains(artifactsText, "runState.WriteArtifactBestEffortAsync(\"write-timeline\", paths.TimelinePath, timeline)");
+        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionResultArtifacts;");
+        AssertContains(builderText, "WritePreSummaryAsync(");
+        AssertDoesNotContain(builderText, "Path.Combine(request.OutputDirectory, \"samples.json\")");
+        AssertDoesNotContain(builderText, "BuildFrameLedgerTrace(request.SessionId, samples)");
 
         return Task.CompletedTask;
     }

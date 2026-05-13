@@ -6,6 +6,7 @@ using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;
 using static Sussudio.Tools.DiagnosticSessionHealthPolicy;
 using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
+using static Sussudio.Tools.DiagnosticSessionResultArtifacts;
 using static Sussudio.Tools.DiagnosticSessionText;
 
 namespace Sussudio.Tools;
@@ -212,14 +213,13 @@ internal static class DiagnosticSessionResultBuilder
             .DefaultIfEmpty(0.0)
             .Max();
 
-        var samplesPath = Path.Combine(request.OutputDirectory, "samples.json");
-        var frameLedgerPath = Path.Combine(request.OutputDirectory, "frame-ledger.json");
-        var timelinePath = Path.Combine(request.OutputDirectory, "timeline.json");
-        var summaryPath = Path.Combine(request.OutputDirectory, "summary.json");
-
-        await runState.WriteArtifactBestEffortAsync("write-samples", samplesPath, samples).ConfigureAwait(false);
-        await runState.WriteArtifactBestEffortAsync("write-frame-ledger", frameLedgerPath, BuildFrameLedgerTrace(request.SessionId, samples)).ConfigureAwait(false);
-        await runState.WriteArtifactBestEffortAsync("write-timeline", timelinePath, request.Timeline).ConfigureAwait(false);
+        var artifactPaths = await WritePreSummaryAsync(
+                request.OutputDirectory,
+                request.SessionId,
+                samples,
+                request.Timeline,
+                runState)
+            .ConfigureAwait(false);
 
         var verificationSucceeded = request.Verification.HasValue
             ? GetBool(request.Verification.Value, "Succeeded")
@@ -248,10 +248,10 @@ internal static class DiagnosticSessionResultBuilder
             SampleCount = samples.Count,
             OutputDirectory = request.OutputDirectory,
             LivePath = request.LivePath,
-            SummaryPath = summaryPath,
-            SamplesPath = samplesPath,
-            FrameLedgerPath = frameLedgerPath,
-            TimelinePath = timelinePath,
+            SummaryPath = artifactPaths.SummaryPath,
+            SamplesPath = artifactPaths.SamplesPath,
+            FrameLedgerPath = artifactPaths.FrameLedgerPath,
+            TimelinePath = artifactPaths.TimelinePath,
             HealthStatus = healthStatus,
             LikelyStage = likelyStage,
             Summary = summary,
@@ -436,7 +436,7 @@ internal static class DiagnosticSessionResultBuilder
         var summaryWritten = false;
         try
         {
-            await WriteJsonAsync(summaryPath, result, CancellationToken.None).ConfigureAwait(false);
+            await WriteJsonAsync(artifactPaths.SummaryPath, result, CancellationToken.None).ConfigureAwait(false);
             summaryWritten = true;
         }
         catch (Exception ex)

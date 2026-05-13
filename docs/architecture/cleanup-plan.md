@@ -798,9 +798,13 @@ not need to know about the formatter owner.
 
 Diagnostic-session result construction now lives in
 `tools/Common/DiagnosticSessionResultBuilder.cs`. It owns result analysis,
-diagnostic warning enrichment, artifact path construction, summary JSON
-construction, and summary-write failure handling while the runner keeps the
-phase sequence.
+diagnostic warning enrichment, summary JSON construction, and summary-write
+failure handling while the runner keeps the phase sequence.
+
+Diagnostic-session result artifact setup now lives in
+`tools/Common/DiagnosticSessionResultArtifacts.cs`. It owns result artifact path
+construction and pre-summary sample, frame-ledger, and timeline writes while
+the result builder keeps summary field construction.
 
 Shared diagnostic-session text helpers now live in
 `tools/Common/DiagnosticSessionText.cs`. Keep cross-cutting string helpers
@@ -998,6 +1002,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionCommandChannel.cs`
 - `DiagnosticSessionPostRunSnapshots.cs`
+- `DiagnosticSessionResultArtifacts.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionRunState.cs`

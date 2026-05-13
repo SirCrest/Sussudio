@@ -912,6 +912,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionResultArtifacts.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionRunState.cs")
@@ -1027,8 +1029,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "WriteSamplingLiveStateBestEffortAsync");
         AssertContains(diagnosticSessionText, "RecordTerminalException(ex, runState.LastStage);");
         AssertContains(diagnosticSessionText, "RecordTerminalException(ex, \"final-snapshot\");");
-        AssertContains(diagnosticSessionText, "WriteArtifactBestEffortAsync(\"write-samples\", samplesPath, samples)");
-        AssertContains(diagnosticSessionText, "await WriteJsonAsync(summaryPath, result, CancellationToken.None)");
+        AssertContains(diagnosticSessionText, "WriteArtifactBestEffortAsync(\"write-samples\", paths.SamplesPath, samples)");
+        AssertContains(diagnosticSessionText, "await WriteJsonAsync(artifactPaths.SummaryPath, result, CancellationToken.None)");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackPendingCommandsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxPendingCommandsObserved");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxCommandQueueLatencyMsObserved");
