@@ -1098,15 +1098,38 @@ static partial class Program
         AssertContains(builderText, "FrameLedgerPath = artifactPaths.FrameLedgerPath");
         AssertContains(builderText, "TimelinePath = artifactPaths.TimelinePath");
         AssertContains(builderText, "runState.SetStage(\"summary\")");
-        AssertContains(builderText, "await WriteJsonAsync(artifactPaths.SummaryPath, result, CancellationToken.None)");
-        AssertContains(builderText, "runState.RecordTerminalException(ex, \"summary-write\")");
-        AssertContains(builderText, "runState.SetStage(\"summary-written\")");
+        AssertContains(builderText, "return await WriteAsync(result, runState, warnings).ConfigureAwait(false);");
         AssertContains(runnerText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
         AssertContains(runnerText, "new DiagnosticSessionResultBuildRequest(");
         AssertDoesNotContain(runnerText, "SetStage(\"result-analysis\")");
         AssertDoesNotContain(runnerText, "var result = new DiagnosticSessionResult");
         AssertDoesNotContain(runnerText, "WriteArtifactBestEffortAsync(\"write-samples\"");
         AssertDoesNotContain(runnerText, "RecordTerminalException(ex, \"summary-write\")");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task DiagnosticSessionSummaryWriter_OwnsSummaryWriteFailures()
+    {
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+            .Replace("\r\n", "\n");
+        var writerText = ReadRepoFile("tools/Common/DiagnosticSessionSummaryWriter.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(writerText, "internal static class DiagnosticSessionSummaryWriter");
+        AssertContains(writerText, "internal static async Task<DiagnosticSessionResult> WriteAsync(");
+        AssertContains(writerText, "await WriteJsonAsync(result.SummaryPath, result, CancellationToken.None)");
+        AssertContains(writerText, "runState.RecordTerminalException(ex, \"summary-write\")");
+        AssertContains(writerText, "result.Success = false;");
+        AssertContains(writerText, "result.CompletedUtc = DateTimeOffset.UtcNow;");
+        AssertContains(writerText, "result.TerminalState = runState.GetTerminalState();");
+        AssertContains(writerText, "result.LastStage = runState.GetResultLastStage();");
+        AssertContains(writerText, "result.Warnings = warnings.ToArray();");
+        AssertContains(writerText, "runState.SetStage(\"summary-written\")");
+        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionSummaryWriter;");
+        AssertContains(builderText, "WriteAsync(result, runState, warnings)");
+        AssertDoesNotContain(builderText, "RecordTerminalException(ex, \"summary-write\")");
+        AssertDoesNotContain(builderText, "SetStage(\"summary-written\")");
 
         return Task.CompletedTask;
     }

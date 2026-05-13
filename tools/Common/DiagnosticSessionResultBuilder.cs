@@ -4,9 +4,9 @@ using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;
 using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;
 using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;
 using static Sussudio.Tools.DiagnosticSessionHealthPolicy;
-using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
 using static Sussudio.Tools.DiagnosticSessionResultArtifacts;
+using static Sussudio.Tools.DiagnosticSessionSummaryWriter;
 using static Sussudio.Tools.DiagnosticSessionText;
 
 namespace Sussudio.Tools;
@@ -433,31 +433,7 @@ internal static class DiagnosticSessionResultBuilder
             Warnings = warnings.ToArray()
         };
 
-        var summaryWritten = false;
-        try
-        {
-            await WriteJsonAsync(artifactPaths.SummaryPath, result, CancellationToken.None).ConfigureAwait(false);
-            summaryWritten = true;
-        }
-        catch (Exception ex)
-        {
-            runState.RecordTerminalException(ex, "summary-write");
-            completedUtc = DateTimeOffset.UtcNow;
-            terminalState = runState.GetTerminalState();
-            result.Success = false;
-            result.CompletedUtc = completedUtc;
-            result.TerminalState = terminalState;
-            result.LastStage = runState.GetResultLastStage();
-            result.UnhandledException = runState.TerminalException is null ? null : DiagnosticSessionRunState.FormatTerminalException(runState.TerminalException);
-            result.Warnings = warnings.ToArray();
-        }
-
-        if (summaryWritten)
-        {
-            runState.SetStage("summary-written");
-        }
-
-        return result;
+        return await WriteAsync(result, runState, warnings).ConfigureAwait(false);
     }
 }
 
