@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -54,7 +52,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private readonly bool _automationTokenRequired;
     private readonly string _automationPipeName;
-    private readonly string _windowTitleBase;
     private long _lastRendererStopTick;
     private long _rendererReinitUnsafeWindows;
     public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);
@@ -85,34 +82,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private static bool IsHdrSubtype(string? subtype)
         => MediaFormat.IsHdrPixelFormat(subtype);
-
-    private static string BuildWindowTitleBase()
-    {
-        var exePath = Environment.ProcessPath;
-        if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
-        {
-            return "Simple Sussudio";
-        }
-
-        var buildTime = File.GetLastWriteTime(exePath);
-        if (buildTime == DateTime.MinValue)
-        {
-            return "Simple Sussudio";
-        }
-
-        return $"Simple Sussudio (build {buildTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)})";
-    }
-
-    private void ApplyWindowTitle()
-    {
-        if (ViewModel.IsRecording)
-        {
-            Title = $"{_windowTitleBase} - REC {ViewModel.RecordingTime}";
-            return;
-        }
-
-        Title = _windowTitleBase;
-    }
 
     public MainWindow()
     {

@@ -59,6 +59,9 @@ Top-level shell resize telemetry for preview compositor transforms now lives in
 `MainWindow.PreviewRenderer.cs`, and close/finalize handling remains in
 `MainWindow.CloseLifecycle.cs`.
 
+Window title base/build-stamp formatting and the recording-time suffix now live
+in `Sussudio/MainWindow.WindowTitle.cs`.
+
 Window close lifecycle and native window helpers are now explicit:
 `Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`, `Closed`,
 automation close completion, and recording-aware shutdown protection, while

@@ -120,6 +120,8 @@ Primary current owners:
   for preview compositor transforms. Preview surface sizing stays with
   `MainWindow.PreviewRenderer.cs`; close/finalize behavior stays with
   `MainWindow.CloseLifecycle.cs`.
+- `Sussudio/MainWindow.WindowTitle.cs` owns window title base/build-stamp
+  formatting and the recording-time suffix used by property changes.
 - `Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`, `Closed`,
   automation close completion, and recording-aware shutdown protection.
 - `Sussudio/MainWindow.NativeWindow.cs` owns native `AppWindow` lookup and DWM

@@ -519,6 +519,9 @@ static partial class Program
                 "MainWindow shell resize telemetry lives in sizing partial",
                 MainWindowShellResizeTelemetry_LivesInSizingPartial),
             await RunCheckAsync(
+                "MainWindow title presentation lives in title partial",
+                MainWindowTitlePresentation_LivesInTitlePartial),
+            await RunCheckAsync(
                 "MainWindow close lifecycle and native helpers are split",
                 MainWindowCloseLifecycleAndNativeHelpers_AreSplit),
             await RunCheckAsync(
@@ -3006,6 +3009,29 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private long _previewLastResizeLogTick;");
         AssertDoesNotContain(closeLifecycleText, "private void MainWindow_SizeChanged(");
         AssertDoesNotContain(closeLifecycleText, "_previewLastResizeLogTick");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task MainWindowTitlePresentation_LivesInTitlePartial()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var titleText = ReadRepoFile("Sussudio/MainWindow.WindowTitle.cs").Replace("\r\n", "\n");
+
+        AssertContains(titleText, "private readonly string _windowTitleBase;");
+        AssertContains(titleText, "private static string BuildWindowTitleBase()");
+        AssertContains(titleText, "Environment.ProcessPath");
+        AssertContains(titleText, "File.GetLastWriteTime(exePath)");
+        AssertContains(titleText, "CultureInfo.InvariantCulture");
+        AssertContains(titleText, "private void ApplyWindowTitle()");
+        AssertContains(titleText, "Title = $\"{_windowTitleBase} - REC {ViewModel.RecordingTime}\";");
+        AssertContains(mainWindowText, "_windowTitleBase = BuildWindowTitleBase();");
+        AssertContains(mainWindowText, "ApplyWindowTitle();");
+        AssertContains(propertyChangedText, "ApplyWindowTitle();");
+        AssertDoesNotContain(mainWindowText, "private static string BuildWindowTitleBase()");
+        AssertDoesNotContain(mainWindowText, "private void ApplyWindowTitle()");
+        AssertDoesNotContain(mainWindowText, "CultureInfo.InvariantCulture");
 
         return Task.CompletedTask;
     }
