@@ -39,6 +39,10 @@ Window geometry automation and the recordings-folder command now live in
 `MainWindow.WindowAutomation.cs` is the `IAutomationWindowControl` adapter.
 Recording-aware close behavior remains in `MainWindow.WindowManagement.cs`.
 
+UI-thread dispatching helpers and guarded async event-handler execution now
+live in `Sussudio/MainWindow.Dispatching.cs`. Window close completion and
+recording-aware close handling remain in `MainWindow.WindowManagement.cs`.
+
 Audio and microphone meter rendering now lives in
 `Sussudio/Controllers/AudioMeterController.cs`. The broader control-bar binding
 and microphone-row animation code remains in `MainWindow.Bindings.cs`.

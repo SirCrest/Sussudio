@@ -261,6 +261,9 @@ static partial class Program
                 "MainWindow window automation commands live in controller",
                 MainWindowWindowAutomationCommands_LiveInController),
             await RunCheckAsync(
+                "MainWindow UI dispatching lives in dispatching partial",
+                MainWindowUiDispatching_LivesInDispatchingPartial),
+            await RunCheckAsync(
                 "Automation dispatcher extracts string payload fields",
                 AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload),
             await RunCheckAsync(

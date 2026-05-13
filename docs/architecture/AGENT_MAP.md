@@ -108,6 +108,9 @@ Primary current owners:
   automation plus the recordings-folder command. `MainWindow.WindowAutomation.cs`
   is the `IAutomationWindowControl` adapter; recording-aware close handling
   stays with `MainWindow.WindowManagement.cs`.
+- `Sussudio/MainWindow.Dispatching.cs` owns UI-thread enqueue helpers and
+  guarded async event-handler execution used by automation adapters and XAML
+  event handlers.
 - `Sussudio/Controllers/AudioMeterController.cs` owns audio/microphone meter
   smoothing, timer lifetime, peak/range markers, and meter clip rendering.
   Keep microphone row layout animation in `MainWindow.Bindings.cs` until that

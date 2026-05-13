@@ -121,6 +121,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var windowManagementSource = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
             .Replace("\r\n", "\n");
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(fullScreenSource, "public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => InvokeOnUiThreadAsync(\n            () => _fullScreenController.SetEnabledAsync(enabled),");
         AssertContains(fullScreenSource, "private Task EnterFullScreenAsync()\n        => _fullScreenController.EnterAsync();");
@@ -134,9 +136,10 @@ static partial class Program
         AssertDoesNotContain(fullScreenSource, "private async void EnterFullScreen");
         AssertDoesNotContain(fullScreenSource, "private async void ExitFullScreen");
         AssertDoesNotContain(fullScreenControllerSource, "async void");
-        AssertContains(windowManagementSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
-        AssertContains(windowManagementSource, "await action().ConfigureAwait(true);");
-        AssertDoesNotContain(windowManagementSource, "registration.Dispose();\n                registration = default;\n\n                if (cancellationToken.IsCancellationRequested)");
+        AssertContains(dispatchingSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
+        AssertContains(dispatchingSource, "await action().ConfigureAwait(true);");
+        AssertDoesNotContain(dispatchingSource, "registration.Dispose();\n                registration = default;\n\n                if (cancellationToken.IsCancellationRequested)");
+        AssertDoesNotContain(windowManagementSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
         return Task.CompletedTask;
     }
 
@@ -145,6 +148,8 @@ static partial class Program
         var mainWindowSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var windowManagementSource = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
+            .Replace("\r\n", "\n");
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
             .Replace("\r\n", "\n");
         var adapterSource = ReadRepoFile("Sussudio/MainWindow.WindowAutomation.cs")
             .Replace("\r\n", "\n");
@@ -156,6 +161,7 @@ static partial class Program
         AssertContains(adapterSource, "GetAppWindow = GetAppWindow,");
         AssertContains(adapterSource, "GetWindowHandle = () => _hwnd,");
         AssertContains(adapterSource, "InvokeOnUiThreadAsync = InvokeOnUiThreadAsync");
+        AssertContains(dispatchingSource, "private Task InvokeOnUiThreadAsync(Action action, CancellationToken cancellationToken = default)");
         AssertContains(adapterSource, "=> _windowAutomationController.MinimizeAsync(cancellationToken);");
         AssertContains(adapterSource, "=> _windowAutomationController.OpenRecordingsFolderAsync(cancellationToken);");
         AssertContains(adapterSource, "=> _windowAutomationController.SnapToRegionAsync(region, cancellationToken);");
@@ -170,6 +176,30 @@ static partial class Program
         AssertDoesNotContain(windowManagementSource, "public Task MinimizeAsync(");
         AssertDoesNotContain(windowManagementSource, "public Task OpenRecordingsFolderAsync(");
         AssertDoesNotContain(windowManagementSource, "public Task SnapToRegionAsync(");
+        return Task.CompletedTask;
+    }
+
+    private static Task MainWindowUiDispatching_LivesInDispatchingPartial()
+    {
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
+            .Replace("\r\n", "\n");
+        var windowManagementSource = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
+            .Replace("\r\n", "\n");
+        var eventHandlersSource = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs")
+            .Replace("\r\n", "\n");
+        var flashbackSource = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(dispatchingSource, "private Task InvokeOnUiThreadAsync(Action action, CancellationToken cancellationToken = default)");
+        AssertContains(dispatchingSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
+        AssertContains(dispatchingSource, "private async Task RunUiEventHandlerAsync(Func<Task> operation, string operationName)");
+        AssertContains(dispatchingSource, "CompleteWindowCloseRequest(new OperationCanceledException(cancellationToken));");
+        AssertContains(dispatchingSource, "ViewModel.StatusText = $\"{operationName} failed: {ex.Message}\";");
+        AssertContains(eventHandlersSource, "RunUiEventHandlerAsync(async () =>");
+        AssertContains(flashbackSource, "_ = RunUiEventHandlerAsync(() => ViewModel.ExportFlashbackAsync(), nameof(FlashbackExportButton_Click));");
+        AssertDoesNotContain(windowManagementSource, "private Task InvokeOnUiThreadAsync(Action action, CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(windowManagementSource, "private async Task RunUiEventHandlerAsync(Func<Task> operation, string operationName)");
+
         return Task.CompletedTask;
     }
 
