@@ -111,6 +111,9 @@ static partial class Program
                 "Recording integrity snapshot contract exposes automation fields",
                 RecordingIntegritySnapshotContract_ExposesAutomationFields),
             await RunCheckAsync(
+                "Recording integrity automation projection lives in focused partial",
+                RecordingIntegrityAutomationProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Recording integrity flags audio discontinuity and drift",
                 RecordingIntegritySummary_FlagsAudioDiscontinuityAndDrift),
             await RunCheckAsync(

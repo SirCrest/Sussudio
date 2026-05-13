@@ -73,6 +73,33 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task RecordingIntegrityAutomationProjection_LivesInFocusedPartial()
+    {
+        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
+            .Replace("\r\n", "\n");
+        var recordingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(snapshotProjectionText, "var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);");
+        AssertContains(snapshotProjectionText, "RecordingIntegrityStatus = recordingIntegrity.Status,");
+        AssertContains(snapshotProjectionText, "RecordingIntegrityAudioFramesWrittenToSink = recordingIntegrity.AudioFramesWrittenToSink,");
+        AssertContains(snapshotProjectionText, "RecordingIntegrityEncoderAvSyncDriftMs = recordingIntegrity.EncoderAvSyncDriftMs,");
+        AssertContains(snapshotProjectionText, "RecordingIntegrityReason = recordingIntegrity.Reason,");
+        AssertDoesNotContain(snapshotProjectionText, "RecordingIntegrityStatus = captureRuntime.RecordingIntegrityStatus,");
+        AssertDoesNotContain(snapshotProjectionText, "RecordingIntegrityAudioFramesWrittenToSink = captureRuntime.RecordingIntegrityAudioFramesWrittenToSink,");
+        AssertDoesNotContain(snapshotProjectionText, "RecordingIntegrityEncoderAvSyncDriftMs = captureRuntime.RecordingIntegrityEncoderAvSyncDriftMs,");
+        AssertDoesNotContain(snapshotProjectionText, "RecordingIntegrityReason = captureRuntime.RecordingIntegrityReason,");
+
+        AssertContains(recordingProjectionText, "private static RecordingIntegrityProjection BuildRecordingIntegrityProjection(CaptureRuntimeSnapshot captureRuntime)");
+        AssertContains(recordingProjectionText, "private readonly record struct RecordingIntegrityProjection");
+        AssertContains(recordingProjectionText, "Status = captureRuntime.RecordingIntegrityStatus,");
+        AssertContains(recordingProjectionText, "AudioFramesWrittenToSink = captureRuntime.RecordingIntegrityAudioFramesWrittenToSink,");
+        AssertContains(recordingProjectionText, "EncoderAvSyncDriftMs = captureRuntime.RecordingIntegrityEncoderAvSyncDriftMs,");
+        AssertContains(recordingProjectionText, "Reason = captureRuntime.RecordingIntegrityReason");
+
+        return Task.CompletedTask;
+    }
+
     private static Task RecordingIntegritySummary_FlagsAudioDiscontinuityAndDrift()
     {
         var summary = InvokeBuildRecordingIntegritySummary(
