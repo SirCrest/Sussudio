@@ -91,6 +91,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Diagnostics.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Guards.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs").Replace("\r\n", "\n")
         };
 
@@ -3787,11 +3788,11 @@ static partial class Program
     {
         var sourceText = ReadFlashbackDecoderSource();
 
-        var softwareInitBlock = ExtractTextBetween(
+        AssertContains(sourceText, "if (codecPar->codec_id == AVCodecID.AV_CODEC_ID_MJPEG)\n        {\n            _videoCodecCtx->thread_count = 1;\n        }");
+        AssertOccursBefore(
             sourceText,
-            "// Software fallback",
+            "if (codecPar->codec_id == AVCodecID.AV_CODEC_ID_MJPEG)",
             "ThrowIfError(\n            ffmpeg.avcodec_open2(_videoCodecCtx, codec, null),");
-        AssertContains(softwareInitBlock, "if (codecPar->codec_id == AVCodecID.AV_CODEC_ID_MJPEG)\n        {\n            _videoCodecCtx->thread_count = 1;\n        }");
 
         return Task.CompletedTask;
     }
@@ -4042,7 +4043,7 @@ static partial class Program
         var disposeBlock = ExtractTextBetween(
             sourceText,
             "public void Dispose()",
-            "    // ── Private: Initialization");
+            "private bool FeedNextVideoPacket");
         AssertContains(disposeBlock, "AudioChunkCallback = null;");
         AssertOccursBefore(disposeBlock, "AudioChunkCallback = null;", "CloseFileCore();");
 

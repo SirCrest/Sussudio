@@ -414,6 +414,10 @@ Decoded video/audio output DTOs now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs` so the root
 decoder file ends at its control-flow owner instead of carrying trailing model
 types.
+Video codec setup, D3D11VA/software fallback selection, frame-rate metadata
+initialization, MJPEG single-thread decode policy, and software output-buffer
+allocation now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs`.
 
 Flashback buffer retention now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs`. Keep segment

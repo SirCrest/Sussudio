@@ -124,6 +124,21 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackDecoder_VideoSetupLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var videoSetupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(videoSetupText, "private void InitializeVideoDecoder()");
+        AssertContains(videoSetupText, "private void AllocateVideoOutputBuffers()");
+        AssertDoesNotContain(rootText, "private void InitializeVideoDecoder()");
+        AssertDoesNotContain(rootText, "private void AllocateVideoOutputBuffers()");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
