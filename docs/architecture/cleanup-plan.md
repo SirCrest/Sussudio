@@ -356,6 +356,13 @@ public cadence snapshot record, expected-rate/window sizing, stop-time cadence
 reset, timestamp interval tracking, and percentile/drop estimate calculations
 there; keep sample reading and frame delivery in the root source-reader file.
 
+Unified capture diagnostic metric projection now lives in
+`Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs`. Keep MJPEG timing
+records, source-reader cadence forwarding, MJPEG jitter/hash metrics, preview
+visual cadence metrics, and frame-ledger summary projection there; keep shared
+source-session lifecycle and preview/recording/Flashback frame routing in
+`UnifiedVideoCapture.cs`.
+
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`: `AutomationSnapshot.cs`,
 `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,

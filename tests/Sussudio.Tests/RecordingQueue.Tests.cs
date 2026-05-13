@@ -15,6 +15,17 @@ static partial class Program
         return string.Join("\n", parts);
     }
 
+    private static string ReadUnifiedVideoCaptureSource()
+    {
+        var parts = new[]
+        {
+            ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs").Replace("\r\n", "\n")
+        };
+
+        return string.Join("\n", parts);
+    }
+
     private static Task RecordingVideoQueues_FailExplicitlyInsteadOfEvictingFrames()
     {
         var libAvSource = ReadLibAvRecordingSinkSource();
@@ -34,7 +45,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs");
         var captureSnapshotsSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs");
-        var unifiedVideoCaptureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs");
+        var unifiedVideoCaptureSource = ReadUnifiedVideoCaptureSource();
         var recordingContractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
             + "\n"
             + ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs");
