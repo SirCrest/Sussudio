@@ -90,6 +90,9 @@ Stats dock and frame-time overlay lifecycle now live in
 still renders metric values and assembles snapshots, but polling, visibility
 state, dynamic diagnostic row pools, and dock animations are out of the shell
 fields.
+Stats overlay lifecycle, source-telemetry panel, and diagnostic row pooling
+contract checks now live in
+`tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs`.
 Frame-time overlay graph drawing now lives in
 `Sussudio/MainWindow.FrameTimeOverlay.cs`; `MainWindow.StatsOverlay.cs` keeps
 the stats dock projection and snapshot adapter.
