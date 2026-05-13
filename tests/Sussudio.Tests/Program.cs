@@ -519,6 +519,9 @@ static partial class Program
                 "MainWindow shell resize telemetry lives in sizing partial",
                 MainWindowShellResizeTelemetry_LivesInSizingPartial),
             await RunCheckAsync(
+                "Preview expected interval state lives in renderer partial",
+                PreviewExpectedIntervalState_LivesInRendererPartial),
+            await RunCheckAsync(
                 "MainWindow title presentation lives in title partial",
                 MainWindowTitlePresentation_LivesInTitlePartial),
             await RunCheckAsync(
@@ -3009,6 +3012,25 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private long _previewLastResizeLogTick;");
         AssertDoesNotContain(closeLifecycleText, "private void MainWindow_SizeChanged(");
         AssertDoesNotContain(closeLifecycleText, "_previewLastResizeLogTick");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewExpectedIntervalState_LivesInRendererPartial()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+
+        AssertContains(previewRendererText, "private double _previewMinPresentationIntervalMs;");
+        AssertContains(previewRendererText, "private double ResolvePreviewExpectedIntervalMs()");
+        AssertContains(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
+        AssertContains(previewRendererText, "return Math.Max(1.0, 1000.0 / sourceFps);");
+        AssertContains(previewRendererText, "_previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();");
+        AssertContains(statsOverlayText, "GetPresentCadenceMetrics(_previewMinPresentationIntervalMs)");
+        AssertDoesNotContain(mainWindowText, "private double _previewMinPresentationIntervalMs;");
+        AssertDoesNotContain(mainWindowText, "private double ResolvePreviewExpectedIntervalMs()");
+        AssertDoesNotContain(mainWindowText, "private static bool IsHdrSubtype");
 
         return Task.CompletedTask;
     }

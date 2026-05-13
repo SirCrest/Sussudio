@@ -36,6 +36,19 @@ namespace Sussudio;
 // renderer sizing, and the bridge between live/Flashback frames and D3D11.
 public sealed partial class MainWindow
 {
+    private double _previewMinPresentationIntervalMs;
+
+    private double ResolvePreviewExpectedIntervalMs()
+    {
+        var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;
+        if (sourceFps <= 0)
+        {
+            sourceFps = 60;
+        }
+
+        return Math.Max(1.0, 1000.0 / sourceFps);
+    }
+
     private void OnD3DRendererFirstFrameRendered()
     {
         Logger.Log($"PREVIEW_D3D11_FIRST_FRAME attempt={_previewStartupAttemptId ?? "none"}");

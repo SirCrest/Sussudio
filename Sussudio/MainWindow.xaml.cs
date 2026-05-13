@@ -47,7 +47,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
     private long _previewLastPresentedTick;
-    private double _previewMinPresentationIntervalMs;
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private readonly bool _automationTokenRequired;
@@ -68,20 +67,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private static bool IsAutoFrameRateOption(FrameRateOption option)
         => option.Value <= 0 || option.FriendlyValue <= 0;
-
-    private double ResolvePreviewExpectedIntervalMs()
-    {
-        var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;
-        if (sourceFps <= 0)
-        {
-            sourceFps = 60;
-        }
-
-        return Math.Max(1.0, 1000.0 / sourceFps);
-    }
-
-    private static bool IsHdrSubtype(string? subtype)
-        => MediaFormat.IsHdrPixelFormat(subtype);
 
     public MainWindow()
     {

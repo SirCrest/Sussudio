@@ -56,7 +56,8 @@ close handling remain in `MainWindow.CloseLifecycle.cs`.
 
 Top-level shell resize telemetry for preview compositor transforms now lives in
 `Sussudio/MainWindow.WindowSizing.cs`. Preview surface sizing remains in
-`MainWindow.PreviewRenderer.cs`, and close/finalize handling remains in
+`MainWindow.PreviewRenderer.cs`, including expected-present interval and
+renderer cadence state. Close/finalize handling remains in
 `MainWindow.CloseLifecycle.cs`.
 
 Window title base/build-stamp formatting and the recording-time suffix now live
