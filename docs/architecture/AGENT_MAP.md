@@ -16,7 +16,7 @@ folder.
 |------|---------------------|----------------------|
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
-| Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackExportFailureClassification.cs`, `CaptureService.FlashbackExportPlanning.cs`, `CaptureService.FlashbackExportProgress.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.Snapshots.cs`, `CaptureService.Telemetry.cs` | lifecycle owner, audio owner, cleanup owner, transition/disposal owner, deferred cleanup owner, failure owner, Flashback control owner, Flashback export failure taxonomy, Flashback export planning/throttle owner, Flashback export/progress owner, Flashback recording policy owner, health snapshot builder, preview lifecycle owner, preview pipeline owner, probe owner, recording integrity owner, runtime snapshot builder, shared snapshot helper policy, telemetry owner, resource managers |
+| Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackExportDiagnostics.cs`, `CaptureService.FlashbackExportFailureClassification.cs`, `CaptureService.FlashbackExportOperations.cs`, `CaptureService.FlashbackExportPlanning.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.Snapshots.cs`, `CaptureService.Telemetry.cs` | lifecycle owner, audio owner, cleanup owner, transition/disposal owner, deferred cleanup owner, failure owner, Flashback control owner, Flashback export diagnostics/progress owner, Flashback export failure taxonomy, Flashback export entry/core owner, Flashback export planning/throttle owner, Flashback recording policy owner, health snapshot builder, preview lifecycle owner, preview pipeline owner, probe owner, recording integrity owner, runtime snapshot builder, shared snapshot helper policy, telemetry owner, resource managers |
 | Capture source reader | `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`, `MfSourceReaderVideoCapture.Cadence.cs`, `MfSourceReaderVideoCapture.Diagnostics.cs`, `MfSourceReaderVideoCapture.Negotiation.cs`, `MfSourceReaderVideoCapture.Interop.cs` | Media Foundation read loop/frame delivery, source cadence metrics, debug-only COM diagnostics, device opening and media-type negotiation, MF P/Invoke and COM interface definitions |
 | Capture fan-out | `Sussudio/Services/Capture/UnifiedVideoCapture.cs`, `UnifiedVideoCapture.Metrics.cs`, `UnifiedVideoCapture.Preview.cs` | shared preview/recording/Flashback source session and frame routing, diagnostic metric/snapshot projection, preview sink submission and visual-cadence handling |
 | MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs`, `MjpegPreviewJitterBuffer.Queue.cs`, `MjpegPreviewJitterBuffer.Adaptive.cs`, `MjpegPreviewJitterBuffer.Metrics.cs` | decoded preview-frame emit loop/lifecycle, queue ordering and reprime recovery, adaptive deadline/depth policy, jitter-buffer metric records and timing sample projection |
@@ -124,12 +124,15 @@ Important entry points:
 - `CaptureService.FlashbackControls.cs` owns Flashback public state, segment
   access, enable/settings mutations, restarts, format changes, and encoder
   setting cycles.
+- `CaptureService.FlashbackExportDiagnostics.cs` owns Flashback export
+  diagnostic state, progress forwarding, rejection records, and force-rotate
+  fallback counters.
 - `CaptureService.FlashbackExportFailureClassification.cs` owns the export
   failure-kind taxonomy shared by capture diagnostics and automation responses.
+- `CaptureService.FlashbackExportOperations.cs` owns Flashback export entry
+  points and the core export operation flow.
 - `CaptureService.FlashbackExportPlanning.cs` owns segment metadata mapping,
   live-export throttle policy, range clamps, and PTS offset helpers.
-- `CaptureService.FlashbackExportProgress.cs` owns Flashback export entry
-  points, progress forwarding, and export diagnostics state.
 - `CaptureService.FlashbackRecording.cs` owns Flashback recording backend
   ownership checks, session context construction, frame-rate rational policy,
   codec/HDR guardrails, and recording topology validation.
