@@ -146,20 +146,11 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.IsCustomAudioInputEnabled):
-                if ((CustomAudioToggle.IsChecked == true) != ViewModel.IsCustomAudioInputEnabled)
-                {
-                    CustomAudioToggle.IsChecked = ViewModel.IsCustomAudioInputEnabled;
-                }
-                AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
+                HandleCustomAudioInputEnabledChanged();
                 break;
 
             case nameof(MainViewModel.IsMicrophoneEnabled):
-                if ((MicrophoneToggle.IsChecked == true) != ViewModel.IsMicrophoneEnabled)
-                {
-                    MicrophoneToggle.IsChecked = ViewModel.IsMicrophoneEnabled;
-                }
-                MicrophoneComboBox.IsEnabled = ViewModel.IsMicrophoneEnabled && !ViewModel.IsRecording;
-                UpdateMicrophoneControlsVisibility();
+                HandleMicrophoneEnabledChanged();
                 break;
 
             case nameof(MainViewModel.IsDeviceAudioControlSupported):
@@ -238,44 +229,23 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.IsAudioEnabled):
-                if (AudioRecordToggle.IsChecked != ViewModel.IsAudioEnabled)
-                {
-                    AudioRecordToggle.IsChecked = ViewModel.IsAudioEnabled;
-                }
-                AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled;
-                if (!ViewModel.IsAudioEnabled && AudioPreviewToggle.IsChecked == true)
-                {
-                    AudioPreviewToggle.IsChecked = false;
-                }
-                AnimateAudioMeterDisabled(!ViewModel.IsAudioEnabled);
+                HandleAudioEnabledChanged();
                 break;
 
             case nameof(MainViewModel.IsAudioPreviewEnabled):
-                if (AudioPreviewToggle.IsChecked != ViewModel.IsAudioPreviewEnabled)
-                {
-                    AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
-                }
+                HandleAudioPreviewEnabledChanged();
                 break;
 
             case nameof(MainViewModel.IsAudioPreviewActive):
-                SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);
+                HandleAudioPreviewActiveChanged();
                 break;
 
             case nameof(MainViewModel.PreviewVolume):
-                if (!IsPreviewAudioFadeInActive)
-                {
-                    var volumePct = ViewModel.PreviewVolume * 100;
-                    if (PreviewVolumeSlider.Value != volumePct)
-                    {
-                        PreviewVolumeSlider.Value = volumePct;
-                    }
-
-                    PreviewVolumeLabel.Text = $"{(int)volumePct}%";
-                }
+                HandlePreviewVolumeChanged();
                 break;
 
             case nameof(MainViewModel.MicrophoneVolume):
-                SyncMicrophoneVolumeControls(ViewModel.MicrophoneVolume);
+                HandleMicrophoneVolumeChanged();
                 break;
 
             case nameof(MainViewModel.IsRecordingTransitioning):

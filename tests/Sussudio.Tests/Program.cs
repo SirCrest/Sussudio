@@ -2686,13 +2686,15 @@ static partial class Program
     {
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var audioMeterText = ReadRepoFile("Sussudio/MainWindow.AudioMeter.cs").Replace("\r\n", "\n");
         var audioMeterControllerText = ReadRepoFile("Sussudio/Controllers/AudioMeterController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "IsAudioPreviewActive");
         AssertContains(propertyChangedText, "case nameof(MainViewModel.IsAudioPreviewActive):");
-        AssertContains(propertyChangedText, "SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);");
+        AssertContains(propertyChangedText, "HandleAudioPreviewActiveChanged();");
+        AssertContains(audioPropertyChangedText, "SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);");
         AssertContains(audioMeterText, "private AudioMeterController _audioMeterController = null!;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _audioMeterMonitoringStoryboard;");
         AssertContains(audioMeterControllerText, "private Storyboard? _audioMeterMonitoringStoryboard;");
@@ -3347,6 +3349,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewAudioFade.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewAudioFadeController.cs").Replace("\r\n", "\n");
@@ -3362,7 +3365,8 @@ static partial class Program
         AssertContains(mainWindowText, "InitializePreviewAudioFadeController();");
         AssertContains(bindingsText, "IsPreviewAudioFadeInActive || IsPreviewAudioFadeAnimationActive");
         AssertContains(propertyChangedText, "await HandlePreviewingChangedAsync();");
-        AssertContains(propertyChangedText, "if (!IsPreviewAudioFadeInActive)");
+        AssertContains(propertyChangedText, "HandlePreviewVolumeChanged();");
+        AssertContains(audioPropertyChangedText, "if (IsPreviewAudioFadeInActive)");
         AssertContains(previewPropertyChangedText, "PrimePreviewAudioFadeIn();");
         AssertContains(controllerText, "internal sealed class PreviewAudioFadeController");
         AssertContains(controllerText, "private double _savedPreviewVolume;");
@@ -3386,6 +3390,7 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.MicrophoneControls.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/MicrophoneControlsController.cs").Replace("\r\n", "\n");
 
@@ -3399,8 +3404,10 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeMicrophoneControlsController();");
         AssertContains(bindingsText, "SetupMicrophoneVolumeBindings();");
         AssertContains(bindingsText, "ApplyInitialMicrophoneControlsVisibility();");
-        AssertContains(propertyChangedText, "UpdateMicrophoneControlsVisibility();");
-        AssertContains(propertyChangedText, "SyncMicrophoneVolumeControls(ViewModel.MicrophoneVolume);");
+        AssertContains(propertyChangedText, "HandleMicrophoneEnabledChanged();");
+        AssertContains(propertyChangedText, "HandleMicrophoneVolumeChanged();");
+        AssertContains(audioPropertyChangedText, "UpdateMicrophoneControlsVisibility();");
+        AssertContains(audioPropertyChangedText, "SyncMicrophoneVolumeControls(ViewModel.MicrophoneVolume);");
         AssertContains(shutdownCleanupText, "StopMicMeterRowAnimation();");
         AssertContains(controllerText, "internal sealed class MicrophoneControlsController");
         AssertContains(controllerText, "private bool _syncingVolumeControls;");
