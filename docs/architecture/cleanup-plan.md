@@ -189,6 +189,12 @@ frames setup, texture-pool creation, and video bitstream-filter initialization
 there; leave per-frame send paths, audio setup/drain, rotation, and finalization
 in `LibAvEncoder.cs`.
 
+LibAv encoder output lifecycle now lives in
+`Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs`. Keep rotation IO
+close/reopen, stream reinitialization, MP4 muxer option application, segment
+runtime resets, and native cleanup/freeing there; keep active send paths and
+generic error helpers in the root encoder.
+
 Native XU source telemetry detail presentation now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs`.
 Keep telemetry detail rows, display formatting, HDR transfer labels, and
