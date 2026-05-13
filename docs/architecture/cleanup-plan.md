@@ -97,8 +97,13 @@ Flashback timeline visibility, lockout, toggle synchronization, and show/hide
 animation state now live in
 `Sussudio/Controllers/FlashbackTimelineController.cs`.
 `MainWindow.FlashbackTimeline.cs` is the XAML-facing adapter; scrub/playback
-commands and CTI rendering remain in `MainWindow.Flashback.cs` for later
-slices.
+commands remain in `MainWindow.Flashback.cs`.
+
+Flashback CTI/playhead compositor state now lives in
+`Sussudio/MainWindow.FlashbackPlayhead.cs`. It owns magnetic scrub movement,
+long-horizon linear playhead extrapolation, and CTI anchor timing; the broader
+Flashback partial keeps command handling, markers, toggle/apply workflows, and
+duration formatting.
 
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.

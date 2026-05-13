@@ -339,6 +339,9 @@ static partial class Program
                 "Flashback polling timers live in controller",
                 FlashbackPollingTimers_LiveInController),
             await RunCheckAsync(
+                "Flashback playhead motion lives in focused partial",
+                FlashbackPlayheadMotion_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Flashback mutations route through capture coordinator",
                 MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator),
             await RunCheckAsync(
@@ -3666,6 +3669,31 @@ static partial class Program
         AssertDoesNotContain(flashbackText, "private DispatcherQueueTimer? _flashbackStatusTimer;");
         AssertDoesNotContain(flashbackText, "private void FlashbackStatusTimer_Tick(");
         AssertDoesNotContain(flashbackText, "private void FlashbackPlaybackTimer_Tick(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackPlayheadMotion_LivesInFocusedPartial()
+    {
+        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var playheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs").Replace("\r\n", "\n");
+        var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPolling.cs").Replace("\r\n", "\n");
+
+        AssertContains(playheadText, "Flashback current-time-indicator visuals");
+        AssertContains(playheadText, "private enum FlashbackPlayheadMotion");
+        AssertContains(playheadText, "private Visual? _flashbackPlayheadVisual;");
+        AssertContains(playheadText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
+        AssertContains(playheadText, "private void RefreshFlashbackCtiMotion(string reason)");
+        AssertContains(playheadText, "private void PositionFlashbackPlayhead(double x, double trackWidth, FlashbackPlayheadMotion motion)");
+        AssertContains(playheadText, "StartLinearPlayheadExtrapolation(");
+        AssertContains(playheadText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
+        AssertContains(flashbackText, "PositionFlashbackPlayhead(x, width, FlashbackPlayheadMotion.Magnetic);");
+        AssertContains(flashbackText, "RefreshFlashbackCtiMotion(\"state_change\");");
+        AssertContains(pollingAdapterText, "StopFlashbackCtiAnchorTimer();");
+        AssertDoesNotContain(flashbackText, "private enum FlashbackPlayheadMotion");
+        AssertDoesNotContain(flashbackText, "private Visual? _flashbackPlayheadVisual;");
+        AssertDoesNotContain(flashbackText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
+        AssertDoesNotContain(flashbackText, "private void RefreshFlashbackCtiMotion(string reason)");
 
         return Task.CompletedTask;
     }

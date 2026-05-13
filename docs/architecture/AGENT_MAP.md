@@ -149,8 +149,10 @@ Primary current owners:
 - `Sussudio/Controllers/FlashbackTimelineController.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, and show/hide
   animation state. `MainWindow.FlashbackTimeline.cs` is the XAML-facing
-  adapter; keep scrub/playback commands and CTI rendering in
-  `MainWindow.Flashback.cs` until those concerns are split separately.
+  adapter; scrub/playback commands remain in `MainWindow.Flashback.cs`.
+- `Sussudio/MainWindow.FlashbackPlayhead.cs` owns Flashback current-time-
+  indicator compositor visuals, magnetic scrub movement, long-horizon linear
+  playhead extrapolation, and CTI anchor timing.
 - `Sussudio/Controllers/FlashbackPollingController.cs` owns Flashback status
   and playback-position polling timers. `MainWindow.FlashbackPolling.cs` is the
   XAML-facing adapter; CTI anchor timing stays with playhead motion.
