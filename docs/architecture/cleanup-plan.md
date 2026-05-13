@@ -39,6 +39,12 @@ performance scoring, alert-detail formatting, and health classifiers.
 loop. `AutomationDiagnosticsHub.Verification.cs` owns recording/file
 verification commands and verification-profile adaptation.
 
+Automation command dispatch now keeps the router focused on authorization,
+readiness gating, command routing, and response shaping.
+`AutomationCommandDispatcher.Payload.cs` owns JSON payload extraction helpers,
+and `AutomationCommandHandler.cs` owns the trivial-handler wrapper used by
+simple one-property commands.
+
 Fullscreen transition mechanics now live in
 `Sussudio/Controllers/FullScreenController.cs`. `MainWindow.FullScreen.cs`
 remains the XAML event adapter and Flashback keyboard/scrub bridge.
