@@ -138,6 +138,10 @@ Primary current owners:
 - `Sussudio/Controllers/ControlBarAnimationController.cs` owns the control-bar
   button list used by entrance animation plus hover/press/release scale
   behavior. `MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter.
+- `Sussudio/Controllers/PreviewTransitionAnimationController.cs` owns preview
+  shell/content fade and scale transitions, unavailable-placeholder fades, and
+  startup/unavailable presentation prep. `MainWindow.PreviewTransitions.cs` is
+  the XAML-facing adapter.
 - `Sussudio/Controllers/LiveSignalInfoController.cs` owns live-signal pill
   visibility state, show/hide debounce timers, and the small scale/fade
   animation. `MainWindow.LiveSignalInfo.cs` is the XAML-facing adapter.

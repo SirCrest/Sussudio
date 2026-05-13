@@ -510,6 +510,9 @@ static partial class Program
                 "Control bar hover animations live in controller",
                 ControlBarHoverAnimations_LiveInController),
             await RunCheckAsync(
+                "Preview transition animations live in controller",
+                PreviewTransitionAnimations_LiveInController),
+            await RunCheckAsync(
                 "Live signal info presentation lives in controller",
                 LiveSignalInfoPresentation_LivesInController),
             await RunCheckAsync(
@@ -2894,6 +2897,43 @@ static partial class Program
         AssertDoesNotContain(animationsText, "private FrameworkElement[] GetControlBarButtons()");
         AssertDoesNotContain(animationsText, "private void SetupButtonHoverAnimations()");
         AssertDoesNotContain(animationsText, "private static void AnimateScale(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewTransitionAnimations_LiveInController()
+    {
+        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;");
+        AssertContains(adapterText, "private void InitializePreviewTransitionAnimationController()");
+        AssertContains(adapterText, "PreviewBorder = PreviewBorder,");
+        AssertContains(adapterText, "PreviewContentGrid = PreviewContentGrid,");
+        AssertContains(adapterText, "StopPreviewFadeInTimer = StopPreviewFadeInTimer,");
+        AssertContains(adapterText, "=> _previewTransitionAnimationController.AddPreviewShellEntranceAnimations(storyboard, easing, beginMs, durationMs);");
+        AssertContains(adapterText, "=> _previewTransitionAnimationController.ResetPreviewContentTransform();");
+        AssertContains(adapterText, "FadeOutShadow(_videoShadowVisual, durationMs: 150);");
+        AssertContains(adapterText, "=> _previewTransitionAnimationController.PrepareStartupPresentation();");
+        AssertContains(adapterText, "=> PreviewTransitionAnimationController.FadeInElement(element);");
+        AssertContains(mainWindowText, "InitializePreviewTransitionAnimationController();");
+        AssertContains(animationsText, "AddPreviewShellEntranceAnimations(storyboard, easing, beginMs: 900, durationMs: 400);");
+        AssertContains(controllerText, "internal sealed class PreviewTransitionAnimationController");
+        AssertContains(controllerText, "public void AddPreviewShellEntranceAnimations(Storyboard storyboard, EasingFunctionBase easing, int beginMs, int durationMs)");
+        AssertContains(controllerText, "public Task AnimatePreviewOutAsync()");
+        AssertContains(controllerText, "public Task AnimatePreviewInAsync()");
+        AssertContains(controllerText, "public void PrepareStartupPresentation()");
+        AssertContains(controllerText, "public void RevealUnavailablePlaceholder()");
+        AssertContains(controllerText, "public static void FadeOutElement(UIElement element)");
+        AssertContains(controllerText, "private Task AnimatePreviewTransitionAsync(");
+        AssertContains(controllerText, "private static Task BeginStoryboardAsync(");
+        AssertDoesNotContain(animationsText, "private Task AnimatePreviewTransitionAsync(");
+        AssertDoesNotContain(animationsText, "private static Task BeginStoryboardAsync(");
+        AssertDoesNotContain(animationsText, "private void ResetPreviewContentTransform()");
+        AssertDoesNotContain(animationsText, "private void PreparePreviewStartupPresentation()");
+        AssertDoesNotContain(animationsText, "private static void FadeOutElement(UIElement element)");
 
         return Task.CompletedTask;
     }

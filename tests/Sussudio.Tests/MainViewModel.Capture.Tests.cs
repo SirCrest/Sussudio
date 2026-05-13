@@ -122,6 +122,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/PreviewAudioFadeController.cs")
             .Replace("\r\n", "\n");
+        var previewTransitionText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
+            .Replace("\r\n", "\n");
+        var previewTransitionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewTransitionAnimationController.cs")
+            .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
             .Replace("\r\n", "\n");
         var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
@@ -140,18 +144,22 @@ static partial class Program
         AssertContains(playEntranceAnimation, "AddPreviewShellEntranceAnimations(storyboard, easing, beginMs: 900, durationMs: 400);");
         AssertDoesNotContain(playEntranceAnimation, "Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);");
 
-        var animatePreviewIn = ExtractMemberCode(animationsText, "AnimatePreviewInAsync");
+        var animatePreviewInAdapter = ExtractMemberCode(previewTransitionText, "AnimatePreviewInAsync");
+        AssertContains(animatePreviewInAdapter, "FadeInShadow(_videoShadowVisual, delayMs: 0, durationMs: 400);");
+        AssertContains(animatePreviewInAdapter, "_previewTransitionAnimationController.AnimatePreviewInAsync();");
+
+        var animatePreviewIn = ExtractMemberCode(previewTransitionControllerText, "AnimatePreviewInAsync");
         AssertContains(animatePreviewIn, "AnimatePreviewShellInAsync(350)");
         AssertContains(animatePreviewIn, "AnimatePreviewTransitionAsync(1.0, 1.0, 250, EasingMode.EaseOut)");
 
-        var preparePresentation = ExtractMemberCode(animationsText, "PreparePreviewStartupPresentation");
-        AssertContains(preparePresentation, "FadeOutElement(NoDevicePlaceholder);");
-        AssertContains(preparePresentation, "StartPreviewStartupOverlay();");
-        AssertContains(preparePresentation, "PreviewContentGrid.Opacity = 0.0;");
+        var preparePresentation = ExtractMemberCode(previewTransitionControllerText, "PrepareStartupPresentation");
+        AssertContains(preparePresentation, "FadeOutElement(_context.NoDevicePlaceholder);");
+        AssertContains(preparePresentation, "_context.StartPreviewStartupOverlay();");
+        AssertContains(preparePresentation, "_context.PreviewContentGrid.Opacity = 0.0;");
 
-        var revealUnavailable = ExtractMemberCode(animationsText, "RevealPreviewUnavailablePlaceholder");
+        var revealUnavailable = ExtractMemberCode(previewTransitionControllerText, "RevealUnavailablePlaceholder");
         AssertContains(revealUnavailable, "AnimatePreviewShellInAsync(300)");
-        AssertContains(revealUnavailable, "FadeInElement(NoDevicePlaceholder);");
+        AssertContains(revealUnavailable, "FadeInElement(_context.NoDevicePlaceholder);");
 
         var primeAudioAdapter = ExtractMemberCode(previewAudioFadeText, "PrimePreviewAudioFadeIn");
         AssertContains(primeAudioAdapter, "_previewAudioFadeController.PrimeFadeIn();");

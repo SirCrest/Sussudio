@@ -86,6 +86,13 @@ Control-bar button ownership and hover/press/release scale behavior now live in
 `MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter; the broader
 entrance storyboard still lives in `MainWindow.Animations.cs`.
 
+Preview shell/content fade and scale transitions plus unavailable-placeholder
+presentation now live in
+`Sussudio/Controllers/PreviewTransitionAnimationController.cs`.
+`MainWindow.PreviewTransitions.cs` is the XAML-facing adapter; composition
+shadow animation and record-button width animation remain in
+`MainWindow.Animations.cs`.
+
 Live-signal pill visibility state, show/hide debounce timers, and the small
 scale/fade animation now live in
 `Sussudio/Controllers/LiveSignalInfoController.cs`. `MainWindow.LiveSignalInfo.cs`
