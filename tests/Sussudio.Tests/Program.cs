@@ -456,6 +456,9 @@ static partial class Program
                 "Show all capture options unlocks source-filtered frame rates",
                 ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates),
             await RunCheckAsync(
+                "Resolution selection policy lives in focused partial",
+                ResolutionSelectionPolicy_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Diagnostics loop does not rebuild automation options each poll",
                 DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll),
             await RunCheckAsync(
@@ -2615,6 +2618,23 @@ static partial class Program
         AssertContains(mainViewModelText, "!IsSourceFilteredFrameRateDisableReason(option.DisableReason)");
         AssertContains(mainViewModelText, "IsEnabled = true");
         AssertContains(mainViewModelText, "DisableReason = string.Empty");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ResolutionSelectionPolicy_LivesInFocusedPartial()
+    {
+        var resolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptions.cs").Replace("\r\n", "\n");
+        var selectionPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
+
+        AssertContains(resolutionOptionsText, "private void RebuildResolutionOptions()");
+        AssertContains(resolutionOptionsText, "private bool TryResolveResolutionKey(");
+        AssertDoesNotContain(resolutionOptionsText, "private ResolutionOption? SelectHdrResolutionOption(");
+        AssertContains(selectionPolicyText, "private ResolutionOption? TrySelectSourceResolutionOption(");
+        AssertContains(selectionPolicyText, "private ResolutionOption? SelectHdrResolutionOption(");
+        AssertContains(selectionPolicyText, "private bool TrySelectSdrAutoResolutionOption(");
+        AssertContains(selectionPolicyText, "private static bool TryParseResolutionKey(");
+        AssertContains(selectionPolicyText, "private string BuildHdrSupportHintForResolution(");
 
         return Task.CompletedTask;
     }

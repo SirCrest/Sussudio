@@ -513,6 +513,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device management: MainViewModel.DeviceManagement.cs
     // Frame-rate options: MainViewModel.FrameRateOptions.cs
     // Auto resolution options: MainViewModel.AutoResolutionOptions.cs
+    // Resolution selection policy: MainViewModel.ResolutionSelectionPolicy.cs
     // Disposal / teardown: MainViewModel.Disposal.cs
     // Runtime status/timers: MainViewModel.Runtime.cs
     // Source telemetry: MainViewModel.Telemetry.cs

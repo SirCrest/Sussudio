@@ -280,6 +280,10 @@ Primary current owners:
   and selected-device capability rebuilds stay in `MainViewModel.DeviceManagement.cs`.
   `MainViewModel.AutoResolutionOptions.cs` owns automatic resolution ranking,
   source-aware auto-selection, and auto-resolved dimension/frame-rate state.
+  `MainViewModel.ResolutionSelectionPolicy.cs` owns source-aware, HDR-aware,
+  and SDR fallback resolution selection helpers. `MainViewModel.ResolutionOptions.cs`
+  owns the resolution dropdown rebuild and effective resolution display/query
+  helpers.
   Remaining automation command mutation code stays in `MainViewModel.Automation.cs`.
 
 Refactor direction:

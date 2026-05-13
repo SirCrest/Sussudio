@@ -460,6 +460,9 @@ Remaining `tools/Common` ownership:
    device capability rebuilds in `MainViewModel.DeviceManagement.cs`.
    Automatic resolution ranking, source-aware auto-selection, and auto-resolved
    dimension/frame-rate state now live in `MainViewModel.AutoResolutionOptions.cs`.
+   Source-aware, HDR-aware, and SDR fallback resolution selection policy now
+   lives in `MainViewModel.ResolutionSelectionPolicy.cs`; keep dropdown rebuild
+   and effective resolution display in `MainViewModel.ResolutionOptions.cs`.
    Keep the remaining command mutation code in `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.
