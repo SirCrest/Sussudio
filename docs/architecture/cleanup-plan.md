@@ -232,6 +232,11 @@ Flashback playback in/out marker state and marker command handling now live in
 marker normalization and out-point pause checks there; keep decode pacing,
 seek, and segment-opening flow in the playback controller core/thread partials.
 
+Flashback playback position/file-PTS mapping now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PositionMapping.cs`.
+It owns scrub/seek clamping, marker-bound range limits, saturating timestamp
+math, active fMP4 segment detection, and playback path comparison.
+
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
 `MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing
