@@ -171,6 +171,12 @@ owns recording/video/audio counter snapshots, baseline deltas, integrity summary
 classification, and the structured `RECORDING_INTEGRITY` log line; the snapshot
 partial now consumes that policy instead of containing it.
 
+LibAv encoder codec and options policy now lives in
+`Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs`. Keep option
+validation, bitstream-filter selection, NVENC preset/split-encode mapping,
+frame-size math, sample-format support, and rational conversion helpers there;
+leave live send/drain/finalize paths in `LibAvEncoder.cs`.
+
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,

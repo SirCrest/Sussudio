@@ -4,6 +4,17 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static string ReadLibAvEncoderSource()
+    {
+        var parts = new[]
+        {
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs").Replace("\r\n", "\n")
+        };
+
+        return string.Join("\n", parts);
+    }
+
     // ── LibAvEncoder: GetHdrBitstreamFilterName ──
 
     private static Task LibAvEncoder_GetHdrBitstreamFilterName_MapsCodecs()
@@ -310,8 +321,7 @@ static partial class Program
 
     private static Task LibAvEncoder_FragmentedMp4UsesShortFragmentsForPlayback()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadLibAvEncoderSource();
 
         AssertContains(sourceText, "private static unsafe void ApplyMp4MuxerOptions(");
         AssertContains(sourceText, "ApplyMp4MuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, \"open\");");
@@ -327,8 +337,7 @@ static partial class Program
 
     private static Task LibAvEncoder_MpegTsNvencDumpsHeadersForRotatedSegments()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadLibAvEncoderSource();
 
         AssertContains(sourceText, "private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)");
         AssertContains(sourceText, "GetVideoBitstreamFilterSpec(options)");
