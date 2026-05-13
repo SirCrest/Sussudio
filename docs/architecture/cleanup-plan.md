@@ -398,6 +398,11 @@ public cadence snapshot record, expected-rate/window sizing, stop-time cadence
 reset, timestamp interval tracking, and percentile/drop estimate calculations
 there; keep sample reading and frame delivery in the root source-reader file.
 
+Media Foundation source-reader diagnostics now live in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Diagnostics.cs`. Keep the
+debug-only COM vtable diagnostic there; keep sample reading, frame delivery,
+DXGI buffer extraction, and YUV copy helpers in the root source-reader file.
+
 Unified capture diagnostic metric projection now lives in
 `Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs`. Keep MJPEG timing
 records, source-reader cadence forwarding, MJPEG jitter/hash metrics, preview

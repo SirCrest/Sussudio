@@ -776,12 +776,19 @@ static partial class Program
         AssertContains(flashbackExporterText, "ResolveSegmentBoundaryTimestampRepairUs(");
         AssertContains(flashbackExporterText, "FLASHBACK_EXPORT_SEGMENT_PTS_REPAIR");
 
-        var sourceReaderText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs")
-            .Replace("\r\n", "\n")
+        var sourceReaderRootText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs")
+            .Replace("\r\n", "\n");
+        var sourceReaderDiagnosticsText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Diagnostics.cs")
+            .Replace("\r\n", "\n");
+        var sourceReaderText = sourceReaderRootText
+            + "\n" + sourceReaderDiagnosticsText
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs")
                 .Replace("\r\n", "\n");
         AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
         AssertContains(sourceReaderText, "lock (_cadenceLock)");
+        AssertContains(sourceReaderDiagnosticsText, "private unsafe void DiagnoseVtable(IMFSample sample)");
+        AssertContains(sourceReaderDiagnosticsText, "VTABLE_DIAG RAW slot35_GetSampleTime");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DiagnoseVtable(IMFSample sample)");
 
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n")
