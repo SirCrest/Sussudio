@@ -555,6 +555,10 @@ Primary owners:
 - `tools/Common/DiagnosticSessionBackgroundTasks.cs` owns diagnostic-session
   background task registration, deterministic await/drain order, PresentMon
   task completion, and interrupted-task warning collection.
+- `tools/Common/DiagnosticSessionScenarioStartup.cs` owns diagnostic-session
+  optional background startup: PresentMon launch, Flashback scenario task
+  registration, deferred recording-settings task registration, and the direct
+  Flashback playback start command. Keep task stage names stable there.
 - `tools/Common/DiagnosticSessionCleanupPolicy.cs` owns cleanup restore
   validation after diagnostic sessions stop recording, preview, Flashback, or
   playback state.
@@ -658,7 +662,7 @@ Invariants:
 - Preserve sampler checkpoint ordering; checkpoint callbacks are allowed to
   observe the sample that was just appended.
 - Preserve diagnostic-session background task await order when moving scenario
-  tasks; interrupted-task warnings are evidence and should keep stable stage
+  startup; interrupted-task warnings are evidence and should keep stable stage
   names.
 - Preserve result text compatibility when refactoring diagnostic-session
   formatting; ssctl and MCP both flow through `DiagnosticSessionRunner.Format`.

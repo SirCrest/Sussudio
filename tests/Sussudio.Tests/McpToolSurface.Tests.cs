@@ -1215,9 +1215,14 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
+            .Replace("\r\n", "\n");
         var tasksText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(startupText, "internal static class DiagnosticSessionScenarioStartup");
+        AssertContains(startupText, "internal static async Task<DiagnosticSessionScenarioStartupResult> StartAsync(");
+        AssertContains(startupText, "internal readonly record struct DiagnosticSessionScenarioStartupResult(bool StartedFlashbackPlayback)");
         AssertContains(tasksText, "internal sealed class DiagnosticSessionBackgroundTasks");
         AssertContains(tasksText, "internal void AddScenario(int awaitOrder, string stage, Task task)");
         AssertContains(tasksText, "internal async Task AwaitScenarioTasksAsync()");
@@ -1227,7 +1232,11 @@ static partial class Program
         AssertContains(tasksText, "flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
         AssertContains(tasksText, "internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(");
         AssertContains(runnerText, "var backgroundTasks = new DiagnosticSessionBackgroundTasks();");
-        AssertContains(runnerText, "backgroundTasks.AddScenario(");
+        AssertContains(startupText, "backgroundTasks.AddScenario(");
+        AssertContains(startupText, "backgroundTasks.SetPresentMon(");
+        AssertContains(startupText, "backgroundTasks.SetRecordingSettingsDeferred(");
+        AssertContains(runnerText, "DiagnosticSessionScenarioStartup.StartAsync(");
+        AssertContains(runnerText, "startedFlashbackPlayback = scenarioStartup.StartedFlashbackPlayback;");
         AssertContains(runnerText, "backgroundTasks.AwaitScenarioTasksAsync()");
         AssertContains(runnerText, "backgroundTasks.ObserveAfterFaultAsync(");
         AssertDoesNotContain(runnerText, "Task? flashbackStressTask");
@@ -1260,6 +1269,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
+            .Replace("\r\n", "\n");
         var cyclesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs")
             .Replace("\r\n", "\n");
 
@@ -1272,7 +1283,9 @@ static partial class Program
         AssertContains(cyclesText, "var cycledPreset = string.Equals(originalPreset, \"P1\", StringComparison.OrdinalIgnoreCase) ? \"P2\" : \"P1\";");
         AssertContains(cyclesText, "\"flashback-encoder-cycle-export.mp4\"");
         AssertContains(cyclesText, "flashback encoder preset restored to");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackCycleScenarios;");
+        AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackCycleScenarios;");
+        AssertContains(startupText, "RunFlashbackRestartCycleAsync(");
+        AssertContains(startupText, "RunFlashbackEncoderCycleAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRestartCycleAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackEncoderCycleAsync(");
 
@@ -1354,6 +1367,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
+            .Replace("\r\n", "\n");
         var cyclesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs")
             .Replace("\r\n", "\n");
 
@@ -1367,7 +1382,10 @@ static partial class Program
         AssertContains(cyclesText, "internal static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(cyclesText, "flashback recording preview cycle preview stopped");
         AssertContains(cyclesText, "internal static bool IsPreviewCycleScenario(");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;");
+        AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;");
+        AssertContains(startupText, "RunFlashbackPreviewCycleAsync(");
+        AssertContains(startupText, "RunFlashbackPlaybackPreviewCycleAsync(");
+        AssertContains(startupText, "RunFlashbackRecordingPreviewCycleAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackPreviewCycleAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackPlaybackPreviewCycleAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRecordingPreviewCycleAsync(");
@@ -1403,6 +1421,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
+            .Replace("\r\n", "\n");
         var segmentPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
             .Replace("\r\n", "\n");
 
@@ -1415,7 +1435,8 @@ static partial class Program
         AssertContains(segmentPlaybackText, "private static async Task<bool> CreateFlashbackCompletedSegmentViaRecordingAsync(");
         AssertContains(segmentPlaybackText, "recording-assisted rotation started");
         AssertContains(segmentPlaybackText, "private static async Task TryStopRecordingAsync(");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;");
+        AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;");
+        AssertContains(startupText, "RunFlashbackSegmentPlaybackAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackSegmentPlaybackAsync(");
         AssertDoesNotContain(runnerText, "private static async Task<bool> CreateFlashbackCompletedSegmentViaRecordingAsync(");
         AssertDoesNotContain(runnerText, "private static async Task TryStopRecordingAsync(");
@@ -1451,6 +1472,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
+            .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs")
             .Replace("\r\n", "\n");
 
@@ -1461,7 +1484,8 @@ static partial class Program
         AssertContains(lifecycleText, "flashback lifecycle: playback worker still alive after disable");
         AssertContains(lifecycleText, "flashback lifecycle: pending commands remained after disable");
         AssertContains(lifecycleText, "flashback lifecycle re-enabled");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackLifecycleScenarios;");
+        AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackLifecycleScenarios;");
+        AssertContains(startupText, "RunFlashbackLifecycleAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackLifecycleAsync(");
 
         return Task.CompletedTask;
@@ -1470,6 +1494,8 @@ static partial class Program
     private static Task DiagnosticSessionFlashbackExportScenarios_OwnExportFlows()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
             .Replace("\r\n", "\n");
         var scenariosText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
             .Replace("\r\n", "\n");
@@ -1487,7 +1513,12 @@ static partial class Program
         AssertContains(scenariosText, "flashback export during playback verified");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
         AssertContains(scenariosText, "[\"useSelectionRange\"] = true");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExportScenarios;");
+        AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExportScenarios;");
+        AssertContains(startupText, "RunFlashbackExportConcurrentAsync(");
+        AssertContains(startupText, "RunFlashbackDisableDuringExportAsync(");
+        AssertContains(startupText, "RunFlashbackRotatedExportAsync(");
+        AssertContains(startupText, "RunFlashbackExportPlaybackAsync(");
+        AssertContains(startupText, "RunFlashbackRangeExportAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackExportConcurrentAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackDisableDuringExportAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRotatedExportAsync(");
@@ -1500,6 +1531,10 @@ static partial class Program
     private static Task DiagnosticSessionFlashbackExports_OwnsExportHelpers()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var exportScenariosText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
+            .Replace("\r\n", "\n");
+        var stressText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.cs")
             .Replace("\r\n", "\n");
         var exportsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
             .Replace("\r\n", "\n");
@@ -1515,7 +1550,8 @@ static partial class Program
         AssertContains(exportsText, "internal static async Task CleanupFlashbackSelectionAsync(");
         AssertContains(exportsText, "\"clear-in-out-points\"");
         AssertContains(exportsText, "\"go-live\"");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExports;");
+        AssertContains(exportScenariosText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExports;");
+        AssertContains(stressText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExports;");
         AssertDoesNotContain(runnerText, "private static int? TryParseFlashbackExportSegmentCount(");
         AssertDoesNotContain(runnerText, "private static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(");
         AssertDoesNotContain(runnerText, "private static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
@@ -1527,6 +1563,10 @@ static partial class Program
     private static Task DiagnosticSessionFlashbackSegments_OwnsSegmentWaitsAndParsing()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var exportScenariosText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
+            .Replace("\r\n", "\n");
+        var segmentPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
             .Replace("\r\n", "\n");
         var segmentsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
             .Replace("\r\n", "\n");
@@ -1541,7 +1581,8 @@ static partial class Program
         AssertContains(segmentsText, "\"FlashbackGetSegments\"");
         AssertContains(segmentsText, "data.TryGetProperty(\"Segments\", out var segmentsElement)");
         AssertContains(segmentsText, "const int requiredHeadroomMs = 8_000;");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;");
+        AssertContains(exportScenariosText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;");
+        AssertContains(segmentPlaybackText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;");
         AssertDoesNotContain(runnerText, "private readonly record struct FlashbackSegmentProbe(");
         AssertDoesNotContain(runnerText, "private readonly record struct FlashbackSegmentPlaybackTarget(");
         AssertDoesNotContain(runnerText, "private static async Task<FlashbackSegmentProbe?> WaitForFlashbackCompletedSegmentAsync(");
@@ -1555,6 +1596,8 @@ static partial class Program
     private static Task DiagnosticSessionFlashbackStressScenario_OwnsStressFlow()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
             .Replace("\r\n", "\n");
         var stressText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.cs")
             .Replace("\r\n", "\n");
@@ -1574,7 +1617,9 @@ static partial class Program
         AssertContains(stressText, "CreateFlashbackExportVerifyPayload(exportPath)");
         AssertContains(stressText, "internal static string? ClassifyFlashbackStressAudioMasterFallbackWarning(");
         AssertContains(stressText, "\"flashback stress: audio-master harmful fallbacks increased during warmed playback \"");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackStressScenario;");
+        AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackStressScenario;");
+        AssertContains(startupText, "RunFlashbackStressAsync(");
+        AssertContains(startupText, "RunFlashbackScrubStressAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackStressAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackScrubStressAsync(");
         AssertDoesNotContain(runnerText, "private static string? ClassifyFlashbackStressAudioMasterFallbackWarning(");

@@ -825,7 +825,14 @@ acquires and disposes the lock.
 Diagnostic-session background task tracking now lives in
 `tools/Common/DiagnosticSessionBackgroundTasks.cs`. It owns scenario task
 registration, deterministic await/drain order, PresentMon completion, and
-interrupted-task warning collection while the runner only starts tasks.
+interrupted-task warning collection.
+
+Diagnostic-session scenario startup now lives in
+`tools/Common/DiagnosticSessionScenarioStartup.cs`. It owns optional
+background startup: PresentMon launch, Flashback scenario task registration,
+deferred recording-settings task registration, and the direct Flashback
+playback start command. The runner now delegates startup and keeps the
+setup/sampling/cleanup/summary phase flow.
 
 Diagnostic-session scenario flagging now lives in
 `tools/Common/DiagnosticSessionScenarioPlan.cs`. It owns normalized scenario
@@ -958,6 +965,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionScenarioPlan.cs`
+- `DiagnosticSessionScenarioStartup.cs`
 - `DiagnosticSessionText.cs`
 - `DiagnosticSessionRunner.cs`
 - `AutomationSnapshotFormatter.cs`
@@ -970,8 +978,9 @@ Remaining `tools/Common` ownership:
 1. Continue splitting diagnostic-session runner by scenario family.
 
    `tools/Common/DiagnosticSessionRunner.cs` is still large. Scenario catalog
-   ownership is extracted; next, move preview, recording, Flashback, and cleanup
-   scenarios behind small runner classes. Keep JSON summary shape unchanged.
+   and optional scenario startup ownership are extracted; next, move preview,
+   recording, Flashback cleanup, and result-summary construction behind small
+   runner helpers. Keep JSON summary shape unchanged.
 
 2. Reduce custom regression harness size.
 

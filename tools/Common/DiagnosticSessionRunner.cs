@@ -1,19 +1,10 @@
-using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;
-using static Sussudio.Tools.DiagnosticSessionFlashbackCycleScenarios;
-using static Sussudio.Tools.DiagnosticSessionFlashbackExports;
-using static Sussudio.Tools.DiagnosticSessionFlashbackExportScenarios;
-using static Sussudio.Tools.DiagnosticSessionFlashbackLifecycleScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;
-using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackRejectedExports;
 using static Sussudio.Tools.DiagnosticSessionFlashbackRecordingSettingsScenarios;
-using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;
-using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;
-using static Sussudio.Tools.DiagnosticSessionFlashbackStressScenario;
 using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
 using static Sussudio.Tools.DiagnosticSessionHealthPolicy;
@@ -79,22 +70,6 @@ public static class DiagnosticSessionRunner
         var stoppedRecordingForVerification = false;
         var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);
         var runFlashbackPlayback = scenarioPlan.RunFlashbackPlayback;
-        var runFlashbackStress = scenarioPlan.RunFlashbackStress;
-        var runFlashbackScrubStress = scenarioPlan.RunFlashbackScrubStress;
-        var runFlashbackRestartCycle = scenarioPlan.RunFlashbackRestartCycle;
-        var runFlashbackEncoderCycle = scenarioPlan.RunFlashbackEncoderCycle;
-        var runFlashbackExportPlayback = scenarioPlan.RunFlashbackExportPlayback;
-        var runFlashbackSegmentPlayback = scenarioPlan.RunFlashbackSegmentPlayback;
-        var runFlashbackRangeExport = scenarioPlan.RunFlashbackRangeExport;
-        var runFlashbackRangeExportAudioSwitch = scenarioPlan.RunFlashbackRangeExportAudioSwitch;
-        var runFlashbackLifecycle = scenarioPlan.RunFlashbackLifecycle;
-        var runFlashbackExportConcurrent = scenarioPlan.RunFlashbackExportConcurrent;
-        var runFlashbackDisableDuringExport = scenarioPlan.RunFlashbackDisableDuringExport;
-        var runFlashbackRotatedExport = scenarioPlan.RunFlashbackRotatedExport;
-        var runFlashbackPreviewCycle = scenarioPlan.RunFlashbackPreviewCycle;
-        var runFlashbackPlaybackPreviewCycle = scenarioPlan.RunFlashbackPlaybackPreviewCycle;
-        var runFlashbackRecording = scenarioPlan.RunFlashbackRecording;
-        var runFlashbackRecordingPreviewCycle = scenarioPlan.RunFlashbackRecordingPreviewCycle;
         var runFlashbackRecordingSettingsDeferred = scenarioPlan.RunFlashbackRecordingSettingsDeferred;
         var runFlashbackRecordingExportRejected = scenarioPlan.RunFlashbackRecordingExportRejected;
         var runFlashbackExportRejected = scenarioPlan.RunFlashbackExportRejected;
@@ -199,279 +174,20 @@ public static class DiagnosticSessionRunner
                 await TryWaitAsync("RecordingFileGrowing", 20_000).ConfigureAwait(false);
             }
 
-            if (options.IncludePresentMon)
-            {
-                var correlationSnapshotResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
-                TryGetSnapshot(correlationSnapshotResponse, out var correlationSnapshot);
-                backgroundTasks.SetPresentMon(PresentMonProbe.RunAsync(new PresentMonProbeOptions
-                {
-                    ProcessName = "Sussudio",
-                    DurationSeconds = Math.Max(1, durationSeconds),
-                    PresentMonPath = options.PresentMonPath,
-                    OutputFile = Path.Combine(outputDirectory, "presentmon.csv"),
-                    ExpectedSwapChainAddress = GetString(correlationSnapshot, "PreviewD3DSwapChainAddress"),
-                    AppPresentId = GetNullableLong(correlationSnapshot, "PreviewD3DLastRenderedPreviewPresentId"),
-                    AppSourceSequenceNumber = GetNullableLong(correlationSnapshot, "PreviewD3DLastRenderedSourceSequenceNumber"),
-                    AppPresentUtcUnixMs = GetNullableLong(correlationSnapshot, "PreviewD3DLastRenderedUtcUnixMs"),
-                    KeepCsv = true
-                }));
-                actions.Add("presentmon capture started");
-            }
-
-            if (runFlashbackStress)
-            {
-                backgroundTasks.AddScenario(
-                    1,
-                    "flashback-stress-task",
-                    RunFlashbackStressAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken));
-                actions.Add("flashback stress started");
-            }
-
-            if (runFlashbackScrubStress)
-            {
-                backgroundTasks.AddScenario(
-                    3,
-                    "flashback-scrub-stress-task",
-                    RunFlashbackScrubStressAsync(
-                        actions,
-                        warnings,
-                        SendRawWithConnectRetryAsync,
-                        scenarioCancellationToken));
-                actions.Add("flashback scrub stress started");
-            }
-
-            if (runFlashbackRestartCycle)
-            {
-                backgroundTasks.AddScenario(
-                    4,
-                    "flashback-restart-cycle-task",
-                    RunFlashbackRestartCycleAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken));
-                actions.Add("flashback restart cycle started");
-            }
-
-            if (runFlashbackEncoderCycle)
-            {
-                backgroundTasks.AddScenario(
-                    5,
-                    "flashback-encoder-cycle-task",
-                    RunFlashbackEncoderCycleAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken));
-                actions.Add("flashback encoder cycle started");
-            }
-
-            if (runFlashbackExportPlayback)
-            {
-                backgroundTasks.AddScenario(
-                    6,
-                    "flashback-export-playback-task",
-                    RunFlashbackExportPlaybackAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken));
-                actions.Add("flashback export playback started");
-            }
-
-            if (runFlashbackSegmentPlayback)
-            {
-                backgroundTasks.AddScenario(
-                    7,
-                    "flashback-segment-playback-task",
-                    RunFlashbackSegmentPlaybackAsync(
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken));
-                actions.Add("flashback segment playback started");
-            }
-
-            if (runFlashbackRangeExport)
-            {
-                backgroundTasks.AddScenario(
-                    8,
-                    "flashback-range-export-task",
-                    RunFlashbackRangeExportAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken));
-                actions.Add("flashback range export started");
-            }
-
-            if (runFlashbackRangeExportAudioSwitch)
-            {
-                backgroundTasks.AddScenario(
-                    9,
-                    "flashback-range-export-audio-switch-task",
-                    RunFlashbackRangeExportAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        SendRawWithConnectRetryAsync,
-                        scenarioCancellationToken,
-                        scenarioLabel: "flashback range export audio switch",
-                        exportFileName: "flashback-range-export-audio-switch.mp4",
-                        outPointMs: 15_000,
-                        switchAudioDuringExport: true));
-                actions.Add("flashback range export audio switch started");
-            }
-
-            if (runFlashbackLifecycle)
-            {
-                backgroundTasks.AddScenario(
-                    2,
-                    "flashback-lifecycle-task",
-                    RunFlashbackLifecycleAsync(
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken));
-                actions.Add("flashback lifecycle started");
-            }
-
-            if (runFlashbackExportConcurrent)
-            {
-                backgroundTasks.AddScenario(
-                    10,
-                    "flashback-export-concurrent-task",
-                    RunFlashbackExportConcurrentAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        SendRawWithConnectRetryAsync,
-                        scenarioCancellationToken));
-                actions.Add("flashback concurrent export started");
-            }
-
-            if (runFlashbackDisableDuringExport)
-            {
-                backgroundTasks.AddScenario(
-                    11,
-                    "flashback-disable-during-export-task",
-                    RunFlashbackDisableDuringExportAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        SendRawWithConnectRetryAsync,
-                        scenarioCancellationToken));
-                actions.Add("flashback disable during export started");
-            }
-
-            if (runFlashbackRotatedExport)
-            {
-                backgroundTasks.AddScenario(
-                    12,
-                    "flashback-rotated-export-task",
-                    RunFlashbackRotatedExportAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken));
-                actions.Add("flashback rotated export started");
-            }
-
-            if (runFlashbackPreviewCycle)
-            {
-                backgroundTasks.AddScenario(
-                    13,
-                    "flashback-preview-cycle-task",
-                    RunFlashbackPreviewCycleAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken));
-                actions.Add("flashback preview cycle started");
-            }
-
-            if (runFlashbackPlaybackPreviewCycle)
-            {
-                backgroundTasks.AddScenario(
-                    14,
-                    "flashback-playback-preview-cycle-task",
-                    RunFlashbackPlaybackPreviewCycleAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken));
-                actions.Add("flashback playback preview cycle started");
-            }
-
-            if (runFlashbackRecordingPreviewCycle)
-            {
-                backgroundTasks.AddScenario(
-                    15,
-                    "flashback-recording-preview-cycle-task",
-                    RunFlashbackRecordingPreviewCycleAsync(
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken));
-                actions.Add("flashback recording preview cycle started");
-            }
-
-            if (runFlashbackRecordingSettingsDeferred)
-            {
-                backgroundTasks.SetRecordingSettingsDeferred(RunFlashbackRecordingSettingsDeferredAsync(
-                        actions,
-                        warnings,
-                        (command, payload, timeoutMs, allowFailure) => SendAsync(command, payload, timeoutMs, allowFailure),
-                        scenarioCancellationToken));
-                actions.Add("flashback recording settings deferred started");
-            }
-
-            if (runFlashbackPlayback)
-            {
-                if (!await WaitForFlashbackStressBufferReadyAsync(
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken).ConfigureAwait(false))
-                {
-                    warnings.Add("flashback playback: Flashback buffer did not become playback-ready within 30s");
-                }
-
-                var playResponse = await SendAsync(
-                        "FlashbackAction",
-                        new Dictionary<string, object?> { ["action"] = "play", ["positionMs"] = 1000 },
-                        null)
-                    .ConfigureAwait(false);
-                if (AutomationSnapshotFormatter.IsSuccess(playResponse))
-                {
-                    startedFlashbackPlayback = true;
-                    actions.Add("flashback playback started at 1000ms");
-                    var playingSnapshot = await WaitForFlashbackPlaybackStateAsync(
-                            (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                            "Playing",
-                            TimeSpan.FromSeconds(5),
-                            scenarioCancellationToken)
-                        .ConfigureAwait(false);
-                    if (playingSnapshot is null)
-                    {
-                        warnings.Add("flashback playback: playback did not report Playing within 5s");
-                    }
-                }
-                else
-                {
-                    warnings.Add($"flashback playback: play command failed - {AutomationSnapshotFormatter.Get(playResponse, "Message", "unknown error")}");
-                }
-            }
+            var scenarioStartup = await DiagnosticSessionScenarioStartup.StartAsync(
+                    options,
+                    scenarioPlan,
+                    durationSeconds,
+                    outputDirectory,
+                    backgroundTasks,
+                    actions,
+                    warnings,
+                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                    SendRawWithConnectRetryAsync,
+                    (command, payload, timeoutMs, allowFailure) => SendAsync(command, payload, timeoutMs, allowFailure),
+                    scenarioCancellationToken)
+                .ConfigureAwait(false);
+            startedFlashbackPlayback = scenarioStartup.StartedFlashbackPlayback;
 
             SetStage("sampling");
             await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
