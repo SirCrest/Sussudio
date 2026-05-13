@@ -906,10 +906,13 @@ static partial class Program
             .Replace("\r\n", "\n");
         var sourceReaderDiagnosticsText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Diagnostics.cs")
             .Replace("\r\n", "\n");
+        var sourceReaderDxgiBuffersText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.DxgiBuffers.cs")
+            .Replace("\r\n", "\n");
         var sourceReaderFrameLayoutText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs")
             .Replace("\r\n", "\n");
         var sourceReaderText = sourceReaderRootText
             + "\n" + sourceReaderDiagnosticsText
+            + "\n" + sourceReaderDxgiBuffersText
             + "\n" + sourceReaderFrameLayoutText
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs")
                 .Replace("\r\n", "\n");
@@ -918,6 +921,11 @@ static partial class Program
         AssertContains(sourceReaderDiagnosticsText, "private unsafe void DiagnoseVtable(IMFSample sample)");
         AssertContains(sourceReaderDiagnosticsText, "VTABLE_DIAG RAW slot35_GetSampleTime");
         AssertDoesNotContain(sourceReaderRootText, "private unsafe void DiagnoseVtable(IMFSample sample)");
+        AssertContains(sourceReaderDxgiBuffersText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
+        AssertContains(sourceReaderDxgiBuffersText, "private static readonly Guid ID3D11Texture2DIid");
+        AssertContains(sourceReaderDxgiBuffersText, "MF_SOURCE_READER_D3D_RESOURCE_FAIL");
+        AssertDoesNotContain(sourceReaderRootText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
+        AssertDoesNotContain(sourceReaderRootText, "private static readonly Guid ID3D11Texture2DIid");
         AssertContains(sourceReaderFrameLayoutText, "public static int GetFrameSizeBytes(int width, int height, bool isP010)");
         AssertContains(sourceReaderFrameLayoutText, "private unsafe static void CopyYuvWithStride(");
         AssertContains(sourceReaderFrameLayoutText, "private static string SubtypeGuidToName(Guid subtype)");
