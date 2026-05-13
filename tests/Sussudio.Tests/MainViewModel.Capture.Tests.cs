@@ -685,6 +685,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
             .Replace("\r\n", "\n");
+        var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs")
+            .Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs")
             .Replace("\r\n", "\n");
         var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
@@ -696,8 +698,10 @@ static partial class Program
         AssertContains(viewModelText, "IsFlashbackTimelineVisible = false;");
         AssertContains(bindingsText, "FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;");
         AssertContains(bindingsText, "ApplyFlashbackTimelineLockout();");
-        AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackEnabled):\n                ApplyFlashbackTimelineLockout();");
-        AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):\n                ApplyFlashbackTimelineVisibility(ViewModel.IsFlashbackTimelineVisible);");
+        AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackEnabled):\n                HandleFlashbackEnabledChanged();");
+        AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):\n                HandleFlashbackTimelineVisibleChanged();");
+        AssertContains(flashbackPropertyChangedText, "ApplyFlashbackTimelineLockout();");
+        AssertContains(flashbackPropertyChangedText, "ApplyFlashbackTimelineVisibility(ViewModel.IsFlashbackTimelineVisible);");
         AssertContains(flashbackTimelineText, "private FlashbackTimelineController _flashbackTimelineController = null!;");
         AssertContains(flashbackTimelineText, "FlashbackToggle = FlashbackToggle,");
         AssertContains(flashbackTimelineText, "FlashbackTimelinePanel = FlashbackTimelinePanel,");

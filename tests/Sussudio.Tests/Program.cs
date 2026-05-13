@@ -3713,6 +3713,7 @@ static partial class Program
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var markerText = ReadRepoFile("Sussudio/MainWindow.FlashbackMarkers.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
 
         AssertContains(markerText, "Flashback timeline marker presentation");
         AssertContains(markerText, "private static string FormatFlashbackDuration(TimeSpan ts)");
@@ -3722,7 +3723,9 @@ static partial class Program
         AssertContains(markerText, "FlashbackSelectionRegion.Visibility = Visibility.Visible;");
         AssertContains(flashbackText, "UpdateFlashbackMarkers();");
         AssertContains(flashbackText, "FormatFlashbackDuration(bufferDuration)");
-        AssertContains(propertyChangedText, "UpdateFlashbackMarkers();");
+        AssertContains(propertyChangedText, "HandleFlashbackRangeChanged();");
+        AssertContains(flashbackPropertyChangedText, "Flashback-specific ViewModel property projections");
+        AssertContains(flashbackPropertyChangedText, "UpdateFlashbackMarkers();");
         AssertDoesNotContain(flashbackText, "private void UpdateFlashbackMarkers()");
         AssertDoesNotContain(flashbackText, "private static string FormatFlashbackDuration(TimeSpan ts)");
 

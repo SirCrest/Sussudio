@@ -181,6 +181,10 @@ Recording-specific ViewModel property projections now live in
 `Sussudio/MainWindow.PropertyChangedRecording.cs`: record-button morphing,
 recording glow, and the recording-time lockout state for capture/audio controls.
 
+Flashback-specific ViewModel property projections now live in
+`Sussudio/MainWindow.PropertyChangedFlashback.cs`: timeline lockout, marker and
+playhead refresh, export progress, and Flashback settings-control sync.
+
 Microphone volume slider synchronization, save triggers, shelf enablement, and
 mic-meter row animation state now live in
 `Sussudio/Controllers/MicrophoneControlsController.cs`.

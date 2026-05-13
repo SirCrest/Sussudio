@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.ViewModels;
-using Microsoft.UI.Xaml.Controls;
 
 namespace Sussudio;
 
@@ -288,48 +287,41 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.IsFlashbackTimelineVisible):
-                ApplyFlashbackTimelineVisibility(ViewModel.IsFlashbackTimelineVisible);
+                HandleFlashbackTimelineVisibleChanged();
                 break;
 
             case nameof(MainViewModel.IsFlashbackEnabled):
-                ApplyFlashbackTimelineLockout();
+                HandleFlashbackEnabledChanged();
                 break;
 
             case nameof(MainViewModel.FlashbackState):
-                UpdateFlashbackStateUI();
+                HandleFlashbackStateChanged();
                 break;
 
             case nameof(MainViewModel.FlashbackBufferFillPercent):
             case nameof(MainViewModel.FlashbackBufferDiskBytes):
-                UpdateFlashbackBufferFill();
-                UpdateFlashbackPositionUI(); // recalc playhead fraction as buffer grows
-                UpdateFlashbackMarkers();    // recalc in/out positions too
+                HandleFlashbackBufferChanged();
                 break;
 
             case nameof(MainViewModel.FlashbackBitrateInfo):
-                if (!ViewModel.IsRecording && ViewModel.IsFlashbackEnabled)
-                    RecordingBitrateTextBlock.Text = ViewModel.FlashbackBitrateInfo;
+                HandleFlashbackBitrateChanged();
                 break;
 
             case nameof(MainViewModel.FlashbackPlaybackPosition):
-                UpdateFlashbackPositionUI();
+                HandleFlashbackPlaybackPositionChanged();
                 break;
 
             case nameof(MainViewModel.FlashbackInPoint):
             case nameof(MainViewModel.FlashbackOutPoint):
-                UpdateFlashbackMarkers();
+                HandleFlashbackRangeChanged();
                 break;
 
             case nameof(MainViewModel.FlashbackExportProgress):
-                FlashbackExportProgressBar.Value = ViewModel.FlashbackExportProgress;
+                HandleFlashbackExportProgressChanged();
                 break;
 
             case nameof(MainViewModel.IsFlashbackExporting):
-                FlashbackExportProgressBar.Visibility = ViewModel.IsFlashbackExporting
-                    ? Microsoft.UI.Xaml.Visibility.Visible
-                    : Microsoft.UI.Xaml.Visibility.Collapsed;
-                if (!ViewModel.IsFlashbackExporting)
-                    FlashbackExportProgressBar.Value = 0;
+                HandleFlashbackExportingChanged();
                 break;
 
             case nameof(MainViewModel.IsDiskWarningActive):
@@ -337,24 +329,11 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.FlashbackGpuDecode):
-                if (FlashbackGpuDecodeToggle.IsOn != ViewModel.FlashbackGpuDecode)
-                    FlashbackGpuDecodeToggle.IsOn = ViewModel.FlashbackGpuDecode;
+                HandleFlashbackGpuDecodeChanged();
                 break;
 
             case nameof(MainViewModel.FlashbackBufferMinutes):
-                if (FlashbackBufferDurationCombo.SelectedItem is not ComboBoxItem current ||
-                    current.Tag is not string currentTag ||
-                    currentTag != ViewModel.FlashbackBufferMinutes.ToString())
-                {
-                    foreach (ComboBoxItem item in FlashbackBufferDurationCombo.Items)
-                    {
-                        if (item.Tag is string tag && tag == ViewModel.FlashbackBufferMinutes.ToString())
-                        {
-                            FlashbackBufferDurationCombo.SelectedItem = item;
-                            break;
-                        }
-                    }
-                }
+                HandleFlashbackBufferMinutesChanged();
                 break;
         }
     }

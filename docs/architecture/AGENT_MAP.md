@@ -202,6 +202,9 @@ Primary current owners:
 - `Sussudio/MainWindow.PropertyChangedRecording.cs` owns recording-specific
   property-change projections for the record button, recording glow, and
   recording-time control lockouts.
+- `Sussudio/MainWindow.PropertyChangedFlashback.cs` owns Flashback-specific
+  property-change projections for timeline lockout, markers, playhead updates,
+  export progress, and settings-control synchronization.
 - `Sussudio/Controllers/MicrophoneControlsController.cs` owns microphone volume
   slider synchronization, save triggers, shelf enablement, and mic-meter row
   animation state. `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.
