@@ -18,7 +18,7 @@ folder.
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.Snapshots.cs`, `CaptureService.Telemetry.cs` | lifecycle owner, audio owner, cleanup owner, transition/disposal owner, deferred cleanup owner, failure owner, Flashback control owner, Flashback recording policy owner, health snapshot builder, preview pipeline owner, probe owner, recording integrity owner, runtime snapshot builder, shared snapshot helper policy, telemetry owner, resource managers |
 | Capture source reader | `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`, `MfSourceReaderVideoCapture.Negotiation.cs` | Media Foundation read loop/frame delivery, device opening and media-type negotiation |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Hdr.cs`, `AutomationDiagnosticsHub.Lifecycle.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.Verification.cs` | additional collectors/controllers when hub orchestration grows |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Hdr.cs`, `AutomationDiagnosticsHub.Lifecycle.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.Timeline.cs`, `AutomationDiagnosticsHub.Verification.cs` | additional collectors/controllers when hub orchestration grows |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`, `PerformanceTimelineEntry.cs`, `ViewModelRuntimeSnapshot.cs` | automation evidence DTO, capture runtime DTO, preview runtime DTO, performance timeline entry, view-model runtime DTO |
 | Source telemetry | `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, `NativeXuAtCommandProvider.AtProtocol.cs`, `NativeXuAtCommandProvider.DeviceCommands.cs`, `NativeXuAtCommandProvider.DiagnosticSummary.cs`, `NativeXuAtCommandProvider.TelemetryDetails.cs` | Native XU telemetry polling/snapshot assembly, AT-command transport/parsing, public device-command surface, diagnostic summary formatting, source telemetry detail presentation |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvEncoder.CodecPolicy.cs`, `LibAvEncoder.AvSync.cs`, `LibAvEncoder.VideoSetup.cs`, `LibAvEncoder.OutputLifecycle.cs`, `LibAvRecordingSink.cs` | encoder runtime, codec/options policy, A/V sync diagnostics, video codec/hardware setup, rotation/output cleanup, sink lifecycle, verifier/finalizer |
@@ -71,7 +71,9 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Lifecycle.cs` owns
   diagnostics hub start/stop/dispose behavior and the polling loop.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns
-  snapshot refresh, read-only snapshot access, and performance-timeline reads.
+  snapshot refresh and read-only snapshot access.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs` owns
+  performance-timeline reads and snapshot-to-timeline entry projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.cs` owns
   recording/file verification commands and verification-profile adaptation.
 

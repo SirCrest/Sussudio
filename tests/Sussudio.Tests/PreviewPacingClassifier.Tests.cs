@@ -117,7 +117,8 @@ static partial class Program
     {
         var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs");
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs");
 
         AssertContains(contractsText, "public string PreviewPacingLikelySlowStage { get; init; }");
         AssertContains(contractsText, "public string PreviewPacingSlowStageConfidence { get; init; }");

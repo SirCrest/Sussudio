@@ -29,7 +29,8 @@ flow and summary writing.
 Automation diagnostics now have named partial owners instead of one large hub
 body. `AutomationDiagnosticsHub.cs` is the compact field/constructor and
 counter state owner. `AutomationDiagnosticsHub.Snapshots.cs` owns snapshot
-refresh, read-only snapshot access, and performance-timeline reads.
+refresh and read-only snapshot access. `AutomationDiagnosticsHub.Timeline.cs`
+owns performance-timeline reads and snapshot-to-timeline entry projection.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert publication, alert state, event
 throttling, Flashback export completion events, and recent event storage.
 `AutomationDiagnosticsHub.Evaluation.cs` owns diagnostic lane policy,
