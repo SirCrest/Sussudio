@@ -304,6 +304,8 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
                 .Replace("\r\n", "\n");
 
         var rangeExport = ExtractTextBetween(
@@ -1007,6 +1009,8 @@ static partial class Program
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
                 .Replace("\r\n", "\n");

@@ -16,7 +16,7 @@ folder.
 |------|---------------------|----------------------|
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
-| Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.Coordination.cs`, `CaptureService.Failures.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.Snapshots.cs`, `CaptureService.Telemetry.cs` | lifecycle owner, audio owner, transition/disposal owner, failure owner, preview pipeline owner, probe owner, snapshot builder, telemetry owner, resource managers |
+| Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.Snapshots.cs`, `CaptureService.Telemetry.cs` | lifecycle owner, audio owner, transition/disposal owner, deferred cleanup owner, failure owner, preview pipeline owner, probe owner, snapshot builder, telemetry owner, resource managers |
 | Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Hdr.cs`, `AutomationDiagnosticsHub.Lifecycle.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.Verification.cs` | additional collectors/controllers when hub orchestration grows |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvRecordingSink.cs` | encoder option policy, sink lifecycle, verifier/finalizer |
 | Flashback | `FlashbackPlaybackController.cs`, `FlashbackEncoderSink.cs`, `FlashbackExporter.cs` | playback, buffer, encoder, export modules |
@@ -81,6 +81,8 @@ Important entry points:
   audio input switching, and WASAPI playback attach/detach order.
 - `CaptureService.Coordination.cs` owns transition serialization, steady-state
   resolution, disposal, and best-effort semaphore/eviction cleanup helpers.
+- `CaptureService.DeferredCleanup.cs` owns Flashback backend/export lock release
+  helpers plus deferred Flashback and unified-video cleanup after drains.
 - `CaptureService.Failures.cs` owns fatal capture/recording/Flashback backend
   failure callbacks, last-failure telemetry, and fault cleanup launchers.
 - `CaptureService.PreviewPipeline.cs` owns preview frame sink attachment,
