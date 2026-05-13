@@ -36,9 +36,11 @@ owns stateful snapshot bookkeeping for audio mute suspicion and recording file
 growth tracking. `AutomationDiagnosticsHub.Timeline.cs`
 owns performance-timeline reads and snapshot-to-timeline entry projection.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation and active-alert
-transitions. `AutomationDiagnosticsHub.DiagnosticEvents.cs` owns diagnostics
-event publication, event throttling, Flashback export completion events, and
-recent event storage.
+transitions. `AutomationDiagnosticsHub.SignalAlerts.cs` owns preview, capture,
+audio-signal, and recording-growth alert rules.
+`AutomationDiagnosticsHub.DiagnosticEvents.cs` owns diagnostics event
+publication, event throttling, Flashback export completion events, and recent
+event storage.
 `AutomationDiagnosticsHub.DiagnosticEvaluation.cs` owns diagnostic verdict
 ordering and diagnostic summaries. `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs`
 owns diagnostic lane text formatting used by diagnostic verdicts.
