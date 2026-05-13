@@ -275,6 +275,13 @@ timestamp conversion, best-effort frame timestamp selection, and recoverable
 seek log suppression now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.Timestamps.cs`.
 
+Flashback buffer retention now lives in
+`Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs`. Keep segment
+purge, eviction, guarded file deletion, disk-warning state, and recording
+start/end retention boundaries there. The root buffer manager keeps session
+setup, segment indexing/lookups, byte/PTS accounting helpers, recovery marker
+checks, and dispose coordination.
+
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
 lock/disposal helpers, progress normalization and throttling, native cleanup,

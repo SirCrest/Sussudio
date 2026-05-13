@@ -4339,8 +4339,7 @@ static partial class Program
         Directory.CreateDirectory(tempDir);
         var manager = CreateInitializedBufferManager(tempDir);
 
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)\n        => GetValidSegmentFileForPosition(absolutePts);");
 
         // Add 3 segments: 0-5s, 5-10s, 10-15s
@@ -4375,8 +4374,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_SegmentCompletionRejectsInvalidMetadata()
     {
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
 
         AssertContains(source, "if (string.IsNullOrWhiteSpace(path))\n        {\n            Logger.Log(\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=empty_path\");\n            return;\n        }");
         AssertContains(source, "if (endPts <= startPts)\n        {\n            Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=invalid_range path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}\");\n            return;\n        }");
@@ -4526,8 +4524,7 @@ static partial class Program
             AssertEqual(false, result, "Outside delete should be rejected");
             AssertEqual(true, File.Exists(outsidePath), "Outside delete should preserve file");
 
-            var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-                .Replace("\r\n", "\n");
+            var source = ReadFlashbackBufferManagerSource();
             AssertContains(source, "FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session");
             AssertOccursBefore(source, "FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session", "File.Delete(filePath);");
         }
@@ -4542,8 +4539,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters()
     {
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
 
         AssertContains(source, "var activeEndPts = TimeSpan.FromTicks(Math.Max(activeStartPts.Ticks, Interlocked.Read(ref _latestPtsTicks)));");
         AssertContains(source, "var activeSizeBytes = Math.Max(0, _totalDiskBytes - _completedSegmentBytes);");
@@ -4564,8 +4560,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_UpdateLatestPts_ClampsInvalidBufferDuration()
     {
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
         var cleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
             .Replace("\r\n", "\n");
 
@@ -4714,8 +4709,7 @@ static partial class Program
         AssertEqual(0L, GetLongProperty(manager, "TotalBytesWritten"), "Disposed manager ignores disk and segment byte updates");
         AssertEqual(0, (int)GetPrivateField(manager, "_completedSegmentSequence")!, "Disposed manager does not allocate segment sequence");
 
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "private volatile bool _disposed;");
         AssertContains(source, "FLASHBACK_BUFFER_SEGMENT_SKIP reason=disposed");
         AssertContains(source, "public void UpdateLatestPts(TimeSpan pts)\n    {\n        if (_disposed)\n        {\n            return;\n        }");
@@ -4758,8 +4752,7 @@ static partial class Program
         AssertEqual(0, GetIntProperty(manager, "SegmentCount"), "Disposed destructive operations keep the disposed empty index stable");
         AssertEqual(string.Empty, GetStringProperty(manager, "ActiveFilePath"), "Disposed destructive operations keep active path cleared");
 
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "FLASHBACK_PURGE_SKIP reason=disposed");
         AssertContains(source, "FLASHBACK_BUFFER_PURGE_SKIP reason=disposed");
 
@@ -4803,8 +4796,7 @@ static partial class Program
         AssertEqual(true, File.Exists(completedPath), "Recovery-preserved completed segment survives dispose");
         AssertEqual(true, File.Exists(activePath), "Recovery-preserved active segment survives dispose");
 
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "private bool _preserveSessionForRecovery;");
         AssertContains(source, "private bool IsSessionPreservedForRecoveryUnsafe()");
         AssertContains(source, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
@@ -4896,8 +4888,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_SegmentPathLookupsNormalizeEquivalentPaths()
     {
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "private static bool IsSameSegmentPath(string? left, string? right)");
         AssertContains(source, "Path.GetFullPath(left)");
         AssertContains(source, "Path.GetFullPath(right)");
@@ -5037,8 +5028,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_GetSegmentInfoList_SkipsMissingFiles()
     {
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "if (!File.Exists(seg.Path))\n                {\n                    continue;\n                }");
         AssertContains(source, "if (_activeSegmentPath != null && File.Exists(_activeSegmentPath))");
         AssertContains(source, "SequenceNumber = Math.Max(0, _nextSegmentIndex - 1),");
@@ -5083,8 +5073,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_ActiveFilePath_RequiresExistingFile()
     {
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "return _activeSegmentPath != null && File.Exists(_activeSegmentPath)\n                    ? _activeSegmentPath\n                    : null;");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
@@ -5103,8 +5092,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_SegmentCount_SkipsMissingFiles()
     {
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "return _completedSegments.Count(seg => File.Exists(seg.Path)) +\n                    (_activeSegmentPath != null && File.Exists(_activeSegmentPath) ? 1 : 0);");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
@@ -5240,8 +5228,7 @@ static partial class Program
             AssertEqual(350L, GetLongProperty(manager, "TotalDiskBytes"), "Rejected segment bytes stay in disk accounting");
             AssertEqual(300L, (long)GetPrivateField(manager, "_completedSegmentBytes")!, "Completed byte cache retains rejected segment");
 
-            var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-                .Replace("\r\n", "\n");
+            var source = ReadFlashbackBufferManagerSource();
             AssertContains(source, "if (DeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"valid_window\"))");
             AssertContains(source, "private static bool DeleteEvictedFile");
             AssertContains(source, "FLASHBACK_BUFFER_EVICT_DELETE_WARN");
@@ -5290,8 +5277,7 @@ static partial class Program
         resumeMethod.Invoke(manager, null);
         AssertEqual(false, GetBoolProperty(manager, "EvictionPaused"), "After unbalanced resume");
 
-        var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.cs"))
-            .Replace("\r\n", "\n");
+        var source = ReadFlashbackBufferManagerSource();
         AssertContains(source, "FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED");
         AssertContains(source, "var unbalancedEndPts = ClampEndPtsToStart(_recordingStartPts, _recordingEndPts);");
         AssertContains(source, "_recordingEndPts = ClampEndPtsToStart(\n                    _recordingStartPts,\n                    TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks)));");
@@ -5487,12 +5473,11 @@ static partial class Program
             AssertEqual(0L, GetLongProperty(manager, "TotalDiskBytes"), "Full purge resets total disk bytes");
             AssertEqual(0L, GetLongProperty(manager, "TotalBytesWritten"), "Full purge resets monotonic bytes for a new buffer session");
 
-            var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-                .Replace("\r\n", "\n");
+            var source = ReadFlashbackBufferManagerSource();
             var purgeCoreBlock = ExtractTextBetween(
                 source,
                 "private (int Segments, long FreedBytes) PurgeAllSegmentsCore()",
-                "    private static long AddNonNegativeSaturated");
+                "    private void EvictOldestSegments()");
             AssertOccursBefore(purgeCoreBlock, "var activeBytes = _activeSegmentPath != null", "if (_activeSegmentPath != null)");
             AssertContains(purgeCoreBlock, "_completedSegmentBytes = GetCompletedSegmentBytesSaturated();");
             AssertContains(purgeCoreBlock, "var retainedActiveBytes = _activeSegmentPath != null ? activeBytes : 0;");

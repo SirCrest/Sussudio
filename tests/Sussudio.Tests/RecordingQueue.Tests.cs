@@ -9,7 +9,7 @@ static partial class Program
         var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs");
         var flashbackSource = ReadFlashbackEncoderSinkSource();
         var flashbackBackendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
-        var flashbackBufferSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs");
+        var flashbackBufferSource = ReadFlashbackBufferManagerSource();
         var flashbackCleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs");
         var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
@@ -204,7 +204,7 @@ static partial class Program
         var flashbackBufferDispose = ExtractSourceBlock(
             flashbackBufferSource,
             "public void Dispose()",
-            "private void EvictOldestSegments()");
+            "private void ThrowIfDisposed()");
         AssertDoesNotContain(flashbackBufferDispose, "PurgeAllSegments()");
         AssertContains(flashbackBufferSource, "RecoveryPreserveMarkerFileName");
         AssertContains(flashbackBufferSource, "MarkSessionPreservedForRecovery");

@@ -87,6 +87,17 @@ static partial class Program
         return string.Join("\n", parts);
     }
 
+    private static string ReadFlashbackBufferManagerSource()
+    {
+        var parts = new[]
+        {
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs").Replace("\r\n", "\n")
+        };
+
+        return string.Join("\n", parts);
+    }
+
     // ── FlashbackBufferOptions ──
 
     private static Task FlashbackBufferOptions_MaxDiskBytes_ScalesWithDuration()
@@ -3967,8 +3978,7 @@ static partial class Program
     private static Task FlashbackEncoderSink_RotateFailureRestoresActiveSegment()
     {
         var sinkText = ReadFlashbackEncoderSinkSource();
-        var bufferText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
+        var bufferText = ReadFlashbackBufferManagerSource();
 
         var rotateBlock = ExtractTextBetween(
             sinkText,

@@ -138,7 +138,8 @@ Primary current owner: `Sussudio/Services/Flashback/`
 Entry points:
 
 - `FlashbackBackendResources.cs` owns backend resource grouping.
-- `FlashbackBufferManager.cs` owns segment retention and buffer state.
+- `FlashbackBufferManager.cs` owns buffer session state, segment indexing, and recovery-preserve marker checks.
+- `FlashbackBufferManager.Retention.cs` owns purge, eviction, delete, disk-warning, and recording-boundary retention behavior.
 - `FlashbackDecoder.cs` owns decoder lifecycle, file open/close, seek/decode control flow, and native cleanup.
 - `FlashbackDecoder.D3D11.cs` owns D3D11VA decoder selection, get-format callback behavior, hardware-config diagnostics, and hardware decoder context setup.
 - `FlashbackDecoder.VideoOutput.cs` owns decoded video frame output, D3D11 surface validation, software frame validation, plane copies, and YUV-to-NV12/P010 conversion.
