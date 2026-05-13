@@ -152,41 +152,6 @@ public sealed partial class MainWindow
     }
     private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
     {
-        _ = RunUiEventHandlerAsync(async () =>
-        {
-            if (!ViewModel.IsPreviewing)
-            {
-                ViewModel.StatusText = "Start preview before capturing a screenshot";
-                return;
-            }
-
-            var outputDir = ViewModel.OutputPath;
-            if (string.IsNullOrWhiteSpace(outputDir))
-                outputDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Sussudio");
-
-            Directory.CreateDirectory(outputDir);
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-            var filePath = Path.Combine(outputDir, $"Screenshot_{timestamp}.png");
-
-            ScreenshotButton.IsEnabled = false;
-            try
-            {
-                var result = await ViewModel.CapturePreviewFrameAsync(filePath);
-                if (result.Succeeded)
-                {
-                    ViewModel.StatusText = $"Screenshot saved: {Path.GetFileName(filePath)}";
-                    Logger.Log($"SCREENSHOT_SAVED path={filePath} width={result.CapturedWidth} height={result.CapturedHeight}");
-                }
-                else
-                {
-                    ViewModel.StatusText = $"Screenshot failed: {result.Message}";
-                    Logger.Log($"SCREENSHOT_FAILED reason={result.Message}");
-                }
-            }
-            finally
-            {
-                ScreenshotButton.IsEnabled = true;
-            }
-        }, nameof(ScreenshotButton_Click));
+        _ = RunUiEventHandlerAsync(() => CapturePreviewScreenshotAsync(), nameof(ScreenshotButton_Click));
     }
 }

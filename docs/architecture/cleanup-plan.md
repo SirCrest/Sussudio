@@ -34,6 +34,12 @@ Automation whole-window screenshot capture now lives in
 `Sussudio/Controllers/WindowScreenshotController.cs`. `MainWindow.Screenshot.cs`
 is only the automation adapter.
 
+Preview-frame screenshot button behavior now lives in
+`Sussudio/Controllers/PreviewScreenshotController.cs`.
+`MainWindow.PreviewScreenshot.cs` is the XAML-facing adapter for output
+directory fallback, file naming, preview-frame capture, status text, logging,
+and button enable/disable state.
+
 Window geometry automation and the recordings-folder command now live in
 `Sussudio/Controllers/WindowAutomationController.cs`.
 `MainWindow.WindowAutomation.cs` is the `IAutomationWindowControl` adapter.

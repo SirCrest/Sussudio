@@ -552,6 +552,9 @@ static partial class Program
                 "Output path display lives in controller",
                 OutputPathDisplay_LivesInController),
             await RunCheckAsync(
+                "Preview screenshot button workflow lives in controller",
+                PreviewScreenshotButtonWorkflow_LivesInController),
+            await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
@@ -3366,6 +3369,38 @@ static partial class Program
         AssertDoesNotContain(bindingsText, "OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();");
         AssertDoesNotContain(bindingsText, "private void UpdateOutputPathDisplay()");
         AssertDoesNotContain(bindingsText, "ToolTipService.SetToolTip(OutputPathTextBox, path);");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewScreenshotButtonWorkflow_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewScreenshot.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewScreenshotController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private PreviewScreenshotController _previewScreenshotController = null!;");
+        AssertContains(adapterText, "private void InitializePreviewScreenshotController()");
+        AssertContains(adapterText, "ViewModel = ViewModel,");
+        AssertContains(adapterText, "ScreenshotButton = ScreenshotButton,");
+        AssertContains(adapterText, "private Task CapturePreviewScreenshotAsync()");
+        AssertContains(adapterText, "=> _previewScreenshotController.CaptureAsync();");
+        AssertContains(mainWindowText, "InitializePreviewScreenshotController();");
+        AssertContains(eventHandlersText, "_ = RunUiEventHandlerAsync(() => CapturePreviewScreenshotAsync(), nameof(ScreenshotButton_Click));");
+        AssertContains(controllerText, "internal sealed class PreviewScreenshotController");
+        AssertContains(controllerText, "public async Task CaptureAsync()");
+        AssertContains(controllerText, "Start preview before capturing a screenshot");
+        AssertContains(controllerText, "Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), \"Sussudio\")");
+        AssertContains(controllerText, "Directory.CreateDirectory(outputDir);");
+        AssertContains(controllerText, "CapturePreviewFrameAsync(filePath)");
+        AssertContains(controllerText, "Screenshot saved: {Path.GetFileName(filePath)}");
+        AssertContains(controllerText, "SCREENSHOT_SAVED");
+        AssertContains(controllerText, "SCREENSHOT_FAILED");
+        AssertContains(controllerText, "_context.ScreenshotButton.IsEnabled = false;");
+        AssertContains(controllerText, "_context.ScreenshotButton.IsEnabled = true;");
+        AssertDoesNotContain(eventHandlersText, "Directory.CreateDirectory(outputDir);");
+        AssertDoesNotContain(eventHandlersText, "CapturePreviewFrameAsync(filePath)");
 
         return Task.CompletedTask;
     }
