@@ -268,8 +268,11 @@ configuration diagnostics now live in
 output, D3D11/software frame validation, plane copies, and YUV-to-NV12/P010
 conversion now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs`. Keep file
-open/close, seek/decode control flow, shared timestamp helpers, and native
-cleanup in the root decoder until those areas get their own focused slices.
+open/close, seek/decode control flow, and native cleanup in the root decoder
+until those areas get their own focused slices. Shared PTS conversion, seek
+timestamp conversion, best-effort frame timestamp selection, and recoverable
+seek log suppression now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.Timestamps.cs`.
 
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
