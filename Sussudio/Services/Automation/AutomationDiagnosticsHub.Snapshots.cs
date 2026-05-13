@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -234,66 +233,8 @@ public sealed partial class AutomationDiagnosticsHub
                 ? "Auto"
                 : "Unavailable";
 
-        bool lastOutputExists = false;
-        long? lastOutputSize = null;
-        var lastOutputPath = captureRuntime.LastOutputPath;
-        if (!string.IsNullOrWhiteSpace(lastOutputPath))
-        {
-            // While recording, the file is still growing — re-stat each poll. Once
-            // recording stops, the size is final and the cached value is reused
-            // until the path changes.
-            var isFinalAndCached = !viewModelSnapshot.IsRecording &&
-                                   _cachedFinalOutputSize.HasValue &&
-                                   string.Equals(_cachedFinalOutputPath, lastOutputPath, StringComparison.Ordinal);
-            if (isFinalAndCached)
-            {
-                lastOutputSize = _cachedFinalOutputSize;
-                lastOutputExists = true;
-            }
-            else
-            {
-                try
-                {
-                    lastOutputSize = new FileInfo(lastOutputPath).Length;
-                    lastOutputExists = true;
-                    if (!viewModelSnapshot.IsRecording)
-                    {
-                        _cachedFinalOutputSize = lastOutputSize;
-                        _cachedFinalOutputPath = lastOutputPath;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub output file probe: {ex.Message}");
-                }
-            }
-        }
-        else
-        {
-            _cachedFinalOutputSize = null;
-            _cachedFinalOutputPath = null;
-        }
-
-        // Memory & GC metrics (all APIs are thread-safe and microsecond-cheap)
-        _currentProcess.Refresh();
-        var processCpuTotalMs = _currentProcess.TotalProcessorTime.TotalMilliseconds;
-        var processCpuPercent = CalculateProcessCpuPercent(processCpuTotalMs);
-        var memoryWorkingSetMb = _currentProcess.WorkingSet64 / (1024.0 * 1024.0);
-        var memoryPrivateBytesMb = _currentProcess.PrivateMemorySize64 / (1024.0 * 1024.0);
-        var memoryManagedHeapMb = GC.GetTotalMemory(false) / (1024.0 * 1024.0);
-        var memoryTotalAllocatedMb = GC.GetTotalAllocatedBytes(precise: false) / (1024.0 * 1024.0);
-        var gcMemoryInfo = GC.GetGCMemoryInfo();
-        var memoryGcHeapSizeMb = gcMemoryInfo.HeapSizeBytes / (1024.0 * 1024.0);
-        var gcPauseTimePercent = gcMemoryInfo.PauseTimePercentage;
-        var gcFragmentationPercent = gcMemoryInfo.HeapSizeBytes > 0
-            ? gcMemoryInfo.FragmentedBytes * 100.0 / gcMemoryInfo.HeapSizeBytes
-            : 0.0;
-        var gcGen0 = GC.CollectionCount(0);
-        var gcGen1 = GC.CollectionCount(1);
-        var gcGen2 = GC.CollectionCount(2);
-        ThreadPool.GetAvailableThreads(out var tpWorkerAvailable, out var tpIoAvailable);
-        ThreadPool.GetMaxThreads(out var tpWorkerMax, out var tpIoMax);
-
+        var lastOutput = ProbeLastOutput(captureRuntime.LastOutputPath, viewModelSnapshot.IsRecording);
+        var processResources = CaptureProcessResourceSnapshot();
         var snapshot = new AutomationSnapshot
         {
             TimestampUtc = DateTimeOffset.UtcNow,
@@ -941,26 +882,26 @@ public sealed partial class AutomationDiagnosticsHub
             LastOutputPath = captureRuntime.LastOutputPath,
             LastFinalizeStatus = captureRuntime.LastFinalizeStatus,
             LastFinalizeUtc = captureRuntime.LastFinalizeUtc,
-            LastOutputExists = lastOutputExists,
-            LastOutputSizeBytes = lastOutputSize,
+            LastOutputExists = lastOutput.Exists,
+            LastOutputSizeBytes = lastOutput.SizeBytes,
             LastVerification = lastVerification,
             HdrTruthVerdict = hdrTruthVerdict,
-            MemoryWorkingSetMb = memoryWorkingSetMb,
-            MemoryPrivateBytesMb = memoryPrivateBytesMb,
-            MemoryManagedHeapMb = memoryManagedHeapMb,
-            MemoryTotalAllocatedMb = memoryTotalAllocatedMb,
-            ProcessCpuPercent = processCpuPercent,
-            ProcessCpuTotalProcessorTimeMs = processCpuTotalMs,
-            MemoryGcHeapSizeMb = memoryGcHeapSizeMb,
-            MemoryGcGen0Collections = gcGen0,
-            MemoryGcGen1Collections = gcGen1,
-            MemoryGcGen2Collections = gcGen2,
-            MemoryGcPauseTimePercent = gcPauseTimePercent,
-            MemoryGcFragmentationPercent = gcFragmentationPercent,
-            ThreadPoolWorkerAvailable = tpWorkerAvailable,
-            ThreadPoolWorkerMax = tpWorkerMax,
-            ThreadPoolIoAvailable = tpIoAvailable,
-            ThreadPoolIoMax = tpIoMax,
+            MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,
+            MemoryPrivateBytesMb = processResources.MemoryPrivateBytesMb,
+            MemoryManagedHeapMb = processResources.MemoryManagedHeapMb,
+            MemoryTotalAllocatedMb = processResources.MemoryTotalAllocatedMb,
+            ProcessCpuPercent = processResources.ProcessCpuPercent,
+            ProcessCpuTotalProcessorTimeMs = processResources.ProcessCpuTotalProcessorTimeMs,
+            MemoryGcHeapSizeMb = processResources.MemoryGcHeapSizeMb,
+            MemoryGcGen0Collections = processResources.MemoryGcGen0Collections,
+            MemoryGcGen1Collections = processResources.MemoryGcGen1Collections,
+            MemoryGcGen2Collections = processResources.MemoryGcGen2Collections,
+            MemoryGcPauseTimePercent = processResources.MemoryGcPauseTimePercent,
+            MemoryGcFragmentationPercent = processResources.MemoryGcFragmentationPercent,
+            ThreadPoolWorkerAvailable = processResources.ThreadPoolWorkerAvailable,
+            ThreadPoolWorkerMax = processResources.ThreadPoolWorkerMax,
+            ThreadPoolIoAvailable = processResources.ThreadPoolIoAvailable,
+            ThreadPoolIoMax = processResources.ThreadPoolIoMax,
             AvSyncCaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,
             AvSyncCaptureDriftRateMsPerSec = captureRuntime.AvSyncCaptureDriftRateMsPerSec,
             AvSyncEncoderDriftMs = captureRuntime.AvSyncEncoderDriftMs,

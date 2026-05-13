@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -173,31 +171,6 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         }
 
         return Math.Max(0, timeouts - previousTimeouts);
-    }
-
-    private double CalculateProcessCpuPercent(double processCpuTotalMs)
-    {
-        var nowTimestamp = Stopwatch.GetTimestamp();
-        var previousTimestamp = _lastProcessCpuSampleTimestamp;
-        var previousCpuTotalMs = _lastProcessCpuTotalMs;
-
-        _lastProcessCpuSampleTimestamp = nowTimestamp;
-        _lastProcessCpuTotalMs = processCpuTotalMs;
-
-        if (previousTimestamp <= 0)
-        {
-            return 0.0;
-        }
-
-        var elapsedMs = Stopwatch.GetElapsedTime(previousTimestamp, nowTimestamp).TotalMilliseconds;
-        if (elapsedMs <= 0)
-        {
-            return 0.0;
-        }
-
-        var cpuDeltaMs = Math.Max(0.0, processCpuTotalMs - previousCpuTotalMs);
-        var cpuCapacityMs = elapsedMs * Math.Max(1, Environment.ProcessorCount);
-        return Math.Clamp(cpuDeltaMs * 100.0 / cpuCapacityMs, 0.0, 100.0);
     }
 
 }

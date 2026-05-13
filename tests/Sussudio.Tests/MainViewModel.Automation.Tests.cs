@@ -304,9 +304,13 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsSnapshotsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
             .Replace("\r\n", "\n");
+        var diagnosticsOutputFilesText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.OutputFiles.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticsProcessMetricsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.ProcessMetrics.cs")
+            .Replace("\r\n", "\n");
         var diagnosticsTimelineText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsTimelineText;
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
@@ -331,9 +335,17 @@ static partial class Program
         AssertDoesNotContain(diagnosticsHubText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
         AssertContains(diagnosticsSnapshotsText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnosticsSnapshotsText, "AppendPerformanceTimelineEntry(snapshot);");
+        AssertContains(diagnosticsOutputFilesText, "private LastOutputProbe ProbeLastOutput(");
+        AssertContains(diagnosticsOutputFilesText, "private readonly record struct LastOutputProbe(");
+        AssertContains(diagnosticsProcessMetricsText, "private ProcessResourceSnapshot CaptureProcessResourceSnapshot()");
+        AssertContains(diagnosticsProcessMetricsText, "private double CalculateProcessCpuPercent(double processCpuTotalMs)");
+        AssertContains(diagnosticsProcessMetricsText, "private readonly record struct ProcessResourceSnapshot(");
         AssertContains(diagnosticsTimelineText, "public IReadOnlyList<PerformanceTimelineEntry> GetPerformanceTimeline");
         AssertContains(diagnosticsTimelineText, "private void AppendPerformanceTimelineEntry(AutomationSnapshot snapshot)");
         AssertDoesNotContain(diagnosticsHubText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
+        AssertDoesNotContain(diagnosticsSnapshotsText, "new FileInfo(lastOutputPath).Length");
+        AssertDoesNotContain(diagnosticsSnapshotsText, "GC.GetGCMemoryInfo()");
+        AssertDoesNotContain(diagnosticsHubText, "private double CalculateProcessCpuPercent(double processCpuTotalMs)");
         AssertContains(diagnosticsText, "private readonly SemaphoreSlim _refreshGate = new(1, 1);");
         AssertContains(diagnosticsText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(diagnosticsText, "return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);");

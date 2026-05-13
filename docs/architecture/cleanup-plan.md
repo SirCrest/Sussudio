@@ -37,8 +37,11 @@ throttling, Flashback export completion events, and recent event storage.
 performance scoring, alert-detail formatting, and health classifiers.
 `AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification.
 `AutomationDiagnosticsHub.Lifecycle.cs` owns start/stop/dispose and the polling
-loop. `AutomationDiagnosticsHub.Verification.cs` owns recording/file
-verification commands and verification-profile adaptation.
+loop. `AutomationDiagnosticsHub.OutputFiles.cs` owns cached last-output file
+existence and size probing. `AutomationDiagnosticsHub.ProcessMetrics.cs` owns
+process CPU, memory, GC, and thread-pool sampling.
+`AutomationDiagnosticsHub.Verification.cs` owns recording/file verification
+commands and verification-profile adaptation.
 
 Automation command dispatch now keeps the root router focused on switch bodies,
 the trivial-handler table, and initialization readiness. Named partials own
