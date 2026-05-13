@@ -742,6 +742,12 @@ terminal exception classification, `session-live.json` breadcrumbs, and
 best-effort artifact write failure recording while the runner keeps the
 scenario flow readable.
 
+Diagnostic-session output locking now lives in
+`tools/Common/DiagnosticSessionOutputLock.cs`. It owns the
+`.sussudio-diag.lock` file, exclusive `FileShare.None` open, delete-on-close
+cleanup, and concurrent-output-directory failure message while the runner only
+acquires and disposes the lock.
+
 Diagnostic-session background task tracking now lives in
 `tools/Common/DiagnosticSessionBackgroundTasks.cs`. It owns scenario task
 registration, deterministic await/drain order, PresentMon completion, and

@@ -1166,6 +1166,28 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionOutputLock_OwnsExclusiveOutputDirectoryLock()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var lockText = ReadRepoFile("tools/Common/DiagnosticSessionOutputLock.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(lockText, "internal static class DiagnosticSessionOutputLock");
+        AssertContains(lockText, "internal static FileStream Acquire(string outputDirectory)");
+        AssertContains(lockText, "\".sussudio-diag.lock\"");
+        AssertContains(lockText, "FileShare.None");
+        AssertContains(lockText, "FileOptions.DeleteOnClose");
+        AssertContains(lockText, "Another diagnostic session is already running");
+        AssertContains(runnerText, "var sessionLock = DiagnosticSessionOutputLock.Acquire(outputDirectory);");
+        AssertContains(runnerText, "sessionLock.Dispose();");
+        AssertDoesNotContain(runnerText, "var lockPath = Path.Combine(outputDirectory, \".sussudio-diag.lock\")");
+        AssertDoesNotContain(runnerText, "FileShare.None");
+        AssertDoesNotContain(runnerText, "FileOptions.DeleteOnClose");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionScenarioPlan_OwnsScenarioFlags()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")

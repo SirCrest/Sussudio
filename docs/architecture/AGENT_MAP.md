@@ -491,6 +491,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionRunState.cs` owns diagnostic-session terminal
   exception state, last-stage tracking, live-state breadcrumbs, and
   best-effort artifact write failure recording.
+- `tools/Common/DiagnosticSessionOutputLock.cs` owns the per-output-directory
+  exclusive lock that prevents concurrent diagnostic sessions from writing the
+  same artifact set.
 - `tools/Common/DiagnosticSessionBackgroundTasks.cs` owns diagnostic-session
   background task registration, deterministic await/drain order, PresentMon
   task completion, and interrupted-task warning collection.
