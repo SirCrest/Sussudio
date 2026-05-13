@@ -3877,7 +3877,9 @@ static partial class Program
     private static Task VisualCadenceTracker_UsesExactCropPixelsWithOnePassDiff()
     {
         var trackerSource = ReadRepoFile("Sussudio/Services/Capture/VisualCadenceTracker.cs").Replace("\r\n", "\n");
-        var captureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs").Replace("\r\n", "\n");
+        var captureSource = (ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs"))
+            .Replace("\r\n", "\n");
 
         AssertContains(trackerSource, "DefaultSampleColumns = 640");
         AssertContains(trackerSource, "DefaultSampleRows = 360");

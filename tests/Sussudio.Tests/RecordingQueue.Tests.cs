@@ -20,7 +20,8 @@ static partial class Program
         var parts = new[]
         {
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs").Replace("\r\n", "\n")
+            ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs").Replace("\r\n", "\n")
         };
 
         return string.Join("\n", parts);

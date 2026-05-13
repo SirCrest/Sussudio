@@ -363,6 +363,12 @@ visual cadence metrics, and frame-ledger summary projection there; keep shared
 source-session lifecycle and preview/recording/Flashback frame routing in
 `UnifiedVideoCapture.cs`.
 
+Unified capture preview routing now lives in
+`Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs`. Keep preview sink
+assignment, live-preview suppression/resume drains, MJPEG preview-frame decoded
+callbacks, raw preview submission, and visual-cadence reset/recording helpers
+there; keep recording and Flashback enqueue paths in `UnifiedVideoCapture.cs`.
+
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`: `AutomationSnapshot.cs`,
 `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,

@@ -219,7 +219,8 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs");
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs");
-        var captureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs");
+        var captureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs");
         AssertContains(source, "SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
         AssertContains(source, "SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL");
         AssertContains(source, "private long _dxgiFrameStatisticsFrameCounter;");
