@@ -812,8 +812,10 @@ PresentMon model and text ownership is split from the probe runner.
 `tools/Common/PresentMonProbe.Models.cs` owns PresentMon options, result,
 summary, swap-chain, correlation, and metric DTOs.
 `tools/Common/PresentMonProbe.Format.cs` owns result text formatting while
-`PresentMonProbe.cs` keeps process execution, path resolution, CSV parsing,
-swap-chain selection, and statistical aggregation for now.
+`tools/Common/PresentMonProbe.Csv.cs` owns CSV parsing, swap-chain selection,
+app-present correlation, warnings, and metric aggregation.
+`PresentMonProbe.cs` keeps process execution, path resolution, command-line
+construction, and temp CSV cleanup.
 
 Remaining `tools/Common` ownership:
 

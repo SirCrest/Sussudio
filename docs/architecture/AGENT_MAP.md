@@ -521,9 +521,11 @@ Primary owners:
   summary, swap-chain, correlation, and metric DTOs.
 - `tools/Common/PresentMonProbe.Format.cs` owns PresentMon result text
   rendering used by diagnostic-session output surfaces.
+- `tools/Common/PresentMonProbe.Csv.cs` owns PresentMon CSV parsing,
+  swap-chain selection, app-present correlation, warnings, and metric
+  aggregation.
 - `tools/Common/PresentMonProbe.cs` owns PresentMon process execution, path
-  resolution, CSV parsing, swap-chain selection, and statistical aggregation
-  until those remaining parser/runner responsibilities are split.
+  resolution, command-line construction, and temp CSV cleanup.
 
 Invariants:
 
