@@ -301,7 +301,9 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(diagnosticsEvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
+        AssertContains(diagnosticsEvaluationText, "private PerformanceEvaluation EvaluatePerformance(");
         AssertContains(diagnosticsEvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
+        AssertDoesNotContain(diagnosticsHubText, "private PerformanceEvaluation EvaluatePerformance(");
         AssertDoesNotContain(diagnosticsHubText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertContains(diagnosticsAlertsText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
         AssertContains(diagnosticsAlertsText, "private void AddEventThrottled(");
