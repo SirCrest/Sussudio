@@ -139,30 +139,6 @@ public sealed partial class MainWindow
             $"PREVIEW_START_WATCHDOG_STARTED attempt={_previewStartupAttemptId ?? "none"} " +
             $"timeoutMs={PreviewStartupVisualTimeoutMs}");
     }
-    private void StartPreviewStartupOverlay()
-    {
-        var ring = (ProgressRing)PreviewLoadingOverlay.Children[0];
-        ring.IsActive = true;
-        FadeInElement(PreviewLoadingOverlay);
-    }
-    private void StopPreviewStartupOverlay()
-    {
-        if (PreviewLoadingOverlay.Visibility == Visibility.Collapsed)
-        {
-            return;
-        }
-
-        var ring = (ProgressRing)PreviewLoadingOverlay.Children[0];
-        ring.IsActive = false;
-        if (_isPreviewReinitAnimating)
-        {
-            PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
-            PreviewLoadingOverlay.Opacity = 1.0;
-            return;
-        }
-
-        FadeOutElement(PreviewLoadingOverlay);
-    }
     private void StopPreviewStartupWatchdog()
     {
         _previewStartupWatchdogTimer?.Stop();

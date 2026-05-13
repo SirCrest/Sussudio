@@ -211,6 +211,8 @@ Primary current owners:
 - `Sussudio/MainWindow.PreviewFadeIn.cs` owns delayed reveal after first visual:
   the rendered-frame threshold, fade-in timer, and preview-audio fade start.
   Keep timeout/watchdog recovery in `MainWindow.PreviewStartup.cs`.
+- `Sussudio/MainWindow.PreviewStartupOverlay.cs` owns preview-startup loading
+  overlay presentation while the app waits for visual confirmation.
 - `Sussudio/MainWindow.PropertyChangedRecording.cs` owns recording-specific
   property-change projections for the record button, recording glow, and
   recording-time control lockouts.
