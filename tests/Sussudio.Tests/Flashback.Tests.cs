@@ -28,7 +28,8 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs").Replace("\r\n", "\n")
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.cs").Replace("\r\n", "\n")
         };
 
         return string.Join("\n", parts);
@@ -312,7 +313,7 @@ static partial class Program
         AssertContains(startCatchBlock, "Logger.Log($\"FLASHBACK_SINK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(startCatchBlock, "lock (_sync)\n            {\n                _started = false;\n            }");
         AssertEqual(1, startCatchBlock.Split("_started = false;", StringSplitOptions.None).Length - 1, "Start failure rollback clears started state once");
-        AssertOccursBefore(sourceText, "_started = false;", "            throw;\n        }\n    }\n\n    Task IRecordingSink.StartAsync");
+        AssertOccursBefore(sourceText, "_started = false;", "    public bool IsForceRotateActive =>");
         AssertContains(startCatchBlock, "_tsFilePath = null;\n            _recordingOutputPath = string.Empty;\n            _segmentStartPts = TimeSpan.Zero;\n            _segmentDuration = TimeSpan.Zero;\n            _ptsBaseOffset = TimeSpan.Zero;\n            Interlocked.Exchange(ref _segmentStartBytes, 0);");
         AssertContains(sourceText, "var tsPath = _bufferManager.AcquireSegmentPath(out var startupGeneratedSegment);");
         AssertContains(sourceText, "startupGeneratedSegmentPath = tsPath;");

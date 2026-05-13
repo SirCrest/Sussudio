@@ -229,6 +229,11 @@ Flashback encoder export force-rotation now lives in
 `ForceRotateForExport`, request timeout/cancellation handling, pending-request
 cleanup, and force-rotate drain abort classification there.
 
+Flashback encoder retroactive recording lifecycle now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.cs`. Keep the
+`IRecordingSink.StartAsync` adapter, `CanBeginRecording`, recording begin/cancel/end,
+recording PTS boundaries, and recording eviction-pause handshake there.
+
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
 lock/disposal helpers, progress normalization and throttling, output/temp
