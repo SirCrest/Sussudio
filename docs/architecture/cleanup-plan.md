@@ -426,10 +426,10 @@ continuous playback pacing in the controller core/thread partials.
 
 Flashback continuous playback progression now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs`.
-Keep playback frame reads, A/V skip decisions, segment switching, fMP4
-write-head waits, and near-live snap handling there; keep cadence and
-audio-master timing math in the controller core unless it is split as a
-separate timing-owner slice.
+Keep playback frame reads, A/V skip decisions, decoded-frame submission flow,
+decode-error snap-to-live, and near-live snap handling there. Segment switching,
+fMP4 reopen recovery, and write-head waits now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`.
 
 Flashback playback timing and cadence now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs`.

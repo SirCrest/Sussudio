@@ -1644,7 +1644,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var scannerText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackSessionRecoveryScanner.cs")
             .Replace("\r\n", "\n");
-        var playbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs")
+        var playbackSegmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs")
             .Replace("\r\n", "\n");
 
         // Constants/definitions now live in the extracted helper classes
@@ -1694,10 +1694,10 @@ static partial class Program
         AssertContains(bufferText, "if (IsSameSegmentPath(_activeSegmentPath, currentPath))\n                return _activeSegmentPath != null && File.Exists(_activeSegmentPath) ? _activeSegmentPath : null;");
         AssertContains(bufferText, "return GetOldestExistingSegmentPath()\n                ?? (_activeSegmentPath != null && File.Exists(_activeSegmentPath) ? _activeSegmentPath : null);");
         AssertContains(bufferText, "public TimeSpan? GetSegmentStartPts(string path)");
-        AssertContains(playbackText, "var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);");
-        AssertContains(playbackText, "if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)");
-        AssertContains(playbackText, "var currentSegmentStart = _bufferManager.GetSegmentStartPts(currentOpenFilePath);");
-        AssertContains(playbackText, "if (currentSegmentStart.HasValue && resumeTarget < currentSegmentStart.Value)");
+        AssertContains(playbackSegmentEdgesText, "var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);");
+        AssertContains(playbackSegmentEdgesText, "if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)");
+        AssertContains(playbackSegmentEdgesText, "var currentSegmentStart = _bufferManager.GetSegmentStartPts(currentOpenFilePath);");
+        AssertContains(playbackSegmentEdgesText, "if (currentSegmentStart.HasValue && resumeTarget < currentSegmentStart.Value)");
 
         return Task.CompletedTask;
     }
