@@ -766,6 +766,149 @@ internal sealed partial class D3D11PreviewRenderer
         }
     }
 
+    private void HandleDeviceLost(Exception ex)
+    {
+        Logger.Log($"D3D11 preview device lost ({ex.GetType().Name}); recreating device.");
+
+        // If Stop() is pending, bail. Stop() will unbind the swap chain from
+        // the panel while D3D resources are still alive, then the finally block
+        // will clean up. Proceeding here would dispose the swap chain while
+        // Stop() may be concurrently calling SetSwapChain(null) on the panel -
+        // the native call would hit freed memory and trigger an
+        // AccessViolationException that .NET 8 cannot catch.
+        if (Volatile.Read(ref _stopRequested) != 0) return;
+
+        CleanupD3DResources();
+        while (TryDequeuePendingFrame(out var stalePending))
+        {
+            TrackFrameDropped(stalePending, "device-lost");
+            stalePending.Dispose();
+        }
+
+        // Re-check: Stop() may have been called during cleanup. Proceeding
+        // into InitializeD3D->BindSwapChainToPanel would dispatch to the UI
+        // thread, which may be blocked on Join - a 5-second deadlock.
+        if (Volatile.Read(ref _stopRequested) != 0) return;
+
+        InitializeD3D();
+        Interlocked.Exchange(ref _compositionTransformDirty, 1);
+    }
+
+    private void DisposeProcessorResources()
+    {
+        _inputView?.Dispose();
+        _inputView = null;
+        _outputView?.Dispose();
+        _outputView = null;
+        _swapChainRTV?.Dispose();
+        _swapChainRTV = null;
+        _swapChainBackBuffer?.Dispose();
+        _swapChainBackBuffer = null;
+        _hdrYPlaneSRV?.Dispose();
+        _hdrYPlaneSRV = null;
+        _hdrUVPlaneSRV?.Dispose();
+        _hdrUVPlaneSRV = null;
+        _nv12YSRV?.Dispose();
+        _nv12YSRV = null;
+        _nv12UVSRV?.Dispose();
+        _nv12UVSRV = null;
+        _nv12LastYPtr = IntPtr.Zero;
+        _nv12LastUVPtr = IntPtr.Zero;
+        _hdrStagingTexture?.Dispose();
+        _hdrStagingTexture = null;
+        _hdrInputTexture?.Dispose();
+        _hdrInputTexture = null;
+        _hdrInputConfiguredWidth = 0;
+        _hdrInputConfiguredHeight = 0;
+        _hdrPlaneViewsUnavailable = false;
+        _videoProcessor?.Dispose();
+        _videoProcessor = null;
+        _videoProcessorEnumerator?.Dispose();
+        _videoProcessorEnumerator = null;
+    }
+
+    private void CleanupD3DResources()
+    {
+        DisposeProcessorResources();
+
+        _captureStagingTexture?.Dispose();
+        _captureStagingTexture = null;
+        _captureStagingWidth = 0;
+        _captureStagingHeight = 0;
+
+        _stagingTexture?.Dispose();
+        _stagingTexture = null;
+        _inputTexture?.Dispose();
+        _inputTexture = null;
+
+        // Stop() unbinds the panel before waking the render thread, while the
+        // swap chain is still alive. Cleanup can then release the DXGI objects
+        // without leaving SwapChainPanel holding a stale native reference.
+        Interlocked.CompareExchange(ref _swapChainBound, 0, 1);
+        Interlocked.Exchange(ref _swapChainAddress, 0);
+
+        _swapChain3?.Dispose();
+        _swapChain3 = null;
+        _swapChain2?.Dispose();
+        _swapChain2 = null;
+        _frameLatencyWaitHandle = IntPtr.Zero;
+        _swapChain?.Dispose();
+        _swapChain = null;
+        _factory?.Dispose();
+        _factory = null;
+        _videoContext1?.Dispose();
+        _videoContext1 = null;
+        _videoContext?.Dispose();
+        _videoContext = null;
+        _videoDevice?.Dispose();
+        _videoDevice = null;
+        _linearSampler?.Dispose();
+        _linearSampler = null;
+        _viewportCB?.Dispose();
+        _viewportCB = null;
+        _nv12PS?.Dispose();
+        _nv12PS = null;
+        _hdrTonemapPS?.Dispose();
+        _hdrTonemapPS = null;
+        _hdrPassthroughPS?.Dispose();
+        _hdrPassthroughPS = null;
+        _fullscreenVS?.Dispose();
+        _fullscreenVS = null;
+        _multithread?.Dispose();
+        _multithread = null;
+        _device3?.Dispose();
+        _device3 = null;
+        _deviceContext?.Dispose();
+        _deviceContext = null;
+        _device?.Dispose();
+        _device = null;
+
+        _configuredInputWidth = 0;
+        _configuredInputHeight = 0;
+        _configuredOutputWidth = 0;
+        _configuredOutputHeight = 0;
+        _configuredInputFormat = Format.Unknown;
+        _hdrCapableSwapChain = false;
+        Interlocked.Exchange(ref _sharedDeviceActive, 0);
+    }
+
+    private static bool IsDeviceLostException(Exception ex)
+    {
+        if (ex is SharpGen.Runtime.SharpGenException sharpGenException)
+        {
+            return sharpGenException.ResultCode == Vortice.DXGI.ResultCode.DeviceRemoved ||
+                   sharpGenException.ResultCode == Vortice.DXGI.ResultCode.DeviceReset;
+        }
+
+        if (ex is COMException comException)
+        {
+            return comException.HResult == unchecked((int)0x887A0005) ||
+                   comException.HResult == unchecked((int)0x887A0007);
+        }
+
+        return false;
+    }
+
     private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)
     {
         using var swapChain2 = swapChain.QueryInterfaceOrNull<IDXGISwapChain2>();
