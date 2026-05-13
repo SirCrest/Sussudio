@@ -507,6 +507,9 @@ static partial class Program
                 "Splash loading phrases live in controller",
                 SplashLoadingPhrases_LiveInController),
             await RunCheckAsync(
+                "Launch entrance animation lives in controller",
+                LaunchEntranceAnimation_LivesInController),
+            await RunCheckAsync(
                 "Control bar hover animations live in controller",
                 ControlBarHoverAnimations_LiveInController),
             await RunCheckAsync(
@@ -2849,6 +2852,7 @@ static partial class Program
     private static Task SplashLoadingPhrases_LiveInController()
     {
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
+        var launchEntranceControllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var splashAdapterText = ReadRepoFile("Sussudio/MainWindow.SplashLoading.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/SplashLoadingPhraseController.cs").Replace("\r\n", "\n");
@@ -2860,8 +2864,8 @@ static partial class Program
         AssertContains(splashAdapterText, "=> _splashLoadingPhraseController.Start();");
         AssertContains(splashAdapterText, "=> _splashLoadingPhraseController.Stop();");
         AssertContains(mainWindowText, "InitializeSplashLoadingPhraseController();");
-        AssertContains(animationsText, "StartSplashLoadingPhrases();");
-        AssertContains(animationsText, "StopSplashLoadingPhrases();");
+        AssertContains(launchEntranceControllerText, "_context.StartSplashLoadingPhrases();");
+        AssertContains(launchEntranceControllerText, "_context.StopSplashLoadingPhrases();");
         AssertContains(controllerText, "internal sealed class SplashLoadingPhraseController");
         AssertContains(controllerText, "private static readonly string[] DefaultSplashLoadingPhrases");
         AssertContains(controllerText, "private DispatcherTimer? _splashPhraseTimer;");
@@ -2877,9 +2881,42 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task LaunchEntranceAnimation_LivesInController()
+    {
+        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.LaunchEntrance.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private LaunchEntranceAnimationController _launchEntranceAnimationController = null!;");
+        AssertContains(adapterText, "private void InitializeLaunchEntranceAnimationController()");
+        AssertContains(adapterText, "SplashContent = SplashContent,");
+        AssertContains(adapterText, "GetEntranceButtons = GetEntranceButtons,");
+        AssertContains(adapterText, "IsPreviewFirstVisualConfirmed = () => _previewFirstVisualConfirmed,");
+        AssertContains(adapterText, "FadeInControlBarShadow = () => FadeInShadow(_controlBarShadowVisual, delayMs: 400, durationMs: 500),");
+        AssertContains(adapterText, "=> _launchEntranceAnimationController.PlaySplashAndEntrance();");
+        AssertContains(mainWindowText, "InitializeLaunchEntranceAnimationController();");
+        AssertContains(windowManagementText, "PlaySplashAndEntrance();");
+        AssertContains(controllerText, "internal sealed class LaunchEntranceAnimationController");
+        AssertContains(controllerText, "private bool _played;");
+        AssertContains(controllerText, "private Storyboard? _activeStoryboard;");
+        AssertContains(controllerText, "public void PlaySplashAndEntrance()");
+        AssertContains(controllerText, "private void PlayEntranceAnimation()");
+        AssertContains(controllerText, "LAUNCH_PREVIEW_REVEAL_DEFERRED");
+        AssertContains(controllerText, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
+        AssertDoesNotContain(mainWindowText, "private bool _entranceAnimationPlayed;");
+        AssertDoesNotContain(mainWindowText, "private Storyboard? _entranceStoryboard;");
+        AssertDoesNotContain(animationsText, "private void PlaySplashAndEntrance()");
+        AssertDoesNotContain(animationsText, "private void PlayEntranceAnimation()");
+
+        return Task.CompletedTask;
+    }
+
     private static Task ControlBarHoverAnimations_LiveInController()
     {
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
+        var launchEntranceControllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBarAnimations.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/ControlBarAnimationController.cs").Replace("\r\n", "\n");
@@ -2892,7 +2929,7 @@ static partial class Program
         AssertContains(adapterText, "=> _controlBarAnimationController.EntranceButtons;");
         AssertContains(mainWindowText, "InitializeControlBarAnimationController();");
         AssertContains(mainWindowText, "SetupButtonHoverAnimations();");
-        AssertContains(animationsText, "var buttons = GetEntranceButtons();");
+        AssertContains(launchEntranceControllerText, "var buttons = _context.GetEntranceButtons();");
         AssertContains(controllerText, "internal sealed class ControlBarAnimationController");
         AssertContains(controllerText, "public IReadOnlyList<FrameworkElement> EntranceButtons");
         AssertContains(controllerText, "public void AttachHoverAnimations()");
@@ -2907,6 +2944,7 @@ static partial class Program
     private static Task PreviewTransitionAnimations_LiveInController()
     {
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
+        var launchEntranceControllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
@@ -2922,7 +2960,7 @@ static partial class Program
         AssertContains(adapterText, "=> _previewTransitionAnimationController.PrepareStartupPresentation();");
         AssertContains(adapterText, "=> PreviewTransitionAnimationController.FadeInElement(element);");
         AssertContains(mainWindowText, "InitializePreviewTransitionAnimationController();");
-        AssertContains(animationsText, "AddPreviewShellEntranceAnimations(storyboard, easing, beginMs: 900, durationMs: 400);");
+        AssertContains(launchEntranceControllerText, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
         AssertContains(controllerText, "internal sealed class PreviewTransitionAnimationController");
         AssertContains(controllerText, "public void AddPreviewShellEntranceAnimations(Storyboard storyboard, EasingFunctionBase easing, int beginMs, int durationMs)");
         AssertContains(controllerText, "public Task AnimatePreviewOutAsync()");

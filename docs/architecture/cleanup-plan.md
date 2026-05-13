@@ -78,13 +78,15 @@ is the XAML-facing adapter.
 
 Splash phrase loading, randomized timer pacing, and the two-line splash text
 animation now live in `Sussudio/Controllers/SplashLoadingPhraseController.cs`.
-`MainWindow.SplashLoading.cs` is the XAML-facing adapter; the broader entrance
-animation remains in `MainWindow.Animations.cs`.
+`MainWindow.SplashLoading.cs` is the XAML-facing adapter.
+
+Splash-to-shell launch entrance choreography and one-shot playback state now
+live in `Sussudio/Controllers/LaunchEntranceAnimationController.cs`.
+`MainWindow.LaunchEntrance.cs` is the XAML-facing adapter.
 
 Control-bar button ownership and hover/press/release scale behavior now live in
 `Sussudio/Controllers/ControlBarAnimationController.cs`.
-`MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter; the broader
-entrance storyboard still lives in `MainWindow.Animations.cs`.
+`MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter.
 
 Preview shell/content fade and scale transitions plus unavailable-placeholder
 presentation now live in

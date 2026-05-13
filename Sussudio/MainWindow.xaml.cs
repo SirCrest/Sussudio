@@ -67,8 +67,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _rendererReinitUnsafeWindows;
     public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);
     private bool _isWindowClosing;
-    private bool _entranceAnimationPlayed;
-    private Storyboard? _entranceStoryboard;
     private bool _isFlashbackScrubbing;
     private TimeSpan? _lastScrubPointerPosition;
     private bool _suppressFlashbackEnabledToggle;
@@ -176,6 +174,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeControlBarAnimationController();
         InitializePreviewTransitionAnimationController();
         InitializeRecordButtonAnimationController();
+        InitializeLaunchEntranceAnimationController();
         InitializeLiveSignalInfoController();
         InitializePreviewAudioFadeController();
         InitializeMicrophoneControlsController();

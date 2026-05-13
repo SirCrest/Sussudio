@@ -110,8 +110,6 @@ static partial class Program
 
     private static Task PreviewStartup_PrimesUiAndAudioBeforePreviewReveal()
     {
-        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs")
-            .Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs")
             .Replace("\r\n", "\n");
         var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs")
@@ -126,6 +124,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewTransitionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewTransitionAnimationController.cs")
             .Replace("\r\n", "\n");
+        var launchEntranceControllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs")
+            .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
             .Replace("\r\n", "\n");
         var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
@@ -139,9 +139,9 @@ static partial class Program
         AssertContains(previewStartRequested, "PreparePreviewStartupPresentation();");
         AssertOccursBefore(previewStartRequested, "PrimePreviewAudioFadeIn();", "PreparePreviewStartupPresentation();");
 
-        var playEntranceAnimation = ExtractMemberCode(animationsText, "PlayEntranceAnimation");
+        var playEntranceAnimation = ExtractMemberCode(launchEntranceControllerText, "PlayEntranceAnimation");
         AssertContains(playEntranceAnimation, "LAUNCH_PREVIEW_REVEAL_DEFERRED");
-        AssertContains(playEntranceAnimation, "AddPreviewShellEntranceAnimations(storyboard, easing, beginMs: 900, durationMs: 400);");
+        AssertContains(playEntranceAnimation, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
         AssertDoesNotContain(playEntranceAnimation, "Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);");
 
         var animatePreviewInAdapter = ExtractMemberCode(previewTransitionText, "AnimatePreviewInAsync");

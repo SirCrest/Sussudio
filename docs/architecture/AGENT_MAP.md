@@ -133,10 +133,12 @@ Primary current owners:
   `MainWindow.SettingsShelf.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/SplashLoadingPhraseController.cs` owns splash phrase
   loading, timer pacing, and two-line text animation. `MainWindow.SplashLoading.cs`
-  is the XAML-facing adapter; `MainWindow.Animations.cs` still owns the broader
-  entrance choreography.
+  is the XAML-facing adapter.
+- `Sussudio/Controllers/LaunchEntranceAnimationController.cs` owns the splash-
+  to-shell launch choreography and one-shot entrance state. `MainWindow.LaunchEntrance.cs`
+  is the XAML-facing adapter.
 - `Sussudio/Controllers/ControlBarAnimationController.cs` owns the control-bar
-  button list used by entrance animation plus hover/press/release scale
+  button list used by launch entrance animation plus hover/press/release scale
   behavior. `MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/PreviewTransitionAnimationController.cs` owns preview
   shell/content fade and scale transitions, unavailable-placeholder fades, and
