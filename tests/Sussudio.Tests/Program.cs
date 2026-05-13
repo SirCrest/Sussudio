@@ -489,6 +489,9 @@ static partial class Program
                 "Stats overlay lifecycle lives in controller",
                 StatsOverlayLifecycle_LivesInController),
             await RunCheckAsync(
+                "Settings shelf lifecycle lives in controller",
+                SettingsShelfLifecycle_LivesInController),
+            await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
@@ -2739,6 +2742,37 @@ static partial class Program
         AssertContains(controllerText, "STATS_POLL_TIMER_FAIL");
         AssertDoesNotContain(statsOverlayText, "private void StatsPollTimer_Tick(");
         AssertDoesNotContain(statsOverlayText, "private Storyboard CreateStatsDockStoryboard(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task SettingsShelfLifecycle_LivesInController()
+    {
+        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
+        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs").Replace("\r\n", "\n");
+        var fullScreenText = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var settingsShelfText = ReadRepoFile("Sussudio/MainWindow.SettingsShelf.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/SettingsShelfController.cs").Replace("\r\n", "\n");
+
+        AssertContains(settingsShelfText, "private SettingsShelfController _settingsShelfController = null!;");
+        AssertContains(settingsShelfText, "private void InitializeSettingsShelfController()");
+        AssertContains(settingsShelfText, "=> _settingsShelfController.Toggle();");
+        AssertContains(settingsShelfText, "=> _settingsShelfController.ApplyVisibility(visible);");
+        AssertContains(settingsShelfText, "=> _settingsShelfController.ResetAnimationState();");
+        AssertContains(mainWindowText, "InitializeSettingsShelfController();");
+        AssertContains(fullScreenText, "ResetSettingsShelfAnimation = ResetSettingsShelfAnimationForFullScreen,");
+        AssertContains(controllerText, "internal sealed class SettingsShelfController");
+        AssertContains(controllerText, "private bool _isAnimating;");
+        AssertContains(controllerText, "public bool IsAnimating => _isAnimating;");
+        AssertContains(controllerText, "public void Toggle()");
+        AssertContains(controllerText, "public void ApplyVisibility(bool visible)");
+        AssertContains(controllerText, "_context.SettingsOverlayPanel.UpdateLayout();");
+        AssertContains(controllerText, "EnableDependentAnimation = true");
+        AssertContains(controllerText, "_context.SettingsOverlayPanel.Visibility = Visibility.Collapsed;");
+        AssertDoesNotContain(mainWindowText, "private bool _isSettingsShelfAnimating;");
+        AssertDoesNotContain(animationsText, "private void AnimateSettingsShelf(");
+        AssertDoesNotContain(eventHandlersText, "private void SettingsToggleButton_Click(");
 
         return Task.CompletedTask;
     }

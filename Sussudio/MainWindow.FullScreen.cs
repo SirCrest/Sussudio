@@ -40,7 +40,7 @@ public sealed partial class MainWindow
             GetAppWindow = GetAppWindow,
             EndFlashbackScrubForFullScreen = EndFlashbackScrubForFullScreen,
             ResetFlashbackTimelineAnimation = ResetFlashbackTimelineAnimationForFullScreen,
-            ResetSettingsShelfAnimation = () => _isSettingsShelfAnimating = false,
+            ResetSettingsShelfAnimation = ResetSettingsShelfAnimationForFullScreen,
             ShouldShowFlashbackTimeline = ShouldShowFlashbackTimeline,
             SyncFlashbackTimelineToggle = SyncFlashbackTimelineToggle,
             HideStatsDockPanelImmediate = () => HideStatsDockPanel(immediate: true),

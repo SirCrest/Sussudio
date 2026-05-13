@@ -55,6 +55,11 @@ animation state now live in
 commands and CTI rendering remain in `MainWindow.Flashback.cs` for later
 slices.
 
+Settings shelf visibility, the animation gate, and show/hide storyboard
+construction now live in
+`Sussudio/Controllers/SettingsShelfController.cs`. `MainWindow.SettingsShelf.cs`
+is the XAML-facing adapter.
+
 Diagnostic session DTOs now live in
 `tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
 owns orchestration and scenario execution, but the public options/result/sample

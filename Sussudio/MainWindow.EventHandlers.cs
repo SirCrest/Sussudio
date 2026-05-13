@@ -189,20 +189,4 @@ public sealed partial class MainWindow
             }
         }, nameof(ScreenshotButton_Click));
     }
-    private void SettingsToggleButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_isSettingsShelfAnimating)
-        {
-            return;
-        }
-
-        if (SettingsOverlayPanel.Visibility == Visibility.Visible)
-        {
-            HideSettingsShelf();
-        }
-        else
-        {
-            ShowSettingsShelf();
-        }
-    }
 }

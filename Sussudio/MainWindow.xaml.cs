@@ -138,7 +138,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private bool _isVolumeFadingIn;
     private Storyboard? _entranceStoryboard;
     private Storyboard? _previewVolumeFadeStoryboard;
-    private bool _isSettingsShelfAnimating;
     private bool _isFlashbackScrubbing;
     private TimeSpan? _lastScrubPointerPosition;
     private bool _suppressFlashbackEnabledToggle;
@@ -324,6 +323,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         ViewModel.SetWindowHandle(_hwnd);
         InitializeWindowScreenshotController();
         InitializeFlashbackTimelineController();
+        InitializeSettingsShelfController();
 
         // Cloak the window to prevent white flash before XAML renders
         int cloakTrue = 1;
