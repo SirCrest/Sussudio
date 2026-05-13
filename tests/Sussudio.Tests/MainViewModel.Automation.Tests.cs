@@ -306,6 +306,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsFlashbackAlertsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackAlerts.cs")
             .Replace("\r\n", "\n");
+        var diagnosticsFlashbackRecordingAlertsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticsFlashbackPlaybackAlertsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs")
+            .Replace("\r\n", "\n");
         var diagnosticsEventsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvents.cs")
             .Replace("\r\n", "\n");
         var diagnosticsVerificationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Verification.cs")
@@ -330,7 +334,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsTimelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsDiagnosticEvaluationLanesText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsSignalAlertsText + "\n" + diagnosticsFlashbackAlertsText + "\n" + diagnosticsEventsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotProjectionText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText + "\n" + diagnosticsTimelineProjectionText;
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsDiagnosticEvaluationLanesText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsSignalAlertsText + "\n" + diagnosticsFlashbackAlertsText + "\n" + diagnosticsFlashbackRecordingAlertsText + "\n" + diagnosticsFlashbackPlaybackAlertsText + "\n" + diagnosticsEventsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotProjectionText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText + "\n" + diagnosticsTimelineProjectionText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
@@ -359,8 +363,14 @@ static partial class Program
         AssertDoesNotContain(diagnosticsAlertsText, "\"preview-blank\"");
         AssertContains(diagnosticsAlertsText, "UpdateFlashbackAlerts(snapshot, flashbackRecordingRecent);");
         AssertContains(diagnosticsFlashbackAlertsText, "private void UpdateFlashbackAlerts(");
-        AssertContains(diagnosticsFlashbackAlertsText, "\"flashback-export-stalled\"");
-        AssertContains(diagnosticsFlashbackAlertsText, "\"flashback-playback-slow\"");
+        AssertContains(diagnosticsFlashbackAlertsText, "UpdateFlashbackRecordingAlerts(snapshot, flashbackRecordingRecent);");
+        AssertContains(diagnosticsFlashbackAlertsText, "UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs);");
+        AssertContains(diagnosticsFlashbackRecordingAlertsText, "private void UpdateFlashbackRecordingAlerts(");
+        AssertContains(diagnosticsFlashbackRecordingAlertsText, "\"flashback-export-stalled\"");
+        AssertContains(diagnosticsFlashbackPlaybackAlertsText, "private void UpdateFlashbackPlaybackAlerts(");
+        AssertContains(diagnosticsFlashbackPlaybackAlertsText, "\"flashback-playback-slow\"");
+        AssertDoesNotContain(diagnosticsFlashbackAlertsText, "\"flashback-export-stalled\"");
+        AssertDoesNotContain(diagnosticsFlashbackAlertsText, "\"flashback-playback-slow\"");
         AssertDoesNotContain(diagnosticsAlertsText, "\"flashback-export-stalled\"");
         AssertDoesNotContain(diagnosticsHubText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
         AssertContains(diagnosticsVerificationText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
