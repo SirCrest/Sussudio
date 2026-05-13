@@ -377,6 +377,10 @@ Flashback playback public command entry points now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Commands.cs`. Keep
 scrub, seek, play/pause, go-live, and nudge request gating there; keep command
 queue coalescing and playback-thread execution in the queue/thread partials.
+Command readiness/failure formatting and queue telemetry bookkeeping live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs`.
+Keep command status counters and last-failure/latency updates there instead of
+growing command channel mechanics.
 
 Flashback playback component lifecycle now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs`. Keep
