@@ -120,8 +120,10 @@ Primary current owners:
   for preview compositor transforms. Preview surface sizing stays with
   `MainWindow.PreviewRenderer.cs`, including preview renderer instances,
   preview source/shadow visuals, frame counters, expected-present interval,
-  renderer cadence state, and the automation preview snapshot provider;
-  close/finalize behavior stays with
+  renderer cadence state, and preview snapshot construction.
+- `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
+  preview snapshot provider that dispatches to the renderer/startup snapshot
+  projection. Close/finalize behavior stays with
   `MainWindow.CloseLifecycle.cs`.
 - `Sussudio/MainWindow.WindowTitle.cs` owns window title base/build-stamp
   formatting and the recording-time suffix used by property changes.

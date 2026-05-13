@@ -3020,6 +3020,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
 
         AssertContains(previewRendererText, "private SoftwareBitmapSource? _previewSource;");
@@ -3035,8 +3036,11 @@ static partial class Program
         AssertContains(previewRendererText, "private double _previewMinPresentationIntervalMs;");
         AssertContains(previewRendererText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
         AssertContains(previewRendererText, "private double ResolvePreviewExpectedIntervalMs()");
-        AssertContains(previewRendererText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
+        AssertContains(previewRuntimeSnapshotText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
+        AssertContains(previewRuntimeSnapshotText, "return GetPreviewRuntimeSnapshot();");
+        AssertContains(previewRuntimeSnapshotText, "completion.TrySetResult(GetPreviewRuntimeSnapshot());");
         AssertContains(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
+        AssertContains(previewRendererText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
         AssertContains(previewRendererText, "return Math.Max(1.0, 1000.0 / sourceFps);");
         AssertContains(previewRendererText, "_previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();");
         AssertContains(statsOverlayText, "GetPresentCadenceMetrics(_previewMinPresentationIntervalMs)");
@@ -3054,6 +3058,7 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
         AssertDoesNotContain(mainWindowText, "private double ResolvePreviewExpectedIntervalMs()");
         AssertDoesNotContain(mainWindowText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
+        AssertDoesNotContain(previewRendererText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
         AssertDoesNotContain(mainWindowText, "private static bool IsHdrSubtype");
 
         return Task.CompletedTask;
