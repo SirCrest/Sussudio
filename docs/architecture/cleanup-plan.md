@@ -369,6 +369,13 @@ assignment, live-preview suppression/resume drains, MJPEG preview-frame decoded
 callbacks, raw preview submission, and visual-cadence reset/recording helpers
 there; keep recording and Flashback enqueue paths in `UnifiedVideoCapture.cs`.
 
+MJPEG preview jitter-buffer metrics now live in
+`Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs`. Keep metrics
+records, snapshot construction, timing samples, selected/dropped-frame
+telemetry, and tick/millisecond conversion helpers there; keep queue ordering,
+deadline drops, adaptive target depth, and emit-loop pacing in
+`MjpegPreviewJitterBuffer.cs`.
+
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`: `AutomationSnapshot.cs`,
 `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,
