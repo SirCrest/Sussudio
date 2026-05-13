@@ -183,6 +183,12 @@ Flashback export failure classification now lives in
 Keep the export failure-kind taxonomy there because automation responses and
 capture diagnostics both consume it.
 
+Flashback export planning now lives in
+`Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs`. Keep
+segment metadata mapping, live-export throttle policy, buffer range clamps, and
+PTS offset helpers there so the export progress partial stays focused on entry
+points, progress forwarding, and diagnostics state.
+
 Preview sink and MJPEG timing handoff now lives in
 `Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs`. That file owns
 preview-frame sink attachment, late Flashback playback preview wiring, shared

@@ -337,7 +337,7 @@ static partial class Program
         var exportCore = ExtractTextBetween(
             captureServiceText,
             "private async Task<FinalizeResult> ExportFlashbackCoreAsync",
-            "    private static IReadOnlyList<FlashbackExportSegment>?");
+            "    private void RecordLastFlashbackExportResult");
         AssertContains(exportCore, "FlashbackExporter? snapshotExporter = null,");
         AssertContains(exportCore, "bool exportOperationLockAlreadyHeld = false,");
         AssertContains(exportCore, "var exportOperationLockHeld = exportOperationLockAlreadyHeld;");
@@ -1033,6 +1033,8 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportProgress.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportFailureClassification.cs")
                 .Replace("\r\n", "\n");
