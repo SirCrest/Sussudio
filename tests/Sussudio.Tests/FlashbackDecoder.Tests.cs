@@ -84,6 +84,31 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackDecoder_DiagnosticsAndGuardsLiveInFocusedPartials()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Diagnostics.cs")
+            .Replace("\r\n", "\n");
+        var guardsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Guards.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(diagnosticsText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
+        AssertContains(diagnosticsText, "private static double ElapsedMsSince(long startTimestamp)");
+        AssertContains(diagnosticsText, "private static void ThrowIfError(int errorCode, string operation)");
+        AssertContains(diagnosticsText, "private static string GetErrorString(int errorCode)");
+        AssertContains(diagnosticsText, "private static InvalidOperationException CreateException(string message)");
+        AssertContains(guardsText, "private void ThrowIfNotInitialized()");
+        AssertContains(guardsText, "private void ThrowIfNotOpen()");
+        AssertContains(guardsText, "private void ThrowIfDisposed()");
+        AssertDoesNotContain(rootText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
+        AssertDoesNotContain(rootText, "private static double ElapsedMsSince(long startTimestamp)");
+        AssertDoesNotContain(rootText, "private static void ThrowIfError(int errorCode, string operation)");
+        AssertDoesNotContain(rootText, "private void ThrowIfNotInitialized()");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");

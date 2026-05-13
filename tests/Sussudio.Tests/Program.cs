@@ -1369,6 +1369,9 @@ static partial class Program
                 "Flashback decoder lifetime cleanup lives in focused partial",
                 FlashbackDecoder_LifetimeCleanupLivesInFocusedPartial),
             await RunCheckAsync(
+                "Flashback decoder diagnostics and guards live in focused partials",
+                FlashbackDecoder_DiagnosticsAndGuardsLiveInFocusedPartials),
+            await RunCheckAsync(
                 "Flashback decoder defaults to closed state",
                 FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized),
             await RunCheckAsync(
