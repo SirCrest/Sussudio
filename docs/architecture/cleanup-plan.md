@@ -176,18 +176,24 @@ LibAv encoder codec and options policy now lives in
 `Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs`. Keep option
 validation, bitstream-filter selection, NVENC preset/split-encode mapping,
 frame-size math, sample-format support, and rational conversion helpers there;
-leave live send/drain/finalize paths in `LibAvEncoder.cs`.
+leave live send/drain/finalize paths in the owner partials.
 
 LibAv encoder A/V sync diagnostics now live in
 `Sussudio/Services/Recording/LibAvEncoder.AvSync.cs`. Keep drift-correction
 thresholds, sync counters, current-drift reporting, and sync warning logs there
-so the root encoder stays focused on stream setup, send paths, and teardown.
+so the root encoder stays focused on video send paths, lifecycle, and teardown.
+
+LibAv encoder audio stream handling now lives in
+`Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone send
+entry points, AAC stream setup, resamplers, packet writing, pending-sample
+flush, and sample queue/drain helpers there; leave video send, rotation, and
+finalization in `LibAvEncoder.cs`.
 
 LibAv encoder video setup now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs`. Keep video codec
 context configuration, NVENC private option application, D3D11/CUDA hardware
 frames setup, texture-pool creation, and video bitstream-filter initialization
-there; leave per-frame send paths, audio setup/drain, rotation, and finalization
+there; leave per-frame video send paths, rotation, and finalization
 in `LibAvEncoder.cs`.
 
 LibAv encoder output lifecycle now lives in
