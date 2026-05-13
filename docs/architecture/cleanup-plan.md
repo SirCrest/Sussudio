@@ -40,7 +40,8 @@ and diagnostic summaries. `AutomationDiagnosticsHub.Evaluation.cs` owns
 performance scoring. `AutomationDiagnosticsHub.EvaluationPolicy.cs` owns shared
 alert-detail formatting and health classifiers used by both alerts and
 diagnostic evaluation.
-`AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification.
+`AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification and preview
+HDR/tone-map state projection.
 `AutomationDiagnosticsHub.Lifecycle.cs` owns start/stop/dispose and the polling
 loop. `AutomationDiagnosticsHub.OutputFiles.cs` owns cached last-output file
 existence and size probing. `AutomationDiagnosticsHub.PreviewPacing.cs` owns

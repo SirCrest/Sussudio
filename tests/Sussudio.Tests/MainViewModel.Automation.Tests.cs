@@ -346,8 +346,12 @@ static partial class Program
         AssertContains(diagnosticsLifecycleText, "private async Task RunLoopAsync(CancellationToken cancellationToken)");
         AssertDoesNotContain(diagnosticsHubText, "public void Start()");
         AssertContains(diagnosticsHdrText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
+        AssertContains(diagnosticsHdrText, "private static PreviewHdrState BuildPreviewHdrState(");
+        AssertContains(diagnosticsHdrText, "private readonly record struct PreviewHdrState(");
         AssertContains(diagnosticsHdrText, "private static bool IsHdrSubtype(string? subtype)");
         AssertDoesNotContain(diagnosticsHubText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
+        AssertContains(diagnosticsSnapshotsText, "var previewHdrState = BuildPreviewHdrState(captureRuntime, viewModelSnapshot, previewRuntime);");
+        AssertDoesNotContain(diagnosticsSnapshotsText, "var previewHdrInputDetected =");
         AssertContains(diagnosticsSnapshotsText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnosticsSnapshotsText, "AppendPerformanceTimelineEntry(snapshot);");
         AssertContains(diagnosticsSnapshotStateText, "private AudioSignalState UpdateAudioSignalState(");

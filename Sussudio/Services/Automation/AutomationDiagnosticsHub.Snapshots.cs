@@ -128,15 +128,7 @@ public sealed partial class AutomationDiagnosticsHub
             recentD3DStatsFailures,
             recentD3DFrameLatencyWaitTimeouts);
         var hdrTruthVerdict = BuildHdrTruthVerdict(captureRuntime, viewModelSnapshot.IsHdrEnabled, lastVerification);
-        var previewHdrInputDetected =
-            IsHdrSubtype(captureRuntime.NegotiatedPixelFormat) ||
-            (captureRuntime.RequestedHdrEnabled ?? false) ||
-            viewModelSnapshot.IsHdrEnabled;
-        var previewToneMapMode = !previewHdrInputDetected
-            ? "None"
-            : previewRuntime.GpuActive
-                ? "Auto"
-                : "Unavailable";
+        var previewHdrState = BuildPreviewHdrState(captureRuntime, viewModelSnapshot, previewRuntime);
 
         var lastOutput = ProbeLastOutput(captureRuntime.LastOutputPath, viewModelSnapshot.IsRecording);
         var processResources = CaptureProcessResourceSnapshot();
@@ -543,8 +535,8 @@ public sealed partial class AutomationDiagnosticsHub
             PreviewGpuNaturalVideoHeight = previewRuntime.GpuNaturalVideoHeight,
             PreviewGpuPositionMs = previewRuntime.GpuPositionMs,
             PreviewGpuPositionEventCount = previewRuntime.GpuPositionEventCount,
-            PreviewHdrInputDetected = previewHdrInputDetected,
-            PreviewToneMapMode = previewToneMapMode,
+            PreviewHdrInputDetected = previewHdrState.InputDetected,
+            PreviewToneMapMode = previewHdrState.ToneMapMode,
             PreviewColorContext = captureRuntime.NegotiatedPixelFormat,
             ConversionQueueDepth = health.ConversionQueueDepth,
             FfmpegVideoQueueDepth = health.FfmpegVideoQueueDepth,
