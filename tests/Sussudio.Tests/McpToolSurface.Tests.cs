@@ -1282,6 +1282,36 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionRecordingChecks_OwnPostRunRecordingVerification()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(recordingChecksText, "internal static class DiagnosticSessionRecordingChecks");
+        AssertContains(recordingChecksText, "internal static async Task<DiagnosticSessionRecordingCheckResult> RunAsync(");
+        AssertContains(recordingChecksText, "internal readonly record struct DiagnosticSessionRecordingCheckResult(JsonElement? Verification)");
+        AssertContains(recordingChecksText, "setStage(\"settings-deferred-restore\")");
+        AssertContains(recordingChecksText, "VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(");
+        AssertContains(recordingChecksText, "DiagnosticSessionScenarios.TryGetFlashbackExportVerificationPath(");
+        AssertContains(recordingChecksText, "setStage(\"recording-verification\")");
+        AssertContains(recordingChecksText, "verificationCommand = \"VerifyFile\"");
+        AssertContains(recordingChecksText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertContains(recordingChecksText, "recording verification skipped: scenario does not produce a recording or export artifact");
+        AssertContains(recordingChecksText, "setStage(\"recording-validation\")");
+        AssertContains(recordingChecksText, "ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings)");
+        AssertContains(runnerText, "DiagnosticSessionRecordingChecks.RunAsync(");
+        AssertContains(runnerText, "verification = recordingCheckResult.Verification;");
+        AssertDoesNotContain(runnerText, "SetStage(\"settings-deferred-restore\")");
+        AssertDoesNotContain(runnerText, "var verificationCommand = \"VerifyLastRecording\"");
+        AssertDoesNotContain(runnerText, "DiagnosticSessionScenarios.TryGetFlashbackExportVerificationPath(");
+        AssertDoesNotContain(runnerText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertDoesNotContain(runnerText, "ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionFlashbackCycleScenarios_OwnCycleFlows()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
@@ -1465,6 +1495,10 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
+            .Replace("\r\n", "\n");
+        var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
+            .Replace("\r\n", "\n");
         var settingsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs")
             .Replace("\r\n", "\n");
 
@@ -1477,7 +1511,10 @@ static partial class Program
         AssertContains(settingsText, "internal static async Task VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(");
         AssertContains(settingsText, "flashback recording settings deferred post-stop buffer verified");
         AssertContains(settingsText, "flashback recording settings deferred preset restored to");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackRecordingSettingsScenarios;");
+        AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackRecordingSettingsScenarios;");
+        AssertContains(startupText, "RunFlashbackRecordingSettingsDeferredAsync(");
+        AssertContains(recordingChecksText, "using static Sussudio.Tools.DiagnosticSessionFlashbackRecordingSettingsScenarios;");
+        AssertContains(recordingChecksText, "VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(");
         AssertDoesNotContain(runnerText, "private static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
         AssertDoesNotContain(runnerText, "private static async Task VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(");
         AssertDoesNotContain(runnerText, "private readonly record struct FlashbackRecordingSettingsDeferredPresetState(");

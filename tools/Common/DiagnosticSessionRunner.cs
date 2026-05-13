@@ -4,7 +4,6 @@ using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;
 using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;
 using static Sussudio.Tools.DiagnosticSessionFlashbackRejectedExports;
-using static Sussudio.Tools.DiagnosticSessionFlashbackRecordingSettingsScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
 using static Sussudio.Tools.DiagnosticSessionHealthPolicy;
@@ -70,7 +69,6 @@ public static class DiagnosticSessionRunner
         var stoppedRecordingForVerification = false;
         var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);
         var runFlashbackPlayback = scenarioPlan.RunFlashbackPlayback;
-        var runFlashbackRecordingSettingsDeferred = scenarioPlan.RunFlashbackRecordingSettingsDeferred;
         var runFlashbackRecordingExportRejected = scenarioPlan.RunFlashbackRecordingExportRejected;
         var runFlashbackExportRejected = scenarioPlan.RunFlashbackExportRejected;
         FlashbackRecordingSettingsDeferredPresetState flashbackRecordingSettingsDeferredPresetState = default;
@@ -267,82 +265,23 @@ public static class DiagnosticSessionRunner
             await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
         }
 
-        if (runFlashbackRecordingSettingsDeferred)
-        {
-            try
-            {
-                SetStage("settings-deferred-restore");
-                await VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(
-                        actions,
-                        warnings,
-                        flashbackRecordingSettingsDeferredPresetState,
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                RecordTerminalException(ex, "settings-deferred-restore");
-            }
-        }
-
-        var hasFlashbackExportVerificationPath = DiagnosticSessionScenarios.TryGetFlashbackExportVerificationPath(
-            scenario,
-            outputDirectory,
-            out var flashbackExportVerificationPath);
-        var shouldRunVerification =
-            startedRecording ||
-            (options.VerifyRecording && hasFlashbackExportVerificationPath);
-        if (shouldRunVerification)
-        {
-            try
-            {
-                SetStage("recording-verification");
-                var verificationCommand = "VerifyLastRecording";
-                Dictionary<string, object?>? verificationPayload = null;
-                if (!startedRecording)
-                {
-                    verificationCommand = "VerifyFile";
-                    verificationPayload = new Dictionary<string, object?>
-                    {
-                        ["filePath"] = flashbackExportVerificationPath,
-                        ["strict"] = true,
-                        ["verificationProfile"] = "flashback-export"
-                    };
-                }
-
-                var verificationResponse = await SendAsync(verificationCommand, verificationPayload, 60_000).ConfigureAwait(false);
-                if (TryGetVerification(verificationResponse, out var verificationElement))
-                {
-                    verification = verificationElement.Clone();
-                }
-                else
-                {
-                    warnings.Add(AutomationSnapshotFormatter.Get(verificationResponse, "Message", "Verification did not return data."));
-                }
-            }
-            catch (Exception ex)
-            {
-                RecordTerminalException(ex, "recording-verification");
-            }
-        }
-        else if (options.VerifyRecording)
-        {
-            actions.Add("recording verification skipped: scenario does not produce a recording or export artifact");
-        }
-
-        if (scenarioPlan.RequiresFlashbackRecordingValidation)
-        {
-            try
-            {
-                SetStage("recording-validation");
-                ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings);
-            }
-            catch (Exception ex)
-            {
-                RecordTerminalException(ex, "recording-validation");
-            }
-        }
+        var recordingCheckResult = await DiagnosticSessionRecordingChecks.RunAsync(
+                options,
+                scenarioPlan,
+                scenario,
+                outputDirectory,
+                initialSnapshot,
+                samples,
+                startedRecording,
+                flashbackRecordingSettingsDeferredPresetState,
+                actions,
+                warnings,
+                (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                SetStage,
+                RecordTerminalException,
+                cancellationToken)
+            .ConfigureAwait(false);
+        verification = recordingCheckResult.Verification;
 
         try
         {

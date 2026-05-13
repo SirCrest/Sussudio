@@ -741,6 +741,9 @@ static partial class Program
                 "Diagnostic session cleanup policy has a named owner",
                 DiagnosticSessionCleanupPolicy_OwnsRestoreWarnings),
             await RunCheckAsync(
+                "Diagnostic session recording checks have a named owner",
+                DiagnosticSessionRecordingChecks_OwnPostRunRecordingVerification),
+            await RunCheckAsync(
                 "Diagnostic session Flashback cycle scenarios have a named owner",
                 DiagnosticSessionFlashbackCycleScenarios_OwnCycleFlows),
             await RunCheckAsync(

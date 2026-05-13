@@ -840,6 +840,12 @@ verification, Flashback playback go-live restore, preview stop, and Flashback
 enable-state restore while `DiagnosticSessionCleanupPolicy.cs` remains the
 post-cleanup warning validator.
 
+Diagnostic-session recording checks now live in
+`tools/Common/DiagnosticSessionRecordingChecks.cs`. It owns deferred Flashback
+recording-settings restore, last-recording or Flashback export verification,
+and Flashback recording validation while the runner keeps the high-level
+post-cleanup phase order.
+
 Diagnostic-session scenario flagging now lives in
 `tools/Common/DiagnosticSessionScenarioPlan.cs`. It owns normalized scenario
 booleans plus grouped warning/validation policy switches so the runner does not
@@ -950,6 +956,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionCleanupActions.cs`
 - `DiagnosticSessionCleanupPolicy.cs`
+- `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`
@@ -985,8 +992,8 @@ Remaining `tools/Common` ownership:
 1. Continue splitting diagnostic-session runner by scenario family.
 
    `tools/Common/DiagnosticSessionRunner.cs` is still large. Scenario catalog
-   optional scenario startup, and cleanup mutation ownership are extracted;
-   next, move preview, recording, post-run verification, and result-summary
+   optional scenario startup, cleanup mutation ownership, and post-cleanup
+   recording checks are extracted; next, move preview setup and result-summary
    construction behind small runner helpers. Keep JSON summary shape unchanged.
 
 2. Reduce custom regression harness size.
