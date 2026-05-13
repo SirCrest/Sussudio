@@ -1,6 +1,6 @@
 # Sussudio Agent Map
 
-Last reviewed: 2026-05-12.
+Last reviewed: 2026-05-13.
 
 This file maps the current repo shape to named owners, entry points, invariants,
 and fast checks. It is intentionally mechanical so future agents can find the
@@ -19,7 +19,7 @@ folder.
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.Snapshots.cs`, `CaptureService.Telemetry.cs` | lifecycle owner, audio owner, cleanup owner, transition/disposal owner, deferred cleanup owner, failure owner, Flashback control owner, Flashback recording policy owner, health snapshot builder, preview pipeline owner, probe owner, recording integrity owner, runtime snapshot builder, shared snapshot helper policy, telemetry owner, resource managers |
 | Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Hdr.cs`, `AutomationDiagnosticsHub.Lifecycle.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.Verification.cs` | additional collectors/controllers when hub orchestration grows |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvRecordingSink.cs` | encoder option policy, sink lifecycle, verifier/finalizer |
-| Flashback | `FlashbackPlaybackController.cs`, `FlashbackEncoderSink.cs`, `FlashbackExporter.cs` | playback, buffer, encoder, export modules |
+| Flashback | `FlashbackPlaybackController.cs`, `FlashbackPlaybackController.Markers.cs`, `FlashbackEncoderSink.cs`, `FlashbackExporter.cs` | playback core, marker owner, buffer, encoder, export modules |
 | Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.Rendering.cs`, `D3D11PreviewRenderer.ScreenshotCapture.cs`, `D3D11PreviewRenderer.ShaderSources.cs` | renderer host, present cadence, screenshot capture, shader source, timing models |
 | UI shell | `MainWindow.*.cs` partial family | named controllers under an app shell folder |
 | Presentation | `MainViewModel.*.cs` partial family | feature view models behind the root facade |
@@ -134,7 +134,8 @@ Entry points:
 
 - `FlashbackBackendResources.cs` owns backend resource grouping.
 - `FlashbackBufferManager.cs` owns segment retention and buffer state.
-- `FlashbackPlaybackController*.cs` owns playback and scrub control.
+- `FlashbackPlaybackController*.cs` owns playback, scrub, and marker control.
+- `FlashbackPlaybackController.Markers.cs` owns in/out marker state, marker API, marker normalization, and out-point pause checks.
 - `FlashbackExporter.cs` owns export path validation and temp-file finalization.
 
 Invariants:

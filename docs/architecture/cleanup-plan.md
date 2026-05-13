@@ -227,6 +227,11 @@ Flashback marker placement and compact duration text now live in
 `Sussudio/MainWindow.FlashbackMarkers.cs`, including in/out marker visibility,
 selection-region layout, and `m:ss` formatting.
 
+Flashback playback in/out marker state and marker command handling now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs`. Keep
+marker normalization and out-point pause checks there; keep decode pacing,
+seek, and segment-opening flow in the playback controller core/thread partials.
+
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
 `MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing
