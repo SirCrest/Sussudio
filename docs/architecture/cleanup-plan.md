@@ -376,6 +376,15 @@ telemetry, and tick/millisecond conversion helpers there; keep queue ordering,
 deadline drops, adaptive target depth, and emit-loop pacing in
 `MjpegPreviewJitterBuffer.cs`.
 
+MJPEG preview jitter-buffer queueing and adaptive deadline policy now have
+their own owners. `MjpegPreviewJitterBuffer.Queue.cs` owns queue depth, ordered
+frame insertion/dequeue, missing-sequence recovery, clear behavior, and resume
+reprime accounting. `MjpegPreviewJitterBuffer.Adaptive.cs` owns hard/soft
+deadline drops, adjusted output cadence, target-depth increase/decrease, and
+latency-pressure classification. Keep the root file focused on construction,
+public enqueue/suppression lifecycle, frame submission, display-clock pacing,
+and timer/MMCSS infrastructure.
+
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`: `AutomationSnapshot.cs`,
 `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,
