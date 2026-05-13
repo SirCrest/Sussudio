@@ -3676,6 +3676,7 @@ static partial class Program
     private static Task FlashbackPlayheadMotion_LivesInFocusedPartial()
     {
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var scrubText = ReadRepoFile("Sussudio/MainWindow.FlashbackScrub.cs").Replace("\r\n", "\n");
         var playheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs").Replace("\r\n", "\n");
         var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPolling.cs").Replace("\r\n", "\n");
 
@@ -3687,7 +3688,7 @@ static partial class Program
         AssertContains(playheadText, "private void PositionFlashbackPlayhead(double x, double trackWidth, FlashbackPlayheadMotion motion)");
         AssertContains(playheadText, "StartLinearPlayheadExtrapolation(");
         AssertContains(playheadText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
-        AssertContains(flashbackText, "PositionFlashbackPlayhead(x, width, FlashbackPlayheadMotion.Magnetic);");
+        AssertContains(scrubText, "PositionFlashbackPlayhead(x, width, FlashbackPlayheadMotion.Magnetic);");
         AssertContains(flashbackText, "RefreshFlashbackCtiMotion(\"state_change\");");
         AssertContains(pollingAdapterText, "StopFlashbackCtiAnchorTimer();");
         AssertDoesNotContain(flashbackText, "private enum FlashbackPlayheadMotion");

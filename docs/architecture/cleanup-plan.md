@@ -99,6 +99,11 @@ animation state now live in
 `MainWindow.FlashbackTimeline.cs` is the XAML-facing adapter; scrub/playback
 commands remain in `MainWindow.Flashback.cs`.
 
+Active Flashback pointer-scrub state now lives in
+`Sussudio/MainWindow.FlashbackScrub.cs`. It owns scrub throttling,
+release/cancel/capture-lost cleanup, and the timeline fraction/duration
+geometry helpers that marker and playhead presentation share.
+
 Flashback CTI/playhead compositor state now lives in
 `Sussudio/MainWindow.FlashbackPlayhead.cs`. It owns magnetic scrub movement,
 long-horizon linear playhead extrapolation, and CTI anchor timing; the broader

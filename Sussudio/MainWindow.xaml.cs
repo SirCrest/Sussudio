@@ -24,8 +24,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private readonly bool _automationTokenRequired;
     private readonly string _automationPipeName;
-    private bool _isFlashbackScrubbing;
-    private TimeSpan? _lastScrubPointerPosition;
     private bool _suppressFlashbackEnabledToggle;
     private FullScreenController _fullScreenController = null!;
     private const int MinWindowWidth = 900;
