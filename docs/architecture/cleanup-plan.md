@@ -193,6 +193,12 @@ Native XU diagnostic summary strings now live in
 Keep the `nativexu:` token contract and extended AT result field formatting in
 that file.
 
+Native XU public device commands now live in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs`.
+Keep audio source switching, analog gain writes, named SET wrappers, and
+probe-facing raw AT reads there. The root provider remains responsible for
+telemetry polling and snapshot assembly.
+
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
