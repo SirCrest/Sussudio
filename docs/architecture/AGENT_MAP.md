@@ -15,7 +15,7 @@ folder.
 | Area | Current large files | Preferred next owner |
 |------|---------------------|----------------------|
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, result formatter, plus per-scenario runners |
-| Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests |
+| Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Snapshots.cs` | transition state machine, snapshot builder, resource managers |
 | Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` | diagnostic collectors and evaluation policies |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvRecordingSink.cs` | encoder option policy, sink lifecycle, verifier/finalizer |
@@ -152,6 +152,10 @@ Primary current owners:
 - `Sussudio/MainWindow.FrameTimeOverlay.cs` owns compact frame-time overlay
   text projection and graph line drawing. Keep frame-time canvas math there,
   while `StatsPresentationBuilder` owns the range/sample text policy.
+- `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` owns legacy
+  harness contract checks for stats presentation and frame-time overlay policy.
+  Keep new stats presentation ownership assertions there instead of growing
+  `tests/Sussudio.Tests/Program.cs`.
 - `Sussudio/MainWindow.StatsHardwareSections.cs` owns decode and GPU stats
   row projection. It should gather current MJPEG/NVML values and delegate row
   element reuse to `StatsDiagnosticRowsController`.

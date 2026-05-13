@@ -96,6 +96,9 @@ the stats dock projection and snapshot adapter.
 Decode and GPU hardware stats row projection now lives in
 `Sussudio/MainWindow.StatsHardwareSections.cs`; row element pooling still
 belongs to `StatsDiagnosticRowsController`.
+Stats presentation and frame-time overlay contract checks now live in
+`tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` instead of expanding
+the legacy harness body in `tests/Sussudio.Tests/Program.cs`.
 
 Dynamic stats diagnostic row pools now live in
 `Sussudio/Controllers/StatsDiagnosticRowsController.cs`. It owns decode/GPU
@@ -413,8 +416,9 @@ Remaining `tools/Common` ownership:
 2. Reduce custom regression harness size.
 
    `tests/Sussudio.Tests/Program.cs` should keep the legacy runner entry point,
-   but new checks should land in focused xUnit files. Move low-risk contract
-   tests first.
+   but checks should keep migrating into focused xUnit files or focused
+   partial contract files while the dual-stack harness remains. Continue with
+   low-risk contract groups first.
 
 3. Continue converting MainWindow partial concerns into controllers.
 
