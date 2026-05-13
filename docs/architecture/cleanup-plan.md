@@ -259,6 +259,13 @@ Flashback encoder public runtime state now lives in
 counters, queue-depth/status projections, encoder format summaries,
 fatal-error callback registration, and the frame-encoded event surface there.
 
+Flashback decoder audio output now lives in
+`Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs`. Keep audio packet
+delivery, audio callback failure handling, resampler output conversion, and
+bounded audio sample/byte sizing there. Keep decoder initialization, file
+open/close, seek/decode control flow, video output, and native cleanup in the
+root decoder until those areas get their own focused slices.
+
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
 lock/disposal helpers, progress normalization and throttling, native cleanup,

@@ -71,6 +71,19 @@ static partial class Program
         return string.Join("\n", parts);
     }
 
+    private static string ReadFlashbackDecoderSource()
+    {
+        var parts = new[]
+        {
+            // Keep audio first so source-shape checks still see audio delivery
+            // before the root file's frame-conversion section marker.
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs").Replace("\r\n", "\n")
+        };
+
+        return string.Join("\n", parts);
+    }
+
     // ── FlashbackBufferOptions ──
 
     private static Task FlashbackBufferOptions_MaxDiskBytes_ScalesWithDuration()
@@ -3688,8 +3701,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_DiscardedAudioFramesAreUnreffed()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackDecoderSource();
 
         var audioDecodeBlock = ExtractTextBetween(
             sourceText,
@@ -3702,8 +3714,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_MjpegPlaybackUsesSingleThreadLowLatencyDecode()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackDecoderSource();
 
         var softwareInitBlock = ExtractTextBetween(
             sourceText,
@@ -3716,8 +3727,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_PtsConversionRejectsInvalidTimestamps()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackDecoderSource();
 
         AssertContains(sourceText, "var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_videoFrame), _videoTimeBase);");
         AssertContains(sourceText, "var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_audioFrame), _audioTimeBase);");
@@ -3756,8 +3766,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_InputStreamsAndFrameSizesAreBounded()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackDecoderSource();
 
         AssertContains(sourceText, "private const int MaxSupportedInputStreams = 64;");
         AssertContains(sourceText, "private const int MaxDecodedVideoDimension = 8192;");
@@ -3785,8 +3794,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_AudioOutputBuffersAreBounded()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackDecoderSource();
 
         AssertContains(sourceText, "private const int MaxDecodedAudioFrameBytes = 16 * 1024 * 1024;");
         AssertContains(sourceText, "byte[]? result = null;\n        var returnResultToPool = true;");
@@ -3810,8 +3818,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_SoftwareFramePlanesAreValidated()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackDecoderSource();
 
         AssertContains(sourceText, "if (actualFormat != AVPixelFormat.AV_PIX_FMT_NONE && actualFormat != _decodedPixelFormat)");
         AssertContains(sourceText, "if (!TryValidateSoftwareVideoFrame(_videoFrame, _decodedPixelFormat, _videoWidth, _videoHeight, _isHdr, out var frameFailure))");
@@ -3839,8 +3846,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_D3D11FramesAreValidated()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackDecoderSource();
 
         AssertContains(sourceText, "if (!TryValidateD3D11VideoFrame(clonedFrame, _videoWidth, _videoHeight, out var d3dFrameFailure))");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_DECODER_VIDEO_WARN reason=invalid_d3d11_frame detail='{d3dFrameFailure}' w={_videoWidth} h={_videoHeight}\");\n                ffmpeg.av_frame_free(&clonedFrame);\n                return default;");
@@ -3854,8 +3860,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_HeldFrameCleanupIsBestEffort()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackDecoderSource();
 
         AssertContains(sourceText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
         AssertContains(sourceText, "FLASHBACK_DECODER_RELEASE_HELD_FRAME_WARN");
@@ -3872,8 +3877,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_DecodeLoopsObserveCancellation()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackDecoderSource();
 
         AssertContains(sourceText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
         AssertContains(sourceText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
@@ -3919,8 +3923,7 @@ static partial class Program
         {
         }
 
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackDecoderSource();
         var initializeBlock = ExtractTextBetween(
             sourceText,
             "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)",
@@ -3947,8 +3950,7 @@ static partial class Program
 
         AssertEqual(null, callbackProperty.GetValue(decoder), "Disposed decoder clears audio callback");
 
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackDecoderSource();
         var disposeBlock = ExtractTextBetween(
             sourceText,
             "public void Dispose()",
@@ -4142,8 +4144,7 @@ static partial class Program
 
     private static Task FlashbackSuppressedExceptionsUseAppLogs()
     {
-        var decoderText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
+        var decoderText = ReadFlashbackDecoderSource();
         var sinkText = ReadFlashbackEncoderSinkSource();
 
         var openFileBlock = ExtractTextBetween(
