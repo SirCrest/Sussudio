@@ -289,6 +289,9 @@ Primary current owners:
   helpers. `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
   for stats/settings visibility, frame-time overlay display, Flashback timeline
   visibility, show-all capture options, and preview volume persistence.
+  `MainViewModel.AutomationRecordingSettings.cs` owns recording format,
+  encoder preset/quality/split-mode/custom-bitrate, and output-path automation
+  mutators.
   Remaining automation command mutation code stays in `MainViewModel.Automation.cs`.
 
 Refactor direction:

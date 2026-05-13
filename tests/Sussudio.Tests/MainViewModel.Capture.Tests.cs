@@ -406,6 +406,7 @@ static partial class Program
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelText = string.Join("\n", viewModelFiles.Values);
         var automationText = viewModelFiles["MainViewModel.Automation.cs"];
+        var automationRecordingSettingsText = viewModelFiles["MainViewModel.AutomationRecordingSettings.cs"];
         var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var flashbackPlaybackText = viewModelFiles["MainViewModel.FlashbackPlayback.cs"];
         var flashbackAutomationText = automationText + "\n" + flashbackExportText + "\n" + flashbackPlaybackText;
@@ -532,9 +533,10 @@ static partial class Program
         AssertMemberContains(settingsText, "OnSelectedRecordingFormatChanged", "_suppressFlashbackFormatCycle is false");
         AssertContains(rawSettingsText, "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),\n                \"recording format\");");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private bool _suppressFlashbackFormatCycle;");
-        AssertMemberContains(automationText, "SetRecordingFormatAsync", "_suppressFlashbackFormatCycle = true;");
-        AssertMemberContains(automationText, "SetRecordingFormatAsync", "RecordingFormat.Av1Mp4");
-        AssertMemberContains(automationText, "SetRecordingFormatAsync", "await _sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
+        AssertMemberContains(automationRecordingSettingsText, "SetRecordingFormatAsync", "_suppressFlashbackFormatCycle = true;");
+        AssertMemberContains(automationRecordingSettingsText, "SetRecordingFormatAsync", "RecordingFormat.Av1Mp4");
+        AssertMemberContains(automationRecordingSettingsText, "SetRecordingFormatAsync", "await _sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
+        AssertDoesNotContain(automationText, "public async Task SetRecordingFormatAsync");
         AssertMemberContains(settingsText, "OnCustomBitrateMbpsChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(settingsText, "OnFlashbackBufferMinutesChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
         AssertMemberContains(settingsText, "OnFlashbackGpuDecodeChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
@@ -556,9 +558,9 @@ static partial class Program
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "nvencPreset: SelectedPreset");
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "splitEncodeMode: SelectedSplitEncodeMode");
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "TrackPendingFlashbackCycleTask(task, description);");
-        AssertMemberContains(automationText, "SetSplitEncodeModeAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
-        AssertMemberContains(automationText, "SetSplitEncodeModeAsync", "SplitEncodeMode: SelectedSplitEncodeMode");
-        AssertMemberContains(automationText, "SetSplitEncodeModeAsync", "splitEncodeMode: settings.SplitEncodeMode");
+        AssertMemberContains(automationRecordingSettingsText, "SetSplitEncodeModeAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
+        AssertMemberContains(automationRecordingSettingsText, "SetSplitEncodeModeAsync", "SplitEncodeMode: SelectedSplitEncodeMode");
+        AssertMemberContains(automationRecordingSettingsText, "SetSplitEncodeModeAsync", "splitEncodeMode: settings.SplitEncodeMode");
         AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "_pendingFlashbackCycleTask = task;");
         AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "if (ReferenceEquals(_pendingFlashbackCycleTask, t))");
         AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "_pendingFlashbackCycleTask = null;");

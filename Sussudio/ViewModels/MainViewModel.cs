@@ -508,6 +508,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Capture settings projection: MainViewModel.CaptureSettings.cs
     // Automation / flashback: MainViewModel.Automation.cs
     // UI-only automation: MainViewModel.AutomationUi.cs
+    // Recording settings automation: MainViewModel.AutomationRecordingSettings.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs
     // Microphone/device audio controls: MainViewModel.AudioControls.cs
     // Audio property changes: MainViewModel.AudioPropertyChanges.cs

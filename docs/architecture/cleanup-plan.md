@@ -466,6 +466,9 @@ Remaining `tools/Common` ownership:
    lives in `MainViewModel.ResolutionSelectionPolicy.cs`; keep dropdown rebuild
    and effective resolution display in `MainViewModel.ResolutionOptions.cs`.
    UI-only automation mutators now live in `MainViewModel.AutomationUi.cs`.
+   Recording format, encoder preset/quality/split-mode/custom-bitrate, and
+   output-path automation mutators now live in
+   `MainViewModel.AutomationRecordingSettings.cs`.
    Keep the remaining command mutation code in `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.
