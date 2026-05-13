@@ -373,6 +373,11 @@ Flashback playback diagnostics now live in
 partial owns playback counters, cadence/decode summary records, percentile
 math, decode timing wrappers, and metric reset behavior.
 
+Flashback playback public command entry points now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.Commands.cs`. Keep
+scrub, seek, play/pause, go-live, and nudge request gating there; keep command
+queue coalescing and playback-thread execution in the queue/thread partials.
+
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
 `MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing
