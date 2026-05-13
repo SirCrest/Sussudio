@@ -110,6 +110,12 @@ volume/mute application, audio level events, mic monitor setup/teardown, WASAPI
 playback attach/detach, audio-preview start/stop, and live audio input
 switching while preserving the root service transition lock.
 
+Explicit capture cleanup now lives in
+`Sussudio/Services/Capture/CaptureService.Cleanup.cs`. That file owns the
+public cleanup transition, shutdown teardown order, failed Flashback recording
+segment preservation, deferred LibAv/unified-video cleanup handoff, WASAPI
+capture disposal, mic teardown, telemetry stop, and final session-state reset.
+
 Capture transition coordination and disposal now live in
 `Sussudio/Services/Capture/CaptureService.Coordination.cs`. That file owns
 `RunTransitionAsync`, steady-state resolution, initialization/disposal guards,
