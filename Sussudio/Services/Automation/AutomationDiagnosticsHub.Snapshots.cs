@@ -54,58 +54,12 @@ public sealed partial class AutomationDiagnosticsHub
 
         var nowTick = Environment.TickCount64;
         var recordingStarted = viewModelSnapshot.IsRecording && !_wasRecording;
-        if (recordingStarted)
-        {
-            _lastRecordedBytes = recordingStats.TotalBytes;
-            _recordingNoGrowthStartTick = 0;
-        }
-
-        var audioSignalPresent = viewModelSnapshot.AudioPeak >= AudioSignalThreshold;
-        var audioContextActive = viewModelSnapshot.IsAudioEnabled &&
-                                 (viewModelSnapshot.IsAudioPreviewEnabled || viewModelSnapshot.IsRecording);
-        if (audioContextActive && !audioSignalPresent)
-        {
-            if (_muteLowSignalStartTick == 0)
-            {
-                _muteLowSignalStartTick = nowTick;
-            }
-        }
-        else
-        {
-            _muteLowSignalStartTick = 0;
-        }
-
-        var audioMutedSuspected = audioContextActive &&
-                                  _muteLowSignalStartTick > 0 &&
-                                  nowTick - _muteLowSignalStartTick >= LowSignalMuteThresholdMs;
-
-        var recordingFileGrowing = true;
-        var totalBytes = recordingStats.TotalBytes;
-        if (viewModelSnapshot.IsRecording)
-        {
-            if (totalBytes > _lastRecordedBytes)
-            {
-                _recordingNoGrowthStartTick = 0;
-                recordingFileGrowing = true;
-            }
-            else
-            {
-                if (_recordingNoGrowthStartTick == 0)
-                {
-                    _recordingNoGrowthStartTick = nowTick;
-                }
-
-                recordingFileGrowing = nowTick - _recordingNoGrowthStartTick < RecordingNoGrowthThresholdMs;
-            }
-
-            _lastRecordedBytes = totalBytes;
-        }
-        else
-        {
-            _lastRecordedBytes = totalBytes;
-            _recordingNoGrowthStartTick = 0;
-            recordingFileGrowing = false;
-        }
+        var audioSignal = UpdateAudioSignalState(viewModelSnapshot, nowTick);
+        var recordingFileGrowing = UpdateRecordingFileGrowthState(
+            viewModelSnapshot,
+            recordingStats,
+            recordingStarted,
+            nowTick);
 
         RecordingVerificationResult? lastVerification;
         lock (_stateLock)
@@ -329,8 +283,8 @@ public sealed partial class AutomationDiagnosticsHub
             RecordingBitrateInfo = viewModelSnapshot.RecordingBitrateInfo,
             AudioPeak = viewModelSnapshot.AudioPeak,
             AudioClipping = viewModelSnapshot.AudioClipping,
-            AudioSignalPresent = audioSignalPresent,
-            AudioMutedSuspected = audioMutedSuspected,
+            AudioSignalPresent = audioSignal.SignalPresent,
+            AudioMutedSuspected = audioSignal.MutedSuspected,
             AudioReaderActive = captureRuntime.AudioReaderActive,
             AudioFramesArrived = captureRuntime.AudioFramesArrived,
             AudioFramesWrittenToSink = captureRuntime.AudioFramesWrittenToSink,
