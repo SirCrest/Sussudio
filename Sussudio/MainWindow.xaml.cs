@@ -162,6 +162,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeSettingsShelfController();
         InitializeSplashLoadingPhraseController();
         InitializeControlBarAnimationController();
+        InitializeShellElevationController();
         InitializePreviewTransitionAnimationController();
         InitializeRecordButtonAnimationController();
         InitializeRecordingButtonActionController();
@@ -231,17 +232,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         FullScreenControlsOverlay.PointerExited += OnFullScreenControlsPointerExited;
 
         PrepareLaunchEntranceInitialState();
-
-        // Shadow for control bar depth effect
-        var shadow = new Microsoft.UI.Xaml.Media.ThemeShadow();
-        shadow.Receivers.Add(SettingsOverlayPanel);
-        ControlBarBorder.Shadow = shadow;
-        ControlBarBorder.Translation = new System.Numerics.Vector3(0, 0, 32);
-
-        // Record button: floating elevation with shadow
-        var recShadow = new Microsoft.UI.Xaml.Media.ThemeShadow();
-        RecordButton.Shadow = recShadow;
-        RecordButton.Translation = new System.Numerics.Vector3(0, 0, 16);
+        ApplyShellElevation();
 
         // Refresh devices on load - use Loaded event to ensure XAML is fully parsed
         var mainContent = (FrameworkElement)this.Content;

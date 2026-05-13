@@ -525,6 +525,9 @@ static partial class Program
                 "Control bar hover animations live in controller",
                 ControlBarHoverAnimations_LiveInController),
             await RunCheckAsync(
+                "Shell elevation setup lives in controller",
+                ShellElevationSetup_LivesInController),
+            await RunCheckAsync(
                 "Preview transition animations live in controller",
                 PreviewTransitionAnimations_LiveInController),
             await RunCheckAsync(
@@ -3074,6 +3077,34 @@ static partial class Program
         AssertDoesNotContain(animationsText, "private FrameworkElement[] GetControlBarButtons()");
         AssertDoesNotContain(animationsText, "private void SetupButtonHoverAnimations()");
         AssertDoesNotContain(animationsText, "private static void AnimateScale(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ShellElevationSetup_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellElevation.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/ShellElevationController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private ShellElevationController _shellElevationController = null!;");
+        AssertContains(adapterText, "private void InitializeShellElevationController()");
+        AssertContains(adapterText, "ControlBarBorder = ControlBarBorder,");
+        AssertContains(adapterText, "SettingsOverlayPanel = SettingsOverlayPanel,");
+        AssertContains(adapterText, "RecordButton = RecordButton,");
+        AssertContains(adapterText, "private void ApplyShellElevation()");
+        AssertContains(adapterText, "=> _shellElevationController.Apply();");
+        AssertContains(mainWindowText, "InitializeShellElevationController();");
+        AssertContains(mainWindowText, "ApplyShellElevation();");
+        AssertContains(controllerText, "internal sealed class ShellElevationController");
+        AssertContains(controllerText, "var controlBarShadow = new ThemeShadow();");
+        AssertContains(controllerText, "controlBarShadow.Receivers.Add(_context.SettingsOverlayPanel);");
+        AssertContains(controllerText, "_context.ControlBarBorder.Translation = new Vector3(0, 0, 32);");
+        AssertContains(controllerText, "var recordButtonShadow = new ThemeShadow();");
+        AssertContains(controllerText, "_context.RecordButton.Translation = new Vector3(0, 0, 16);");
+        AssertDoesNotContain(mainWindowText, "new Microsoft.UI.Xaml.Media.ThemeShadow()");
+        AssertDoesNotContain(mainWindowText, "ControlBarBorder.Translation = new System.Numerics.Vector3(0, 0, 32);");
+        AssertDoesNotContain(mainWindowText, "RecordButton.Translation = new System.Numerics.Vector3(0, 0, 16);");
 
         return Task.CompletedTask;
     }

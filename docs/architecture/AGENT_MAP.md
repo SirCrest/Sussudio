@@ -159,6 +159,9 @@ Primary current owners:
 - `Sussudio/Controllers/ControlBarAnimationController.cs` owns the control-bar
   button list used by launch entrance animation plus hover/press/release scale
   behavior. `MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter.
+- `Sussudio/Controllers/ShellElevationController.cs` owns static shell
+  ThemeShadow and translation setup for the control bar and record button.
+  `MainWindow.ShellElevation.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/PreviewTransitionAnimationController.cs` owns preview
   shell/content fade and scale transitions, unavailable-placeholder fades, and
   startup/unavailable presentation prep. `MainWindow.PreviewTransitions.cs` is
