@@ -202,6 +202,13 @@ close/reopen, stream reinitialization, MP4 muxer option application, segment
 runtime resets, and native cleanup/freeing there; keep active send paths and
 generic error helpers in the root encoder.
 
+LibAv recording sink queue ownership now lives in
+`Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`. Keep public
+video/GPU/CUDA/audio enqueue entry points, hot WASAPI write adapters,
+remaining-buffer cleanup, queue-depth accounting, failure signaling, packet
+records, and pooled buffer return helpers there; keep start/stop lifecycle,
+encoder option creation, and the encode-drain loop in `LibAvRecordingSink.cs`.
+
 Native XU source telemetry detail presentation now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs`.
 Keep telemetry detail rows, display formatting, HDR transfer labels, and

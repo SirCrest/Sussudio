@@ -4,9 +4,20 @@ using System.Threading.Tasks;
 // Tests for recording sink queue limits, drops, and latency accounting.
 static partial class Program
 {
+    private static string ReadLibAvRecordingSinkSource()
+    {
+        var parts = new[]
+        {
+            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs").Replace("\r\n", "\n")
+        };
+
+        return string.Join("\n", parts);
+    }
+
     private static Task RecordingVideoQueues_FailExplicitlyInsteadOfEvictingFrames()
     {
-        var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs");
+        var libAvSource = ReadLibAvRecordingSinkSource();
         var flashbackSource = ReadFlashbackEncoderSinkSource();
         var flashbackBackendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
         var flashbackBufferSource = ReadFlashbackBufferManagerSource();
@@ -599,8 +610,7 @@ static partial class Program
 
     private static Task LibAvRecordingSink_StopValidatesFinalOutput()
     {
-        var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
-            .Replace("\r\n", "\n");
+        var libAvSource = ReadLibAvRecordingSinkSource();
 
         AssertContains(libAvSource, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
         AssertContains(libAvSource, "if (!TryValidateStoppedOutputFile(outputPath, out var outputBytes, out var outputFailure))\n        {\n            Logger.Log($\"LIBAV_SINK_STOP_OUTPUT_INVALID output='{outputPath}' reason='{outputFailure}'\");\n            return FinalizeResult.Failure(outputPath, $\"Stopped (output file invalid: {outputFailure})\");\n        }");
@@ -615,8 +625,7 @@ static partial class Program
 
     private static Task RecordingVideoTryEnqueuePaths_DoNotBlockCaptureCallbacks()
     {
-        var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
-            .Replace("\r\n", "\n");
+        var libAvSource = ReadLibAvRecordingSinkSource();
         var flashbackSource = ReadFlashbackEncoderSinkSource();
 
         var libAvVideoEnqueue = ExtractSourceBlock(
@@ -671,8 +680,7 @@ static partial class Program
                 + "\n"
                 + ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs"))
             .Replace("\r\n", "\n");
-        var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
-            .Replace("\r\n", "\n");
+        var libAvSource = ReadLibAvRecordingSinkSource();
         var flashbackSource = ReadFlashbackEncoderSinkSource();
 
         var drainBlock = ExtractSourceBlock(
@@ -770,8 +778,7 @@ static partial class Program
 
     private static Task LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
     {
-        var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
-            .Replace("\r\n", "\n");
+        var libAvSource = ReadLibAvRecordingSinkSource();
 
         AssertContains(libAvSource, "private const int VideoDrainBatchLimit = 24;");
         AssertContains(libAvSource, "private const int AudioDrainBatchLimit = 128;");
