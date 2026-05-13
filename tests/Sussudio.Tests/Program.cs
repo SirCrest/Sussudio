@@ -555,6 +555,9 @@ static partial class Program
                 "Output path display lives in controller",
                 OutputPathDisplay_LivesInController),
             await RunCheckAsync(
+                "Output path button actions live in controller",
+                OutputPathButtonActions_LiveInController),
+            await RunCheckAsync(
                 "Preview screenshot button workflow lives in controller",
                 PreviewScreenshotButtonWorkflow_LivesInController),
             await RunCheckAsync(
@@ -3405,6 +3408,36 @@ static partial class Program
         AssertDoesNotContain(bindingsText, "OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();");
         AssertDoesNotContain(bindingsText, "private void UpdateOutputPathDisplay()");
         AssertDoesNotContain(bindingsText, "ToolTipService.SetToolTip(OutputPathTextBox, path);");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task OutputPathButtonActions_LiveInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.OutputPathActions.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/OutputPathActionController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private OutputPathActionController _outputPathActionController = null!;");
+        AssertContains(adapterText, "private void InitializeOutputPathActionController()");
+        AssertContains(adapterText, "ViewModel = ViewModel,");
+        AssertContains(adapterText, "OpenRecordingsFolderAsync = () => OpenRecordingsFolderAsync()");
+        AssertContains(adapterText, "private Task BrowseOutputPathFromButtonAsync()");
+        AssertContains(adapterText, "=> _outputPathActionController.BrowseAsync();");
+        AssertContains(adapterText, "private Task OpenRecordingsFolderFromButtonAsync()");
+        AssertContains(adapterText, "=> _outputPathActionController.OpenRecordingsFolderIfAvailableAsync();");
+        AssertContains(mainWindowText, "InitializeOutputPathActionController();");
+        AssertContains(eventHandlersText, "_ = RunUiEventHandlerAsync(() => BrowseOutputPathFromButtonAsync(), nameof(BrowseButton_Click));");
+        AssertContains(eventHandlersText, "_ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));");
+        AssertContains(controllerText, "internal sealed class OutputPathActionController");
+        AssertContains(controllerText, "public Task BrowseAsync()");
+        AssertContains(controllerText, "=> _context.ViewModel.BrowseOutputPathAsync();");
+        AssertContains(controllerText, "public Task OpenRecordingsFolderIfAvailableAsync()");
+        AssertContains(controllerText, "string.IsNullOrWhiteSpace(path) || !Directory.Exists(path)");
+        AssertContains(controllerText, "return _context.OpenRecordingsFolderAsync();");
+        AssertDoesNotContain(eventHandlersText, "ViewModel.BrowseOutputPathAsync()");
+        AssertDoesNotContain(eventHandlersText, "System.IO.Directory.Exists(path)");
 
         return Task.CompletedTask;
     }

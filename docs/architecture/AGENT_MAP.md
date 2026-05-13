@@ -196,6 +196,9 @@ Primary current owners:
 - `Sussudio/Controllers/OutputPathDisplayController.cs` owns recording output-
   path truncation and tooltip updates. `MainWindow.OutputPathDisplay.cs` is the
   XAML-facing adapter used by binding setup and property changes.
+- `Sussudio/Controllers/OutputPathActionController.cs` owns recording output-
+  path browse/open-recordings button workflows. `MainWindow.OutputPathActions.cs`
+  is the XAML-facing adapter.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets

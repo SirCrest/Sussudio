@@ -111,15 +111,11 @@ public sealed partial class MainWindow
     }
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
-        _ = RunUiEventHandlerAsync(() => ViewModel.BrowseOutputPathAsync(), nameof(BrowseButton_Click));
+        _ = RunUiEventHandlerAsync(() => BrowseOutputPathFromButtonAsync(), nameof(BrowseButton_Click));
     }
     private void OpenRecordingsButton_Click(object sender, RoutedEventArgs e)
     {
-        var path = ViewModel.OutputPath;
-        if (!string.IsNullOrWhiteSpace(path) && System.IO.Directory.Exists(path))
-        {
-            _ = RunUiEventHandlerAsync(() => OpenRecordingsFolderAsync(), nameof(OpenRecordingsButton_Click));
-        }
+        _ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));
     }
     private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
     {

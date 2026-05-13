@@ -170,6 +170,10 @@ Recording output-path truncation and tooltip updates now live in
 `MainWindow.OutputPathDisplay.cs` is the XAML-facing adapter used by binding
 setup and property changes.
 
+Recording output-path browse/open-recordings button workflows now live in
+`Sussudio/Controllers/OutputPathActionController.cs`.
+`MainWindow.OutputPathActions.cs` is the XAML-facing adapter.
+
 Diagnostic session DTOs now live in
 `tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
 owns orchestration and scenario execution, but the public options/result/sample
