@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -45,12 +44,7 @@ internal sealed partial class FlashbackPlaybackController
                         if (cts.IsCancellationRequested)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested");
-                            CleanupDecoder(ref decoder, ref fileOpen);
-                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-                            RestoreLiveAudio();
-                            SafeResumePreviewSubmission("thread_cancelled");
-                            SetState(FlashbackPlaybackState.Live);
+                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, "thread_cancelled");
                             return;
                         }
 
@@ -74,12 +68,7 @@ internal sealed partial class FlashbackPlaybackController
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed");
                             isScrubbing = false;
-                            CleanupDecoder(ref decoder, ref fileOpen);
-                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-                            RestoreLiveAudio();
-                            SafeResumePreviewSubmission("channel_closed");
-                            SetState(FlashbackPlaybackState.Live);
+                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, "channel_closed");
                             return;
                         }
 
@@ -87,12 +76,7 @@ internal sealed partial class FlashbackPlaybackController
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
                             isScrubbing = false;
-                            CleanupDecoder(ref decoder, ref fileOpen);
-                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-                            RestoreLiveAudio();
-                            SafeResumePreviewSubmission("thread_disposed");
-                            SetState(FlashbackPlaybackState.Live);
+                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, "thread_disposed");
                             return;
                         }
                         if (!commandChannel.Reader.TryRead(out cmd))
@@ -116,12 +100,7 @@ internal sealed partial class FlashbackPlaybackController
                             isPlaying = false;
                             isScrubbing = false;
                             pendingExactResumeTarget = null;
-                            CleanupDecoder(ref decoder, ref fileOpen);
-                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-                            RestoreLiveAudio();
-                            SafeResumePreviewSubmission("thread_stop");
-                            SetState(FlashbackPlaybackState.Live);
+                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, "thread_stop");
                             Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
                             return;
 
@@ -524,12 +503,7 @@ internal sealed partial class FlashbackPlaybackController
                         isPlaying = false;
                         isScrubbing = false;
                         pendingExactResumeTarget = null;
-                        CleanupDecoder(ref decoder, ref fileOpen);
-                        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-                        Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-                        RestoreLiveAudio();
-                        SafeResumePreviewSubmission("go_live");
-                        SetState(FlashbackPlaybackState.Live);
+                        RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, "go_live");
                         Logger.Log("FLASHBACK_PLAYBACK_GO_LIVE");
                         break;
 
@@ -594,23 +568,13 @@ internal sealed partial class FlashbackPlaybackController
         catch (OperationCanceledException)
         {
             Logger.Log("FLASHBACK_PLAYBACK_THREAD_CANCELLED");
-            CleanupDecoder(ref decoder, ref fileOpen);
-            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-            RestoreLiveAudio();
-            SafeResumePreviewSubmission("thread_cancelled");
-            SetState(FlashbackPlaybackState.Live);
+            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, "thread_cancelled");
         }
         catch (Exception ex)
         {
             SetLastCommandFailure(ex.GetType().Name + ":" + ex.Message);
             Logger.Log($"FLASHBACK_PLAYBACK_FATAL type={ex.GetType().Name} error='{ex.Message}'");
-            CleanupDecoder(ref decoder, ref fileOpen);
-            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-            RestoreLiveAudio();
-            SafeResumePreviewSubmission("thread_fatal");
-            SetState(FlashbackPlaybackState.Live);
+            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, "thread_fatal");
         }
         finally
         {
@@ -639,32 +603,4 @@ internal sealed partial class FlashbackPlaybackController
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
     }
 
-    private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)
-    {
-        if (cts == null) return;
-
-        try
-        {
-            cts.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_PLAYBACK_CTS_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
-        }
-    }
-
-    private static string FormatActiveCommandKind(int rawKind)
-    {
-        if (rawKind < 0) return "None";
-        return Enum.IsDefined(typeof(CommandKind), rawKind)
-            ? ((CommandKind)rawKind).ToString()
-            : rawKind.ToString(CultureInfo.InvariantCulture);
-    }
-
-    private double GetActiveCommandElapsedMs(long nowTimestamp)
-    {
-        var started = Volatile.Read(ref _activeCommandStartedTimestamp);
-        if (started <= 0) return 0;
-        return Stopwatch.GetElapsedTime(started, nowTimestamp).TotalMilliseconds;
-    }
 }

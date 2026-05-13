@@ -381,6 +381,10 @@ Command readiness/failure formatting and queue telemetry bookkeeping live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.CommandTelemetry.cs`.
 Keep command status counters and last-failure/latency updates there instead of
 growing command channel mechanics.
+Playback thread exit cleanup now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs`.
+Keep repeated live-restore cleanup and playback CTS disposal warnings there
+instead of duplicating teardown blocks inside the worker loop.
 
 Flashback playback component lifecycle now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs`. Keep

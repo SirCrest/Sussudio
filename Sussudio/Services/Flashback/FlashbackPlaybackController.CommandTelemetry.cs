@@ -197,4 +197,19 @@ internal sealed partial class FlashbackPlaybackController
             }
         }
     }
+
+    private static string FormatActiveCommandKind(int rawKind)
+    {
+        if (rawKind < 0) return "None";
+        return Enum.IsDefined(typeof(CommandKind), rawKind)
+            ? ((CommandKind)rawKind).ToString()
+            : rawKind.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private double GetActiveCommandElapsedMs(long nowTimestamp)
+    {
+        var started = Volatile.Read(ref _activeCommandStartedTimestamp);
+        if (started <= 0) return 0;
+        return Stopwatch.GetElapsedTime(started, nowTimestamp).TotalMilliseconds;
+    }
 }
