@@ -125,15 +125,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private DispatcherQueueTimer? _previewFadeInTimer;
     private const int PreviewFadeInFrameThreshold = 3;
     private bool _isWindowClosing;
-    private bool _toggleLabelsVisible;
     private bool _entranceAnimationPlayed;
     private Storyboard? _entranceStoryboard;
     private bool _isFlashbackScrubbing;
     private TimeSpan? _lastScrubPointerPosition;
     private bool _suppressFlashbackEnabledToggle;
     private FullScreenController _fullScreenController = null!;
-    private bool _captureSettingsNarrow;
-    private const double ControlBarLabelThreshold = 900.0;
     private const int MinWindowWidth = 900;
     private const int MinWindowHeight = 500;
     private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
@@ -317,6 +314,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeLiveSignalInfoController();
         InitializePreviewAudioFadeController();
         InitializeMicrophoneControlsController();
+        InitializeResponsiveShellLayoutController();
 
         // Cloak the window to prevent white flash before XAML renders
         int cloakTrue = 1;

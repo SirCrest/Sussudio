@@ -595,64 +595,9 @@ public sealed partial class MainWindow
         };
         AudioMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
         MicMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
-        ControlBarBorder.SizeChanged += (s, e) => UpdateToggleLabelVisibility(e.NewSize.Width);
-        CaptureSettingsGrid.SizeChanged += CaptureSettingsGrid_SizeChanged;
+        SetupResponsiveShellLayoutBindings();
         OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();
         ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);
-    }
-    private void UpdateToggleLabelVisibility(double controlBarWidth)
-    {
-        var showLabels = controlBarWidth >= ControlBarLabelThreshold;
-        if (showLabels == _toggleLabelsVisible) return;
-        _toggleLabelsVisible = showLabels;
-
-        var vis = showLabels ? Visibility.Visible : Visibility.Collapsed;
-        HdrToggleLabel.Visibility = vis;
-        AudioRecordToggleLabel.Visibility = vis;
-        PreviewButtonLabel.Visibility = vis;
-        HdrPreviewToggleLabel.Visibility = vis;
-        AudioPreviewToggleLabel.Visibility = vis;
-        StatsToggleLabel.Visibility = vis;
-        FrameTimeOverlayToggleLabel.Visibility = vis;
-        // Record button is always a circle when idle — no label mode
-    }
-    private void CaptureSettingsGrid_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        var narrow = e.NewSize.Width < 700;
-        if (narrow == _captureSettingsNarrow)
-        {
-            return;
-        }
-
-        _captureSettingsNarrow = narrow;
-        if (narrow)
-        {
-            VideoFormatColumn.Width = new GridLength(0);
-            PresetColumn.Width = new GridLength(0);
-            SplitColumn.Width = new GridLength(0);
-            Grid.SetRow(VideoFormatPanel, 1);
-            Grid.SetColumn(VideoFormatPanel, 1);
-            Grid.SetRow(PresetPanel, 1);
-            Grid.SetColumn(PresetPanel, 2);
-            Grid.SetRow(SplitPanel, 1);
-            Grid.SetColumn(SplitPanel, 3);
-            Grid.SetRow(CustomBitratePanel, 1);
-            Grid.SetColumn(CustomBitratePanel, 2);
-        }
-        else
-        {
-            VideoFormatColumn.Width = new GridLength(1, GridUnitType.Star);
-            PresetColumn.Width = new GridLength(1, GridUnitType.Star);
-            SplitColumn.Width = new GridLength(1, GridUnitType.Star);
-            Grid.SetRow(VideoFormatPanel, 0);
-            Grid.SetColumn(VideoFormatPanel, 0);
-            Grid.SetRow(PresetPanel, 0);
-            Grid.SetColumn(PresetPanel, 5);
-            Grid.SetRow(SplitPanel, 0);
-            Grid.SetColumn(SplitPanel, 6);
-            Grid.SetRow(CustomBitratePanel, 0);
-            Grid.SetColumn(CustomBitratePanel, 5);
-        }
     }
     private void UpdateDecoderCountVisibility()
     {

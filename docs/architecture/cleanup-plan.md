@@ -80,6 +80,10 @@ mic-meter row animation state now live in
 `Sussudio/Controllers/MicrophoneControlsController.cs`.
 `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.
 
+Control-bar label visibility and capture-settings narrow/wide grid placement
+now live in `Sussudio/Controllers/ResponsiveShellLayoutController.cs`.
+`MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
+
 Diagnostic session DTOs now live in
 `tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
 owns orchestration and scenario execution, but the public options/result/sample

@@ -504,6 +504,9 @@ static partial class Program
                 "Microphone controls live in controller",
                 MicrophoneControls_LiveInController),
             await RunCheckAsync(
+                "Responsive shell layout lives in controller",
+                ResponsiveShellLayout_LivesInController),
+            await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
@@ -2925,6 +2928,39 @@ static partial class Program
         AssertDoesNotContain(bindingsText, "MicVolumeSlider.ValueChanged +=");
         AssertDoesNotContain(bindingsText, "private void SyncMicrophoneVolumeControls(double volumePercent)");
         AssertDoesNotContain(bindingsText, "private Storyboard CreateMicMeterRowStoryboard(bool showing)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ResponsiveShellLayout_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ResponsiveShellLayout.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/ResponsiveShellLayoutController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private ResponsiveShellLayoutController _responsiveShellLayoutController = null!;");
+        AssertContains(adapterText, "private void InitializeResponsiveShellLayoutController()");
+        AssertContains(adapterText, "ControlBarBorder = ControlBarBorder,");
+        AssertContains(adapterText, "CaptureSettingsGrid = CaptureSettingsGrid,");
+        AssertContains(adapterText, "private void SetupResponsiveShellLayoutBindings()");
+        AssertContains(adapterText, "=> _responsiveShellLayoutController.Attach();");
+        AssertContains(mainWindowText, "InitializeResponsiveShellLayoutController();");
+        AssertContains(bindingsText, "SetupResponsiveShellLayoutBindings();");
+        AssertContains(controllerText, "internal sealed class ResponsiveShellLayoutController");
+        AssertContains(controllerText, "private const double ControlBarLabelThreshold = 900.0;");
+        AssertContains(controllerText, "private const double CaptureSettingsNarrowWidth = 700.0;");
+        AssertContains(controllerText, "private bool _toggleLabelsVisible;");
+        AssertContains(controllerText, "private bool _captureSettingsNarrow;");
+        AssertContains(controllerText, "public void Attach()");
+        AssertContains(controllerText, "_context.ControlBarBorder.SizeChanged += (_, e) => ApplyControlBarWidth(e.NewSize.Width);");
+        AssertContains(controllerText, "private void ApplyNarrowCaptureSettingsLayout()");
+        AssertContains(controllerText, "private void ApplyWideCaptureSettingsLayout()");
+        AssertDoesNotContain(mainWindowText, "private bool _toggleLabelsVisible;");
+        AssertDoesNotContain(mainWindowText, "private bool _captureSettingsNarrow;");
+        AssertDoesNotContain(mainWindowText, "private const double ControlBarLabelThreshold = 900.0;");
+        AssertDoesNotContain(bindingsText, "private void UpdateToggleLabelVisibility(");
+        AssertDoesNotContain(bindingsText, "private void CaptureSettingsGrid_SizeChanged(");
 
         return Task.CompletedTask;
     }
