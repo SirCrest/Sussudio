@@ -26,11 +26,18 @@ Diagnostic session scenario names and scenario-level metadata now live in
 `tools/Common/DiagnosticSessionScenarios.cs`; the runner still owns execution
 flow and summary writing.
 
-Automation diagnostic evaluation now lives in
-`Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs`. The hub
-still owns snapshot refresh, alert publication, counters, and event flow, while
-the evaluation partial owns diagnostic lane policy, alert-detail formatting,
-and health classifiers.
+Automation diagnostics now have named partial owners instead of one large hub
+body. `AutomationDiagnosticsHub.cs` is the compact field/constructor and
+counter state owner. `AutomationDiagnosticsHub.Snapshots.cs` owns snapshot
+refresh, read-only snapshot access, and performance-timeline reads.
+`AutomationDiagnosticsHub.Alerts.cs` owns alert publication, alert state, event
+throttling, Flashback export completion events, and recent event storage.
+`AutomationDiagnosticsHub.Evaluation.cs` owns diagnostic lane policy,
+performance scoring, alert-detail formatting, and health classifiers.
+`AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification.
+`AutomationDiagnosticsHub.Lifecycle.cs` owns start/stop/dispose and the polling
+loop. `AutomationDiagnosticsHub.Verification.cs` owns recording/file
+verification commands and verification-profile adaptation.
 
 Fullscreen transition mechanics now live in
 `Sussudio/Controllers/FullScreenController.cs`. `MainWindow.FullScreen.cs`
