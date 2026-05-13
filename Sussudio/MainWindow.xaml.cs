@@ -1,34 +1,15 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
-using Sussudio.Models;
-using Sussudio.Tools;
-using Sussudio.ViewModels;
-using Sussudio.Controllers;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Composition;
-using Microsoft.UI.Xaml.Hosting;
-using System.Numerics;
-using WinRT.Interop;
-using Sussudio.Services.Audio;
+using Sussudio.Controllers;
+using Sussudio.Models;
 using Sussudio.Services.Automation;
-using Sussudio.Services.Capture;
-using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
-using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
-using Sussudio.Services.Telemetry;
+using Sussudio.Tools;
+using Sussudio.ViewModels;
+using WinRT.Interop;
 
 namespace Sussudio;
 
@@ -38,22 +19,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 {
     public MainViewModel ViewModel { get; }
     private readonly DispatcherQueue _dispatcherQueue;
-    private SoftwareBitmapSource? _previewSource;
-    private D3D11PreviewRenderer? _d3dRenderer;
     private NvmlMonitor? _nvmlMonitor;
-    private SpriteVisual? _videoShadowVisual;
-    private SpriteVisual? _controlBarShadowVisual;
-    private long _previewFramesArrived;
-    private long _previewFramesDisplayed;
-    private long _previewFramesDropped;
-    private long _previewLastPresentedTick;
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private readonly bool _automationTokenRequired;
     private readonly string _automationPipeName;
-    private long _lastRendererStopTick;
-    private long _rendererReinitUnsafeWindows;
-    public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);
     private bool _isFlashbackScrubbing;
     private TimeSpan? _lastScrubPointerPosition;
     private bool _suppressFlashbackEnabledToggle;
@@ -193,81 +163,5 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         mainContent.Loaded += MainWindow_Loaded;
         mainContent.SizeChanged += MainWindow_SizeChanged;
         Closed += MainWindow_Closed;
-
     }
-    private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
-    {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            throw new OperationCanceledException(cancellationToken);
-        }
-
-        if (_dispatcherQueue.HasThreadAccess)
-        {
-            return GetPreviewRuntimeSnapshot();
-        }
-
-        const int maxAttempts = 3;
-        for (var attempt = 1; attempt <= maxAttempts; attempt++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var completion = new TaskCompletionSource<PreviewRuntimeSnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
-            CancellationTokenRegistration registration = default;
-            if (cancellationToken.CanBeCanceled)
-            {
-                registration = cancellationToken.Register(() =>
-                {
-                    completion.TrySetCanceled(cancellationToken);
-                });
-            }
-
-            var enqueued = _dispatcherQueue.TryEnqueue(() =>
-            {
-                try
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        completion.TrySetCanceled(cancellationToken);
-                        return;
-                    }
-
-                    completion.TrySetResult(GetPreviewRuntimeSnapshot());
-                }
-                catch (Exception ex)
-                {
-                    completion.TrySetException(ex);
-                }
-                finally
-                {
-                    registration.Dispose();
-                }
-            });
-
-            if (enqueued)
-            {
-                return await completion.Task.ConfigureAwait(false);
-            }
-
-            registration.Dispose();
-            if (attempt >= maxAttempts)
-            {
-                break;
-            }
-
-            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
-        }
-
-        throw new InvalidOperationException("Failed to enqueue preview snapshot operation.");
-    }
-
-
-
-
-
-
-
-
-
-
 }

@@ -118,8 +118,10 @@ Primary current owners:
   `MainWindow.CloseLifecycle.cs`.
 - `Sussudio/MainWindow.WindowSizing.cs` owns top-level shell resize telemetry
   for preview compositor transforms. Preview surface sizing stays with
-  `MainWindow.PreviewRenderer.cs`, including expected-present interval and
-  renderer cadence state; close/finalize behavior stays with
+  `MainWindow.PreviewRenderer.cs`, including preview renderer instances,
+  preview source/shadow visuals, frame counters, expected-present interval,
+  renderer cadence state, and the automation preview snapshot provider;
+  close/finalize behavior stays with
   `MainWindow.CloseLifecycle.cs`.
 - `Sussudio/MainWindow.WindowTitle.cs` owns window title base/build-stamp
   formatting and the recording-time suffix used by property changes.

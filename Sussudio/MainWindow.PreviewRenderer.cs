@@ -36,7 +36,19 @@ namespace Sussudio;
 // renderer sizing, and the bridge between live/Flashback frames and D3D11.
 public sealed partial class MainWindow
 {
+    private SoftwareBitmapSource? _previewSource;
+    private D3D11PreviewRenderer? _d3dRenderer;
+    private SpriteVisual? _videoShadowVisual;
+    private SpriteVisual? _controlBarShadowVisual;
+    private long _previewFramesArrived;
+    private long _previewFramesDisplayed;
+    private long _previewFramesDropped;
+    private long _previewLastPresentedTick;
+    private long _lastRendererStopTick;
+    private long _rendererReinitUnsafeWindows;
     private double _previewMinPresentationIntervalMs;
+
+    public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);
 
     private double ResolvePreviewExpectedIntervalMs()
     {
@@ -47,6 +59,72 @@ public sealed partial class MainWindow
         }
 
         return Math.Max(1.0, 1000.0 / sourceFps);
+    }
+
+    private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException(cancellationToken);
+        }
+
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            return GetPreviewRuntimeSnapshot();
+        }
+
+        const int maxAttempts = 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var completion = new TaskCompletionSource<PreviewRuntimeSnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
+            CancellationTokenRegistration registration = default;
+            if (cancellationToken.CanBeCanceled)
+            {
+                registration = cancellationToken.Register(() =>
+                {
+                    completion.TrySetCanceled(cancellationToken);
+                });
+            }
+
+            var enqueued = _dispatcherQueue.TryEnqueue(() =>
+            {
+                try
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        completion.TrySetCanceled(cancellationToken);
+                        return;
+                    }
+
+                    completion.TrySetResult(GetPreviewRuntimeSnapshot());
+                }
+                catch (Exception ex)
+                {
+                    completion.TrySetException(ex);
+                }
+                finally
+                {
+                    registration.Dispose();
+                }
+            });
+
+            if (enqueued)
+            {
+                return await completion.Task.ConfigureAwait(false);
+            }
+
+            registration.Dispose();
+            if (attempt >= maxAttempts)
+            {
+                break;
+            }
+
+            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+        }
+
+        throw new InvalidOperationException("Failed to enqueue preview snapshot operation.");
     }
 
     private void OnD3DRendererFirstFrameRendered()

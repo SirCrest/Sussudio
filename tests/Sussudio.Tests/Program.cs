@@ -519,8 +519,8 @@ static partial class Program
                 "MainWindow shell resize telemetry lives in sizing partial",
                 MainWindowShellResizeTelemetry_LivesInSizingPartial),
             await RunCheckAsync(
-                "Preview expected interval state lives in renderer partial",
-                PreviewExpectedIntervalState_LivesInRendererPartial),
+                "Preview renderer runtime state lives in renderer partial",
+                PreviewRendererRuntimeState_LivesInRendererPartial),
             await RunCheckAsync(
                 "MainWindow title presentation lives in title partial",
                 MainWindowTitlePresentation_LivesInTitlePartial),
@@ -3016,20 +3016,44 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewExpectedIntervalState_LivesInRendererPartial()
+    private static Task PreviewRendererRuntimeState_LivesInRendererPartial()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
 
+        AssertContains(previewRendererText, "private SoftwareBitmapSource? _previewSource;");
+        AssertContains(previewRendererText, "private D3D11PreviewRenderer? _d3dRenderer;");
+        AssertContains(previewRendererText, "private SpriteVisual? _videoShadowVisual;");
+        AssertContains(previewRendererText, "private SpriteVisual? _controlBarShadowVisual;");
+        AssertContains(previewRendererText, "private long _previewFramesArrived;");
+        AssertContains(previewRendererText, "private long _previewFramesDisplayed;");
+        AssertContains(previewRendererText, "private long _previewFramesDropped;");
+        AssertContains(previewRendererText, "private long _previewLastPresentedTick;");
+        AssertContains(previewRendererText, "private long _lastRendererStopTick;");
+        AssertContains(previewRendererText, "private long _rendererReinitUnsafeWindows;");
         AssertContains(previewRendererText, "private double _previewMinPresentationIntervalMs;");
+        AssertContains(previewRendererText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
         AssertContains(previewRendererText, "private double ResolvePreviewExpectedIntervalMs()");
+        AssertContains(previewRendererText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
         AssertContains(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
         AssertContains(previewRendererText, "return Math.Max(1.0, 1000.0 / sourceFps);");
         AssertContains(previewRendererText, "_previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();");
         AssertContains(statsOverlayText, "GetPresentCadenceMetrics(_previewMinPresentationIntervalMs)");
+        AssertDoesNotContain(mainWindowText, "private SoftwareBitmapSource? _previewSource;");
+        AssertDoesNotContain(mainWindowText, "private D3D11PreviewRenderer? _d3dRenderer;");
+        AssertDoesNotContain(mainWindowText, "private SpriteVisual? _videoShadowVisual;");
+        AssertDoesNotContain(mainWindowText, "private SpriteVisual? _controlBarShadowVisual;");
+        AssertDoesNotContain(mainWindowText, "private long _previewFramesArrived;");
+        AssertDoesNotContain(mainWindowText, "private long _previewFramesDisplayed;");
+        AssertDoesNotContain(mainWindowText, "private long _previewFramesDropped;");
+        AssertDoesNotContain(mainWindowText, "private long _previewLastPresentedTick;");
+        AssertDoesNotContain(mainWindowText, "private long _lastRendererStopTick;");
+        AssertDoesNotContain(mainWindowText, "private long _rendererReinitUnsafeWindows;");
         AssertDoesNotContain(mainWindowText, "private double _previewMinPresentationIntervalMs;");
+        AssertDoesNotContain(mainWindowText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
         AssertDoesNotContain(mainWindowText, "private double ResolvePreviewExpectedIntervalMs()");
+        AssertDoesNotContain(mainWindowText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
         AssertDoesNotContain(mainWindowText, "private static bool IsHdrSubtype");
 
         return Task.CompletedTask;
