@@ -16,7 +16,7 @@ folder.
 |------|---------------------|----------------------|
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs` | xUnit slices and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
-| Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.Snapshots.cs`, `CaptureService.Telemetry.cs` | lifecycle owner, audio owner, cleanup owner, transition/disposal owner, deferred cleanup owner, failure owner, Flashback control owner, Flashback recording policy owner, preview pipeline owner, probe owner, recording integrity owner, snapshot builder, telemetry owner, resource managers |
+| Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.Snapshots.cs`, `CaptureService.Telemetry.cs` | lifecycle owner, audio owner, cleanup owner, transition/disposal owner, deferred cleanup owner, failure owner, Flashback control owner, Flashback recording policy owner, preview pipeline owner, probe owner, recording integrity owner, runtime snapshot builder, health snapshot helpers, telemetry owner, resource managers |
 | Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Hdr.cs`, `AutomationDiagnosticsHub.Lifecycle.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.Verification.cs` | additional collectors/controllers when hub orchestration grows |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvRecordingSink.cs` | encoder option policy, sink lifecycle, verifier/finalizer |
 | Flashback | `FlashbackPlaybackController.cs`, `FlashbackEncoderSink.cs`, `FlashbackExporter.cs` | playback, buffer, encoder, export modules |
@@ -100,8 +100,10 @@ Important entry points:
   capture waits.
 - `CaptureService.RecordingIntegrity.cs` owns recording integrity counters,
   baseline deltas, audio integrity classification, and summary logging policy.
-- `CaptureService.Snapshots.cs` builds runtime snapshots consumed by UI and
-  automation.
+- `CaptureService.RuntimeSnapshots.cs` builds runtime snapshots consumed by UI,
+  automation, and verification.
+- `CaptureService.Snapshots.cs` owns health snapshot projection and shared
+  snapshot helper policy.
 - `CaptureService.Telemetry.cs` owns source telemetry polling, fallback merge,
   NTSC frame-rate correction, and observed pixel-format accounting.
 

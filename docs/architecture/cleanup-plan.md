@@ -162,6 +162,12 @@ owns recording/video/audio counter snapshots, baseline deltas, integrity summary
 classification, and the structured `RECORDING_INTEGRITY` log line; the snapshot
 partial now consumes that policy instead of containing it.
 
+Runtime capture snapshot projection now lives in
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
+the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
+automation, and verification; the general snapshot partial still owns health
+snapshot projection and shared helper policy.
+
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
 still renders metric values and assembles snapshots, but polling, visibility

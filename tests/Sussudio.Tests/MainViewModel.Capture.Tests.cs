@@ -1152,7 +1152,7 @@ static partial class Program
         AssertDoesNotContain(captureServiceText, "NVENC preset '");
         // Snapshot field remains populated from the compatibility resolver so
         // downstream consumers share the same no-downgrade contract.
-        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         AssertContains(snapshotsText, "FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),");
         var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeSnapshots.cs")

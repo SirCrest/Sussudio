@@ -2769,7 +2769,7 @@ static partial class Program
         var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs").Replace("\r\n", "\n");
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
         var runtimeContractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeSnapshots.cs").Replace("\r\n", "\n");
-        var runtimeSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs").Replace("\r\n", "\n");
+        var runtimeSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs").Replace("\r\n", "\n");
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs").Replace("\r\n", "\n");
         var automationInterfaceText = ReadRepoFile("Sussudio/Services/Automation/IAutomationViewModel.cs").Replace("\r\n", "\n");
 
