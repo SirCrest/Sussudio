@@ -115,6 +115,11 @@ Capture read-only automation probes now live in
 preview color probing, and preview-frame screenshot waits are separated from
 runtime lifecycle mutation code.
 
+Fatal capture and backend failure handling now lives in
+`Sussudio/Services/Capture/CaptureService.Failures.cs`. That file owns fatal
+error callbacks, last-failure telemetry, GPU device-lost classification, and
+the async cleanup launchers that move the service into faulted states.
+
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
 still renders metric values and assembles snapshots, but polling, visibility
