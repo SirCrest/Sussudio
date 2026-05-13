@@ -403,6 +403,9 @@ seek log suppression now live in
 Decoded frame-size calculation, video-dimension validation, input stream-count
 bounds, and stream-index bounds now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.Validation.cs`.
+File-close native cleanup, software buffer returns, pending held-frame release,
+decoder state reset, and held-frame best-effort release helpers now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.Lifetime.cs`.
 
 Flashback buffer retention now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs`. Keep segment

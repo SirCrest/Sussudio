@@ -67,6 +67,23 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackDecoder_LifetimeCleanupLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var lifetimeText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Lifetime.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(lifetimeText, "private void CloseFileCore()");
+        AssertContains(lifetimeText, "internal static void ReleaseHeldFrame(DecodedVideoFrame frame)");
+        AssertContains(lifetimeText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
+        AssertDoesNotContain(rootText, "private void CloseFileCore()");
+        AssertDoesNotContain(rootText, "internal static void ReleaseHeldFrame(DecodedVideoFrame frame)");
+        AssertDoesNotContain(rootText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
