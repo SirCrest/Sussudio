@@ -168,6 +168,13 @@ the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
 automation, and verification; the general snapshot partial still owns health
 snapshot projection and shared helper policy.
 
+Capture health snapshot projection now lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file owns
+the large diagnostics/automation health DTO construction for Flashback,
+recording, MJPEG, source telemetry, and visual cadence; the general snapshot
+partial is now shared helper policy plus the diagnostics-snapshot compatibility
+entry point.
+
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
 still renders metric values and assembles snapshots, but polling, visibility
