@@ -84,6 +84,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
             .Replace("\r\n", "\n");
+        var previewStartupSignalsText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupSignals.cs")
+            .Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs")
             .Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs")
@@ -96,10 +98,13 @@ static partial class Program
         AssertContains(previewStartupText, "private readonly Lazy<int> _previewStartupVisualTimeoutMs = new(static () =>");
         AssertContains(previewStartupText, "private DispatcherQueueTimer? _previewStartupWatchdogTimer;");
         AssertContains(previewStartupText, "private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;");
-        AssertContains(previewStartupText, "private long _previewStartupPositionEventCount;");
         AssertContains(previewStartupText, "private const int PreviewFadeInFrameThreshold = 3;");
-        AssertContains(previewStartupText, "private bool IsPreviewStartupSignalWindowActive()");
-        AssertContains(previewStartupText, "private void ResetPreviewSignalState()");
+        AssertContains(previewStartupSignalsText, "Preview startup readiness-signal tracking");
+        AssertContains(previewStartupSignalsText, "private long _previewStartupPositionEventCount;");
+        AssertContains(previewStartupSignalsText, "private bool IsPreviewStartupSignalWindowActive()");
+        AssertContains(previewStartupSignalsText, "private void ResetPreviewSignalState()");
+        AssertContains(previewStartupSignalsText, "private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
+        AssertContains(previewStartupSignalsText, "private void LogPreviewStartupPlaybackSnapshot(string reason)");
         AssertContains(previewRuntimeSnapshotText, "_previewStartupState.ToString()");
         AssertDoesNotContain(previewRendererText, "_previewStartupState.ToString()");
         AssertContains(propertyChangedText, "IsPreviewStartupFailedState(_previewStartupState)");
@@ -107,6 +112,7 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "_previewStartupVisualTimeoutMs");
         AssertDoesNotContain(mainWindowText, "_previewStartupWatchdogTimer");
         AssertDoesNotContain(mainWindowText, "ResetPreviewSignalState()");
+        AssertDoesNotContain(previewStartupText, "private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
 
         return Task.CompletedTask;
     }
