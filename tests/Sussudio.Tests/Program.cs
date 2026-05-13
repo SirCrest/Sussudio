@@ -426,6 +426,9 @@ static partial class Program
                 "Automation diagnostics audio projection lives in focused partial",
                 AutomationDiagnosticsSnapshotAudioProjection_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Automation diagnostics capture format projection lives in focused partial",
+                AutomationDiagnosticsCaptureFormatProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Automation SetRecordingEnabled uses recording-sized client timeout",
                 AutomationProtocol_SetRecordingUsesRecordingSizedTimeout),
             await RunCheckAsync(

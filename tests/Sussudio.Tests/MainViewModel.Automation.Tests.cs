@@ -332,6 +332,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionAudioText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.cs")
             .Replace("\r\n", "\n");
+        var diagnosticsSnapshotProjectionCaptureFormatText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs")
+            .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionRecordingIntegrityText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs")
             .Replace("\r\n", "\n");
         var diagnosticsSnapshotStateText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotState.cs")
@@ -346,7 +348,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsTimelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsDiagnosticEvaluationFlashbackText + "\n" + diagnosticsDiagnosticEvaluationRealtimeText + "\n" + diagnosticsDiagnosticEvaluationLanesText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsSignalAlertsText + "\n" + diagnosticsFlashbackAlertsText + "\n" + diagnosticsFlashbackRecordingAlertsText + "\n" + diagnosticsFlashbackPlaybackAlertsText + "\n" + diagnosticsFlashbackPlaybackCommandAlertsText + "\n" + diagnosticsFlashbackPlaybackPerformanceAlertsText + "\n" + diagnosticsEventsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotProjectionText + "\n" + diagnosticsSnapshotProjectionAudioText + "\n" + diagnosticsSnapshotProjectionRecordingIntegrityText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText + "\n" + diagnosticsTimelineProjectionText;
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsDiagnosticEvaluationFlashbackText + "\n" + diagnosticsDiagnosticEvaluationRealtimeText + "\n" + diagnosticsDiagnosticEvaluationLanesText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsSignalAlertsText + "\n" + diagnosticsFlashbackAlertsText + "\n" + diagnosticsFlashbackRecordingAlertsText + "\n" + diagnosticsFlashbackPlaybackAlertsText + "\n" + diagnosticsFlashbackPlaybackCommandAlertsText + "\n" + diagnosticsFlashbackPlaybackPerformanceAlertsText + "\n" + diagnosticsEventsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotProjectionText + "\n" + diagnosticsSnapshotProjectionAudioText + "\n" + diagnosticsSnapshotProjectionCaptureFormatText + "\n" + diagnosticsSnapshotProjectionRecordingIntegrityText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText + "\n" + diagnosticsTimelineProjectionText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
@@ -423,10 +425,14 @@ static partial class Program
         AssertContains(diagnosticsSnapshotProjectionText, "private AutomationSnapshot BuildAutomationSnapshot(");
         AssertContains(diagnosticsSnapshotProjectionText, "new AutomationSnapshot");
         AssertContains(diagnosticsSnapshotProjectionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
+        AssertContains(diagnosticsSnapshotProjectionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
         AssertContains(diagnosticsSnapshotProjectionText, "PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage");
         AssertContains(diagnosticsSnapshotProjectionAudioText, "private static AudioAndIngestProjection BuildAudioAndIngestProjection(");
         AssertContains(diagnosticsSnapshotProjectionAudioText, "AudioPeak = viewModelSnapshot.AudioPeak,");
         AssertDoesNotContain(diagnosticsSnapshotProjectionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
+        AssertContains(diagnosticsSnapshotProjectionCaptureFormatText, "private static CaptureFormatProjection BuildCaptureFormatProjection(CaptureRuntimeSnapshot captureRuntime)");
+        AssertContains(diagnosticsSnapshotProjectionCaptureFormatText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
+        AssertDoesNotContain(diagnosticsSnapshotProjectionText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
         AssertContains(diagnosticsSnapshotProjectionText, "var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);");
         AssertContains(diagnosticsSnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityProjection BuildRecordingIntegrityProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnosticsSnapshotProjectionRecordingIntegrityText, "Status = captureRuntime.RecordingIntegrityStatus,");
@@ -1652,6 +1658,36 @@ static partial class Program
         AssertContains(audioProjectionText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
         AssertContains(audioProjectionText, "WasapiCaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
         AssertContains(audioProjectionText, "WasapiPlaybackBufferedDurationMs = captureRuntime.WasapiPlaybackBufferedDurationMs,");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AutomationDiagnosticsCaptureFormatProjection_LivesInFocusedPartial()
+    {
+        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
+            .Replace("\r\n", "\n");
+        var captureFormatProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(snapshotProjectionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
+        AssertContains(snapshotProjectionText, "RequestedWidth = captureFormat.RequestedWidth,");
+        AssertContains(snapshotProjectionText, "HdrActivationReason = captureFormat.HdrActivationReason,");
+        AssertContains(snapshotProjectionText, "NegotiatedWidth = captureFormat.NegotiatedWidth,");
+        AssertContains(snapshotProjectionText, "LatestObservedFramePixelFormat = captureFormat.LatestObservedFramePixelFormat,");
+        AssertContains(snapshotProjectionText, "EncoderVideoCodec = captureFormat.EncoderVideoCodec,");
+        AssertDoesNotContain(snapshotProjectionText, "RequestedWidth = captureRuntime.RequestedWidth,");
+        AssertDoesNotContain(snapshotProjectionText, "HdrActivationReason = captureRuntime.HdrActivationReason,");
+        AssertDoesNotContain(snapshotProjectionText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
+        AssertDoesNotContain(snapshotProjectionText, "LatestObservedFramePixelFormat = captureRuntime.LatestObservedFramePixelFormat,");
+        AssertDoesNotContain(snapshotProjectionText, "EncoderVideoCodec = captureRuntime.EncoderVideoCodec,");
+
+        AssertContains(captureFormatProjectionText, "private static CaptureFormatProjection BuildCaptureFormatProjection(CaptureRuntimeSnapshot captureRuntime)");
+        AssertContains(captureFormatProjectionText, "private readonly record struct CaptureFormatProjection");
+        AssertContains(captureFormatProjectionText, "RequestedWidth = captureRuntime.RequestedWidth,");
+        AssertContains(captureFormatProjectionText, "HdrActivationReason = captureRuntime.HdrActivationReason,");
+        AssertContains(captureFormatProjectionText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
+        AssertContains(captureFormatProjectionText, "LatestObservedFramePixelFormat = captureRuntime.LatestObservedFramePixelFormat,");
+        AssertContains(captureFormatProjectionText, "EncoderVideoCodec = captureRuntime.EncoderVideoCodec,");
 
         return Task.CompletedTask;
     }

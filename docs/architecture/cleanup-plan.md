@@ -40,6 +40,9 @@ owns performance-timeline ring reads and append mechanics.
 `AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns the audio, ingest,
 source-reader, and WASAPI runtime projection inputs consumed by the automation
 snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns requested,
+actual, negotiated, observed, and encoder format projection inputs consumed by
+the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs` owns
 recording-integrity projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation and active-alert
