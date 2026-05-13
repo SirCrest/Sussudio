@@ -459,6 +459,9 @@ static partial class Program
                 "Resolution selection policy lives in focused partial",
                 ResolutionSelectionPolicy_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Frame-rate timing policy lives in focused partial",
+                FrameRateTimingPolicy_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Diagnostics loop does not rebuild automation options each poll",
                 DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll),
             await RunCheckAsync(
@@ -2637,6 +2640,25 @@ static partial class Program
         AssertContains(selectionPolicyText, "private bool TrySelectSdrAutoResolutionOption(");
         AssertContains(selectionPolicyText, "private static bool TryParseResolutionKey(");
         AssertContains(selectionPolicyText, "private string BuildHdrSupportHintForResolution(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FrameRateTimingPolicy_LivesInFocusedPartial()
+    {
+        var formatSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FormatSelection.cs").Replace("\r\n", "\n");
+        var timingText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateTiming.cs").Replace("\r\n", "\n");
+
+        AssertContains(formatSelectionText, "private void UpdateSelectedFormat()");
+        AssertContains(formatSelectionText, "private void RebuildVideoFormatOptions()");
+        AssertContains(formatSelectionText, "partial void OnIsHdrEnabledChanged(bool value)");
+        AssertDoesNotContain(formatSelectionText, "private FrameRateTimingFamily ResolvePreferredTimingFamily(");
+        AssertDoesNotContain(formatSelectionText, "private static bool TryInferFrameRateTimingFamily(");
+        AssertContains(timingText, "private FrameRateTimingFamily ResolvePreferredTimingFamily(");
+        AssertContains(timingText, "private static MediaFormat SelectPreferredFrameRateFormat(");
+        AssertContains(timingText, "private (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(");
+        AssertContains(timingText, "private static bool TryInferFrameRateTimingFamily(");
+        AssertContains(timingText, "private static bool TryParseFrameRateRational(");
 
         return Task.CompletedTask;
     }

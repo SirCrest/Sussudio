@@ -456,7 +456,9 @@ Remaining `tools/Common` ownership:
    flow, progress/cancellation state, and segment projection now live in
    `MainViewModel.FlashbackExport.cs`. Frame-rate option rebuilding, source-rate
    filtering, and automatic frame-rate selection now live in
-   `MainViewModel.FrameRateOptions.cs`; keep device enumeration and selected
+   `MainViewModel.FrameRateOptions.cs`. Shared frame-rate timing family,
+   rational parsing, source-rate fallback, and preferred-format ranking now live
+   in `MainViewModel.FrameRateTiming.cs`; keep device enumeration and selected
    device capability rebuilds in `MainViewModel.DeviceManagement.cs`.
    Late-arriving device format probe reconciliation and active-preview retarget
    checks now live in `MainViewModel.DeviceFormatProbes.cs`.
