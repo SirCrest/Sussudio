@@ -107,15 +107,19 @@ Primary current owners:
 - `Sussudio/Controllers/WindowAutomationController.cs` owns window geometry
   automation plus the recordings-folder command. `MainWindow.WindowAutomation.cs`
   is the `IAutomationWindowControl` adapter; recording-aware close handling
-  stays with `MainWindow.WindowManagement.cs`.
+  stays with `MainWindow.CloseLifecycle.cs`.
 - `Sussudio/MainWindow.Startup.cs` owns first-load startup, first-frame
   uncloaking, initial ViewModel/device refresh, automation pipe hosting, and
   the launch entrance trigger. Close/finalize behavior stays in
-  `MainWindow.WindowManagement.cs`.
+  `MainWindow.CloseLifecycle.cs`.
 - `Sussudio/MainWindow.WindowSizing.cs` owns top-level shell resize telemetry
   for preview compositor transforms. Preview surface sizing stays with
   `MainWindow.PreviewRenderer.cs`; close/finalize behavior stays with
-  `MainWindow.WindowManagement.cs`.
+  `MainWindow.CloseLifecycle.cs`.
+- `Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`, `Closed`,
+  automation close completion, and recording-aware shutdown protection.
+- `Sussudio/MainWindow.NativeWindow.cs` owns native `AppWindow` lookup and DWM
+  cloak/dark-mode helpers used by shell startup and automation controllers.
 - `Sussudio/MainWindow.Dispatching.cs` owns UI-thread enqueue helpers and
   guarded async event-handler execution used by automation adapters and XAML
   event handlers.

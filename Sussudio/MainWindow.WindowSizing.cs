@@ -6,7 +6,7 @@ namespace Sussudio;
 
 // Top-level window resize telemetry for the shell. Preview surface sizing stays
 // with MainWindow.PreviewRenderer.cs; close/finalize handling stays in
-// MainWindow.WindowManagement.cs.
+// MainWindow.CloseLifecycle.cs.
 public sealed partial class MainWindow
 {
     private long _previewLastResizeLogTick;

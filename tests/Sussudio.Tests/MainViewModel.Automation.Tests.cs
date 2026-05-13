@@ -1398,19 +1398,19 @@ static partial class Program
     {
         var windowCtorText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(windowCtorText, "appWindow.Closing += MainWindow_Closing;");
-        AssertContains(windowManagementText, "args.Cancel = true;");
-        AssertContains(windowManagementText, "TryStopRecordingBeforeCloseAsync");
-        AssertContains(windowManagementText, "const int StopBudgetMs = 120_000;");
-        AssertContains(windowManagementText, "close cancelled to protect recording");
-        AssertContains(windowManagementText, "RequestWindowClose();");
-        AssertContains(windowManagementText, "GetWindowCloseCompletionTask(cancellationToken)");
-        AssertContains(windowManagementText, "CompleteWindowCloseRequest(new InvalidOperationException(ViewModel.StatusText));");
-        AssertContains(windowManagementText, "CompleteWindowCloseRequest();");
-        AssertDoesNotContain(windowManagementText, "MP4 may be truncated.");
+        AssertContains(closeLifecycleText, "args.Cancel = true;");
+        AssertContains(closeLifecycleText, "TryStopRecordingBeforeCloseAsync");
+        AssertContains(closeLifecycleText, "const int StopBudgetMs = 120_000;");
+        AssertContains(closeLifecycleText, "close cancelled to protect recording");
+        AssertContains(closeLifecycleText, "RequestWindowClose();");
+        AssertContains(closeLifecycleText, "GetWindowCloseCompletionTask(cancellationToken)");
+        AssertContains(closeLifecycleText, "CompleteWindowCloseRequest(new InvalidOperationException(ViewModel.StatusText));");
+        AssertContains(closeLifecycleText, "CompleteWindowCloseRequest();");
+        AssertDoesNotContain(closeLifecycleText, "MP4 may be truncated.");
 
         return Task.CompletedTask;
     }

@@ -37,21 +37,27 @@ is only the automation adapter.
 Window geometry automation and the recordings-folder command now live in
 `Sussudio/Controllers/WindowAutomationController.cs`.
 `MainWindow.WindowAutomation.cs` is the `IAutomationWindowControl` adapter.
-Recording-aware close behavior remains in `MainWindow.WindowManagement.cs`.
+Recording-aware close behavior remains in `MainWindow.CloseLifecycle.cs`.
 
 UI-thread dispatching helpers and guarded async event-handler execution now
 live in `Sussudio/MainWindow.Dispatching.cs`. Window close completion and
-recording-aware close handling remain in `MainWindow.WindowManagement.cs`.
+recording-aware close handling remain in `MainWindow.CloseLifecycle.cs`.
 
 First-load startup, first-frame uncloaking, initial ViewModel/device refresh,
 automation pipe hosting, and the launch entrance trigger now live in
 `Sussudio/MainWindow.Startup.cs`. Window close completion and recording-aware
-close handling remain in `MainWindow.WindowManagement.cs`.
+close handling remain in `MainWindow.CloseLifecycle.cs`.
 
 Top-level shell resize telemetry for preview compositor transforms now lives in
 `Sussudio/MainWindow.WindowSizing.cs`. Preview surface sizing remains in
 `MainWindow.PreviewRenderer.cs`, and close/finalize handling remains in
-`MainWindow.WindowManagement.cs`.
+`MainWindow.CloseLifecycle.cs`.
+
+Window close lifecycle and native window helpers are now explicit:
+`Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`, `Closed`,
+automation close completion, and recording-aware shutdown protection, while
+`Sussudio/MainWindow.NativeWindow.cs` owns native `AppWindow` lookup and DWM
+cloak/dark-mode helpers.
 
 Audio and microphone meter rendering now lives in
 `Sussudio/Controllers/AudioMeterController.cs`. The broader control-bar binding

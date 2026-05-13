@@ -1,41 +1,23 @@
+using Microsoft.UI.Xaml;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Sussudio.Models;
-using Sussudio.ViewModels;
-using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Composition;
-using Microsoft.UI.Xaml.Hosting;
-using System.Numerics;
-using WinRT.Interop;
-using Sussudio.Services.Audio;
-using Sussudio.Services.Automation;
-using Sussudio.Services.Capture;
-using Sussudio.Services.Flashback;
-using Sussudio.Services.Gpu;
-using Sussudio.Services.Preview;
-using Sussudio.Services.Recording;
-using Sussudio.Services.Runtime;
-using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
-// Window chrome, sizing, and automation-facing window controls. Capture logic
-// should not live here; this partial only owns the native window shell.
+// Window close lifecycle and automation close completion. Recording finalization
+// protection lives here because close is the last chance to avoid truncating an
+// in-progress recording.
 public sealed partial class MainWindow
 {
+    private int _windowCloseRequested;
+    private int _windowCloseCleanupStarted;
+    private int _windowCloseRecordingStopInProgress;
+    private int _windowCloseAllowedAfterRecordingStop;
+    private readonly object _windowCloseCompletionLock = new();
+    private TaskCompletionSource<object?>? _windowCloseCompletion;
+    private bool _isWindowClosing;
+
     private async void MainWindow_Closing(
         Microsoft.UI.Windowing.AppWindow sender,
         Microsoft.UI.Windowing.AppWindowClosingEventArgs args)
@@ -261,12 +243,6 @@ public sealed partial class MainWindow
             Logger.Log($"ViewModel dispose during window close failed: {ex.Message}");
         }
     }
-    private Microsoft.UI.Windowing.AppWindow GetAppWindow()
-    {
-        var hwnd = WindowNative.GetWindowHandle(this);
-        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-        return Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
-    }
     public Task CloseAsync(CancellationToken cancellationToken = default)
     {
         if (Volatile.Read(ref _windowCloseCleanupStarted) != 0)
@@ -431,10 +407,4 @@ public sealed partial class MainWindow
         return message.IndexOf("closing", StringComparison.OrdinalIgnoreCase) >= 0 ||
                message.IndexOf("closed", StringComparison.OrdinalIgnoreCase) >= 0;
     }
-    #region Win32 interop (DWM only — min-size subclass moved to MinSizeWindowSubclass)
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
-    private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
-    private const int DWMWA_CLOAK = 13;
-    #endregion
 }

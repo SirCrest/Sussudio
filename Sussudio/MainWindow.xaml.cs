@@ -49,12 +49,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
     private long _previewLastPresentedTick;
-    private int _windowCloseRequested;
-    private int _windowCloseCleanupStarted;
-    private int _windowCloseRecordingStopInProgress;
-    private int _windowCloseAllowedAfterRecordingStop;
-    private readonly object _windowCloseCompletionLock = new();
-    private TaskCompletionSource<object?>? _windowCloseCompletion;
     private double _previewMinPresentationIntervalMs;
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;
@@ -64,7 +58,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _lastRendererStopTick;
     private long _rendererReinitUnsafeWindows;
     public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);
-    private bool _isWindowClosing;
     private bool _isFlashbackScrubbing;
     private TimeSpan? _lastScrubPointerPosition;
     private bool _suppressFlashbackEnabledToggle;

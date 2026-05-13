@@ -519,6 +519,9 @@ static partial class Program
                 "MainWindow shell resize telemetry lives in sizing partial",
                 MainWindowShellResizeTelemetry_LivesInSizingPartial),
             await RunCheckAsync(
+                "MainWindow close lifecycle and native helpers are split",
+                MainWindowCloseLifecycleAndNativeHelpers_AreSplit),
+            await RunCheckAsync(
                 "Control bar hover animations live in controller",
                 ControlBarHoverAnimations_LiveInController),
             await RunCheckAsync(
@@ -2926,7 +2929,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs").Replace("\r\n", "\n");
-        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
 
         AssertContains(startupText, "private int _automationServicesStarted;");
         AssertContains(startupText, "private void MainWindow_Loaded(object sender, RoutedEventArgs e)");
@@ -2944,9 +2947,9 @@ static partial class Program
         AssertContains(startupText, "Automation control disabled on pipe");
         AssertContains(mainWindowText, "mainContent.Loaded += MainWindow_Loaded;");
         AssertDoesNotContain(mainWindowText, "private int _automationServicesStarted;");
-        AssertDoesNotContain(windowManagementText, "private void MainWindow_Loaded(");
-        AssertDoesNotContain(windowManagementText, "private void StartAutomationServices()");
-        AssertDoesNotContain(windowManagementText, "_automationServicesStarted");
+        AssertDoesNotContain(closeLifecycleText, "private void MainWindow_Loaded(");
+        AssertDoesNotContain(closeLifecycleText, "private void StartAutomationServices()");
+        AssertDoesNotContain(closeLifecycleText, "_automationServicesStarted");
 
         return Task.CompletedTask;
     }
@@ -2955,7 +2958,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var windowSizingText = ReadRepoFile("Sussudio/MainWindow.WindowSizing.cs").Replace("\r\n", "\n");
-        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
 
         AssertContains(windowSizingText, "private long _previewLastResizeLogTick;");
@@ -2967,11 +2970,54 @@ static partial class Program
         AssertContains(windowSizingText, "Interlocked.CompareExchange(ref _previewLastResizeLogTick, nowTick, lastLogTick)");
         AssertContains(windowSizingText, "Preview resize active. Updating compositor transform without resizing swap-chain buffers.");
         AssertContains(mainWindowText, "mainContent.SizeChanged += MainWindow_SizeChanged;");
-        AssertContains(windowManagementText, "mainContent.SizeChanged -= MainWindow_SizeChanged;");
+        AssertContains(closeLifecycleText, "mainContent.SizeChanged -= MainWindow_SizeChanged;");
         AssertContains(previewRendererText, "_previewLastResizeLogTick = 0;");
         AssertDoesNotContain(mainWindowText, "private long _previewLastResizeLogTick;");
-        AssertDoesNotContain(windowManagementText, "private void MainWindow_SizeChanged(");
-        AssertDoesNotContain(windowManagementText, "_previewLastResizeLogTick");
+        AssertDoesNotContain(closeLifecycleText, "private void MainWindow_SizeChanged(");
+        AssertDoesNotContain(closeLifecycleText, "_previewLastResizeLogTick");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task MainWindowCloseLifecycleAndNativeHelpers_AreSplit()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
+        var nativeWindowText = ReadRepoFile("Sussudio/MainWindow.NativeWindow.cs").Replace("\r\n", "\n");
+        var oldWindowManagementPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "Sussudio",
+            "MainWindow.WindowManagement.cs");
+
+        if (File.Exists(oldWindowManagementPath))
+        {
+            throw new InvalidOperationException("MainWindow.WindowManagement.cs should not return as a catch-all partial.");
+        }
+
+        AssertContains(closeLifecycleText, "private int _windowCloseRequested;");
+        AssertContains(closeLifecycleText, "private int _windowCloseCleanupStarted;");
+        AssertContains(closeLifecycleText, "private TaskCompletionSource<object?>? _windowCloseCompletion;");
+        AssertContains(closeLifecycleText, "private bool _isWindowClosing;");
+        AssertContains(closeLifecycleText, "private async void MainWindow_Closing(");
+        AssertContains(closeLifecycleText, "private async Task<bool> TryStopRecordingBeforeCloseAsync()");
+        AssertContains(closeLifecycleText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");
+        AssertContains(closeLifecycleText, "public Task CloseAsync(CancellationToken cancellationToken = default)");
+        AssertContains(closeLifecycleText, "private Task GetWindowCloseCompletionTask(CancellationToken cancellationToken)");
+        AssertContains(closeLifecycleText, "private void RequestWindowClose()");
+        AssertContains(closeLifecycleText, "private static bool IsCloseAlreadyInProgressException(Exception ex)");
+        AssertContains(closeLifecycleText, "StopLiveSignalInfoTimers();");
+        AssertContains(closeLifecycleText, "StopMicMeterRowAnimation();");
+        AssertContains(closeLifecycleText, "StopFlashbackStatusPolling();");
+        AssertContains(nativeWindowText, "private Microsoft.UI.Windowing.AppWindow GetAppWindow()");
+        AssertContains(nativeWindowText, "private static extern int DwmSetWindowAttribute(");
+        AssertContains(nativeWindowText, "private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;");
+        AssertContains(nativeWindowText, "private const int DWMWA_CLOAK = 13;");
+        AssertContains(mainWindowText, "appWindow.Closing += MainWindow_Closing;");
+        AssertContains(mainWindowText, "Closed += MainWindow_Closed;");
+        AssertDoesNotContain(mainWindowText, "private int _windowCloseRequested;");
+        AssertDoesNotContain(mainWindowText, "private bool _isWindowClosing;");
+        AssertDoesNotContain(closeLifecycleText, "private Microsoft.UI.Windowing.AppWindow GetAppWindow()");
+        AssertDoesNotContain(closeLifecycleText, "DwmSetWindowAttribute(");
 
         return Task.CompletedTask;
     }
@@ -3072,7 +3118,7 @@ static partial class Program
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var liveSignalAdapterText = ReadRepoFile("Sussudio/MainWindow.LiveSignalInfo.cs").Replace("\r\n", "\n");
-        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/LiveSignalInfoController.cs").Replace("\r\n", "\n");
 
         AssertContains(liveSignalAdapterText, "private LiveSignalInfoController _liveSignalInfoController = null!;");
@@ -3082,7 +3128,7 @@ static partial class Program
         AssertContains(liveSignalAdapterText, "private void StopLiveSignalInfoTimers()");
         AssertContains(liveSignalAdapterText, "=> _liveSignalInfoController.StopTimers();");
         AssertContains(mainWindowText, "InitializeLiveSignalInfoController();");
-        AssertContains(windowManagementText, "StopLiveSignalInfoTimers();");
+        AssertContains(closeLifecycleText, "StopLiveSignalInfoTimers();");
         AssertContains(controllerText, "internal sealed class LiveSignalInfoController");
         AssertContains(controllerText, "private DispatcherQueueTimer? _showDebounceTimer;");
         AssertContains(controllerText, "private DispatcherQueueTimer? _hideDebounceTimer;");
@@ -3141,7 +3187,7 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.MicrophoneControls.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
-        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/MicrophoneControlsController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private MicrophoneControlsController _microphoneControlsController = null!;");
@@ -3156,7 +3202,7 @@ static partial class Program
         AssertContains(bindingsText, "ApplyInitialMicrophoneControlsVisibility();");
         AssertContains(propertyChangedText, "UpdateMicrophoneControlsVisibility();");
         AssertContains(propertyChangedText, "SyncMicrophoneVolumeControls(ViewModel.MicrophoneVolume);");
-        AssertContains(windowManagementText, "StopMicMeterRowAnimation();");
+        AssertContains(closeLifecycleText, "StopMicMeterRowAnimation();");
         AssertContains(controllerText, "internal sealed class MicrophoneControlsController");
         AssertContains(controllerText, "private bool _syncingVolumeControls;");
         AssertContains(controllerText, "private Storyboard? _activeRowStoryboard;");
@@ -3252,7 +3298,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPolling.cs").Replace("\r\n", "\n");
         var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs").Replace("\r\n", "\n");
-        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/FlashbackPollingController.cs").Replace("\r\n", "\n");
 
         AssertContains(pollingAdapterText, "private FlashbackPollingController _flashbackPollingController = null!;");
@@ -3265,7 +3311,7 @@ static partial class Program
         AssertContains(pollingAdapterText, "=> _flashbackPollingController.StopPlaybackPolling();");
         AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
         AssertContains(timelineAdapterText, "StartStatusPolling = StartFlashbackStatusPolling,");
-        AssertContains(windowManagementText, "StopFlashbackStatusPolling();");
+        AssertContains(closeLifecycleText, "StopFlashbackStatusPolling();");
         AssertContains(flashbackText, "StartFlashbackPlaybackPolling();");
         AssertContains(flashbackText, "StopFlashbackPlaybackPolling();");
         AssertContains(controllerText, "internal sealed class FlashbackPollingController");

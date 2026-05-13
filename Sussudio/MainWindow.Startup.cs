@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml;
 namespace Sussudio;
 
 // First-load startup and automation hosting for the shell. Close/finalize
-// handling stays in MainWindow.WindowManagement.cs.
+// handling stays in MainWindow.CloseLifecycle.cs.
 public sealed partial class MainWindow
 {
     private int _automationServicesStarted;
