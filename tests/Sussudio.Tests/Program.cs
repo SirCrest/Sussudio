@@ -492,8 +492,11 @@ static partial class Program
                 "MainViewModel audio controls map analog gain curve and clamp endpoints",
                 MainViewModelAudioControls_MapsAnalogGainCurveAndClamps),
             await RunCheckAsync(
-                "MainViewModel audio controls preserve routing persistence and device guards",
-                MainViewModelAudioControls_PreserveRoutingPersistenceAndDeviceGuards),
+                "MainViewModel audio monitoring preserves volume persistence and ramped routing",
+                MainViewModelAudioMonitoring_PreservesVolumePersistenceAndRampedRouting),
+            await RunCheckAsync(
+                "MainViewModel audio controls preserve microphone and device guards",
+                MainViewModelAudioControls_PreserveMicrophoneVolumeAndDeviceGuards),
             await RunCheckAsync(
                 "MainViewModel audio meters own callback meter state",
                 MainViewModelAudioMeters_OwnCallbackMeterState),
@@ -2711,7 +2714,7 @@ static partial class Program
     private static Task AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry()
     {
         var traceModelsText = ReadRepoFile("Sussudio/Models/Audio/AudioRampTraceModels.cs").Replace("\r\n", "\n");
-        var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs").Replace("\r\n", "\n");
+        var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs").Replace("\r\n", "\n");
         var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs").Replace("\r\n", "\n");
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
         var runtimeContractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeSnapshots.cs").Replace("\r\n", "\n");
@@ -2727,11 +2730,11 @@ static partial class Program
         AssertContains(traceModelsText, "public long PlaybackOutputAgeMs { get; init; }");
 
         AssertContains(audioRampTraceText, "private const int AudioRampTraceSampleIntervalMs = 10;");
-        AssertContains(audioControlsText, "BeginAudioRampTraceSession(");
-        AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"volume-set\")");
-        AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"primed\"");
-        AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"monitoring-started\"");
-        AssertContains(audioControlsText, "RecordAudioRampTracePoint(\"monitoring-stopped\"");
+        AssertContains(audioMonitoringText, "BeginAudioRampTraceSession(");
+        AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"volume-set\")");
+        AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"primed\"");
+        AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-started\"");
+        AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-stopped\"");
         AssertContains(audioRampTraceText, "RunAudioRampTraceSamplerAsync");
         AssertContains(audioRampTraceText, "Task.Delay(AudioRampTraceSampleIntervalMs");
         AssertContains(audioRampTraceText, "GetAudioRampTraceSnapshotAsync");

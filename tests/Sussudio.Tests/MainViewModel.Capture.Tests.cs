@@ -230,7 +230,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
             .Replace("\r\n", "\n");
-        var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs")
+        var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs")
             .Replace("\r\n", "\n");
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
@@ -247,10 +247,10 @@ static partial class Program
         AssertContains(uiFadeOut, "_context.ViewModel.PreviewVolume = 0;");
         AssertContains(uiFadeOut, "PREVIEW_AUDIO_FADE_OUT_STARTED");
 
-        var vmStopRamp = ExtractMemberCode(audioControlsText, "RampPreviewVolumeDownForStopAsync");
+        var vmStopRamp = ExtractMemberCode(audioMonitoringText, "RampPreviewVolumeDownForStopAsync");
         AssertContains(vmStopRamp, "RampPreviewVolumeDownForAudioTransitionAsync(\"preview_stop\", cancellationToken)");
 
-        var vmRampDown = ExtractMemberCode(audioControlsText, "RampPreviewVolumeDownForAudioTransitionAsync");
+        var vmRampDown = ExtractMemberCode(audioMonitoringText, "RampPreviewVolumeDownForAudioTransitionAsync");
         AssertContains(vmRampDown, "VolumeSaveOverride = persistedVolume;");
         AssertContains(vmRampDown, "PreviewVolume = startingVolume * eased;");
         AssertContains(vmRampDown, "PreviewVolume = 0;");

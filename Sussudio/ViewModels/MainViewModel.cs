@@ -505,7 +505,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // -- Partial class references ----
     // Capture lifecycle: MainViewModel.Capture.cs
     // Automation / flashback: MainViewModel.Automation.cs
-    // Audio controls: MainViewModel.AudioControls.cs
+    // Audio monitoring: MainViewModel.AudioMonitoring.cs
+    // Microphone/device audio controls: MainViewModel.AudioControls.cs
     // Audio property changes: MainViewModel.AudioPropertyChanges.cs
     // Device management: MainViewModel.DeviceManagement.cs
     // Frame-rate options: MainViewModel.FrameRateOptions.cs
