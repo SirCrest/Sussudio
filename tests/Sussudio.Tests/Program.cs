@@ -3039,8 +3039,10 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
         AssertContains(previewRuntimeSnapshotText, "return GetPreviewRuntimeSnapshot();");
         AssertContains(previewRuntimeSnapshotText, "completion.TrySetResult(GetPreviewRuntimeSnapshot());");
+        AssertContains(previewRuntimeSnapshotText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
+        AssertContains(previewRuntimeSnapshotText, "var d3d = _d3dRenderer;");
+        AssertContains(previewRuntimeSnapshotText, "return new PreviewRuntimeSnapshot");
         AssertContains(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
-        AssertContains(previewRendererText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
         AssertContains(previewRendererText, "return Math.Max(1.0, 1000.0 / sourceFps);");
         AssertContains(previewRendererText, "_previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();");
         AssertContains(statsOverlayText, "GetPresentCadenceMetrics(_previewMinPresentationIntervalMs)");
@@ -3059,6 +3061,7 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private double ResolvePreviewExpectedIntervalMs()");
         AssertDoesNotContain(mainWindowText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
         AssertDoesNotContain(previewRendererText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
+        AssertDoesNotContain(previewRendererText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
         AssertDoesNotContain(mainWindowText, "private static bool IsHdrSubtype");
 
         return Task.CompletedTask;

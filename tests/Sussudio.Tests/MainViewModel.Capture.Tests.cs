@@ -86,6 +86,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs")
             .Replace("\r\n", "\n");
+        var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs")
+            .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
             .Replace("\r\n", "\n");
 
@@ -98,7 +100,8 @@ static partial class Program
         AssertContains(previewStartupText, "private const int PreviewFadeInFrameThreshold = 3;");
         AssertContains(previewStartupText, "private bool IsPreviewStartupSignalWindowActive()");
         AssertContains(previewStartupText, "private void ResetPreviewSignalState()");
-        AssertContains(previewRendererText, "_previewStartupState.ToString()");
+        AssertContains(previewRuntimeSnapshotText, "_previewStartupState.ToString()");
+        AssertDoesNotContain(previewRendererText, "_previewStartupState.ToString()");
         AssertContains(propertyChangedText, "IsPreviewStartupFailedState(_previewStartupState)");
         AssertDoesNotContain(mainWindowText, "private enum PreviewStartupState");
         AssertDoesNotContain(mainWindowText, "_previewStartupVisualTimeoutMs");
