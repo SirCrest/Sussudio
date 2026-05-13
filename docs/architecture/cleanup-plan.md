@@ -246,6 +246,14 @@ attribute reads, and optional media-attribute copy helpers there; keep the read
 loop, frame delivery, DXGI buffer extraction, and YUV copy helpers in the root
 source-reader file.
 
+Automation snapshot contracts now live in named model files under
+`Sussudio/Models/Automation/`: `AutomationSnapshot.cs`,
+`CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,
+`PerformanceTimelineEntry.cs`, `FlashbackSegmentInfo.cs`, and
+`ViewModelRuntimeSnapshot.cs`. Do not recreate a broad
+`AutomationRuntimeSnapshots.cs` catch-all; add new DTOs to a named file that
+matches the snapshot surface they own.
+
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,

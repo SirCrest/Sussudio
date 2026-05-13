@@ -1155,7 +1155,7 @@ static partial class Program
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         AssertContains(snapshotsText, "FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),");
-        var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeSnapshots.cs")
+        var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs")
             .Replace("\r\n", "\n");
         AssertContains(contractsText, "public string? FlashbackExportVerificationFormat { get; init; }");
         AssertContains(contractsText, "public string? FlashbackCodecDowngradeReason { get; init; }");
