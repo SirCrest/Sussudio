@@ -237,6 +237,11 @@ Flashback playback position/file-PTS mapping now lives in
 It owns scrub/seek clamping, marker-bound range limits, saturating timestamp
 math, active fMP4 segment detection, and playback path comparison.
 
+Flashback playback diagnostics now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs`. That
+partial owns playback counters, cadence/decode summary records, percentile
+math, decode timing wrappers, and metric reset behavior.
+
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
 `MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing
