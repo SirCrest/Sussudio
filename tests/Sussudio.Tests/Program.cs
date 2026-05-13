@@ -2836,6 +2836,7 @@ static partial class Program
     private static Task StatsDiagnosticRowPooling_LivesInController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var hardwareSectionsText = ReadRepoFile("Sussudio/MainWindow.StatsHardwareSections.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
 
@@ -2843,9 +2844,11 @@ static partial class Program
         AssertContains(statsOverlayText, "_statsDiagnosticRowsController = new StatsDiagnosticRowsController");
         AssertContains(statsOverlayText, "ResourceOwner = StatsDockPanel,");
         AssertContains(statsOverlayText, "DiagnosticsContent = Diagnostics_Content");
-        AssertContains(statsOverlayText, "_statsDiagnosticRowsController.CollapseDecodeRows(Decode_Content);");
-        AssertContains(statsOverlayText, "_statsDiagnosticRowsController.UpdateDecodeRows(Decode_Content, rows);");
-        AssertContains(statsOverlayText, "_statsDiagnosticRowsController.UpdateGpuRows(GPU_Content, rows);");
+        AssertContains(hardwareSectionsText, "private void UpdateDecodeSection()");
+        AssertContains(hardwareSectionsText, "private void UpdateGpuSection()");
+        AssertContains(hardwareSectionsText, "_statsDiagnosticRowsController.CollapseDecodeRows(Decode_Content);");
+        AssertContains(hardwareSectionsText, "_statsDiagnosticRowsController.UpdateDecodeRows(Decode_Content, rows);");
+        AssertContains(hardwareSectionsText, "_statsDiagnosticRowsController.UpdateGpuRows(GPU_Content, rows);");
         AssertContains(statsOverlayText, "_statsDiagnosticRowsController.UpdateDiagnostics(presentation);");
         AssertContains(controllerText, "internal sealed class StatsDiagnosticRowsController");
         AssertContains(controllerText, "private const int MaxExpectedDecodeRowCount = 14;");
@@ -2859,6 +2862,8 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "private sealed record DiagnosticRowSlot(");
         AssertDoesNotContain(statsOverlayText, "private void EnsureDiagnosticRowPool(");
         AssertDoesNotContain(statsOverlayText, "private Border CreateDiagnosticRow(");
+        AssertDoesNotContain(statsOverlayText, "private void UpdateDecodeSection()");
+        AssertDoesNotContain(statsOverlayText, "private void UpdateGpuSection()");
 
         return Task.CompletedTask;
     }
