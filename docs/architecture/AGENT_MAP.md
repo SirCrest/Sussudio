@@ -258,8 +258,9 @@ Primary current owners:
   audio/microphone meter callback state; keep callback-thread meter targets
   out of the root facade file. `MainViewModel.AudioRampTrace.cs` owns the audio
   ramp diagnostic ring buffer and sampler; keep preview monitoring call sites
-  in `MainViewModel.AudioMonitoring.cs`. `MainViewModel.AudioControls.cs` owns
-  microphone endpoint volume plus device-native audio mode/gain management.
+  in `MainViewModel.AudioMonitoring.cs`. `MainViewModel.MicrophoneVolume.cs`
+  owns microphone endpoint volume synchronization and persistence.
+  `MainViewModel.AudioControls.cs` owns device-native audio mode/gain management.
   `MainViewModel.AudioPropertyChanges.cs` owns audio, microphone, and
   device-audio observable property handlers.
   `MainViewModel.Dispatching.cs` owns shared

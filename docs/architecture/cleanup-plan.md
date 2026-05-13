@@ -440,8 +440,9 @@ Remaining `tools/Common` ownership:
    behavior there instead of growing the root facade file. Audio ramp trace
    buffering/sampling now lives in `MainViewModel.AudioRampTrace.cs`; keep the
    preview monitoring call sites in `MainViewModel.AudioMonitoring.cs`.
-   Microphone endpoint volume and device-native audio mode/gain management stay
-   in `MainViewModel.AudioControls.cs`. Audio, microphone, and device-audio
+   Microphone endpoint volume synchronization and persistence now live in
+   `MainViewModel.MicrophoneVolume.cs`; device-native audio mode/gain
+   management stays in `MainViewModel.AudioControls.cs`. Audio, microphone, and device-audio
    observable property handlers now live in `MainViewModel.AudioPropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
    and live runtime text/timer/status/error handling now lives in

@@ -97,7 +97,9 @@ static partial class Program
         var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
         AssertNotNull(viewModelType.GetMethod("SaveMicrophoneVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SaveMicrophoneVolume");
 
-        var audioCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioControls.cs");
+        var audioControlsCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioControls.cs");
+        var microphoneVolumeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.MicrophoneVolume.cs");
+        var audioCode = audioControlsCode + "\n" + microphoneVolumeCode;
         var setMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "SetMicrophoneEndpointVolume");
         var getMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "GetMicrophoneEndpointVolume");
         var refreshDeviceAudioControls = ExtractMemberCode(audioCode, "RefreshDeviceAudioControlsAsync");
@@ -107,7 +109,10 @@ static partial class Program
         var suppressedRefresh = ExtractMemberCode(audioCode, "WithAudioControlRefreshSuppressed");
         var normalizeDeviceAudioMode = ExtractMemberCode(audioCode, "NormalizeDeviceAudioMode");
 
-        AssertContains(audioCode, "internal void SaveMicrophoneVolume() => SaveSettings();");
+        AssertContains(microphoneVolumeCode, "internal void SaveMicrophoneVolume() => SaveSettings();");
+        AssertContains(microphoneVolumeCode, "partial void OnMicrophoneVolumeChanged(double value)");
+        AssertDoesNotContain(audioControlsCode, "SetMicrophoneEndpointVolume");
+        AssertDoesNotContain(audioControlsCode, "GetMicrophoneEndpointVolume");
 
         AssertContains(setMicrophoneEndpointVolume, "string.IsNullOrWhiteSpace(deviceId)");
         AssertContains(setMicrophoneEndpointVolume, "WasapiComInterop.SetEndpointVolume(deviceId, (float)(Math.Clamp(volumePercent, 0.0, 100.0) / 100.0));");

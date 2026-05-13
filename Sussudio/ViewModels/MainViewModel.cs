@@ -443,7 +443,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // UI-only automation: MainViewModel.AutomationUi.cs
     // Recording settings automation: MainViewModel.AutomationRecordingSettings.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs
-    // Microphone/device audio controls: MainViewModel.AudioControls.cs
+    // Microphone endpoint volume: MainViewModel.MicrophoneVolume.cs
+    // Device-native audio controls: MainViewModel.AudioControls.cs
     // Audio property changes: MainViewModel.AudioPropertyChanges.cs
     // Device management: MainViewModel.DeviceManagement.cs
     // Device format probes: MainViewModel.DeviceFormatProbes.cs
