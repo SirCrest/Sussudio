@@ -48,6 +48,25 @@ static partial class Program
 
     // ── FlashbackDecoder: state guard properties ──
 
+    private static Task FlashbackDecoder_ValidationHelpersLiveInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var validationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Validation.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(validationText, "private static int CalculateFrameBufferSize(int width, int height, bool isHdr)");
+        AssertContains(validationText, "private static void ValidateVideoDimensions(int width, int height)");
+        AssertContains(validationText, "private static bool TryGetInputStreamCount(AVFormatContext* formatCtx, out int streamCount, out string failureMessage)");
+        AssertContains(validationText, "private static bool IsValidStreamIndex(int streamIndex, int streamCount)");
+        AssertDoesNotContain(rootText, "private static int CalculateFrameBufferSize(int width, int height, bool isHdr)");
+        AssertDoesNotContain(rootText, "private static void ValidateVideoDimensions(int width, int height)");
+        AssertDoesNotContain(rootText, "private static bool TryGetInputStreamCount(AVFormatContext* formatCtx, out int streamCount, out string failureMessage)");
+        AssertDoesNotContain(rootText, "private static bool IsValidStreamIndex(int streamIndex, int streamCount)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");

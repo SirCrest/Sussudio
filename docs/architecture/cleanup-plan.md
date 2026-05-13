@@ -400,6 +400,9 @@ until those areas get their own focused slices. Shared PTS conversion, seek
 timestamp conversion, best-effort frame timestamp selection, and recoverable
 seek log suppression now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.Timestamps.cs`.
+Decoded frame-size calculation, video-dimension validation, input stream-count
+bounds, and stream-index bounds now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.Validation.cs`.
 
 Flashback buffer retention now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs`. Keep segment
