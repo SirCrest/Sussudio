@@ -5,7 +5,6 @@ using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;
 using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;
 using static Sussudio.Tools.DiagnosticSessionFlashbackRejectedExports;
 using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;
-using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
 using static Sussudio.Tools.DiagnosticSessionHealthPolicy;
 using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
@@ -134,43 +133,20 @@ public static class DiagnosticSessionRunner
             }
             else
             {
-                if (DiagnosticSessionScenarios.NeedsFlashback(scenario) && !GetBool(initialSnapshot, "FlashbackActive"))
-                {
-                    await SendAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, null).ConfigureAwait(false);
-                    enabledFlashback = true;
-                    actions.Add("flashback enabled");
-                }
-
-            if (runFlashbackExportRejected && GetBool(initialSnapshot, "FlashbackActive"))
-            {
-                await SendAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = false }, null).ConfigureAwait(false);
-                disabledFlashback = true;
-                actions.Add("flashback disabled for rejected export");
-            }
-
-            if (DiagnosticSessionScenarios.NeedsPreview(scenario) && !GetBool(initialSnapshot, "IsPreviewing"))
-            {
-                await SendAsync("SetPreviewEnabled", new Dictionary<string, object?> { ["enabled"] = true }, null).ConfigureAwait(false);
-                startedPreview = true;
-                actions.Add("preview started");
-                await TryWaitAsync("VideoFramesFlowing", 15_000).ConfigureAwait(false);
-            }
-
-            if (DiagnosticSessionScenarios.NeedsRecording(scenario) && !GetBool(initialSnapshot, "IsRecording"))
-            {
-                if (scenarioPlan.RequiresFlashbackRecordingReadiness &&
-                    !await WaitForFlashbackStressBufferReadyAsync(
-                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        scenarioCancellationToken).ConfigureAwait(false))
-                {
-                    warnings.Add("flashback recording: Flashback buffer did not become recording-ready within 30s");
-                }
-
-                await SendAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = true }, null).ConfigureAwait(false);
-                startedRecording = true;
-                actions.Add("recording started");
-                await TryWaitAsync("RecordingFileGrowing", 20_000).ConfigureAwait(false);
-            }
+            var setupResult = await DiagnosticSessionScenarioSetup.RunAsync(
+                    scenario,
+                    scenarioPlan,
+                    initialSnapshot,
+                    actions,
+                    warnings,
+                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                    TryWaitAsync,
+                    scenarioCancellationToken)
+                .ConfigureAwait(false);
+            startedPreview = setupResult.StartedPreview;
+            startedRecording = setupResult.StartedRecording;
+            enabledFlashback = setupResult.EnabledFlashback;
+            disabledFlashback = setupResult.DisabledFlashback;
 
             var scenarioStartup = await DiagnosticSessionScenarioStartup.StartAsync(
                     options,

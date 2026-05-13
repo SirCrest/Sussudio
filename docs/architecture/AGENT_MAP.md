@@ -559,6 +559,10 @@ Primary owners:
   optional background startup: PresentMon launch, Flashback scenario task
   registration, deferred recording-settings task registration, and the direct
   Flashback playback start command. Keep task stage names stable there.
+- `tools/Common/DiagnosticSessionScenarioSetup.cs` owns diagnostic-session
+  initial state mutations before sampling: enabling or disabling Flashback for
+  scenarios, starting preview, starting recording, and waiting for the
+  associated readiness conditions.
 - `tools/Common/DiagnosticSessionCleanupActions.cs` owns diagnostic-session
   cleanup mutations: recording stop for verification, Flashback playback
   go-live restore, preview stop, and Flashback enable-state restore. Keep

@@ -735,6 +735,9 @@ static partial class Program
                 "Diagnostic session scenario plan has a named owner",
                 DiagnosticSessionScenarioPlan_OwnsScenarioFlags),
             await RunCheckAsync(
+                "Diagnostic session scenario setup has a named owner",
+                DiagnosticSessionScenarioSetup_OwnsInitialMutations),
+            await RunCheckAsync(
                 "Diagnostic session background tasks have a named owner",
                 DiagnosticSessionBackgroundTasks_OwnTaskDraining),
             await RunCheckAsync(
