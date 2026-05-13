@@ -63,26 +63,21 @@ public sealed partial class AutomationDiagnosticsHub
         var sourceSignalLane = lanes.SourceSignal;
         var recordingLane = lanes.Recording;
         var audioLane = lanes.Audio;
-        var flashbackRecordingLane = lanes.FlashbackRecording;
-        var exportLane = lanes.Export;
-        var tempCacheLane = lanes.TempCache;
-        var playbackCommandLane = lanes.PlaybackCommand;
-        var playbackPerfLane = lanes.PlaybackPerf;
         var recentRendererSubmitted = lanes.RecentRendererSubmitted;
         var recentRendererDropPercent = lanes.RecentRendererDropPercent;
-        var playbackSlow =
-            string.Equals(health.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
-            playbackTargetFps > 0 &&
-            health.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
-            health.FlashbackPlaybackObservedFps > 0 &&
-            health.FlashbackPlaybackObservedFps < playbackTargetFps * FlashbackPlaybackSlowFpsRatio;
-        var playbackFrametimeDegraded =
-            IsFlashbackPlaybackFrametimeDegraded(
-                health.FlashbackPlaybackState,
-                playbackTargetFps,
-                health.FlashbackPlaybackFrameCount,
-                health.FlashbackPlaybackCadenceSampleCount,
-                health.FlashbackPlaybackOnePercentLowFps);
+        var flashbackDiagnostic = TryBuildFlashbackDiagnosticEvaluation(
+            health,
+            isRecording,
+            recentFlashbackRecording,
+            lanes,
+            playbackTargetFps,
+            playbackCommandQueueAgeMs,
+            playbackCommandFailedRecently);
+        if (flashbackDiagnostic.HasValue)
+        {
+            return flashbackDiagnostic.Value;
+        }
+
         var captureOnePercentLowDegraded =
             IsCaptureOnePercentLowDegraded(
                 health.ExpectedFrameRate,
@@ -101,246 +96,6 @@ public sealed partial class AutomationDiagnosticsHub
                 health.VisualCadenceRepeatFramePercent,
                 health.VisualCadenceLongestRepeatRun);
         var mjpegDuplicateCadenceDetected = IsMjpegDuplicateCadenceDetected(health);
-        var flashbackTempPressure =
-            health.FlashbackActive &&
-            (health.FlashbackStartupCacheOverBudget ||
-             (health.FlashbackTempDriveFreeBytes >= 0 && health.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes));
-        var flashbackForceRotateRejectWithoutDamage =
-            health.FlashbackActive &&
-            health.FlashbackVideoSequenceGaps > 0 &&
-            health.FlashbackVideoQueueRejectedFrames > 0 &&
-            health.FlashbackDroppedFrames <= 0 &&
-            health.FlashbackVideoEncoderDroppedFrames <= 0 &&
-            health.FlashbackGpuFramesDropped <= 0 &&
-            recentFlashbackRecording.BackpressureEvents <= 0 &&
-            !IsFlashbackRecordingQueueBackedUp(
-                health.FlashbackVideoQueueDepth,
-                health.FlashbackVideoQueueCapacity,
-                health.FlashbackVideoQueueOldestFrameAgeMs) &&
-            IsFlashbackForceRotateRejectReason(health.FlashbackVideoQueueLastRejectReason);
-        var flashbackRecordingRecentBackpressure =
-            recentFlashbackRecording.BackpressureEvents > 0 &&
-            health.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs;
-        var flashbackRecordingDegraded =
-            health.FlashbackActive &&
-            (recentFlashbackRecording.DroppedFrames > 0 ||
-             recentFlashbackRecording.EncoderDroppedFrames > 0 ||
-             (!flashbackForceRotateRejectWithoutDamage &&
-              recentFlashbackRecording.SequenceGaps > 0) ||
-             recentFlashbackRecording.GpuFramesDropped > 0 ||
-             flashbackRecordingRecentBackpressure ||
-             IsFlashbackRecordingQueueBackedUp(
-                 health.FlashbackVideoQueueDepth,
-                 health.FlashbackVideoQueueCapacity,
-                 health.FlashbackVideoQueueOldestFrameAgeMs) ||
-             IsFlashbackAudioQueueBackedUp(
-                 health.FlashbackAudioQueueDepth,
-                 health.FlashbackAudioQueueCapacity));
-        var flashbackBackendSettingsUnexpectedlyStale =
-            health.FlashbackActive &&
-            health.FlashbackBackendSettingsStale &&
-            !isRecording;
-        var flashbackExportRotationGap =
-            flashbackForceRotateRejectWithoutDamage &&
-            (health.FlashbackExportActive ||
-             health.FlashbackForceRotateActive ||
-             health.FlashbackForceRotateRequested ||
-             health.FlashbackForceRotateDraining);
-        var exportLastProgressAgeMs = health.FlashbackExportActive
-            ? Math.Max(0, health.FlashbackExportLastProgressAgeMs)
-            : 0;
-
-        if (flashbackTempPressure)
-        {
-            return new DiagnosticEvaluation(
-                "Warning",
-                "flashback_storage",
-                "Flashback temp storage is under pressure.",
-                tempCacheLane,
-                sourceLane,
-                decodeLane,
-                previewLane,
-                renderLane,
-                presentLane,
-                recordingLane,
-                audioLane);
-        }
-
-        if (health.FlashbackEncodingFailed)
-        {
-            return new DiagnosticEvaluation(
-                "Critical",
-                "flashback_recording",
-                "Flashback encoder has failed.",
-                flashbackRecordingLane,
-                sourceLane,
-                decodeLane,
-                previewLane,
-                renderLane,
-                presentLane,
-                recordingLane,
-                audioLane);
-        }
-
-        if (flashbackExportRotationGap)
-        {
-            return new DiagnosticEvaluation(
-                "Warning",
-                "flashback_export",
-                "Flashback export rotation skipped live-edge frames.",
-                flashbackRecordingLane,
-                sourceLane,
-                decodeLane,
-                previewLane,
-                renderLane,
-                presentLane,
-                recordingLane,
-                audioLane);
-        }
-
-        if (flashbackBackendSettingsUnexpectedlyStale)
-        {
-            return new DiagnosticEvaluation(
-                "Warning",
-                "flashback_recording",
-                "Flashback backend settings differ from requested settings.",
-                flashbackRecordingLane,
-                sourceLane,
-                decodeLane,
-                previewLane,
-                renderLane,
-                presentLane,
-                recordingLane,
-                audioLane);
-        }
-
-        if (flashbackRecordingDegraded)
-        {
-            return new DiagnosticEvaluation(
-                "Warning",
-                "flashback_recording",
-                "Flashback recording path is dropping or backing up.",
-                flashbackRecordingLane,
-                sourceLane,
-                decodeLane,
-                previewLane,
-                renderLane,
-                presentLane,
-                recordingLane,
-                audioLane);
-        }
-
-        if (health.FlashbackExportActive)
-        {
-            if (exportLastProgressAgeMs >= FlashbackExportStallThresholdMs)
-            {
-                return new DiagnosticEvaluation(
-                    "Warning",
-                    "flashback_export",
-                    "Flashback export progress is stalled.",
-                    $"{exportLane} progressAgeMs={exportLastProgressAgeMs}",
-                    sourceLane,
-                    decodeLane,
-                    previewLane,
-                    renderLane,
-                    presentLane,
-                    recordingLane,
-                    audioLane);
-            }
-
-            return new DiagnosticEvaluation(
-                "Busy",
-                "flashback_export",
-                "Flashback export is running.",
-                exportLane,
-                sourceLane,
-                decodeLane,
-                previewLane,
-                renderLane,
-                presentLane,
-                recordingLane,
-                audioLane);
-        }
-
-        if (playbackCommandQueueAgeMs >= FlashbackPlaybackCommandStallThresholdMs)
-        {
-            return new DiagnosticEvaluation(
-                "Warning",
-                "flashback_playback",
-                "Flashback playback command queue is stalled.",
-                playbackCommandLane,
-                sourceLane,
-                decodeLane,
-                previewLane,
-                renderLane,
-                presentLane,
-                recordingLane,
-                audioLane);
-        }
-
-        if (playbackCommandFailedRecently)
-        {
-            return new DiagnosticEvaluation(
-                "Warning",
-                "flashback_playback",
-                "Flashback playback command failed recently.",
-                playbackCommandLane,
-                sourceLane,
-                decodeLane,
-                previewLane,
-                renderLane,
-                presentLane,
-                recordingLane,
-                audioLane);
-        }
-
-        if (playbackSlow)
-        {
-            return new DiagnosticEvaluation(
-                "Warning",
-                "flashback_playback",
-                "Flashback playback is below target rate.",
-                playbackPerfLane,
-                sourceLane,
-                decodeLane,
-                previewLane,
-                renderLane,
-                presentLane,
-                recordingLane,
-                audioLane);
-        }
-
-        if (playbackFrametimeDegraded)
-        {
-            return new DiagnosticEvaluation(
-                "Warning",
-                "flashback_playback",
-                "Flashback playback frametime is below target.",
-                playbackPerfLane,
-                sourceLane,
-                decodeLane,
-                previewLane,
-                renderLane,
-                presentLane,
-                recordingLane,
-                audioLane);
-        }
-
-        if (health.FlashbackPlaybackSubmitFailures > 0)
-        {
-            return new DiagnosticEvaluation(
-                "Warning",
-                "flashback_playback",
-                "Flashback playback frame submission failed.",
-                playbackPerfLane,
-                sourceLane,
-                decodeLane,
-                previewLane,
-                renderLane,
-                presentLane,
-                recordingLane,
-                audioLane);
-        }
 
         if (!isPreviewing && !isRecording)
         {
