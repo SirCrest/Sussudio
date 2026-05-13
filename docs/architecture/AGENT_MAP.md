@@ -20,7 +20,7 @@ folder.
 | Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Hdr.cs`, `AutomationDiagnosticsHub.Lifecycle.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.Verification.cs` | additional collectors/controllers when hub orchestration grows |
 | Source telemetry | `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, `NativeXuAtCommandProvider.DeviceCommands.cs`, `NativeXuAtCommandProvider.DiagnosticSummary.cs`, `NativeXuAtCommandProvider.TelemetryDetails.cs` | Native XU telemetry polling/snapshot assembly, public device-command surface, diagnostic summary formatting, source telemetry detail presentation |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvEncoder.CodecPolicy.cs`, `LibAvEncoder.AvSync.cs`, `LibAvRecordingSink.cs` | encoder runtime, codec/options policy, A/V sync diagnostics, sink lifecycle, verifier/finalizer |
-| Flashback | `FlashbackPlaybackController.cs`, `FlashbackPlaybackController.Markers.cs`, `FlashbackPlaybackController.PositionMapping.cs`, `FlashbackPlaybackController.Metrics.cs`, `FlashbackEncoderSink.cs`, `FlashbackExporter.cs` | playback core, marker owner, position/file-PTS mapping, metrics, buffer, encoder, export modules |
+| Flashback | `FlashbackPlaybackController.cs`, `FlashbackPlaybackController.Markers.cs`, `FlashbackPlaybackController.PositionMapping.cs`, `FlashbackPlaybackController.Metrics.cs`, `FlashbackEncoderSink.cs`, `FlashbackEncoderSink.Options.cs`, `FlashbackExporter.cs` | playback core, marker owner, position/file-PTS mapping, metrics, buffer, encoder runtime, encoder options/packet helpers, export modules |
 | Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.Rendering.cs`, `D3D11PreviewRenderer.ScreenshotCapture.cs`, `D3D11PreviewRenderer.ShaderSources.cs` | renderer host, present cadence, screenshot capture, shader source, timing models |
 | UI shell | `MainWindow.*.cs` partial family | named controllers under an app shell folder |
 | Presentation | `MainViewModel.*.cs` partial family | feature view models behind the root facade |
@@ -139,6 +139,7 @@ Entry points:
 - `FlashbackPlaybackController.Markers.cs` owns in/out marker state, marker API, marker normalization, and out-point pause checks.
 - `FlashbackPlaybackController.PositionMapping.cs` owns scrub/seek clamp policy, saturating timestamp math, active fMP4 segment detection, and playback path comparison.
 - `FlashbackPlaybackController.Metrics.cs` owns playback diagnostic counters, cadence/decode summaries, decode timing wrappers, and metric reset.
+- `FlashbackEncoderSink.Options.cs` owns encoder option construction, recording-to-Flashback session mapping, packet records, file-size/session-id helpers, and buffer/COM return helpers.
 - `FlashbackExporter.cs` owns export path validation and temp-file finalization.
 
 Invariants:

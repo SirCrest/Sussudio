@@ -199,6 +199,13 @@ Keep audio source switching, analog gain writes, named SET wrappers, and
 probe-facing raw AT reads there. The root provider remains responsible for
 telemetry polling and snapshot assembly.
 
+Flashback encoder sink options and packet helpers now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs`. Keep
+recording-context mapping, encoder option creation, segment extension policy,
+packet records, and buffer/COM release helpers there so
+`FlashbackEncoderSink.cs` stays focused on lifecycle, queues, the encode loop,
+and rotation.
+
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,

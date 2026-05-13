@@ -21,6 +21,17 @@ static partial class Program
         return string.Join("\n", parts);
     }
 
+    private static string ReadFlashbackEncoderSinkSource()
+    {
+        var parts = new[]
+        {
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs").Replace("\r\n", "\n")
+        };
+
+        return string.Join("\n", parts);
+    }
+
     // ── FlashbackBufferOptions ──
 
     private static Task FlashbackBufferOptions_MaxDiskBytes_ScalesWithDuration()
@@ -269,8 +280,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_StartFailureRollsBackStartedState()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackEncoderSinkSource();
 
         var startCatchBlock = ExtractTextBetween(
             sourceText,
@@ -2422,8 +2432,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_DisposeResetsGpuQueueDepth()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackEncoderSinkSource();
 
         AssertContains(sourceText, "ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);");
         AssertContains(sourceText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
@@ -2535,8 +2544,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_AudioPacketsAreValidatedBeforeRent()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackEncoderSinkSource();
 
         AssertContains(sourceText, "private const int AudioInputBlockAlignBytes = 2 * sizeof(float);");
         AssertContains(sourceText, "private const int MaxAudioPacketBytes = 4 * 1024 * 1024;");
@@ -2555,8 +2563,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackEncoderSinkSource();
 
         AssertContains(sourceText, "private const int VideoDrainBatchLimit = 24;");
         AssertContains(sourceText, "private const int GpuDrainBatchLimit = 16;");
@@ -2584,8 +2591,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackEncoderSinkSource();
 
         AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(_encoder.NextVideoPts / frameRate)");
         AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(_encoder.NextVideoPts / finalFrameRate)");
@@ -3926,8 +3932,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_RotateFailureRestoresActiveSegment()
     {
-        var sinkText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var sinkText = ReadFlashbackEncoderSinkSource();
         var bufferText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
 
@@ -3961,8 +3966,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_RegistersSegmentsOnCancellationAndRotationFailure()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackEncoderSinkSource();
 
         var cancelBlock = ExtractTextBetween(
             sourceText,
@@ -3998,8 +4002,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_ForceRotateRejectsFailedEncoder()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackEncoderSinkSource();
 
         var forceRotateBlock = ExtractTextBetween(
             sourceText,
@@ -4024,8 +4027,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_ForceRotateSkipsCompletedPendingRequest()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackEncoderSinkSource();
 
         var loopBlock = ExtractTextBetween(
             sourceText,
@@ -4096,8 +4098,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_FatalSegmentRegistrationFailuresAreLogged()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackEncoderSinkSource();
 
         var fatalBlock = ExtractTextBetween(
             sourceText,
@@ -4114,8 +4115,7 @@ static partial class Program
     {
         var decoderText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var sinkText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var sinkText = ReadFlashbackEncoderSinkSource();
 
         var openFileBlock = ExtractTextBetween(
             decoderText,

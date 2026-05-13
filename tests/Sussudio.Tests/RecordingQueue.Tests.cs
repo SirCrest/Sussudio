@@ -7,7 +7,7 @@ static partial class Program
     private static Task RecordingVideoQueues_FailExplicitlyInsteadOfEvictingFrames()
     {
         var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs");
-        var flashbackSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs");
+        var flashbackSource = ReadFlashbackEncoderSinkSource();
         var flashbackBackendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
         var flashbackBufferSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs");
         var flashbackCleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs");
@@ -617,8 +617,7 @@ static partial class Program
     {
         var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");
-        var flashbackSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var flashbackSource = ReadFlashbackEncoderSinkSource();
 
         var libAvVideoEnqueue = ExtractSourceBlock(
             libAvSource,
@@ -674,8 +673,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");
-        var flashbackSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
+        var flashbackSource = ReadFlashbackEncoderSinkSource();
 
         var drainBlock = ExtractSourceBlock(
             wasapiSource,
