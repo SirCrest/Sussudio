@@ -409,6 +409,12 @@ write-head waits, and near-live snap handling there; keep cadence and
 audio-master timing math in the controller core unless it is split as a
 separate timing-owner slice.
 
+Flashback playback timing and cadence now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs`.
+Keep frame-rate resolution, pause-from-live target calculation,
+audio-master pacing and fallback accounting, wall-clock sleep/spin pacing,
+software-decode budget snaps, and decoded PTS/cadence tracking there.
+
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
 `MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing
