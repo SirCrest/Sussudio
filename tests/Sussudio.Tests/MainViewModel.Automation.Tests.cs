@@ -51,6 +51,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
+        var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
+            .Replace("\r\n", "\n");
+        var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
@@ -67,6 +71,12 @@ static partial class Program
         AssertContains(recordingLifecycleText, "await _sessionCoordinator.StopRecordingAsync(cancellationToken);");
         AssertDoesNotContain(captureText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
+        AssertContains(recordingStateText, "private readonly Stopwatch _recordingStopwatch = new();");
+        AssertContains(recordingStateText, "public partial ObservableCollection<string> AvailableRecordingFormats");
+        AssertContains(recordingStateText, "public partial string OutputPath");
+        AssertContains(recordingStateText, "public partial bool IsRecording");
+        AssertDoesNotContain(rootViewModelText, "public partial ObservableCollection<string> AvailableRecordingFormats");
+        AssertDoesNotContain(rootViewModelText, "public partial string OutputPath");
         AssertContains(automationText, "return SetRecordingDesiredStateAsync(enabled, cancellationToken);");
         AssertContains(dispatcherText, "return CreateResponse(correlationId, $\"Recording {(enabled ? \"started\" : \"stopped\")}.\"");
         AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");

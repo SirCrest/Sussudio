@@ -450,7 +450,9 @@ Remaining `tools/Common` ownership:
    `MainViewModel.Capture.cs` focused on device/preview/reinitialize
    transitions. Recording toggle serialization, graceful stop, emergency stop,
    and start/stop recording transitions now live in
-   `MainViewModel.RecordingLifecycle.cs`. Bounded teardown and event unsubscription now live
+   `MainViewModel.RecordingLifecycle.cs`. Recording option selections, output
+   path, counters, and transition flags now live in
+   `MainViewModel.RecordingState.cs`. Bounded teardown and event unsubscription now live
    in `MainViewModel.Disposal.cs`. Automation-facing snapshot/probe/options
    projection now lives in `MainViewModel.AutomationSnapshots.cs`. Flashback
    playback commands, marker commands, and buffer/bitrate status projection now

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,15 +31,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly NativeXuAudioControlService _deviceAudioControlService;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly AudioDeviceWatcher _audioDeviceWatcher;
-    private readonly Stopwatch _recordingStopwatch = new();
     private DispatcherQueueTimer? _timer;
     private IntPtr _windowHandle;
-    private readonly Queue<(long Tick, long Bytes)> _bitrateSamples = new();
     private readonly Queue<(long Tick, long Bytes)> _flashbackBitrateSamples = new();
-    private const int BitrateWindowMs = 10000;
-    private const string DefaultRecordingFormat = "H.264";
-    private const string HevcRecordingFormat = "HEVC";
-    private const string Av1RecordingFormat = "AV1";
     private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;
     private const int PreviewReinitializeDebounceMs = 250;
     private const string HdrToggleBlockedWhileRecordingMessage = "Stop recording before switching between HDR and SDR pipelines.";
@@ -132,19 +125,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _pendingModeOptionsRefresh;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private int? _lastTelemetryAgeBucket;
-    private List<string> _detectedRecordingFormats = new();
     private long _deviceScanGeneration;
 
     // Flag to prevent reinitialization during initial device setup
     private bool _isChangingDevice;
     private bool _suppressFormatChangeReinitialize;
     private bool _isRevertingHdrToggle;
-    private int _recordingToggleInProgress;
-    // Holds the in-flight ToggleRecordingAsync task so the window-close path can
-    // observe (and await) an already-running stop instead of short-circuiting on
-    // the CAS gate above. Cleared in the toggle's finally block.
-    private volatile Task? _activeRecordingToggleTask;
-    private int _activeRecordingTransitionTarget = -1;
     private bool _isLoadingSettings;
     private bool _suppressFlashbackFormatCycle;
     private bool _suppressFlashbackEncoderSettingsCycle;
@@ -167,43 +153,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private int _flashbackSettingsRestartGeneration;
     private bool _suppressMicrophoneMonitorUpdate;
     [ObservableProperty]
-    public partial bool IsRecordingTransitioning { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsFfmpegMissing { get; set; }
-
-    [ObservableProperty]
-    public partial ObservableCollection<string> AvailableRecordingFormats { get; set; } =
-        new() { DefaultRecordingFormat, HevcRecordingFormat, Av1RecordingFormat };
-
-    [ObservableProperty]
-    public partial string SelectedRecordingFormat { get; set; } = DefaultRecordingFormat;
-
-    [ObservableProperty]
-    public partial ObservableCollection<string> AvailableQualities { get; set; } = new() { "Auto", "Low", "Medium", "High", "Super High", "Custom" };
-
-    [ObservableProperty]
-    public partial string SelectedQuality { get; set; } = "Medium";
-
-    [ObservableProperty]
-    public partial ObservableCollection<string> AvailablePresets { get; set; } = new()
-    {
-        "Auto", "P1", "P2", "P3", "P4", "P5", "P6", "P7"
-    };
-
-    [ObservableProperty]
-    public partial string SelectedPreset { get; set; } = "Auto";
-
-    [ObservableProperty]
-    public partial ObservableCollection<string> AvailableSplitEncodeModes { get; set; } = new()
-    {
-        "Auto", "Disabled", "2-way", "3-way"
-    };
-
-    [ObservableProperty]
-    public partial string SelectedSplitEncodeMode { get; set; } = "Auto";
-
-    [ObservableProperty]
     public partial ObservableCollection<string> AvailableVideoFormats { get; set; } = new()
     {
         "Auto", "MJPG", "NV12", "P010"
@@ -214,12 +163,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     [ObservableProperty]
     public partial int MjpegDecoderCount { get; set; } = 6;
-
-    [ObservableProperty]
-    public partial double CustomBitrateMbps { get; set; } = 50;
-
-    [ObservableProperty]
-    public partial bool IsCustomBitrateVisible { get; set; }
 
     [ObservableProperty]
     public partial bool IsHdrEnabled { get; set; }
@@ -337,19 +280,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial double AnalogAudioGainPercent { get; set; } = 50;
 
     [ObservableProperty]
-    public partial string OutputPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
-
-    [ObservableProperty]
     public partial string StatusText { get; set; } = "Ready";
-
-    [ObservableProperty]
-    public partial string RecordingTime { get; set; } = "00:00:00";
-
-    [ObservableProperty]
-    public partial string RecordingSizeInfo { get; set; } = "--";
-
-    [ObservableProperty]
-    public partial string RecordingBitrateInfo { get; set; } = "--";
 
     [ObservableProperty]
     public partial string LiveResolution { get; set; } = LiveInfoUnavailable;
@@ -359,9 +290,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     [ObservableProperty]
     public partial string LivePixelFormat { get; set; } = LiveInfoUnavailable;
-
-    [ObservableProperty]
-    public partial bool IsRecording { get; set; }
 
     [ObservableProperty]
     public partial bool IsPreviewing { get; set; }
@@ -501,12 +429,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     // -- Capture lifecycle methods are in MainViewModel.Capture.cs -----
     // -- Recording lifecycle methods are in MainViewModel.RecordingLifecycle.cs -----
+    // -- Recording observable state is in MainViewModel.RecordingState.cs -----
     // -- Capture settings projection is in MainViewModel.CaptureSettings.cs -----
     // -- Automation methods are in MainViewModel.Automation.cs ---------
 
     // -- Partial class references ----
     // Capture lifecycle: MainViewModel.Capture.cs
     // Recording lifecycle: MainViewModel.RecordingLifecycle.cs
+    // Recording state: MainViewModel.RecordingState.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs
     // Automation / flashback: MainViewModel.Automation.cs
     // Capture-mode automation: MainViewModel.AutomationCaptureMode.cs

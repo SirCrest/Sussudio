@@ -272,6 +272,8 @@ Primary current owners:
   selected-device apply, output-path browsing, and preview reinitialization.
   `MainViewModel.RecordingLifecycle.cs` owns recording toggle serialization,
   graceful stop, emergency stop, and start/stop recording transitions.
+  `MainViewModel.RecordingState.cs` owns recording option selections, output
+  path, counters, and transition flags.
   `MainViewModel.Disposal.cs` owns bounded teardown, event unsubscription, and
   export-cancellation cleanup.
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing snapshot,
