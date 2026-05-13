@@ -224,6 +224,11 @@ Flashback encoder queue helpers now live in
 completion/signaling, queue-depth accounting, enqueue rejection guards/logging,
 hot audio packet enqueue, and queued-buffer cleanup there.
 
+Flashback encoder export force-rotation now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs`. Keep
+`ForceRotateForExport`, request timeout/cancellation handling, pending-request
+cleanup, and force-rotate drain abort classification there.
+
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
 lock/disposal helpers, progress normalization and throttling, output/temp
