@@ -90,6 +90,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Lifetime.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Diagnostics.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Guards.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs").Replace("\r\n", "\n")
         };
 

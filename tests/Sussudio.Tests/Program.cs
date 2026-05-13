@@ -1372,6 +1372,9 @@ static partial class Program
                 "Flashback decoder diagnostics and guards live in focused partials",
                 FlashbackDecoder_DiagnosticsAndGuardsLiveInFocusedPartials),
             await RunCheckAsync(
+                "Flashback decoder output types live in focused file",
+                FlashbackDecoder_OutputTypesLiveInFocusedFile),
+            await RunCheckAsync(
                 "Flashback decoder defaults to closed state",
                 FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized),
             await RunCheckAsync(

@@ -410,6 +410,10 @@ Decode phase timing accumulation and FFmpeg decoder error formatting now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.Diagnostics.cs`. Open/disposed
 state guards now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.Guards.cs`.
+Decoded video/audio output DTOs now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs` so the root
+decoder file ends at its control-flow owner instead of carrying trailing model
+types.
 
 Flashback buffer retention now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs`. Keep segment

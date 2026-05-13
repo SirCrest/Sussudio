@@ -109,6 +109,21 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackDecoder_OutputTypesLiveInFocusedFile()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var outputTypesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(outputTypesText, "internal readonly struct DecodedVideoFrame");
+        AssertContains(outputTypesText, "internal readonly struct DecodedAudioChunk");
+        AssertDoesNotContain(rootText, "internal readonly struct DecodedVideoFrame");
+        AssertDoesNotContain(rootText, "internal readonly struct DecodedAudioChunk");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
