@@ -129,6 +129,9 @@ static partial class Program
                 "Recording verifier implements verification interface",
                 RecordingVerifier_ImplementsIRecordingVerifier),
             await RunCheckAsync(
+                "Recording verifier cadence analysis lives in focused partial",
+                RecordingVerifier_CadenceAnalysisLivesInFocusedPartial),
+            await RunCheckAsync(
                 "Recording verification result exposes expected properties",
                 RecordingVerificationResult_HasExpectedProperties),
             await RunCheckAsync(

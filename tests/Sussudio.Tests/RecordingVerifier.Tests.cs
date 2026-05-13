@@ -112,6 +112,25 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task RecordingVerifier_CadenceAnalysisLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.cs")
+            .Replace("\r\n", "\n");
+        var cadenceText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.Cadence.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(rootText, "public sealed partial class RecordingVerifier : IRecordingVerifier");
+        AssertContains(cadenceText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
+        AssertContains(cadenceText, "private static CadenceMetrics ComputeCadenceMetrics(");
+        AssertContains(cadenceText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
+        AssertContains(cadenceText, "private static double? TryGetJsonDouble(JsonElement element, string propertyName)");
+        AssertDoesNotContain(rootText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
+        AssertDoesNotContain(rootText, "private static CadenceMetrics ComputeCadenceMetrics(");
+        AssertDoesNotContain(rootText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task RecordingVerificationResult_HasExpectedProperties()
     {
         var resultType = RequireType("Sussudio.Models.RecordingVerificationResult");

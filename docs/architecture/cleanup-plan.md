@@ -227,6 +227,13 @@ remaining-buffer cleanup, queue-depth accounting, failure signaling, packet
 records, and pooled buffer return helpers there; keep start/stop lifecycle,
 encoder option creation, and the encode-drain loop in `LibAvRecordingSink.cs`.
 
+Recording verifier cadence analysis now lives in
+`Sussudio/Services/Recording/RecordingVerifier.Cadence.cs`. Keep ffprobe frame
+timestamp JSON parsing, cadence interval filtering, observed FPS, jitter,
+severe-gap, and estimated-drop calculations there; keep strict verification
+orchestration, stream/container/HDR validation, mismatch taxonomy, and early
+failure shaping in `RecordingVerifier.cs`.
+
 Native XU source telemetry detail presentation now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs`.
 Keep telemetry detail rows, display formatting, HDR transfer labels, and
