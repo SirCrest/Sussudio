@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Contracts;
@@ -156,6 +157,81 @@ internal sealed partial class FlashbackPlaybackController
         _initialized = false;
         Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER op={operation} reason=thread_alive_after_detach_timeout");
         return true;
+    }
+
+    private void ApplyDeferredPreviewAttachAfterStopTimeout()
+    {
+        IPreviewFrameSink? pendingSink;
+        ILiveVideoSource? pendingCapture;
+        var lockTaken = false;
+        try
+        {
+            Monitor.TryEnter(_playbackThreadSync, 0, ref lockTaken);
+            if (!lockTaken)
+            {
+                Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER_APPLY_SKIP reason=lock_busy");
+                ScheduleDeferredPreviewAttachApplyRetry();
+                return;
+            }
+
+            Volatile.Write(ref _previewDetachStopTimeoutActive, 0);
+            Interlocked.Exchange(ref _deferredPreviewAttachApplyRetryScheduled, 0);
+            pendingSink = _pendingPreviewSinkAfterDetachTimeout;
+            pendingCapture = _pendingVideoCaptureAfterDetachTimeout;
+            _pendingPreviewSinkAfterDetachTimeout = null;
+            _pendingVideoCaptureAfterDetachTimeout = null;
+
+            if (_disposedFlag != 0 || pendingSink == null || pendingCapture == null)
+            {
+                return;
+            }
+
+            _previewSink = pendingSink;
+            _videoCapture = pendingCapture;
+            _initialized = true;
+        }
+        finally
+        {
+            if (lockTaken)
+            {
+                Monitor.Exit(_playbackThreadSync);
+            }
+        }
+
+        Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER_APPLIED reason=thread_exit");
+        ApplyPreviewRoutingForState("deferred_preview_attach");
+        ApplyAudioRoutingForState("deferred_preview_attach");
+    }
+
+    private void ScheduleDeferredPreviewAttachApplyRetry()
+    {
+        if (Volatile.Read(ref _previewDetachStopTimeoutActive) == 0)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref _deferredPreviewAttachApplyRetryScheduled, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(25).ConfigureAwait(false);
+                Interlocked.Exchange(ref _deferredPreviewAttachApplyRetryScheduled, 0);
+                if (Volatile.Read(ref _previewDetachStopTimeoutActive) != 0)
+                {
+                    ApplyDeferredPreviewAttachAfterStopTimeout();
+                }
+            }
+            catch (Exception ex)
+            {
+                Interlocked.Exchange(ref _deferredPreviewAttachApplyRetryScheduled, 0);
+                Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER_RETRY_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+            }
+        });
     }
 
     // --- Dispose ---
