@@ -216,8 +216,13 @@ Flashback encoder sink options and packet helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs`. Keep
 recording-context mapping, encoder option creation, segment extension policy,
 packet records, and buffer/COM release helpers there so
-`FlashbackEncoderSink.cs` stays focused on lifecycle, queues, the encode loop,
-and rotation.
+`FlashbackEncoderSink.cs` stays focused on lifecycle, the encode loop, and
+rotation.
+
+Flashback encoder queue helpers now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep queue
+completion/signaling, queue-depth accounting, enqueue rejection guards/logging,
+hot audio packet enqueue, and queued-buffer cleanup there.
 
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
