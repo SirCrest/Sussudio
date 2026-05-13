@@ -439,7 +439,9 @@ Remaining `tools/Common` ownership:
    now has a named owner in `MainViewModel.AudioMeters.cs`; keep future meter
    behavior there instead of growing the root facade file. Audio ramp trace
    buffering/sampling now lives in `MainViewModel.AudioRampTrace.cs`; keep the
-   audio-control call sites in `MainViewModel.AudioControls.cs`. Shared
+   audio-control call sites in `MainViewModel.AudioControls.cs`. Audio,
+   microphone, and device-audio observable property handlers now live in
+   `MainViewModel.AudioPropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
    and live runtime text/timer/status/error handling now lives in
    `MainViewModel.Runtime.cs`. Bounded teardown and event unsubscription now live

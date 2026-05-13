@@ -389,7 +389,10 @@ static partial class Program
         var flashbackPlaybackText = viewModelFiles["MainViewModel.FlashbackPlayback.cs"];
         var flashbackAutomationText = automationText + "\n" + flashbackExportText + "\n" + flashbackPlaybackText;
         var disposalText = viewModelFiles["MainViewModel.Disposal.cs"];
+        var audioPropertyChangesText = viewModelFiles["MainViewModel.AudioPropertyChanges.cs"];
         var rawViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var rawAudioPropertyChangesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs")
             .Replace("\r\n", "\n");
         var rawDisposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs")
             .Replace("\r\n", "\n");
@@ -542,18 +545,18 @@ static partial class Program
         AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "else if (t.IsCanceled)");
         AssertContains(rawSettingsText, "CycleFlashbackEncoder({description}) failed");
         AssertContains(rawSettingsText, "CycleFlashbackEncoder({description}) canceled");
-        AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "var settings = BuildCaptureSettings();");
-        AssertMemberContains(rawViewModelText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(\n                        true,\n                        \"audio_capture_enable\",");
-        AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "afterMonitoringStarted: () => _sessionCoordinator.RestartFlashbackAsync(settings)");
-        AssertMemberContains(rawViewModelText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(false, \"audio_capture_disable\", teardownCapture: true)");
+        AssertMemberContains(audioPropertyChangesText, "OnIsAudioEnabledChanged", "var settings = BuildCaptureSettings();");
+        AssertMemberContains(rawAudioPropertyChangesText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(\n                        true,\n                        \"audio_capture_enable\",");
+        AssertMemberContains(audioPropertyChangesText, "OnIsAudioEnabledChanged", "afterMonitoringStarted: () => _sessionCoordinator.RestartFlashbackAsync(settings)");
+        AssertMemberContains(rawAudioPropertyChangesText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(false, \"audio_capture_disable\", teardownCapture: true)");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _audioEnabledChangeGeneration;");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private bool _suppressAudioPreviewEnabledChangeOperation;");
-        AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "var changeGeneration = Interlocked.Increment(ref _audioEnabledChangeGeneration);");
-        AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "_suppressAudioPreviewEnabledChangeOperation = true;");
-        AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || !IsAudioEnabled");
-        AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || IsAudioEnabled");
-        AssertMemberContains(rawViewModelText, "OnIsAudioEnabledChanged", "AUDIO_TOGGLE_SKIP op=enable");
-        AssertMemberContains(rawViewModelText, "OnIsAudioEnabledChanged", "AUDIO_TOGGLE_SKIP op=disable");
+        AssertMemberContains(audioPropertyChangesText, "OnIsAudioEnabledChanged", "var changeGeneration = Interlocked.Increment(ref _audioEnabledChangeGeneration);");
+        AssertMemberContains(audioPropertyChangesText, "OnIsAudioEnabledChanged", "_suppressAudioPreviewEnabledChangeOperation = true;");
+        AssertMemberContains(audioPropertyChangesText, "OnIsAudioEnabledChanged", "changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || !IsAudioEnabled");
+        AssertMemberContains(audioPropertyChangesText, "OnIsAudioEnabledChanged", "changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || IsAudioEnabled");
+        AssertMemberContains(rawAudioPropertyChangesText, "OnIsAudioEnabledChanged", "AUDIO_TOGGLE_SKIP op=enable");
+        AssertMemberContains(rawAudioPropertyChangesText, "OnIsAudioEnabledChanged", "AUDIO_TOGGLE_SKIP op=disable");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _flashbackSettingsRestartGeneration;");
 
         foreach (var memberName in new[]

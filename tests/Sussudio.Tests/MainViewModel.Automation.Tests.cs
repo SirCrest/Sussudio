@@ -107,6 +107,8 @@ static partial class Program
         var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.Dispatching.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs")
                 .Replace("\r\n", "\n");
         var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
