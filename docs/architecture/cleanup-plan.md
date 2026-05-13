@@ -106,8 +106,9 @@ Splash phrase loading, randomized timer pacing, and the two-line splash text
 animation now live in `Sussudio/Controllers/SplashLoadingPhraseController.cs`.
 `MainWindow.SplashLoading.cs` is the XAML-facing adapter.
 
-Splash-to-shell launch entrance choreography and one-shot playback state now
-live in `Sussudio/Controllers/LaunchEntranceAnimationController.cs`.
+Splash-to-shell launch entrance choreography, initial hidden/scaled shell state,
+and one-shot playback state now live in
+`Sussudio/Controllers/LaunchEntranceAnimationController.cs`.
 `MainWindow.LaunchEntrance.cs` is the XAML-facing adapter.
 
 Control-bar button ownership and hover/press/release scale behavior now live in

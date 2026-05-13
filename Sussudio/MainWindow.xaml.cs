@@ -230,27 +230,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         FullScreenControlsOverlay.PointerEntered += OnFullScreenControlsPointerEntered;
         FullScreenControlsOverlay.PointerExited += OnFullScreenControlsPointerExited;
 
-        // Entrance animation: hide everything initially
-        ControlBarBorder.Opacity = 0;
-        ControlBarBorder.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 1.0);
-        ControlBarBorder.RenderTransform = new TranslateTransform { Y = 16 };
-        StatsRow.Opacity = 0;
-        StatsRow.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0);
-        StatsRow.RenderTransform = new TranslateTransform { Y = -8 };
-        PreviewBorder.Opacity = 0;
-        PreviewBorderScale.ScaleX = 0.97;
-        PreviewBorderScale.ScaleY = 0.97;
-
-        var entranceButtons = GetEntranceButtons();
-        foreach (var button in entranceButtons)
-        {
-            button.Opacity = 0;
-            if (button.RenderTransform is ScaleTransform transform)
-            {
-                transform.ScaleX = 0.85;
-                transform.ScaleY = 0.85;
-            }
-        }
+        PrepareLaunchEntranceInitialState();
 
         // Shadow for control bar depth effect
         var shadow = new Microsoft.UI.Xaml.Media.ThemeShadow();

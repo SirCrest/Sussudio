@@ -17,6 +17,8 @@ public sealed partial class MainWindow
             SplashScale = SplashScale,
             ControlBarBorder = ControlBarBorder,
             StatsRow = StatsRow,
+            PreviewBorder = PreviewBorder,
+            PreviewBorderScale = PreviewBorderScale,
             GetEntranceButtons = GetEntranceButtons,
             IsPreviewFirstVisualConfirmed = () => _previewFirstVisualConfirmed,
             StartSplashLoadingPhrases = StartSplashLoadingPhrases,
@@ -25,6 +27,9 @@ public sealed partial class MainWindow
             FadeInControlBarShadow = () => FadeInShadow(_controlBarShadowVisual, delayMs: 400, durationMs: 500),
         });
     }
+
+    private void PrepareLaunchEntranceInitialState()
+        => _launchEntranceAnimationController.PrepareInitialState();
 
     private void PlaySplashAndEntrance()
         => _launchEntranceAnimationController.PlaySplashAndEntrance();
