@@ -4,6 +4,21 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static string ReadSsctlCommandHandlersFamilyText()
+    {
+        var files = new[]
+        {
+            "tools/ssctl/CommandHandlers.cs",
+            "tools/ssctl/CommandHandlers.Context.cs",
+            "tools/ssctl/CommandHandlers.Parsing.cs",
+            "tools/ssctl/CommandHandlers.Transport.cs"
+        };
+
+        return string.Join(
+            "\n",
+            files.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
+    }
+
     private static async Task SsctlCommandHandlers_RouteCoreCommandGroups()
     {
         var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
@@ -196,8 +211,7 @@ static partial class Program
         AssertEqual("eq", assertPayload.GetProperty("op").GetString(), "assert simple op");
         AssertEqual(false, assertPayload.GetProperty("value").GetBoolean(), "assert simple value");
 
-        var commandHandlersSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs")
-            .Replace("\r\n", "\n");
+        var commandHandlersSource = ReadSsctlCommandHandlersFamilyText();
         AssertContains(commandHandlersSource, "\"manifest\" => HandleManifestAsync(context)");
         AssertContains(commandHandlersSource, "\"audio-ramp-trace\" => HandleAudioRampTraceAsync(context)");
         AssertContains(commandHandlersSource, "\"recordings\" => HandleRecordingsAsync(context)");

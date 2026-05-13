@@ -55,6 +55,12 @@ comparison helpers. `AutomationCommandDispatcher.Payload.cs` owns JSON payload
 extraction helpers, and `AutomationCommandHandler.cs` owns the trivial-handler
 wrapper used by simple one-property commands.
 
+`tools/ssctl/CommandHandlers.cs` is now the top-level CLI router plus command
+group handler owner. `CommandHandlers.Context.cs` owns per-invocation command
+context, `CommandHandlers.Parsing.cs` owns CLI flag/value/usage parsing, and
+`CommandHandlers.Transport.cs` owns shared command sending plus response
+exit-code shaping.
+
 Fullscreen transition mechanics now live in
 `Sussudio/Controllers/FullScreenController.cs`. `MainWindow.FullScreen.cs`
 remains the XAML event adapter and Flashback keyboard/scrub bridge.

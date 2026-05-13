@@ -455,6 +455,14 @@ Primary owners:
   pipe client, snapshot formatting, diagnostic sessions, diagnostic scenario
   cataloging, diagnostic-session pipe retry policy, PresentMon probing, and
   shared JSON options.
+- `tools/ssctl/CommandHandlers.cs` owns top-level CLI routing and command
+  group handlers.
+- `tools/ssctl/CommandHandlers.Context.cs` owns the per-invocation command
+  context wrapper.
+- `tools/ssctl/CommandHandlers.Parsing.cs` owns flag parsing, value parsing,
+  usage validation, path/argument joining, and CLI value normalization.
+- `tools/ssctl/CommandHandlers.Transport.cs` owns shared command sending and
+  response exit-code shaping.
 - `tools/Common/DiagnosticSessionModels.cs` owns diagnostic session options,
   result, and sample DTOs. Keep summary/live JSON shape changes there rather
   than expanding the runner header.
