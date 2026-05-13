@@ -55,8 +55,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
+        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
         AssertContains(recordingLifecycleText, "internal Task SetRecordingDesiredStateAsync");
         AssertContains(recordingLifecycleText, "public Task ToggleRecordingAsync()\n        => SetRecordingDesiredStateAsync(!IsRecording);");
@@ -110,8 +109,7 @@ static partial class Program
 
         var interfaceText = ReadRepoFile("Sussudio/Services/Automation/IAutomationViewModel.cs")
             .Replace("\r\n", "\n");
-        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
+        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
         var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
@@ -311,8 +309,7 @@ static partial class Program
         var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsTimelineText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
-        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
+        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
         AssertContains(diagnosticsEvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
         AssertContains(diagnosticsEvaluationText, "private PerformanceEvaluation EvaluatePerformance(");

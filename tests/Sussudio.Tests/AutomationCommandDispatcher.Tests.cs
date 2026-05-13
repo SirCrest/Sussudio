@@ -5,6 +5,25 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static string ReadAutomationCommandDispatcherFamilyText()
+    {
+        var files = new[]
+        {
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.cs",
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs",
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.CommandParsing.cs",
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.WindowActions.cs",
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.WaitConditions.cs",
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs",
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.Authorization.cs",
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.Responses.cs"
+        };
+
+        return string.Join(
+            "\n",
+            files.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
+    }
+
     // ── AutomationCommandDispatcher: payload extraction helpers ──
 
     private static Task AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload()
@@ -174,8 +193,7 @@ static partial class Program
 
     private static Task AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadAutomationCommandDispatcherFamilyText();
         var windowActionBlock = ExtractTextBetween(
             sourceText,
             "case AutomationCommandKind.WindowAction:",
@@ -195,8 +213,7 @@ static partial class Program
 
     private static Task AutomationCommandDispatcher_PreviewRendererHealthy_RequiresFirstVisual()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadAutomationCommandDispatcherFamilyText();
         var conditionBlock = ExtractTextBetween(
             sourceText,
             "AutomationWaitCondition.PreviewRendererHealthy =>",
@@ -249,8 +266,7 @@ static partial class Program
             .ConfigureAwait(false);
         AssertAutomationResponse(protectedCommandResponse, success: false, errorCode: "unauthorized", status: "error", "missing token rejects non-authenticate command");
 
-        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
+        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
         AssertContains(dispatcherText, "if (string.IsNullOrWhiteSpace(_authToken))\n        {\n            return true;\n        }");
         AssertContains(dispatcherText, "var providedToken = request.AuthToken;");
@@ -482,8 +498,7 @@ static partial class Program
         // as the pre-switch Authenticate check, as a TrivialHandlers key, or as
         // a case label in the switch. This test reads the dispatcher source and
         // verifies each enum name appears in at least one of those locations.
-        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
+        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
         var commandKindType = RequireType("Sussudio.Models.AutomationCommandKind");
         var names = Enum.GetNames(commandKindType);

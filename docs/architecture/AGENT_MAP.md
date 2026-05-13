@@ -57,8 +57,24 @@ dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore
 
 Automation diagnostics ownership:
 
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` owns command
-  authorization, readiness gating, command routing, and response shaping.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` owns the
+  command router, switch bodies, trivial-handler table, and initialization
+  readiness check.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.Authorization.cs`
+  owns auth-token fallback lookup, constant-time token comparison, and auth
+  failure logging.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.CommandParsing.cs`
+  owns command metadata lookups, path validation forwarding, and enum payload
+  parsing.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.Responses.cs`
+  owns response shaping, acknowledged responses, and Flashback rejection
+  diagnostics.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.WindowActions.cs`
+  owns window automation action execution.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.WaitConditions.cs`
+  owns wait-condition polling and snapshot predicates.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs`
+  owns AssertSnapshot payload parsing and snapshot comparison helpers.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs` owns
   JSON payload extraction helpers for dispatcher command bodies.
 - `Sussudio/Services/Automation/AutomationCommandHandler.cs` owns the shared

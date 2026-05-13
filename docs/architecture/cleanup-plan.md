@@ -40,11 +40,20 @@ performance scoring, alert-detail formatting, and health classifiers.
 loop. `AutomationDiagnosticsHub.Verification.cs` owns recording/file
 verification commands and verification-profile adaptation.
 
-Automation command dispatch now keeps the router focused on authorization,
-readiness gating, command routing, and response shaping.
-`AutomationCommandDispatcher.Payload.cs` owns JSON payload extraction helpers,
-and `AutomationCommandHandler.cs` owns the trivial-handler wrapper used by
-simple one-property commands.
+Automation command dispatch now keeps the root router focused on switch bodies,
+the trivial-handler table, and initialization readiness. Named partials own
+support responsibilities: `AutomationCommandDispatcher.Authorization.cs`
+handles auth-token lookup and constant-time comparison;
+`AutomationCommandDispatcher.CommandParsing.cs` handles command metadata,
+path-validation forwarding, and enum payload parsing;
+`AutomationCommandDispatcher.Responses.cs` handles response shaping and
+Flashback rejection diagnostics; `AutomationCommandDispatcher.WindowActions.cs`
+handles window automation; `AutomationCommandDispatcher.WaitConditions.cs`
+handles wait polling and snapshot predicates; and
+`AutomationCommandDispatcher.Assertions.cs` handles AssertSnapshot parsing and
+comparison helpers. `AutomationCommandDispatcher.Payload.cs` owns JSON payload
+extraction helpers, and `AutomationCommandHandler.cs` owns the trivial-handler
+wrapper used by simple one-property commands.
 
 Fullscreen transition mechanics now live in
 `Sussudio/Controllers/FullScreenController.cs`. `MainWindow.FullScreen.cs`
