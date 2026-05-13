@@ -420,6 +420,9 @@ static partial class Program
                 "Diagnostics snapshot refresh is serialized for recording responses",
                 DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses),
             await RunCheckAsync(
+                "Automation diagnostics audio projection lives in focused partial",
+                AutomationDiagnosticsSnapshotAudioProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Automation SetRecordingEnabled uses recording-sized client timeout",
                 AutomationProtocol_SetRecordingUsesRecordingSizedTimeout),
             await RunCheckAsync(

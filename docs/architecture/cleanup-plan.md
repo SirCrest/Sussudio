@@ -37,6 +37,9 @@ growth tracking. `AutomationDiagnosticsHub.Timeline.cs`
 owns performance-timeline ring reads and append mechanics.
 `AutomationDiagnosticsHub.TimelineProjection.cs` owns `AutomationSnapshot` to
 `PerformanceTimelineEntry` projection.
+`AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns the audio, ingest,
+source-reader, and WASAPI runtime projection inputs consumed by the automation
+snapshot DTO.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation and active-alert
 transitions. `AutomationDiagnosticsHub.SignalAlerts.cs` owns preview, capture,
 audio-signal, and recording-growth alert rules.

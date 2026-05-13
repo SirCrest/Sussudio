@@ -330,6 +330,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var diagnosticsSnapshotProjectionAudioText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.cs")
+            .Replace("\r\n", "\n");
         var diagnosticsSnapshotStateText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotState.cs")
             .Replace("\r\n", "\n");
         var diagnosticsPreviewPacingText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.PreviewPacing.cs")
@@ -342,7 +344,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsTimelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsDiagnosticEvaluationFlashbackText + "\n" + diagnosticsDiagnosticEvaluationRealtimeText + "\n" + diagnosticsDiagnosticEvaluationLanesText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsSignalAlertsText + "\n" + diagnosticsFlashbackAlertsText + "\n" + diagnosticsFlashbackRecordingAlertsText + "\n" + diagnosticsFlashbackPlaybackAlertsText + "\n" + diagnosticsFlashbackPlaybackCommandAlertsText + "\n" + diagnosticsFlashbackPlaybackPerformanceAlertsText + "\n" + diagnosticsEventsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotProjectionText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText + "\n" + diagnosticsTimelineProjectionText;
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsDiagnosticEvaluationFlashbackText + "\n" + diagnosticsDiagnosticEvaluationRealtimeText + "\n" + diagnosticsDiagnosticEvaluationLanesText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsSignalAlertsText + "\n" + diagnosticsFlashbackAlertsText + "\n" + diagnosticsFlashbackRecordingAlertsText + "\n" + diagnosticsFlashbackPlaybackAlertsText + "\n" + diagnosticsFlashbackPlaybackCommandAlertsText + "\n" + diagnosticsFlashbackPlaybackPerformanceAlertsText + "\n" + diagnosticsEventsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotProjectionText + "\n" + diagnosticsSnapshotProjectionAudioText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText + "\n" + diagnosticsTimelineProjectionText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
@@ -418,7 +420,11 @@ static partial class Program
         AssertContains(diagnosticsSnapshotsText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnosticsSnapshotProjectionText, "private AutomationSnapshot BuildAutomationSnapshot(");
         AssertContains(diagnosticsSnapshotProjectionText, "new AutomationSnapshot");
+        AssertContains(diagnosticsSnapshotProjectionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
         AssertContains(diagnosticsSnapshotProjectionText, "PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage");
+        AssertContains(diagnosticsSnapshotProjectionAudioText, "private static AudioAndIngestProjection BuildAudioAndIngestProjection(");
+        AssertContains(diagnosticsSnapshotProjectionAudioText, "AudioPeak = viewModelSnapshot.AudioPeak,");
+        AssertDoesNotContain(diagnosticsSnapshotProjectionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
         AssertContains(diagnosticsSnapshotsText, "var snapshot = BuildAutomationSnapshot(");
         AssertDoesNotContain(diagnosticsSnapshotsText, "new AutomationSnapshot");
         AssertContains(diagnosticsSnapshotsText, "AppendPerformanceTimelineEntry(snapshot);");
@@ -1607,6 +1613,39 @@ static partial class Program
         AssertContains(recordingLifecycleText, "StatusText = $\"Recording failed: {ex.Message}\";");
         AssertContains(recordingLifecycleText, "StatusText = $\"Stop recording failed: {ex.Message}\";");
         AssertContains(recordingLifecycleText, "throw;");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AutomationDiagnosticsSnapshotAudioProjection_LivesInFocusedPartial()
+    {
+        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
+            .Replace("\r\n", "\n");
+        var audioProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(snapshotProjectionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
+        AssertContains(snapshotProjectionText, "AudioPeak = audioAndIngest.AudioPeak,");
+        AssertContains(snapshotProjectionText, "AudioSignalPresent = audioAndIngest.AudioSignalPresent,");
+        AssertContains(snapshotProjectionText, "AudioFramesWrittenToSink = audioAndIngest.AudioFramesWrittenToSink,");
+        AssertContains(snapshotProjectionText, "SourceReaderReadOutstanding = audioAndIngest.SourceReaderReadOutstanding,");
+        AssertContains(snapshotProjectionText, "WasapiCaptureAudioLevelEventsFired = audioAndIngest.WasapiCaptureAudioLevelEventsFired,");
+        AssertContains(snapshotProjectionText, "WasapiPlaybackBufferedDurationMs = audioAndIngest.WasapiPlaybackBufferedDurationMs,");
+        AssertDoesNotContain(snapshotProjectionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
+        AssertDoesNotContain(snapshotProjectionText, "AudioSignalPresent = audioSignal.SignalPresent,");
+        AssertDoesNotContain(snapshotProjectionText, "AudioFramesWrittenToSink = captureRuntime.AudioFramesWrittenToSink,");
+        AssertDoesNotContain(snapshotProjectionText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
+        AssertDoesNotContain(snapshotProjectionText, "WasapiCaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
+        AssertDoesNotContain(snapshotProjectionText, "WasapiPlaybackBufferedDurationMs = captureRuntime.WasapiPlaybackBufferedDurationMs,");
+
+        AssertContains(audioProjectionText, "private static AudioAndIngestProjection BuildAudioAndIngestProjection(");
+        AssertContains(audioProjectionText, "private readonly record struct AudioAndIngestProjection");
+        AssertContains(audioProjectionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
+        AssertContains(audioProjectionText, "AudioSignalPresent = audioSignal.SignalPresent,");
+        AssertContains(audioProjectionText, "AudioFramesWrittenToSink = captureRuntime.AudioFramesWrittenToSink,");
+        AssertContains(audioProjectionText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
+        AssertContains(audioProjectionText, "WasapiCaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
+        AssertContains(audioProjectionText, "WasapiPlaybackBufferedDurationMs = captureRuntime.WasapiPlaybackBufferedDurationMs,");
 
         return Task.CompletedTask;
     }
