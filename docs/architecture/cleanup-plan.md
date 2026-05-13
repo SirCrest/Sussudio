@@ -206,6 +206,13 @@ packet records, and buffer/COM release helpers there so
 `FlashbackEncoderSink.cs` stays focused on lifecycle, queues, the encode loop,
 and rotation.
 
+Flashback exporter infrastructure now lives in
+`Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
+lock/disposal helpers, progress normalization and throttling, output/temp
+validation, native cleanup, cancellation-source handling, FFmpeg error strings,
+timestamp math, and orphan temp cleanup there so `FlashbackExporter.cs` stays
+focused on export orchestration and packet-copy/remux loops.
+
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,

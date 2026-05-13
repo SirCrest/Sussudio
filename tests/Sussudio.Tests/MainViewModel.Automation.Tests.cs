@@ -756,8 +756,7 @@ static partial class Program
         AssertContains(captureServiceText, "raw_percent={rawPercent:0.###} percent={percent:0.###}");
         AssertContains(captureServiceText, "try\n            {\n                innerProgress?.Report(progress);\n            }\n            catch (Exception ex)\n            {\n                Logger.Log($\"FLASHBACK_EXPORT_PROGRESS_FORWARD_WARN id={exportId} type={ex.GetType().Name} msg='{ex.Message}'\");\n            }");
 
-        var flashbackExporterText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var flashbackExporterText = ReadFlashbackExporterSource();
         AssertContains(flashbackExporterText, "if (request.Segments is { Count: > 0 })");
         AssertContains(flashbackExporterText, "var useSegmentTimeline = segment.StartPts.HasValue");
         AssertContains(flashbackExporterText, "var comparePtsUs = useSegmentTimeline");

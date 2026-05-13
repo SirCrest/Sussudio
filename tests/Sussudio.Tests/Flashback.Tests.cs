@@ -32,6 +32,17 @@ static partial class Program
         return string.Join("\n", parts);
     }
 
+    private static string ReadFlashbackExporterSource()
+    {
+        var parts = new[]
+        {
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs").Replace("\r\n", "\n")
+        };
+
+        return string.Join("\n", parts);
+    }
+
     // ── FlashbackBufferOptions ──
 
     private static Task FlashbackBufferOptions_MaxDiskBytes_ScalesWithDuration()
@@ -374,8 +385,7 @@ static partial class Program
 
     private static Task FlashbackExporter_DoesNotScanUserOutputDirectoryForOrphans()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackExporterSource();
 
         AssertDoesNotContain(sourceText, "private static void CleanupOrphanedTempFilesNearOutput(string outputPath)");
         AssertDoesNotContain(sourceText, "FLASHBACK_EXPORT_ORPHAN_OUTPUT_SCAN_FAIL");
@@ -683,8 +693,7 @@ static partial class Program
 
     private static Task FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackExporterSource();
 
         AssertContains(sourceText, "private readonly object _lifetimeSync = new();");
         AssertContains(sourceText, "return Task.FromResult(CreateDisposedExportResult(request.OutputPath));");
@@ -759,8 +768,7 @@ static partial class Program
 
     private static Task FlashbackExporter_OutputPathValidation_ReturnsFailure()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackExporterSource();
 
         AssertContains(sourceText, "if (!TryValidateOutputPath(outputPath, out var normalizedOutputPath, out var outputPathFailure))\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'\");\n            return FinalizeResult.Failure(outputPath, outputPathFailure);\n        }\n        outputPath = normalizedOutputPath;");
         AssertContains(sourceText, "if (!TryValidateExportRange(inPoint, outPoint, out var rangeFailure))");
@@ -1075,8 +1083,7 @@ static partial class Program
 
     private static Task FlashbackExporter_RejectsDuplicateSegmentPaths()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackExporterSource();
         AssertContains(sourceText, "var duplicateSegmentIndex = FindDuplicateSegmentPathIndex(segments);");
         AssertContains(sourceText, "Flashback export failed: duplicate segment path at index {duplicateSegmentIndex}.");
         AssertContains(sourceText, "private static int FindDuplicateSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
@@ -1142,8 +1149,7 @@ static partial class Program
 
     private static Task FlashbackExporter_ProgressCallbacksAreBestEffort()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackExporterSource();
 
         AssertDoesNotContain(sourceText, "progress?.Report(new ExportProgress");
         AssertContains(sourceText, "using System.Diagnostics;");
@@ -1197,8 +1203,7 @@ static partial class Program
 
     private static Task FlashbackExporter_ReleasesBufferedSegmentPacketsOnFailures()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackExporterSource();
 
         AssertContains(sourceText, "private static void FreeBufferedPackets(List<IntPtr> bufferedPackets, List<int>? bufferedStreamIndices = null)");
         AssertContains(sourceText, "FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);");
@@ -1248,8 +1253,7 @@ static partial class Program
 
     private static Task FlashbackExporter_TimestampConversionsAreSaturating()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackExporterSource();
 
         AssertDoesNotContain(sourceText, "TotalSeconds * ffmpeg.AV_TIME_BASE");
         AssertDoesNotContain(sourceText, "TotalMilliseconds * 1000)");
@@ -1291,8 +1295,7 @@ static partial class Program
 
     private static Task FlashbackExporter_InputStreamCountsAreBounded()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackExporterSource();
 
         AssertContains(sourceText, "private const int MaxSupportedInputStreams = 64;");
         AssertContains(sourceText, "private static bool TryGetInputStreamCount(");
@@ -1315,8 +1318,7 @@ static partial class Program
 
     private static Task FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackExporterSource();
 
         var templateSelectionBlock = ExtractTextBetween(
             sourceText,
@@ -1353,8 +1355,7 @@ static partial class Program
 
     private static Task FlashbackExporter_FailsWhenRequestedSegmentsAreSkipped()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackExporterSource();
         var segmentExportCore = ExtractTextBetween(
             sourceText,
             "private FinalizeResult ExportSegmentsCore",
@@ -1540,8 +1541,7 @@ static partial class Program
 
     private static Task FlashbackExporter_DisposeTimeoutDoesNotTearDownActiveNativeState()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
+        var sourceText = ReadFlashbackExporterSource();
 
         var disposeBlock = ExtractTextBetween(
             sourceText,
