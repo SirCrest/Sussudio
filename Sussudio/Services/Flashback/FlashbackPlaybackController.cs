@@ -254,41 +254,8 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         }
     }
 
-    // (Command dispatch, thread management, playback loop/timing, and audio prebuffer extracted to partials)
-    // See: FlashbackPlaybackController.CommandQueue.cs, .Thread.cs, .PlaybackLoop.cs, .PlaybackTiming.cs, .AudioPrebuffer.cs
-
-    private void SnapToLiveOnError(FlashbackDecoder decoder, Exception ex, ref bool fileOpen)
-    {
-        Interlocked.Increment(ref _playbackDecodeErrorSnaps);
-        var pos = PlaybackPosition;
-        var bufDur = _bufferManager.BufferedDuration;
-        var gapMs = SaturatingSubtract(bufDur, pos).TotalMilliseconds;
-        SetLastCommandFailure($"decode_error:{ex.GetType().Name}{FormatCommandDetail(position: pos)}");
-        Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE type={ex.GetType().Name} error='{ex.Message}' pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
-        Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK {ex.StackTrace?.Replace("\r\n", " | ")}");
-        CloseDecoderFileBestEffort(decoder, "decode_error");
-        fileOpen = false;
-        _currentOpenFilePath = null;
-        _decoderHwAccel = "N/A";
-        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-        Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-        ReleasePlaybackFrameForLive("decode_error");
-        RestoreLiveAudio();
-        SafeResumePreviewSubmission("decode_error");
-        SetState(FlashbackPlaybackState.Live);
-    }
-
-    private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)
-    {
-        try
-        {
-            if (decoder.IsOpen) decoder.CloseFile();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
-        }
-    }
+    // (Command dispatch, decoder files, playback loop/timing, and audio prebuffer extracted to partials)
+    // See: FlashbackPlaybackController.CommandQueue.cs, .DecoderFiles.cs, .Thread.cs, .PlaybackLoop.cs, .PlaybackTiming.cs, .AudioPrebuffer.cs
 
     // --- State management ---
 

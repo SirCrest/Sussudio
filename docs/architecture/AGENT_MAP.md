@@ -138,12 +138,12 @@ Entry points:
 - `FlashbackBackendResources.cs` owns backend resource grouping.
 - `FlashbackBufferManager.cs` owns segment retention and buffer state.
 - `FlashbackPlaybackController*.cs` owns playback, scrub, and marker control.
-- `FlashbackPlaybackController.DecoderFiles.cs` owns decoder creation, active file identity, segment file open/reopen/seek, and decoder cleanup.
+- `FlashbackPlaybackController.DecoderFiles.cs` owns decoder creation, active file identity, segment file open/reopen/seek, best-effort close handling, and decoder cleanup.
 - `FlashbackPlaybackController.Lifecycle.cs` owns initialize/update component references, preview-detach cleanup, deferred reattach, and dispose.
 - `FlashbackPlaybackController.Commands.cs` owns public playback command entry points for scrub, seek, play/pause, go-live, and nudge.
 - `FlashbackPlaybackController.PreviewFrames.cs` owns decoded frame validation, preview submission, held-frame release, and live-restore after submit failures.
 - `FlashbackPlaybackController.SeekDisplay.cs` owns seek/scrub keyframe display, file-PTS mapping for displayed seek frames, and seek-display failure accounting.
-- `FlashbackPlaybackController.PlaybackLoop.cs` owns continuous playback frame progression, A/V skip decisions, segment switching, fMP4 write-head waits, and near-live snap handling.
+- `FlashbackPlaybackController.PlaybackLoop.cs` owns continuous playback frame progression, A/V skip decisions, segment switching, fMP4 write-head waits, decode-error live recovery, and near-live snap handling.
 - `FlashbackPlaybackController.PlaybackTiming.cs` owns frame-rate resolution, audio-master pacing/fallback accounting, wall-clock sleeps, and decoded PTS/cadence tracking.
 - `FlashbackPlaybackController.Markers.cs` owns in/out marker state, marker API, marker normalization, and out-point pause checks.
 - `FlashbackPlaybackController.PositionMapping.cs` owns scrub/seek clamp policy, saturating timestamp math, active fMP4 segment detection, and playback path comparison.

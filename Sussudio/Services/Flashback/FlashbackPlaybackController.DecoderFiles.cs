@@ -89,6 +89,18 @@ internal sealed partial class FlashbackPlaybackController
     private static bool IsDecoderFileReady(FlashbackDecoder decoder, bool fileOpen)
         => fileOpen && decoder.IsOpen;
 
+    private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)
+    {
+        try
+        {
+            if (decoder.IsOpen) decoder.CloseFile();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
     private void CleanupDecoder(ref FlashbackDecoder? decoder, ref bool fileOpen)
     {
         var cleanupStarted = Stopwatch.GetTimestamp();

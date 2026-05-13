@@ -414,6 +414,9 @@ Flashback playback timing and cadence now live in
 Keep frame-rate resolution, pause-from-live target calculation,
 audio-master pacing and fallback accounting, wall-clock sleep/spin pacing,
 software-decode budget snaps, and decoded PTS/cadence tracking there.
+Decoder close best-effort handling now lives with decoder file ownership, and
+decode-error snap-to-live recovery lives with the continuous playback loop, so
+the root controller can remain a field/property facade plus shared state setter.
 
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
