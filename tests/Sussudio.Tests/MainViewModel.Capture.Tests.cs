@@ -78,6 +78,36 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewStartup_StateLivesInPreviewStartupPartial()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
+            .Replace("\r\n", "\n");
+        var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
+            .Replace("\r\n", "\n");
+        var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(previewStartupText, "private enum PreviewStartupState");
+        AssertContains(previewStartupText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");
+        AssertContains(previewStartupText, "private readonly Lazy<int> _previewStartupVisualTimeoutMs = new(static () =>");
+        AssertContains(previewStartupText, "private DispatcherQueueTimer? _previewStartupWatchdogTimer;");
+        AssertContains(previewStartupText, "private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;");
+        AssertContains(previewStartupText, "private long _previewStartupPositionEventCount;");
+        AssertContains(previewStartupText, "private const int PreviewFadeInFrameThreshold = 3;");
+        AssertContains(previewStartupText, "private bool IsPreviewStartupSignalWindowActive()");
+        AssertContains(previewStartupText, "private void ResetPreviewSignalState()");
+        AssertContains(previewRendererText, "_previewStartupState.ToString()");
+        AssertContains(propertyChangedText, "IsPreviewStartupFailedState(_previewStartupState)");
+        AssertDoesNotContain(mainWindowText, "private enum PreviewStartupState");
+        AssertDoesNotContain(mainWindowText, "_previewStartupVisualTimeoutMs");
+        AssertDoesNotContain(mainWindowText, "_previewStartupWatchdogTimer");
+        AssertDoesNotContain(mainWindowText, "ResetPreviewSignalState()");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewStartup_PrimesUiAndAudioBeforePreviewReveal()
     {
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs")

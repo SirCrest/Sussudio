@@ -450,6 +450,9 @@ static partial class Program
                 "Diagnostics loop does not rebuild automation options each poll",
                 DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll),
             await RunCheckAsync(
+                "Preview startup state lives in preview startup partial",
+                PreviewStartup_StateLivesInPreviewStartupPartial),
+            await RunCheckAsync(
                 "Preview startup tolerates missing audio capture devices",
                 PreviewStartup_ToleratesMissingAudioCaptureDevices),
             await RunCheckAsync(

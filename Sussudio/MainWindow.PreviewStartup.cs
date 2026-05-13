@@ -37,6 +37,87 @@ namespace Sussudio;
 // flashes during source-reader and renderer warm-up.
 public sealed partial class MainWindow
 {
+    private enum PreviewStartupState
+    {
+        Idle,
+        StartingSession,
+        RendererAttaching,
+        WaitingForFirstVisual,
+        Rendering,
+        Failed
+    }
+
+    private const int PreviewStartupDefaultVisualTimeoutMs = 10000;
+    private const int PreviewStartupMinVisualTimeoutMs = 1000;
+    private const int PreviewStartupMaxVisualTimeoutMs = 15000;
+    private const int PreviewFadeInFrameThreshold = 3;
+    private static readonly TimeSpan PreviewStartupPlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);
+
+    // Lazy<int> instead of static readonly so per-test env overrides work:
+    // tests that flip SUSSUDIO_PREVIEW_START_TIMEOUT_MS before constructing
+    // MainWindow get the override on the first read instead of a value
+    // baked in at type-init time.
+    private readonly Lazy<int> _previewStartupVisualTimeoutMs = new(static () =>
+        EnvironmentHelpers.GetIntFromEnv(
+            "SUSSUDIO_PREVIEW_START_TIMEOUT_MS",
+            PreviewStartupDefaultVisualTimeoutMs,
+            PreviewStartupMinVisualTimeoutMs,
+            PreviewStartupMaxVisualTimeoutMs));
+
+    private DispatcherQueueTimer? _previewStartupWatchdogTimer;
+    private DispatcherQueueTimer? _previewStartupTelemetryTimer;
+    private DispatcherQueueTimer? _previewFadeInTimer;
+    private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;
+    private string? _previewStartupAttemptId;
+    private DateTimeOffset? _previewStartupRequestedUtc;
+    private DateTimeOffset? _previewRendererAttachedUtc;
+    private DateTimeOffset? _previewFirstVisualUtc;
+    private string? _previewLastFailureReason;
+    private string? _previewStartupMissingSignals;
+    private int _previewRecoveryAttemptCount;
+    private bool _previewFirstVisualConfirmed;
+    private bool _previewStartupExpectGpuDualSignals;
+    private bool _previewGpuSignalMediaOpened;
+    private bool _previewGpuSignalFirstFrame;
+    private bool _previewGpuSignalPlaybackAdvancing;
+    private PreviewStartupSignalFlags _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
+    private PreviewStartupSignalFlags _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
+    private PreviewStartupStrategy _previewStartupStrategy = PreviewStartupStrategy.None;
+    private TimeSpan _previewStartupLastPlaybackPosition = TimeSpan.Zero;
+    private long _previewStartupPositionEventCount;
+    private bool _previewStartupPlaybackPositionInitialized;
+    private int _previewStartupFailureStopScheduled;
+    private long _previewStartupLastPositionDispatchTick;
+    private bool _previewStopRequestedByUser;
+    private bool _isPreviewReinitAnimating;
+
+    private int PreviewStartupVisualTimeoutMs => _previewStartupVisualTimeoutMs.Value;
+
+    private static bool IsPreviewStartupFailedState(PreviewStartupState state)
+        => state == PreviewStartupState.Failed;
+
+    private static bool IsPreviewStartupTerminalState(PreviewStartupState state)
+        => state is PreviewStartupState.Idle or PreviewStartupState.Rendering or PreviewStartupState.Failed;
+
+    private bool IsPreviewStartupSignalWindowActive()
+        => ViewModel.IsPreviewing &&
+           !_previewFirstVisualConfirmed &&
+           _previewStartupState is PreviewStartupState.StartingSession or PreviewStartupState.RendererAttaching or PreviewStartupState.WaitingForFirstVisual;
+
+    private void ResetPreviewSignalState()
+    {
+        _previewStartupExpectGpuDualSignals = false;
+        _previewGpuSignalMediaOpened = false;
+        _previewGpuSignalFirstFrame = false;
+        _previewGpuSignalPlaybackAdvancing = false;
+        _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
+        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
+        _previewStartupStrategy = PreviewStartupStrategy.None;
+        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
+        _previewStartupPositionEventCount = 0;
+        _previewStartupPlaybackPositionInitialized = false;
+    }
+
     private void SetPreviewStartupState(PreviewStartupState state, string? reason = null)
     {
         if (!string.IsNullOrWhiteSpace(reason))
