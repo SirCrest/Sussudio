@@ -279,6 +279,11 @@ LibAv encoder packed software-frame copy helpers now live in
 `Sussudio/Services/Recording/LibAvEncoder.FrameCopy.cs`. Keep packed NV12/P010
 plane sizing, source-buffer validation, and stride-aware plane copies there.
 
+LibAv encoder diagnostics and error helpers now live in
+`Sussudio/Services/Recording/LibAvEncoder.Diagnostics.cs`. Keep open-state
+guards, FFmpeg error string conversion, structured libav exceptions, and
+D3D11 device-removed checks there.
+
 LibAv encoder audio stream handling now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone send
 entry points, AAC stream setup, resamplers, packet writing, pending-sample
