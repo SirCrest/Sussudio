@@ -361,4 +361,24 @@ internal sealed partial class FlashbackPlaybackController
             return false;
         }
     }
+
+    private bool ShouldSkipActiveFmp4ReopenNearLive(TimeSpan seekTarget, string reason)
+    {
+        var latestPts = _bufferManager.LatestPts;
+        if (latestPts <= TimeSpan.Zero)
+        {
+            return false;
+        }
+
+        var distanceFromLive = seekTarget >= latestPts
+            ? TimeSpan.Zero
+            : latestPts - seekTarget;
+        if (distanceFromLive > ActiveFmp4ReopenNearLiveGuard)
+        {
+            return false;
+        }
+
+        Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SKIP_NEAR_LIVE reason={reason} target_ms={(long)seekTarget.TotalMilliseconds} latest_ms={(long)latestPts.TotalMilliseconds} distance_ms={(long)distanceFromLive.TotalMilliseconds} guard_ms={(long)ActiveFmp4ReopenNearLiveGuard.TotalMilliseconds}");
+        return true;
+    }
 }

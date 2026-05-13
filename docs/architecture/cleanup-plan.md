@@ -396,6 +396,12 @@ Keep decoder creation, active segment file identity, file open/reopen/seek
 fallback, and decoder cleanup there; keep seek-display and playback pacing in
 the controller core/thread partials.
 
+Flashback playback seek/scrub frame display now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplay.cs`.
+Keep keyframe seek display, displayed-frame PTS mapping, adjacent-segment
+fallback for seek display, and seek-display failure accounting there; keep
+continuous playback pacing in the controller core/thread partials.
+
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
 `MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing

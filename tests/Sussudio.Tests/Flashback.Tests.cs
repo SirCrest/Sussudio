@@ -16,6 +16,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PositionMapping.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplay.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Commands.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Thread.cs").Replace("\r\n", "\n"),
@@ -2952,7 +2953,7 @@ static partial class Program
         var seekDisplayBlock = ExtractTextBetween(
             sourceText,
             "private bool SeekAndDisplayKeyframe(",
-            "    private bool ShouldSkipActiveFmp4ReopenNearLive");
+            "    private void RecordSeekDisplayDecodeFailure");
         AssertContains(seekDisplayBlock, "CancellationToken cancellationToken");
         AssertContains(seekDisplayBlock, "cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(seekDisplayBlock, "decoder.SeekToKeyframe(filePts, cancellationToken)");
