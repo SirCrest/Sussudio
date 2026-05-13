@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Sussudio.Models;
 
@@ -546,4 +547,18 @@ public sealed partial class AutomationDiagnosticsHub
             }
         }
     }
+    public IReadOnlyList<DiagnosticsEvent> GetRecentEvents(int maxEvents = 100)
+    {
+        lock (_stateLock)
+        {
+            var take = Math.Clamp(maxEvents, 1, MaxRecentEvents);
+            if (_recentEvents.Count <= take)
+            {
+                return _recentEvents.ToArray();
+            }
+
+            return _recentEvents.GetRange(_recentEvents.Count - take, take).ToArray();
+        }
+    }
+
 }

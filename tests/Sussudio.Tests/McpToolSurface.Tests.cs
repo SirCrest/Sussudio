@@ -2330,7 +2330,8 @@ static partial class Program
     private static Task McpPerformanceTimelineTool_ExposesD3DP99StageTiming()
     {
         var source = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
-        var diagnosticsHubSource = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs");
+        var diagnosticsHubSource = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
         var entryType = RequireType("Sussudio.Models.PerformanceTimelineEntry");
 
         AssertContains(source, "PreviewD3DInputUploadCpuP99Ms");

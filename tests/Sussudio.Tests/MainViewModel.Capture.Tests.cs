@@ -1139,7 +1139,9 @@ static partial class Program
         AssertContains(contractsText, "public string? FlashbackExportVerificationFormat { get; init; }");
         AssertContains(contractsText, "public string? FlashbackCodecDowngradeReason { get; init; }");
         var automationDiagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
-            .Replace("\r\n", "\n");
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
+                .Replace("\r\n", "\n");
         AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
         AssertContains(automationDiagnosticsHubText, "FlashbackCodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason,");
         AssertDoesNotContain(captureServiceText, "var fbFileNameFormatOverride =");

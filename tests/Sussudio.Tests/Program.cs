@@ -1843,7 +1843,8 @@ static partial class Program
     private static Task AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields()
     {
         var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeSnapshots.cs").Replace("\r\n", "\n");
-        var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs").Replace("\r\n", "\n");
+        var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs").Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs").Replace("\r\n", "\n");
 
         AssertContains(contractsText, "public string? SourceFirmware { get; init; }");
         AssertContains(contractsText, "public string? SourceAudioFormat { get; init; }");
@@ -2667,7 +2668,8 @@ static partial class Program
 
     private static Task DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll()
     {
-        var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs");
+        var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
         var automationSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs");
 
         AssertDoesNotContain(diagnosticsHubText, "GetAutomationOptionsSnapshotAsync(cancellationToken)");
