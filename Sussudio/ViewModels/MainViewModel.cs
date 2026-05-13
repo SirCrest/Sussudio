@@ -500,10 +500,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     }
 
     // -- Capture lifecycle methods are in MainViewModel.Capture.cs -----
+    // -- Capture settings projection is in MainViewModel.CaptureSettings.cs -----
     // -- Automation methods are in MainViewModel.Automation.cs ---------
 
     // -- Partial class references ----
     // Capture lifecycle: MainViewModel.Capture.cs
+    // Capture settings projection: MainViewModel.CaptureSettings.cs
     // Automation / flashback: MainViewModel.Automation.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs
     // Microphone/device audio controls: MainViewModel.AudioControls.cs

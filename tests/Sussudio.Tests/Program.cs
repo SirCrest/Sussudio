@@ -489,6 +489,9 @@ static partial class Program
                 "MainViewModel capture routes audio monitoring through coordinator",
                 MainViewModelCapture_RoutesAudioMonitoringThroughCoordinator),
             await RunCheckAsync(
+                "MainViewModel capture settings projection lives in focused partial",
+                MainViewModelCaptureSettings_OwnsSettingsProjection),
+            await RunCheckAsync(
                 "MainViewModel audio controls map analog gain curve and clamp endpoints",
                 MainViewModelAudioControls_MapsAnalogGainCurveAndClamps),
             await RunCheckAsync(

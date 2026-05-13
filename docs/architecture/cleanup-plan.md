@@ -445,7 +445,10 @@ Remaining `tools/Common` ownership:
    observable property handlers now live in `MainViewModel.AudioPropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
    and live runtime text/timer/status/error handling now lives in
-   `MainViewModel.Runtime.cs`. Bounded teardown and event unsubscription now live
+   `MainViewModel.Runtime.cs`. Capture settings projection from UI/runtime state
+   now lives in `MainViewModel.CaptureSettings.cs`, leaving
+   `MainViewModel.Capture.cs` focused on lifecycle transitions. Bounded teardown
+   and event unsubscription now live
    in `MainViewModel.Disposal.cs`. Automation-facing snapshot/probe/options
    projection now lives in `MainViewModel.AutomationSnapshots.cs`. Flashback
    playback commands, marker commands, and buffer/bitrate status projection now
