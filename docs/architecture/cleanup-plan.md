@@ -90,8 +90,11 @@ Preview shell/content fade and scale transitions plus unavailable-placeholder
 presentation now live in
 `Sussudio/Controllers/PreviewTransitionAnimationController.cs`.
 `MainWindow.PreviewTransitions.cs` is the XAML-facing adapter; composition
-shadow animation and record-button width animation remain in
-`MainWindow.Animations.cs`.
+shadow animation remains in `MainWindow.Animations.cs`.
+
+Record-button circle/pill width animation now lives in
+`Sussudio/Controllers/RecordButtonAnimationController.cs`.
+`MainWindow.RecordButtonAnimations.cs` is the XAML-facing adapter.
 
 Live-signal pill visibility state, show/hide debounce timers, and the small
 scale/fade animation now live in

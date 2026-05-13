@@ -1,26 +1,15 @@
 using System;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using Sussudio.Models;
-using Sussudio.ViewModels;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Composition;
-using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
-using WinRT.Interop;
 
 namespace Sussudio;
 
-// Shared WinUI animation helpers for preview, settings, stats, and transient
-// visual states. Capture state is updated elsewhere; animations should make
-// state changes legible without becoming the source of truth.
+// Launch entrance choreography plus shared composition shadow helpers. Smaller
+// animation behaviors live in named controllers so UI state changes stay easy
+// to locate without becoming the source of truth.
 public sealed partial class MainWindow
 {
     private void PlaySplashAndEntrance()
@@ -225,28 +214,5 @@ public sealed partial class MainWindow
         anim.InsertKeyFrame(1f, 0f, compositor.CreateCubicBezierEasingFunction(new Vector2(0.25f, 0.1f), new Vector2(0.25f, 1f)));
         anim.Duration = TimeSpan.FromMilliseconds(durationMs);
         visual.StartAnimation("Opacity", anim);
-    }
-    private void AnimateRecordButtonWidth(double from, double to, Action? onCompleted = null)
-    {
-        var anim = new DoubleAnimation
-        {
-            From = from,
-            To = to,
-            Duration = new Duration(TimeSpan.FromMilliseconds(200)),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut },
-            EnableDependentAnimation = true
-        };
-        Storyboard.SetTarget(anim, RecordButton);
-        Storyboard.SetTargetProperty(anim, "Width");
-
-        var sb = new Storyboard();
-        sb.Children.Add(anim);
-        sb.Completed += (_, _) =>
-        {
-            // Set final width explicitly (NaN for pill, 36 for circle)
-            RecordButton.Width = to == 36 ? 36 : double.NaN;
-            onCompleted?.Invoke();
-        };
-        sb.Begin();
     }
 }

@@ -513,6 +513,9 @@ static partial class Program
                 "Preview transition animations live in controller",
                 PreviewTransitionAnimations_LiveInController),
             await RunCheckAsync(
+                "Record button width animation lives in controller",
+                RecordButtonWidthAnimation_LivesInController),
+            await RunCheckAsync(
                 "Live signal info presentation lives in controller",
                 LiveSignalInfoPresentation_LivesInController),
             await RunCheckAsync(
@@ -2934,6 +2937,31 @@ static partial class Program
         AssertDoesNotContain(animationsText, "private void ResetPreviewContentTransform()");
         AssertDoesNotContain(animationsText, "private void PreparePreviewStartupPresentation()");
         AssertDoesNotContain(animationsText, "private static void FadeOutElement(UIElement element)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task RecordButtonWidthAnimation_LivesInController()
+    {
+        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.RecordButtonAnimations.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/RecordButtonAnimationController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private RecordButtonAnimationController _recordButtonAnimationController = null!;");
+        AssertContains(adapterText, "private void InitializeRecordButtonAnimationController()");
+        AssertContains(adapterText, "RecordButton = RecordButton,");
+        AssertContains(adapterText, "=> _recordButtonAnimationController.AnimateWidth(from, to, onCompleted);");
+        AssertContains(mainWindowText, "InitializeRecordButtonAnimationController();");
+        AssertContains(propertyChangedText, "AnimateRecordButtonWidth(36, targetWidth);");
+        AssertContains(propertyChangedText, "AnimateRecordButtonWidth(currentWidth, 36, () =>");
+        AssertContains(controllerText, "internal sealed class RecordButtonAnimationController");
+        AssertContains(controllerText, "public void AnimateWidth(double from, double to, Action? onCompleted = null)");
+        AssertContains(controllerText, "Storyboard.SetTarget(anim, _context.RecordButton);");
+        AssertContains(controllerText, "_context.RecordButton.Width = to == 36 ? 36 : double.NaN;");
+        AssertDoesNotContain(animationsText, "private void AnimateRecordButtonWidth(");
+        AssertDoesNotContain(animationsText, "Storyboard.SetTarget(anim, RecordButton);");
 
         return Task.CompletedTask;
     }

@@ -142,6 +142,9 @@ Primary current owners:
   shell/content fade and scale transitions, unavailable-placeholder fades, and
   startup/unavailable presentation prep. `MainWindow.PreviewTransitions.cs` is
   the XAML-facing adapter.
+- `Sussudio/Controllers/RecordButtonAnimationController.cs` owns the recording
+  button circle/pill width morph used by recording state changes.
+  `MainWindow.RecordButtonAnimations.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/LiveSignalInfoController.cs` owns live-signal pill
   visibility state, show/hide debounce timers, and the small scale/fade
   animation. `MainWindow.LiveSignalInfo.cs` is the XAML-facing adapter.
