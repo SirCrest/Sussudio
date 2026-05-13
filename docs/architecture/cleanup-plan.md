@@ -153,7 +153,12 @@ Capture, audio, microphone, and encoder selection synchronization now lives in
 `Sussudio/Controllers/CaptureSelectionBindingController.cs`. It owns
 collection-change debounce, pending-device apply state, and device-audio
 mode/gain projection while `MainWindow.CaptureSelectionBindings.cs` keeps the
-old method names for `PropertyChanged` and button handlers.
+old method names for `PropertyChanged` and binding setup.
+
+Capture-device refresh/apply button workflows now live in
+`Sussudio/Controllers/CaptureDeviceActionController.cs`.
+`MainWindow.CaptureDeviceActions.cs` is the XAML-facing adapter and keeps the
+explicit apply/reinit path separate from selection synchronization.
 
 Presentation-only rules for capture option affordances now live in
 `Sussudio/MainWindow.CaptureOptionPresentation.cs`: HDR readiness hints, FPS

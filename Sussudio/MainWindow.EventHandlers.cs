@@ -38,40 +38,11 @@ public sealed partial class MainWindow
 {
     private void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
-        _ = RunUiEventHandlerAsync(async () =>
-        {
-            RefreshButton.Content = new Microsoft.UI.Xaml.Controls.ProgressRing { Width = 16, Height = 16, IsActive = true };
-            RefreshButton.IsEnabled = false;
-            try
-            {
-                await ViewModel.RefreshDevicesAsync();
-            }
-            finally
-            {
-                RefreshButton.Content = new Microsoft.UI.Xaml.Controls.FontIcon { Glyph = "\uE72C", FontSize = 14 };
-                RefreshButton.IsEnabled = true;
-            }
-        }, nameof(RefreshButton_Click));
+        _ = RunUiEventHandlerAsync(() => RefreshDevicesFromButtonAsync(), nameof(RefreshButton_Click));
     }
     private void ApplyDeviceButton_Click(object sender, RoutedEventArgs e)
     {
-        _ = RunUiEventHandlerAsync(async () =>
-        {
-            if (DeviceComboBox.SelectedItem is not CaptureDevice selectedDevice)
-            {
-                return;
-            }
-
-            ApplyDeviceButton.IsEnabled = false;
-            try
-            {
-                await ViewModel.ApplySelectedDeviceAsync(selectedDevice);
-            }
-            finally
-            {
-                UpdateDeviceApplyButtonState();
-            }
-        }, nameof(ApplyDeviceButton_Click));
+        _ = RunUiEventHandlerAsync(() => ApplySelectedDeviceFromButtonAsync(), nameof(ApplyDeviceButton_Click));
     }
     private void PreviewButton_Click(object sender, RoutedEventArgs e)
     {
