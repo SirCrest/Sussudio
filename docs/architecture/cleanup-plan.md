@@ -254,6 +254,12 @@ Automation snapshot contracts now live in named model files under
 `AutomationRuntimeSnapshots.cs` catch-all; add new DTOs to a named file that
 matches the snapshot surface they own.
 
+Native XU AT-command transport and payload parsing now live in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs`. Keep raw
+AT read/write frames, LRC/envelope handling, payload decoders, device-ID
+parsing, and command failure formatting there; keep rolling telemetry polling
+and snapshot assembly in the root provider.
+
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
