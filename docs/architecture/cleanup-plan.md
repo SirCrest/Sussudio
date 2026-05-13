@@ -385,6 +385,13 @@ latency-pressure classification. Keep the root file focused on construction,
 public enqueue/suppression lifecycle, frame submission, display-clock pacing,
 and timer/MMCSS infrastructure.
 
+Parallel MJPEG decode pipeline timing now lives in
+`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs`. Keep timing
+record structs, timing snapshot construction, per-decoder sample windows,
+packet-hash metric access, and stopwatch conversion helpers there; keep worker
+decode, reorder, emit, stop/dispose, and cleanup behavior in the root pipeline
+until those paths get their own slices.
+
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`: `AutomationSnapshot.cs`,
 `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,
