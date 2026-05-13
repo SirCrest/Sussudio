@@ -96,6 +96,12 @@ static partial class Program
         var method = serviceType.GetMethod("ResolveHdrWarmupState",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveHdrWarmupState not found.");
+        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+            .Replace("\r\n", "\n");
+        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs")
+            .Replace("\r\n", "\n");
+        AssertDoesNotContain(snapshotsText, "private static string ResolveHdrWarmupState(");
+        AssertContains(telemetryText, "private static string ResolveHdrWarmupState(");
 
         // HDR not requested → NotRequested
         var notRequested = method.Invoke(null, new object[] { false, false, false, 0L })?.ToString();
@@ -155,6 +161,12 @@ static partial class Program
 
         var telemetryType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
         var originType = RequireType("Sussudio.Models.SourceTelemetryOrigin");
+        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+            .Replace("\r\n", "\n");
+        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs")
+            .Replace("\r\n", "\n");
+        AssertDoesNotContain(snapshotsText, "private static string ResolveSourceTelemetryBackend(");
+        AssertContains(telemetryText, "private static string ResolveSourceTelemetryBackend(");
 
         // NativeXu origin
         var nativeXuTelemetry = RuntimeHelpers.GetUninitializedObject(telemetryType);
@@ -241,6 +253,12 @@ static partial class Program
         var settingsType = RequireType("Sussudio.Models.CaptureSettings");
         var telemetryType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
         var availabilityType = RequireType("Sussudio.Models.SourceTelemetryAvailability");
+        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+            .Replace("\r\n", "\n");
+        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs")
+            .Replace("\r\n", "\n");
+        AssertDoesNotContain(snapshotsText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
+        AssertContains(telemetryText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
 
         // Aligned case: telemetry matches settings
         var alignedTelemetry = RuntimeHelpers.GetUninitializedObject(telemetryType);
