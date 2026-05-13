@@ -267,7 +267,10 @@ temp cleanup there so `FlashbackExporter.cs` stays focused on export
 orchestration and packet-copy/remux loops. Packet timestamp normalization,
 segment boundary timestamp repair, packet clone/free helpers, and buffered
 packet flushes live in
-`Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`. Temp output
+`Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`. FFmpeg input
+and output context setup, stream count validation, stream-template copying, and
+segment stream-layout checks live in
+`Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`. Temp output
 validation, atomic replacement, overwrite policy, and invalid final-output cleanup live in
 `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
 
