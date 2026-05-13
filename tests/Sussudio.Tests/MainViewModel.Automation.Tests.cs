@@ -910,10 +910,13 @@ static partial class Program
             .Replace("\r\n", "\n");
         var sourceReaderFrameLayoutText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs")
             .Replace("\r\n", "\n");
+        var sourceReaderLifecycleText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs")
+            .Replace("\r\n", "\n");
         var sourceReaderText = sourceReaderRootText
             + "\n" + sourceReaderDiagnosticsText
             + "\n" + sourceReaderDxgiBuffersText
             + "\n" + sourceReaderFrameLayoutText
+            + "\n" + sourceReaderLifecycleText
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs")
                 .Replace("\r\n", "\n");
         AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
@@ -932,6 +935,14 @@ static partial class Program
         AssertDoesNotContain(sourceReaderRootText, "public static int GetFrameSizeBytes(int width, int height, bool isP010)");
         AssertDoesNotContain(sourceReaderRootText, "private unsafe static void CopyYuvWithStride(");
         AssertDoesNotContain(sourceReaderRootText, "private static string SubtypeGuidToName(Guid subtype)");
+        AssertContains(sourceReaderLifecycleText, "public void StartReading(RawFrameCallback onFrame, CancellationToken ct)");
+        AssertContains(sourceReaderLifecycleText, "public async Task StopAsync()");
+        AssertContains(sourceReaderLifecycleText, "private void ReleaseReaderAndSource()");
+        AssertContains(sourceReaderLifecycleText, "private void SignalFatalError(Exception ex)");
+        AssertDoesNotContain(sourceReaderRootText, "public void StartReading(RawFrameCallback onFrame, CancellationToken ct)");
+        AssertDoesNotContain(sourceReaderRootText, "public async Task StopAsync()");
+        AssertDoesNotContain(sourceReaderRootText, "private void ReleaseReaderAndSource()");
+        AssertDoesNotContain(sourceReaderRootText, "private void SignalFatalError(Exception ex)");
 
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n")
