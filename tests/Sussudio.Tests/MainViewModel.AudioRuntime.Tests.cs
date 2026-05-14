@@ -4,14 +4,14 @@ static partial class Program
 {
     private static Task AudioMonitoringVisuals_FollowRuntimePreviewActivity()
     {
-        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var mainViewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var audioMeterText = ReadRepoFile("Sussudio/MainWindow.AudioMeter.cs").Replace("\r\n", "\n");
         var audioMeterControllerText = ReadRepoFile("Sussudio/Controllers/AudioMeterController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
 
-        AssertContains(mainViewModelText, "IsAudioPreviewActive");
+        AssertContains(mainViewModelStateText, "IsAudioPreviewActive");
         AssertContains(propertyChangedText, "case nameof(MainViewModel.IsAudioPreviewActive):");
         AssertContains(propertyChangedText, "HandleAudioPreviewActiveChanged();");
         AssertContains(audioPropertyChangedText, "SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);");

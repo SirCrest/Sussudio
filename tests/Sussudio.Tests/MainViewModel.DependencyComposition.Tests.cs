@@ -5,6 +5,7 @@ static partial class Program
     private static Task MainViewModel_UsesDependencyCompositionSeam()
     {
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var stateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
         var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
 
         AssertContains(rootText, "public MainViewModel()\n        : this(MainViewModelDependencies.CreateDefault())");
@@ -20,6 +21,11 @@ static partial class Program
         AssertDoesNotContain(rootText, "_sessionCoordinator = new CaptureSessionCoordinator(_captureService);");
         AssertDoesNotContain(rootText, "_deviceAudioControlService = new NativeXuAudioControlService();");
         AssertDoesNotContain(rootText, "_audioDeviceWatcher = new AudioDeviceWatcher();");
+        AssertDoesNotContain(rootText, "[ObservableProperty]");
+        AssertContains(stateText, "public partial ObservableCollection<CaptureDevice> Devices");
+        AssertContains(stateText, "public partial bool IsAudioPreviewActive");
+        AssertContains(stateText, "partial void OnIsFlashbackEnabledChanged(bool value)");
+        AssertContains(stateText, "private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);");
 
         AssertContains(dependenciesText, "internal sealed class MainViewModelDependencies");
         AssertContains(dependenciesText, "public static MainViewModelDependencies CreateDefault()");

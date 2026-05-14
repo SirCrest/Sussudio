@@ -4,11 +4,11 @@ static partial class Program
 {
     private static Task AutomationCaptureModeChanges_AwaitReinitialization()
     {
-        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
         var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs").Replace("\r\n", "\n");
         var captureModeAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCaptureMode.cs").Replace("\r\n", "\n");
 
-        AssertContains(viewModelText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
+        AssertContains(viewModelStateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
         AssertContains(captureModeAutomationText, "private async Task SetAutomationCaptureModeAsync(");
         AssertContains(captureModeAutomationText, "await _automationCaptureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(captureModeAutomationText, "_suppressFormatChangeReinitialize = true;");

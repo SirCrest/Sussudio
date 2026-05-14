@@ -1081,7 +1081,10 @@ Primary current owners:
   path browse/open-recordings button workflows. `MainWindow.OutputPathActions.cs`
   is the XAML-facing adapter.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
-  automation-facing compatibility. `MainViewModel.AudioMeters.cs` owns live
+  automation-facing compatibility. `MainViewModel.cs` owns compatibility-facade
+  construction, dependency assignment, event subscription, and small bridge
+  methods; `MainViewModel.State.cs` owns UI-facing observable state,
+  coordination gates, and shared constants. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets
   out of the root facade file. `MainViewModel.AudioRampTrace.cs` owns the audio
   ramp diagnostic ring buffer and sampler; keep preview monitoring call sites
