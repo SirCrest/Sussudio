@@ -10,6 +10,7 @@ public sealed partial class AutomationDiagnosticsHub
         CaptureRuntimeSnapshot captureRuntime)
     {
         var cadence = BuildPreviewRuntimeCadenceProjection(previewRuntime);
+        var startup = BuildPreviewRuntimeStartupProjection(previewRuntime);
 
         return new()
         {
@@ -22,23 +23,7 @@ public sealed partial class AutomationDiagnosticsHub
             GpuElementVisible = previewRuntime.GpuElementVisible,
             CpuElementVisible = previewRuntime.CpuElementVisible,
             RendererAttached = previewRuntime.RendererAttached,
-            StartupState = previewRuntime.StartupState,
-            AttemptId = previewRuntime.StartupAttemptId,
-            StartupElapsedMs = previewRuntime.StartupElapsedMs,
-            StartupTimeoutMs = previewRuntime.StartupTimeoutMs,
-            GpuSignalMediaOpened = previewRuntime.StartupGpuSignalMediaOpened,
-            GpuSignalFirstFrame = previewRuntime.StartupGpuSignalFirstFrame,
-            GpuSignalPlaybackAdvancing = previewRuntime.StartupGpuSignalPlaybackAdvancing,
-            StartupRequiredSignals = previewRuntime.StartupRequiredSignals,
-            StartupReceivedSignals = previewRuntime.StartupReceivedSignals,
-            StartupStrategy = previewRuntime.StartupStrategy.ToString(),
-            StartupMissingSignals = previewRuntime.StartupMissingSignals,
-            RecoveryAttemptCount = previewRuntime.StartupRecoveryAttemptCount,
-            LastFailureReason = previewRuntime.StartupLastFailureReason,
-            FirstVisualConfirmed = previewRuntime.FirstVisualConfirmed,
-            BlankSuspected = previewRuntime.BlankSuspected,
-            Stalled = previewRuntime.StallSuspected,
-            RendererMode = previewRuntime.RendererMode,
+            Startup = startup,
             GpuPlaybackState = previewRuntime.GpuPlaybackState,
             GpuNaturalVideoWidth = previewRuntime.GpuNaturalVideoWidth,
             GpuNaturalVideoHeight = previewRuntime.GpuNaturalVideoHeight,
@@ -62,23 +47,7 @@ public sealed partial class AutomationDiagnosticsHub
         public bool GpuElementVisible { get; init; }
         public bool CpuElementVisible { get; init; }
         public bool RendererAttached { get; init; }
-        public string StartupState { get; init; }
-        public string? AttemptId { get; init; }
-        public double? StartupElapsedMs { get; init; }
-        public int StartupTimeoutMs { get; init; }
-        public bool GpuSignalMediaOpened { get; init; }
-        public bool GpuSignalFirstFrame { get; init; }
-        public bool GpuSignalPlaybackAdvancing { get; init; }
-        public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }
-        public PreviewStartupSignalFlags StartupReceivedSignals { get; init; }
-        public string StartupStrategy { get; init; }
-        public string? StartupMissingSignals { get; init; }
-        public int RecoveryAttemptCount { get; init; }
-        public string? LastFailureReason { get; init; }
-        public bool FirstVisualConfirmed { get; init; }
-        public bool BlankSuspected { get; init; }
-        public bool Stalled { get; init; }
-        public string RendererMode { get; init; }
+        public PreviewRuntimeStartupProjection Startup { get; init; }
         public string GpuPlaybackState { get; init; }
         public int GpuNaturalVideoWidth { get; init; }
         public int GpuNaturalVideoHeight { get; init; }

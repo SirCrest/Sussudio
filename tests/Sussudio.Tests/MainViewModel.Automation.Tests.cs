@@ -387,6 +387,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionPreviewRuntimeCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntimeCadence.cs")
             .Replace("\r\n", "\n");
+        var diagnosticsSnapshotProjectionPreviewRuntimeStartupText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntimeStartup.cs")
+            .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionProcessResourcesText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs")
             .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionRecordingIntegrityText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs")
@@ -421,6 +423,7 @@ static partial class Program
         diagnosticsText += "\n" + diagnosticsSnapshotProjectionPreviewD3DCpuTimingText;
         diagnosticsText += "\n" + diagnosticsSnapshotProjectionPreviewD3DFrameFlowText;
         diagnosticsText += "\n" + diagnosticsSnapshotProjectionPreviewRuntimeCadenceText;
+        diagnosticsText += "\n" + diagnosticsSnapshotProjectionPreviewRuntimeStartupText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
@@ -523,8 +526,13 @@ static partial class Program
         AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeCadenceText, "private static PreviewRuntimeCadenceProjection BuildPreviewRuntimeCadenceProjection(");
         AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeCadenceText, "OnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
         AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeCadenceText, "SlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent");
+        AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeText, "var startup = BuildPreviewRuntimeStartupProjection(previewRuntime);");
+        AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeText, "Startup = startup,");
+        AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeStartupText, "private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(");
+        AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeStartupText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
+        AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeStartupText, "RendererMode = previewRuntime.RendererMode");
         AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeText, "FramesArrived = previewRuntime.FramesArrived,");
-        AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeText, "StartupStrategy = previewRuntime.StartupStrategy.ToString(),");
+        AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeStartupText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
         AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeText, "HdrInputDetected = previewHdrState.InputDetected,");
         AssertContains(diagnosticsSnapshotProjectionPreviewRuntimeText, "AdapterColorMetadata = captureRuntime.PreviewColorMetadata");
         AssertDoesNotContain(diagnosticsSnapshotProjectionText, "PreviewFramesArrived = previewRuntime.FramesArrived,");
@@ -2423,16 +2431,21 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewRuntimeCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntimeCadence.cs")
             .Replace("\r\n", "\n");
+        var previewRuntimeStartupProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntimeStartup.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
         AssertContains(snapshotProjectionText, "PreviewFramesArrived = previewSummary.FramesArrived,");
         AssertContains(snapshotProjectionText, "PreviewCadenceOnePercentLowFps = previewSummary.Cadence.OnePercentLowFps,");
-        AssertContains(snapshotProjectionText, "PreviewStartupStrategy = previewSummary.StartupStrategy,");
+        AssertContains(snapshotProjectionText, "PreviewStartupStrategy = previewSummary.Startup.Strategy,");
+        AssertContains(snapshotProjectionText, "PreviewRendererMode = previewSummary.Startup.RendererMode,");
         AssertContains(snapshotProjectionText, "PreviewGpuPlaybackState = previewSummary.GpuPlaybackState,");
         AssertContains(snapshotProjectionText, "PreviewColorContext = previewSummary.ColorContext,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewFramesArrived = previewRuntime.FramesArrived,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewCadenceOnePercentLowFps = previewSummary.CadenceOnePercentLowFps,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
+        AssertDoesNotContain(snapshotProjectionText, "PreviewStartupStrategy = previewSummary.StartupStrategy,");
+        AssertDoesNotContain(snapshotProjectionText, "PreviewRendererMode = previewSummary.RendererMode,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewStartupStrategy = previewRuntime.StartupStrategy.ToString(),");
         AssertDoesNotContain(snapshotProjectionText, "PreviewGpuPlaybackState = previewRuntime.GpuPlaybackState,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewColorContext = captureRuntime.NegotiatedPixelFormat,");
@@ -2440,10 +2453,13 @@ static partial class Program
         AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeProjection BuildPreviewRuntimeProjection(");
         AssertContains(previewRuntimeProjectionText, "var cadence = BuildPreviewRuntimeCadenceProjection(previewRuntime);");
         AssertContains(previewRuntimeProjectionText, "Cadence = cadence,");
+        AssertContains(previewRuntimeProjectionText, "var startup = BuildPreviewRuntimeStartupProjection(previewRuntime);");
+        AssertContains(previewRuntimeProjectionText, "Startup = startup,");
         AssertContains(previewRuntimeProjectionText, "FramesArrived = previewRuntime.FramesArrived,");
         AssertDoesNotContain(previewRuntimeProjectionText, "CadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
         AssertDoesNotContain(previewRuntimeProjectionText, "CadenceSlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent,");
-        AssertContains(previewRuntimeProjectionText, "StartupStrategy = previewRuntime.StartupStrategy.ToString(),");
+        AssertDoesNotContain(previewRuntimeProjectionText, "StartupStrategy = previewRuntime.StartupStrategy.ToString(),");
+        AssertDoesNotContain(previewRuntimeProjectionText, "RendererMode = previewRuntime.RendererMode,");
         AssertContains(previewRuntimeProjectionText, "GpuPlaybackState = previewRuntime.GpuPlaybackState,");
         AssertContains(previewRuntimeProjectionText, "HdrInputDetected = previewHdrState.InputDetected,");
         AssertContains(previewRuntimeProjectionText, "ColorContext = captureRuntime.NegotiatedPixelFormat,");
@@ -2453,6 +2469,11 @@ static partial class Program
         AssertContains(previewRuntimeCadenceProjectionText, "RecentIntervalsMs = previewRuntime.DisplayCadenceRecentIntervalsMs,");
         AssertContains(previewRuntimeCadenceProjectionText, "SlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent");
         AssertContains(previewRuntimeCadenceProjectionText, "private readonly record struct PreviewRuntimeCadenceProjection");
+        AssertContains(previewRuntimeStartupProjectionText, "private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(");
+        AssertContains(previewRuntimeStartupProjectionText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
+        AssertContains(previewRuntimeStartupProjectionText, "FirstVisualConfirmed = previewRuntime.FirstVisualConfirmed,");
+        AssertContains(previewRuntimeStartupProjectionText, "RendererMode = previewRuntime.RendererMode");
+        AssertContains(previewRuntimeStartupProjectionText, "private readonly record struct PreviewRuntimeStartupProjection");
 
         return Task.CompletedTask;
     }
