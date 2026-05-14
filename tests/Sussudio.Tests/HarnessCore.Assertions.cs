@@ -47,4 +47,7 @@ static partial class Program
             throw new InvalidOperationException($"Assertion failed for {fieldName}: value was null.");
         }
     }
+
+    private static string NormalizeLineEndings(string value)
+        => value.Replace("\r\n", "\n").Replace('\r', '\n');
 }

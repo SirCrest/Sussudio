@@ -1,68 +1,9 @@
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 
 static partial class Program
 {
-    private static HashSet<string> ExtractSnapshotFields(string sourceText)
-    {
-        var fields = new HashSet<string>(StringComparer.Ordinal);
-        var index = 0;
-        while (index < sourceText.Length)
-        {
-            var getIdx = sourceText.IndexOf("Get(snapshot,", index, StringComparison.Ordinal);
-            if (getIdx < 0)
-                break;
-
-            var afterComma = getIdx + "Get(snapshot,".Length;
-            var quoteIdx = sourceText.IndexOf('"', afterComma);
-            if (quoteIdx < 0 || quoteIdx - afterComma > 10)
-            {
-                index = afterComma;
-                continue;
-            }
-
-            var endQuoteIdx = sourceText.IndexOf('"', quoteIdx + 1);
-            if (endQuoteIdx < 0)
-            {
-                index = quoteIdx + 1;
-                continue;
-            }
-
-            var fieldName = sourceText.Substring(quoteIdx + 1, endQuoteIdx - quoteIdx - 1);
-            if (fieldName.Length > 0)
-                fields.Add(fieldName);
-
-            index = endQuoteIdx + 1;
-        }
-
-        return fields;
-    }
-
-    private static object BuildRecordingContext(
-        bool usePostMuxAudio,
-        string? videoPath = null,
-        string? audioTempPath = null,
-        string? finalPath = null)
-    {
-        var settings = BuildSettings(hdrEnabled: false);
-        var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
-        var context = RuntimeHelpers.GetUninitializedObject(contextType);
-        SetPropertyBackingField(context, "Settings", settings);
-        SetPropertyBackingField(context, "UsePostMuxAudio", usePostMuxAudio);
-        SetPropertyBackingField(context, "EffectiveFrameRate", 60.0);
-        SetPropertyBackingField(context, "FrameRateArg", "60");
-        SetPropertyBackingField(context, "EffectiveWidth", 1920u);
-        SetPropertyBackingField(context, "EffectiveHeight", 1080u);
-        SetPropertyBackingField(context, "VideoInputPixelFormat", "nv12");
-        SetPropertyBackingField(context, "VideoOutputPath", videoPath ?? "/tmp/video.mp4");
-        SetPropertyBackingField(context, "FinalOutputPath", finalPath ?? "/tmp/final.mp4");
-        SetPropertyBackingField(context, "AudioTempPath", audioTempPath);
-        SetPropertyBackingField(context, "HdrPipelineActive", false);
-        return context;
-    }
-
     private static void SetPropertyBackingField(object instance, string propertyName, object? value)
     {
         var field = instance.GetType().GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -95,99 +36,6 @@ static partial class Program
         throw new InvalidOperationException("No Count property found");
     }
 
-    private static object BuildDevice(string id = "device-1")
-    {
-        var device = CreateInstance("Sussudio.Models.CaptureDevice");
-        SetPropertyOrBackingField(device, "Id", id);
-        SetPropertyOrBackingField(device, "Name", "Synthetic Capture Device");
-        SetPropertyOrBackingField(device, "AudioDeviceId", "audio-1");
-        SetPropertyOrBackingField(device, "AudioDeviceName", "Synthetic Audio");
-        return device;
-    }
-
-    private static object BuildSettings(bool hdrEnabled)
-    {
-        var settings = CreateInstance("Sussudio.Models.CaptureSettings");
-        SetPropertyOrBackingField(settings, "Width", 1920u);
-        SetPropertyOrBackingField(settings, "Height", 1080u);
-        SetPropertyOrBackingField(settings, "FrameRate", 60d);
-        SetPropertyOrBackingField(settings, "RequestedFrameRateArg", "60/1");
-        SetPropertyOrBackingField(settings, "RequestedFrameRateNumerator", 60u);
-        SetPropertyOrBackingField(settings, "RequestedFrameRateDenominator", 1u);
-        SetPropertyOrBackingField(settings, "RequestedPixelFormat", hdrEnabled ? "P010" : "NV12");
-        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "HevcMp4"));
-        SetPropertyOrBackingField(settings, "Quality", ParseEnum("Sussudio.Models.VideoQuality", "High"));
-        SetPropertyOrBackingField(settings, "HdrEnabled", hdrEnabled);
-        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("Sussudio.Models.HdrOutputMode", "Hdr10Pq"));
-        SetPropertyOrBackingField(settings, "AudioEnabled", true);
-        SetPropertyOrBackingField(settings, "OutputPath", Path.GetTempPath());
-        return settings;
-    }
-
-    private static async Task InvokeInitializeAsync(object captureService, object device, object settings)
-    {
-        var initialize = captureService.GetType().GetMethod(
-            "InitializeAsync",
-            BindingFlags.Public | BindingFlags.Instance,
-            binder: null,
-            types: new[] { device.GetType(), settings.GetType(), typeof(CancellationToken) },
-            modifiers: null);
-        if (initialize == null)
-        {
-            throw new InvalidOperationException("CaptureService.InitializeAsync method not found.");
-        }
-
-        var task = initialize.Invoke(captureService, new[] { device, settings, CancellationToken.None }) as Task;
-        if (task == null)
-        {
-            throw new InvalidOperationException("CaptureService.InitializeAsync did not return a Task.");
-        }
-
-        await task.ConfigureAwait(false);
-    }
-
-    private static async Task DisposeAsync(object captureService)
-    {
-        await DisposeValueTaskAsync(captureService).ConfigureAwait(false);
-    }
-
-    private static async Task DisposeValueTaskAsync(object instance)
-    {
-        var disposeAsync = instance.GetType().GetMethod("DisposeAsync", BindingFlags.Public | BindingFlags.Instance);
-        if (disposeAsync == null)
-        {
-            return;
-        }
-
-        var valueTask = disposeAsync.Invoke(instance, null);
-        if (valueTask == null)
-        {
-            return;
-        }
-
-        var asTaskMethod = valueTask.GetType().GetMethod("AsTask", BindingFlags.Public | BindingFlags.Instance);
-        if (asTaskMethod?.Invoke(valueTask, null) is Task task)
-        {
-            await task.ConfigureAwait(false);
-        }
-    }
-
-    private static async Task WaitForConditionAsync(Func<bool> condition, string description, int timeoutMs = 2000, int pollMs = 25)
-    {
-        var sw = Stopwatch.StartNew();
-        while (sw.ElapsedMilliseconds < timeoutMs)
-        {
-            if (condition())
-            {
-                return;
-            }
-
-            await Task.Delay(pollMs).ConfigureAwait(false);
-        }
-
-        throw new InvalidOperationException($"Timed out waiting for condition: {description}");
-    }
-
     private static object CreateInstance(string typeName)
     {
         var type = RequireType(typeName);
@@ -202,52 +50,6 @@ static partial class Program
 
     private static object CreateUninitializedObject(Type type)
         => RuntimeHelpers.GetUninitializedObject(type);
-
-    private static string GetRepoRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory != null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "Sussudio.slnx")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException(
-            $"Could not locate repository root from '{AppContext.BaseDirectory}'.");
-    }
-
-    private static string ReadRepoFile(string relativePath)
-        => File.ReadAllText(Path.Combine(GetRepoRoot(), relativePath));
-
-    private static string ReadAutomationSnapshotFamilyText()
-    {
-        var files = new[]
-        {
-            "Sussudio/Models/Automation/AutomationSnapshot.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.UserSettings.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.Hdr.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.AudioIngest.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.Recording.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.CaptureFormat.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.SourceTelemetry.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.Preview.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.Mjpeg.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.SystemHealth.cs",
-            "Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs"
-        };
-
-        var parts = new List<string>();
-        foreach (var file in files)
-        {
-            parts.Add(ReadRepoFile(file).Replace("\r\n", "\n"));
-        }
-
-        return string.Join("\n", parts);
-    }
 
     private static Type RequireType(string typeName)
     {
@@ -458,7 +260,4 @@ static partial class Program
 
         return property.GetValue(instance);
     }
-
-    private static string NormalizeLineEndings(string value)
-        => value.Replace("\r\n", "\n").Replace('\r', '\n');
 }

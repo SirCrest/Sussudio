@@ -1020,12 +1020,19 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCheckCatalog.ToolContracts.cs` owns recording
   pipeline, NVML, capture-session/process, automation protocol, tool formatter,
   and RTK probe check registration.
-- `tests/Sussudio.Tests/HarnessCore.Helpers.cs` owns shared repo-file reads,
-  reflection/property access, wait helpers, and synthetic capture/recording
-  object factories used by the legacy harness and xUnit slices.
+- `tests/Sussudio.Tests/HarnessCore.SourceText.cs` owns shared repo-root/file
+  reads and source-text extraction helpers used by harness ownership checks.
+- `tests/Sussudio.Tests/HarnessCore.Reflection.cs` owns shared reflection,
+  private-field/property access, enum/type lookup, and field-value fixture
+  helpers.
+- `tests/Sussudio.Tests/HarnessCore.ObjectFactories.cs` owns synthetic
+  capture, settings, and recording-context object factories.
+- `tests/Sussudio.Tests/HarnessCore.AsyncLifecycle.cs` owns capture-service
+  initialization, async disposal, and polling wait helpers.
 - `tests/Sussudio.Tests/HarnessCore.Assertions.cs` owns generic harness
   assertion helpers: `AssertEqual<T>`, `AssertNearlyEqual`, `AssertContains`,
-  `AssertDoesNotContain`, and `AssertNotNull`.
+  `AssertDoesNotContain`, `AssertNotNull`, and string line-ending
+  normalization.
 - `tests/Sussudio.Tests/MjpegTimingMetrics.Helpers.cs` owns synthetic MJPEG
   timing metric factories and the closed-pipeline emit delegate used by
   harness-level MJPEG and snapshot tests.
