@@ -27,7 +27,8 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs");
-        var captureSnapshotsSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs");
+        var captureSnapshotsSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs");
         var unifiedVideoCaptureSource = ReadUnifiedVideoCaptureSource();
         var recordingContractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
             + "\n"
@@ -553,18 +554,18 @@ static partial class Program
         AssertDoesNotContain(captureSnapshotsSource, "unifiedVideoCapture?.GetMjpegPipelineTimingMetrics()");
         AssertDoesNotContain(captureSnapshotsSource, "unifiedVideoCapture?.GetFullMjpegPipelineTimingMetrics()");
         AssertContains(captureSnapshotsSource, "var flashbackVideoQueueLatencyMetrics = fbSink?.VideoQueueLatencyMetrics");
-        AssertContains(captureSnapshotsSource, "var activeRecordingVideoQueueLatencyMetrics = sink?.VideoQueueLatencyMetrics");
+        AssertContains(captureSnapshotsSource, "sink?.VideoQueueLatencyMetrics ??");
         AssertDoesNotContain(captureSnapshotsSource, "var flashbackIsRecordingBackend = _isRecording && IsFlashbackRecordingBackendActive()");
         AssertContains(captureSnapshotsSource, "RecordingEncodingFailureMessage");
-        AssertContains(captureSnapshotsSource, "RecordingVideoFramesSubmittedToEncoder = activeRecordingVideoFramesSubmitted");
-        AssertContains(captureSnapshotsSource, "RecordingVideoQueueLatencyP95Ms = activeRecordingVideoQueueLatencyMetrics.P95Ms");
-        AssertContains(captureSnapshotsSource, "RecordingVideoQueueLatencyP99Ms = activeRecordingVideoQueueLatencyMetrics.P99Ms");
-        AssertContains(captureSnapshotsSource, "RecordingVideoQueueOldestFrameAgeMs = activeRecordingVideoQueueOldestFrameAgeMs");
-        AssertContains(captureSnapshotsSource, "RecordingVideoBackpressureWaitMs = activeRecordingVideoBackpressureWaitMs");
+        AssertContains(captureSnapshotsSource, "RecordingVideoFramesSubmittedToEncoder = recordingHealth.VideoFramesSubmitted");
+        AssertContains(captureSnapshotsSource, "RecordingVideoQueueLatencyP95Ms = recordingHealth.VideoQueueLatencyMetrics.P95Ms");
+        AssertContains(captureSnapshotsSource, "RecordingVideoQueueLatencyP99Ms = recordingHealth.VideoQueueLatencyMetrics.P99Ms");
+        AssertContains(captureSnapshotsSource, "RecordingVideoQueueOldestFrameAgeMs = recordingHealth.VideoQueueOldestFrameAgeMs");
+        AssertContains(captureSnapshotsSource, "RecordingVideoBackpressureWaitMs = recordingHealth.VideoBackpressureWaitMs");
         AssertContains(captureSnapshotsSource, "FlashbackVideoEncoderPacketsWritten = fbSink?.VideoEncoderPacketsWritten");
         AssertContains(captureSnapshotsSource, "FlashbackVideoSequenceGaps = fbSink?.VideoSequenceGaps");
         AssertContains(captureSnapshotsSource, "FlashbackVideoQueueOldestFrameAgeMs = fbSink?.VideoQueueOldestFrameAgeMs");
-        AssertContains(captureSnapshotsSource, "FlashbackVideoQueueLatencyP99Ms = flashbackVideoQueueLatencyMetrics.P99Ms");
+        AssertContains(captureSnapshotsSource, "FlashbackVideoQueueLatencyP99Ms = recordingHealth.FlashbackVideoQueueLatencyMetrics.P99Ms");
         AssertContains(captureSnapshotsSource, "FlashbackVideoBackpressureWaitMs = fbSink?.VideoBackpressureWaitMs");
         AssertContains(captureSnapshotsSource, "FatalCleanupInProgress = fatalCleanupInProgress");
         AssertContains(captureSnapshotsSource, "FlashbackCleanupInProgress = flashbackCleanupInProgress");

@@ -18,7 +18,6 @@ public partial class CaptureService
         var fatalCleanupInProgress = Volatile.Read(ref _fatalCleanupInProgress) != 0;
         var flashbackCleanupInProgress = Volatile.Read(ref _flashbackCleanupInProgress) != 0;
         var observedTelemetry = ResolveObservedFrameTelemetry();
-        var videoFramesDropped = sink?.DroppedVideoFrames ?? Interlocked.Read(ref _videoFramesDropped);
         var sourceTelemetrySuppressedReason = ResolveSourceTelemetrySuppressedReason(_latestSourceTelemetry);
         var sourceTelemetrySuppressed = !string.IsNullOrWhiteSpace(sourceTelemetrySuppressedReason);
         var sourceCadence = unifiedVideoCapture?.GetSourceCadenceMetrics()
@@ -36,72 +35,7 @@ public partial class CaptureService
             ?? FrameFingerprintCadenceTracker.Empty;
         var (avSyncDriftMs, avSyncDriftRate) = ComputeAvSyncDrift();
         var (avSyncEncoderDriftMs, avSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
-        var flashbackIsRecordingBackend = IsFlashbackRecordingBackendOwnedByRecording();
-        var lastFailure = GetLastFailureTelemetry();
-        var liveRecordingFailed = sink?.EncodingFailed == true ||
-                                  (flashbackIsRecordingBackend && fbSink?.EncodingFailed == true);
-        var activeRecordingEncodingFailed = liveRecordingFailed || lastFailure.RecordingFailed;
-        var activeRecordingFailureType = sink?.EncodingFailureType ??
-                                         (flashbackIsRecordingBackend ? fbSink?.EncodingFailureType : null) ??
-                                         lastFailure.RecordingFailureType;
-        var activeRecordingFailureMessage = sink?.EncodingFailureMessage ??
-                                            (flashbackIsRecordingBackend ? fbSink?.EncodingFailureMessage : null) ??
-                                            lastFailure.RecordingFailureMessage;
-        var flashbackEncodingFailed = fbSink?.EncodingFailed == true || lastFailure.FlashbackFailed;
-        var flashbackFailureType = fbSink?.EncodingFailureType ?? lastFailure.FlashbackFailureType;
-        var flashbackFailureMessage = fbSink?.EncodingFailureMessage ?? lastFailure.FlashbackFailureMessage;
-        var activeRecordingVideoQueueDepth = sink?.VideoQueueCount ??
-                                             (flashbackIsRecordingBackend ? fbSink?.VideoQueueCount ?? 0 : 0);
-        var activeRecordingVideoQueueCapacity = sink?.VideoQueueCapacityFrames ??
-                                                (flashbackIsRecordingBackend ? fbSink?.VideoQueueCapacityFrames ?? 0 : 0);
-        var activeRecordingVideoQueueMaxDepth = sink?.VideoQueueMaxDepth ??
-                                                (flashbackIsRecordingBackend ? fbSink?.VideoQueueMaxDepth ?? 0 : 0);
-        var activeRecordingVideoFramesEnqueued = sink?.VideoFramesEnqueuedCount ??
-                                                 (flashbackIsRecordingBackend ? fbSink?.VideoFramesEnqueuedCount ?? 0 : 0);
-        var activeRecordingVideoFramesSubmitted = sink?.VideoFramesSubmittedToEncoder ??
-                                                  (flashbackIsRecordingBackend ? fbSink?.VideoFramesSubmittedToEncoder ?? 0 : 0);
-        var activeRecordingVideoEncoderPts = sink?.VideoEncoderPts ??
-                                             (flashbackIsRecordingBackend ? fbSink?.VideoEncoderPts ?? 0 : 0);
-        var activeRecordingVideoEncoderPacketsWritten = sink?.VideoEncoderPacketsWritten ??
-                                                        (flashbackIsRecordingBackend ? fbSink?.VideoEncoderPacketsWritten ?? 0 : 0);
-        var activeRecordingVideoEncoderDroppedFrames = sink?.VideoEncoderDroppedFrames ??
-                                                       (flashbackIsRecordingBackend ? fbSink?.VideoEncoderDroppedFrames ?? 0 : 0);
-        var activeRecordingVideoSequenceGaps = sink?.VideoSequenceGaps ??
-                                               (flashbackIsRecordingBackend ? fbSink?.VideoSequenceGaps ?? 0 : 0);
-        var activeRecordingVideoQueueOldestFrameAgeMs = sink?.VideoQueueOldestFrameAgeMs ??
-                                                        (flashbackIsRecordingBackend ? fbSink?.VideoQueueOldestFrameAgeMs ?? 0 : 0);
-        var activeRecordingVideoQueueLastLatencyMs = sink?.LastVideoQueueLatencyMs ??
-                                                     (flashbackIsRecordingBackend ? fbSink?.LastVideoQueueLatencyMs ?? 0 : 0);
-        (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) emptyVideoQueueLatencyMetrics = default;
-        var flashbackVideoQueueLatencyMetrics = fbSink?.VideoQueueLatencyMetrics ?? emptyVideoQueueLatencyMetrics;
-        var activeRecordingVideoQueueLatencyMetrics = sink?.VideoQueueLatencyMetrics ??
-                                                      (flashbackIsRecordingBackend
-                                                          ? flashbackVideoQueueLatencyMetrics
-                                                          : emptyVideoQueueLatencyMetrics);
-        var activeRecordingVideoBackpressureWaitMs = sink?.VideoBackpressureWaitMs ??
-                                                     (flashbackIsRecordingBackend ? fbSink?.VideoBackpressureWaitMs ?? 0 : 0);
-        var activeRecordingVideoBackpressureEvents = sink?.VideoBackpressureEvents ??
-                                                     (flashbackIsRecordingBackend ? fbSink?.VideoBackpressureEvents ?? 0 : 0);
-        var activeRecordingVideoBackpressureLastWaitMs = sink?.LastVideoBackpressureWaitMs ??
-                                                         (flashbackIsRecordingBackend ? fbSink?.LastVideoBackpressureWaitMs ?? 0 : 0);
-        var activeRecordingVideoBackpressureMaxWaitMs = sink?.MaxVideoBackpressureWaitMs ??
-                                                        (flashbackIsRecordingBackend ? fbSink?.MaxVideoBackpressureWaitMs ?? 0 : 0);
-        var activeRecordingDroppedFrames = sink?.DroppedVideoFrames ??
-                                           (flashbackIsRecordingBackend ? fbSink?.DroppedVideoFrames ?? 0 : Interlocked.Read(ref _videoFramesDropped));
-        var activeRecordingVideoDropsQueueSaturated = sink?.VideoDropsQueueSaturated ??
-                                                      (flashbackIsRecordingBackend ? fbSink?.VideoDropsQueueSaturated ?? 0 : 0);
-        var activeRecordingVideoDropsBacklogEviction = sink?.VideoDropsBacklogEviction ??
-                                                       (flashbackIsRecordingBackend ? fbSink?.VideoDropsBacklogEviction ?? 0 : 0);
-        var activeRecordingAudioQueueDepth = sink?.AudioQueueCount ??
-                                             (flashbackIsRecordingBackend ? fbSink?.AudioQueueCount ?? 0 : 0);
-        var activeRecordingAudioDropsQueueSaturated = sink?.AudioDropsQueueSaturated ??
-                                                      (flashbackIsRecordingBackend ? fbSink?.AudioDropsQueueSaturated ?? 0 : 0);
-        var activeRecordingAudioDropsBacklogEviction = sink?.AudioDropsBacklogEviction ??
-                                                       (flashbackIsRecordingBackend ? fbSink?.AudioDropsBacklogEviction ?? 0 : 0);
-        var activeRecordingLastVideoEnqueueTick = sink?.LastVideoEnqueueTick ??
-                                                  (flashbackIsRecordingBackend ? fbSink?.LastVideoEnqueueTick ?? 0 : 0);
-        var activeRecordingLastVideoWriteTick = sink?.LastVideoWriteTick ??
-                                                (flashbackIsRecordingBackend ? fbSink?.LastVideoWriteTick ?? 0 : 0);
+        var recordingHealth = CaptureRecordingHealthSnapshotFields(sink, fbSink);
         var flashbackExport = CaptureFlashbackExportHealthSnapshotFields();
         var flashbackBackendSettings = _flashbackBackendSettings;
 
@@ -334,46 +268,46 @@ public partial class CaptureService
                 sourceTelemetrySuppressed),
             LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),
             VideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? 0,
-            VideoFramesQueued = activeRecordingVideoQueueDepth,
-            VideoFramesDropped = activeRecordingDroppedFrames,
-            VideoFramesDroppedBacklog = activeRecordingVideoDropsBacklogEviction,
-            VideoFramesConverted = sink?.EncodedVideoFrames ?? (flashbackIsRecordingBackend ? fbSink?.EncodedVideoFrames ?? 0 : 0),
-            VideoDropsQueueSaturated = activeRecordingVideoDropsQueueSaturated,
-            VideoDropsBacklogEviction = activeRecordingVideoDropsBacklogEviction,
-            RecordingEncodingFailed = activeRecordingEncodingFailed,
-            RecordingEncodingFailureType = activeRecordingFailureType,
-            RecordingEncodingFailureMessage = activeRecordingFailureMessage,
-            RecordingVideoQueueCapacity = activeRecordingVideoQueueCapacity,
-            RecordingVideoQueueMaxDepth = activeRecordingVideoQueueMaxDepth,
-            RecordingVideoFramesSubmittedToEncoder = activeRecordingVideoFramesSubmitted,
-            RecordingVideoEncoderPts = activeRecordingVideoEncoderPts,
-            RecordingVideoEncoderPacketsWritten = activeRecordingVideoEncoderPacketsWritten,
-            RecordingVideoEncoderDroppedFrames = activeRecordingVideoEncoderDroppedFrames,
-            RecordingVideoSequenceGaps = activeRecordingVideoSequenceGaps,
-            RecordingVideoQueueOldestFrameAgeMs = activeRecordingVideoQueueOldestFrameAgeMs,
-            RecordingVideoQueueLastLatencyMs = activeRecordingVideoQueueLastLatencyMs,
-            RecordingVideoQueueLatencySampleCount = activeRecordingVideoQueueLatencyMetrics.SampleCount,
-            RecordingVideoQueueLatencyAvgMs = activeRecordingVideoQueueLatencyMetrics.AverageMs,
-            RecordingVideoQueueLatencyP95Ms = activeRecordingVideoQueueLatencyMetrics.P95Ms,
-            RecordingVideoQueueLatencyP99Ms = activeRecordingVideoQueueLatencyMetrics.P99Ms,
-            RecordingVideoQueueLatencyMaxMs = activeRecordingVideoQueueLatencyMetrics.MaxMs,
-            RecordingVideoBackpressureWaitMs = activeRecordingVideoBackpressureWaitMs,
-            RecordingVideoBackpressureEvents = activeRecordingVideoBackpressureEvents,
-            RecordingVideoBackpressureLastWaitMs = activeRecordingVideoBackpressureLastWaitMs,
-            RecordingVideoBackpressureMaxWaitMs = activeRecordingVideoBackpressureMaxWaitMs,
-            RecordingGpuQueueDepth = sink?.GpuQueueCount ?? (flashbackIsRecordingBackend ? fbSink?.GpuQueueCount ?? 0 : 0),
-            RecordingGpuQueueCapacity = sink?.GpuQueueCapacityFrames ?? (flashbackIsRecordingBackend ? fbSink?.GpuQueueCapacityFrames ?? 0 : 0),
-            RecordingGpuQueueMaxDepth = sink?.GpuQueueMaxDepth ?? (flashbackIsRecordingBackend ? fbSink?.GpuQueueMaxDepth ?? 0 : 0),
-            RecordingGpuFramesEnqueued = sink?.GpuFramesEnqueued ?? (flashbackIsRecordingBackend ? fbSink?.GpuFramesEnqueued ?? 0 : 0),
-            RecordingGpuFramesDropped = sink?.GpuFramesDropped ?? (flashbackIsRecordingBackend ? fbSink?.GpuFramesDropped ?? 0 : 0),
+            VideoFramesQueued = recordingHealth.VideoQueueDepth,
+            VideoFramesDropped = recordingHealth.DroppedFrames,
+            VideoFramesDroppedBacklog = recordingHealth.VideoDropsBacklogEviction,
+            VideoFramesConverted = recordingHealth.EncodedVideoFrames,
+            VideoDropsQueueSaturated = recordingHealth.VideoDropsQueueSaturated,
+            VideoDropsBacklogEviction = recordingHealth.VideoDropsBacklogEviction,
+            RecordingEncodingFailed = recordingHealth.EncodingFailed,
+            RecordingEncodingFailureType = recordingHealth.FailureType,
+            RecordingEncodingFailureMessage = recordingHealth.FailureMessage,
+            RecordingVideoQueueCapacity = recordingHealth.VideoQueueCapacity,
+            RecordingVideoQueueMaxDepth = recordingHealth.VideoQueueMaxDepth,
+            RecordingVideoFramesSubmittedToEncoder = recordingHealth.VideoFramesSubmitted,
+            RecordingVideoEncoderPts = recordingHealth.VideoEncoderPts,
+            RecordingVideoEncoderPacketsWritten = recordingHealth.VideoEncoderPacketsWritten,
+            RecordingVideoEncoderDroppedFrames = recordingHealth.VideoEncoderDroppedFrames,
+            RecordingVideoSequenceGaps = recordingHealth.VideoSequenceGaps,
+            RecordingVideoQueueOldestFrameAgeMs = recordingHealth.VideoQueueOldestFrameAgeMs,
+            RecordingVideoQueueLastLatencyMs = recordingHealth.VideoQueueLastLatencyMs,
+            RecordingVideoQueueLatencySampleCount = recordingHealth.VideoQueueLatencyMetrics.SampleCount,
+            RecordingVideoQueueLatencyAvgMs = recordingHealth.VideoQueueLatencyMetrics.AverageMs,
+            RecordingVideoQueueLatencyP95Ms = recordingHealth.VideoQueueLatencyMetrics.P95Ms,
+            RecordingVideoQueueLatencyP99Ms = recordingHealth.VideoQueueLatencyMetrics.P99Ms,
+            RecordingVideoQueueLatencyMaxMs = recordingHealth.VideoQueueLatencyMetrics.MaxMs,
+            RecordingVideoBackpressureWaitMs = recordingHealth.VideoBackpressureWaitMs,
+            RecordingVideoBackpressureEvents = recordingHealth.VideoBackpressureEvents,
+            RecordingVideoBackpressureLastWaitMs = recordingHealth.VideoBackpressureLastWaitMs,
+            RecordingVideoBackpressureMaxWaitMs = recordingHealth.VideoBackpressureMaxWaitMs,
+            RecordingGpuQueueDepth = recordingHealth.GpuQueueDepth,
+            RecordingGpuQueueCapacity = recordingHealth.GpuQueueCapacity,
+            RecordingGpuQueueMaxDepth = recordingHealth.GpuQueueMaxDepth,
+            RecordingGpuFramesEnqueued = recordingHealth.GpuFramesEnqueued,
+            RecordingGpuFramesDropped = recordingHealth.GpuFramesDropped,
             RecordingCudaQueueDepth = sink?.CudaQueueCount ?? 0,
             RecordingCudaQueueCapacity = sink?.CudaQueueCapacityFrames ?? 0,
             RecordingCudaQueueMaxDepth = sink?.CudaQueueMaxDepth ?? 0,
             RecordingCudaFramesEnqueued = sink?.CudaFramesEnqueued ?? 0,
             RecordingCudaFramesDropped = sink?.CudaFramesDropped ?? 0,
-            FlashbackEncodingFailed = flashbackEncodingFailed,
-            FlashbackEncodingFailureType = flashbackFailureType,
-            FlashbackEncodingFailureMessage = flashbackFailureMessage,
+            FlashbackEncodingFailed = recordingHealth.FlashbackEncodingFailed,
+            FlashbackEncodingFailureType = recordingHealth.FlashbackFailureType,
+            FlashbackEncodingFailureMessage = recordingHealth.FlashbackFailureMessage,
             FatalCleanupInProgress = fatalCleanupInProgress,
             FlashbackCleanupInProgress = flashbackCleanupInProgress,
             FlashbackForceRotateActive = fbSink?.IsForceRotateActive ?? false,
@@ -390,11 +324,11 @@ public partial class CaptureService
             FlashbackVideoQueueLastRejectReason = fbSink?.LastVideoQueueRejectReason ?? string.Empty,
             FlashbackVideoQueueOldestFrameAgeMs = fbSink?.VideoQueueOldestFrameAgeMs ?? 0,
             FlashbackVideoQueueLastLatencyMs = fbSink?.LastVideoQueueLatencyMs ?? 0,
-            FlashbackVideoQueueLatencySampleCount = flashbackVideoQueueLatencyMetrics.SampleCount,
-            FlashbackVideoQueueLatencyAvgMs = flashbackVideoQueueLatencyMetrics.AverageMs,
-            FlashbackVideoQueueLatencyP95Ms = flashbackVideoQueueLatencyMetrics.P95Ms,
-            FlashbackVideoQueueLatencyP99Ms = flashbackVideoQueueLatencyMetrics.P99Ms,
-            FlashbackVideoQueueLatencyMaxMs = flashbackVideoQueueLatencyMetrics.MaxMs,
+            FlashbackVideoQueueLatencySampleCount = recordingHealth.FlashbackVideoQueueLatencyMetrics.SampleCount,
+            FlashbackVideoQueueLatencyAvgMs = recordingHealth.FlashbackVideoQueueLatencyMetrics.AverageMs,
+            FlashbackVideoQueueLatencyP95Ms = recordingHealth.FlashbackVideoQueueLatencyMetrics.P95Ms,
+            FlashbackVideoQueueLatencyP99Ms = recordingHealth.FlashbackVideoQueueLatencyMetrics.P99Ms,
+            FlashbackVideoQueueLatencyMaxMs = recordingHealth.FlashbackVideoQueueLatencyMetrics.MaxMs,
             FlashbackVideoBackpressureWaitMs = fbSink?.VideoBackpressureWaitMs ?? 0,
             FlashbackVideoBackpressureEvents = fbSink?.VideoBackpressureEvents ?? 0,
             FlashbackVideoBackpressureLastWaitMs = fbSink?.LastVideoBackpressureWaitMs ?? 0,
@@ -406,15 +340,15 @@ public partial class CaptureService
             FlashbackGpuFramesDropped = fbSink?.GpuFramesDropped ?? 0,
             FlashbackGpuQueueRejectedFrames = fbSink?.GpuQueueRejectedFrames ?? 0,
             FlashbackGpuQueueLastRejectReason = fbSink?.LastGpuQueueRejectReason ?? string.Empty,
-            AudioDropsQueueSaturated = activeRecordingAudioDropsQueueSaturated,
-            AudioDropsBacklogEviction = activeRecordingAudioDropsBacklogEviction,
-            AudioChunksDropped = activeRecordingAudioDropsQueueSaturated + activeRecordingAudioDropsBacklogEviction,
+            AudioDropsQueueSaturated = recordingHealth.AudioDropsQueueSaturated,
+            AudioDropsBacklogEviction = recordingHealth.AudioDropsBacklogEviction,
+            AudioChunksDropped = recordingHealth.AudioDropsQueueSaturated + recordingHealth.AudioDropsBacklogEviction,
             ConversionQueueDepth = 0,
-            FfmpegVideoQueueDepth = activeRecordingVideoQueueDepth,
-            FfmpegAudioQueueDepth = activeRecordingAudioQueueDepth,
-            VideoFramesEnqueued = activeRecordingVideoFramesEnqueued,
-            LastVideoEnqueueAgeMs = ComputeTickAge(activeRecordingLastVideoEnqueueTick),
-            LastVideoWriteAgeMs = ComputeTickAge(activeRecordingLastVideoWriteTick),
+            FfmpegVideoQueueDepth = recordingHealth.VideoQueueDepth,
+            FfmpegAudioQueueDepth = recordingHealth.AudioQueueDepth,
+            VideoFramesEnqueued = recordingHealth.VideoFramesEnqueued,
+            LastVideoEnqueueAgeMs = ComputeTickAge(recordingHealth.LastVideoEnqueueTick),
+            LastVideoWriteAgeMs = ComputeTickAge(recordingHealth.LastVideoWriteTick),
             CaptureCadenceSampleCount = sourceCadence.SampleCount,
             CaptureCadenceObservedFps = sourceCadence.ObservedFps,
             CaptureCadenceExpectedIntervalMs = sourceCadence.ExpectedIntervalMs,

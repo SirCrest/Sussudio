@@ -372,6 +372,8 @@ Important entry points:
   diagnostics and automation health checks.
 - `CaptureService.HealthSnapshotFlashbackExport.cs` owns the locked Flashback
   export diagnostic field copy used by health snapshot projection.
+- `CaptureService.HealthSnapshotRecording.cs` owns active recording and
+  Flashback-recording queue/failure field projection for health snapshots.
 - `CaptureService.PreviewLifecycle.cs` owns video preview start/stop,
   retained-backend reuse checks, preview-start rollback, and preview pipeline
   disposal ordering.

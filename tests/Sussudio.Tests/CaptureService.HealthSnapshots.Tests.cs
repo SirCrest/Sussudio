@@ -22,6 +22,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureService_HealthSnapshotRecordingFields_LiveInFocusedPartial()
+    {
+        var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var recordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(healthSnapshotText, "var recordingHealth = CaptureRecordingHealthSnapshotFields(sink, fbSink);");
+        AssertContains(healthSnapshotText, "RecordingEncodingFailed = recordingHealth.EncodingFailed,");
+        AssertContains(healthSnapshotText, "RecordingVideoQueueLatencyP95Ms = recordingHealth.VideoQueueLatencyMetrics.P95Ms,");
+        AssertContains(healthSnapshotText, "FlashbackVideoQueueLatencyP99Ms = recordingHealth.FlashbackVideoQueueLatencyMetrics.P99Ms,");
+        AssertDoesNotContain(healthSnapshotText, "var activeRecordingVideoQueueLatencyMetrics");
+        AssertDoesNotContain(healthSnapshotText, "var flashbackIsRecordingBackend = IsFlashbackRecordingBackendOwnedByRecording();");
+
+        AssertContains(recordingText, "private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(");
+        AssertContains(recordingText, "GetLastFailureTelemetry()");
+        AssertContains(recordingText, "IsFlashbackRecordingBackendOwnedByRecording()");
+        AssertContains(recordingText, "Interlocked.Read(ref _videoFramesDropped)");
+        AssertContains(recordingText, "private readonly record struct RecordingHealthSnapshotFields");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");

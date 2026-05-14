@@ -1150,9 +1150,11 @@ snapshot projection and shared helper policy.
 Capture health snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file owns
 the large diagnostics/automation health DTO construction for Flashback,
-recording, MJPEG, source telemetry, and visual cadence; the general snapshot
-partial is now shared helper policy plus the diagnostics-snapshot compatibility
-entry point.
+MJPEG, source telemetry, and visual cadence; active recording queue/failure
+projection lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs`, and the
+general snapshot partial is now shared helper policy plus the
+diagnostics-snapshot compatibility entry point.
 
 Source telemetry snapshot policy now lives in
 `Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs`. Keep telemetry
