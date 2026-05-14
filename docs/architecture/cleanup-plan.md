@@ -510,6 +510,12 @@ frame, lease, texture, and NV12 plane submission entry points plus the NV12
 pending-frame adapter there; keep start/stop, panel sizing, and disposal in the
 root renderer.
 
+D3D preview renderer frame upload now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs`. Keep
+video-processor input view resolution, external texture input-view creation,
+direct raw-frame texture updates, and staging uploads there; keep shader draw
+paths and present tracking in `D3D11PreviewRenderer.Rendering.cs`.
+
 D3D preview renderer submitted/rendered/dropped frame ownership tracking now
 lives in `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs`.
 Keep frame ownership snapshot projection and submitted/presented/dropped

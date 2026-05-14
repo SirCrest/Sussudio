@@ -224,6 +224,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs");
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs");
         var captureSource = ReadUnifiedVideoCaptureSource();
         AssertContains(source, "SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
@@ -751,6 +752,26 @@ static partial class Program
         AssertDoesNotContain(resourcesText, "private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)");
         AssertDoesNotContain(resourcesText, "private void UnbindSwapChainFromPanel()");
         AssertDoesNotContain(resourcesText, "private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_FrameUploadLivesInFocusedPartial()
+    {
+        var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
+            .Replace("\r\n", "\n");
+        var frameUploadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(frameUploadText, "private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)");
+        AssertContains(frameUploadText, "private ID3D11VideoProcessorInputView CreateInputViewFromTexture(ID3D11Texture2D texture, int subresourceIndex)");
+        AssertContains(frameUploadText, "private unsafe bool UploadRawFrameToTexture(");
+        AssertContains(frameUploadText, "private unsafe bool TryUpdateRawFrameTexture(");
+        AssertContains(frameUploadText, "private unsafe bool UploadRawFrameViaStaging(");
+        AssertContains(frameUploadText, "_deviceContext.UpdateSubresource(");
+        AssertContains(frameUploadText, "_deviceContext.CopyResource(inputTexture, stagingTexture);");
+        AssertDoesNotContain(renderingText, "private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)");
+        AssertDoesNotContain(renderingText, "private unsafe bool UploadRawFrameViaStaging(");
 
         return Task.CompletedTask;
     }
