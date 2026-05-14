@@ -477,6 +477,9 @@ static partial class Program
                 "Automation diagnostics AV sync projection lives in focused partial",
                 AutomationDiagnosticsAvSyncProjection_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Automation diagnostics preview runtime projection lives in focused partial",
+                AutomationDiagnosticsPreviewRuntimeProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Automation diagnostics preview D3D projection lives in focused partial",
                 AutomationDiagnosticsPreviewD3DProjection_LivesInFocusedPartial),
             await RunCheckAsync(

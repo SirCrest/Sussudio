@@ -66,6 +66,10 @@ snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
 swap-chain, render timing, frame-latency wait, frame statistics, and submitted /
 rendered / dropped frame projection consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs` owns preview
+frame counters, display cadence, startup/readiness state, GPU playback state,
+preview HDR state, and preview color-context projection consumed by the
+automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs` owns process
 memory, CPU, GC, and thread-pool projection consumed by the automation snapshot
 DTO.
