@@ -710,6 +710,8 @@ Primary current owners:
   lifecycle assertions.
 - `tests/Sussudio.Tests/GpuTelemetry.Nvml.Tests.cs` owns NVML snapshot
   computed-property and unit-conversion contract checks.
+- `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns RuntimePaths,
+  MMCSS registration, ProcessSpec, and ProcessRunResult contract checks.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers for automation tool contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Protocol.Tests.cs` owns
