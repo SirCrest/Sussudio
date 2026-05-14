@@ -1176,6 +1176,8 @@ the diagnostics/automation health DTO construction for source telemetry and
 shared fields; MJPEG timing, jitter, packet-hash, visual-cadence, and
 per-decoder projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs`;
+source telemetry, backend, suppression, and circuit-state projection lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs`;
 Flashback buffer, startup-cache, backend-staleness, and encoder summary
 projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs`;

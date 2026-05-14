@@ -91,6 +91,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureService_HealthSnapshotSourceTelemetryFields_LiveInFocusedPartial()
+    {
+        var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var sourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(healthSnapshotText, "var sourceTelemetry = CaptureSourceTelemetryHealthSnapshotFields(_latestSourceTelemetry);");
+        AssertContains(healthSnapshotText, "SourceTelemetryAvailability = sourceTelemetry.Availability,");
+        AssertContains(healthSnapshotText, "SourceTelemetryBackend = sourceTelemetry.Backend,");
+        AssertContains(healthSnapshotText, "SourceTelemetryCircuitState = sourceTelemetry.CircuitState,");
+        AssertDoesNotContain(healthSnapshotText, "ResolveSourceTelemetrySuppressedReason(_latestSourceTelemetry)");
+        AssertDoesNotContain(healthSnapshotText, "ResolveSourceTelemetryCircuitState(");
+
+        AssertContains(sourceTelemetryText, "private SourceTelemetryHealthSnapshotFields CaptureSourceTelemetryHealthSnapshotFields(");
+        AssertContains(sourceTelemetryText, "ResolveSourceTelemetrySuppressedReason(telemetry) ?? string.Empty");
+        AssertContains(sourceTelemetryText, "ResolveSourceTelemetryBackend(telemetry)");
+        AssertContains(sourceTelemetryText, "ResolveSourceTelemetryCircuitState(telemetry.Availability, suppressed)");
+        AssertContains(sourceTelemetryText, "private readonly record struct SourceTelemetryHealthSnapshotFields");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_HealthSnapshotMjpegFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
