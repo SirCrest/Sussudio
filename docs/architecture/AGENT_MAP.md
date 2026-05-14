@@ -708,6 +708,13 @@ Primary current owners:
   DTO contract tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.RecordingPipeline.Tests.cs`
   owns recording pipeline queue capacity and drop-policy tests.
+- `tests/Sussudio.Tests/CaptureSessionCoordinator.Tests.cs` is the capture
+  session coordinator marker shell. Focused coordinator coverage lives in
+  `CaptureSessionCoordinator.Api`, `CaptureSessionCoordinator.Contracts`,
+  `CaptureSessionCoordinator.Queue`, `CaptureSessionCoordinator.Flashback`,
+  `CaptureSessionCoordinator.Ownership`, and `CaptureSessionTransitionPolicy`
+  files; shared reflective harness helpers live in
+  `CaptureSessionCoordinator.Helpers.cs`.
 - `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` owns shared pooled-frame
   reflection, frame factory, jitter-buffer factory, and tracking pool helpers.
 - `tests/Sussudio.Tests/PooledVideoFrame.Leases.Tests.cs` owns pooled video

@@ -423,6 +423,11 @@ bookkeeping, and queue latency accounting now live in
 `CaptureSessionCoordinator.Snapshot.cs`. Dispose/drain/cancel lifecycle for the
 worker queue and cancellation token source now lives in
 `CaptureSessionCoordinator.Disposal.cs`.
+`tests/Sussudio.Tests/CaptureSessionCoordinator.Tests.cs` is now only the
+coordinator test-family marker shell. API/command/snapshot contracts, focused
+source-ownership contracts, queue behavior, Flashback/cancellation behavior,
+transition policy, and shared reflection harness helpers now live in separate
+named files beside it.
 Queued Flashback mutations, read-only Flashback status/projection helpers,
 export forwarding, and active playback-controller readiness checks now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs`.
@@ -1564,8 +1569,10 @@ Remaining `tools/Common` ownership:
    diagnostic-session ownership, diagnostic-session Flashback,
    diagnostic-session runner, performance, window/preview, and helper partial
    files. Flashback tests are also split by buffer, encoder, exporter,
-   playback, decoder, and support owners. MainViewModel automation tests are
-   split into surface, diagnostics refresh, diagnostics projection,
+   playback, decoder, and support owners. Capture session coordinator tests
+   are split into API/contracts, queue behavior, Flashback behavior,
+   transition policy, ownership, and harness-helper owners. MainViewModel
+   automation tests are split into surface, diagnostics refresh, diagnostics projection,
    runtime-safety, and Flashback cleanup owners. MainViewModel capture tests
    are split into preview startup, Flashback export, Flashback routing,
    Flashback backend, and Flashback frame-rate/lifecycle owners. Continue with
