@@ -620,7 +620,7 @@ Primary current owners:
   assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns serialized diagnostics refresh and automation diagnostics hub ownership
-  assertions.
+  assertions, including HDR truth verdict behavior.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
   is now only the automation diagnostics projection test family marker shell.
   Keep new projection ownership assertions in the focused owner files:
@@ -663,6 +663,8 @@ Primary current owners:
   model checks.
 - `tests/Sussudio.Tests/SnapshotModels.SourceSignalTelemetry.Tests.cs` owns
   SourceSignalTelemetrySnapshot and SourceTelemetryDetailEntry contract checks.
+- `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs` owns Native XU
+  telemetry provider ownership and supported 4K X product-revision checks.
 - `tests/Sussudio.Tests/CapturePolicies.HdrOutputPolicy.Tests.cs` owns the
   offline harness HdrOutputPolicy and HDR output environment-switch checks.
 - `tests/Sussudio.Tests/RecordingQueue.Tests.cs` owns shared recording queue
