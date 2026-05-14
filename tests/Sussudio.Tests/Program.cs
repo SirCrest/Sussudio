@@ -2962,6 +2962,7 @@ static partial class Program
         var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs").Replace("\r\n", "\n");
         var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs").Replace("\r\n", "\n");
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
+        var playbackVolumeText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Volume.cs").Replace("\r\n", "\n");
         var runtimeContractsText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var runtimeSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs").Replace("\r\n", "\n");
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs").Replace("\r\n", "\n");
@@ -2985,10 +2986,15 @@ static partial class Program
         AssertContains(audioRampTraceText, "GetAudioRampTraceSnapshotAsync");
 
         AssertContains(playbackText, "UpdateOutputLevel(destinationSpan);");
-        AssertContains(playbackText, "public float TargetVolume => _targetVolume;");
-        AssertContains(playbackText, "public float CurrentVolume => _currentVolume;");
-        AssertContains(playbackText, "public float LastOutputPeak => _lastOutputPeak;");
-        AssertContains(playbackText, "public float LastOutputRms => _lastOutputRms;");
+        AssertContains(playbackVolumeText, "internal sealed partial class WasapiAudioPlayback");
+        AssertContains(playbackVolumeText, "public float TargetVolume => _targetVolume;");
+        AssertContains(playbackVolumeText, "public float CurrentVolume => _currentVolume;");
+        AssertContains(playbackVolumeText, "public float LastOutputPeak => _lastOutputPeak;");
+        AssertContains(playbackVolumeText, "public float LastOutputRms => _lastOutputRms;");
+        AssertContains(playbackVolumeText, "private void ApplyVolume(Span<byte> buffer)");
+        AssertContains(playbackVolumeText, "private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)");
+        AssertDoesNotContain(playbackText, "private void ApplyVolume(Span<byte> buffer)");
+        AssertDoesNotContain(playbackText, "private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)");
 
         AssertContains(runtimeContractsText, "public double WasapiPlaybackTargetVolumePercent { get; init; }");
         AssertContains(runtimeContractsText, "public double WasapiPlaybackCurrentVolumePercent { get; init; }");

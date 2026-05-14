@@ -59,6 +59,9 @@ capture-thread lifecycle in `WasapiAudioCapture.cs`.
 points and hot writer task-completion enforcement.
 `WasapiAudioCapture.Diagnostics.cs` owns audio-level event projection, callback
 interval, discontinuity, timestamp-error, glitch, and audio-level event counters.
+`WasapiAudioPlayback.Volume.cs` owns render-side volume ramps and output-level
+telemetry used by audio ramp traces. Keep WASAPI initialization, render-thread
+lifecycle, and queue ownership in `WasapiAudioPlayback.cs`.
 `AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
 capture/playback callback, queue, gap, glitch, and latency projection consumed
 by the automation snapshot DTO.

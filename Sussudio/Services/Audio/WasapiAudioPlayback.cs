@@ -1,7 +1,6 @@
 using System;
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -14,7 +13,7 @@ namespace Sussudio.Services.Audio;
 // Producers enqueue normalized f32le 48 kHz stereo chunks; a single WASAPI
 // render thread applies volume ramps, tracks queue depth, and writes to the
 // default output endpoint.
-internal sealed class WasapiAudioPlayback : IDisposable
+internal sealed partial class WasapiAudioPlayback : IDisposable
 {
     private const int OutputChannels = 2;
     private const int BytesPerSample = 4;
@@ -55,12 +54,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
     // video cadence is being re-established.
     private int _resumePrebufferFrames;
     private int _resumePrebufferTimeoutMs;
-    private volatile float _targetVolume = 1.0f;
-    private float _currentVolume;
-    private volatile float _lastOutputPeak;
-    private volatile float _lastOutputRms;
-    private long _lastOutputLevelTickMs;
-    private const float VolumeRampPerFrame = 1.0f / (0.3f * OutputSampleRate); // 300ms ramp at 48kHz
     private long _renderCallbackCount;
     private int _renderSilenceCount;
     private int _playbackQueueDropCount;
@@ -90,16 +83,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
     public double PlaybackBufferedDurationMs =>
         PlaybackQueueDurationMs + PlaybackActiveChunkDurationMs + PlaybackEndpointQueuedDurationMs;
-
-    public float TargetVolume => _targetVolume;
-
-    public float CurrentVolume => _currentVolume;
-
-    public float LastOutputPeak => _lastOutputPeak;
-
-    public float LastOutputRms => _lastOutputRms;
-
-    public long LastOutputLevelTickMs => Interlocked.Read(ref _lastOutputLevelTickMs);
 
     public long LastRenderCallbackTickMs => Interlocked.Read(ref _lastRenderCallbackTickMs);
 
@@ -251,11 +234,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
             Interlocked.Exchange(ref _started, 0);
             throw;
         }
-    }
-
-    public void SetVolume(float volume)
-    {
-        _targetVolume = Math.Clamp(volume, 0f, 1f);
     }
 
     internal void EnqueuePooledSamples(byte[] pooledBuffer, int validLength, long ptsTicks = 0)
@@ -704,97 +682,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 return;
             }
         }
-    }
-
-    private void ApplyVolume(Span<byte> buffer)
-    {
-        var floats = MemoryMarshal.Cast<byte, float>(buffer);
-        var target = _targetVolume;
-
-        // Fast path: already at target volume of 1.0
-        if (_currentVolume >= 1.0f && target >= 1.0f) return;
-
-        // Fast path: already at target, no ramp needed
-        if (MathF.Abs(_currentVolume - target) < 0.0001f)
-        {
-            if (target < 0.0001f)
-            {
-                floats.Clear();
-                return;
-            }
-
-            // Constant non-unity volume
-            for (var i = 0; i < floats.Length; i++)
-            {
-                floats[i] *= _currentVolume;
-            }
-            return;
-        }
-
-        // Ramp toward target volume
-        for (var i = 0; i < floats.Length; i += OutputChannels)
-        {
-            // Step current toward target
-            if (_currentVolume < target)
-            {
-                _currentVolume = MathF.Min(_currentVolume + VolumeRampPerFrame, target);
-            }
-            else if (_currentVolume > target)
-            {
-                _currentVolume = MathF.Max(_currentVolume - VolumeRampPerFrame, target);
-            }
-
-            for (var ch = 0; ch < OutputChannels && i + ch < floats.Length; ch++)
-            {
-                floats[i + ch] *= _currentVolume;
-            }
-
-            // Once settled, apply rest at constant volume
-            if (MathF.Abs(_currentVolume - target) < 0.0001f)
-            {
-                _currentVolume = target;
-                if (target >= 1.0f) return; // rest is at unity, no scaling needed
-                // Apply constant volume to remaining samples
-                for (var j = i + OutputChannels; j < floats.Length; j++)
-                {
-                    floats[j] *= _currentVolume;
-                }
-                return;
-            }
-        }
-    }
-
-    private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)
-    {
-        // Measure after volume application. This is the signal actually handed
-        // to IAudioRenderClient, so automation traces can distinguish source
-        // silence from a render-side dropout or an over-aggressive ramp.
-        var floats = MemoryMarshal.Cast<byte, float>(buffer);
-        if (floats.Length == 0)
-        {
-            _lastOutputPeak = 0;
-            _lastOutputRms = 0;
-            Interlocked.Exchange(ref _lastOutputLevelTickMs, Environment.TickCount64);
-            return;
-        }
-
-        var peak = 0f;
-        var sumSquares = 0.0;
-        for (var i = 0; i < floats.Length; i++)
-        {
-            var sample = floats[i];
-            var abs = MathF.Abs(sample);
-            if (abs > peak)
-            {
-                peak = abs;
-            }
-
-            sumSquares += sample * sample;
-        }
-
-        _lastOutputPeak = peak;
-        _lastOutputRms = (float)Math.Sqrt(sumSquares / floats.Length);
-        Interlocked.Exchange(ref _lastOutputLevelTickMs, Environment.TickCount64);
     }
 
     private void ReturnActiveChunk()
