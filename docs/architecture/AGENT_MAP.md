@@ -1033,9 +1033,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/ServiceNamespace.AutomationContracts.Tests.cs` owns
   AutomationCommandKind project/source ownership alignment across the app and
   automation tools.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.PresentationPreview.cs` owns
-  MainViewModel, MainWindow, stats, preview renderer, and preview pacing check
-  registration.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.PresentationPreview.cs` coordinates
+  presentation-preview check registration; the focused
+  `HarnessCheckCatalog.PresentationPreview.*.cs` partials own capture/root
+  policy, MainViewModel, MainWindow, stats, D3D renderer, and preview pacing
+  registration groups.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.McpDiagnosticsPipeline.cs` owns MCP,
   diagnostic-session, unified-video, MJPEG, D3D pending-frame, and recording
   queue check registration.
