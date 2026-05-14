@@ -718,6 +718,9 @@ Primary current owners:
   service contract DTO checks such as GpuPipelineHandles and RecordingContextRequest.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers for automation tool contract tests.
+- `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns
+  automation command enum numeric IDs, window action enum membership, and the
+  shared golden automation command table used by protocol/MCP tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Protocol.Tests.cs` owns
   automation pipe protocol, pipe-connect failure, and response-state contract
   tests.
