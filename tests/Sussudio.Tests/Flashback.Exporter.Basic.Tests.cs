@@ -328,6 +328,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
+        var progressText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Progress.cs")
+            .Replace("\r\n", "\n");
+        var infrastructureText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
         AssertContains(requestsText, "request.SegmentPaths.Select(path => new FlashbackExportSegment");
@@ -337,6 +341,11 @@ static partial class Program
         AssertContains(singleFileText, "ReleaseExportLockBestEffort(\"single_export\");");
         AssertContains(segmentsText, "private FinalizeResult ExportSegmentsCore(");
         AssertContains(segmentsText, "ReleaseExportLockBestEffort(\"segment_export\");");
+        AssertContains(progressText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)");
+        AssertContains(progressText, "private static bool ShouldReportProgressHeartbeat(ref long lastHeartbeatTick)");
+        AssertContains(progressText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
+        AssertDoesNotContain(infrastructureText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)");
+        AssertDoesNotContain(infrastructureText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
         AssertDoesNotContain(rootText, "public Task<FinalizeResult> ExportAsync(");
         AssertDoesNotContain(rootText, "public void Dispose()");
         AssertDoesNotContain(rootText, "private FinalizeResult ExportCore(");
