@@ -847,7 +847,9 @@ D3D preview renderer metrics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep present
 cadence, pipeline latency, render CPU timing, frame-latency wait metrics,
 slow-frame diagnostics, and metric reset logic there; keep queueing/lifecycle
-in the root renderer and GPU drawing work in `D3D11PreviewRenderer.Rendering.cs`.
+in the root renderer, VideoProcessor/present work in
+`D3D11PreviewRenderer.Rendering.cs`, and shader drawing in
+`D3D11PreviewRenderer.ShaderRendering.cs`.
 
 D3D preview renderer nested frame and metrics model types now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameTypes.cs`. Keep the
@@ -864,14 +866,21 @@ root renderer.
 D3D preview renderer frame upload now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs`. Keep
 video-processor input view resolution, external texture input-view creation,
-direct raw-frame texture updates, and staging uploads there; keep shader draw
-paths and present tracking in `D3D11PreviewRenderer.Rendering.cs`.
+direct raw-frame texture updates, and staging uploads there; keep present
+tracking in `D3D11PreviewRenderer.Rendering.cs`.
+
+D3D preview renderer shader drawing now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep NV12
+plane shader rendering, HDR tonemap/passthrough shader rendering, reusable
+shader class-instance arrays, and NV12 SRV caching there; keep the render loop,
+VideoProcessor path, present accounting, and slow-frame diagnostics in
+`D3D11PreviewRenderer.Rendering.cs`.
 
 D3D preview renderer viewport and letterbox helpers now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs`. Keep
 `ComputeLetterboxViewport`, `UpdateViewportConstantBuffer`, and
 `ComputeLetterboxRect` there; keep shader draw path ordering in
-`D3D11PreviewRenderer.Rendering.cs` and D3D resource creation in
+`D3D11PreviewRenderer.ShaderRendering.cs` and D3D resource creation in
 `D3D11PreviewRenderer.Resources.cs`.
 
 D3D preview renderer submitted/rendered/dropped frame ownership tracking now
@@ -905,8 +914,9 @@ creation, color-space application, and D3D resource disposal there.
 Raw-frame and HDR shader input texture allocation now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.InputResources.cs`. Keep
 NV12/P010 input textures, staging textures, input views, and HDR plane SRV
-creation there. Device-lost recovery has its own focused owner; keep per-frame
-rendering and draw paths in `D3D11PreviewRenderer.Rendering.cs`.
+creation there. Device-lost recovery has its own focused owner; keep render
+loop and present paths in `D3D11PreviewRenderer.Rendering.cs`, and shader draw
+paths in `D3D11PreviewRenderer.ShaderRendering.cs`.
 
 D3D preview renderer swap-chain panel binding now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs`. Keep

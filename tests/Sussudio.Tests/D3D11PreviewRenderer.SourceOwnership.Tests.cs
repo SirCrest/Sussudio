@@ -128,6 +128,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task D3D11PreviewRenderer_ShaderRenderingLivesInFocusedPartial()
+    {
+        var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
+            .Replace("\r\n", "\n");
+        var shaderRenderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(shaderRenderingText, "private void RenderNv12WithShader(PendingFrame frame)");
+        AssertContains(shaderRenderingText, "private void RenderHdrFrameWithShader(PendingFrame frame, ID3D11PixelShader pixelShader)");
+        AssertContains(shaderRenderingText, "private bool TryEnsureNv12ShaderResources(PendingFrame frame)");
+        AssertContains(shaderRenderingText, "private static readonly ID3D11ClassInstance[] EmptyClassInstances");
+        AssertContains(shaderRenderingText, "PreviewShaderSources.RendererModeNv12");
+        AssertContains(shaderRenderingText, "RendererModeHdrPassthrough");
+        AssertDoesNotContain(renderingText, "private void RenderNv12WithShader(PendingFrame frame)");
+        AssertDoesNotContain(renderingText, "private void RenderHdrFrameWithShader(PendingFrame frame, ID3D11PixelShader pixelShader)");
+        AssertDoesNotContain(renderingText, "private bool TryEnsureNv12ShaderResources(PendingFrame frame)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task D3D11PreviewRenderer_FrameLatencyLivesInFocusedPartial()
     {
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
