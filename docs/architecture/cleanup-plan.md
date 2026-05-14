@@ -1227,6 +1227,14 @@ Shared diagnostic-session text helpers now live in
 there instead of reintroducing private duplicates in the runner, formatter, or
 validation policy files.
 
+MCP performance timeline projection is split across the
+`tools/McpServer/Tools/PerformanceTimelineTools.*.cs` family. Keep the public
+tool entry point and table/trend rendering in the root file, JSON-to-row
+projection and the private row model in `PerformanceTimelineTools.Rows.cs`,
+compact value/byte/export/D3D formatting helpers in
+`PerformanceTimelineTools.Formatting.cs`, and target/pressure summaries in
+`PerformanceTimelineTools.Summaries.cs`.
+
 Diagnostic-session pipe retry/error classification now lives in
 `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a
 permanent failure and connect failed/timeout responses retryable.

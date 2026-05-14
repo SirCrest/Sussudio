@@ -2671,7 +2671,13 @@ static partial class Program
 
     private static Task McpPerformanceTimelineTool_ExposesD3DP99StageTiming()
     {
-        var source = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
+        var source = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs");
+        AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs"), "private sealed class TimelineRow");
+        AssertContains(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs"), "private sealed class TimelineRow");
+        AssertContains(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs"), "AppendPressureSummary");
         var diagnosticsHubSource = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
