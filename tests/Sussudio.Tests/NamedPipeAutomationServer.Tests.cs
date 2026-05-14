@@ -11,12 +11,27 @@ static partial class Program
     {
         AssertPipeSecurityPolicyMatrix();
 
-        var pipeServerText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
+        var pipeServerRootText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
             .Replace("\r\n", "\n");
-        AssertContains(pipeServerText, "AutomationPipeSecurityPolicy.ShouldDisableDefaultSecurityFallback(");
-        AssertContains(pipeServerText, "_explicitSecurityFailed = true;");
-        AssertContains(pipeServerText, "if (!_authTokenRequired)\n                {\n                    throw new AutomationPipeSecurityException(");
-        AssertContains(pipeServerText, "Automation pipe explicit security fallback to token-required default security");
+        var pipeServerLifecycleText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.Lifecycle.cs")
+            .Replace("\r\n", "\n");
+        var pipeServerConnectionText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.Connections.cs")
+            .Replace("\r\n", "\n");
+        var pipeServerSecurityText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.Security.cs")
+            .Replace("\r\n", "\n");
+        var pipeServerResponsesText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.Responses.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(pipeServerRootText, "public sealed partial class NamedPipeAutomationServer : IDisposable, IAsyncDisposable");
+        AssertContains(pipeServerLifecycleText, "public bool Start()");
+        AssertContains(pipeServerConnectionText, "private async Task HandleConnectionAsync(");
+        AssertContains(pipeServerSecurityText, "AutomationPipeSecurityPolicy.ShouldDisableDefaultSecurityFallback(");
+        AssertContains(pipeServerSecurityText, "_explicitSecurityFailed = true;");
+        AssertContains(pipeServerSecurityText, "if (!_authTokenRequired)\n                {\n                    throw new AutomationPipeSecurityException(");
+        AssertContains(pipeServerSecurityText, "Automation pipe explicit security fallback to token-required default security");
+        AssertContains(pipeServerResponsesText, "private AutomationCommandResponse CreateRequestTimeoutResponse()");
+        AssertDoesNotContain(pipeServerRootText, "public bool Start()");
+        AssertDoesNotContain(pipeServerRootText, "private async Task HandleConnectionAsync(");
+        AssertDoesNotContain(pipeServerRootText, "AutomationPipeSecurityPolicy.ShouldDisableDefaultSecurityFallback(");
 
         if (!OperatingSystem.IsWindows())
         {

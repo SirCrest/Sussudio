@@ -1,0 +1,137 @@
+using System;
+using System.IO.Pipes;
+using System.Threading;
+using System.Threading.Tasks;
+using Sussudio.Tools;
+
+namespace Sussudio.Services.Automation;
+
+public sealed partial class NamedPipeAutomationServer
+{
+    public bool Start()
+    {
+        if (_disposed)
+        {
+            throw new ObjectDisposedException(nameof(NamedPipeAutomationServer));
+        }
+
+        if (_serverTask != null)
+        {
+            return true;
+        }
+
+        if (IsDefaultSecurityDisallowed())
+        {
+            Logger.Log(
+                "Automation pipe server disabled because explicit Windows pipe security is unavailable " +
+                $"and {AutomationPipeProtocol.AutomationKeyEnvVar} is not configured ({_pipeSecurityMode}).");
+            return false;
+        }
+
+        NamedPipeServerStream initialServer;
+        try
+        {
+            initialServer = CreateServerStream();
+        }
+        catch (AutomationPipeSecurityException ex)
+        {
+            Logger.Log($"Automation pipe server disabled: {ex.Message}");
+            TraceFallback($"[{DateTime.Now:O}] security disabled: {ex}");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Automation pipe server startup failed: {ex.Message}");
+            TraceFallback($"[{DateTime.Now:O}] startup failed: {ex}");
+            return false;
+        }
+
+        _cts = new CancellationTokenSource();
+        _serverTask = Task.Run(() => RunServerLoopAsync(initialServer, _cts.Token));
+        Logger.Log($"Automation pipe server started on '{_pipeName}' ({_pipeSecurityMode}).");
+        return true;
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken = default)
+    {
+        var serverTask = _serverTask;
+        if (serverTask == null)
+        {
+            return;
+        }
+
+        _cts?.Cancel();
+        _serverTask = null;
+
+        try
+        {
+            await serverTask.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            // Server loop didn't stop within 5s â€” proceed with cleanup.
+        }
+        catch (OperationCanceledException)
+        {
+            /* Expected during shutdown â€” server loop cancelled via disposal */
+        }
+
+        _cts?.Dispose();
+        _cts = null;
+        Logger.Log("Automation pipe server stopped.");
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        StopAsync().GetAwaiter().GetResult();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        await StopAsync().ConfigureAwait(false);
+    }
+
+    private async Task RunServerLoopAsync(NamedPipeServerStream? initialServer, CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                using var server = initialServer ?? CreateServerStream();
+                initialServer = null;
+
+                await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
+                await HandleConnectionSafelyAsync(server, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                /* Expected during shutdown â€” exit the accept loop */
+                break;
+            }
+            catch (AutomationPipeSecurityException ex)
+            {
+                Logger.Log($"Automation pipe server disabled: {ex.Message}");
+                TraceFallback($"[{DateTime.Now:O}] security disabled: {ex}");
+                break;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Automation pipe server loop error: {ex.Message}");
+                TraceFallback($"[{DateTime.Now:O}] loop error: {ex}");
+                await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+}

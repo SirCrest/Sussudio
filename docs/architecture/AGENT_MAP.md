@@ -80,6 +80,18 @@ Automation diagnostics ownership:
   JSON payload extraction helpers for dispatcher command bodies.
 - `Sussudio/Services/Automation/AutomationCommandHandler.cs` owns the shared
   trivial-handler wrapper used by simple one-property automation commands.
+- `Sussudio/Services/Automation/NamedPipeAutomationServer.cs` owns automation
+  pipe constructor/configuration state.
+- `Sussudio/Services/Automation/NamedPipeAutomationServer.Lifecycle.cs` owns
+  server start/stop/dispose and the accept loop.
+- `Sussudio/Services/Automation/NamedPipeAutomationServer.Connections.cs` owns
+  per-connection JSON framing, request timeouts, dispatch observation, and
+  response writing.
+- `Sussudio/Services/Automation/NamedPipeAutomationServer.Security.cs` owns
+  Windows pipe security descriptor setup, fallback policy, P/Invoke, and secure
+  stream creation.
+- `Sussudio/Services/Automation/NamedPipeAutomationServer.Responses.cs` owns
+  error/timeout responses and fallback trace logging.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` owns polling,
   snapshot refresh serialization, counters, and timeline flow.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs` owns alert

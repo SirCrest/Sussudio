@@ -238,6 +238,13 @@ comparison helpers. `AutomationCommandDispatcher.Payload.cs` owns JSON payload
 extraction helpers, and `AutomationCommandHandler.cs` owns the trivial-handler
 wrapper used by simple one-property commands.
 
+Automation pipe hosting is split across `NamedPipeAutomationServer.*.cs`.
+Keep constructor/configuration state in the root file, server start/stop and
+accept-loop behavior in `NamedPipeAutomationServer.Lifecycle.cs`, per-connection
+JSON framing and dispatch timeouts in `NamedPipeAutomationServer.Connections.cs`,
+Windows pipe security/PInvoke in `NamedPipeAutomationServer.Security.cs`, and
+error/timeout responses plus fallback tracing in `NamedPipeAutomationServer.Responses.cs`.
+
 `tools/ssctl/CommandHandlers.cs` is now the top-level CLI router plus command
 group handler owner. `CommandHandlers.Context.cs` owns per-invocation command
 context, `CommandHandlers.Parsing.cs` owns CLI flag/value/usage parsing, and
