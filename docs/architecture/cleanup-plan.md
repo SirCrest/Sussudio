@@ -493,6 +493,12 @@ ownership, slow-frame diagnostics, display-clock estimates, and metric reset
 logic there; keep queueing/lifecycle in the root renderer and GPU drawing work
 in `D3D11PreviewRenderer.Rendering.cs`.
 
+D3D preview renderer nested frame and metrics model types now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.FrameTypes.cs`. Keep the
+`PendingFrame` lifetime wrapper and renderer metric record structs there so the
+root renderer stays focused on lifecycle, submission entry points, and public
+state.
+
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep device
 initialization, shared-device handoff, pipeline texture/view setup, swap-chain

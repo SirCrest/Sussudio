@@ -657,6 +657,9 @@ static partial class Program
                 "D3D preview diagnostics expose swap-chain and render timing contract",
                 D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming),
             await RunCheckAsync(
+                "D3D preview frame types live in focused partial",
+                D3D11PreviewRenderer_FrameTypesLiveInFocusedPartial),
+            await RunCheckAsync(
                 "Preview pacing classifier rejects weak samples",
                 PreviewPacingClassifier_RequiresStableSampleUnlessHardSignal),
             await RunCheckAsync(
