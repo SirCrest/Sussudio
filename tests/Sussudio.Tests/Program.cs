@@ -42,6 +42,9 @@ static partial class Program
                 "NativeXu telemetry accepts known 4K X product revisions",
                 NativeXuTelemetry_AcceptsKnown4kXProductRevisions),
             await RunCheckAsync(
+                "KS extension-unit native helper is split by boundary",
+                KsExtensionUnitNative_SourceOwnership_IsSplitByNativeBoundary),
+            await RunCheckAsync(
                 "NativeXu telemetry rolling poll lives in focused partial",
                 NativeXuAtCommandProvider_RollingPollLivesInFocusedPartial),
             await RunCheckAsync(
