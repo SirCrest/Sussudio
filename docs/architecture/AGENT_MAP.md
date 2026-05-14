@@ -1180,6 +1180,9 @@ Primary owners:
   workflows; `Program.Models.cs` owns probe experiment/readback DTOs and
   result-diff records; `Program.Commands.cs` owns Native XU command IDs;
   `Program.ExperimentPayloads.cs` owns experiment payload construction.
+- `tools/KsAudioNodeProbe/Program.cs` owns KS audio node probe command flow;
+  `Program.Constants.cs` owns probe constants and `Program.NativeTypes.cs` owns
+  native interop DTOs.
 - `tools/ssctl/CommandHandlers.Context.cs` owns the per-invocation command
   context wrapper.
 - `tools/ssctl/CommandHandlers.Parsing.cs` owns flag parsing, value parsing,

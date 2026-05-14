@@ -1,21 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
-
-const uint IoctlKsProperty = 0x002F0003;
-const uint DigcfPresent = 0x00000002;
-const uint DigcfDeviceInterface = 0x00000010;
-const uint GenericRead = 0x80000000;
-const uint GenericWrite = 0x40000000;
-const uint FileShareRead = 0x00000001;
-const uint FileShareWrite = 0x00000002;
-const uint OpenExisting = 3;
-const uint KsPropertyTypeGet = 0x00000001;
-const uint KsPropertyTypeSet = 0x00000002;
-const uint KsPropertyTypeTopology = 0x10000000;
-const int ErrorNoMoreItems = 259;
-const int ErrorInsufficientBuffer = 122;
-const int ErrorMoreData = 234;
+using static KsAudioNodeProbeConstants;
 
 var holdMode = args.Any(a => a.StartsWith("--set-hold", StringComparison.OrdinalIgnoreCase));
 var selector = args.FirstOrDefault(a => !a.StartsWith("--")) ?? "VID_0FD9&PID_009D";
@@ -147,7 +133,6 @@ Console.WriteLine();
 Console.WriteLine("== Extended node tests ==");
 for (int nodeId = 0; nodeId < 32; nodeId++)
 {
-    var anyHit = false;
     for (int propId = 1; propId <= 20; propId++)
     {
         for (int ch = -1; ch <= 1; ch++)
@@ -156,8 +141,6 @@ for (int nodeId = 0; nodeId < 32; nodeId++)
             {
                 var pName = propertyNames.TryGetValue(propId, out var n) ? n : $"Property({propId})";
                 Console.WriteLine($"  Node {nodeId}, {pName}, ch={ch}: GET={val}");
-                anyHit = true;
-
                 // Try SET on this property
                 if (propId == 12) // MUTE
                 {
@@ -619,45 +602,3 @@ static extern bool DeviceIoControl(
     int nOutBufferSize,
     out int lpBytesReturned,
     IntPtr lpOverlapped);
-
-[StructLayout(LayoutKind.Sequential)]
-struct KsProperty
-{
-    public Guid Set;
-    public uint Id;
-    public uint Flags;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-struct KsNodeProperty
-{
-    public KsProperty Property;
-    public uint NodeId;
-    public uint Reserved;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-struct KsNodePropertyAudioChannel
-{
-    public KsNodeProperty NodeProperty;
-    public int Channel;
-    public uint Reserved;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-struct SP_DEVICE_INTERFACE_DATA
-{
-    public int cbSize;
-    public Guid InterfaceClassGuid;
-    public int Flags;
-    public IntPtr Reserved;
-}
-
-[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-struct SP_DEVICE_INTERFACE_DETAIL_DATA
-{
-    public int cbSize;
-
-    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
-    public string DevicePath;
-}

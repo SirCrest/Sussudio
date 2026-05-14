@@ -88,5 +88,8 @@ static partial class Program
         await AddCheckAsync(results,
             "RTK I2C probe guards unsafe native paths",
             RtkI2cProbe_GuardsUnsafeNativePaths);
+        await AddCheckAsync(results,
+            "KS audio node probe source ownership is split",
+            KsAudioNodeProbe_SourceOwnership_IsSplit);
     }
 }
