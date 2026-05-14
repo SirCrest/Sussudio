@@ -1151,6 +1151,9 @@ static partial class Program
                 "CaptureService flashback backend ownership uses resource aggregate",
                 CaptureService_FlashbackBackendOwnershipUsesResourceAggregate),
             await RunCheckAsync(
+                "CaptureService Flashback orchestration lives in focused partials",
+                CaptureService_FlashbackOrchestrationLivesInFocusedPartials),
+            await RunCheckAsync(
                 "LibAv recording drain loop interleaves audio with bounded video batches",
                 LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches),
             await RunCheckAsync(
