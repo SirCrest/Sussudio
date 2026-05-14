@@ -102,6 +102,9 @@ static partial class Program
             "MainViewModel audio meters own callback meter state",
             MainViewModelAudioMeters_OwnCallbackMeterState);
         await AddCheckAsync(results,
+            "MainViewModel uses dependency composition seam",
+            MainViewModel_UsesDependencyCompositionSeam);
+        await AddCheckAsync(results,
             "Audio ramp trace exposes control and render-side envelope telemetry",
             AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry);
         await AddCheckAsync(results,

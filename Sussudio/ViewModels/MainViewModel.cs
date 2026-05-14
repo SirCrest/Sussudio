@@ -387,13 +387,18 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
 
     public MainViewModel()
+        : this(MainViewModelDependencies.CreateDefault())
     {
-        _deviceService = new DeviceService();
+    }
+
+    internal MainViewModel(MainViewModelDependencies dependencies)
+    {
+        _deviceService = dependencies.DeviceService;
         _deviceService.FormatProbeCompleted += OnDeviceFormatProbeCompleted;
-        _captureService = new CaptureService();
-        _sessionCoordinator = new CaptureSessionCoordinator(_captureService);
-        _deviceAudioControlService = new NativeXuAudioControlService();
-        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        _captureService = dependencies.CaptureService;
+        _sessionCoordinator = dependencies.SessionCoordinator;
+        _deviceAudioControlService = dependencies.DeviceAudioControlService;
+        _dispatcherQueue = dependencies.DispatcherQueue;
 
         _captureService.StatusChanged += OnCaptureStatusChanged;
         _captureService.ErrorOccurred += OnCaptureError;
@@ -416,7 +421,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         UpdateHdrRuntimeStatusFromCapture();
         UpdateLiveCaptureInfo();
 
-        _audioDeviceWatcher = new AudioDeviceWatcher();
+        _audioDeviceWatcher = dependencies.AudioDeviceWatcher;
         _audioDeviceWatcher.DevicesChanged += OnAudioDevicesChanged;
 
         SetupTimer();

@@ -1135,6 +1135,9 @@ Refactor direction:
   partials.
 - Keep `MainViewModel` as a compatibility facade while moving feature state to
   capture, recording, audio, Flashback, diagnostics, and automation adapters.
+- `MainViewModelDependencies.cs` owns the default service graph for the root
+  compatibility view model until a fuller app composition root injects feature
+  view models and narrower ports.
 
 ## Tooling And Diagnostics
 
