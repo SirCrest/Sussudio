@@ -6,6 +6,7 @@ using Sussudio.Services.Contracts;
 using Sussudio.Services.Telemetry;
 using static NativeXuProbeCommands;
 using static NativeXuProbeExperimentPayloads;
+using static NativeXuProbeI2cTransport;
 
 var deviceNameFilter = args.Length > 0 ? args[0] : "4K X";
 if (args.Length > 0 && string.Equals(args[0], "rtk-i2c", StringComparison.OrdinalIgnoreCase))
@@ -237,118 +238,6 @@ if (args.Length > 0 && string.Equals(args[0], "i2c-probe", StringComparison.Ordi
     return 0;
 }
 
-static async Task<byte[]?> SendI2cAtGetAsync(CaptureDevice device, byte[] i2cFrame)
-{
-    // Wrap I2C frame inside AT command with opcode 0x1C (I2C GET)
-    return await SendI2cViaAtAsync(device, 0x1C, i2cFrame);
-}
-
-static async Task<bool> SendI2cAtSetAsync(CaptureDevice device, byte[] i2cFrame)
-{
-    // Wrap I2C frame inside AT command with opcode 0x1B (I2C SET)
-    var resp = await SendI2cViaAtAsync(device, 0x1B, i2cFrame);
-    return resp != null; // any response = success
-}
-
-static async Task<byte[]?> SendI2cViaAtAsync(CaptureDevice device, int atOpcode, byte[] i2cPayload)
-{
-    // Send an AT command with the given opcode and I2C payload, then read the response
-    // This uses the write frame format but expects a response (like the i2c-probe confirmed)
-    if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out var vid, out var pid))
-        return null;
-
-    var interfaces = GetSelectedKsInterfaces(device);
-    var xuGuid = new Guid("961073c7-49f7-44f2-ab42-e940405940c2");
-
-    foreach (var ksIf in interfaces)
-    {
-        using var handle = KsExtensionUnitNative.TryOpen(ksIf.Path, out _);
-        if (handle == null) continue;
-
-        if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
-            continue;
-
-        foreach (var node in (nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>()).Where(n => n.IsDevSpecific))
-        {
-            var atFrame = BuildAtFrameWithPayload(atOpcode, i2cPayload);
-
-            // Trigger: send frame length to selector 2
-            var trigger = new byte[] { (byte)(atFrame.Length & 0xFF), (byte)((atFrame.Length >> 8) & 0xFF) };
-            if (!KsExtensionUnitNative.TryXuSetViaOutput(handle, node.NodeId, xuGuid, 2, trigger, out _))
-                continue;
-
-            // Payload: send AT frame to selector 1
-            if (!KsExtensionUnitNative.TryXuSetViaOutput(handle, node.NodeId, xuGuid, 1, atFrame, out _))
-                continue;
-
-            // Read response length from selector 2
-            if (!KsExtensionUnitNative.TryXuGetDirect(handle, node.NodeId, xuGuid, 2, 2, out var lenData, out var lenBytes, out _))
-                continue;
-
-            int respLen = lenBytes >= 2 ? BitConverter.ToUInt16(lenData, 0) : 0;
-            if (respLen <= 0 || respLen > 1024)
-                return Array.Empty<byte>(); // Command accepted but no meaningful response
-
-            // Read response from selector 1
-            if (!KsExtensionUnitNative.TryXuGetDirect(handle, node.NodeId, xuGuid, 1, respLen, out var respData, out var respBytes, out _))
-                continue;
-
-            // Strip AT envelope: [A1 len 00 00 cmd(4B) payload... LRC]
-            // len = number of bytes from offset 2 to end of payload (before LRC)
-            // So actual data = frame[4 .. 2+len-1], length = len - 2
-            if (respBytes >= 5 && respData[0] == 0xA1)
-            {
-                int envLen = respData[1]; // bytes after offset 1, before LRC
-                int payloadLen = envLen - 2; // subtract the 00-00 prefix
-                if (payloadLen > 0 && 4 + payloadLen <= respBytes)
-                {
-                    var result = new byte[payloadLen];
-                    Array.Copy(respData, 4, result, 0, payloadLen);
-                    return result;
-                }
-            }
-
-            // Return raw if not standard AT envelope
-            var raw = new byte[respBytes];
-            Array.Copy(respData, raw, respBytes);
-            return raw;
-        }
-    }
-    return null;
-}
-
-static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> GetSelectedKsInterfaces(CaptureDevice device)
-{
-    if (string.IsNullOrWhiteSpace(device.NativeXuInterfacePath))
-    {
-        Console.Error.WriteLine("Selected device has no native XU interface path.");
-        return Array.Empty<KsExtensionUnitNative.KsInterfacePath>();
-    }
-
-    return new[] { new KsExtensionUnitNative.KsInterfacePath(device.NativeXuInterfacePath, Guid.Empty) };
-}
-
-static byte[] BuildAtFrameWithPayload(int cmdCode, byte[] payload)
-{
-    // AT frame format: [0xA1, totalLen, 0x00, 0x00, cmd(4B LE), payload..., LRC]
-    // totalLen = 4 (cmd bytes) + payload.Length
-    var dataLen = 4 + payload.Length;
-    var frame = new byte[5 + dataLen]; // header(A1, len, 00, 00) + cmd(4B) + payload + LRC
-    frame[0] = 0xA1;
-    frame[1] = (byte)dataLen;
-    frame[2] = 0x00;
-    frame[3] = 0x00;
-    frame[4] = (byte)(cmdCode & 0xFF);
-    frame[5] = (byte)((cmdCode >> 8) & 0xFF);
-    frame[6] = (byte)((cmdCode >> 16) & 0xFF);
-    frame[7] = (byte)((cmdCode >> 24) & 0xFF);
-    Array.Copy(payload, 0, frame, 8, payload.Length);
-    // LRC: two's complement of sum of all preceding bytes
-    byte sum = 0;
-    for (int i = 0; i < frame.Length - 1; i++) sum += frame[i];
-    frame[^1] = unchecked((byte)(~sum + 1));
-    return frame;
-}
 if (args.Length > 0 && string.Equals(args[0], "i2c-cmd", StringComparison.OrdinalIgnoreCase))
 {
     // Send I2C AT commands via the AT envelope (opcode 0x1C=GET, 0x1B=SET)
