@@ -42,6 +42,7 @@ public sealed partial class AutomationDiagnosticsHub
             lastVerification);
         var processResourceProjection = BuildProcessResourceProjection(processResources);
         var avSync = BuildAvSyncProjection(captureRuntime);
+        var captureTransport = BuildCaptureTransportProjection(captureRuntime);
         var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);
         var recordingPipeline = BuildRecordingPipelineProjection(health);
         var captureCadence = BuildCaptureCadenceProjection(health);
@@ -216,13 +217,13 @@ public sealed partial class AutomationDiagnosticsHub
             WasapiPlaybackBufferedDurationMs = audioAndIngest.WasapiPlaybackBufferedDurationMs,
             WasapiPlaybackStreamLatencyMs = audioAndIngest.WasapiPlaybackStreamLatencyMs,
             WasapiPlaybackLastRenderTickMs = audioAndIngest.WasapiPlaybackLastRenderTickMs,
-            MemoryPreference = captureRuntime.MemoryPreference,
-            VideoRequestedSubtype = captureRuntime.VideoRequestedSubtype,
-            VideoNegotiatedSubtype = captureRuntime.VideoNegotiatedSubtype,
-            FrameLedgerCapacity = captureRuntime.FrameLedgerCapacity,
-            FrameLedgerEventCount = captureRuntime.FrameLedgerEventCount,
-            FrameLedgerDroppedEventCount = captureRuntime.FrameLedgerDroppedEventCount,
-            FrameLedgerRecentEvents = captureRuntime.FrameLedgerRecentEvents,
+            MemoryPreference = captureTransport.MemoryPreference,
+            VideoRequestedSubtype = captureTransport.VideoRequestedSubtype,
+            VideoNegotiatedSubtype = captureTransport.VideoNegotiatedSubtype,
+            FrameLedgerCapacity = captureTransport.FrameLedgerCapacity,
+            FrameLedgerEventCount = captureTransport.FrameLedgerEventCount,
+            FrameLedgerDroppedEventCount = captureTransport.FrameLedgerDroppedEventCount,
+            FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents,
             PreviewAdapterColorMetadata = previewSummary.AdapterColorMetadata,
             EncoderVideoFramesEnqueued = recordingPipeline.EncoderVideoFramesEnqueued,
             EncoderVideoFramesEncoded = recordingPipeline.EncoderVideoFramesEncoded,

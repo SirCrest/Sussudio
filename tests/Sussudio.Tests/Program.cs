@@ -450,6 +450,9 @@ static partial class Program
                 "Automation diagnostics capture format projection lives in focused partial",
                 AutomationDiagnosticsCaptureFormatProjection_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Automation diagnostics capture transport projection lives in focused partial",
+                AutomationDiagnosticsCaptureTransportProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Automation diagnostics HDR pipeline projection lives in focused partial",
                 AutomationDiagnosticsHdrPipelineProjection_LivesInFocusedPartial),
             await RunCheckAsync(

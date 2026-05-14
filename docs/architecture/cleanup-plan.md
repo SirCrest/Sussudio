@@ -46,6 +46,9 @@ projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns requested,
 actual, negotiated, observed, and encoder format projection inputs consumed by
 the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs` owns capture
+memory preference, requested/negotiated video subtype, and frame-ledger
+projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs` owns source
 capture cadence, preview visual cadence, and center-crop visual cadence
 projection inputs consumed by the automation snapshot DTO.
