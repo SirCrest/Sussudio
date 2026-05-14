@@ -3,11 +3,62 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static Task SourceSignalTelemetrySnapshot_DefaultsHaveExpectedValues()
+    {
+        var type = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
+        var instance = RuntimeHelpers.GetUninitializedObject(type);
+
+        // Uninitialized record: nullable properties should be default (null for nullable, 0 for value types)
+        // Use the factory method to test proper defaults
+        var createMethod = type.GetMethod(
+            "CreateUnavailable",
+            BindingFlags.Public | BindingFlags.Static,
+            binder: null,
+            types: new[] { typeof(string), typeof(string) },
+            modifiers: null)!;
+        var snapshot = createMethod.Invoke(null, new object?[] { "test-reason", null })!;
+
+        AssertEqual("Unavailable",
+            GetStringProperty(snapshot, "Availability"),
+            "CreateUnavailable Availability");
+        AssertEqual("Unknown",
+            GetStringProperty(snapshot, "Origin"),
+            "CreateUnavailable Origin");
+        AssertEqual("Unavailable",
+            GetStringProperty(snapshot, "OriginDetail"),
+            "CreateUnavailable OriginDetail");
+        AssertContains(GetStringProperty(snapshot, "DiagnosticSummary"), "test-reason");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task SourceSignalTelemetrySnapshot_PropertiesRoundTrip()
+    {
+        var type = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
+        var snapshot = RuntimeHelpers.GetUninitializedObject(type);
+
+        SetPropertyBackingField(snapshot, "Width", (int?)1920);
+        SetPropertyBackingField(snapshot, "Height", (int?)1080);
+        SetPropertyBackingField(snapshot, "FrameRateExact", (double?)59.94);
+        SetPropertyBackingField(snapshot, "IsHdr", (bool?)true);
+        SetPropertyBackingField(snapshot, "VideoFormat", "P010");
+        SetPropertyBackingField(snapshot, "Firmware", "1.2.3");
+
+        AssertEqual(1920, GetIntProperty(snapshot, "Width"), "Width round-trip");
+        AssertEqual(1080, GetIntProperty(snapshot, "Height"), "Height round-trip");
+        AssertEqual("P010", GetStringProperty(snapshot, "VideoFormat"), "VideoFormat round-trip");
+        AssertEqual("1.2.3", GetStringProperty(snapshot, "Firmware"), "Firmware round-trip");
+        AssertEqual(true, GetBoolProperty(snapshot, "IsHdr"), "IsHdr round-trip");
+
+        return Task.CompletedTask;
+    }
+
     private static Task SourceSignalTelemetrySnapshot_PreservesFullTelemetryContract()
     {
         var snapshotType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
