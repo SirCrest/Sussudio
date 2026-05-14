@@ -309,6 +309,12 @@ queue source-reader helper shell. Recording queue coverage is split into queue
 overload policy, LibAv sink, WASAPI, and capture fan-out / Flashback backend
 owner files.
 
+`tests/Sussudio.Tests/D3D11PreviewRenderer.Tests.cs` is now only the
+preview-renderer test family marker shell. D3D preview renderer coverage is
+split into geometry/screenshot helper contracts, cadence contracts, the large
+diagnostics contract, source ownership assertions, device-lost behavior, and
+frame-flow/shared-device assertions.
+
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
 to the public toggle/state surface, `FullScreenController.Transitions.cs` to
@@ -1522,7 +1528,9 @@ Remaining `tools/Common` ownership:
    low-risk contract groups first. Snapshot-model contract tests are split by
    CaptureDiagnostics, CaptureHealth, and source-signal telemetry model owner.
    Recording queue tests are split into overload policy, LibAv sink, WASAPI,
-   and capture fan-out/backend owners.
+   and capture fan-out/backend owners. D3D preview renderer tests are split
+   into geometry, cadence, diagnostics-contract, source-ownership, device-lost,
+   and frame-flow owners.
 
 3. Continue converting MainWindow partial concerns into controllers.
 

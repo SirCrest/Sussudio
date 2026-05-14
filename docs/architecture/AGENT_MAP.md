@@ -633,6 +633,23 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` owns
   UnifiedVideoCapture sink fan-out and CaptureService Flashback backend
   aggregate ownership assertions.
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.Tests.cs` is the preview-renderer
+  test family marker shell.
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.Geometry.Tests.cs` owns letterbox,
+  black-edge counting, and PNG CRC helper contract tests.
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.Cadence.Tests.cs` owns present
+  cadence metric shape and suppression baseline tests.
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.Tests.cs`
+  owns the large preview runtime, automation snapshot, and performance timeline
+  diagnostics contract assertion.
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.Tests.cs` owns
+  renderer partial ownership assertions for frame types, submission, ownership,
+  DXGI stats, panel binding, upload, frame latency, and viewport helpers.
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.DeviceLost.Tests.cs` owns device
+  lost classification and recovery ownership assertions.
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.FrameFlow.Tests.cs` owns pending
+  frame draining, frame-capture cancellation, and shared D3D device reference
+  lifecycle assertions.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing and formatter batch tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the
