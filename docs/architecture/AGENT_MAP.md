@@ -1000,9 +1000,11 @@ Primary owners:
   cell, byte, D3D bottleneck, cleanup, export, and optional-value formatting.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs` owns 1%-low
   target summaries, pressure summaries, counters, and budget predicates.
-- `tools/Common/DiagnosticSessionModels.cs` owns diagnostic session options,
-  result, and sample DTOs. Keep summary/live JSON shape changes there rather
-  than expanding the runner header.
+- `tools/Common/DiagnosticSessionOptions.cs` owns diagnostic session run
+  options.
+- `tools/Common/DiagnosticSessionResult.cs` owns diagnostic session summary and
+  live JSON result shape.
+- `tools/Common/DiagnosticSessionSample.cs` owns sampled snapshot DTOs.
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,
   and final summary emission. Keep `summary.json` field shape stable in the

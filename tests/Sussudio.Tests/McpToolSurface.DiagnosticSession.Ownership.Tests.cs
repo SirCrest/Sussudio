@@ -36,8 +36,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var modelText = ReadRepoFile("tools/Common/DiagnosticSessionModels.cs")
-            .Replace("\r\n", "\n");
+        var modelText = ReadDiagnosticSessionModelsSource();
 
         AssertContains(modelText, "public sealed class DiagnosticSessionOptions");
         AssertContains(modelText, "public sealed class DiagnosticSessionResult");

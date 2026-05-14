@@ -1,18 +1,4 @@
-using System.Text.Json;
-
 namespace Sussudio.Tools;
-
-public sealed class DiagnosticSessionOptions
-{
-    public string Scenario { get; init; } = "observe";
-    public int DurationSeconds { get; init; } = 10;
-    public int SampleIntervalMs { get; init; } = 1000;
-    public string? OutputDirectory { get; init; }
-    public bool IncludePresentMon { get; init; }
-    public string? PresentMonPath { get; init; }
-    public bool VerifyRecording { get; init; }
-    public bool LeaveRunning { get; init; }
-}
 
 public sealed class DiagnosticSessionResult
 {
@@ -211,11 +197,4 @@ public sealed class DiagnosticSessionResult
     public PresentMonProbeResult? PresentMon { get; init; }
     public string[] Actions { get; set; } = Array.Empty<string>();
     public string[] Warnings { get; set; } = Array.Empty<string>();
-}
-
-public sealed class DiagnosticSessionSample
-{
-    public long OffsetMs { get; init; }
-    public DateTimeOffset TimestampUtc { get; init; }
-    public JsonElement Snapshot { get; init; }
 }

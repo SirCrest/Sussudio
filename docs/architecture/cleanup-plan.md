@@ -1306,10 +1306,12 @@ Recording output-path browse/open-recordings button workflows now live in
 `Sussudio/Controllers/OutputPathActionController.cs`.
 `MainWindow.OutputPathActions.cs` is the XAML-facing adapter.
 
-Diagnostic session DTOs now live in
-`tools/Common/DiagnosticSessionModels.cs`. `DiagnosticSessionRunner.cs` still
-owns orchestration and scenario execution, but the public options/result/sample
-contracts are separated from runner behavior.
+Diagnostic session DTOs now live in focused model files:
+`tools/Common/DiagnosticSessionOptions.cs`,
+`tools/Common/DiagnosticSessionResult.cs`, and
+`tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionRunner.cs` still
+owns orchestration and scenario execution, but the public
+options/result/sample contracts are separated from runner behavior.
 
 Diagnostic-session result text now lives in a focused partial family rooted at
 `tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
@@ -1599,7 +1601,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionMetrics.PreviewD3D.cs`
 - `DiagnosticSessionMetrics.PlaybackCommands.cs`
 - `DiagnosticSessionMetrics.Counters.cs`
-- `DiagnosticSessionModels.cs`
+- `DiagnosticSessionOptions.cs`
+- `DiagnosticSessionResult.cs`
+- `DiagnosticSessionSample.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionCommandChannel.cs`
 - `DiagnosticSessionPostRunSnapshots.cs`

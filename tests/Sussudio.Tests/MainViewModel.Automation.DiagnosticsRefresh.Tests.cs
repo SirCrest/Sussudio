@@ -1018,8 +1018,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionText.cs")
                 .Replace("\r\n", "\n");
-        var diagnosticSessionModelsText = ReadRepoFile("tools/Common/DiagnosticSessionModels.cs")
-            .Replace("\r\n", "\n");
+        var diagnosticSessionModelsText = ReadDiagnosticSessionModelsSource();
         var diagnosticScenariosText = ReadRepoFile("tools/Common/DiagnosticSessionScenarios.cs")
             .Replace("\r\n", "\n");
         AssertContains(diagnosticSessionText, "var scenario = DiagnosticSessionScenarios.Normalize(options.Scenario);");
