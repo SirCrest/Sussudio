@@ -1516,6 +1516,14 @@ Flashback warmup filtering, sparse cadence tolerances, and tolerated warning
 classification while the runner still owns scenario execution and warning
 emission.
 
+Shared automation pipe client ownership is split from a single helper into a
+focused partial family. `tools/Common/AutomationPipeClient.cs` is the public
+client marker shell, `AutomationPipeClient.Transport.cs` owns named-pipe
+connect/write/read and pipe error classification, `AutomationPipeClient.Commands.cs`
+owns command envelope sending and `not_ready` retry policy,
+`AutomationPipeClient.ResponseState.cs` owns tolerant response-state parsing,
+and `AutomationPipeClient.Models.cs` owns command result and exception types.
+
 PresentMon model and text ownership is split from the probe runner.
 `tools/Common/PresentMonProbe.Models.cs` owns PresentMon options, result,
 summary, swap-chain, correlation, and metric DTOs.
@@ -1537,6 +1545,10 @@ cleanup.
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
+- `AutomationPipeClient.Transport.cs`
+- `AutomationPipeClient.Commands.cs`
+- `AutomationPipeClient.ResponseState.cs`
+- `AutomationPipeClient.Models.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionCleanupActions.cs`
 - `DiagnosticSessionCleanupPolicy.cs`

@@ -80,8 +80,7 @@ static partial class Program
 
     private static Task AutomationPipeConnectFailures_AreClassifiedForCliAndMcp()
     {
-        var sharedClientText = ReadRepoFile("tools/Common/AutomationPipeClient.cs")
-            .Replace("\r\n", "\n");
+        var sharedClientText = ReadAutomationPipeClientSource();
         var ssctlPipeText = ReadRepoFile("tools/ssctl/PipeTransport.cs")
             .Replace("\r\n", "\n");
         var mcpPipeText = ReadRepoFile("tools/McpServer/PipeClient.cs")
@@ -93,6 +92,11 @@ static partial class Program
         var diagnosticSessionPipeRetryText = ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(sharedClientText, "internal static partial class AutomationPipeClient");
+        AssertContains(sharedClientText, "internal static async Task<string> SendRequestAsync(");
+        AssertContains(sharedClientText, "internal static async Task<AutomationPipeCommandResult> SendCommandWithResultAsync(");
+        AssertContains(sharedClientText, "internal static bool TryReadResponseState(");
+        AssertContains(sharedClientText, "internal readonly record struct AutomationPipeCommandResult(");
         AssertContains(sharedClientText, "catch (UnauthorizedAccessException ex)");
         AssertContains(sharedClientText, "\"pipe-access-denied\"");
         AssertContains(sharedClientText, "AutomationPipeProtocol.AutomationKeyEnvVar");
