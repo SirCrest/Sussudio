@@ -118,10 +118,12 @@ static partial class Program
         var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs");
         var diagnosticsSnapshotsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
         var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
+        var diagnosticsSnapshotProjectionCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs");
         var diagnosticsPreviewPacingText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.PreviewPacing.cs");
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + diagnosticsSnapshotsText
             + "\n" + diagnosticsSnapshotProjectionText
+            + "\n" + diagnosticsSnapshotProjectionCaptureCadenceText
             + "\n" + diagnosticsPreviewPacingText
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs");
@@ -135,7 +137,8 @@ static partial class Program
         AssertContains(diagnosticsPreviewPacingText, "private static PreviewPacingClassification ClassifyPreviewPacing(");
         AssertContains(diagnosticsPreviewPacingText, "PreviewPacingSlowStageClassifier.Classify");
         AssertContains(diagnosticsHubText, "PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps");
-        AssertContains(diagnosticsHubText, "CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames");
+        AssertContains(diagnosticsHubText, "CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames");
+        AssertContains(diagnosticsHubText, "EstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames");
         AssertContains(diagnosticsHubText, "RecentD3DMissedRefreshes = recentD3DMissedRefreshes");
         AssertContains(diagnosticsHubText, "RecentPreviewJitterScheduleLateCount = recentPreviewJitter.ScheduleLateCount");
         AssertContains(diagnosticsHubText, "RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts");

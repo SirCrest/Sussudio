@@ -43,6 +43,9 @@ snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns requested,
 actual, negotiated, observed, and encoder format projection inputs consumed by
 the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs` owns source
+capture cadence, preview visual cadence, and center-crop visual cadence
+projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs` owns active
 Flashback export progress, failure, force-rotate fallback, and last-result
 projection consumed by the automation snapshot DTO.
