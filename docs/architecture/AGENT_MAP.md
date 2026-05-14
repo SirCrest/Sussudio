@@ -532,6 +532,8 @@ Entry points:
 - `FlashbackExporter.cs` owns shared native export state and constants.
 - `FlashbackExporter.SingleFile.cs` owns the single-file packet-copy/remux core.
 - `FlashbackExporter.Segments.cs` owns the multi-segment packet-copy/remux core.
+- `FlashbackExporter.SegmentValidation.cs` owns multi-segment export input
+  validation and readable-segment byte estimation for progress.
 - `FlashbackExporter.Requests.cs` owns public export request routing.
 - `FlashbackExporter.Lifetime.cs` owns exporter disposal and cancellation of
   active exports during disposal.

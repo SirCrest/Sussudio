@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using FFmpeg.AutoGen;
 using Sussudio.Models;
@@ -26,82 +25,27 @@ internal sealed unsafe partial class FlashbackExporter
             return CreateCancelledExportResult(outputPath);
         }
 
-        if (segments == null || segments.Count == 0)
+        if (!TryValidateSegmentExportInputs(
+                segments,
+                inPoint,
+                outPoint,
+                outputPath,
+                out var normalizedOutputPath,
+                out var validationFailure))
         {
-            const string message = "Flashback export failed: no segment paths provided.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
-        }
-
-        if (!TryValidateExportRange(inPoint, outPoint, out var rangeFailure))
-        {
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{rangeFailure}'");
-            return FinalizeResult.Failure(outputPath, rangeFailure);
-        }
-
-        var invalidSegmentIndex = FindInvalidSegmentPathIndex(segments);
-        if (invalidSegmentIndex >= 0)
-        {
-            var message = $"Flashback export failed: segment path at index {invalidSegmentIndex} is empty.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
-        }
-
-        var duplicateSegmentIndex = FindDuplicateSegmentPathIndex(segments);
-        if (duplicateSegmentIndex >= 0)
-        {
-            var message = $"Flashback export failed: duplicate segment path at index {duplicateSegmentIndex}.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
-        }
-
-        if (!TryValidateOutputPath(outputPath, out var normalizedOutputPath, out var outputPathFailure))
-        {
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'");
-            return FinalizeResult.Failure(outputPath, outputPathFailure);
+            return validationFailure!;
         }
         outputPath = normalizedOutputPath;
 
-        if (segments.Any(segment => IsSamePath(segment.Path, outputPath)))
-        {
-            var message = $"Flashback export failed: output path must not overwrite source segment '{outputPath}'.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
-        }
-
         var tmpPath = outputPath + ".tmp";
-        if (segments.Any(segment => IsSamePath(segment.Path, tmpPath)))
-        {
-            var message = $"Flashback export failed: temporary output path must not overwrite source segment '{tmpPath}'.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
-        }
 
-        // Estimate total bytes for progress
-        long totalEstimatedBytes = 0;
-        var readableSegmentCount = 0;
-        foreach (var segment in segments)
+        if (!TryEstimateSegmentExportReadableBytes(
+                segments,
+                outputPath,
+                out var totalEstimatedBytes,
+                out var estimateFailure))
         {
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(segment.Path) && File.Exists(segment.Path))
-                {
-                    var segmentLength = new FileInfo(segment.Path).Length;
-                    readableSegmentCount++;
-                    totalEstimatedBytes = AddNonNegativeSaturated(totalEstimatedBytes, segmentLength);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN path='{segment.Path}' type={ex.GetType().Name} msg='{ex.Message}'");
-            }
-        }
-
-        if (readableSegmentCount == 0)
-        {
-            var message = $"Flashback export failed: no readable segment files were available from {segments.Count} planned segments.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
+            return estimateFailure!;
         }
 
         if (!TryWaitForExportLock(outputPath, ct, out var cancellationResult))

@@ -328,6 +328,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
+        var segmentValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentValidation.cs")
+            .Replace("\r\n", "\n");
         var progressText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Progress.cs")
             .Replace("\r\n", "\n");
         var infrastructureText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs")
@@ -340,7 +342,13 @@ static partial class Program
         AssertContains(singleFileText, "private FinalizeResult ExportCore(");
         AssertContains(singleFileText, "ReleaseExportLockBestEffort(\"single_export\");");
         AssertContains(segmentsText, "private FinalizeResult ExportSegmentsCore(");
+        AssertContains(segmentsText, "TryValidateSegmentExportInputs(");
+        AssertContains(segmentsText, "TryEstimateSegmentExportReadableBytes(");
         AssertContains(segmentsText, "ReleaseExportLockBestEffort(\"segment_export\");");
+        AssertContains(segmentValidationText, "private static bool TryValidateSegmentExportInputs(");
+        AssertContains(segmentValidationText, "private static bool TryEstimateSegmentExportReadableBytes(");
+        AssertDoesNotContain(segmentsText, "FindDuplicateSegmentPathIndex(segments)");
+        AssertDoesNotContain(segmentsText, "FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN");
         AssertContains(progressText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)");
         AssertContains(progressText, "private static bool ShouldReportProgressHeartbeat(ref long lastHeartbeatTick)");
         AssertContains(progressText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
