@@ -1470,7 +1470,9 @@ Remaining `tools/Common` ownership:
 
    `tests/Sussudio.Tests/Program.cs` should keep the legacy runner entry point,
    but checks should keep migrating into focused xUnit files or focused
-   partial contract files while the dual-stack harness remains. Continue with
+   partial contract files while the dual-stack harness remains. MCP tool
+   surface tests are now split into command-routing, diagnostic-session,
+   performance, window/preview, and helper partial files; continue with
    low-risk contract groups first.
 
 3. Continue converting MainWindow partial concerns into controllers.

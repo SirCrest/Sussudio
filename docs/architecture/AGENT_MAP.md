@@ -582,6 +582,16 @@ Primary current owners:
   harness contract checks for stats presentation and frame-time overlay policy.
   Keep new stats presentation ownership assertions there instead of growing
   `tests/Sussudio.Tests/Program.cs`.
+- `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
+  command-routing and formatter batch tests.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` owns MCP
+  diagnostic-session tool and diagnostic-session runner contract tests.
+- `tests/Sussudio.Tests/McpToolSurface.Performance.Tests.cs` owns MCP
+  performance timeline and frame-pacing verdict tests.
+- `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` owns MCP wait,
+  window, preview, Flashback, screenshot, and probe tests.
+- `tests/Sussudio.Tests/McpToolSurface.Helpers.cs` owns the shared MCP process,
+  reflection, pipe-capture, JSON assertion, and tool-result helpers.
 - `Sussudio/MainWindow.StatsHardwareSections.cs` owns decode and GPU stats
   row projection. It should gather current MJPEG/NVML values and delegate row
   element reuse to `StatsDiagnosticRowsController`.
