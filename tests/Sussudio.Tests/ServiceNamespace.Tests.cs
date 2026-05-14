@@ -197,6 +197,7 @@ static partial class Program
         var probeExperimentPayloadsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ExperimentPayloads.cs"));
         var probeFormattingText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Formatting.cs"));
         var probeI2cCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.cs"));
+        var probeI2cCommandsHighSelectorProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.HighSelectorProbe.cs"));
         var probeI2cCommandsSelectorProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.SelectorProbe.cs"));
         var probeI2cSwitchText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs"));
         var probeI2cTransportText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs"));
@@ -248,6 +249,11 @@ static partial class Program
         AssertContains(probeI2cCommandsText, "I2C SET/verify via AT envelope");
         AssertContains(probeI2cCommandsText, "RunSelectorProbeAsync(dev)");
         AssertDoesNotContain(probeI2cCommandsText, "Full Selector 3 dump");
+        AssertContains(probeI2cCommandsText, "RunHighSelectorProbeAsync(dev)");
+        AssertDoesNotContain(probeI2cCommandsText, "Probing selectors 18-40");
+        AssertContains(probeI2cCommandsHighSelectorProbeText, "static partial class NativeXuProbeI2cCommands");
+        AssertContains(probeI2cCommandsHighSelectorProbeText, "public static async Task<int> RunHighSelectorProbeAsync");
+        AssertContains(probeI2cCommandsHighSelectorProbeText, "Probing selectors 18-40");
         AssertContains(probeI2cCommandsSelectorProbeText, "static partial class NativeXuProbeI2cCommands");
         AssertContains(probeI2cCommandsSelectorProbeText, "public static async Task<int> RunSelectorProbeAsync");
         AssertContains(probeI2cCommandsSelectorProbeText, "Full Selector 3 dump");
