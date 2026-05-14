@@ -659,6 +659,8 @@ Primary current owners:
   model checks.
 - `tests/Sussudio.Tests/SnapshotModels.SourceSignalTelemetry.Tests.cs` owns
   SourceSignalTelemetrySnapshot and SourceTelemetryDetailEntry contract checks.
+- `tests/Sussudio.Tests/CapturePolicies.HdrOutputPolicy.Tests.cs` owns the
+  offline harness HdrOutputPolicy and HDR output environment-switch checks.
 - `tests/Sussudio.Tests/RecordingQueue.Tests.cs` owns shared recording queue
   source readers and source-block extraction helpers.
 - `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the
