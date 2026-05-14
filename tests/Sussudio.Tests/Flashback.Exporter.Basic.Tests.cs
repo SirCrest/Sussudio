@@ -327,6 +327,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
+        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
+            .Replace("\r\n", "\n");
         var segmentValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentValidation.cs")
             .Replace("\r\n", "\n");
         var progressText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Progress.cs")
@@ -344,6 +346,9 @@ static partial class Program
         AssertContains(segmentsText, "TryValidateSegmentExportInputs(");
         AssertContains(segmentsText, "TryEstimateSegmentExportReadableBytes(");
         AssertContains(segmentsText, "ReleaseExportLockBestEffort(\"segment_export\");");
+        AssertContains(segmentTemplateText, "private bool TryInitializeSegmentOutputTemplate(");
+        AssertContains(segmentTemplateText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
+        AssertDoesNotContain(segmentsText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
         AssertContains(segmentValidationText, "private static bool TryValidateSegmentExportInputs(");
         AssertContains(segmentValidationText, "private static bool TryEstimateSegmentExportReadableBytes(");
         AssertDoesNotContain(segmentsText, "FindDuplicateSegmentPathIndex(segments)");

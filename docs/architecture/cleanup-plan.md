@@ -866,10 +866,11 @@ normalization, and single-export lock release there.
 
 Flashback exporter multi-segment packet-copy/remux behavior now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Segments.cs`. Keep segment
-validation, output-template initialization, skipped-requested-segment
-classification, per-segment packet buffering, continuous timestamp repair, and
-segment-export lock release there. The root exporter keeps shared native state,
-constants, and fields only.
+validation dispatch, skipped-requested-segment classification, per-segment
+packet buffering, continuous timestamp repair, and segment-export lock release
+there. Output-template selection and template-skip diagnostics live in
+`Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs`. The root
+exporter keeps shared native state, constants, and fields only.
 
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
