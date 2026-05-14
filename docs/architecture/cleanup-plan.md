@@ -488,10 +488,9 @@ validation, atomic replacement, overwrite policy, and invalid final-output clean
 
 D3D preview renderer metrics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep present
-cadence, pipeline latency, render CPU timing, DXGI frame statistics, frame
-ownership, slow-frame diagnostics, display-clock estimates, and metric reset
-logic there; keep queueing/lifecycle in the root renderer and GPU drawing work
-in `D3D11PreviewRenderer.Rendering.cs`.
+cadence, pipeline latency, render CPU timing, frame-latency wait metrics,
+slow-frame diagnostics, and metric reset logic there; keep queueing/lifecycle
+in the root renderer and GPU drawing work in `D3D11PreviewRenderer.Rendering.cs`.
 
 D3D preview renderer nested frame and metrics model types now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameTypes.cs`. Keep the
@@ -520,10 +519,15 @@ diagnostic consumption of the latest DXGI counters in `D3D11PreviewRenderer.Metr
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep device
 initialization, shared-device handoff, pipeline texture/view setup, swap-chain
-RTV creation, color-space application, panel binding/unbinding, and composition
-scale transforms there. Device-lost recovery and D3D resource disposal also
-belong there; keep per-frame rendering and draw paths in
+RTV creation, and color-space application there. Device-lost recovery and D3D
+resource disposal also belong there; keep per-frame rendering and draw paths in
 `D3D11PreviewRenderer.Rendering.cs`.
+
+D3D preview renderer swap-chain panel binding now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs`. Keep
+UI-thread `SetSwapChain` bind/unbind marshaling and composition scale
+transforms there; keep device and view allocation in
+`D3D11PreviewRenderer.Resources.cs`.
 
 D3D preview pending-frame queue ownership now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs`. Keep
