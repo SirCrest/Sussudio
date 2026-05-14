@@ -1074,6 +1074,9 @@ static partial class Program
                 "WASAPI audio capture rejects incomplete hot audio writes",
                 WasapiAudioCapture_HotAudioWritesRejectIncompleteTasks),
             await RunCheckAsync(
+                "WASAPI audio capture conversion lives in focused partial",
+                WasapiAudioCapture_ConversionLivesInFocusedPartial),
+            await RunCheckAsync(
                 "WASAPI audio capture stop uses bounded thread join",
                 WasapiAudioCapture_StopUsesBoundedThreadJoin),
             await RunCheckAsync(

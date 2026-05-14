@@ -52,6 +52,9 @@ automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs` owns capture
 audio/video reader, source-reader, and ingest counter projection consumed by the
 automation snapshot DTO.
+`WasapiAudioCapture.Conversion.cs` owns WASAPI sample decode, f32le 48 kHz
+stereo conversion, resampling, and pooled converted packet buffers. Keep
+capture-thread lifecycle and hot writer fan-out in `WasapiAudioCapture.cs`.
 `AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
 capture/playback callback, queue, gap, glitch, and latency projection consumed
 by the automation snapshot DTO.

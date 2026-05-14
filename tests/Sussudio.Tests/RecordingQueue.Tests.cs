@@ -750,6 +750,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task WasapiAudioCapture_ConversionLivesInFocusedPartial()
+    {
+        var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
+            .Replace("\r\n", "\n");
+        var conversionSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.Conversion.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(wasapiSource, "internal sealed partial class WasapiAudioCapture");
+        AssertContains(conversionSource, "internal sealed partial class WasapiAudioCapture");
+        AssertContains(conversionSource, "private ConvertedAudioPacket ConvertToOutputFormat(");
+        AssertContains(conversionSource, "private int ComputeResampledFrameCount(");
+        AssertContains(conversionSource, "private static void ResampleStereoLinear(");
+        AssertContains(conversionSource, "private static unsafe void DecodeToStereo(");
+        AssertContains(conversionSource, "private static unsafe float ReadSample(");
+        AssertContains(conversionSource, "private static void ReturnPacketBuffer(ConvertedAudioPacket packet)");
+        AssertContains(conversionSource, "private readonly struct ConvertedAudioPacket");
+        AssertDoesNotContain(wasapiSource, "private ConvertedAudioPacket ConvertToOutputFormat(");
+        AssertDoesNotContain(wasapiSource, "private static void ResampleStereoLinear(");
+        AssertDoesNotContain(wasapiSource, "private readonly struct ConvertedAudioPacket");
+
+        return Task.CompletedTask;
+    }
+
     private static Task WasapiAudioCapture_StopUsesBoundedThreadJoin()
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
