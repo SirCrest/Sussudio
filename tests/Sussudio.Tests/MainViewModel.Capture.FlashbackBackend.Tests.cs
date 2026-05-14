@@ -13,7 +13,7 @@ static partial class Program
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
-            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.Audio.cs")
+            + "\n" + ReadCaptureServiceAudioCodeWithoutCommentsOrStrings()
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs")
             + "\n" + ReadCaptureServiceFlashbackOrchestrationCodeWithoutCommentsOrStrings();
         var captureServiceRawText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
@@ -24,8 +24,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
-                .Replace("\r\n", "\n")
+            + "\n" + ReadCaptureServiceAudioSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource();
@@ -141,9 +140,9 @@ static partial class Program
             "newCapture.AttachRecordingSink(activeSink);",
             "await StartWasapiPlaybackAsync(committedSwitchToken)");
         var updateMicrophoneMonitor = ExtractTextBetween(
-            captureServiceRawText,
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs").Replace("\r\n", "\n"),
             "public Task UpdateMicrophoneMonitorAsync",
-            "private void OnWasapiCaptureFailed");
+            "        }, cancellationToken);");
         AssertContains(updateMicrophoneMonitor, "if (_isRecording)");
         AssertContains(updateMicrophoneMonitor, "MIC_MONITOR_UPDATE_DEFERRED recording=true");
         AssertOccursBefore(

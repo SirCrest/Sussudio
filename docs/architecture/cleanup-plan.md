@@ -491,11 +491,14 @@ surface, but telemetry polling, fallback merging, NTSC frame-rate correction,
 and pixel-format counters are no longer embedded in the lifecycle/orchestration
 file.
 
-Capture audio preview and microphone monitoring now live in
-`Sussudio/Services/Capture/CaptureService.Audio.cs`. This includes preview
-volume/mute application, audio level events, mic monitor setup/teardown, WASAPI
-playback attach/detach, audio-preview start/stop, and live audio input
-switching while preserving the root service transition lock.
+Capture audio preview and live input switching now live in
+`Sussudio/Services/Capture/CaptureService.Audio.cs`. Preview-time microphone
+monitoring lives in
+`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`, and WASAPI
+playback attach/detach ordering lives in
+`Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs`. These files
+preserve the root service transition lock while keeping mic cleanup and
+playback routing from collapsing back into the general audio partial.
 
 Explicit capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.Cleanup.cs`. That file owns the

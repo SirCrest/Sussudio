@@ -138,8 +138,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
-                .Replace("\r\n", "\n")
+            + "\n" + ReadCaptureServiceAudioSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Probes.cs")
                 .Replace("\r\n", "\n");
 

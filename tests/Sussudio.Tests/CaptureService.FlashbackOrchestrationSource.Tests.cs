@@ -17,6 +17,13 @@ static partial class Program
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs"
     };
 
+    private static readonly string[] CaptureServiceAudioFiles =
+    {
+        "Sussudio/Services/Capture/CaptureService.Audio.cs",
+        "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs",
+        "Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs"
+    };
+
     private static string ReadCaptureServiceFlashbackOrchestrationSource()
         => string.Join(
             "\n",
@@ -27,10 +34,20 @@ static partial class Program
             "\n",
             CaptureServiceRecordingFinalizationFiles.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 
+    private static string ReadCaptureServiceAudioSource()
+        => string.Join(
+            "\n",
+            CaptureServiceAudioFiles.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
+
     private static string ReadCaptureServiceFlashbackOrchestrationCodeWithoutCommentsOrStrings()
         => string.Join(
             "\n",
             CaptureServiceFlashbackOrchestrationFiles.Select(ReadRepoCodeWithoutCommentsOrStrings));
+
+    private static string ReadCaptureServiceAudioCodeWithoutCommentsOrStrings()
+        => string.Join(
+            "\n",
+            CaptureServiceAudioFiles.Select(ReadRepoCodeWithoutCommentsOrStrings));
 
     private static Task CaptureService_FlashbackOrchestrationLivesInFocusedPartials()
     {
@@ -50,6 +67,31 @@ static partial class Program
         AssertDoesNotContain(orchestrationText, "private async Task EnsureFlashbackPreviewBackendAsync(");
         AssertDoesNotContain(orchestrationText, "private async Task DisposeFlashbackPreviewBackendAsync(");
         AssertDoesNotContain(orchestrationText, "private async Task CycleFlashbackBufferAsync(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_AudioOwnershipLivesInFocusedPartials()
+    {
+        var audioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs");
+        var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs");
+        var playbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs");
+
+        AssertContains(audioText, "public Task StartAudioPreviewAsync(");
+        AssertContains(audioText, "public Task UpdateAudioInputAsync(");
+        AssertContains(audioText, "private void OnWasapiCaptureFailed(");
+        AssertDoesNotContain(audioText, "public Task UpdateMicrophoneMonitorAsync(");
+        AssertDoesNotContain(audioText, "private async Task StartWasapiPlaybackAsync(");
+
+        AssertContains(microphoneText, "public Task UpdateMicrophoneMonitorAsync(");
+        AssertContains(microphoneText, "private async Task DisposeMicrophoneCaptureAsync()");
+        AssertContains(microphoneText, "private void OnMicrophoneAudioLevelUpdated(");
+
+        AssertContains(playbackText, "private async Task StartWasapiPlaybackAsync(");
+        AssertContains(playbackText, "private void StopWasapiPlayback()");
+        AssertContains(playbackText, "private void DetachWasapiAudioCapture(");
+        AssertContains(playbackText, "private static void SafeClearWasapiCapturePlayback(");
+        AssertContains(playbackText, "private static void DisposeWasapiPlaybackBestEffort(");
 
         return Task.CompletedTask;
     }
