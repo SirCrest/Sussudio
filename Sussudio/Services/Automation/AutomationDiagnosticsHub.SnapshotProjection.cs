@@ -33,6 +33,13 @@ public sealed partial class AutomationDiagnosticsHub
         var captureFormat = BuildCaptureFormatProjection(captureRuntime);
         var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);
         var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);
+        var recordingOutput = BuildRecordingOutputProjection(
+            viewModelSnapshot,
+            captureRuntime,
+            recordingStats,
+            recordingFileGrowing,
+            lastOutput,
+            lastVerification);
         var recordingPipeline = BuildRecordingPipelineProjection(health);
         var captureCadence = BuildCaptureCadenceProjection(health);
         var mjpeg = BuildMjpegProjection(health);
@@ -162,10 +169,10 @@ public sealed partial class AutomationDiagnosticsHub
             PipelineModeReason = hdrPipeline.PipelineModeReason,
             TelemetryAlignmentStatus = hdrPipeline.TelemetryAlignmentStatus,
             TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,
-            OutputPath = viewModelSnapshot.OutputPath,
-            RecordingTime = viewModelSnapshot.RecordingTime,
-            RecordingSizeInfo = viewModelSnapshot.RecordingSizeInfo,
-            RecordingBitrateInfo = viewModelSnapshot.RecordingBitrateInfo,
+            OutputPath = recordingOutput.OutputPath,
+            RecordingTime = recordingOutput.RecordingTime,
+            RecordingSizeInfo = recordingOutput.RecordingSizeInfo,
+            RecordingBitrateInfo = recordingOutput.RecordingBitrateInfo,
             AudioPeak = audioAndIngest.AudioPeak,
             AudioClipping = audioAndIngest.AudioClipping,
             AudioSignalPresent = audioAndIngest.AudioSignalPresent,
@@ -656,16 +663,16 @@ public sealed partial class AutomationDiagnosticsHub
             VisualCenterCadenceRecentOutputIntervalsMs = captureCadence.VisualCenterRecentOutputIntervalsMs,
             VisualCenterCadenceRecentChangeIntervalsMs = captureCadence.VisualCenterRecentChangeIntervalsMs,
             MjpegPerDecoder = mjpeg.PerDecoder,
-            RecordingVideoBytes = recordingStats.VideoBytes,
-            RecordingAudioBytes = recordingStats.AudioBytes,
-            RecordingTotalBytes = recordingStats.TotalBytes,
-            RecordingFileGrowing = recordingFileGrowing,
-            LastOutputPath = captureRuntime.LastOutputPath,
-            LastFinalizeStatus = captureRuntime.LastFinalizeStatus,
-            LastFinalizeUtc = captureRuntime.LastFinalizeUtc,
-            LastOutputExists = lastOutput.Exists,
-            LastOutputSizeBytes = lastOutput.SizeBytes,
-            LastVerification = lastVerification,
+            RecordingVideoBytes = recordingOutput.RecordingVideoBytes,
+            RecordingAudioBytes = recordingOutput.RecordingAudioBytes,
+            RecordingTotalBytes = recordingOutput.RecordingTotalBytes,
+            RecordingFileGrowing = recordingOutput.RecordingFileGrowing,
+            LastOutputPath = recordingOutput.LastOutputPath,
+            LastFinalizeStatus = recordingOutput.LastFinalizeStatus,
+            LastFinalizeUtc = recordingOutput.LastFinalizeUtc,
+            LastOutputExists = recordingOutput.LastOutputExists,
+            LastOutputSizeBytes = recordingOutput.LastOutputSizeBytes,
+            LastVerification = recordingOutput.LastVerification,
             HdrTruthVerdict = hdrTruthVerdict,
             MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,
             MemoryPrivateBytesMb = processResources.MemoryPrivateBytesMb,
