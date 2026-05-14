@@ -9,6 +9,7 @@ static partial class Program
         var parts = new[]
         {
             ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs").Replace("\r\n", "\n")
         };
 
@@ -841,6 +842,26 @@ static partial class Program
             "if (videoQueue.Reader.Completion.IsCompleted");
         AssertContains(secondAudioDrainBlock, "DrainAudioPackets(audioQueue.Reader)");
         AssertContains(secondAudioDrainBlock, "DrainMicrophonePackets(microphoneQueue.Reader)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task LibAvRecordingSink_EncodingLoopLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
+            .Replace("\r\n", "\n");
+        var encodingLoopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(encodingLoopText, "private void EncodingLoop(CancellationToken cancellationToken)");
+        AssertContains(encodingLoopText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(encodingLoopText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(encodingLoopText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(encodingLoopText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)");
+        AssertContains(encodingLoopText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader)");
+        AssertDoesNotContain(rootText, "private void EncodingLoop(CancellationToken cancellationToken)");
+        AssertDoesNotContain(rootText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertDoesNotContain(rootText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
 
         return Task.CompletedTask;
     }

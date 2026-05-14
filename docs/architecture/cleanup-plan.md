@@ -315,8 +315,14 @@ LibAv recording sink queue ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`. Keep public
 video/GPU/CUDA/audio enqueue entry points, hot WASAPI write adapters,
 remaining-buffer cleanup, queue-depth accounting, failure signaling, packet
-records, and pooled buffer return helpers there; keep start/stop lifecycle,
-encoder option creation, and the encode-drain loop in `LibAvRecordingSink.cs`.
+records, and pooled buffer return helpers there; keep start/stop lifecycle and
+encoder option creation in `LibAvRecordingSink.cs`.
+
+LibAv recording sink encode-drain ownership now lives in
+`Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs`. Keep the
+background encoding loop, bounded video/GPU/CUDA/audio/microphone drain
+batches, cancellation cleanup, frame-encoded event dispatch, and fatal encoder
+failure handling there.
 
 Recording verifier cadence analysis now lives in
 `Sussudio/Services/Recording/RecordingVerifier.Cadence.cs`. Keep ffprobe frame

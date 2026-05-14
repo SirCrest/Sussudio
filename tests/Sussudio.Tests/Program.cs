@@ -1011,6 +1011,9 @@ static partial class Program
                 "LibAv recording drain loop interleaves audio with bounded video batches",
                 LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches),
             await RunCheckAsync(
+                "LibAv recording encoding loop lives in focused partial",
+                LibAvRecordingSink_EncodingLoopLivesInFocusedPartial),
+            await RunCheckAsync(
                 "MJPG HFR mode only activates for SDR 4K120-style settings",
                 CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest),
             await RunCheckAsync(
