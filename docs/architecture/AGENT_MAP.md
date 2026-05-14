@@ -728,7 +728,8 @@ Primary current owners:
   source readers and source-block extraction helpers.
 - `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the
   recording/Flashback queue overload, fatal-failure, recovery-preserve, and
-  snapshot projection policy assertion.
+  snapshot projection policy assertion. `CaptureService.RecordingOwnership.Tests.cs` owns
+  CaptureService recording lifecycle and rollback file-ownership assertions.
 - `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Tests.cs` owns LibAv recording
   sink output validation, try-enqueue, drain-loop, encoding-loop, and lifecycle
   ownership assertions.
