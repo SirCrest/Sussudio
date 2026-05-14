@@ -71,6 +71,9 @@ recording-integrity projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns encoder
 queue ages, conversion queue depths, and recording video/GPU/CUDA health inputs
 consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs` owns detected
+source frame-rate fallback, source dimensions/HDR, and raw source signal
+metadata projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.SourceTelemetry.cs` owns source
 telemetry fallback policy, age calculation, and source-target summary inputs
 consumed by the automation snapshot DTO.

@@ -30,6 +30,7 @@ public sealed partial class AutomationDiagnosticsHub
         var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);
         var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);
         var captureFormat = BuildCaptureFormatProjection(captureRuntime);
+        var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);
         var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);
         var recordingPipeline = BuildRecordingPipelineProjection(health);
         var captureCadence = BuildCaptureCadenceProjection(health);
@@ -99,29 +100,26 @@ public sealed partial class AutomationDiagnosticsHub
             SelectedExactFrameRateArg = viewModelSnapshot.SelectedExactFrameRateArg,
             DisabledResolutionReason = viewModelSnapshot.DisabledResolutionReason,
             DisabledFrameRateReason = viewModelSnapshot.DisabledFrameRateReason,
-            DetectedSourceFrameRate = viewModelSnapshot.DetectedSourceFrameRate ?? captureRuntime.DetectedSourceFrameRate,
-            DetectedSourceFrameRateArg = viewModelSnapshot.DetectedSourceFrameRateArg ?? captureRuntime.DetectedSourceFrameRateArg,
-            SourceFrameRateOrigin = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceFrameRateOrigin) &&
-                                    !string.Equals(viewModelSnapshot.SourceFrameRateOrigin, "Unknown", StringComparison.OrdinalIgnoreCase)
-                ? viewModelSnapshot.SourceFrameRateOrigin
-                : captureRuntime.SourceFrameRateOrigin,
-            SourceWidth = viewModelSnapshot.SourceWidth ?? captureRuntime.SourceWidth,
-            SourceHeight = viewModelSnapshot.SourceHeight ?? captureRuntime.SourceHeight,
-            SourceIsHdr = viewModelSnapshot.SourceIsHdr ?? captureRuntime.SourceIsHdr,
-            SourceVideoFormat = captureRuntime.SourceVideoFormat,
-            SourceColorimetry = captureRuntime.SourceColorimetry,
-            SourceQuantization = captureRuntime.SourceQuantization,
-            SourceHdrTransferFunction = captureRuntime.SourceHdrTransferFunction,
-            SourceHdrTransferCode = captureRuntime.SourceHdrTransferCode,
-            SourceFirmware = captureRuntime.SourceFirmware,
-            SourceAudioFormat = captureRuntime.SourceAudioFormat,
-            SourceAudioSampleRate = captureRuntime.SourceAudioSampleRate,
-            SourceInputSource = captureRuntime.SourceInputSource,
-            SourceUsbHostProtocol = captureRuntime.SourceUsbHostProtocol,
-            SourceHdcpMode = captureRuntime.SourceHdcpMode,
-            SourceHdcpVersion = captureRuntime.SourceHdcpVersion,
-            SourceRxTxHdcpVersion = captureRuntime.SourceRxTxHdcpVersion,
-            SourceRawTimingHex = captureRuntime.SourceRawTimingHex,
+            DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,
+            DetectedSourceFrameRateArg = sourceSignal.DetectedFrameRateArg,
+            SourceFrameRateOrigin = sourceSignal.FrameRateOrigin,
+            SourceWidth = sourceSignal.Width,
+            SourceHeight = sourceSignal.Height,
+            SourceIsHdr = sourceSignal.IsHdr,
+            SourceVideoFormat = sourceSignal.VideoFormat,
+            SourceColorimetry = sourceSignal.Colorimetry,
+            SourceQuantization = sourceSignal.Quantization,
+            SourceHdrTransferFunction = sourceSignal.HdrTransferFunction,
+            SourceHdrTransferCode = sourceSignal.HdrTransferCode,
+            SourceFirmware = sourceSignal.Firmware,
+            SourceAudioFormat = sourceSignal.AudioFormat,
+            SourceAudioSampleRate = sourceSignal.AudioSampleRate,
+            SourceInputSource = sourceSignal.InputSource,
+            SourceUsbHostProtocol = sourceSignal.UsbHostProtocol,
+            SourceHdcpMode = sourceSignal.HdcpMode,
+            SourceHdcpVersion = sourceSignal.HdcpVersion,
+            SourceRxTxHdcpVersion = sourceSignal.RxTxHdcpVersion,
+            SourceRawTimingHex = sourceSignal.RawTimingHex,
             SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,
             SourceTelemetryOriginDetail = sourceTelemetry.SourceTelemetryOriginDetail,
             SourceTelemetryConfidence = sourceTelemetry.SourceTelemetryConfidence,

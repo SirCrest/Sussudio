@@ -453,6 +453,9 @@ static partial class Program
                 "Automation diagnostics MJPEG projection lives in focused partial",
                 AutomationDiagnosticsMjpegProjection_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Automation diagnostics source signal projection lives in focused partial",
+                AutomationDiagnosticsSourceSignalProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Automation diagnostics source telemetry projection lives in focused partial",
                 AutomationDiagnosticsSourceTelemetryProjection_LivesInFocusedPartial),
             await RunCheckAsync(
@@ -1990,9 +1993,11 @@ static partial class Program
     private static Task AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields()
     {
         var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs").Replace("\r\n", "\n");
+        var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs").Replace("\r\n", "\n");
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs").Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs").Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs").Replace("\r\n", "\n")
+            + "\n" + sourceSignalProjectionText
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs").Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs").Replace("\r\n", "\n");
 
@@ -2006,15 +2011,18 @@ static partial class Program
         AssertContains(contractsText, "public string? SourceRxTxHdcpVersion { get; init; }");
         AssertContains(contractsText, "public string? SourceRawTimingHex { get; init; }");
 
-        AssertContains(diagnosticsHubText, "SourceFirmware = captureRuntime.SourceFirmware,");
-        AssertContains(diagnosticsHubText, "SourceAudioFormat = captureRuntime.SourceAudioFormat,");
-        AssertContains(diagnosticsHubText, "SourceAudioSampleRate = captureRuntime.SourceAudioSampleRate,");
-        AssertContains(diagnosticsHubText, "SourceInputSource = captureRuntime.SourceInputSource,");
-        AssertContains(diagnosticsHubText, "SourceUsbHostProtocol = captureRuntime.SourceUsbHostProtocol,");
-        AssertContains(diagnosticsHubText, "SourceHdcpMode = captureRuntime.SourceHdcpMode,");
-        AssertContains(diagnosticsHubText, "SourceHdcpVersion = captureRuntime.SourceHdcpVersion,");
-        AssertContains(diagnosticsHubText, "SourceRxTxHdcpVersion = captureRuntime.SourceRxTxHdcpVersion,");
-        AssertContains(diagnosticsHubText, "SourceRawTimingHex = captureRuntime.SourceRawTimingHex,");
+        AssertContains(diagnosticsHubText, "SourceFirmware = sourceSignal.Firmware,");
+        AssertContains(diagnosticsHubText, "SourceAudioFormat = sourceSignal.AudioFormat,");
+        AssertContains(diagnosticsHubText, "SourceAudioSampleRate = sourceSignal.AudioSampleRate,");
+        AssertContains(diagnosticsHubText, "SourceInputSource = sourceSignal.InputSource,");
+        AssertContains(diagnosticsHubText, "SourceUsbHostProtocol = sourceSignal.UsbHostProtocol,");
+        AssertContains(diagnosticsHubText, "SourceHdcpMode = sourceSignal.HdcpMode,");
+        AssertContains(diagnosticsHubText, "SourceHdcpVersion = sourceSignal.HdcpVersion,");
+        AssertContains(diagnosticsHubText, "SourceRxTxHdcpVersion = sourceSignal.RxTxHdcpVersion,");
+        AssertContains(diagnosticsHubText, "SourceRawTimingHex = sourceSignal.RawTimingHex,");
+        AssertContains(sourceSignalProjectionText, "Firmware = captureRuntime.SourceFirmware,");
+        AssertContains(sourceSignalProjectionText, "AudioFormat = captureRuntime.SourceAudioFormat,");
+        AssertContains(sourceSignalProjectionText, "RawTimingHex = captureRuntime.SourceRawTimingHex");
 
         return Task.CompletedTask;
     }
