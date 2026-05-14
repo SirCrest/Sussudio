@@ -54,6 +54,25 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task StatsSectionChrome_LivesInFocusedPartial()
+    {
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsSectionsText = ReadRepoFile("Sussudio/MainWindow.StatsSections.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+
+        AssertContains(statsSectionsText, "private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)");
+        AssertContains(statsSectionsText, "private void SetStatsSectionVisible(string section, bool visible)");
+        AssertContains(statsSectionsText, "content.Visibility = collapsing ? Visibility.Collapsed : Visibility.Visible;");
+        AssertContains(statsSectionsText, "rotate.Angle = collapsing ? -90 : 0;");
+        AssertContains(statsSectionsText, "rotate.Angle = visible ? 0 : -90;");
+        AssertContains(statsSectionsText, "UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);");
+        AssertContains(mainWindowText, "ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;");
+        AssertDoesNotContain(statsOverlayText, "private void StatsSectionHeader_Tapped(");
+        AssertDoesNotContain(statsOverlayText, "private void SetStatsSectionVisible(string section, bool visible)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task StatsDiagnosticRowPooling_LivesInController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");

@@ -660,9 +660,11 @@ Primary current owners:
   frame-time overlay visibility, polling lifetime, and dock show/hide
   animations. `MainWindow.StatsOverlay.cs` still owns metric text projection
   and snapshot assembly for now.
+- `Sussudio/MainWindow.StatsSections.cs` owns stats dock section expand/collapse
+  chrome and automation-visible section visibility application.
 - `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
-  contract checks for stats overlay lifecycle wiring, source-telemetry panel
-  projection, and diagnostic row pooling.
+  contract checks for stats overlay lifecycle wiring, stats section chrome,
+  source-telemetry panel projection, and diagnostic row pooling.
 - `Sussudio/Controllers/StatsDiagnosticRowsController.cs` owns dynamic
   decode/GPU/diagnostic row pools, empty-state rows, group headers, and
   diagnostic row style updates. `MainWindow.StatsOverlay.cs` still owns metric
