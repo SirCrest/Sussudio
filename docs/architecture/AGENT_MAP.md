@@ -654,6 +654,8 @@ Primary current owners:
   audio-level, and MediaFormat model contract checks.
 - `tests/Sussudio.Tests/SnapshotModels.Tests.cs` owns shared snapshot-model
   reflection/spec helpers, including the CaptureDiagnostics property spec.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.Tests.cs` owns automation
+  snapshot/options DTO shape checks and source-signal projection drift guards.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns
   CaptureDiagnosticsSnapshot default, round-trip, and reflection JSON checks.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns
