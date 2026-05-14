@@ -29,6 +29,7 @@ public sealed partial class AutomationDiagnosticsHub
         var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);
         var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);
         var captureFormat = BuildCaptureFormatProjection(captureRuntime);
+        var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);
         var snapshot = new AutomationSnapshot
         {
             TimestampUtc = DateTimeOffset.UtcNow,
@@ -110,31 +111,19 @@ public sealed partial class AutomationDiagnosticsHub
             SourceHdcpVersion = captureRuntime.SourceHdcpVersion,
             SourceRxTxHdcpVersion = captureRuntime.SourceRxTxHdcpVersion,
             SourceRawTimingHex = captureRuntime.SourceRawTimingHex,
-            SourceTelemetryAvailability = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceTelemetryAvailability) &&
-                                          !string.Equals(viewModelSnapshot.SourceTelemetryAvailability, "Unknown", StringComparison.OrdinalIgnoreCase)
-                ? viewModelSnapshot.SourceTelemetryAvailability
-                : captureRuntime.SourceTelemetryAvailability,
-            SourceTelemetryOriginDetail = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceTelemetryOriginDetail) &&
-                                          !string.Equals(viewModelSnapshot.SourceTelemetryOriginDetail, "Unknown", StringComparison.OrdinalIgnoreCase)
-                ? viewModelSnapshot.SourceTelemetryOriginDetail
-                : captureRuntime.SourceTelemetryOriginDetail,
-            SourceTelemetryConfidence = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceTelemetryConfidence) &&
-                                        !string.Equals(viewModelSnapshot.SourceTelemetryConfidence, "Unknown", StringComparison.OrdinalIgnoreCase)
-                ? viewModelSnapshot.SourceTelemetryConfidence
-                : captureRuntime.SourceTelemetryConfidence,
-            SourceTelemetryDiagnosticSummary = viewModelSnapshot.SourceTelemetryDiagnosticSummary ?? captureRuntime.SourceTelemetryDiagnosticSummary,
-            SourceTelemetryDetails = captureRuntime.SourceTelemetryDetails,
-            SourceTelemetryTimestampUtc = viewModelSnapshot.SourceTelemetryTimestampUtc ?? captureRuntime.SourceTelemetryTimestampUtc,
-            SourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(
-                viewModelSnapshot.SourceTelemetryAgeSeconds,
-                viewModelSnapshot.SourceTelemetryTimestampUtc ?? captureRuntime.SourceTelemetryTimestampUtc,
-                DateTimeOffset.UtcNow),
-            SourceTelemetryBackend = captureRuntime.SourceTelemetryBackend,
-            SourceTelemetrySuppressed = captureRuntime.SourceTelemetrySuppressed,
-            SourceTelemetrySuppressedReason = captureRuntime.SourceTelemetrySuppressedReason,
-            SourceTelemetryCircuitState = captureRuntime.SourceTelemetryCircuitState,
-            SourceTelemetrySummaryText = viewModelSnapshot.SourceTelemetrySummaryText,
-            SourceTargetSummaryText = viewModelSnapshot.SourceTargetSummaryText,
+            SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,
+            SourceTelemetryOriginDetail = sourceTelemetry.SourceTelemetryOriginDetail,
+            SourceTelemetryConfidence = sourceTelemetry.SourceTelemetryConfidence,
+            SourceTelemetryDiagnosticSummary = sourceTelemetry.SourceTelemetryDiagnosticSummary,
+            SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,
+            SourceTelemetryTimestampUtc = sourceTelemetry.SourceTelemetryTimestampUtc,
+            SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,
+            SourceTelemetryBackend = sourceTelemetry.SourceTelemetryBackend,
+            SourceTelemetrySuppressed = sourceTelemetry.SourceTelemetrySuppressed,
+            SourceTelemetrySuppressedReason = sourceTelemetry.SourceTelemetrySuppressedReason,
+            SourceTelemetryCircuitState = sourceTelemetry.SourceTelemetryCircuitState,
+            SourceTelemetrySummaryText = sourceTelemetry.SourceTelemetrySummaryText,
+            SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText,
             SelectedRecordingFormat = viewModelSnapshot.SelectedRecordingFormat,
             SelectedQuality = viewModelSnapshot.SelectedQuality,
             SelectedPreset = viewModelSnapshot.SelectedPreset,

@@ -45,6 +45,9 @@ actual, negotiated, observed, and encoder format projection inputs consumed by
 the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs` owns
 recording-integrity projection inputs consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.SourceTelemetry.cs` owns source
+telemetry fallback policy, age calculation, and source-target summary inputs
+consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation and active-alert
 transitions. `AutomationDiagnosticsHub.SignalAlerts.cs` owns preview, capture,
 audio-signal, and recording-growth alert rules.
