@@ -80,6 +80,10 @@ consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs` owns selected
 device, selected capture/recording options, preview volume, and stats
 visibility projection consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs` owns HDR
+availability/request state, runtime/readiness fallback, HDR warmup/downgrade,
+pipeline parity, and telemetry-alignment projection consumed by the automation
+snapshot DTO.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation and active-alert
 transitions. `AutomationDiagnosticsHub.SignalAlerts.cs` owns preview, capture,
 audio-signal, and recording-growth alert rules.

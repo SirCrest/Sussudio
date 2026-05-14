@@ -40,6 +40,7 @@ public sealed partial class AutomationDiagnosticsHub
             previewRuntime,
             recentD3DMissedRefreshes,
             recentD3DStatsFailures);
+        var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime);
         var flashbackExport = BuildFlashbackExportProjection(health);
         var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);
         var flashbackPlayback = BuildFlashbackPlaybackProjection(health);
@@ -143,28 +144,24 @@ public sealed partial class AutomationDiagnosticsHub
             ShowAllCaptureOptions = userSettings.ShowAllCaptureOptions,
             PreviewVolumePercent = userSettings.PreviewVolumePercent,
             IsStatsVisible = userSettings.IsStatsVisible,
-            IsHdrAvailable = viewModelSnapshot.IsHdrAvailable,
-            IsHdrEnabled = viewModelSnapshot.IsHdrEnabled,
-            HdrOutputActive = captureRuntime.HdrOutputActive,
-            HdrRuntimeState = !string.IsNullOrWhiteSpace(viewModelSnapshot.HdrRuntimeState)
-                ? viewModelSnapshot.HdrRuntimeState
-                : captureRuntime.HdrRuntimeState,
-            HdrReadinessReason = !string.IsNullOrWhiteSpace(viewModelSnapshot.HdrReadinessReason)
-                ? viewModelSnapshot.HdrReadinessReason
-                : captureRuntime.HdrReadinessReason,
-            HdrWarmupState = captureRuntime.HdrWarmupState,
-            HdrWarmupRequiredP010Frames = captureRuntime.HdrWarmupRequiredP010Frames,
-            HdrWarmupAllowedNonP010Frames = captureRuntime.HdrWarmupAllowedNonP010Frames,
-            HdrWarmupObservedP010Frames = captureRuntime.HdrWarmupObservedP010Frames,
-            HdrWarmupObservedNonP010Frames = captureRuntime.HdrWarmupObservedNonP010Frames,
-            HdrDowngradeCode = captureRuntime.HdrDowngradeCode,
-            RequestedPipelineMode = captureRuntime.RequestedPipelineMode,
-            ActivePipelineMode = captureRuntime.ActivePipelineMode,
-            PipelineModeMatched = captureRuntime.PipelineModeMatched,
-            PipelineModeStatus = captureRuntime.PipelineModeStatus,
-            PipelineModeReason = captureRuntime.PipelineModeReason,
-            TelemetryAlignmentStatus = captureRuntime.TelemetryAlignmentStatus,
-            TelemetryAlignmentReason = captureRuntime.TelemetryAlignmentReason,
+            IsHdrAvailable = hdrPipeline.IsHdrAvailable,
+            IsHdrEnabled = hdrPipeline.IsHdrEnabled,
+            HdrOutputActive = hdrPipeline.HdrOutputActive,
+            HdrRuntimeState = hdrPipeline.HdrRuntimeState,
+            HdrReadinessReason = hdrPipeline.HdrReadinessReason,
+            HdrWarmupState = hdrPipeline.HdrWarmupState,
+            HdrWarmupRequiredP010Frames = hdrPipeline.HdrWarmupRequiredP010Frames,
+            HdrWarmupAllowedNonP010Frames = hdrPipeline.HdrWarmupAllowedNonP010Frames,
+            HdrWarmupObservedP010Frames = hdrPipeline.HdrWarmupObservedP010Frames,
+            HdrWarmupObservedNonP010Frames = hdrPipeline.HdrWarmupObservedNonP010Frames,
+            HdrDowngradeCode = hdrPipeline.HdrDowngradeCode,
+            RequestedPipelineMode = hdrPipeline.RequestedPipelineMode,
+            ActivePipelineMode = hdrPipeline.ActivePipelineMode,
+            PipelineModeMatched = hdrPipeline.PipelineModeMatched,
+            PipelineModeStatus = hdrPipeline.PipelineModeStatus,
+            PipelineModeReason = hdrPipeline.PipelineModeReason,
+            TelemetryAlignmentStatus = hdrPipeline.TelemetryAlignmentStatus,
+            TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,
             OutputPath = viewModelSnapshot.OutputPath,
             RecordingTime = viewModelSnapshot.RecordingTime,
             RecordingSizeInfo = viewModelSnapshot.RecordingSizeInfo,
