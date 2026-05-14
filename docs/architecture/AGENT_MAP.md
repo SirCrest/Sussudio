@@ -772,8 +772,11 @@ Primary current owners:
   playback state, marker, position, snap-live, and no-op command tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Thread.Tests.cs` owns Flashback
   playback thread recovery and live-preview transition tests.
-- `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` owns Flashback
-  playback command queue, scrub coalescing, and seek-slot barrier tests.
+- `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` is the
+  Flashback playback command queue marker shell. Capacity/drop-oldest,
+  scrub-coalescing, and seek-slot barrier coverage lives in focused
+  `CommandQueue.Capacity`, `CommandQueue.ScrubCoalescing`, and
+  `CommandQueue.SeekSlots` owner files.
 - `tests/Sussudio.Tests/Flashback.Playback.Cadence.Tests.cs` owns Flashback
   playback cadence, submit-failure, fMP4 reopen, and metrics reset tests.
 - `tests/Sussudio.Tests/Flashback.Decoder.Tests.cs` owns Flashback decoder
