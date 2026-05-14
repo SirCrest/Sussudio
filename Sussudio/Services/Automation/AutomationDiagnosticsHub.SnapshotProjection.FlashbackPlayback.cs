@@ -6,6 +6,7 @@ public sealed partial class AutomationDiagnosticsHub
 {
     private static FlashbackPlaybackProjection BuildFlashbackPlaybackProjection(CaptureHealthSnapshot health)
     {
+        var audioMaster = BuildFlashbackPlaybackAudioMasterProjection(health);
         var commands = BuildFlashbackPlaybackCommandProjection(health);
 
         return new()
@@ -16,15 +17,15 @@ public sealed partial class AutomationDiagnosticsHub
             FrameCount = health.FlashbackPlaybackFrameCount,
             LateFrames = health.FlashbackPlaybackLateFrames,
             DroppedFrames = health.FlashbackPlaybackDroppedFrames,
-            AudioMasterDelayDoubles = health.FlashbackPlaybackAudioMasterDelayDoubles,
-            AudioMasterDelayShrinks = health.FlashbackPlaybackAudioMasterDelayShrinks,
-            AudioMasterFallbacks = health.FlashbackPlaybackAudioMasterFallbacks,
-            AudioMasterUnavailableFallbacks = health.FlashbackPlaybackAudioMasterUnavailableFallbacks,
-            AudioMasterStaleFallbacks = health.FlashbackPlaybackAudioMasterStaleFallbacks,
-            AudioMasterDriftOutlierFallbacks = health.FlashbackPlaybackAudioMasterDriftOutlierFallbacks,
-            AudioMasterLastFallbackReason = health.FlashbackPlaybackAudioMasterLastFallbackReason,
-            AudioMasterLastFallbackDriftMs = health.FlashbackPlaybackAudioMasterLastFallbackDriftMs,
-            AudioMasterLastFallbackClockAgeMs = health.FlashbackPlaybackAudioMasterLastFallbackClockAgeMs,
+            AudioMasterDelayDoubles = audioMaster.DelayDoubles,
+            AudioMasterDelayShrinks = audioMaster.DelayShrinks,
+            AudioMasterFallbacks = audioMaster.Fallbacks,
+            AudioMasterUnavailableFallbacks = audioMaster.UnavailableFallbacks,
+            AudioMasterStaleFallbacks = audioMaster.StaleFallbacks,
+            AudioMasterDriftOutlierFallbacks = audioMaster.DriftOutlierFallbacks,
+            AudioMasterLastFallbackReason = audioMaster.LastFallbackReason,
+            AudioMasterLastFallbackDriftMs = audioMaster.LastFallbackDriftMs,
+            AudioMasterLastFallbackClockAgeMs = audioMaster.LastFallbackClockAgeMs,
             SegmentSwitches = health.FlashbackPlaybackSegmentSwitches,
             Fmp4Reopens = health.FlashbackPlaybackFmp4Reopens,
             WriteHeadWaits = health.FlashbackPlaybackWriteHeadWaits,
