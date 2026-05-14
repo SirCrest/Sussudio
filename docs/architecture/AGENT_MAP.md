@@ -712,6 +712,8 @@ Primary current owners:
   computed-property and unit-conversion contract checks.
 - `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns RuntimePaths,
   MMCSS registration, ProcessSpec, and ProcessRunResult contract checks.
+- `tests/Sussudio.Tests/RecordingContracts.Models.Tests.cs` owns recording
+  service contract DTO checks such as GpuPipelineHandles and RecordingContextRequest.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers for automation tool contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Protocol.Tests.cs` owns
