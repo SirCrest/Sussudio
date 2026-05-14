@@ -826,6 +826,8 @@ the legacy harness body in `tests/Sussudio.Tests/Program.cs`.
 Stats diagnostic summary/row parsing now lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs`; keep the root
 `StatsPresentationBuilder.cs` focused on dock and frame-time presentation.
+Stats presentation DTO records/enums now live in
+`Sussudio/ViewModels/StatsPresentationModels.cs`.
 
 Dynamic stats diagnostic row pools now live in
 `Sussudio/Controllers/StatsDiagnosticRowsController.cs`. It owns decode/GPU

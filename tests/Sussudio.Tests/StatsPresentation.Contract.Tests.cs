@@ -8,6 +8,7 @@ static partial class Program
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationDiagnosticsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs").Replace("\r\n", "\n");
+        var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
 
         AssertContains(statsPresentationText, "internal static partial class StatsPresentationBuilder");
         AssertContains(statsPresentationText, "public static StatsDockPresentation BuildDockPresentation(StatsSnapshot snapshot)");
@@ -18,6 +19,11 @@ static partial class Program
         AssertContains(statsPresentationDiagnosticsText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
         AssertDoesNotContain(statsPresentationText, "public static StatsDiagnosticRowsPresentation BuildDiagnosticRows(");
         AssertDoesNotContain(statsPresentationText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
+        AssertContains(statsPresentationModelsText, "internal sealed record StatsDockPresentation(");
+        AssertContains(statsPresentationModelsText, "internal sealed record StatsFrameTimePresentation(");
+        AssertContains(statsPresentationModelsText, "internal enum StatsMetricStatus");
+        AssertDoesNotContain(statsPresentationText, "internal sealed record StatsDockPresentation(");
+        AssertDoesNotContain(statsPresentationText, "internal enum StatsMetricStatus");
         AssertContains(statsOverlayText, "var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);");
         AssertContains(frameTimeOverlayText, "var presentation = StatsPresentationBuilder.BuildFrameTimePresentation(snapshot);");
         AssertContains(statsOverlayText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
