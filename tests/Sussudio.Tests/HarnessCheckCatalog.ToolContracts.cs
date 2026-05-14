@@ -86,6 +86,9 @@ static partial class Program
             "ssctl CommandHandlers route core command groups",
             SsctlCommandHandlers_RouteCoreCommandGroups);
         await AddCheckAsync(results,
+            "ssctl help documents Flashback export force flag",
+            SsctlHelp_FlashbackExportIncludesForceFlag);
+        await AddCheckAsync(results,
             "PresentMon parser selects dominant non-artifact swap chain",
             PresentMonParser_SelectsDominantNonArtifactSwapChain);
         await AddCheckAsync(results,

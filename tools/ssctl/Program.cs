@@ -167,7 +167,7 @@ internal static class Program
         Console.WriteLine("  flashback update-scrub <ms>");
         Console.WriteLine("  flashback end-scrub [<ms>]");
         Console.WriteLine("  flashback set-in|set-out|clear-range");
-        Console.WriteLine("  flashback export [seconds] [path] [--range]");
+        Console.WriteLine("  flashback export [seconds] [path] [--range] [--force]");
         Console.WriteLine("  flashback apply");
         Console.WriteLine();
         Console.WriteLine("Window:");
