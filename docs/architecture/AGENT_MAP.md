@@ -794,7 +794,17 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Tests.cs` owns shared Flashback test helper
   source readers and helper methods only.
 - `tests/Sussudio.Tests/Flashback.Buffer.Tests.cs` owns Flashback buffer option
-  and buffer-manager contract tests.
+  and initialization contract tests.
+- `tests/Sussudio.Tests/Flashback.Buffer.Helpers.cs` owns shared Flashback
+  buffer test factories, completed-segment insertion, and sized-file helpers.
+- `tests/Sussudio.Tests/Flashback.Buffer.SourceOwnership.Tests.cs` owns
+  Flashback buffer-manager partial ownership assertions.
+- `tests/Sussudio.Tests/Flashback.Buffer.Segments.Tests.cs` owns Flashback
+  buffer segment completion, query, PTS, and segment-list behavior tests.
+- `tests/Sussudio.Tests/Flashback.Buffer.Retention.Tests.cs` owns Flashback
+  buffer eviction, purge, stale-session, and startup-cache budget tests.
+- `tests/Sussudio.Tests/Flashback.Buffer.Validation.Tests.cs` owns Flashback
+  buffer session-id and segment-extension validation tests.
 - `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs` owns Flashback encoder
   sink frame-rate, queue, force-rotate, and segment-registration tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback

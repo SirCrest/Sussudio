@@ -297,9 +297,12 @@ safety, synthetic pipe-connect retry, and concurrent-output-directory lockout.
 Flashback regression coverage is split into buffer, encoder-sink, exporter
 basic, exporter segment/range, exporter output-file, playback state, playback
 thread, playback command-queue, playback cadence, decoder, and support partial
-files. Playback command-queue coverage is further split into capacity/drop
-policy, scrub coalescing, and seek-slot barrier owners. Keep new Flashback
-tests in the closest owner file instead of regrowing the root helper shell.
+files. Buffer coverage is further split into option/init contracts, shared
+helpers, source-ownership assertions, segment/query behavior, retention/cache
+behavior, and validation owners. Playback command-queue coverage is further
+split into capacity/drop policy, scrub coalescing, and seek-slot barrier
+owners. Keep new Flashback tests in the closest owner file instead of
+regrowing the root helper shell.
 
 `tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` is now only the
 automation view-model surface and shared reflection-helper shell. Automation
