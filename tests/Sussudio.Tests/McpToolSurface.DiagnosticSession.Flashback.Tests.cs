@@ -305,8 +305,7 @@ static partial class Program
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
-        var stressText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.cs")
-            .Replace("\r\n", "\n");
+        var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
         var exportsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
             .Replace("\r\n", "\n");
 
@@ -369,10 +368,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
             .Replace("\r\n", "\n");
-        var stressText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.cs")
-            .Replace("\r\n", "\n");
+        var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
 
-        AssertContains(stressText, "internal static class DiagnosticSessionFlashbackStressScenario");
+        AssertContains(stressText, "internal static partial class DiagnosticSessionFlashbackStressScenario");
         AssertContains(stressText, "internal const int FlashbackStressMaxPlaybackPendingCommands = 4;");
         AssertContains(stressText, "internal const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
         AssertContains(stressText, "internal const double FlashbackStressPlaybackWarmSeconds = 10.0;");
