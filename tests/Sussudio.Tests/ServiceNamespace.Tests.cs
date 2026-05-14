@@ -196,6 +196,7 @@ static partial class Program
         var probeDefaultExperimentText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.cs"));
         var probeExperimentPayloadsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ExperimentPayloads.cs"));
         var probeFormattingText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Formatting.cs"));
+        var probeI2cSwitchText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs"));
         var probeI2cTransportText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs"));
         var probeServiceText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ServiceProbe.cs"));
         AssertDoesNotContain(probeProgramText, "sealed record GetterSpec");
@@ -205,6 +206,8 @@ static partial class Program
         AssertDoesNotContain(probeProgramText, "static async Task RunAnalogGainSequenceAsync");
         AssertDoesNotContain(probeProgramText, "Usage: at-write <opcode_hex>");
         AssertDoesNotContain(probeProgramText, "Before: InputSource=");
+        AssertDoesNotContain(probeProgramText, "Current I2C AT state");
+        AssertDoesNotContain(probeProgramText, "Sending audio switch sequence");
         AssertDoesNotContain(probeProgramText, "static IEnumerable<SetExperiment> BuildShortExperiments");
         AssertDoesNotContain(probeProgramText, "static async Task<byte[]?> SendI2cAtGetAsync");
         AssertDoesNotContain(probeProgramText, "static byte[] BuildAtFrameWithPayload");
@@ -217,6 +220,7 @@ static partial class Program
         AssertContains(probeProgramText, "NativeXuProbeAtCommands.RunAtWriteAsync(args)");
         AssertContains(probeProgramText, "NativeXuProbeAtCommands.RunAtSetInputAsync(args)");
         AssertContains(probeProgramText, "NativeXuProbeDefaultExperiment.RunAsync(device)");
+        AssertContains(probeProgramText, "NativeXuProbeI2cSwitch.RunAsync(args)");
         AssertContains(probeProgramText, "NativeXuProbeServiceProbe.RunServiceControlProbeAsync");
         AssertContains(probeProgramText, "NativeXuProbeServiceProbe.RunServiceSmokeAsync");
         AssertContains(probeAtCommandsText, "static class NativeXuProbeAtCommands");
@@ -235,6 +239,9 @@ static partial class Program
         AssertContains(probeExperimentPayloadsText, "public static byte[] BuildPayload(int width, long value)");
         AssertContains(probeFormattingText, "static class NativeXuProbeFormatting");
         AssertContains(probeFormattingText, "public static string FormatRaw");
+        AssertContains(probeI2cSwitchText, "static class NativeXuProbeI2cSwitch");
+        AssertContains(probeI2cSwitchText, "public static async Task<int> RunAsync");
+        AssertContains(probeI2cSwitchText, "Sending audio switch sequence");
         AssertContains(probeI2cTransportText, "static class NativeXuProbeI2cTransport");
         AssertContains(probeI2cTransportText, "public static async Task<byte[]?> SendI2cAtGetAsync");
         AssertContains(probeI2cTransportText, "public static byte[] BuildAtFrameWithPayload");
