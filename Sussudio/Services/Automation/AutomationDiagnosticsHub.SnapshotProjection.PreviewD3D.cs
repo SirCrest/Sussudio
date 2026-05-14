@@ -9,6 +9,7 @@ public sealed partial class AutomationDiagnosticsHub
         long recentD3DMissedRefreshes,
         long recentD3DStatsFailures)
     {
+        var cpuTiming = BuildPreviewD3DCpuTimingProjection(previewRuntime);
         var frameLatencyWait = BuildPreviewD3DFrameLatencyWaitProjection(previewRuntime);
         var frameStats = BuildPreviewD3DFrameStatsProjection(
             previewRuntime,
@@ -31,28 +32,7 @@ public sealed partial class AutomationDiagnosticsHub
             PendingFrameCount = previewRuntime.D3DPendingFrameCount,
             InputColorSpace = previewRuntime.D3DInputColorSpace,
             OutputColorSpace = previewRuntime.D3DOutputColorSpace,
-            CpuTimingSampleCount = previewRuntime.D3DCpuTimingSampleCount,
-            InputUploadCpuAvgMs = previewRuntime.D3DInputUploadCpuAvgMs,
-            InputUploadCpuP95Ms = previewRuntime.D3DInputUploadCpuP95Ms,
-            InputUploadCpuP99Ms = previewRuntime.D3DInputUploadCpuP99Ms,
-            InputUploadCpuMaxMs = previewRuntime.D3DInputUploadCpuMaxMs,
-            RenderSubmitCpuAvgMs = previewRuntime.D3DRenderSubmitCpuAvgMs,
-            RenderSubmitCpuP95Ms = previewRuntime.D3DRenderSubmitCpuP95Ms,
-            RenderSubmitCpuP99Ms = previewRuntime.D3DRenderSubmitCpuP99Ms,
-            RenderSubmitCpuMaxMs = previewRuntime.D3DRenderSubmitCpuMaxMs,
-            PresentCallAvgMs = previewRuntime.D3DPresentCallAvgMs,
-            PresentCallP95Ms = previewRuntime.D3DPresentCallP95Ms,
-            PresentCallP99Ms = previewRuntime.D3DPresentCallP99Ms,
-            PresentCallMaxMs = previewRuntime.D3DPresentCallMaxMs,
-            TotalFrameCpuAvgMs = previewRuntime.D3DTotalFrameCpuAvgMs,
-            TotalFrameCpuP95Ms = previewRuntime.D3DTotalFrameCpuP95Ms,
-            TotalFrameCpuP99Ms = previewRuntime.D3DTotalFrameCpuP99Ms,
-            TotalFrameCpuMaxMs = previewRuntime.D3DTotalFrameCpuMaxMs,
-            PipelineLatencySampleCount = previewRuntime.D3DPipelineLatencySampleCount,
-            PipelineLatencyAvgMs = previewRuntime.D3DPipelineLatencyAvgMs,
-            PipelineLatencyP95Ms = previewRuntime.D3DPipelineLatencyP95Ms,
-            PipelineLatencyP99Ms = previewRuntime.D3DPipelineLatencyP99Ms,
-            PipelineLatencyMaxMs = previewRuntime.D3DPipelineLatencyMaxMs,
+            CpuTiming = cpuTiming,
             FrameLatencyWait = frameLatencyWait,
             FrameStats = frameStats,
             LastSubmittedPreviewPresentId = previewRuntime.D3DLastSubmittedPreviewPresentId,
@@ -93,28 +73,7 @@ public sealed partial class AutomationDiagnosticsHub
         public int PendingFrameCount { get; init; }
         public string InputColorSpace { get; init; }
         public string OutputColorSpace { get; init; }
-        public int CpuTimingSampleCount { get; init; }
-        public double InputUploadCpuAvgMs { get; init; }
-        public double InputUploadCpuP95Ms { get; init; }
-        public double InputUploadCpuP99Ms { get; init; }
-        public double InputUploadCpuMaxMs { get; init; }
-        public double RenderSubmitCpuAvgMs { get; init; }
-        public double RenderSubmitCpuP95Ms { get; init; }
-        public double RenderSubmitCpuP99Ms { get; init; }
-        public double RenderSubmitCpuMaxMs { get; init; }
-        public double PresentCallAvgMs { get; init; }
-        public double PresentCallP95Ms { get; init; }
-        public double PresentCallP99Ms { get; init; }
-        public double PresentCallMaxMs { get; init; }
-        public double TotalFrameCpuAvgMs { get; init; }
-        public double TotalFrameCpuP95Ms { get; init; }
-        public double TotalFrameCpuP99Ms { get; init; }
-        public double TotalFrameCpuMaxMs { get; init; }
-        public int PipelineLatencySampleCount { get; init; }
-        public double PipelineLatencyAvgMs { get; init; }
-        public double PipelineLatencyP95Ms { get; init; }
-        public double PipelineLatencyP99Ms { get; init; }
-        public double PipelineLatencyMaxMs { get; init; }
+        public PreviewD3DCpuTimingProjection CpuTiming { get; init; }
         public PreviewD3DFrameLatencyWaitProjection FrameLatencyWait { get; init; }
         public PreviewD3DFrameStatsProjection FrameStats { get; init; }
         public long LastSubmittedPreviewPresentId { get; init; }
