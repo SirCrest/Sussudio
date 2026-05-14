@@ -1317,9 +1317,13 @@ Diagnostic-session result text now lives in
 not need to know about the formatter owner.
 
 Diagnostic-session result construction now lives in
-`tools/Common/DiagnosticSessionResultBuilder.cs`. It owns result analysis,
-diagnostic warning enrichment, and summary JSON construction while the runner
-keeps the phase sequence.
+`tools/Common/DiagnosticSessionResultBuilder.cs`. It owns final
+`DiagnosticSessionResult` construction, artifact-write handoff,
+summary-write handoff, and the success calculation while the runner keeps the
+phase sequence. Diagnostic health analysis, Flashback warning tolerance, metric
+gathering, and result-build handoff models live beside it in
+`DiagnosticSessionResultBuilder.Analysis.cs` and
+`DiagnosticSessionResultBuilder.Models.cs`.
 
 Diagnostic-session summary writing now lives in
 `tools/Common/DiagnosticSessionSummaryWriter.cs`. It owns `summary.json` writes
@@ -1546,6 +1550,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionPostRunSnapshots.cs`
 - `DiagnosticSessionResultArtifacts.cs`
 - `DiagnosticSessionResultBuilder.cs`
+- `DiagnosticSessionResultBuilder.Analysis.cs`
+- `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionSummaryWriter.cs`
 - `DiagnosticSessionRunState.cs`

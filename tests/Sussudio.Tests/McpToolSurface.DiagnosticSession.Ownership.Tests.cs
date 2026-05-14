@@ -11,8 +11,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
         var policyText = ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
             .Replace("\r\n", "\n");
 
@@ -58,8 +57,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
             .Replace("\r\n", "\n");
 
@@ -80,10 +78,9 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
 
-        AssertContains(builderText, "internal static class DiagnosticSessionResultBuilder");
+        AssertContains(builderText, "internal static partial class DiagnosticSessionResultBuilder");
         AssertContains(builderText, "internal static async Task<DiagnosticSessionResult> BuildAndWriteAsync(");
         AssertContains(builderText, "internal sealed record DiagnosticSessionResultBuildRequest(");
         AssertContains(builderText, "runState.SetStage(\"result-analysis\")");
@@ -107,8 +104,7 @@ static partial class Program
 
     private static Task DiagnosticSessionSummaryWriter_OwnsSummaryWriteFailures()
     {
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
         var writerText = ReadRepoFile("tools/Common/DiagnosticSessionSummaryWriter.cs")
             .Replace("\r\n", "\n");
 
@@ -132,8 +128,7 @@ static partial class Program
 
     private static Task DiagnosticSessionResultArtifacts_OwnPreSummaryWrites()
     {
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
         var artifactsText = ReadRepoFile("tools/Common/DiagnosticSessionResultArtifacts.cs")
             .Replace("\r\n", "\n");
 
@@ -159,8 +154,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
             .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
@@ -429,8 +423,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
         var cleanupActionsText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.cs")
             .Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
@@ -544,8 +537,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
         var metricsText = ReadRepoFile("tools/Common/DiagnosticSessionMetrics.cs")
             .Replace("\r\n", "\n");
 

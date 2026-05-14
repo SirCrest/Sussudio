@@ -106,8 +106,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
         var metricsText = ReadDiagnosticSessionFlashbackMetricsSource();
 
         AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
@@ -438,8 +437,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
         var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
             .Replace("\r\n", "\n");
 

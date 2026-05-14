@@ -993,8 +993,13 @@ Primary owners:
   result, and sample DTOs. Keep summary/live JSON shape changes there rather
   than expanding the runner header.
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
-  result analysis and summary JSON construction. Keep `summary.json` field
-  shape stable there.
+  result DTO construction, artifact-write handoff, summary-write handoff, and
+  final success calculation. Keep `summary.json` field shape stable there.
+- `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
+  diagnostic-session health analysis, warning tolerance, and metric preparation
+  before summary construction.
+- `tools/Common/DiagnosticSessionResultBuilder.Models.cs` owns the builder
+  request record and private analysis handoff record.
 - `tools/Common/DiagnosticSessionSummaryWriter.cs` owns diagnostic-session
   `summary.json` writes and summary-write failure repair of the returned
   result object.
