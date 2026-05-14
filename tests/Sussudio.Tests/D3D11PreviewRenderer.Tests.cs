@@ -224,6 +224,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs");
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceLost.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameLatency.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs")
@@ -810,6 +811,24 @@ static partial class Program
         AssertContains(viewportText, "MapMode.WriteDiscard");
         AssertDoesNotContain(renderingText, "private Viewport ComputeLetterboxViewport(");
         AssertDoesNotContain(renderingText, "private static Vortice.RawRect ComputeLetterboxRect(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_DeviceLostRecoveryLivesInFocusedPartial()
+    {
+        var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
+            .Replace("\r\n", "\n");
+        var deviceLostText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceLost.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(deviceLostText, "private void HandleDeviceLost(Exception ex)");
+        AssertContains(deviceLostText, "private static bool IsDeviceLostException(Exception ex)");
+        AssertContains(deviceLostText, "TrackFrameDropped(stalePending, \"device-lost\");");
+        AssertContains(deviceLostText, "ResultCode.DeviceRemoved");
+        AssertContains(deviceLostText, "unchecked((int)0x887A0005)");
+        AssertDoesNotContain(resourcesText, "private void HandleDeviceLost(Exception ex)");
+        AssertDoesNotContain(resourcesText, "private static bool IsDeviceLostException(Exception ex)");
 
         return Task.CompletedTask;
     }

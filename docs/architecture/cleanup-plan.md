@@ -541,12 +541,18 @@ D3D preview renderer frame-latency waitable swap-chain setup now lives in
 `WaitForSingleObject` import, and wait-result constants there so resource
 construction and render drawing stay focused.
 
+D3D preview renderer device-lost recovery now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceLost.cs`. Keep device
+loss classification, device-lost frame drops, stop-guarded cleanup, and
+reinitialize scheduling there; keep generic resource disposal in
+`D3D11PreviewRenderer.Resources.cs`.
+
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep device
 initialization, shared-device handoff, pipeline texture/view setup, swap-chain
-RTV creation, and color-space application there. Device-lost recovery and D3D
-resource disposal also belong there; keep per-frame rendering and draw paths in
-`D3D11PreviewRenderer.Rendering.cs`.
+RTV creation, color-space application, and D3D resource disposal there.
+Device-lost recovery has its own focused owner; keep per-frame rendering and
+draw paths in `D3D11PreviewRenderer.Rendering.cs`.
 
 D3D preview renderer swap-chain panel binding now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs`. Keep
