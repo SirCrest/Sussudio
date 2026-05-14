@@ -370,6 +370,8 @@ Important entry points:
   codec/HDR guardrails, and recording topology validation.
 - `CaptureService.HealthSnapshots.cs` builds health snapshots consumed by
   diagnostics and automation health checks.
+- `CaptureService.HealthSnapshotFlashbackExport.cs` owns the locked Flashback
+  export diagnostic field copy used by health snapshot projection.
 - `CaptureService.PreviewLifecycle.cs` owns video preview start/stop,
   retained-backend reuse checks, preview-start rollback, and preview pipeline
   disposal ordering.
@@ -736,7 +738,8 @@ Primary current owners:
   cleanup and faulted-session state assertions.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.Tests.cs` owns
   CaptureService health/diagnostics snapshot behavior scenarios for structured
-  source telemetry and cached MJPEG timing metrics.
+  source telemetry, cached MJPEG timing metrics, and Flashback export health
+  field ownership.
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns shared
   fake process-supervisor, runtime-snapshot, verifier-construction, and
   verification-invocation helpers for recording verifier integration tests.

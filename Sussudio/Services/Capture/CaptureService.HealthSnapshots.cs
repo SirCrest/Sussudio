@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using Sussudio.Models;
-using Sussudio.Services.Contracts;
 
 namespace Sussudio.Services.Capture;
 
@@ -103,69 +102,24 @@ public partial class CaptureService
                                                   (flashbackIsRecordingBackend ? fbSink?.LastVideoEnqueueTick ?? 0 : 0);
         var activeRecordingLastVideoWriteTick = sink?.LastVideoWriteTick ??
                                                 (flashbackIsRecordingBackend ? fbSink?.LastVideoWriteTick ?? 0 : 0);
-        bool flashbackExportActive;
-        long flashbackExportId;
-        string flashbackExportStatus;
-        string flashbackExportOutputPath;
-        long flashbackExportStartedUtcUnixMs;
-        long flashbackExportLastProgressUtcUnixMs;
-        long flashbackExportCompletedUtcUnixMs;
-        int flashbackExportSegmentsProcessed;
-        int flashbackExportTotalSegments;
-        double flashbackExportPercent;
-        long flashbackExportInPointMs;
-        long flashbackExportOutPointMs;
-        string flashbackExportMessage;
-        string flashbackExportFailureKind;
-        long flashbackExportForceRotateFallbacks;
-        long flashbackExportLastForceRotateFallbackUtcUnixMs;
-        int flashbackExportLastForceRotateFallbackSegments;
-        long flashbackExportLastForceRotateFallbackInPointMs;
-        long flashbackExportLastForceRotateFallbackOutPointMs;
-        CaptureSettings? flashbackBackendSettings;
-        long lastFlashbackExportResultId;
-        FinalizeResult? lastExportResult;
-        lock (_flashbackExportDiagnosticsLock)
-        {
-            flashbackExportActive = _flashbackExportActive;
-            flashbackExportId = _flashbackExportId;
-            flashbackExportStatus = _flashbackExportStatus;
-            flashbackExportOutputPath = _flashbackExportOutputPath;
-            flashbackExportStartedUtcUnixMs = _flashbackExportStartedUtcUnixMs;
-            flashbackExportLastProgressUtcUnixMs = _flashbackExportLastProgressUtcUnixMs;
-            flashbackExportCompletedUtcUnixMs = _flashbackExportCompletedUtcUnixMs;
-            flashbackExportSegmentsProcessed = _flashbackExportSegmentsProcessed;
-            flashbackExportTotalSegments = _flashbackExportTotalSegments;
-            flashbackExportPercent = _flashbackExportPercent;
-            flashbackExportInPointMs = _flashbackExportInPointMs;
-            flashbackExportOutPointMs = _flashbackExportOutPointMs;
-            flashbackExportMessage = _flashbackExportMessage;
-            flashbackExportFailureKind = _flashbackExportFailureKind;
-            flashbackExportForceRotateFallbacks = _flashbackExportForceRotateFallbacks;
-            flashbackExportLastForceRotateFallbackUtcUnixMs = _flashbackExportLastForceRotateFallbackUtcUnixMs;
-            flashbackExportLastForceRotateFallbackSegments = _flashbackExportLastForceRotateFallbackSegments;
-            flashbackExportLastForceRotateFallbackInPointMs = _flashbackExportLastForceRotateFallbackInPointMs;
-            flashbackExportLastForceRotateFallbackOutPointMs = _flashbackExportLastForceRotateFallbackOutPointMs;
-            lastFlashbackExportResultId = _lastFlashbackExportResultId;
-            lastExportResult = _lastExportResult;
-        }
-        flashbackBackendSettings = _flashbackBackendSettings;
+        var flashbackExport = CaptureFlashbackExportHealthSnapshotFields();
+        var flashbackBackendSettings = _flashbackBackendSettings;
 
         var snapshotUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var flashbackExportElapsedMs = ComputeFlashbackExportElapsedMs(
-            flashbackExportActive,
-            flashbackExportStartedUtcUnixMs,
-            flashbackExportCompletedUtcUnixMs,
+            flashbackExport.Active,
+            flashbackExport.StartedUtcUnixMs,
+            flashbackExport.CompletedUtcUnixMs,
             snapshotUtcUnixMs);
         var flashbackExportLastProgressAgeMs = ComputeFlashbackExportLastProgressAgeMs(
-            flashbackExportActive,
-            flashbackExportStartedUtcUnixMs,
-            flashbackExportLastProgressUtcUnixMs,
+            flashbackExport.Active,
+            flashbackExport.StartedUtcUnixMs,
+            flashbackExport.LastProgressUtcUnixMs,
             snapshotUtcUnixMs);
         var flashbackExportOutputBytes = GetFileLengthOrZero(
-            !string.IsNullOrWhiteSpace(flashbackExportOutputPath)
-                ? flashbackExportOutputPath
-                : lastExportResult?.OutputPath);
+            !string.IsNullOrWhiteSpace(flashbackExport.OutputPath)
+                ? flashbackExport.OutputPath
+                : flashbackExport.LastResult?.OutputPath);
         var flashbackExportThroughputBytesPerSec = flashbackExportElapsedMs > 0
             ? flashbackExportOutputBytes / (flashbackExportElapsedMs / 1000.0)
             : 0;
@@ -295,38 +249,38 @@ public partial class CaptureService
             FlashbackPlaybackLastCommandProcessedUtcUnixMs = fbPlayback?.LastCommandProcessedUtcUnixMs ?? 0,
             FlashbackPlaybackLastCommandFailureUtcUnixMs = fbPlayback?.LastCommandFailureUtcUnixMs ?? 0,
             FlashbackPlaybackLastCommandFailure = fbPlayback?.LastCommandFailure ?? string.Empty,
-            FlashbackExportActive = flashbackExportActive,
-            FlashbackExportId = flashbackExportId,
-            FlashbackExportStatus = flashbackExportStatus,
-            FlashbackExportOutputPath = flashbackExportOutputPath,
-            FlashbackExportStartedUtcUnixMs = flashbackExportStartedUtcUnixMs,
-            FlashbackExportLastProgressUtcUnixMs = flashbackExportLastProgressUtcUnixMs,
-            FlashbackExportCompletedUtcUnixMs = flashbackExportCompletedUtcUnixMs,
+            FlashbackExportActive = flashbackExport.Active,
+            FlashbackExportId = flashbackExport.Id,
+            FlashbackExportStatus = flashbackExport.Status,
+            FlashbackExportOutputPath = flashbackExport.OutputPath,
+            FlashbackExportStartedUtcUnixMs = flashbackExport.StartedUtcUnixMs,
+            FlashbackExportLastProgressUtcUnixMs = flashbackExport.LastProgressUtcUnixMs,
+            FlashbackExportCompletedUtcUnixMs = flashbackExport.CompletedUtcUnixMs,
             FlashbackExportElapsedMs = flashbackExportElapsedMs,
             FlashbackExportLastProgressAgeMs = flashbackExportLastProgressAgeMs,
             FlashbackExportOutputBytes = flashbackExportOutputBytes,
             FlashbackExportThroughputBytesPerSec = flashbackExportThroughputBytesPerSec,
-            FlashbackExportSegmentsProcessed = flashbackExportSegmentsProcessed,
-            FlashbackExportTotalSegments = flashbackExportTotalSegments,
-            FlashbackExportPercent = flashbackExportPercent,
-            FlashbackExportInPointMs = flashbackExportInPointMs,
-            FlashbackExportOutPointMs = flashbackExportOutPointMs,
-            FlashbackExportMessage = flashbackExportMessage,
-            FlashbackExportFailureKind = flashbackExportFailureKind,
-            FlashbackExportForceRotateFallbacks = flashbackExportForceRotateFallbacks,
-            FlashbackExportLastForceRotateFallbackUtcUnixMs = flashbackExportLastForceRotateFallbackUtcUnixMs,
-            FlashbackExportLastForceRotateFallbackSegments = flashbackExportLastForceRotateFallbackSegments,
-            FlashbackExportLastForceRotateFallbackInPointMs = flashbackExportLastForceRotateFallbackInPointMs,
-            FlashbackExportLastForceRotateFallbackOutPointMs = flashbackExportLastForceRotateFallbackOutPointMs,
+            FlashbackExportSegmentsProcessed = flashbackExport.SegmentsProcessed,
+            FlashbackExportTotalSegments = flashbackExport.TotalSegments,
+            FlashbackExportPercent = flashbackExport.Percent,
+            FlashbackExportInPointMs = flashbackExport.InPointMs,
+            FlashbackExportOutPointMs = flashbackExport.OutPointMs,
+            FlashbackExportMessage = flashbackExport.Message,
+            FlashbackExportFailureKind = flashbackExport.FailureKind,
+            FlashbackExportForceRotateFallbacks = flashbackExport.ForceRotateFallbacks,
+            FlashbackExportLastForceRotateFallbackUtcUnixMs = flashbackExport.LastForceRotateFallbackUtcUnixMs,
+            FlashbackExportLastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,
+            FlashbackExportLastForceRotateFallbackInPointMs = flashbackExport.LastForceRotateFallbackInPointMs,
+            FlashbackExportLastForceRotateFallbackOutPointMs = flashbackExport.LastForceRotateFallbackOutPointMs,
             // Surface the silent codec/preset substitution alongside the existing
             // export status so automation, the verifier, and (eventually) the UI
             // can show what was actually encoded vs what the user requested.
             FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(_currentSettings, unifiedVideoCapture),
             FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(_currentSettings, unifiedVideoCapture),
-            LastExportId = lastFlashbackExportResultId,
-            LastExportPath = lastExportResult?.OutputPath,
-            LastExportSuccess = lastExportResult?.Succeeded,
-            LastExportMessage = lastExportResult?.StatusMessage,
+            LastExportId = flashbackExport.LastResultId,
+            LastExportPath = flashbackExport.LastResult?.OutputPath,
+            LastExportSuccess = flashbackExport.LastResult?.Succeeded,
+            LastExportMessage = flashbackExport.LastResult?.StatusMessage,
             RecordingElapsedMs = _isRecording ? _recordingStopwatch.ElapsedMilliseconds : 0,
             ExpectedFrameRate = _actualFrameRate ?? _currentSettings?.FrameRate ?? 0,
             NegotiatedWidth = _actualWidth,

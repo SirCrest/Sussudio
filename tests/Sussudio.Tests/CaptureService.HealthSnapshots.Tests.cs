@@ -3,6 +3,25 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static Task CaptureService_HealthSnapshotFlashbackExportFields_LiveInFocusedPartial()
+    {
+        var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(healthSnapshotText, "var flashbackExport = CaptureFlashbackExportHealthSnapshotFields();");
+        AssertContains(healthSnapshotText, "FlashbackExportActive = flashbackExport.Active,");
+        AssertContains(healthSnapshotText, "LastExportId = flashbackExport.LastResultId,");
+        AssertDoesNotContain(healthSnapshotText, "lock (_flashbackExportDiagnosticsLock)");
+
+        AssertContains(flashbackExportText, "private FlashbackExportHealthSnapshotFields CaptureFlashbackExportHealthSnapshotFields()");
+        AssertContains(flashbackExportText, "lock (_flashbackExportDiagnosticsLock)");
+        AssertContains(flashbackExportText, "FinalizeResult? LastResult");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
