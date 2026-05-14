@@ -618,6 +618,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` owns automation
   view-model surface, async method contract, and recording-transition routing
   assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` owns
+  automation UI-setting persistence and frame-time/stat visibility contracts.
+- `tests/Sussudio.Tests/MainViewModel.Automation.CaptureMode.Tests.cs` owns
+  automation capture-mode reinitialization and device-selection routing
+  contracts.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns serialized diagnostics refresh and automation diagnostics hub ownership
   assertions, including HDR truth verdict behavior.
@@ -732,6 +737,9 @@ Primary current owners:
   RecordingContextRequest, and FinalizeResult.
 - `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns temp artifact
   finalize/rollback behavior for recording output cleanup.
+- `tests/Sussudio.Tests/AutomationCommandDispatcher.Tests.cs` owns dispatcher
+  payload parsing, readiness gating, authorization, response, and command-kind
+  handling contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers for automation tool contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns
@@ -792,6 +800,9 @@ Primary current owners:
   MJPEG preview jitter queue/drop/reprime behavior tests.
 - `tests/Sussudio.Tests/PooledVideoFrame.QueuedLeaseRelease.Tests.cs` owns
   D3D pending-frame and recording/Flashback queued lease return tests.
+- `tests/Sussudio.Tests/McpToolSurface.Tests.cs` owns MCP surface compatibility
+  checks that span raw app state, capture options, capture settings, and UI
+  settings tools.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` is now the
   MCP command-routing test family marker shell. Keep route/formatter assertions
   in the focused `CommandRouting.Capture`, `CommandRouting.Host`,

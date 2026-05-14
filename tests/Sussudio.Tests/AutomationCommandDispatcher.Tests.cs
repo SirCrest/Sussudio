@@ -530,4 +530,16 @@ static partial class Program
             => Handler(targetMethod, args);
     }
 
+
+    private static Task UiAutomationCommands_AreNotBlockedOnDeviceReadiness()
+    {
+        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
+
+        AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetShowAllCaptureOptions => true,");
+        AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetPreviewVolume => true,");
+        AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetStatsVisible => true,");
+        AssertDoesNotContain(dispatcherText, "AutomationCommandKind.GetCaptureOptions => true,");
+
+        return Task.CompletedTask;
+    }
 }
