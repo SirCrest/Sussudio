@@ -279,6 +279,13 @@ for Flashback scenario/metrics/wait/export ownership assertions, and
 `McpToolSurface.DiagnosticSession.Runner.Tests.cs` for reflective runner
 behavior tests with synthetic automation delegates.
 
+`tests/Sussudio.Tests/Flashback.Tests.cs` is now only the shared helper shell.
+Flashback regression coverage is split into buffer, encoder-sink, exporter
+basic, exporter segment/range, exporter output-file, playback state, playback
+thread, playback command-queue, playback cadence, decoder, and support partial
+files. Keep new Flashback tests in the closest owner file instead of regrowing
+the root helper shell.
+
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
 to the public toggle/state surface, `FullScreenController.Transitions.cs` to
@@ -1483,7 +1490,9 @@ Remaining `tools/Common` ownership:
    surface tests are now split into command-routing, diagnostic-session tool,
    diagnostic-session ownership, diagnostic-session Flashback,
    diagnostic-session runner, performance, window/preview, and helper partial
-   files; continue with low-risk contract groups first.
+   files. Flashback tests are also split by buffer, encoder, exporter,
+   playback, decoder, and support owners. Continue with low-risk contract
+   groups first.
 
 3. Continue converting MainWindow partial concerns into controllers.
 

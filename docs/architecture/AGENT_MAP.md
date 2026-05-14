@@ -603,6 +603,33 @@ Primary current owners:
   window, preview, Flashback, screenshot, and probe tests.
 - `tests/Sussudio.Tests/McpToolSurface.Helpers.cs` owns the shared MCP process,
   reflection, pipe-capture, JSON assertion, and tool-result helpers.
+- `tests/Sussudio.Tests/Flashback.Tests.cs` owns shared Flashback test helper
+  source readers and helper methods only.
+- `tests/Sussudio.Tests/Flashback.Buffer.Tests.cs` owns Flashback buffer option
+  and buffer-manager contract tests.
+- `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs` owns Flashback encoder
+  sink frame-rate, queue, force-rotate, and segment-registration tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback
+  exporter cleanup, basic validation, task-wrapper, ownership, and failure
+  classifier tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.Segments.Tests.cs` owns Flashback
+  exporter range, segment-list, progress, timestamp, stream-count, and template
+  validation tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.Output.Tests.cs` owns Flashback
+  exporter cancellation, missing-segment, overwrite, final-output, and temp-path
+  tests.
+- `tests/Sussudio.Tests/Flashback.Playback.State.Tests.cs` owns Flashback
+  playback state, marker, position, snap-live, and no-op command tests.
+- `tests/Sussudio.Tests/Flashback.Playback.Thread.Tests.cs` owns Flashback
+  playback thread recovery and live-preview transition tests.
+- `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` owns Flashback
+  playback command queue, scrub coalescing, and seek-slot barrier tests.
+- `tests/Sussudio.Tests/Flashback.Playback.Cadence.Tests.cs` owns Flashback
+  playback cadence, submit-failure, fMP4 reopen, and metrics reset tests.
+- `tests/Sussudio.Tests/Flashback.Decoder.Tests.cs` owns Flashback decoder
+  audio, timestamp, stream-bound, validation, lifetime, and callback tests.
+- `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
+  support/logging contract tests.
 - `Sussudio/MainWindow.StatsHardwareSections.cs` owns decode and GPU stats
   row projection. It should gather current MJPEG/NVML values and delegate row
   element reuse to `StatsDiagnosticRowsController`.
