@@ -5,7 +5,10 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static FlashbackPlaybackProjection BuildFlashbackPlaybackProjection(CaptureHealthSnapshot health)
-        => new()
+    {
+        var commands = BuildFlashbackPlaybackCommandProjection(health);
+
+        return new()
         {
             State = health.FlashbackPlaybackState,
             PositionMs = health.FlashbackPlaybackPositionMs,
@@ -69,26 +72,27 @@ public sealed partial class AutomationDiagnosticsHub
             MaxDecodeUtcUnixMs = health.FlashbackPlaybackMaxDecodeUtcUnixMs,
             MaxDecodePositionMs = health.FlashbackPlaybackMaxDecodePositionMs,
             AvDriftMs = health.FlashbackAvDriftMs,
-            ThreadAlive = health.FlashbackPlaybackThreadAlive,
-            CommandsEnqueued = health.FlashbackPlaybackCommandsEnqueued,
-            CommandsProcessed = health.FlashbackPlaybackCommandsProcessed,
-            CommandsDropped = health.FlashbackPlaybackCommandsDropped,
-            CommandsSkippedNotReady = health.FlashbackPlaybackCommandsSkippedNotReady,
-            ScrubUpdatesCoalesced = health.FlashbackPlaybackScrubUpdatesCoalesced,
-            SeekCommandsCoalesced = health.FlashbackPlaybackSeekCommandsCoalesced,
-            CommandQueueCapacity = health.FlashbackPlaybackCommandQueueCapacity,
-            PendingCommands = health.FlashbackPlaybackPendingCommands,
-            MaxPendingCommands = health.FlashbackPlaybackMaxPendingCommands,
-            LastCommandQueueLatencyMs = health.FlashbackPlaybackLastCommandQueueLatencyMs,
-            MaxCommandQueueLatencyMs = health.FlashbackPlaybackMaxCommandQueueLatencyMs,
-            MaxCommandQueueLatencyCommand = health.FlashbackPlaybackMaxCommandQueueLatencyCommand,
-            LastCommandQueued = health.FlashbackPlaybackLastCommandQueued,
-            LastCommandProcessed = health.FlashbackPlaybackLastCommandProcessed,
-            LastCommandQueuedUtcUnixMs = health.FlashbackPlaybackLastCommandQueuedUtcUnixMs,
-            LastCommandProcessedUtcUnixMs = health.FlashbackPlaybackLastCommandProcessedUtcUnixMs,
-            LastCommandFailureUtcUnixMs = health.FlashbackPlaybackLastCommandFailureUtcUnixMs,
-            LastCommandFailure = health.FlashbackPlaybackLastCommandFailure
+            ThreadAlive = commands.ThreadAlive,
+            CommandsEnqueued = commands.Enqueued,
+            CommandsProcessed = commands.Processed,
+            CommandsDropped = commands.Dropped,
+            CommandsSkippedNotReady = commands.SkippedNotReady,
+            ScrubUpdatesCoalesced = commands.ScrubUpdatesCoalesced,
+            SeekCommandsCoalesced = commands.SeekCommandsCoalesced,
+            CommandQueueCapacity = commands.QueueCapacity,
+            PendingCommands = commands.Pending,
+            MaxPendingCommands = commands.MaxPending,
+            LastCommandQueueLatencyMs = commands.LastQueueLatencyMs,
+            MaxCommandQueueLatencyMs = commands.MaxQueueLatencyMs,
+            MaxCommandQueueLatencyCommand = commands.MaxQueueLatencyCommand,
+            LastCommandQueued = commands.LastQueued,
+            LastCommandProcessed = commands.LastProcessed,
+            LastCommandQueuedUtcUnixMs = commands.LastQueuedUtcUnixMs,
+            LastCommandProcessedUtcUnixMs = commands.LastProcessedUtcUnixMs,
+            LastCommandFailureUtcUnixMs = commands.LastFailureUtcUnixMs,
+            LastCommandFailure = commands.LastFailure
         };
+    }
 
     private readonly record struct FlashbackPlaybackProjection
     {

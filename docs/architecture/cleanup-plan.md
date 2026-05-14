@@ -78,9 +78,11 @@ Flashback recording, buffer, backend, encoder, and queue projection, including
 the export verification and codec-downgrade fallback policy consumed by the
 automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs` owns
-Flashback playback state, decoder/cadence metrics, audio-master fallback
-counters, and playback command queue projection consumed by the automation
-snapshot DTO.
+Flashback playback state, decoder/cadence metrics, and audio-master fallback
+counters consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlaybackCommands.cs` owns
+Flashback playback thread and command queue counter/latency/failure projection
+consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
 swap-chain, render timing, frame-latency wait, frame statistics, and submitted /
 rendered / dropped frame projection consumed by the automation snapshot DTO.
