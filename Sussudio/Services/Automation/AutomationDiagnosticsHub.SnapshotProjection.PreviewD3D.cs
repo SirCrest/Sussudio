@@ -10,6 +10,10 @@ public sealed partial class AutomationDiagnosticsHub
         long recentD3DStatsFailures)
     {
         var frameLatencyWait = BuildPreviewD3DFrameLatencyWaitProjection(previewRuntime);
+        var frameStats = BuildPreviewD3DFrameStatsProjection(
+            previewRuntime,
+            recentD3DMissedRefreshes,
+            recentD3DStatsFailures);
 
         return new()
         {
@@ -50,20 +54,7 @@ public sealed partial class AutomationDiagnosticsHub
             PipelineLatencyP99Ms = previewRuntime.D3DPipelineLatencyP99Ms,
             PipelineLatencyMaxMs = previewRuntime.D3DPipelineLatencyMaxMs,
             FrameLatencyWait = frameLatencyWait,
-            FrameStatsSampleCount = previewRuntime.D3DFrameStatsSampleCount,
-            FrameStatsSuccessCount = previewRuntime.D3DFrameStatsSuccessCount,
-            FrameStatsFailureCount = previewRuntime.D3DFrameStatsFailureCount,
-            FrameStatsLastError = previewRuntime.D3DFrameStatsLastError,
-            FrameStatsPresentCount = previewRuntime.D3DFrameStatsPresentCount,
-            FrameStatsPresentRefreshCount = previewRuntime.D3DFrameStatsPresentRefreshCount,
-            FrameStatsSyncRefreshCount = previewRuntime.D3DFrameStatsSyncRefreshCount,
-            FrameStatsSyncQpcTime = previewRuntime.D3DFrameStatsSyncQpcTime,
-            FrameStatsLastPresentDelta = previewRuntime.D3DFrameStatsLastPresentDelta,
-            FrameStatsLastPresentRefreshDelta = previewRuntime.D3DFrameStatsLastPresentRefreshDelta,
-            FrameStatsLastSyncRefreshDelta = previewRuntime.D3DFrameStatsLastSyncRefreshDelta,
-            FrameStatsMissedRefreshCount = previewRuntime.D3DFrameStatsMissedRefreshCount,
-            FrameStatsRecentMissedRefreshCount = recentD3DMissedRefreshes,
-            FrameStatsRecentFailureCount = recentD3DStatsFailures,
+            FrameStats = frameStats,
             LastSubmittedPreviewPresentId = previewRuntime.D3DLastSubmittedPreviewPresentId,
             LastSubmittedSourceSequenceNumber = previewRuntime.D3DLastSubmittedSourceSequenceNumber,
             LastSubmittedSourcePtsTicks = previewRuntime.D3DLastSubmittedSourcePtsTicks,
@@ -125,20 +116,7 @@ public sealed partial class AutomationDiagnosticsHub
         public double PipelineLatencyP99Ms { get; init; }
         public double PipelineLatencyMaxMs { get; init; }
         public PreviewD3DFrameLatencyWaitProjection FrameLatencyWait { get; init; }
-        public long FrameStatsSampleCount { get; init; }
-        public long FrameStatsSuccessCount { get; init; }
-        public long FrameStatsFailureCount { get; init; }
-        public string FrameStatsLastError { get; init; }
-        public long FrameStatsPresentCount { get; init; }
-        public long FrameStatsPresentRefreshCount { get; init; }
-        public long FrameStatsSyncRefreshCount { get; init; }
-        public long FrameStatsSyncQpcTime { get; init; }
-        public long FrameStatsLastPresentDelta { get; init; }
-        public long FrameStatsLastPresentRefreshDelta { get; init; }
-        public long FrameStatsLastSyncRefreshDelta { get; init; }
-        public long FrameStatsMissedRefreshCount { get; init; }
-        public long FrameStatsRecentMissedRefreshCount { get; init; }
-        public long FrameStatsRecentFailureCount { get; init; }
+        public PreviewD3DFrameStatsProjection FrameStats { get; init; }
         public long LastSubmittedPreviewPresentId { get; init; }
         public long LastSubmittedSourceSequenceNumber { get; init; }
         public long LastSubmittedSourcePtsTicks { get; init; }

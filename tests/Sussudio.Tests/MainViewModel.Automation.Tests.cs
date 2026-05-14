@@ -373,6 +373,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionPreviewD3DFrameLatencyWaitText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DFrameLatencyWait.cs")
             .Replace("\r\n", "\n");
+        var diagnosticsSnapshotProjectionPreviewD3DFrameStatsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DFrameStats.cs")
+            .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionPreviewRuntimeText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs")
             .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionProcessResourcesText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs")
@@ -405,7 +407,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsTimelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsDiagnosticEvaluationFlashbackText + "\n" + diagnosticsDiagnosticEvaluationRealtimeText + "\n" + diagnosticsDiagnosticEvaluationLanesText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsSignalAlertsText + "\n" + diagnosticsFlashbackAlertsText + "\n" + diagnosticsFlashbackRecordingAlertsText + "\n" + diagnosticsFlashbackPlaybackAlertsText + "\n" + diagnosticsFlashbackPlaybackCommandAlertsText + "\n" + diagnosticsFlashbackPlaybackPerformanceAlertsText + "\n" + diagnosticsEventsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotProjectionText + "\n" + diagnosticsSnapshotProjectionSnapshotStatusText + "\n" + diagnosticsSnapshotProjectionSnapshotEvaluationText + "\n" + diagnosticsSnapshotProjectionAvSyncText + "\n" + diagnosticsSnapshotProjectionAudioText + "\n" + diagnosticsSnapshotProjectionAudioSignalText + "\n" + diagnosticsSnapshotProjectionCaptureIngestText + "\n" + diagnosticsSnapshotProjectionWasapiAudioText + "\n" + diagnosticsSnapshotProjectionCaptureCommandsText + "\n" + diagnosticsSnapshotProjectionCaptureFormatText + "\n" + diagnosticsSnapshotProjectionCaptureTransportText + "\n" + diagnosticsSnapshotProjectionCaptureCadenceText + "\n" + diagnosticsSnapshotProjectionMjpegText + "\n" + diagnosticsSnapshotProjectionMjpegPreviewJitterText + "\n" + diagnosticsSnapshotProjectionMjpegPacketHashText + "\n" + diagnosticsSnapshotProjectionFlashbackExportText + "\n" + diagnosticsSnapshotProjectionFlashbackPlaybackText + "\n" + diagnosticsSnapshotProjectionFlashbackPlaybackAudioMasterText + "\n" + diagnosticsSnapshotProjectionFlashbackPlaybackDecodeText + "\n" + diagnosticsSnapshotProjectionFlashbackPlaybackCommandsText + "\n" + diagnosticsSnapshotProjectionFlashbackRecordingText + "\n" + diagnosticsSnapshotProjectionPreviewD3DText + "\n" + diagnosticsSnapshotProjectionPreviewD3DFrameLatencyWaitText + "\n" + diagnosticsSnapshotProjectionPreviewRuntimeText + "\n" + diagnosticsSnapshotProjectionProcessResourcesText + "\n" + diagnosticsSnapshotProjectionRecordingIntegrityText + "\n" + diagnosticsSnapshotProjectionRecordingBackendText + "\n" + diagnosticsSnapshotProjectionRecordingPipelineText + "\n" + diagnosticsSnapshotProjectionRecordingOutputText + "\n" + diagnosticsSnapshotProjectionSourceSignalText + "\n" + diagnosticsSnapshotProjectionSourceTelemetryText + "\n" + diagnosticsSnapshotProjectionUserSettingsText + "\n" + diagnosticsSnapshotProjectionHdrPipelineText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText + "\n" + diagnosticsTimelineProjectionText;
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsDiagnosticEvaluationFlashbackText + "\n" + diagnosticsDiagnosticEvaluationRealtimeText + "\n" + diagnosticsDiagnosticEvaluationLanesText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsSignalAlertsText + "\n" + diagnosticsFlashbackAlertsText + "\n" + diagnosticsFlashbackRecordingAlertsText + "\n" + diagnosticsFlashbackPlaybackAlertsText + "\n" + diagnosticsFlashbackPlaybackCommandAlertsText + "\n" + diagnosticsFlashbackPlaybackPerformanceAlertsText + "\n" + diagnosticsEventsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotProjectionText + "\n" + diagnosticsSnapshotProjectionSnapshotStatusText + "\n" + diagnosticsSnapshotProjectionSnapshotEvaluationText + "\n" + diagnosticsSnapshotProjectionAvSyncText + "\n" + diagnosticsSnapshotProjectionAudioText + "\n" + diagnosticsSnapshotProjectionAudioSignalText + "\n" + diagnosticsSnapshotProjectionCaptureIngestText + "\n" + diagnosticsSnapshotProjectionWasapiAudioText + "\n" + diagnosticsSnapshotProjectionCaptureCommandsText + "\n" + diagnosticsSnapshotProjectionCaptureFormatText + "\n" + diagnosticsSnapshotProjectionCaptureTransportText + "\n" + diagnosticsSnapshotProjectionCaptureCadenceText + "\n" + diagnosticsSnapshotProjectionMjpegText + "\n" + diagnosticsSnapshotProjectionMjpegPreviewJitterText + "\n" + diagnosticsSnapshotProjectionMjpegPacketHashText + "\n" + diagnosticsSnapshotProjectionFlashbackExportText + "\n" + diagnosticsSnapshotProjectionFlashbackPlaybackText + "\n" + diagnosticsSnapshotProjectionFlashbackPlaybackAudioMasterText + "\n" + diagnosticsSnapshotProjectionFlashbackPlaybackDecodeText + "\n" + diagnosticsSnapshotProjectionFlashbackPlaybackCommandsText + "\n" + diagnosticsSnapshotProjectionFlashbackRecordingText + "\n" + diagnosticsSnapshotProjectionPreviewD3DText + "\n" + diagnosticsSnapshotProjectionPreviewD3DFrameLatencyWaitText + "\n" + diagnosticsSnapshotProjectionPreviewD3DFrameStatsText + "\n" + diagnosticsSnapshotProjectionPreviewRuntimeText + "\n" + diagnosticsSnapshotProjectionProcessResourcesText + "\n" + diagnosticsSnapshotProjectionRecordingIntegrityText + "\n" + diagnosticsSnapshotProjectionRecordingBackendText + "\n" + diagnosticsSnapshotProjectionRecordingPipelineText + "\n" + diagnosticsSnapshotProjectionRecordingOutputText + "\n" + diagnosticsSnapshotProjectionSourceSignalText + "\n" + diagnosticsSnapshotProjectionSourceTelemetryText + "\n" + diagnosticsSnapshotProjectionUserSettingsText + "\n" + diagnosticsSnapshotProjectionHdrPipelineText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText + "\n" + diagnosticsTimelineProjectionText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
@@ -514,10 +516,13 @@ static partial class Program
         AssertContains(diagnosticsSnapshotProjectionText, "var previewD3D = BuildPreviewD3DProjection(");
         AssertContains(diagnosticsSnapshotProjectionPreviewD3DText, "private static PreviewD3DProjection BuildPreviewD3DProjection(");
         AssertContains(diagnosticsSnapshotProjectionPreviewD3DText, "var frameLatencyWait = BuildPreviewD3DFrameLatencyWaitProjection(previewRuntime);");
+        AssertContains(diagnosticsSnapshotProjectionPreviewD3DText, "var frameStats = BuildPreviewD3DFrameStatsProjection(");
         AssertContains(diagnosticsSnapshotProjectionPreviewD3DText, "FrameLatencyWait = frameLatencyWait,");
         AssertContains(diagnosticsSnapshotProjectionPreviewD3DFrameLatencyWaitText, "private static PreviewD3DFrameLatencyWaitProjection BuildPreviewD3DFrameLatencyWaitProjection(");
         AssertContains(diagnosticsSnapshotProjectionPreviewD3DFrameLatencyWaitText, "TimeoutCount = previewRuntime.D3DFrameLatencyWaitTimeoutCount,");
-        AssertContains(diagnosticsSnapshotProjectionPreviewD3DText, "FrameStatsRecentMissedRefreshCount = recentD3DMissedRefreshes,");
+        AssertContains(diagnosticsSnapshotProjectionPreviewD3DText, "FrameStats = frameStats,");
+        AssertContains(diagnosticsSnapshotProjectionPreviewD3DFrameStatsText, "private static PreviewD3DFrameStatsProjection BuildPreviewD3DFrameStatsProjection(");
+        AssertContains(diagnosticsSnapshotProjectionPreviewD3DFrameStatsText, "RecentMissedRefreshCount = recentD3DMissedRefreshes,");
         AssertDoesNotContain(diagnosticsSnapshotProjectionText, "PreviewD3DFrameStatsRecentMissedRefreshCount = recentD3DMissedRefreshes,");
         AssertContains(diagnosticsSnapshotProjectionText, "var flashbackExport = BuildFlashbackExportProjection(health);");
         AssertContains(diagnosticsSnapshotProjectionFlashbackExportText, "private static FlashbackExportProjection BuildFlashbackExportProjection(CaptureHealthSnapshot health)");
@@ -2409,29 +2414,39 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewD3DFrameLatencyWaitProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DFrameLatencyWait.cs")
             .Replace("\r\n", "\n");
+        var previewD3DFrameStatsProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DFrameStats.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var previewD3D = BuildPreviewD3DProjection(\n            previewRuntime,\n            recentD3DMissedRefreshes,\n            recentD3DStatsFailures);");
         AssertContains(snapshotProjectionText, "PreviewD3DPresentSyncInterval = previewD3D.PresentSyncInterval,");
         AssertContains(snapshotProjectionText, "PreviewD3DInputUploadCpuP99Ms = previewD3D.InputUploadCpuP99Ms,");
         AssertContains(snapshotProjectionText, "PreviewD3DFrameLatencyWaitTimeoutCount = previewD3D.FrameLatencyWait.TimeoutCount,");
-        AssertContains(snapshotProjectionText, "PreviewD3DFrameStatsRecentMissedRefreshCount = previewD3D.FrameStatsRecentMissedRefreshCount,");
+        AssertContains(snapshotProjectionText, "PreviewD3DFrameStatsRecentMissedRefreshCount = previewD3D.FrameStats.RecentMissedRefreshCount,");
         AssertContains(snapshotProjectionText, "PreviewD3DRecentSlowFrames = previewD3D.RecentSlowFrames,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewD3DPresentSyncInterval = previewRuntime.D3DPresentSyncInterval,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewD3DInputUploadCpuP99Ms = previewRuntime.D3DInputUploadCpuP99Ms,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewD3DFrameLatencyWaitTimeoutCount = previewD3D.FrameLatencyWaitTimeoutCount,");
+        AssertDoesNotContain(snapshotProjectionText, "PreviewD3DFrameStatsRecentMissedRefreshCount = previewD3D.FrameStatsRecentMissedRefreshCount,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewD3DFrameStatsRecentMissedRefreshCount = recentD3DMissedRefreshes,");
 
         AssertContains(previewD3DProjectionText, "private static PreviewD3DProjection BuildPreviewD3DProjection(");
         AssertContains(previewD3DProjectionText, "var frameLatencyWait = BuildPreviewD3DFrameLatencyWaitProjection(previewRuntime);");
+        AssertContains(previewD3DProjectionText, "var frameStats = BuildPreviewD3DFrameStatsProjection(");
         AssertContains(previewD3DProjectionText, "FrameLatencyWait = frameLatencyWait,");
+        AssertContains(previewD3DProjectionText, "FrameStats = frameStats,");
         AssertDoesNotContain(previewD3DProjectionText, "FrameLatencyWaitTimeoutCount = previewRuntime.D3DFrameLatencyWaitTimeoutCount,");
+        AssertDoesNotContain(previewD3DProjectionText, "FrameStatsRecentMissedRefreshCount = recentD3DMissedRefreshes,");
         AssertContains(previewD3DFrameLatencyWaitProjectionText, "private static PreviewD3DFrameLatencyWaitProjection BuildPreviewD3DFrameLatencyWaitProjection(");
         AssertContains(previewD3DFrameLatencyWaitProjectionText, "Enabled = previewRuntime.D3DFrameLatencyWaitEnabled,");
         AssertContains(previewD3DFrameLatencyWaitProjectionText, "TimeoutCount = previewRuntime.D3DFrameLatencyWaitTimeoutCount,");
         AssertContains(previewD3DFrameLatencyWaitProjectionText, "MaxMs = previewRuntime.D3DFrameLatencyWaitMaxMs");
         AssertContains(previewD3DFrameLatencyWaitProjectionText, "private readonly record struct PreviewD3DFrameLatencyWaitProjection");
-        AssertContains(previewD3DProjectionText, "FrameStatsRecentMissedRefreshCount = recentD3DMissedRefreshes,");
-        AssertContains(previewD3DProjectionText, "FrameStatsRecentFailureCount = recentD3DStatsFailures,");
+
+        AssertContains(previewD3DFrameStatsProjectionText, "private static PreviewD3DFrameStatsProjection BuildPreviewD3DFrameStatsProjection(");
+        AssertContains(previewD3DFrameStatsProjectionText, "SampleCount = previewRuntime.D3DFrameStatsSampleCount,");
+        AssertContains(previewD3DFrameStatsProjectionText, "RecentMissedRefreshCount = recentD3DMissedRefreshes,");
+        AssertContains(previewD3DFrameStatsProjectionText, "RecentFailureCount = recentD3DStatsFailures");
+        AssertContains(previewD3DFrameStatsProjectionText, "private readonly record struct PreviewD3DFrameStatsProjection");
         AssertContains(previewD3DProjectionText, "RecentSlowFrames = previewRuntime.D3DRecentSlowFrames");
         AssertContains(previewD3DProjectionText, "private readonly record struct PreviewD3DProjection");
 

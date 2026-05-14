@@ -96,11 +96,14 @@ automation snapshot DTO.
 Flashback playback thread and command queue counter/latency/failure projection
 consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
-swap-chain, render timing, frame statistics, and submitted / rendered / dropped
-frame projection consumed by the automation snapshot DTO.
+swap-chain, render timing, and submitted / rendered / dropped frame projection
+consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DFrameLatencyWait.cs`
 owns D3D waitable frame-latency counter and timing projection consumed by the
 automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DFrameStats.cs` owns D3D
+frame-statistics success/failure, missed-refresh, and present-count projection
+consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs` owns preview
 frame counters, display cadence, startup/readiness state, GPU playback state,
 preview HDR state, and preview color-context projection consumed by the
