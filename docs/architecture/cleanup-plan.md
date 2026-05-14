@@ -483,9 +483,14 @@ that file.
 
 Native XU public device commands now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs`.
-Keep audio source switching, analog gain writes, named SET wrappers, and
-probe-facing raw AT reads there. The root provider remains responsible for
-telemetry polling and snapshot assembly.
+Keep generic AT SET/GET wrappers, named SET wrappers, and probe-facing raw AT
+reads there. The root provider remains responsible for selected-interface
+validation and dispatch into telemetry polling.
+
+Native XU audio command sequences now live in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioCommands.cs`. Keep
+HDMI/Analog switching, analog gain writes, gain-register mapping, selector-4
+I2C payload writes, and flash persistence sequencing there.
 
 Native XU reference full-snapshot reads now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.FullSnapshot.cs`. Keep

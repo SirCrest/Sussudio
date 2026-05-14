@@ -48,6 +48,9 @@ static partial class Program
                 "NativeXu telemetry rolling poll lives in focused partial",
                 NativeXuAtCommandProvider_RollingPollLivesInFocusedPartial),
             await RunCheckAsync(
+                "NativeXu audio command sequences live in focused partial",
+                NativeXuAtCommandProvider_AudioCommandsLiveInFocusedPartial),
+            await RunCheckAsync(
                 "Health snapshot propagates structured source telemetry details",
                 CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails),
             await RunCheckAsync(
