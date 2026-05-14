@@ -108,10 +108,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs")
-            .Replace("\r\n", "\n");
+        var metricsText = ReadDiagnosticSessionFlashbackMetricsSource();
 
-        AssertContains(metricsText, "internal static class DiagnosticSessionFlashbackMetrics");
+        AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
         AssertContains(metricsText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertContains(metricsText, "internal sealed class FlashbackPlaybackSessionMetrics");
         AssertContains(metricsText, "internal sealed class FlashbackPlaybackResultMetrics");

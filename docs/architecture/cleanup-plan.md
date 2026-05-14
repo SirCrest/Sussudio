@@ -1450,10 +1450,11 @@ Diagnostic-session Flashback lifecycle checks now live in
 pause/seek/play disable-and-re-enable flow and post-disable playback queue
 assertions while the runner only starts the lifecycle task.
 
-Diagnostic-session Flashback metric projection now lives in
-`tools/Common/DiagnosticSessionFlashbackMetrics.cs`. It owns snapshot-only
-recording, playback, playback-result, and export metric projection while the
-runner retains scenario control and validation warning policy.
+Diagnostic-session Flashback metric projection now lives in a focused partial
+family rooted at `tools/Common/DiagnosticSessionFlashbackMetrics.cs`. The root
+is only a marker shell; DTOs, recording metrics, playback session aggregation,
+playback result copying, and export metrics each have named owner files. These
+helpers remain snapshot-only projections and must not send automation commands.
 
 Diagnostic-session Flashback preview-cycle scenarios now live in
 `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`. They own
@@ -1522,7 +1523,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
-- `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
