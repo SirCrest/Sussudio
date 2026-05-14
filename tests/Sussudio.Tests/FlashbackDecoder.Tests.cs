@@ -139,6 +139,23 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackDecoder_SeekingLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var seekingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Seeking.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(seekingText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
+        AssertContains(seekingText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
+        AssertContains(seekingText, "FLASHBACK_DECODER_SEEK_FALLBACK_OK");
+        AssertContains(seekingText, "FLASHBACK_DECODER_SEEK_CAP_HIT");
+        AssertDoesNotContain(rootText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(rootText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");

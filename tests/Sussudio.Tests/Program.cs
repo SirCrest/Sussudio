@@ -1561,6 +1561,9 @@ static partial class Program
                 "Flashback decoder video setup lives in focused partial",
                 FlashbackDecoder_VideoSetupLivesInFocusedPartial),
             await RunCheckAsync(
+                "Flashback decoder seeking lives in focused partial",
+                FlashbackDecoder_SeekingLivesInFocusedPartial),
+            await RunCheckAsync(
                 "Flashback decoder defaults to closed state",
                 FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized),
             await RunCheckAsync(

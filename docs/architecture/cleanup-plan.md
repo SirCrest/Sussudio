@@ -762,10 +762,12 @@ configuration diagnostics now live in
 output, D3D11/software frame validation, plane copies, and YUV-to-NV12/P010
 conversion now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs`. Keep file
-open/close, seek/decode control flow, and native cleanup in the root decoder
-until those areas get their own focused slices. Shared PTS conversion, seek
-timestamp conversion, best-effort frame timestamp selection, and recoverable
-seek log suppression now live in
+open/close, decode control flow, and native cleanup in the root decoder until
+those areas get their own focused slices. Keyframe/exact seek control flow,
+pending-frame transfer, seek-cap diagnostics, and seek-buffer flushing now live
+in `Sussudio/Services/Flashback/FlashbackDecoder.Seeking.cs`. Shared PTS
+conversion, seek timestamp conversion, best-effort frame timestamp selection,
+and recoverable seek log suppression now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.Timestamps.cs`.
 Decoded frame-size calculation, video-dimension validation, input stream-count
 bounds, and stream-index bounds now live in
