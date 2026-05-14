@@ -188,7 +188,8 @@ static partial class Program
 
     private static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
     {
-        var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
+        var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs");
         AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
         AssertContains(source, "HasJpegStartOfImage");
         AssertContains(source, "MJPEG_REORDER_STRICT_WAIT");
@@ -222,6 +223,31 @@ static partial class Program
             "if (_reorderFrames.ContainsKey(seqNo))",
             "_reorderFrames.Add(seqNo, new DecodedFrame(seqNo, frame, decodedTick));");
         AssertDoesNotContain(duplicateBlock, "MarkKnownMissing");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ParallelMjpegDecodePipeline_LifecycleLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
+            .Replace("\r\n", "\n");
+        var lifecycleText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(lifecycleText, "public void Dispose()");
+        AssertContains(lifecycleText, "public bool TryStop(TimeSpan timeout, out string? failureReason)");
+        AssertContains(lifecycleText, "private void BeginStop()");
+        AssertContains(lifecycleText, "private void SignalEmitter(string operation)");
+        AssertContains(lifecycleText, "private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)");
+        AssertContains(lifecycleText, "private void CleanupResources()");
+        AssertContains(lifecycleText, "private void ReturnRemainingWorkItems()");
+        AssertContains(lifecycleText, "private void SignalFatalError(Exception ex)");
+        AssertContains(lifecycleText, "private static TimeSpan GetRemainingTimeout(long deadlineTimestamp)");
+        AssertDoesNotContain(rootText, "public bool TryStop(TimeSpan timeout, out string? failureReason)");
+        AssertDoesNotContain(rootText, "private void BeginStop()");
+        AssertDoesNotContain(rootText, "private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)");
+        AssertDoesNotContain(rootText, "private void CleanupResources()");
+        AssertDoesNotContain(rootText, "private static TimeSpan GetRemainingTimeout(long deadlineTimestamp)");
 
         return Task.CompletedTask;
     }

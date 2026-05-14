@@ -619,8 +619,12 @@ Parallel MJPEG decode pipeline timing now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs`. Keep timing
 record structs, timing snapshot construction, per-decoder sample windows,
 packet-hash metric access, and stopwatch conversion helpers there; keep worker
-decode, reorder, emit, stop/dispose, and cleanup behavior in the root pipeline
-until those paths get their own slices.
+decode, reorder, and emit behavior in the root pipeline.
+
+Parallel MJPEG decode pipeline lifecycle now lives in
+`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs`. Keep
+stop/dispose, emitter signaling, shutdown joins, cleanup of remaining work and
+reorder frames, fatal-callback dispatch, and remaining-timeout helpers there.
 
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`: `AutomationSnapshot.cs`,

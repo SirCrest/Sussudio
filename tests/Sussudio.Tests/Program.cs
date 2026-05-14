@@ -924,6 +924,9 @@ static partial class Program
                 "MJPEG pipeline remaining timeout clamps past deadlines",
                 ParallelMjpegDecodePipeline_GetRemainingTimeout_ReturnsCorrectTimeSpan),
             await RunCheckAsync(
+                "MJPEG pipeline lifecycle lives in focused partial",
+                ParallelMjpegDecodePipeline_LifecycleLivesInFocusedPartial),
+            await RunCheckAsync(
                 "MJPEG pipeline timing metrics expose expected properties",
                 ParallelMjpegDecodePipeline_PipelineTimingMetrics_HasExpectedProperties),
             await RunCheckAsync(
