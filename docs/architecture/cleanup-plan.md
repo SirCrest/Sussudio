@@ -1784,10 +1784,11 @@ Remaining `tools/Common` ownership:
    but checks should keep migrating into focused xUnit files or focused
    partial contract files while the dual-stack harness remains. MCP tool
    surface tests are now split into command-routing, diagnostic-session tool,
-   diagnostic-session ownership, diagnostic-session Flashback,
-   diagnostic-session runner, performance, window/preview, and helper partial
-   files. Flashback tests are also split by buffer, encoder, exporter,
-   playback, decoder, and support owners. Capture session coordinator tests
+   diagnostic-session ownership, diagnostic-session result ownership,
+   diagnostic-session Flashback, diagnostic-session runner, performance,
+   window/preview, and helper partial files. Flashback tests are also split by
+   buffer, encoder, exporter, playback, decoder, and support owners. Capture
+   session coordinator tests
    are split into API/contracts, queue behavior, Flashback behavior,
    transition policy, ownership, and harness-helper owners. MainViewModel
    automation tests are split into surface, diagnostics refresh, diagnostics projection,

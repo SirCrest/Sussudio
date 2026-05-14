@@ -901,8 +901,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Tests.cs` owns
   MCP `run_diagnostic_session` success/failure artifact contract tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`
-  owns diagnostic-session helper ownership assertions for core runner
-  collaborators.
+  owns diagnostic-session helper ownership assertions for core runner, command,
+  scenario, cleanup, sampling, and metric collaborators.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`
+  owns diagnostic-session model, formatter, result-builder, summary-writer,
+  JSON artifact, and shared text ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Tests.cs`
   owns diagnostic-session Flashback scenario, metrics, waits, export, and
   validation ownership assertions.
