@@ -1116,9 +1116,23 @@ Primary current owners:
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`
   owns diagnostic-session model, formatter, result-builder, summary-writer,
   JSON artifact, and shared text ownership assertions.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Tests.cs`
-  owns diagnostic-session Flashback scenario, metrics, waits, and validation
-  ownership assertions.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Tests.cs` is
+  the diagnostic-session Flashback ownership marker shell.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.HealthPolicy.Tests.cs`
+  owns diagnostic-session Flashback warmup health-policy ownership assertions.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`
+  owns diagnostic-session Flashback cycle, preview-cycle, rejected-export,
+  segment-playback, recording-settings, and lifecycle scenario ownership
+  assertions.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Stress.Tests.cs`
+  owns diagnostic-session Flashback stress and audio-master fallback
+  classification ownership assertions.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Metrics.Tests.cs`
+  owns diagnostic-session Flashback metric projection ownership assertions.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Waits.Tests.cs`
+  owns diagnostic-session Flashback snapshot polling wait ownership assertions.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Validation.Tests.cs`
+  owns diagnostic-session Flashback warning-policy ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Export.Tests.cs`
   owns diagnostic-session Flashback export ownership assertions for export
   scenario flows, export helpers, and shared segment wait/parsing collaborators.
