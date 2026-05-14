@@ -575,7 +575,7 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "FlashbackStartupCacheBytes = bufMgr?.StartupCacheBytes");
         AssertContains(captureSnapshotsSource, "FlashbackTempDriveFreeBytes = bufMgr?.TempDriveAvailableFreeBytes");
         var sharedFormatterSource = ReadAutomationSnapshotFormatterSource();
-        var ssctlFormatterSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
+        var ssctlFormatterSource = ReadSsctlSnapshotFormatterSource();
         var mcpAppStateSource = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
         AssertContains(sharedFormatterSource, "FlashbackEncodingFailed");
         AssertContains(sharedFormatterSource, "FlashbackStartupCacheBytes");

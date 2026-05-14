@@ -264,11 +264,12 @@ remain: `CommandHandlers.Context.cs` owns per-invocation command context,
 exit-code shaping.
 
 `tools/ssctl/Formatters.cs` is only the projection facade for console output.
-Keep snapshot text in `Formatters.Snapshot.cs`, diagnostic-event text in
-`Formatters.Diagnostics.cs`, capture option/device text in
-`Formatters.Options.cs`, performance timeline tables in
-`Formatters.Timeline.cs`, memory/GC summaries in `Formatters.Memory.cs`, and
-shared JSON/result helpers in `Formatters.Common.cs`.
+Keep app snapshot orchestration in `Formatters.Snapshot.cs`, Flashback snapshot
+text in `Formatters.Snapshot.Flashback.cs`, diagnostic-event text in
+`Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
+performance timeline tables in `Formatters.Timeline.cs`, memory/GC summaries in
+`Formatters.Memory.cs`, and shared JSON/result helpers in
+`Formatters.Common.cs`.
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
 snapshot formatter facade for top-level text flow. Tolerant JSON accessors and

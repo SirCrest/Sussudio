@@ -1019,7 +1019,9 @@ Primary owners:
 - `tools/ssctl/CommandHandlers.Transport.cs` owns shared command sending and
   response exit-code shaping.
 - `tools/ssctl/Formatters.cs` is the console projection facade only.
-- `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot text sections.
+- `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration and
+  non-Flashback text sections.
+- `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot text.
 - `tools/ssctl/Formatters.Diagnostics.cs` owns recent diagnostic-event output.
 - `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
 - `tools/ssctl/Formatters.Timeline.cs` owns performance timeline table output

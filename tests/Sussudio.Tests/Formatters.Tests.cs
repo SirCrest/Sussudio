@@ -39,8 +39,14 @@ static partial class Program
         AssertContains(output, "submitFailures=1");
         AssertContains(output, "A/V Drift: -1.5ms");
         var ssctlFormatterRoot = ReadRepoFile("tools/ssctl/Formatters.cs");
-        var ssctlFormatterSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
+        var ssctlFormatterSource = ReadSsctlSnapshotFormatterSource();
+        var ssctlSnapshotRootSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
+        var ssctlSnapshotFlashbackSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.cs");
         AssertDoesNotContain(ssctlFormatterRoot, "public static string FormatSnapshot");
+        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotFlashbackSection(builder, snapshot);");
+        AssertDoesNotContain(ssctlSnapshotRootSource, "var flashbackActive = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackActive\", \"false\");");
+        AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotFlashbackSource, "var flashbackActive = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackActive\", \"false\");");
         AssertContains(ReadRepoFile("tools/ssctl/Formatters.Diagnostics.cs"), "public static string FormatDiagnostics");
         AssertContains(ReadRepoFile("tools/ssctl/Formatters.Options.cs"), "public static string FormatOptions");
         AssertContains(ReadRepoFile("tools/ssctl/Formatters.Timeline.cs"), "public static string FormatTimeline");

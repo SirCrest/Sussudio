@@ -6737,7 +6737,7 @@ static partial class Program
     private static Task SsctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter()
     {
         var mcpText = ReadAutomationSnapshotFormatterSource();
-        var ssctlText = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
+        var ssctlText = ReadSsctlSnapshotFormatterSource();
 
         var mcpFields = ExtractSnapshotFields(mcpText);
         var ssctlFields = ExtractSnapshotFields(ssctlText);
