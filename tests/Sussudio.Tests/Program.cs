@@ -144,6 +144,9 @@ static partial class Program
                 "Recording verifier cadence analysis lives in focused partial",
                 RecordingVerifier_CadenceAnalysisLivesInFocusedPartial),
             await RunCheckAsync(
+                "Recording verifier probe validation and result shaping live in focused partials",
+                RecordingVerifier_ProbeValidationAndResultsLiveInFocusedPartials),
+            await RunCheckAsync(
                 "Recording verification result exposes expected properties",
                 RecordingVerificationResult_HasExpectedProperties),
             await RunCheckAsync(

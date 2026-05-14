@@ -131,6 +131,36 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task RecordingVerifier_ProbeValidationAndResultsLiveInFocusedPartials()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.cs")
+            .Replace("\r\n", "\n");
+        var ffprobeText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.Ffprobe.cs")
+            .Replace("\r\n", "\n");
+        var parsingText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.ProbeParsing.cs")
+            .Replace("\r\n", "\n");
+        var validationText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.Validation.cs")
+            .Replace("\r\n", "\n");
+        var resultsText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.Results.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(rootText, "public async Task<RecordingVerificationResult> VerifyAsync(");
+        AssertContains(ffprobeText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
+        AssertContains(ffprobeText, "private ProcessSpec CreateFfprobeProcessSpec(");
+        AssertContains(parsingText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
+        AssertContains(parsingText, "private static double? TryParseRational(string? value)");
+        AssertContains(validationText, "private static void ValidateContainer(");
+        AssertContains(validationText, "private static HdrValidationResult ValidateHdrMetadata(");
+        AssertContains(resultsText, "private static HdrParityResult BuildHdrParityResult(");
+        AssertContains(resultsText, "private static RecordingVerificationResult CreateEarlyFailure(");
+        AssertDoesNotContain(rootText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
+        AssertDoesNotContain(rootText, "private static void ValidateContainer(");
+        AssertDoesNotContain(rootText, "private static HdrParityResult BuildHdrParityResult(");
+        AssertDoesNotContain(rootText, "private static RecordingVerificationResult CreateEarlyFailure(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task RecordingVerificationResult_HasExpectedProperties()
     {
         var resultType = RequireType("Sussudio.Models.RecordingVerificationResult");

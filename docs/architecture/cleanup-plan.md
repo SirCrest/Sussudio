@@ -463,12 +463,13 @@ background encoding loop, bounded video/GPU/CUDA/audio/microphone drain
 batches, cancellation cleanup, frame-encoded event dispatch, and fatal encoder
 failure handling there.
 
-Recording verifier cadence analysis now lives in
-`Sussudio/Services/Recording/RecordingVerifier.Cadence.cs`. Keep ffprobe frame
-timestamp JSON parsing, cadence interval filtering, observed FPS, jitter,
-severe-gap, and estimated-drop calculations there; keep strict verification
-orchestration, stream/container/HDR validation, mismatch taxonomy, and early
-failure shaping in `RecordingVerifier.cs`.
+Recording verifier ownership is split across focused partials. Keep strict
+verification orchestration in `Sussudio/Services/Recording/RecordingVerifier.cs`,
+ffprobe process/spec/side-data probing in `RecordingVerifier.Ffprobe.cs`, probe
+scalar parsing in `RecordingVerifier.ProbeParsing.cs`, stream/container/HDR and
+cadence validation policy in `RecordingVerifier.Validation.cs`, result/taxonomy
+shaping in `RecordingVerifier.Results.cs`, and ffprobe frame timestamp cadence
+analysis in `RecordingVerifier.Cadence.cs`.
 
 Native XU source telemetry detail presentation now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs`.
