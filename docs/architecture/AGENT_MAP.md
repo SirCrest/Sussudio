@@ -450,10 +450,13 @@ Primary current owners:
 
 - `Sussudio/MainWindow.*.cs` for shell, renderer, fullscreen, screenshots,
   animations, and window lifecycle.
-- `Sussudio/Controllers/FullScreenController.cs` owns fullscreen transition
-  state, overlay reparenting, button state, and auto-hide timer behavior. Keep
-  `MainWindow.FullScreen.cs` as the XAML-facing adapter and Flashback shortcut
-  bridge.
+- `Sussudio/Controllers/FullScreenController.cs` owns fullscreen public
+  toggle/state and shared context; `FullScreenController.Transitions.cs` owns
+  enter/exit orchestration, `FullScreenController.Animation.cs` owns rect
+  animation and size waits, `FullScreenController.Chrome.cs` owns chrome/material
+  state, and `FullScreenController.Controls.cs` owns overlay pointer/auto-hide
+  behavior. Keep `MainWindow.FullScreen.cs` as the XAML-facing adapter and
+  Flashback shortcut bridge.
 - `Sussudio/Controllers/WindowScreenshotController.cs` owns automation whole-
   window screenshot dispatch, native PrintWindow capture, and PNG/BMP encoding.
   Keep `MainWindow.Screenshot.cs` as the `IAutomationWindowControl` adapter.

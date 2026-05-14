@@ -244,9 +244,14 @@ context, `CommandHandlers.Parsing.cs` owns CLI flag/value/usage parsing, and
 `CommandHandlers.Transport.cs` owns shared command sending plus response
 exit-code shaping.
 
-Fullscreen transition mechanics now live in
-`Sussudio/Controllers/FullScreenController.cs`. `MainWindow.FullScreen.cs`
-remains the XAML event adapter and Flashback keyboard/scrub bridge.
+Fullscreen transition mechanics now live under the
+`Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
+to the public toggle/state surface, `FullScreenController.Transitions.cs` to
+enter/exit orchestration, `FullScreenController.Animation.cs` to rect animation,
+`FullScreenController.Chrome.cs` to chrome/material state, and
+`FullScreenController.Controls.cs` to overlay pointer/auto-hide behavior.
+`MainWindow.FullScreen.cs` remains the XAML event adapter and Flashback
+keyboard/scrub bridge.
 
 Automation whole-window screenshot capture now lives in
 `Sussudio/Controllers/WindowScreenshotController.cs`. `MainWindow.Screenshot.cs`
