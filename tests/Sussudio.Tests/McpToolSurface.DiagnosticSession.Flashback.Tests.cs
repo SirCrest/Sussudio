@@ -186,10 +186,9 @@ static partial class Program
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
-        var segmentPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
-            .Replace("\r\n", "\n");
+        var segmentPlaybackText = ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource();
 
-        AssertContains(segmentPlaybackText, "internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios");
+        AssertContains(segmentPlaybackText, "internal static partial class DiagnosticSessionFlashbackSegmentPlaybackScenarios");
         AssertContains(segmentPlaybackText, "internal static async Task RunFlashbackSegmentPlaybackAsync(");
         AssertContains(segmentPlaybackText, "flashback segment playback live headroom established");
         AssertContains(segmentPlaybackText, "flashback segment playback started near boundary");
@@ -329,8 +328,7 @@ static partial class Program
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
-        var segmentPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
-            .Replace("\r\n", "\n");
+        var segmentPlaybackText = ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource();
         var segmentsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
             .Replace("\r\n", "\n");
 

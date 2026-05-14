@@ -1110,8 +1110,10 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs` owns
   Flashback recording-settings deferral checks and post-stop preset restore.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs` owns the
-  Flashback completed-segment playback scenario and its recording-assisted
-  segment-rotation cleanup helper.
+  Flashback completed-segment playback scenario.
+- `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
+  owns recording-assisted segment rotation and best-effort stop cleanup for
+  segment playback diagnostics.
 - `tools/Common/DiagnosticSessionFlashbackSegments.cs` owns read-only
   diagnostic-session Flashback segment parsing, completed-segment waits, and
   playable-boundary headroom waits. Do not add state-mutating scenario steps

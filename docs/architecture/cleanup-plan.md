@@ -1490,9 +1490,11 @@ verification and restore.
 
 Diagnostic-session Flashback segment playback now lives in
 `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`. It owns
-completed-segment playback crossing plus recording-assisted segment rotation,
-while `DiagnosticSessionFlashbackSegments.cs` stays read-only segment parsing
-and wait policy.
+completed-segment playback crossing. Recording-assisted segment rotation and
+best-effort stop cleanup live beside it in
+`DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`, while
+`DiagnosticSessionFlashbackSegments.cs` stays read-only segment parsing and
+wait policy.
 
 Diagnostic-session Flashback segment handling now lives in
 `tools/Common/DiagnosticSessionFlashbackSegments.cs`. It owns segment DTOs,
@@ -1569,6 +1571,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
+- `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
 - `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionFlashbackStressScenario.Stress.cs`
