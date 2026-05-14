@@ -326,6 +326,14 @@ Queued Flashback mutations, read-only Flashback status/projection helpers,
 export forwarding, and active playback-controller readiness checks now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs`.
 
+Device discovery ownership is split across `DeviceService.*.cs`. Keep root
+enumeration orchestration in `DeviceService.cs`, format cache serialization in
+`DeviceService.FormatCache.cs`, inline/background format probing in
+`DeviceService.FormatProbe.cs`, device priority/capability scoring in
+`DeviceService.Scoring.cs`, audio endpoint association in
+`DeviceService.AudioAssociation.cs`, and native XU interface path resolution in
+`DeviceService.NativeXu.cs`.
+
 Capture service source telemetry and observed pixel-format accounting now live
 in `Sussudio/Services/Capture/CaptureService.Telemetry.cs`. The root capture
 service still owns runtime resources, but telemetry polling, fallback merging,
