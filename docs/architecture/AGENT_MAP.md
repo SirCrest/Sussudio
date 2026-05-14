@@ -589,7 +589,13 @@ Primary current owners:
   owns serialized diagnostics refresh and automation diagnostics hub ownership
   assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
-  owns focused automation snapshot projection ownership assertions.
+  is now only the automation diagnostics projection test family marker shell.
+  Keep new projection ownership assertions in the focused owner files:
+  `DiagnosticsProjection.Snapshot.Tests.cs`, `DiagnosticsProjection.Audio.Tests.cs`,
+  `DiagnosticsProjection.Capture.Tests.cs`, `DiagnosticsProjection.Mjpeg.Tests.cs`,
+  `DiagnosticsProjection.Recording.Tests.cs`, `DiagnosticsProjection.System.Tests.cs`,
+  `DiagnosticsProjection.Preview.Tests.cs`, and
+  `DiagnosticsProjection.Flashback.Tests.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RuntimeSafety.Tests.cs` owns
   automation timeout, recording failure propagation, safe close, screenshot,
   preview-stop surface, process supervisor, and emergency-stop assertions.

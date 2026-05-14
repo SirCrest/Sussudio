@@ -331,6 +331,12 @@ lease lifecycle/fan-out contracts, MJPEG jitter adaptive policy, MJPEG jitter
 queue/drop/reprime behavior, and queued lease release contracts for D3D,
 recording, and Flashback paths.
 
+`tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
+is now only the automation diagnostics projection test family marker shell.
+Projection ownership checks are split into snapshot/status, audio, capture and
+source, MJPEG, recording, system resources and A/V sync, preview, and Flashback
+owner files.
+
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
 to the public toggle/state surface, `FullScreenController.Transitions.cs` to
