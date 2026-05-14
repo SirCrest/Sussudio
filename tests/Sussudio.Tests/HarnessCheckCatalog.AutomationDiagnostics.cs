@@ -201,6 +201,9 @@ static partial class Program
             "MF device enumerator source ownership lives in focused partials",
             MfDeviceEnumerator_SourceOwnershipLivesInFocusedPartials);
         await AddCheckAsync(results,
+            "Capture discovery source ownership lives in focused partials",
+            CaptureDiscoverySourceOwnership_LivesInFocusedPartials);
+        await AddCheckAsync(results,
             "AutomationCommandKind source ownership is contract-aligned",
             AutomationCommandKind_SourceOwnership_IsModelAligned);
         await AddCheckAsync(results,

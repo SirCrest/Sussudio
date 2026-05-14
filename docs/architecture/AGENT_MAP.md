@@ -758,6 +758,9 @@ Primary current owners:
   SourceSignalTelemetrySnapshot and SourceTelemetryDetailEntry contract checks.
 - `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs` owns Native XU
   telemetry provider ownership and supported 4K X product-revision checks.
+- `tests/Sussudio.Tests/CaptureDiscovery.SourceOwnership.Tests.cs` owns
+  DeviceService scoring and source-reader negotiation/interop ownership
+  assertions.
 - `tests/Sussudio.Tests/CapturePolicies.HdrOutputPolicy.Tests.cs` owns the
   offline harness HdrOutputPolicy and HDR output environment-switch checks.
 - `tests/Sussudio.Tests/RecordingQueue.Tests.cs` owns shared recording queue
