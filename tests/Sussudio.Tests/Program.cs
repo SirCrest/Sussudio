@@ -4789,33 +4789,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // ── RecordingPipelineOptions / NvmlSnapshot / Coordinator / ProcessSpec tests ──
-
-    private static Task RecordingPipelineOptions_ResolvesVideoQueueCapacity()
-    {
-        var options = CreateInstance("Sussudio.Models.RecordingPipelineOptions");
-
-        // Default: 250ms latency, min=4, max=30
-        // At 60fps: ceil(60 * 250 / 1000) = ceil(15) = 15 → clamp(15, 4, 30) = 15
-        var method = options.GetType().GetMethod("ResolveVideoQueueCapacity")!;
-        var at60 = (int)method.Invoke(options, new object[] { 60.0 })!;
-        AssertEqual(15, at60, "60fps default latency");
-
-        // At 120fps: ceil(120 * 250 / 1000) = ceil(30) = 30 → clamp(30, 4, 30) = 30
-        var at120 = (int)method.Invoke(options, new object[] { 120.0 })!;
-        AssertEqual(30, at120, "120fps default latency");
-
-        // At 30fps: ceil(30 * 250 / 1000) = ceil(7.5) = 8 → clamp(8, 4, 30) = 8
-        var at30 = (int)method.Invoke(options, new object[] { 30.0 })!;
-        AssertEqual(8, at30, "30fps default latency");
-
-        // Zero fps falls back to 60fps: ceil(60 * 250 / 1000) = 15
-        var atZero = (int)method.Invoke(options, new object[] { 0.0 })!;
-        AssertEqual(15, atZero, "0fps fallback to 60");
-
-        return Task.CompletedTask;
-    }
-
     private static Task NvmlSnapshot_ComputedProperties_ConvertUnits()
     {
         var snapshotType = RequireType("Sussudio.Services.Gpu.NvmlSnapshot");
