@@ -866,6 +866,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/PresentMonProbe.Tests.cs` owns PresentMon parser
   behavior contracts for swap-chain selection, artifact filtering, CSV field
   versions, and app-present correlation.
+- `tests/Sussudio.Tests/PresentMonProbe.SourceOwnership.Tests.cs` owns
+  PresentMonProbe split-family source ownership assertions.
 - `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` owns shared tool
   assembly loading, isolated load contexts, freshness checks, and tool build
   command mapping used by the legacy harness and xUnit slices.

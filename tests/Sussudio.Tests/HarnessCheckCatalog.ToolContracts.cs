@@ -83,6 +83,9 @@ static partial class Program
             "PresentMon parser selects dominant non-artifact swap chain",
             PresentMonParser_SelectsDominantNonArtifactSwapChain);
         await AddCheckAsync(results,
+            "PresentMon probe source ownership is split",
+            PresentMonProbe_SourceOwnership_IsSplit);
+        await AddCheckAsync(results,
             "ssctl Formatters emit core snapshot sections",
             SsctlFormatters_EmitCoreSnapshotSections);
         await AddCheckAsync(results,
