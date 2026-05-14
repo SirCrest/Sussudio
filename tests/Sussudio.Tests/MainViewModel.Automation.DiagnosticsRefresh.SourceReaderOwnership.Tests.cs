@@ -1,0 +1,60 @@
+static partial class Program
+{
+    private static void AssertDiagnosticsRefreshSourceReaderOwnership()
+    {
+        var sourceReaderSources = ReadMfSourceReaderVideoCaptureSourceFamily();
+        var sourceReaderRootText = sourceReaderSources.RootText;
+        var sourceReaderDiagnosticsText = sourceReaderSources.DiagnosticsText;
+        var sourceReaderDxgiBuffersText = sourceReaderSources.DxgiBuffersText;
+        var sourceReaderFrameLayoutText = sourceReaderSources.FrameLayoutText;
+        var sourceReaderLifecycleText = sourceReaderSources.LifecycleText;
+        var sourceReaderInitializationText = sourceReaderSources.InitializationText;
+        var sourceReaderReadLoopText = sourceReaderSources.ReadLoopText;
+        var sourceReaderFrameDeliveryText = sourceReaderSources.FrameDeliveryText;
+        var sourceReaderText = sourceReaderSources.SourceFamilyText;
+        AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
+        AssertContains(sourceReaderText, "lock (_cadenceLock)");
+        AssertContains(sourceReaderDiagnosticsText, "private unsafe void DiagnoseVtable(IMFSample sample)");
+        AssertContains(sourceReaderDiagnosticsText, "VTABLE_DIAG RAW slot35_GetSampleTime");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DiagnoseVtable(IMFSample sample)");
+        AssertContains(sourceReaderDxgiBuffersText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
+        AssertContains(sourceReaderDxgiBuffersText, "private static readonly Guid ID3D11Texture2DIid");
+        AssertContains(sourceReaderDxgiBuffersText, "MF_SOURCE_READER_D3D_RESOURCE_FAIL");
+        AssertDoesNotContain(sourceReaderRootText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
+        AssertDoesNotContain(sourceReaderRootText, "private static readonly Guid ID3D11Texture2DIid");
+        AssertContains(sourceReaderFrameLayoutText, "public static int GetFrameSizeBytes(int width, int height, bool isP010)");
+        AssertContains(sourceReaderFrameLayoutText, "private unsafe static void CopyYuvWithStride(");
+        AssertContains(sourceReaderFrameLayoutText, "private static string SubtypeGuidToName(Guid subtype)");
+        AssertDoesNotContain(sourceReaderRootText, "public static int GetFrameSizeBytes(int width, int height, bool isP010)");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe static void CopyYuvWithStride(");
+        AssertDoesNotContain(sourceReaderRootText, "private static string SubtypeGuidToName(Guid subtype)");
+        AssertContains(sourceReaderLifecycleText, "public void StartReading(RawFrameCallback onFrame, CancellationToken ct)");
+        AssertContains(sourceReaderLifecycleText, "public async Task StopAsync()");
+        AssertContains(sourceReaderLifecycleText, "private void ReleaseReaderAndSource()");
+        AssertContains(sourceReaderLifecycleText, "private void SignalFatalError(Exception ex)");
+        AssertDoesNotContain(sourceReaderRootText, "public void StartReading(RawFrameCallback onFrame, CancellationToken ct)");
+        AssertDoesNotContain(sourceReaderRootText, "public async Task StopAsync()");
+        AssertDoesNotContain(sourceReaderRootText, "private void ReleaseReaderAndSource()");
+        AssertDoesNotContain(sourceReaderRootText, "private void SignalFatalError(Exception ex)");
+        AssertContains(sourceReaderInitializationText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
+        AssertContains(sourceReaderInitializationText, "MF_SOURCE_READER_INIT ");
+        AssertContains(sourceReaderInitializationText, "SelectConvertedMediaType(");
+        AssertDoesNotContain(sourceReaderRootText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
+        AssertContains(sourceReaderReadLoopText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
+        AssertContains(sourceReaderReadLoopText, "reader.ReadSample(");
+        AssertContains(sourceReaderReadLoopText, "DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);");
+        AssertDoesNotContain(sourceReaderRootText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
+        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverFrame(");
+        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverDualFrameFromBuffer(");
+        AssertContains(sourceReaderFrameDeliveryText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertContains(sourceReaderFrameDeliveryText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
+        AssertContains(sourceReaderFrameDeliveryText, "ArrayPool<byte>.Shared.Rent");
+        AssertContains(sourceReaderFrameDeliveryText, "Marshal.Release(gpuTexture)");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverFrame(");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverDualFrameFromBuffer(");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
+    }
+}

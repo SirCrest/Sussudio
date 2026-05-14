@@ -717,15 +717,42 @@ Primary current owners:
   automation capture-mode reinitialization and device-selection routing
   contracts.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
-  owns serialized diagnostics refresh and remaining automation diagnostics hub
+  owns the serialized diagnostics refresh ownership check and coordinates the
+  focused diagnostics refresh assertion helpers.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.RefreshPipeline.Tests.cs`
+  owns diagnostics refresh pipeline, refresh gate, snapshot, and dispatcher
   ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.AlertEvents.Tests.cs`
   owns diagnostics alert/event ownership assertions for UpdateAlerts,
   diagnostic events, signal alerts, and Flashback alert routing.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackAlerts.Tests.cs`
+  owns Flashback alert, counter, completion-event, and diagnostics lane
+  coverage for the diagnostics refresh family.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackExport.Tests.cs`
+  owns capture-service and dispatcher Flashback export operation ownership
+  assertions used by diagnostics refresh.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.CoreOwnership.Tests.cs`
   owns diagnostics refresh core ownership assertions for evaluation policy,
   diagnostic evaluation lanes, verification, preview pacing, lifecycle, HDR,
   and the initial snapshot/BuildAutomationSnapshot shape.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceReaderOwnership.Tests.cs`
+  owns source-reader partial ownership assertions used by diagnostics refresh.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionCore.Tests.cs`
+  owns diagnostic-session orchestration, model, and startup/stop contract
+  assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionPlayback.Tests.cs`
+  owns diagnostic-session Flashback playback metrics and result assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionPreview.Tests.cs`
+  owns diagnostic-session preview, visual cadence, D3D, and process metric
+  assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionExportRecording.Tests.cs`
+  owns diagnostic-session Flashback export, recording, artifact, cleanup, and
+  storage metric assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionScenarios.Tests.cs`
+  owns diagnostic-session scenario, health-policy, Flashback stress, and
+  warning-tolerance assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.DiagnosticSessionToolSurface.Tests.cs`
+  owns `ssctl` and MCP diagnostic-session command-surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotProjection.Tests.cs`
   owns diagnostics snapshot projection ownership assertions for
   snapshot projection source text and named BuildProjection boundaries.
@@ -809,13 +836,17 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingQueue.Tests.cs` owns shared recording queue
   source readers and source-block extraction helpers.
 - `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the
-  recording/Flashback queue overload, fatal-failure, recovery-preserve, and
-  snapshot projection policy assertion. `RecordingQueue.OverloadPolicy.SourceReaders.cs`
+  recording/Flashback queue overload, fatal-failure, lifecycle, and recording
+  backend policy assertion. `RecordingQueue.OverloadPolicy.SourceReaders.cs`
   owns source-loading setup for the overload policy assertion.
   `RecordingQueue.OverloadPolicy.LibAvSpec.cs` owns the LibAv overload and
   queue-depth assertion subgroup.
   `RecordingQueue.OverloadPolicy.FlashbackSpec.cs` owns the Flashback overload,
   fatal-failure, queue-depth, and frame-validation assertion subgroup.
+  `RecordingQueue.OverloadPolicy.FlashbackBuffer.cs` owns Flashback buffer
+  recovery, eviction, active-segment, and enqueue-gating assertions.
+  `RecordingQueue.OverloadPolicy.Telemetry.cs` owns unified capture, health
+  snapshot, and automation formatter telemetry assertions.
   `CaptureService.RecordingOwnership.Tests.cs` owns
   CaptureService recording lifecycle and rollback file-ownership assertions.
 - `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Tests.cs` owns LibAv recording
@@ -874,8 +905,14 @@ Primary current owners:
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.Cadence.Tests.cs` owns present
   cadence metric shape and suppression baseline tests.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.Tests.cs`
-  owns the large preview runtime, automation snapshot, and performance timeline
-  diagnostics contract assertion.
+  owns renderer diagnostics source-shape, frame queue, frame ownership, and
+  public renderer diagnostics API contract assertions.
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.SnapshotModels.Tests.cs`
+  owns preview runtime, automation snapshot, nested renderer metrics, preview
+  tracking, and slow-frame diagnostic reflection contracts.
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.PerformanceTimeline.Tests.cs`
+  owns `PerformanceTimelineEntry` preview, Flashback, export, and process
+  diagnostics reflection contracts.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.SourceReaders.cs`
   owns source-loading setup for the preview-renderer diagnostics contract
   assertion.

@@ -1,0 +1,172 @@
+static partial class Program
+{
+    private static void AssertDiagnosticsRefreshFlashbackExportOwnership(string dispatcherText)
+    {
+        var captureServiceText = ReadCaptureServiceDiagnosticsRefreshSource();
+        var flashbackBackendText = ReadFlashbackBackendResourcesSource();
+        AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
+        AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
+        AssertContains(captureServiceText, "FlashbackExporter? snapshotExporter = null,");
+        AssertContains(captureServiceText, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackExporter ??= new FlashbackExporter();\n            }");
+        AssertOccursBefore(captureServiceText, "if (bufferManager == null)", "var exporter = snapshotExporter;");
+        AssertContains(captureServiceText, "var sessionLockHeld = false;");
+        AssertContains(captureServiceText, "sessionLockHeld = true;");
+        AssertContains(captureServiceText, "if (sessionLockHeld)");
+        AssertContains(captureServiceText, "var exportOperationLockHeld = false;");
+        AssertContains(captureServiceText, "exportOperationLockHeld = true;");
+        AssertContains(captureServiceText, "catch (OperationCanceledException) when (ct.IsCancellationRequested)");
+        AssertContains(captureServiceText, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
+        AssertContains(captureServiceText, "private void ReleaseFlashbackBackendLeaseIfHeld(ref bool backendLeaseHeld)");
+        AssertContains(captureServiceText, "backendLeaseHeld = false;\n        ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_backend_lease\");");
+        var exportRangeMethod = ExtractTextBetween(
+            captureServiceText,
+            "internal async Task<FinalizeResult> ExportFlashbackRangeAsync",
+            "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
+        var exportLastNMethod = ExtractTextBetween(
+            captureServiceText,
+            "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
+            "private FinalizeResult FailFlashbackExport");
+        AssertContains(exportRangeMethod, "FlashbackExporter? flashbackExporter;");
+        AssertContains(exportRangeMethod, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
+        AssertContains(exportRangeMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
+        AssertOccursBefore(exportRangeMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
+        AssertContains(exportRangeMethod, "snapshotExporter: flashbackExporter,");
+        AssertContains(exportLastNMethod, "FlashbackExporter? flashbackExporter;");
+        AssertContains(exportLastNMethod, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
+        AssertContains(exportLastNMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
+        AssertOccursBefore(exportLastNMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
+        AssertContains(exportLastNMethod, "snapshotExporter: flashbackExporter,");
+        AssertContains(flashbackBackendText, "outerPauseApplied = bufferManager != null;");
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\", inPoint, outPoint);");
+        AssertContains(captureServiceText, "var exportId = 0L;");
+        AssertContains(captureServiceText, "var evictionPaused = false;");
+        AssertContains(captureServiceText, "exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
+        AssertContains(captureServiceText, "var forceRotateResult = flashbackSink.ForceRotateForExport(inPoint, outPoint, ct);");
+        AssertContains(captureServiceText, "segmentPaths = forceRotateResult.SegmentPaths;");
+        AssertContains(captureServiceText, "if (forceRotateResult.Status == FlashbackForceRotateStatus.Failed)");
+        AssertContains(captureServiceText, "if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)");
+        var forceRotateFailedBlock = ExtractTextBetween(
+            captureServiceText,
+            "if (forceRotateResult.Status == FlashbackForceRotateStatus.Failed)",
+            "if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)");
+        AssertContains(forceRotateFailedBlock, "Flashback export failed: live-edge segment rotation failed.");
+        AssertContains(forceRotateFailedBlock, "preserved_segments={preservedArtifacts.Count}");
+        AssertContains(forceRotateFailedBlock, "return result;");
+        var forceRotateFallbackBlock = ExtractTextBetween(
+            captureServiceText,
+            "if (segmentPaths.Count == 0)",
+            "// Fallback: single-file export if no segments available");
+        AssertContains(forceRotateFallbackBlock, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
+        AssertContains(forceRotateFallbackBlock, "RecordFlashbackExportForceRotateFallback(exportId, segmentPaths.Count, inPoint, outPoint);");
+        AssertDoesNotContain(forceRotateFallbackBlock, "force_rotate_failed");
+        AssertDoesNotContain(forceRotateFallbackBlock, "Flashback export failed: live-edge segment rotation failed.");
+        AssertContains(captureServiceText, "private sealed class FlashbackRecordingBoundarySnapshot");
+        AssertContains(captureServiceText, "captureBoundarySnapshot: sink => CaptureFlashbackRecordingBoundarySnapshot(sink, recordingBoundary)");
+        AssertContains(flashbackBackendText, "captureBoundarySnapshot?.Invoke(flashbackSink);");
+        AssertOccursBefore(flashbackBackendText, "captureBoundarySnapshot?.Invoke(flashbackSink);", "var exportResult = await exportRecordingAsync(");
+        AssertContains(captureServiceText, "counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline");
+        AssertContains(captureServiceText, "audioCounters: recordingBoundary.AudioCounters ?? GetRecordingAudioCountersSinceBaseline");
+        AssertContains(captureServiceText, "evictionPaused = true;");
+        AssertContains(captureServiceText, "if (exportId != 0)");
+        AssertContains(captureServiceText, "if (evictionPaused)");
+        AssertContains(captureServiceText, "ResumeFlashbackEvictionBestEffort(bufferManager, \"flashback_export\");");
+        AssertContains(flashbackBackendText, "resumeEvictionBestEffort(bufferManager, \"flashback_recording_finalize\");");
+        AssertContains(captureServiceText, "RecordLastFlashbackExportResult(exportId, failure);");
+        AssertContains(captureServiceText, "private void RecordLastFlashbackExportResult(long exportId, FinalizeResult result)");
+        AssertContains(captureServiceText, "Volatile.Write(ref _lastFlashbackExportResultId, exportId);");
+        AssertContains(captureServiceText, "private FinalizeResult FailFlashbackExport(\n        string outputPath,\n        string statusMessage,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
+        AssertContains(captureServiceText, "Logger.Log($\"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'\");");
+        AssertContains(captureServiceText, "_lastExportResult = result;");
+        AssertContains(captureServiceText, "RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);");
+        AssertContains(captureServiceText, "private void RecordRejectedFlashbackExportDiagnostics(\n        string outputPath,\n        FinalizeResult result,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
+        AssertContains(captureServiceText, "if (_flashbackExportActive)");
+        AssertContains(captureServiceText, "Volatile.Write(ref _lastFlashbackExportResultId, 0);");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_REJECTED_DIAGNOSTICS_DEFERRED");
+        AssertContains(captureServiceText, "active_id={_flashbackExportId}");
+        AssertContains(captureServiceText, "if (_flashbackExportId != exportId || !_flashbackExportActive)");
+        AssertContains(captureServiceText, "var statusMessage = ex is OperationCanceledException && ct.IsCancellationRequested\n                ? \"Flashback export cancelled.\"\n                : ex.Message;");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_CORE_FAIL id={exportId} type={ex.GetType().Name}");
+        AssertContains(captureServiceText, "var failure = FinalizeResult.Failure(outputPath, statusMessage);");
+        AssertContains(captureServiceText, "CompleteFlashbackExportDiagnostics(exportId, failure);\n            }\n            else\n            {\n                RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);\n            }\n            return failure;");
+        AssertContains(captureServiceText, "_flashbackExportStartedUtcUnixMs = now;");
+        AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = now;");
+        AssertContains(captureServiceText, "var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
+        AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;");
+        AssertContains(captureServiceText, "_flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;");
+        AssertContains(captureServiceText, "ClassifyFlashbackExportFailureKind(result.StatusMessage)");
+        AssertContains(captureServiceText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
+        AssertContains(captureServiceText, "return \"UnavailableDuringRecording\";");
+        AssertContains(captureServiceText, "return \"BufferInactive\";");
+        AssertContains(captureServiceText, "ContainsFlashbackExportFailureText(statusMessage, \"buffer has no active file\")");
+        AssertContains(captureServiceText, "return \"InvalidOutputPath\";");
+        AssertContains(captureServiceText, "return \"NoMediaWritten\";");
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", inPoint, outPoint);");
+        AssertContains(captureServiceText, "resolveRangeAfterEvictionPaused: manager =>");
+        AssertContains(captureServiceText, "var validStart = manager.ValidStartPts;");
+        AssertContains(captureServiceText, "var bufferedDuration = manager.BufferedDuration;");
+        AssertContains(captureServiceText, "var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);");
+        AssertContains(captureServiceText, "var bufferOutPoint = outPoint.HasValue\n                        ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)\n                        : TimeSpan.MaxValue;");
+        AssertContains(captureServiceText, "var fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);");
+        AssertContains(captureServiceText, "var fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);");
+        AssertContains(captureServiceText, ".Select(segment => (Key: TryGetFullPath(segment.Path), Segment: segment))");
+        AssertContains(captureServiceText, "var pathKey = TryGetFullPath(path);");
+        AssertContains(captureServiceText, "segmentInfo.TryGetValue(pathKey, out var info)");
+        AssertContains(captureServiceText, "private static string? TryGetFullPath(string? path)");
+        AssertContains(captureServiceText, "FLASHBACK_PATH_NORMALIZE_WARN");
+        AssertContains(captureServiceText, "fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint");
+        AssertContains(captureServiceText, "resolvedRange.FailureMessage ?? \"Flashback export range is empty or invalid.\"");
+        AssertContains(captureServiceText, "if (ct.IsCancellationRequested)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export cancelled.\");\n        }\n\n        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export duration must be finite, greater than zero, and within TimeSpan range.\");\n        }");
+        AssertRegex(
+            dispatcherText,
+            "if \\(!double\\.IsFinite\\(seconds\\) \\|\\|\\n\\s*seconds <= 0 \\|\\|\\n\\s*seconds > TimeSpan\\.MaxValue\\.TotalSeconds\\)",
+            "Flashback export duration guard");
+        AssertContains(dispatcherText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
+        AssertContains(captureServiceText, "? \"Cancelled\"");
+        AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
+        AssertContains(captureServiceText, "if (exportOperationLockHeld)");
+        AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, \"flashback_export_operation\");");
+        AssertContains(captureServiceText, "DisposeCoordinationLocksBestEffort();");
+        AssertContains(captureServiceText, "DisposeSemaphoreBestEffort(_sessionTransitionLock, \"session_transition\");");
+        AssertContains(captureServiceText, "DisposeSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_backend_lease\");");
+        AssertContains(captureServiceText, "DisposeSemaphoreBestEffort(_flashbackExportOperationLock, \"flashback_export_operation\");");
+        AssertContains(captureServiceText, "CAPTURE_SERVICE_SEMAPHORE_DISPOSE_WARN");
+        AssertContains(captureServiceText, "private static void ReleaseSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
+        AssertContains(captureServiceText, "CAPTURE_SERVICE_SEMAPHORE_RELEASE_WARN");
+        AssertContains(captureServiceText, "private static void ResumeFlashbackEvictionBestEffort(FlashbackBufferManager? bufferManager, string operation)");
+        AssertContains(captureServiceText, "FLASHBACK_EVICTION_RESUME_WARN");
+        AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_sessionTransitionLock, \"flashback_export_snapshot_session\");");
+        AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_preview_backend_dispose\");");
+        AssertDoesNotContain(captureServiceText, "_flashbackBackendLeaseLock.Release();");
+        AssertDoesNotContain(captureServiceText, "_flashbackExportOperationLock.Release();");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_ACTIVE_FILE_FALLBACK");
+        AssertContains(captureServiceText, "Segments = BuildFlashbackExportSegments(bufferManager, segmentPaths)");
+        AssertContains(captureServiceText, "var startPts = FromSegmentMilliseconds(info.StartPtsMs);");
+        AssertContains(captureServiceText, "var endPts = FromSegmentMilliseconds(info.EndPtsMs);");
+        AssertContains(captureServiceText, "if (endPts < startPts)\n                {\n                    endPts = startPts;\n                }");
+        AssertContains(captureServiceText, "StartPts = startPts,\n                    EndPts = endPts");
+        AssertContains(captureServiceText, "private static TimeSpan FromSegmentMilliseconds(long milliseconds)");
+        AssertContains(captureServiceText, "return milliseconds >= TimeSpan.MaxValue.TotalMilliseconds\n            ? TimeSpan.MaxValue\n            : TimeSpan.FromMilliseconds(milliseconds);");
+        AssertContains(captureServiceText, "private static TimeSpan ClampFlashbackBufferPosition(TimeSpan position, TimeSpan bufferedDuration)");
+        AssertContains(captureServiceText, "if (bufferedDuration <= TimeSpan.Zero)\n        {\n            return TimeSpan.Zero;\n        }");
+        AssertContains(captureServiceText, "private static TimeSpan AddFlashbackPtsOffsetOrMax(TimeSpan position, TimeSpan offset)");
+        AssertContains(captureServiceText, "if (position < TimeSpan.Zero)\n        {\n            position = TimeSpan.Zero;\n        }");
+        AssertContains(captureServiceText, "if (offset <= TimeSpan.Zero)\n        {\n            return position;\n        }");
+        AssertContains(captureServiceText, "return position > TimeSpan.MaxValue - offset\n            ? TimeSpan.MaxValue\n            : position + offset;");
+        AssertContains(captureServiceText, "var rawTotalSegments = progress.TotalSegments;");
+        AssertContains(captureServiceText, "var totalSegments = Math.Max(0, rawTotalSegments);");
+        AssertContains(captureServiceText, "if (totalSegments > 0 && segmentsProcessed > totalSegments)");
+        AssertContains(captureServiceText, "Math.Clamp(rawPercent, 0.0, 100.0)");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_PROGRESS_NORMALIZED");
+        AssertContains(captureServiceText, "raw_segments={rawSegmentsProcessed}/{rawTotalSegments}");
+        AssertContains(captureServiceText, "raw_percent={rawPercent:0.###} percent={percent:0.###}");
+        AssertContains(captureServiceText, "try\n            {\n                innerProgress?.Report(progress);\n            }\n            catch (Exception ex)\n            {\n                Logger.Log($\"FLASHBACK_EXPORT_PROGRESS_FORWARD_WARN id={exportId} type={ex.GetType().Name} msg='{ex.Message}'\");\n            }");
+
+        var flashbackExporterText = ReadFlashbackExporterSource();
+        AssertContains(flashbackExporterText, "if (request.Segments is { Count: > 0 })");
+        AssertContains(flashbackExporterText, "var useSegmentTimeline = segment.StartPts.HasValue");
+        AssertContains(flashbackExporterText, "var comparePtsUs = useSegmentTimeline");
+        AssertContains(flashbackExporterText, "ResolveSegmentBoundaryTimestampRepairUs(");
+        AssertContains(flashbackExporterText, "FLASHBACK_EXPORT_SEGMENT_PTS_REPAIR");
+
+    }
+}

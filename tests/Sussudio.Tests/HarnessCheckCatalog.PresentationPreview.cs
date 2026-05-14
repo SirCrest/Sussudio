@@ -228,6 +228,12 @@ static partial class Program
             "D3D preview diagnostics expose swap-chain and render timing contract",
             D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming);
         await AddCheckAsync(results,
+            "D3D preview diagnostics expose snapshot model contract",
+            D3D11PreviewRenderer_DiagnosticsContract_SnapshotModelsExposeExpectedProperties);
+        await AddCheckAsync(results,
+            "D3D preview diagnostics expose performance timeline contract",
+            D3D11PreviewRenderer_DiagnosticsContract_PerformanceTimelineExposesExpectedProperties);
+        await AddCheckAsync(results,
             "D3D preview frame types live in focused partial",
             D3D11PreviewRenderer_FrameTypesLiveInFocusedPartial);
         await AddCheckAsync(results,
