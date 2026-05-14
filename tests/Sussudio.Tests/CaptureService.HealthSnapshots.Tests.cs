@@ -45,6 +45,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureService_HealthSnapshotFlashbackPlaybackFields_LiveInFocusedPartial()
+    {
+        var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var flashbackPlaybackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(healthSnapshotText, "var flashbackPlayback = CaptureFlashbackPlaybackHealthSnapshotFields(fbPlayback);");
+        AssertContains(healthSnapshotText, "FlashbackPlaybackState = flashbackPlayback.State,");
+        AssertContains(healthSnapshotText, "FlashbackPlaybackDecodeP95Ms = flashbackPlayback.DecodeP95Ms,");
+        AssertContains(healthSnapshotText, "FlashbackPlaybackLastCommandFailure = flashbackPlayback.LastCommandFailure,");
+        AssertDoesNotContain(healthSnapshotText, "var playbackCadence = fbPlayback?.GetPlaybackCadenceMetrics()");
+        AssertDoesNotContain(healthSnapshotText, "var playbackDecode = fbPlayback?.GetPlaybackDecodeMetrics()");
+        AssertDoesNotContain(healthSnapshotText, "FlashbackPlaybackFrameCount = fbPlayback?.PlaybackFrameCount");
+
+        AssertContains(flashbackPlaybackText, "private static FlashbackPlaybackHealthSnapshotFields CaptureFlashbackPlaybackHealthSnapshotFields(");
+        AssertContains(flashbackPlaybackText, "fbPlayback?.GetPlaybackCadenceMetrics() ?? default");
+        AssertContains(flashbackPlaybackText, "fbPlayback?.GetPlaybackDecodeMetrics() ?? default");
+        AssertContains(flashbackPlaybackText, "private readonly record struct FlashbackPlaybackHealthSnapshotFields");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
