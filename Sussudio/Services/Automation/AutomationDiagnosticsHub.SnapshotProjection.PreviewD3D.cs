@@ -8,7 +8,10 @@ public sealed partial class AutomationDiagnosticsHub
         PreviewRuntimeSnapshot previewRuntime,
         long recentD3DMissedRefreshes,
         long recentD3DStatsFailures)
-        => new()
+    {
+        var frameLatencyWait = BuildPreviewD3DFrameLatencyWaitProjection(previewRuntime);
+
+        return new()
         {
             PresentSyncInterval = previewRuntime.D3DPresentSyncInterval,
             MaxFrameLatency = previewRuntime.D3DMaxFrameLatency,
@@ -46,19 +49,7 @@ public sealed partial class AutomationDiagnosticsHub
             PipelineLatencyP95Ms = previewRuntime.D3DPipelineLatencyP95Ms,
             PipelineLatencyP99Ms = previewRuntime.D3DPipelineLatencyP99Ms,
             PipelineLatencyMaxMs = previewRuntime.D3DPipelineLatencyMaxMs,
-            FrameLatencyWaitEnabled = previewRuntime.D3DFrameLatencyWaitEnabled,
-            FrameLatencyWaitHandleActive = previewRuntime.D3DFrameLatencyWaitHandleActive,
-            FrameLatencyWaitCallCount = previewRuntime.D3DFrameLatencyWaitCallCount,
-            FrameLatencyWaitSignaledCount = previewRuntime.D3DFrameLatencyWaitSignaledCount,
-            FrameLatencyWaitTimeoutCount = previewRuntime.D3DFrameLatencyWaitTimeoutCount,
-            FrameLatencyWaitUnexpectedResultCount = previewRuntime.D3DFrameLatencyWaitUnexpectedResultCount,
-            FrameLatencyWaitLastResult = previewRuntime.D3DFrameLatencyWaitLastResult,
-            FrameLatencyWaitLastMs = previewRuntime.D3DFrameLatencyWaitLastMs,
-            FrameLatencyWaitSampleCount = previewRuntime.D3DFrameLatencyWaitSampleCount,
-            FrameLatencyWaitAvgMs = previewRuntime.D3DFrameLatencyWaitAvgMs,
-            FrameLatencyWaitP95Ms = previewRuntime.D3DFrameLatencyWaitP95Ms,
-            FrameLatencyWaitP99Ms = previewRuntime.D3DFrameLatencyWaitP99Ms,
-            FrameLatencyWaitMaxMs = previewRuntime.D3DFrameLatencyWaitMaxMs,
+            FrameLatencyWait = frameLatencyWait,
             FrameStatsSampleCount = previewRuntime.D3DFrameStatsSampleCount,
             FrameStatsSuccessCount = previewRuntime.D3DFrameStatsSuccessCount,
             FrameStatsFailureCount = previewRuntime.D3DFrameStatsFailureCount,
@@ -93,6 +84,7 @@ public sealed partial class AutomationDiagnosticsHub
             LastDropReason = previewRuntime.D3DLastDropReason,
             RecentSlowFrames = previewRuntime.D3DRecentSlowFrames
         };
+    }
 
     private readonly record struct PreviewD3DProjection
     {
@@ -132,19 +124,7 @@ public sealed partial class AutomationDiagnosticsHub
         public double PipelineLatencyP95Ms { get; init; }
         public double PipelineLatencyP99Ms { get; init; }
         public double PipelineLatencyMaxMs { get; init; }
-        public bool FrameLatencyWaitEnabled { get; init; }
-        public bool FrameLatencyWaitHandleActive { get; init; }
-        public long FrameLatencyWaitCallCount { get; init; }
-        public long FrameLatencyWaitSignaledCount { get; init; }
-        public long FrameLatencyWaitTimeoutCount { get; init; }
-        public long FrameLatencyWaitUnexpectedResultCount { get; init; }
-        public uint FrameLatencyWaitLastResult { get; init; }
-        public double FrameLatencyWaitLastMs { get; init; }
-        public int FrameLatencyWaitSampleCount { get; init; }
-        public double FrameLatencyWaitAvgMs { get; init; }
-        public double FrameLatencyWaitP95Ms { get; init; }
-        public double FrameLatencyWaitP99Ms { get; init; }
-        public double FrameLatencyWaitMaxMs { get; init; }
+        public PreviewD3DFrameLatencyWaitProjection FrameLatencyWait { get; init; }
         public long FrameStatsSampleCount { get; init; }
         public long FrameStatsSuccessCount { get; init; }
         public long FrameStatsFailureCount { get; init; }
