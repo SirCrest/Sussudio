@@ -217,6 +217,7 @@ static partial class Program
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var source = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameTypes.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs");
@@ -687,6 +688,26 @@ static partial class Program
         AssertDoesNotContain(rootText, "public void SubmitRawFrameLease(");
         AssertDoesNotContain(rootText, "public void SubmitTexture(");
         AssertDoesNotContain(rootText, "public void SubmitNv12PlaneTextures(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_FrameOwnershipLivesInFocusedPartial()
+    {
+        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
+            .Replace("\r\n", "\n");
+        var ownershipText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(ownershipText, "public FrameOwnershipMetrics GetFrameOwnershipMetrics()");
+        AssertContains(ownershipText, "private void TrackFrameSubmitted(PendingFrame frame)");
+        AssertContains(ownershipText, "private void TrackFramePresented(PendingFrame frame, long presentReturnTick, long estimatedVisibleTick)");
+        AssertContains(ownershipText, "private void TrackFrameDropped(PendingFrame frame, string reason)");
+        AssertContains(ownershipText, "Interlocked.Exchange(ref _lastRenderedSourcePtsTicks, frame.SourcePtsTicks);");
+        AssertContains(ownershipText, "Volatile.Write(ref _lastDropReason, reason);");
+        AssertDoesNotContain(metricsText, "public FrameOwnershipMetrics GetFrameOwnershipMetrics()");
+        AssertDoesNotContain(metricsText, "private void TrackFrameSubmitted(PendingFrame frame)");
+        AssertDoesNotContain(metricsText, "private void TrackFrameDropped(PendingFrame frame, string reason)");
 
         return Task.CompletedTask;
     }
