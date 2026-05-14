@@ -725,7 +725,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/GpuTelemetry.Nvml.Tests.cs` owns NVML snapshot
   computed-property and unit-conversion contract checks.
 - `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns RuntimePaths,
-  MMCSS registration, ProcessSpec, and ProcessRunResult contract checks.
+  FFmpeg runtime location, MMCSS registration, ProcessSpec, and
+  ProcessRunResult contract checks.
 - `tests/Sussudio.Tests/RecordingContracts.Models.Tests.cs` owns recording
   service contract DTO checks such as GpuPipelineHandles,
   RecordingContextRequest, and FinalizeResult.
@@ -745,8 +746,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
   reliability-gates script contract test.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Tests.cs`
-  owns shared/ssctl snapshot formatter text, parity, and typed-accessor
-  contract tests.
+  owns shared/ssctl snapshot formatter text, MJPEG timing rendering, parity,
+  and typed-accessor contract tests.
 - `tests/Sussudio.Tests/PresentMonProbe.Tests.cs` owns PresentMon parser
   behavior contracts for swap-chain selection, artifact filtering, CSV field
   versions, and app-present correlation.

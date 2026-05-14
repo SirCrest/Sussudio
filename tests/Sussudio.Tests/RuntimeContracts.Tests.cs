@@ -79,4 +79,58 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FfmpegRuntimeLocator_PrefersAppLocalRuntimeFolder()
+    {
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"ec-ffmpeg-locator-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempRoot);
+        var localFfmpegDir = Path.Combine(tempRoot, "ffmpeg");
+        Directory.CreateDirectory(localFfmpegDir);
+
+        try
+        {
+            File.WriteAllBytes(Path.Combine(localFfmpegDir, "avcodec-62.dll"), Array.Empty<byte>());
+            File.WriteAllBytes(Path.Combine(localFfmpegDir, "avutil-60.dll"), Array.Empty<byte>());
+            File.WriteAllBytes(Path.Combine(localFfmpegDir, "ffmpeg.exe"), Array.Empty<byte>());
+            File.WriteAllBytes(Path.Combine(localFfmpegDir, "ffprobe.exe"), Array.Empty<byte>());
+
+            var locatorType = RequireType("Sussudio.Services.Runtime.FfmpegRuntimeLocator");
+            var resolveRuntime = locatorType.GetMethod(
+                                     "TryResolveNativeRuntimeRoot",
+                                     BindingFlags.Static | BindingFlags.NonPublic,
+                                     binder: null,
+                                     types: new[] { typeof(string), typeof(string).MakeByRefType() },
+                                     modifiers: null)
+                                 ?? throw new InvalidOperationException("FfmpegRuntimeLocator.TryResolveNativeRuntimeRoot overload not found.");
+            var runtimeArgs = new object?[] { tempRoot, null };
+            var resolved = (bool)(resolveRuntime.Invoke(null, runtimeArgs)
+                                  ?? throw new InvalidOperationException("FfmpegRuntimeLocator.TryResolveNativeRuntimeRoot returned null."));
+            AssertEqual(true, resolved, "FfmpegRuntimeLocator.TryResolveNativeRuntimeRoot resolved");
+            AssertEqual(localFfmpegDir, runtimeArgs[1]?.ToString(), "FfmpegRuntimeLocator native runtime root");
+
+            var findToolPath = locatorType.GetMethod(
+                                   "FindToolPath",
+                                   BindingFlags.Static | BindingFlags.NonPublic,
+                                   binder: null,
+                                   types: new[] { typeof(string), typeof(string) },
+                                   modifiers: null)
+                               ?? throw new InvalidOperationException("FfmpegRuntimeLocator.FindToolPath overload not found.");
+            var ffmpegPath = findToolPath.Invoke(null, new object?[] { "ffmpeg.exe", tempRoot })?.ToString()
+                             ?? throw new InvalidOperationException("FfmpegRuntimeLocator.FindToolPath(ffmpeg.exe) returned null.");
+            var ffprobePath = findToolPath.Invoke(null, new object?[] { "ffprobe.exe", tempRoot })?.ToString()
+                              ?? throw new InvalidOperationException("FfmpegRuntimeLocator.FindToolPath(ffprobe.exe) returned null.");
+
+            AssertEqual(Path.Combine(localFfmpegDir, "ffmpeg.exe"), ffmpegPath, "FfmpegRuntimeLocator ffmpeg.exe path");
+            AssertEqual(Path.Combine(localFfmpegDir, "ffprobe.exe"), ffprobePath, "FfmpegRuntimeLocator ffprobe.exe path");
+        }
+        finally
+        {
+            if (Directory.Exists(tempRoot))
+            {
+                Directory.Delete(tempRoot, recursive: true);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
 }
