@@ -120,6 +120,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task LibAvRecordingSink_AudioQueuesLiveInFocusedPartial()
+    {
+        var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs")
+            .Replace("\r\n", "\n");
+        var audioQueueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.AudioQueues.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(audioQueueText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
+        AssertContains(audioQueueText, "public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
+        AssertContains(audioQueueText, "private bool TryEnqueueAudioPacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)");
+        AssertContains(audioQueueText, "private bool TryEnqueueMicrophonePacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)");
+        AssertContains(audioQueueText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
+        AssertContains(audioQueueText, "private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);");
+        AssertDoesNotContain(queueText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(queueText, "private bool TryEnqueueAudioPacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)");
+        AssertDoesNotContain(queueText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task LibAvRecordingSink_LifecycleHelpersLiveInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")

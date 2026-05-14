@@ -638,9 +638,11 @@ runtime resets, and native cleanup/freeing there; keep generic error helpers in
 
 LibAv recording sink queue ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`. Keep public
-video/GPU/CUDA/audio enqueue entry points, hot WASAPI write adapters,
-remaining-buffer cleanup, queue-depth accounting, failure signaling, packet
-records, and pooled buffer return helpers there. Keep start/stop lifecycle in
+video/GPU/CUDA enqueue entry points, video/GPU/CUDA queue-depth accounting,
+failure signaling, video packet records, and pooled video buffer return helpers
+there. Hot audio/microphone WASAPI write adapters, audio queue eviction,
+audio remaining-buffer cleanup, and `AudioSamplePacket` now live in
+`LibAvRecordingSink.AudioQueues.cs`. Keep start/stop lifecycle in
 `LibAvRecordingSink.cs`, read-only telemetry and encoder drift accessors in
 `LibAvRecordingSink.Diagnostics.cs`, dispose/deferred cleanup in
 `LibAvRecordingSink.Lifetime.cs`, encoder option creation in

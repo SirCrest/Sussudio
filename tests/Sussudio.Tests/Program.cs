@@ -1149,6 +1149,9 @@ static partial class Program
                 "LibAv recording encoding loop lives in focused partial",
                 LibAvRecordingSink_EncodingLoopLivesInFocusedPartial),
             await RunCheckAsync(
+                "LibAv recording audio queues live in focused partial",
+                LibAvRecordingSink_AudioQueuesLiveInFocusedPartial),
+            await RunCheckAsync(
                 "LibAv recording lifecycle helpers live in focused partials",
                 LibAvRecordingSink_LifecycleHelpersLiveInFocusedPartials),
             await RunCheckAsync(
