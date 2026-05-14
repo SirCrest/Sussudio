@@ -10,6 +10,8 @@ static partial class Program
         var files = new[]
         {
             "Sussudio/Services/Automation/AutomationCommandDispatcher.cs",
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.TrivialHandlers.cs",
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.CommandParsing.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.WindowActions.cs",

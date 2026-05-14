@@ -2747,7 +2747,7 @@ static partial class Program
 
     private static Task UiAutomationCommands_AreNotBlockedOnDeviceReadiness()
     {
-        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs");
+        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
         AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetShowAllCaptureOptions => true,");
         AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetPreviewVolume => true,");
@@ -2987,7 +2987,7 @@ static partial class Program
         var playbackVolumeText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Volume.cs").Replace("\r\n", "\n");
         var runtimeContractsText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var runtimeSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs").Replace("\r\n", "\n");
-        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs").Replace("\r\n", "\n");
+        var dispatcherText = ReadAutomationCommandDispatcherFamilyText().Replace("\r\n", "\n");
         var automationInterfaceText = ReadRepoFile("Sussudio/Services/Automation/IAutomationViewModel.cs").Replace("\r\n", "\n");
 
         AssertContains(traceModelsText, "public sealed class AudioRampTraceSnapshot");

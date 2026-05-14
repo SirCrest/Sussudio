@@ -323,7 +323,7 @@ static partial class Program
             .ToArray();
         AssertEqual(expectedPathFields.Count, pathEntries.Length, "Catalog path-policy command count");
 
-        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
+        var dispatcherText = ReadAutomationCommandDispatcherFamilyText()
             .Replace("\r\n", "\n");
         foreach (var entry in pathEntries)
         {
@@ -346,7 +346,7 @@ static partial class Program
             AssertEqual("String", GetMetadataProperty(pathField, "Type")!.ToString(), $"{commandName} path field type");
             AssertContains(
                 dispatcherText,
-                $"ValidatePathPayload(\n                        AutomationCommandKind.{commandName},\n                        \"{expected.FieldName}\"");
+                $"ValidatePathPayload(\n                    AutomationCommandKind.{commandName},\n                    \"{expected.FieldName}\"");
 
             var enumValue = Enum.Parse(enumType, commandName);
             AssertThrows<InvalidOperationException>(

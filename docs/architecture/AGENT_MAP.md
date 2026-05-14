@@ -60,8 +60,14 @@ dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore
 Automation diagnostics ownership:
 
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` owns the
-  command router, switch bodies, trivial-handler table, and initialization
-  readiness check.
+  command envelope, manifest/auth/readiness gates, trivial-handler dispatch, and
+  error shaping.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`
+  owns custom automation command switch bodies that need multi-field payloads,
+  special response shapes, diagnostics, or capture/Flashback routing.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.TrivialHandlers.cs`
+  owns the table of simple one-property commands that delegate straight to the
+  automation view-model port.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Authorization.cs`
   owns auth-token fallback lookup, constant-time token comparison, and auth
   failure logging.

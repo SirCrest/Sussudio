@@ -223,10 +223,15 @@ thread-pool sampling.
 commands, automatic post-recording verification scheduling, and
 recording-start verification reset, and verification-profile adaptation.
 
-Automation command dispatch now keeps the root router focused on switch bodies,
-the trivial-handler table, and initialization readiness. Named partials own
-support responsibilities: `AutomationCommandDispatcher.Authorization.cs`
-handles auth-token lookup and constant-time comparison;
+Automation command dispatch now keeps the root router focused on the command
+envelope: manifest revision checks, auth/readiness gates, trivial-handler
+dispatch, and error shaping. `AutomationCommandDispatcher.CustomCommands.cs`
+owns custom switch bodies for commands that need multi-field payloads, special
+response shapes, diagnostics, or capture/Flashback routing.
+`AutomationCommandDispatcher.TrivialHandlers.cs` owns the simple one-property
+command table. Named partials own support responsibilities:
+`AutomationCommandDispatcher.Authorization.cs` handles auth-token lookup and
+constant-time comparison;
 `AutomationCommandDispatcher.CommandParsing.cs` handles command metadata,
 path-validation forwarding, and enum payload parsing;
 `AutomationCommandDispatcher.Responses.cs` handles response shaping and
@@ -235,8 +240,8 @@ handles window automation; `AutomationCommandDispatcher.WaitConditions.cs`
 handles wait polling and snapshot predicates; and
 `AutomationCommandDispatcher.Assertions.cs` handles AssertSnapshot parsing and
 comparison helpers. `AutomationCommandDispatcher.Payload.cs` owns JSON payload
-extraction helpers, and `AutomationCommandHandler.cs` owns the trivial-handler
-wrapper used by simple one-property commands.
+extraction helpers, and `AutomationCommandHandler.cs` owns the reusable
+trivial-handler wrapper.
 
 Automation pipe hosting is split across `NamedPipeAutomationServer.*.cs`.
 Keep constructor/configuration state in the root file, server start/stop and

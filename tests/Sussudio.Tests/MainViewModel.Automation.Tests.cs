@@ -160,7 +160,7 @@ static partial class Program
         AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken)");
         AssertContains(dispatcherText, "CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage)");
         AssertContains(dispatcherText, "FailureKind = failureKind");
-        AssertContains(dispatcherText, "if (positionMs.HasValue &&\n                        (!double.IsFinite(positionMs.Value) ||\n                         positionMs.Value < 0 ||\n                         positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds))");
+        AssertContains(dispatcherText, "if (positionMs.HasValue &&\n                    (!double.IsFinite(positionMs.Value) ||\n                     positionMs.Value < 0 ||\n                     positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds))");
         AssertContains(dispatcherText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(dispatcherText, "case AutomationFlashbackAction.SetInPoint:");
         AssertContains(dispatcherText, "case AutomationFlashbackAction.SetOutPoint:");
@@ -737,8 +737,8 @@ static partial class Program
         AssertContains(diagnosticsText, "private readonly SemaphoreSlim _refreshGate = new(1, 1);");
         AssertContains(diagnosticsText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(diagnosticsText, "return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "case AutomationCommandKind.GetSnapshot:\n                {\n                    var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);\n                    var assertions = ParseAssertions(payload);");
+        AssertContains(dispatcherText, "case AutomationCommandKind.GetSnapshot:\n            {\n                var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);\n                var assertions = ParseAssertions(payload);");
         AssertContains(dispatcherText, "private async Task<(bool Met, AutomationSnapshot Snapshot)> WaitForConditionAsync");
         AssertContains(dispatcherText, "return (true, snapshot);");
         AssertContains(dispatcherText, "snapshot: snapshot");
@@ -1126,7 +1126,7 @@ static partial class Program
         AssertContains(captureServiceText, "fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint");
         AssertContains(captureServiceText, "resolvedRange.FailureMessage ?? \"Flashback export range is empty or invalid.\"");
         AssertContains(captureServiceText, "if (ct.IsCancellationRequested)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export cancelled.\");\n        }\n\n        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export duration must be finite, greater than zero, and within TimeSpan range.\");\n        }");
-        AssertContains(dispatcherText, "if (!double.IsFinite(seconds) ||\n                        seconds <= 0 ||\n                        seconds > TimeSpan.MaxValue.TotalSeconds)");
+        AssertContains(dispatcherText, "if (!double.IsFinite(seconds) ||\n                    seconds <= 0 ||\n                    seconds > TimeSpan.MaxValue.TotalSeconds)");
         AssertContains(dispatcherText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
         AssertContains(captureServiceText, "? \"Cancelled\"");
         AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
