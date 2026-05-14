@@ -3615,6 +3615,8 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerSource();
         var wasapiPlaybackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
+        var wasapiPlaybackQueueText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private void SafeSuppressPreviewSubmission(string operation)");
         AssertContains(sourceText, "private void SafeResumePreviewSubmission(string operation)");
@@ -3734,14 +3736,18 @@ static partial class Program
         AssertDoesNotContain(wasapiPlaybackText, "IAudioRenderClient.GetBuffer(pre-fill)");
         AssertDoesNotContain(wasapiPlaybackText, "AUDCLNT_BUFFERFLAGS_SILENT");
         AssertDoesNotContain(wasapiPlaybackText, "WASAPI_PREFILL_WARN");
-        AssertContains(wasapiPlaybackText, "private int _playbackQueueDepth;");
-        AssertContains(wasapiPlaybackText, "public int PlaybackQueueDepth => Math.Max(0, Volatile.Read(ref _playbackQueueDepth));");
-        AssertContains(wasapiPlaybackText, "if (TryWriteChunk(chunk)) return;");
-        AssertContains(wasapiPlaybackText, "private bool TryWriteChunk(PlaybackChunk chunk)");
-        AssertContains(wasapiPlaybackText, "Interlocked.Increment(ref _playbackQueueDepth);\n        if (_sampleQueue.Writer.TryWrite(chunk))");
-        AssertContains(wasapiPlaybackText, "DecrementPlaybackQueueDepth();\n        return false;");
-        AssertContains(wasapiPlaybackText, "private bool TryDequeueChunk(out PlaybackChunk chunk)");
-        AssertContains(wasapiPlaybackText, "DecrementPlaybackQueueDepth();");
+        AssertContains(wasapiPlaybackQueueText, "internal sealed partial class WasapiAudioPlayback");
+        AssertContains(wasapiPlaybackQueueText, "private int _playbackQueueDepth;");
+        AssertContains(wasapiPlaybackQueueText, "public int PlaybackQueueDepth => Math.Max(0, Volatile.Read(ref _playbackQueueDepth));");
+        AssertContains(wasapiPlaybackQueueText, "internal void EnqueuePooledSamples(byte[] pooledBuffer, int validLength, long ptsTicks = 0)");
+        AssertContains(wasapiPlaybackQueueText, "if (TryWriteChunk(chunk)) return;");
+        AssertContains(wasapiPlaybackQueueText, "private bool TryWriteChunk(PlaybackChunk chunk)");
+        AssertContains(wasapiPlaybackQueueText, "Interlocked.Increment(ref _playbackQueueDepth);\n        if (_sampleQueue.Writer.TryWrite(chunk))");
+        AssertContains(wasapiPlaybackQueueText, "DecrementPlaybackQueueDepth();\n        return false;");
+        AssertContains(wasapiPlaybackQueueText, "private bool TryDequeueChunk(out PlaybackChunk chunk)");
+        AssertContains(wasapiPlaybackQueueText, "DecrementPlaybackQueueDepth();");
+        AssertDoesNotContain(wasapiPlaybackText, "private bool TryWriteChunk(PlaybackChunk chunk)");
+        AssertDoesNotContain(wasapiPlaybackText, "private bool TryDequeueChunk(out PlaybackChunk chunk)");
         AssertContains(wasapiPlaybackText, "private const int OutputSampleRate = 48000;");
         AssertContains(wasapiPlaybackText, "private const uint MaxRenderWriteFrames = OutputSampleRate / 50; // 20ms");
         AssertContains(wasapiPlaybackText, "var framesToWrite = Math.Min(_bufferFrameCount - paddingFrames, MaxRenderWriteFrames);");
@@ -3750,7 +3756,7 @@ static partial class Program
         AssertContains(wasapiPlaybackText, "var frameOffset = Math.Max(0, _activeChunkOffset) / OutputBlockAlign;");
         AssertContains(wasapiPlaybackText, "var offsetTicks = frameOffset * TimeSpan.TicksPerSecond / OutputSampleRate;");
         AssertDoesNotContain(wasapiPlaybackText, "_sampleQueue.Reader.Count");
-        AssertDoesNotContain(wasapiPlaybackText, "_sampleQueue.Writer.TryWrite(chunk))\n        {\n            Interlocked.Increment(ref _playbackQueueDepth);");
+        AssertDoesNotContain(wasapiPlaybackQueueText, "_sampleQueue.Writer.TryWrite(chunk))\n        {\n            Interlocked.Increment(ref _playbackQueueDepth);");
         AssertDoesNotContain(sourceText, "_videoCapture?.SuppressPreviewSubmission();\n                        SuppressLiveAudio();\n                        _audioPlayback?.PauseRendering();");
 
         return Task.CompletedTask;
