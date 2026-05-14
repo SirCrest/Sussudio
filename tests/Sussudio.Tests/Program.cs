@@ -450,6 +450,9 @@ static partial class Program
                 "Automation diagnostics recording pipeline projection lives in focused partial",
                 AutomationDiagnosticsRecordingPipelineProjection_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Automation diagnostics preview D3D projection lives in focused partial",
+                AutomationDiagnosticsPreviewD3DProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Automation SetRecordingEnabled uses recording-sized client timeout",
                 AutomationProtocol_SetRecordingUsesRecordingSizedTimeout),
             await RunCheckAsync(
