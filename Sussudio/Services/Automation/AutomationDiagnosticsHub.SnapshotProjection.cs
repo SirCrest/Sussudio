@@ -41,6 +41,7 @@ public sealed partial class AutomationDiagnosticsHub
             lastOutput,
             lastVerification);
         var processResourceProjection = BuildProcessResourceProjection(processResources);
+        var avSync = BuildAvSyncProjection(captureRuntime);
         var recordingPipeline = BuildRecordingPipelineProjection(health);
         var captureCadence = BuildCaptureCadenceProjection(health);
         var mjpeg = BuildMjpegProjection(health);
@@ -691,10 +692,10 @@ public sealed partial class AutomationDiagnosticsHub
             ThreadPoolWorkerMax = processResourceProjection.ThreadPoolWorkerMax,
             ThreadPoolIoAvailable = processResourceProjection.ThreadPoolIoAvailable,
             ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax,
-            AvSyncCaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,
-            AvSyncCaptureDriftRateMsPerSec = captureRuntime.AvSyncCaptureDriftRateMsPerSec,
-            AvSyncEncoderDriftMs = captureRuntime.AvSyncEncoderDriftMs,
-            AvSyncEncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples,
+            AvSyncCaptureDriftMs = avSync.CaptureDriftMs,
+            AvSyncCaptureDriftRateMsPerSec = avSync.CaptureDriftRateMsPerSec,
+            AvSyncEncoderDriftMs = avSync.EncoderDriftMs,
+            AvSyncEncoderCorrectionSamples = avSync.EncoderCorrectionSamples,
             FlashbackActive = flashbackRecording.Active,
             FlashbackBufferedDurationMs = flashbackRecording.BufferedDurationMs,
             FlashbackDiskBytes = flashbackRecording.DiskBytes,

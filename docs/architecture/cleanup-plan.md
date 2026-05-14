@@ -69,6 +69,8 @@ rendered / dropped frame projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs` owns process
 memory, CPU, GC, and thread-pool projection consumed by the automation snapshot
 DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs` owns live A/V sync
+drift and encoder correction projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs` owns
 recording-integrity projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns encoder
