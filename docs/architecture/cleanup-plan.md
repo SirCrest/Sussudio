@@ -514,8 +514,13 @@ and recording topology validation.
 Recording start/stop lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`. That file owns
 the public recording transition surface, Flashback recording fast-path reuse,
-standard LibAv recording startup, recording rollback cleanup, and the emergency
+standard LibAv recording startup, start-rollback ordering, and the emergency
 stop overload that feeds finalization.
+
+Transient recording-start rollback cleanup now lives in
+`Sussudio/Services/Capture/CaptureService.RecordingRollback.cs`. That file owns
+best-effort teardown for partially started sinks, WASAPI capture, unified-video
+capture, and deferred LibAv drain cleanup after a failed recording start.
 
 Flashback export failure classification now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportFailureClassification.cs`.

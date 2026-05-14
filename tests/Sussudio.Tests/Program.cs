@@ -1104,6 +1104,9 @@ static partial class Program
                 "Capture service recording lifecycle lives in focused partial",
                 CaptureService_RecordingLifecycleLivesInFocusedPartial),
             await RunCheckAsync(
+                "Capture service recording rollback lives in focused partial",
+                CaptureService_RecordingRollbackLivesInFocusedPartial),
+            await RunCheckAsync(
                 "LibAv recording stop validates final output",
                 LibAvRecordingSink_StopValidatesFinalOutput),
             await RunCheckAsync(

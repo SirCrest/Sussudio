@@ -23,6 +23,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs");
@@ -616,6 +617,23 @@ static partial class Program
         AssertContains(lifecycleText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertContains(lifecycleText, "await recordingSink.StartAsync(recordingContext, transitionToken)");
         AssertContains(lifecycleText, "await StopAndDisposeRecordingBackendAsync(\"Stopped\", emergency, transitionToken)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_RecordingRollbackLivesInFocusedPartial()
+    {
+        var finalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+            .Replace("\r\n", "\n");
+        var rollbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs")
+            .Replace("\r\n", "\n");
+
+        AssertDoesNotContain(finalizationText, "private async Task DisposeTransientRecordingBackendAsync(");
+        AssertContains(rollbackText, "private async Task DisposeTransientRecordingBackendAsync(");
+        AssertContains(rollbackText, "Transient recording sink stop failed during rollback");
+        AssertContains(rollbackText, "Transient unified video dispose failed during rollback");
+        AssertContains(rollbackText, "ScheduleDeferredUnifiedVideoCaptureCleanup(");
+        AssertContains(rollbackText, "reason: \"recording_start_rollback\"");
 
         return Task.CompletedTask;
     }
