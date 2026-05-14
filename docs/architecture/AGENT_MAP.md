@@ -702,9 +702,18 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs` owns
   MainWindow controller-adapter ownership assertions for control bar, shell
   elevation, preview-transition, and record-button width visual controllers.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` owns MainWindow
-  controller-adapter ownership assertions for recording controls, capture
-  selections, output path, and screenshots.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` is the
+  MainWindow controller-adapter ownership marker shell.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs`
+  owns MainWindow controller-adapter ownership assertions for recording action,
+  live signal info, preview audio fade, microphone controls, and responsive
+  shell layout.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs` owns
+  MainWindow capture selection, capture device action, and capture option
+  presentation ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs` owns
+  MainWindow output path display/actions and preview screenshot workflow
+  ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Tests.cs` owns MainWindow
   Flashback polling, playhead motion, and marker-presentation ownership
   assertions.
