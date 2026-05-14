@@ -1083,8 +1083,11 @@ Primary current owners:
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.cs` owns compatibility-facade
   construction, dependency assignment, event subscription, and small bridge
-  methods; `MainViewModel.State.cs` owns UI-facing observable state,
-  coordination gates, and shared constants. `MainViewModel.AudioMeters.cs` owns live
+  methods. `MainViewModel.State.cs` owns shared shell/runtime flags and
+  coordination gates; `MainViewModel.CaptureState.cs` owns capture-selection,
+  source telemetry, and HDR state; `MainViewModel.AudioState.cs` owns audio,
+  microphone, and device-audio state; `MainViewModel.FlashbackState.cs` owns
+  Flashback timeline/export state. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets
   out of the root facade file. `MainViewModel.AudioRampTrace.cs` owns the audio
   ramp diagnostic ring buffer and sampler; keep preview monitoring call sites

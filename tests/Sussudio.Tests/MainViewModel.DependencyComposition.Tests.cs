@@ -6,6 +6,9 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var stateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
+        var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
+        var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
+        var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
         var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
 
         AssertContains(rootText, "public MainViewModel()\n        : this(MainViewModelDependencies.CreateDefault())");
@@ -22,9 +25,9 @@ static partial class Program
         AssertDoesNotContain(rootText, "_deviceAudioControlService = new NativeXuAudioControlService();");
         AssertDoesNotContain(rootText, "_audioDeviceWatcher = new AudioDeviceWatcher();");
         AssertDoesNotContain(rootText, "[ObservableProperty]");
-        AssertContains(stateText, "public partial ObservableCollection<CaptureDevice> Devices");
-        AssertContains(stateText, "public partial bool IsAudioPreviewActive");
-        AssertContains(stateText, "partial void OnIsFlashbackEnabledChanged(bool value)");
+        AssertContains(captureStateText, "public partial ObservableCollection<CaptureDevice> Devices");
+        AssertContains(audioStateText, "public partial bool IsAudioPreviewActive");
+        AssertContains(flashbackStateText, "partial void OnIsFlashbackEnabledChanged(bool value)");
         AssertContains(stateText, "private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);");
 
         AssertContains(dependenciesText, "internal sealed class MainViewModelDependencies");

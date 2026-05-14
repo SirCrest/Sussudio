@@ -41,7 +41,10 @@ static partial class Program
 
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelText = string.Join("\n", viewModelFiles.Values);
-        var viewModelStateText = viewModelFiles["MainViewModel.State.cs"];
+        var viewModelSharedStateText = viewModelFiles["MainViewModel.State.cs"];
+        var viewModelCaptureStateText = viewModelFiles["MainViewModel.CaptureState.cs"];
+        var viewModelAudioStateText = viewModelFiles["MainViewModel.AudioState.cs"];
+        var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var automationText = viewModelFiles["MainViewModel.Automation.cs"];
         var automationRecordingSettingsText = viewModelFiles["MainViewModel.AutomationRecordingSettings.cs"];
         var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
@@ -123,14 +126,14 @@ static partial class Program
         AssertContains(rawFlashbackExportText, "Flashback export unavailable: flashback is not active.");
         AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "case ExportFlashbackOutcome.Stale:");
         AssertMemberContains(flashbackExportText, "SaveFlashbackLast5mAsync", "case ExportFlashbackOutcome.Stale:");
-        AssertContains(viewModelStateText, "private int _flashbackExportOperationId;");
+        AssertContains(viewModelFlashbackStateText, "private int _flashbackExportOperationId;");
         AssertContains(disposalText, "Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(disposalText, "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
         AssertContains(disposalText, "CancelFlashbackExportCts(exportCts);");
         AssertContains(rawDisposalText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
-        AssertContains(viewModelStateText, "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
-        AssertContains(viewModelStateText, "private const int PreviewReinitializeDebounceMs = 250;");
-        AssertContains(viewModelStateText, "private int _previewReinitializeGeneration;");
+        AssertContains(viewModelFlashbackStateText, "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
+        AssertContains(viewModelCaptureStateText, "private const int PreviewReinitializeDebounceMs = 250;");
+        AssertContains(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
         AssertContains(rawCaptureText, "var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);");
         AssertContains(rawCaptureText, "await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);");
         AssertContains(rawCaptureText, "Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration");
@@ -174,7 +177,7 @@ static partial class Program
         AssertMemberContains(flashbackSettingsText, "OnSelectedRecordingFormatChanged", "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),");
         AssertMemberContains(flashbackSettingsText, "OnSelectedRecordingFormatChanged", "_suppressFlashbackFormatCycle is false");
         AssertContains(rawFlashbackSettingsText, "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),\n                \"recording format\");");
-        AssertContains(viewModelStateText, "private bool _suppressFlashbackFormatCycle;");
+        AssertContains(viewModelFlashbackStateText, "private bool _suppressFlashbackFormatCycle;");
         AssertMemberContains(automationRecordingSettingsText, "SetRecordingFormatAsync", "_suppressFlashbackFormatCycle = true;");
         AssertMemberContains(automationRecordingSettingsText, "SetRecordingFormatAsync", "RecordingFormat.Av1Mp4");
         AssertMemberContains(automationRecordingSettingsText, "SetRecordingFormatAsync", "await _sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
@@ -214,15 +217,15 @@ static partial class Program
         AssertMemberContains(rawAudioPropertyChangesText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(\n                        true,\n                        \"audio_capture_enable\",");
         AssertMemberContains(audioPropertyChangesText, "OnIsAudioEnabledChanged", "afterMonitoringStarted: () => _sessionCoordinator.RestartFlashbackAsync(settings)");
         AssertMemberContains(rawAudioPropertyChangesText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(false, \"audio_capture_disable\", teardownCapture: true)");
-        AssertContains(viewModelStateText, "private int _audioEnabledChangeGeneration;");
-        AssertContains(viewModelStateText, "private bool _suppressAudioPreviewEnabledChangeOperation;");
+        AssertContains(viewModelAudioStateText, "private int _audioEnabledChangeGeneration;");
+        AssertContains(viewModelAudioStateText, "private bool _suppressAudioPreviewEnabledChangeOperation;");
         AssertMemberContains(audioPropertyChangesText, "OnIsAudioEnabledChanged", "var changeGeneration = Interlocked.Increment(ref _audioEnabledChangeGeneration);");
         AssertMemberContains(audioPropertyChangesText, "OnIsAudioEnabledChanged", "_suppressAudioPreviewEnabledChangeOperation = true;");
         AssertMemberContains(audioPropertyChangesText, "OnIsAudioEnabledChanged", "changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || !IsAudioEnabled");
         AssertMemberContains(audioPropertyChangesText, "OnIsAudioEnabledChanged", "changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || IsAudioEnabled");
         AssertMemberContains(rawAudioPropertyChangesText, "OnIsAudioEnabledChanged", "AUDIO_TOGGLE_SKIP op=enable");
         AssertMemberContains(rawAudioPropertyChangesText, "OnIsAudioEnabledChanged", "AUDIO_TOGGLE_SKIP op=disable");
-        AssertContains(viewModelStateText, "private int _flashbackSettingsRestartGeneration;");
+        AssertContains(viewModelFlashbackStateText, "private int _flashbackSettingsRestartGeneration;");
 
         foreach (var memberName in new[]
         {
@@ -367,7 +370,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs")
             .Replace("\r\n", "\n");
-        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs")
+        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "private bool _suppressFlashbackEnabledToggle;");
