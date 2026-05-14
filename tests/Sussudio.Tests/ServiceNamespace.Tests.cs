@@ -196,6 +196,7 @@ static partial class Program
         var probeDefaultExperimentText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.cs"));
         var probeExperimentPayloadsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ExperimentPayloads.cs"));
         var probeFormattingText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Formatting.cs"));
+        var probeI2cCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.cs"));
         var probeI2cSwitchText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs"));
         var probeI2cTransportText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs"));
         var probeServiceText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ServiceProbe.cs"));
@@ -208,14 +209,15 @@ static partial class Program
         AssertDoesNotContain(probeProgramText, "Before: InputSource=");
         AssertDoesNotContain(probeProgramText, "Current I2C AT state");
         AssertDoesNotContain(probeProgramText, "Sending audio switch sequence");
+        AssertDoesNotContain(probeProgramText, "Usage: i2c-cmd get|set|scan");
+        AssertDoesNotContain(probeProgramText, "I2C SET/verify via AT envelope");
         AssertDoesNotContain(probeProgramText, "static IEnumerable<SetExperiment> BuildShortExperiments");
         AssertDoesNotContain(probeProgramText, "static async Task<byte[]?> SendI2cAtGetAsync");
         AssertDoesNotContain(probeProgramText, "static byte[] BuildAtFrameWithPayload");
         AssertDoesNotContain(probeProgramText, "static async Task<int> RunServiceControlProbeAsync");
         AssertDoesNotContain(probeProgramText, "ReadServiceStateAsync");
-        AssertContains(probeProgramText, "using static NativeXuProbeCommands;");
-        AssertContains(probeProgramText, "using static NativeXuProbeExperimentPayloads;");
         AssertContains(probeProgramText, "using static NativeXuProbeI2cTransport;");
+        AssertContains(probeProgramText, "NativeXuProbeI2cCommands.RunAsync(args)");
         AssertContains(probeProgramText, "NativeXuProbeAtCommands.RunAtReadAsync(args)");
         AssertContains(probeProgramText, "NativeXuProbeAtCommands.RunAtWriteAsync(args)");
         AssertContains(probeProgramText, "NativeXuProbeAtCommands.RunAtSetInputAsync(args)");
@@ -239,6 +241,10 @@ static partial class Program
         AssertContains(probeExperimentPayloadsText, "public static byte[] BuildPayload(int width, long value)");
         AssertContains(probeFormattingText, "static class NativeXuProbeFormatting");
         AssertContains(probeFormattingText, "public static string FormatRaw");
+        AssertContains(probeI2cCommandsText, "static class NativeXuProbeI2cCommands");
+        AssertContains(probeI2cCommandsText, "public static async Task<int> RunAsync");
+        AssertContains(probeI2cCommandsText, "Usage: i2c-cmd get|set|scan");
+        AssertContains(probeI2cCommandsText, "I2C SET/verify via AT envelope");
         AssertContains(probeI2cSwitchText, "static class NativeXuProbeI2cSwitch");
         AssertContains(probeI2cSwitchText, "public static async Task<int> RunAsync");
         AssertContains(probeI2cSwitchText, "Sending audio switch sequence");
