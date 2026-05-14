@@ -393,10 +393,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var setupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs")
             .Replace("\r\n", "\n");
-        var waitsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackWaits.cs")
-            .Replace("\r\n", "\n");
+        var waitsText = ReadDiagnosticSessionFlashbackWaitsSource();
 
-        AssertContains(waitsText, "internal static class DiagnosticSessionFlashbackWaits");
+        AssertContains(waitsText, "internal static partial class DiagnosticSessionFlashbackWaits");
         AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackBoundaryCrossAsync(");
         AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(");
         AssertContains(waitsText, "internal static async Task<JsonElement?> WaitForFlashbackPlaybackWarmSampleAsync(");

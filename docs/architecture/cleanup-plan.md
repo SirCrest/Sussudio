@@ -1502,9 +1502,11 @@ Diagnostic-session Flashback segment handling now lives in
 headroom waits while the runner keeps scenario command sequencing.
 
 Diagnostic-session Flashback snapshot waits now live in
-`tools/Common/DiagnosticSessionFlashbackWaits.cs`. They own read-only polling
-loops for playback state, playback warmup, preview active, Flashback active,
-and recording-ready checks while the runner keeps scenario command sequencing.
+`tools/Common/DiagnosticSessionFlashbackWaits.cs`. The root owns read-only
+polling loops for preview active, Flashback active, recording-ready, and
+buffer-ready checks. `DiagnosticSessionFlashbackWaits.Playback.cs` owns
+playback boundary, state, warmup, and position polling while the runner keeps
+scenario command sequencing.
 
 Diagnostic-session Flashback stress orchestration now lives in a focused
 partial family. `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns
@@ -1578,6 +1580,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackStressScenario.Scrub.cs`
 - `DiagnosticSessionFlashbackStressScenario.AudioMaster.cs`
 - `DiagnosticSessionFlashbackWaits.cs`
+- `DiagnosticSessionFlashbackWaits.Playback.cs`
 - `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
