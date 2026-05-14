@@ -6,7 +6,6 @@ using Sussudio.Services.Contracts;
 using Sussudio.Services.Telemetry;
 using static NativeXuProbeCommands;
 using static NativeXuProbeExperimentPayloads;
-using static NativeXuProbeFormatting;
 using static NativeXuProbeI2cTransport;
 
 var deviceNameFilter = args.Length > 0 ? args[0] : "4K X";
@@ -897,89 +896,15 @@ if (args.Length > 0 && string.Equals(args[0], "i2c-switch", StringComparison.Ord
 }
 if (args.Length > 0 && string.Equals(args[0], "at-read", StringComparison.OrdinalIgnoreCase))
 {
-    // Read a single AT opcode and print raw response bytes
-    // Usage: at-read <opcode_hex> [opcode2_hex ...]
-    var dev = NativeXuProbeDeviceLocator.Find("4K X");
-    if (dev == null) { Console.Error.WriteLine("No device"); return 1; }
-    Console.WriteLine($"Device: {dev.Name}");
-
-    for (int ai = 1; ai < args.Length; ai++)
-    {
-        var opcodeStr = args[ai].TrimStart('0').TrimStart('x', 'X');
-        if (opcodeStr.StartsWith("x", StringComparison.OrdinalIgnoreCase)) opcodeStr = opcodeStr[1..];
-        if (!int.TryParse(args[ai].Replace("0x", "").Replace("0X", ""), NumberStyles.HexNumber, null, out int opcode))
-        {
-            Console.Error.WriteLine($"Invalid opcode: {args[ai]}");
-            continue;
-        }
-        var raw = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, opcode, $"0x{opcode:X2}");
-        if (raw != null)
-            Console.WriteLine($"  AT 0x{opcode:X2}: {BitConverter.ToString(raw)} ({raw.Length} bytes) int32={BitConverter.ToInt32(raw.Length >= 4 ? raw[..4] : raw.Concat(new byte[4 - raw.Length]).ToArray(), 0)}");
-        else
-            Console.WriteLine($"  AT 0x{opcode:X2}: (null/failed)");
-    }
-    return 0;
+    return await NativeXuProbeAtCommands.RunAtReadAsync(args);
 }
 if (args.Length > 0 && string.Equals(args[0], "at-write", StringComparison.OrdinalIgnoreCase))
 {
-    // Write a value to an AT opcode: at-write <opcode_hex> <value_int>
-    // Then read back using the next opcode (opcode+1) as the GET pair
-    var dev = NativeXuProbeDeviceLocator.Find("4K X");
-    if (dev == null) { Console.Error.WriteLine("No device"); return 1; }
-    Console.WriteLine($"Device: {dev.Name}");
-
-    if (args.Length < 3) { Console.Error.WriteLine("Usage: at-write <opcode_hex> <value_int> [--read-back <get_opcode_hex>]"); return 1; }
-    int.TryParse(args[1].Replace("0x", "").Replace("0X", ""), NumberStyles.HexNumber, null, out int setOpcode);
-    int.TryParse(args[2], out int value);
-    int getOpcode = setOpcode + 1; // default: GET = SET + 1
-    for (int ai = 3; ai < args.Length - 1; ai++)
-    {
-        if (args[ai] == "--read-back")
-            int.TryParse(args[ai + 1].Replace("0x", "").Replace("0X", ""), NumberStyles.HexNumber, null, out getOpcode);
-    }
-
-    // Read before
-    var before = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, getOpcode, $"GET 0x{getOpcode:X2}");
-    Console.WriteLine($"BEFORE: AT 0x{getOpcode:X2} = {(before != null ? BitConverter.ToString(before) : "(null)")}");
-
-    // Write
-    Console.WriteLine($"WRITING: AT 0x{setOpcode:X2} value={value} (bytes: {BitConverter.ToString(BitConverter.GetBytes(value))})");
-    var ok = await NativeXuAtCommandProvider.SendNamedSetCommandPublicAsync(dev, setOpcode, BitConverter.GetBytes(value), $"SET 0x{setOpcode:X2}={value}");
-    Console.WriteLine($"Result: {ok}");
-
-    await Task.Delay(500);
-
-    // Read after
-    var after = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, getOpcode, $"GET 0x{getOpcode:X2}");
-    Console.WriteLine($"AFTER: AT 0x{getOpcode:X2} = {(after != null ? BitConverter.ToString(after) : "(null)")}");
-
-    return ok ? 0 : 1;
+    return await NativeXuProbeAtCommands.RunAtWriteAsync(args);
 }
 if (args.Length > 0 && string.Equals(args[0], "at-set-input", StringComparison.OrdinalIgnoreCase))
 {
-    // Pure AT-only SetInputSource: at-set-input <0=HDMI|1=Analog> [--no-restore]
-    var atVal = args.Length > 1 ? int.Parse(args[1]) : 0;
-    var noRestore = args.Any(a => a == "--no-restore");
-    var dev = NativeXuProbeDeviceLocator.Find("4K X");
-    if (dev == null) { Console.Error.WriteLine("No device"); return 1; }
-    Console.WriteLine($"Device: {dev.Name}");
-    var beforeInput = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, CmdInputSource, "InputSource");
-    Console.WriteLine($"Before: InputSource={FormatRaw(beforeInput)}");
-    Console.WriteLine($"Sending AT SetInputSource(0x34) = {atVal} (1 byte)...");
-    var ok = await NativeXuAtCommandProvider.SetInputSourceAsync(dev, atVal);
-    Console.WriteLine($"Result: {ok}");
-    await Task.Delay(500);
-    var afterInput = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, CmdInputSource, "InputSource");
-    Console.WriteLine($"After: InputSource={FormatRaw(afterInput)}");
-    if (!noRestore && beforeInput?.Length > 0)
-    {
-        Console.WriteLine($"Restoring to {beforeInput[0]}...");
-        await NativeXuAtCommandProvider.SetInputSourceAsync(dev, beforeInput[0]);
-        await Task.Delay(300);
-        var restored = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, CmdInputSource, "InputSource");
-        Console.WriteLine($"Restored: InputSource={FormatRaw(restored)}");
-    }
-    return ok ? 0 : 1;
+    return await NativeXuProbeAtCommands.RunAtSetInputAsync(args);
 }
 
 var device = NativeXuProbeDeviceLocator.Find(deviceNameFilter);

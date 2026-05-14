@@ -190,6 +190,7 @@ static partial class Program
         AssertContains(probeProgramText, "string.Equals(arg, \"--device\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(probeProgramText, "NativeXuProbeDeviceLocator.Find(null)");
         AssertContains(probeProgramText, "RtkI2cProbe.Run(rtkArgs, dev)");
+        var probeAtCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.AtCommands.cs"));
         var probeModelsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Models.cs"));
         var probeCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Commands.cs"));
         var probeDefaultExperimentText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.cs"));
@@ -202,6 +203,8 @@ static partial class Program
         AssertDoesNotContain(probeProgramText, "const int CmdAudioFormat");
         AssertDoesNotContain(probeProgramText, "PrintSnapshot(\"Baseline snapshot\"");
         AssertDoesNotContain(probeProgramText, "static async Task RunAnalogGainSequenceAsync");
+        AssertDoesNotContain(probeProgramText, "Usage: at-write <opcode_hex>");
+        AssertDoesNotContain(probeProgramText, "Before: InputSource=");
         AssertDoesNotContain(probeProgramText, "static IEnumerable<SetExperiment> BuildShortExperiments");
         AssertDoesNotContain(probeProgramText, "static async Task<byte[]?> SendI2cAtGetAsync");
         AssertDoesNotContain(probeProgramText, "static byte[] BuildAtFrameWithPayload");
@@ -209,11 +212,18 @@ static partial class Program
         AssertDoesNotContain(probeProgramText, "ReadServiceStateAsync");
         AssertContains(probeProgramText, "using static NativeXuProbeCommands;");
         AssertContains(probeProgramText, "using static NativeXuProbeExperimentPayloads;");
-        AssertContains(probeProgramText, "using static NativeXuProbeFormatting;");
         AssertContains(probeProgramText, "using static NativeXuProbeI2cTransport;");
+        AssertContains(probeProgramText, "NativeXuProbeAtCommands.RunAtReadAsync(args)");
+        AssertContains(probeProgramText, "NativeXuProbeAtCommands.RunAtWriteAsync(args)");
+        AssertContains(probeProgramText, "NativeXuProbeAtCommands.RunAtSetInputAsync(args)");
         AssertContains(probeProgramText, "NativeXuProbeDefaultExperiment.RunAsync(device)");
         AssertContains(probeProgramText, "NativeXuProbeServiceProbe.RunServiceControlProbeAsync");
         AssertContains(probeProgramText, "NativeXuProbeServiceProbe.RunServiceSmokeAsync");
+        AssertContains(probeAtCommandsText, "static class NativeXuProbeAtCommands");
+        AssertContains(probeAtCommandsText, "public static async Task<int> RunAtReadAsync");
+        AssertContains(probeAtCommandsText, "public static async Task<int> RunAtWriteAsync");
+        AssertContains(probeAtCommandsText, "public static async Task<int> RunAtSetInputAsync");
+        AssertContains(probeAtCommandsText, "using static NativeXuProbeFormatting;");
         AssertContains(probeModelsText, "sealed record GetterSpec");
         AssertContains(probeModelsText, "sealed class ExperimentResult");
         AssertContains(probeCommandsText, "public const int CmdAudioFormat = 0x04;");
