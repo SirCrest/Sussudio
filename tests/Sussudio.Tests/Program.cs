@@ -426,6 +426,9 @@ static partial class Program
                 "Capture session coordinator models live in focused file",
                 CaptureSessionCoordinator_ModelsLiveInFocusedFile),
             await RunCheckAsync(
+                "Capture session coordinator Flashback facade lives in focused partial",
+                CaptureSessionCoordinator_FlashbackFacadeLivesInFocusedPartial),
+            await RunCheckAsync(
                 "Service namespaces follow service folders",
                 ServiceNamespaces_FollowServiceFolders),
             await RunCheckAsync(

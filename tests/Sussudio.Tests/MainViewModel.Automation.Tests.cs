@@ -126,8 +126,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs")
                 .Replace("\r\n", "\n");
-        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
-            .Replace("\r\n", "\n");
+        var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var pipeServerText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
             .Replace("\r\n", "\n");
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
@@ -1809,8 +1808,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs")
                 .Replace("\r\n", "\n");
-        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
-            .Replace("\r\n", "\n");
+        var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
 

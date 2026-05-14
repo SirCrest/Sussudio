@@ -158,6 +158,9 @@ Important entry points:
 - `CaptureSessionCoordinator.cs` serializes lifecycle mutations.
 - `CaptureSessionCoordinator.Models.cs` owns command enums, queue receipts,
   session snapshots, and Flashback playback/buffer status projections.
+- `CaptureSessionCoordinator.Flashback.cs` owns queued Flashback mutations,
+  read-only Flashback status/projections, export forwarding, and active
+  playback-controller readiness checks.
 - `CaptureSessionTransitionPolicy.cs` owns pure transition legality and
   steady-state resolution for `CaptureService`.
 - `CaptureService.cs` still owns too many resource lifetimes and should not

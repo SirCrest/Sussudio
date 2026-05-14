@@ -171,6 +171,9 @@ snapshots, and Flashback playback/buffer status projections now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs`, leaving
 `CaptureSessionCoordinator.cs` focused on queue serialization and lifecycle
 mutation routing.
+Queued Flashback mutations, read-only Flashback status/projection helpers,
+export forwarding, and active playback-controller readiness checks now live in
+`Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs`.
 
 Capture service source telemetry and observed pixel-format accounting now live
 in `Sussudio/Services/Capture/CaptureService.Telemetry.cs`. The root capture
