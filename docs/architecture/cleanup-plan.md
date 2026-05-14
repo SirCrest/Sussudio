@@ -1396,9 +1396,11 @@ the small background-task handoff records.
 Diagnostic-session scenario startup now lives in a focused partial family.
 `tools/Common/DiagnosticSessionScenarioStartup.cs` owns the public startup
 orchestration call. `DiagnosticSessionScenarioStartup.Registrations.cs` owns
-Flashback scenario task registration,
+non-export Flashback scenario task registration,
 `DiagnosticSessionScenarioStartup.DeferredSettings.cs` owns deferred Flashback
-recording-settings task registration, and
+recording-settings task registration,
+`DiagnosticSessionScenarioStartup.ExportRegistrations.cs` owns Flashback export
+task registration, and
 `DiagnosticSessionScenarioStartup.Playback.cs` owns the direct Flashback
 playback start command and playback-state wait. The runner now delegates
 startup and keeps the setup/sampling/cleanup/summary phase flow.
@@ -1634,6 +1636,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioStartup.cs`
 - `DiagnosticSessionScenarioStartup.Registrations.cs`
 - `DiagnosticSessionScenarioStartup.DeferredSettings.cs`
+- `DiagnosticSessionScenarioStartup.ExportRegistrations.cs`
 - `DiagnosticSessionScenarioStartup.Playback.cs`
 - `DiagnosticSessionPresentMonStartup.cs`
 - `DiagnosticSessionText.cs`

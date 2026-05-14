@@ -1,6 +1,5 @@
 using System.Text.Json;
 using static Sussudio.Tools.DiagnosticSessionFlashbackCycleScenarios;
-using static Sussudio.Tools.DiagnosticSessionFlashbackExportScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackLifecycleScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;
@@ -75,19 +74,14 @@ internal static partial class DiagnosticSessionScenarioStartup
             actions.Add("flashback encoder cycle started");
         }
 
-        if (scenarioPlan.RunFlashbackExportPlayback)
-        {
-            backgroundTasks.AddScenario(
-                6,
-                "flashback-export-playback-task",
-                RunFlashbackExportPlaybackAsync(
-                    outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
-            actions.Add("flashback export playback started");
-        }
+        RegisterFlashbackExportPlaybackTask(
+            scenarioPlan,
+            outputDirectory,
+            backgroundTasks,
+            actions,
+            warnings,
+            sendAsync,
+            cancellationToken);
 
         if (scenarioPlan.RunFlashbackSegmentPlayback)
         {
@@ -102,37 +96,15 @@ internal static partial class DiagnosticSessionScenarioStartup
             actions.Add("flashback segment playback started");
         }
 
-        if (scenarioPlan.RunFlashbackRangeExport)
-        {
-            backgroundTasks.AddScenario(
-                8,
-                "flashback-range-export-task",
-                RunFlashbackRangeExportAsync(
-                    outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
-            actions.Add("flashback range export started");
-        }
-
-        if (scenarioPlan.RunFlashbackRangeExportAudioSwitch)
-        {
-            backgroundTasks.AddScenario(
-                9,
-                "flashback-range-export-audio-switch-task",
-                RunFlashbackRangeExportAsync(
-                    outputDirectory,
-                    actions,
-                    warnings,
-                    sendRawWithConnectRetryAsync,
-                    cancellationToken,
-                    scenarioLabel: "flashback range export audio switch",
-                    exportFileName: "flashback-range-export-audio-switch.mp4",
-                    outPointMs: 15_000,
-                    switchAudioDuringExport: true));
-            actions.Add("flashback range export audio switch started");
-        }
+        RegisterFlashbackRangeExportTasks(
+            scenarioPlan,
+            outputDirectory,
+            backgroundTasks,
+            actions,
+            warnings,
+            sendAsync,
+            sendRawWithConnectRetryAsync,
+            cancellationToken);
 
         if (scenarioPlan.RunFlashbackLifecycle)
         {
@@ -147,47 +119,15 @@ internal static partial class DiagnosticSessionScenarioStartup
             actions.Add("flashback lifecycle started");
         }
 
-        if (scenarioPlan.RunFlashbackExportConcurrent)
-        {
-            backgroundTasks.AddScenario(
-                10,
-                "flashback-export-concurrent-task",
-                RunFlashbackExportConcurrentAsync(
-                    outputDirectory,
-                    actions,
-                    warnings,
-                    sendRawWithConnectRetryAsync,
-                    cancellationToken));
-            actions.Add("flashback concurrent export started");
-        }
-
-        if (scenarioPlan.RunFlashbackDisableDuringExport)
-        {
-            backgroundTasks.AddScenario(
-                11,
-                "flashback-disable-during-export-task",
-                RunFlashbackDisableDuringExportAsync(
-                    outputDirectory,
-                    actions,
-                    warnings,
-                    sendRawWithConnectRetryAsync,
-                    cancellationToken));
-            actions.Add("flashback disable during export started");
-        }
-
-        if (scenarioPlan.RunFlashbackRotatedExport)
-        {
-            backgroundTasks.AddScenario(
-                12,
-                "flashback-rotated-export-task",
-                RunFlashbackRotatedExportAsync(
-                    outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
-            actions.Add("flashback rotated export started");
-        }
+        RegisterFlashbackExportCoordinationTasks(
+            scenarioPlan,
+            outputDirectory,
+            backgroundTasks,
+            actions,
+            warnings,
+            sendAsync,
+            sendRawWithConnectRetryAsync,
+            cancellationToken);
 
         if (scenarioPlan.RunFlashbackPreviewCycle)
         {
