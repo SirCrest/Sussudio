@@ -726,6 +726,9 @@ Primary current owners:
   owns diagnostics refresh core ownership assertions for evaluation policy,
   diagnostic evaluation lanes, verification, preview pacing, lifecycle, HDR,
   and the initial snapshot/BuildAutomationSnapshot shape.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotProjection.Tests.cs`
+  owns diagnostics snapshot projection ownership assertions for
+  snapshot projection source text and named BuildProjection boundaries.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
   owns the diagnostics hub source-family reader used by refresh ownership
   assertions.
@@ -873,6 +876,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.Tests.cs`
   owns the large preview runtime, automation snapshot, and performance timeline
   diagnostics contract assertion.
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.SourceReaders.cs`
+  owns source-loading setup for the preview-renderer diagnostics contract
+  assertion.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.Tests.cs` owns
   renderer partial ownership assertions for frame types, submission, ownership,
   DXGI stats, panel binding, upload, shader source/compile boundaries, frame
@@ -899,10 +905,13 @@ Primary current owners:
   dimension rejection, HDR codec/P010 constraints, and frame-rate
   numerator/denominator pairing.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Tests.cs` owns dispatcher
-  readiness gating, authorization, response, command-kind handling, and
-  dispatcher source-ownership contract tests.
+  authorization, response, command-kind handling, and dispatcher
+  source-ownership contract tests.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Tests.cs` owns
   dispatcher JSON payload extraction helper coverage.
+- `tests/Sussudio.Tests/AutomationCommandDispatcher.Readiness.Tests.cs` owns
+  dispatcher readiness gating, window close, preview health, and UI automation
+  readiness-independent coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.ReadyIndependent.Tests.cs`
   owns ready-independent no-hardware command coverage and harness payload/fake
   device support.
@@ -1014,8 +1023,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Tests.cs` owns
   MCP `run_diagnostic_session` success/failure artifact contract tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`
-  owns diagnostic-session helper ownership assertions for core runner, command,
+  owns diagnostic-session helper ownership assertions for core runner,
   scenario, cleanup, sampling, and metric collaborators.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.InfrastructureOwnership.Tests.cs`
+  owns diagnostic-session infrastructure ownership assertions for initial
+  snapshot capture, pipe retry, command channel, run state, and output lock.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`
   owns diagnostic-session model, formatter, result-builder, summary-writer,
   JSON artifact, and shared text ownership assertions.
