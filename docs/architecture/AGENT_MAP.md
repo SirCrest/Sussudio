@@ -734,9 +734,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Tests.cs`
   owns diagnostic-session Flashback scenario, metrics, waits, export, and
   validation ownership assertions.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs`
-  owns diagnostic-session runner behavior tests that execute the reflective
-  runner against synthetic command delegates.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs` is
+  the diagnostic-session runner behavior marker shell. Focused runner behavior
+  coverage lives beside it in `Runner.Artifacts`, `Runner.HealthPolicy`,
+  `Runner.FlashbackPlayback`, `Runner.InitialSnapshot`, `Runner.PipeRetry`,
+  and `Runner.Concurrency` files that execute the reflective runner against
+  synthetic command delegates.
 - `tests/Sussudio.Tests/McpToolSurface.Performance.Tests.cs` owns MCP
   performance timeline and frame-pacing verdict tests.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` owns MCP wait,

@@ -276,8 +276,11 @@ split into `McpToolSurface.DiagnosticSession.Tool.Tests.cs` for MCP tool
 artifact contracts, `McpToolSurface.DiagnosticSession.Ownership.Tests.cs` for
 core helper ownership assertions, `McpToolSurface.DiagnosticSession.Flashback.Tests.cs`
 for Flashback scenario/metrics/wait/export ownership assertions, and
-`McpToolSurface.DiagnosticSession.Runner.Tests.cs` for reflective runner
-behavior tests with synthetic automation delegates.
+`McpToolSurface.DiagnosticSession.Runner.Tests.cs` as a marker shell for
+focused reflective runner behavior tests. The runner behavior files now own
+final-snapshot artifact failures, sparse source-cadence health tolerance,
+Flashback export/playback command flow, unknown-initial-snapshot mutation
+safety, synthetic pipe-connect retry, and concurrent-output-directory lockout.
 
 `tests/Sussudio.Tests/Flashback.Tests.cs` is now only the shared helper shell.
 Flashback regression coverage is split into buffer, encoder-sink, exporter
@@ -1541,13 +1544,15 @@ Remaining `tools/Common` ownership:
 
 ## Next Slices
 
-1. Continue splitting diagnostic-session runner by scenario family.
+1. Continue decomposing diagnostic-session runner internals by owner.
 
    `tools/Common/DiagnosticSessionRunner.cs` is still large. Scenario catalog
    initial scenario setup, optional scenario startup, cleanup mutation
    ownership, post-cleanup recording checks, post-run snapshot fetches, command
    send/failure plumbing, and result construction are extracted; next, split
-   remaining scenario startup families or pivot to the next large owner. Keep
+   remaining production runner families or pivot to the next large owner. The
+   reflective runner behavior tests are already split by scenario, so keep new
+   runner coverage in the focused owner file that matches the behavior. Keep
    JSON summary shape unchanged.
 
 2. Reduce custom regression harness size.
