@@ -57,8 +57,8 @@ stereo conversion, resampling, and pooled converted packet buffers. Keep
 capture-thread lifecycle in `WasapiAudioCapture.cs`.
 `WasapiAudioCapture.Fanout.cs` owns recording/Flashback/playback attachment
 points and hot writer task-completion enforcement.
-`WasapiAudioCapture.Diagnostics.cs` owns callback interval, discontinuity,
-timestamp-error, glitch, and audio-level event counters.
+`WasapiAudioCapture.Diagnostics.cs` owns audio-level event projection, callback
+interval, discontinuity, timestamp-error, glitch, and audio-level event counters.
 `AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
 capture/playback callback, queue, gap, glitch, and latency projection consumed
 by the automation snapshot DTO.

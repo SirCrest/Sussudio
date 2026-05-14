@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -482,42 +481,6 @@ internal sealed partial class WasapiAudioCapture : IAsyncDisposable
                     "IAudioCaptureClient.ReleaseBuffer");
             }
         }
-    }
-
-    private void RaiseAudioLevelIfDue(ReadOnlySpan<byte> f32leBytes)
-    {
-        var handler = AudioLevelUpdated;
-        if (handler == null || f32leBytes.Length == 0)
-        {
-            return;
-        }
-
-        var nowTick = Environment.TickCount64;
-        var lastTick = Interlocked.Read(ref _audioLevelLastFireTick);
-        if (nowTick - lastTick < AudioLevelFireIntervalMs)
-        {
-            return;
-        }
-
-        if (Interlocked.CompareExchange(ref _audioLevelLastFireTick, nowTick, lastTick) != lastTick)
-        {
-            return;
-        }
-
-        var samples = MemoryMarshal.Cast<byte, float>(f32leBytes);
-        float peak = 0f;
-        foreach (var sample in samples)
-        {
-            var abs = MathF.Abs(sample);
-            if (abs > peak)
-            {
-                peak = abs;
-            }
-        }
-
-        Interlocked.Increment(ref _audioLevelEventsFired);
-        Interlocked.Exchange(ref _audioLevelEventsLastFireTickMs, nowTick);
-        handler.Invoke(this, new AudioLevelEventArgs(peak, 0, peak >= 1.0f));
     }
 
     private void OnCaptureFailed(Exception ex)

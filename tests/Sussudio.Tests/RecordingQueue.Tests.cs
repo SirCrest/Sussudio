@@ -726,7 +726,7 @@ static partial class Program
         var drainBlock = ExtractSourceBlock(
             wasapiSource,
             "private void DrainCapturePackets()",
-            "private void RaiseAudioLevelIfDue");
+            "private void OnCaptureFailed");
         AssertContains(drainBlock, "InvokeHotAudioWriter(");
         AssertContains(drainBlock, "WriteAudioToSinkOnCaptureThread(");
         AssertDoesNotContain(drainBlock, ".GetAwaiter()");
@@ -797,11 +797,13 @@ static partial class Program
         AssertContains(wasapiSource, "TrackCapturePacketFlags(flags);");
         AssertContains(diagnosticsSource, "public long AudioFramesArrived => Interlocked.Read(ref _audioFramesArrived);");
         AssertContains(diagnosticsSource, "public (double AvgIntervalMs, double MaxIntervalMs) GetCaptureCallbackIntervalSnapshot()");
+        AssertContains(diagnosticsSource, "private void RaiseAudioLevelIfDue(ReadOnlySpan<byte> f32leBytes)");
         AssertContains(diagnosticsSource, "private void TrackCaptureCallback(long callbackTickMs)");
         AssertContains(diagnosticsSource, "private CallbackIntervalMetrics GetCaptureCallbackIntervalMetrics()");
         AssertContains(diagnosticsSource, "private void TrackCapturePacketFlags(uint flags)");
         AssertContains(diagnosticsSource, "private readonly record struct CallbackIntervalMetrics");
         AssertDoesNotContain(wasapiSource, "public long AudioFramesArrived => Interlocked.Read(ref _audioFramesArrived);");
+        AssertDoesNotContain(wasapiSource, "private void RaiseAudioLevelIfDue(ReadOnlySpan<byte> f32leBytes)");
         AssertDoesNotContain(wasapiSource, "private void TrackCaptureCallback(long callbackTickMs)");
         AssertDoesNotContain(wasapiSource, "private readonly record struct CallbackIntervalMetrics");
 
