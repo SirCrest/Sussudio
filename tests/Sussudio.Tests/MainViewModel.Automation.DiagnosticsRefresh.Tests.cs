@@ -82,14 +82,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotsText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnostics.SnapshotProjectionText, "private AutomationSnapshot BuildAutomationSnapshot(");
         AssertContains(diagnostics.SnapshotProjectionText, "new AutomationSnapshot");
-        AssertContains(diagnostics.SnapshotProjectionText, "var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionSnapshotStatusText, "private SnapshotStatusProjection BuildSnapshotStatusProjection(");
-        AssertContains(diagnostics.SnapshotProjectionSnapshotStatusText, "VerificationInProgress = Volatile.Read(ref _verificationInProgress) != 0,");
-        AssertContains(diagnostics.SnapshotProjectionSnapshotStatusText, "SessionState = captureRuntime.SessionState,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "TimestampUtc = DateTimeOffset.UtcNow,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "VerificationInProgress = Volatile.Read(ref _verificationInProgress) != 0,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "SessionState = captureRuntime.SessionState,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "StatusText = viewModelSnapshot.StatusText,");
+        AssertDiagnosticsSnapshotStatusProjectionOwnership(diagnostics);
         AssertContains(diagnostics.SnapshotProjectionText, "var snapshotEvaluation = BuildSnapshotEvaluationProjection(performance, diagnostic, previewPacingClassification);");
         AssertContains(diagnostics.SnapshotProjectionSnapshotEvaluationText, "private SnapshotEvaluationProjection BuildSnapshotEvaluationProjection(");
         AssertContains(diagnostics.SnapshotProjectionSnapshotEvaluationText, "PerformanceScore = performance.Score,");
@@ -189,6 +182,12 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionUserSettingsText, "IsStatsVisible = viewModelSnapshot.IsStatsVisible");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "SelectedDeviceId = viewModelSnapshot.SelectedDeviceId,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "SelectedFriendlyFrameRate = viewModelSnapshot.SelectedFriendlyFrameRate ?? Math.Round(viewModelSnapshot.SelectedFrameRate),");
+        AssertContains(diagnostics.SnapshotProjectionText, "var recordingSettings = BuildRecordingSettingsProjection(userSettings);");
+        AssertContains(diagnostics.SnapshotProjectionRecordingSettingsText, "private static RecordingSettingsProjection BuildRecordingSettingsProjection(UserSettingsProjection userSettings)");
+        AssertContains(diagnostics.SnapshotProjectionRecordingSettingsText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
+        AssertContains(diagnostics.SnapshotProjectionRecordingSettingsText, "CustomBitrateMbps = userSettings.CustomBitrateMbps");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "CustomBitrateMbps = userSettings.CustomBitrateMbps,");
         AssertContains(diagnostics.SnapshotProjectionText, "var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionHdrPipelineText, "private static HdrPipelineProjection BuildHdrPipelineProjection(");
         AssertContains(diagnostics.SnapshotProjectionHdrPipelineText, "HdrRuntimeState = PreferViewModelHdrText(viewModelSnapshot.HdrRuntimeState, captureRuntime.HdrRuntimeState),");

@@ -32,14 +32,20 @@ static partial class Program
             .Replace("\r\n", "\n");
         var userSettingsProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs")
             .Replace("\r\n", "\n");
+        var recordingSettingsProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingSettings.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var userSettings = BuildUserSettingsProjection(viewModelSnapshot);");
+        AssertContains(snapshotProjectionText, "var recordingSettings = BuildRecordingSettingsProjection(userSettings);");
         AssertContains(snapshotProjectionText, "SelectedDeviceId = userSettings.SelectedDeviceId,");
         AssertContains(snapshotProjectionText, "SelectedFriendlyFrameRate = userSettings.SelectedFriendlyFrameRate,");
-        AssertContains(snapshotProjectionText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
+        AssertContains(snapshotProjectionText, "SelectedRecordingFormat = recordingSettings.SelectedRecordingFormat,");
+        AssertContains(snapshotProjectionText, "CustomBitrateMbps = recordingSettings.CustomBitrateMbps,");
         AssertContains(snapshotProjectionText, "IsStatsVisible = userSettings.IsStatsVisible,");
         AssertDoesNotContain(snapshotProjectionText, "SelectedDeviceId = viewModelSnapshot.SelectedDeviceId,");
         AssertDoesNotContain(snapshotProjectionText, "SelectedFriendlyFrameRate = viewModelSnapshot.SelectedFriendlyFrameRate ?? Math.Round(viewModelSnapshot.SelectedFrameRate),");
+        AssertDoesNotContain(snapshotProjectionText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
+        AssertDoesNotContain(snapshotProjectionText, "CustomBitrateMbps = userSettings.CustomBitrateMbps,");
         AssertDoesNotContain(snapshotProjectionText, "IsStatsVisible = viewModelSnapshot.IsStatsVisible,");
 
         AssertContains(userSettingsProjectionText, "private static UserSettingsProjection BuildUserSettingsProjection(ViewModelRuntimeSnapshot viewModelSnapshot)");
@@ -48,6 +54,11 @@ static partial class Program
         AssertContains(userSettingsProjectionText, "SelectedRecordingFormat = viewModelSnapshot.SelectedRecordingFormat,");
         AssertContains(userSettingsProjectionText, "IsStatsVisible = viewModelSnapshot.IsStatsVisible");
         AssertContains(userSettingsProjectionText, "private readonly record struct UserSettingsProjection");
+        AssertContains(recordingSettingsProjectionText, "private static RecordingSettingsProjection BuildRecordingSettingsProjection(UserSettingsProjection userSettings)");
+        AssertContains(recordingSettingsProjectionText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
+        AssertContains(recordingSettingsProjectionText, "SelectedVideoFormat = userSettings.SelectedVideoFormat,");
+        AssertContains(recordingSettingsProjectionText, "CustomBitrateMbps = userSettings.CustomBitrateMbps");
+        AssertContains(recordingSettingsProjectionText, "private readonly record struct RecordingSettingsProjection");
 
         return Task.CompletedTask;
     }

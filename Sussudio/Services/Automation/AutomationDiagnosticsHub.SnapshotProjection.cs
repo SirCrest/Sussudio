@@ -30,6 +30,7 @@ public sealed partial class AutomationDiagnosticsHub
         var audioDrops = BuildAudioDropsProjection(health);
         var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);
         var userSettings = BuildUserSettingsProjection(viewModelSnapshot);
+        var recordingSettings = BuildRecordingSettingsProjection(userSettings);
         var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);
         var captureFormat = BuildCaptureFormatProjection(captureRuntime);
         var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);
@@ -149,12 +150,12 @@ public sealed partial class AutomationDiagnosticsHub
             SourceTelemetryCircuitState = sourceTelemetry.SourceTelemetryCircuitState,
             SourceTelemetrySummaryText = sourceTelemetry.SourceTelemetrySummaryText,
             SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText,
-            SelectedRecordingFormat = userSettings.SelectedRecordingFormat,
-            SelectedQuality = userSettings.SelectedQuality,
-            SelectedPreset = userSettings.SelectedPreset,
-            SelectedSplitEncodeMode = userSettings.SelectedSplitEncodeMode,
-            SelectedVideoFormat = userSettings.SelectedVideoFormat,
-            CustomBitrateMbps = userSettings.CustomBitrateMbps,
+            SelectedRecordingFormat = recordingSettings.SelectedRecordingFormat,
+            SelectedQuality = recordingSettings.SelectedQuality,
+            SelectedPreset = recordingSettings.SelectedPreset,
+            SelectedSplitEncodeMode = recordingSettings.SelectedSplitEncodeMode,
+            SelectedVideoFormat = recordingSettings.SelectedVideoFormat,
+            CustomBitrateMbps = recordingSettings.CustomBitrateMbps,
             ShowAllCaptureOptions = userSettings.ShowAllCaptureOptions,
             PreviewVolumePercent = userSettings.PreviewVolumePercent,
             IsStatsVisible = userSettings.IsStatsVisible,

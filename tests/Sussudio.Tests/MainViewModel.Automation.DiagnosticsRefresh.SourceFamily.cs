@@ -64,6 +64,7 @@ static partial class Program
             SnapshotProjectionSourceSignalText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs"),
             SnapshotProjectionSourceTelemetryText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.SourceTelemetry.cs"),
             SnapshotProjectionUserSettingsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs"),
+            SnapshotProjectionRecordingSettingsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.RecordingSettings.cs"),
             SnapshotProjectionHdrPipelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs"),
             SnapshotProjectionHdrTruthText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.HdrTruth.cs"),
             SnapshotStateText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotState.cs"),
@@ -145,6 +146,7 @@ static partial class Program
         public string SnapshotProjectionSourceSignalText { get; init; } = string.Empty;
         public string SnapshotProjectionSourceTelemetryText { get; init; } = string.Empty;
         public string SnapshotProjectionUserSettingsText { get; init; } = string.Empty;
+        public string SnapshotProjectionRecordingSettingsText { get; init; } = string.Empty;
         public string SnapshotProjectionHdrPipelineText { get; init; } = string.Empty;
         public string SnapshotProjectionHdrTruthText { get; init; } = string.Empty;
         public string SnapshotStateText { get; init; } = string.Empty;
@@ -213,6 +215,7 @@ static partial class Program
                 SnapshotProjectionSourceSignalText,
                 SnapshotProjectionSourceTelemetryText,
                 SnapshotProjectionUserSettingsText,
+                SnapshotProjectionRecordingSettingsText,
                 SnapshotProjectionHdrPipelineText,
                 SnapshotProjectionHdrTruthText,
                 SnapshotStateText,
