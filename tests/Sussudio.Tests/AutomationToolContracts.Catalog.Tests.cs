@@ -202,9 +202,10 @@ static partial class Program
 
             AssertEqual(expected.Required, (bool)GetMetadataProperty(pathField, "Required")!, $"{commandName} path field required flag");
             AssertEqual("String", GetMetadataProperty(pathField, "Type")!.ToString(), $"{commandName} path field type");
-            AssertContains(
+            AssertRegex(
                 dispatcherText,
-                $"ValidatePathPayload(\n                    AutomationCommandKind.{commandName},\n                    \"{expected.FieldName}\"");
+                $"ValidatePathPayload\\(\\n\\s*AutomationCommandKind\\.{commandName},\\n\\s*\"{expected.FieldName}\"",
+                $"{commandName} dispatcher path validation");
 
             var enumValue = Enum.Parse(enumType, commandName);
             AssertThrows<InvalidOperationException>(

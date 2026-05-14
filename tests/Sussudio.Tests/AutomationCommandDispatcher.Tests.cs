@@ -12,6 +12,7 @@ static partial class Program
             "Sussudio/Services/Automation/AutomationCommandDispatcher.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.TrivialHandlers.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs",
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.CommandParsing.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.WindowActions.cs",
@@ -367,6 +368,31 @@ static partial class Program
         AssertEqual("thread_not_running:Pause", (string)GetPublicProperty(data, "LastCommandFailure")!, "flashback failure data last command failure");
         AssertEqual(123456789L, (long)GetPublicProperty(data, "LastCommandFailureUtcUnixMs")!, "flashback failure data failure utc");
         AssertEqual(snapshot, GetPublicProperty(response, "Snapshot"), "flashback failure response reuses diagnostic snapshot");
+    }
+
+    private static Task AutomationCommandDispatcher_FlashbackCommands_LiveInFocusedPartial()
+    {
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+            .Replace("\r\n", "\n");
+        var flashbackCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(customCommandsText, "case AutomationCommandKind.FlashbackAction:");
+        AssertContains(customCommandsText, "ExecuteFlashbackActionCommandAsync(payload, correlationId, cancellationToken)");
+        AssertContains(customCommandsText, "ExecuteFlashbackExportCommandAsync(payload, correlationId, cancellationToken)");
+        AssertContains(customCommandsText, "ExecuteFlashbackGetSegmentsCommandAsync(correlationId, cancellationToken)");
+        AssertContains(customCommandsText, "ExecuteRestartFlashbackCommandAsync(correlationId, cancellationToken)");
+        AssertContains(customCommandsText, "ExecuteSetFlashbackEnabledCommandAsync(payload, correlationId, cancellationToken)");
+
+        AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteFlashbackActionCommandAsync(");
+        AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteFlashbackExportCommandAsync(");
+        AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteFlashbackGetSegmentsCommandAsync(");
+        AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteRestartFlashbackCommandAsync(");
+        AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetFlashbackEnabledCommandAsync(");
+        AssertDoesNotContain(customCommandsText, "ExportFlashbackAutomationAsync(seconds");
+        AssertDoesNotContain(customCommandsText, "CreateFlashbackActionRejectedResponse(");
+
+        return Task.CompletedTask;
     }
 
     private static object CreateAutomationCommandDispatcher(string? authToken)

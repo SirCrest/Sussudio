@@ -841,7 +841,10 @@ static partial class Program
         AssertContains(captureServiceText, "fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint");
         AssertContains(captureServiceText, "resolvedRange.FailureMessage ?? \"Flashback export range is empty or invalid.\"");
         AssertContains(captureServiceText, "if (ct.IsCancellationRequested)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export cancelled.\");\n        }\n\n        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export duration must be finite, greater than zero, and within TimeSpan range.\");\n        }");
-        AssertContains(dispatcherText, "if (!double.IsFinite(seconds) ||\n                    seconds <= 0 ||\n                    seconds > TimeSpan.MaxValue.TotalSeconds)");
+        AssertRegex(
+            dispatcherText,
+            "if \\(!double\\.IsFinite\\(seconds\\) \\|\\|\\n\\s*seconds <= 0 \\|\\|\\n\\s*seconds > TimeSpan\\.MaxValue\\.TotalSeconds\\)",
+            "Flashback export duration guard");
         AssertContains(dispatcherText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
         AssertContains(captureServiceText, "? \"Cancelled\"");
         AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");

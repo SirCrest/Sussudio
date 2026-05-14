@@ -64,8 +64,11 @@ Automation diagnostics ownership:
   command envelope, manifest/auth/readiness gates, trivial-handler dispatch, and
   error shaping.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`
-  owns custom automation command switch bodies that need multi-field payloads,
-  special response shapes, diagnostics, or capture/Flashback routing.
+  owns the custom automation command router for multi-field payloads, special
+  response shapes, diagnostics, and capture routing.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs`
+  owns Flashback action/export/segment/restart/enable command bodies behind the
+  custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.TrivialHandlers.cs`
   owns the table of simple one-property commands that delegate straight to the
   automation view-model port.
@@ -767,8 +770,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns temp artifact
   finalize/rollback behavior for recording output cleanup.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Tests.cs` owns dispatcher
-  payload parsing, readiness gating, authorization, response, and command-kind
-  handling contract tests.
+  payload parsing, readiness gating, authorization, response, command-kind
+  handling, and dispatcher source-ownership contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers for automation tool contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns

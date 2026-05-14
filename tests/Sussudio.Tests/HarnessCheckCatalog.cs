@@ -317,6 +317,9 @@ static partial class Program
                 "Automation dispatcher flashback failures return playback diagnostics",
                 AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics),
             await RunCheckAsync(
+                "Automation dispatcher Flashback commands live in focused partial",
+                AutomationCommandDispatcher_FlashbackCommands_LiveInFocusedPartial),
+            await RunCheckAsync(
                 "Automation dispatcher handles every AutomationCommandKind value",
                 AutomationCommandDispatcher_AllCommandKinds_AreHandled),
             await RunCheckAsync(

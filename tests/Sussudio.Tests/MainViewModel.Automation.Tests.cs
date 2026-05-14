@@ -160,7 +160,10 @@ static partial class Program
         AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken)");
         AssertContains(dispatcherText, "CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage)");
         AssertContains(dispatcherText, "FailureKind = failureKind");
-        AssertContains(dispatcherText, "if (positionMs.HasValue &&\n                    (!double.IsFinite(positionMs.Value) ||\n                     positionMs.Value < 0 ||\n                     positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds))");
+        AssertContains(dispatcherText, "if (positionMs.HasValue &&");
+        AssertContains(dispatcherText, "(!double.IsFinite(positionMs.Value) ||");
+        AssertContains(dispatcherText, "positionMs.Value < 0 ||");
+        AssertContains(dispatcherText, "positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds))");
         AssertContains(dispatcherText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(dispatcherText, "case AutomationFlashbackAction.SetInPoint:");
         AssertContains(dispatcherText, "case AutomationFlashbackAction.SetOutPoint:");
