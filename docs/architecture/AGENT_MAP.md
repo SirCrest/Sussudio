@@ -1183,8 +1183,9 @@ Primary owners:
   `Program.I2cTransport.cs` owns I2C-over-AT transport helpers; and
   `Program.ServiceProbe.cs` owns service-control smoke/payload workflows.
 - `tools/KsAudioNodeProbe/Program.cs` owns KS audio node probe command flow;
-  `Program.Constants.cs` owns probe constants and `Program.NativeTypes.cs` owns
-  native interop DTOs.
+  `Program.Constants.cs` owns probe constants; `Program.NativeTypes.cs` owns
+  native interop DTOs; and `Program.NativeInterop.cs` owns SetupAPI, file-handle,
+  KS property transfer, topology enumeration, and Win32 formatting helpers.
 - `tools/ssctl/CommandHandlers.Context.cs` owns the per-invocation command
   context wrapper.
 - `tools/ssctl/CommandHandlers.Parsing.cs` owns flag parsing, value parsing,
