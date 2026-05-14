@@ -3617,6 +3617,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var wasapiPlaybackQueueText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs")
             .Replace("\r\n", "\n");
+        var wasapiPlaybackRenderText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private void SafeSuppressPreviewSubmission(string operation)");
         AssertContains(sourceText, "private void SafeResumePreviewSubmission(string operation)");
@@ -3726,16 +3728,20 @@ static partial class Program
         AssertContains(wasapiPlaybackText, "public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)");
         AssertContains(wasapiPlaybackText, "Volatile.Write(ref _resumePrebufferFrames, Math.Max(0, prebufferFrames));");
         AssertContains(wasapiPlaybackText, "_resumeRequested = true;\n        _renderEvent?.Set();");
-        AssertContains(wasapiPlaybackText, "if (!_resumeRequested)\n                {\n                    continue;\n                }");
-        AssertContains(wasapiPlaybackText, "WASAPI_PLAYBACK_RENDER_RESUME_CANCELED_PENDING_PAUSE");
-        AssertContains(wasapiPlaybackText, "WaitForResumePrebuffer();");
-        AssertContains(wasapiPlaybackText, "WASAPI_PLAYBACK_RENDER_PREBUFFER target_ms={FramesToMilliseconds(targetFrames):F1}");
-        AssertContains(wasapiPlaybackText, "private int PlaybackBufferedFramesForResume()");
+        AssertContains(wasapiPlaybackRenderText, "internal sealed partial class WasapiAudioPlayback");
+        AssertContains(wasapiPlaybackRenderText, "private void RenderThreadMain()");
+        AssertContains(wasapiPlaybackRenderText, "if (!_resumeRequested)\n                {\n                    continue;\n                }");
+        AssertContains(wasapiPlaybackRenderText, "WASAPI_PLAYBACK_RENDER_RESUME_CANCELED_PENDING_PAUSE");
+        AssertContains(wasapiPlaybackRenderText, "WaitForResumePrebuffer();");
+        AssertContains(wasapiPlaybackRenderText, "WASAPI_PLAYBACK_RENDER_PREBUFFER target_ms={FramesToMilliseconds(targetFrames):F1}");
+        AssertContains(wasapiPlaybackRenderText, "private int PlaybackBufferedFramesForResume()");
+        AssertDoesNotContain(wasapiPlaybackText, "private void RenderThreadMain()");
+        AssertDoesNotContain(wasapiPlaybackText, "private unsafe void RenderAvailableFrames()");
         AssertDoesNotContain(wasapiPlaybackText, "public void ResumeRendering()\n    {\n        if (Volatile.Read(ref _started) == 0) return;\n        if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested) return;\n\n        _pauseRequested = false;");
-        AssertDoesNotContain(wasapiPlaybackText, "GetCurrentPadding(pre-fill)");
-        AssertDoesNotContain(wasapiPlaybackText, "IAudioRenderClient.GetBuffer(pre-fill)");
-        AssertDoesNotContain(wasapiPlaybackText, "AUDCLNT_BUFFERFLAGS_SILENT");
-        AssertDoesNotContain(wasapiPlaybackText, "WASAPI_PREFILL_WARN");
+        AssertDoesNotContain(wasapiPlaybackRenderText, "GetCurrentPadding(pre-fill)");
+        AssertDoesNotContain(wasapiPlaybackRenderText, "IAudioRenderClient.GetBuffer(pre-fill)");
+        AssertDoesNotContain(wasapiPlaybackRenderText, "AUDCLNT_BUFFERFLAGS_SILENT");
+        AssertDoesNotContain(wasapiPlaybackRenderText, "WASAPI_PREFILL_WARN");
         AssertContains(wasapiPlaybackQueueText, "internal sealed partial class WasapiAudioPlayback");
         AssertContains(wasapiPlaybackQueueText, "private int _playbackQueueDepth;");
         AssertContains(wasapiPlaybackQueueText, "public int PlaybackQueueDepth => Math.Max(0, Volatile.Read(ref _playbackQueueDepth));");
@@ -3750,11 +3756,11 @@ static partial class Program
         AssertDoesNotContain(wasapiPlaybackText, "private bool TryDequeueChunk(out PlaybackChunk chunk)");
         AssertContains(wasapiPlaybackText, "private const int OutputSampleRate = 48000;");
         AssertContains(wasapiPlaybackText, "private const uint MaxRenderWriteFrames = OutputSampleRate / 50; // 20ms");
-        AssertContains(wasapiPlaybackText, "var framesToWrite = Math.Min(_bufferFrameCount - paddingFrames, MaxRenderWriteFrames);");
-        AssertDoesNotContain(wasapiPlaybackText, "var framesToWrite = _bufferFrameCount - paddingFrames;");
-        AssertContains(wasapiPlaybackText, "UpdateRenderingPtsForActiveChunk();");
-        AssertContains(wasapiPlaybackText, "var frameOffset = Math.Max(0, _activeChunkOffset) / OutputBlockAlign;");
-        AssertContains(wasapiPlaybackText, "var offsetTicks = frameOffset * TimeSpan.TicksPerSecond / OutputSampleRate;");
+        AssertContains(wasapiPlaybackRenderText, "var framesToWrite = Math.Min(_bufferFrameCount - paddingFrames, MaxRenderWriteFrames);");
+        AssertDoesNotContain(wasapiPlaybackRenderText, "var framesToWrite = _bufferFrameCount - paddingFrames;");
+        AssertContains(wasapiPlaybackRenderText, "UpdateRenderingPtsForActiveChunk();");
+        AssertContains(wasapiPlaybackRenderText, "var frameOffset = Math.Max(0, _activeChunkOffset) / OutputBlockAlign;");
+        AssertContains(wasapiPlaybackRenderText, "var offsetTicks = frameOffset * TimeSpan.TicksPerSecond / OutputSampleRate;");
         AssertDoesNotContain(wasapiPlaybackText, "_sampleQueue.Reader.Count");
         AssertDoesNotContain(wasapiPlaybackQueueText, "_sampleQueue.Writer.TryWrite(chunk))\n        {\n            Interlocked.Increment(ref _playbackQueueDepth);");
         AssertDoesNotContain(sourceText, "_videoCapture?.SuppressPreviewSubmission();\n                        SuppressLiveAudio();\n                        _audioPlayback?.PauseRendering();");

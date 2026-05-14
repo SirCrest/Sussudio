@@ -65,6 +65,9 @@ lifecycle in `WasapiAudioPlayback.cs`.
 `WasapiAudioPlayback.Queue.cs` owns playback chunk queue state, pooled-sample
 ingress, queue depth/frame accounting, buffered-duration projection, and pooled
 chunk returns.
+`WasapiAudioPlayback.RenderThread.cs` owns the WASAPI render-thread loop,
+pause/resume execution, resume prebuffer wait, endpoint buffer writes, render
+buffer filling, and render-side PTS advancement.
 `AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
 capture/playback callback, queue, gap, glitch, and latency projection consumed
 by the automation snapshot DTO.

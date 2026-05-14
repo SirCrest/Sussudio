@@ -2962,6 +2962,7 @@ static partial class Program
         var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs").Replace("\r\n", "\n");
         var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs").Replace("\r\n", "\n");
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
+        var playbackRenderText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs").Replace("\r\n", "\n");
         var playbackVolumeText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Volume.cs").Replace("\r\n", "\n");
         var runtimeContractsText = ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var runtimeSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs").Replace("\r\n", "\n");
@@ -2985,7 +2986,8 @@ static partial class Program
         AssertContains(audioRampTraceText, "Task.Delay(AudioRampTraceSampleIntervalMs");
         AssertContains(audioRampTraceText, "GetAudioRampTraceSnapshotAsync");
 
-        AssertContains(playbackText, "UpdateOutputLevel(destinationSpan);");
+        AssertContains(playbackRenderText, "UpdateOutputLevel(destinationSpan);");
+        AssertContains(playbackRenderText, "private unsafe void RenderAvailableFrames()");
         AssertContains(playbackVolumeText, "internal sealed partial class WasapiAudioPlayback");
         AssertContains(playbackVolumeText, "public float TargetVolume => _targetVolume;");
         AssertContains(playbackVolumeText, "public float CurrentVolume => _currentVolume;");
