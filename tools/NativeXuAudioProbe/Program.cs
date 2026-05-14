@@ -4,39 +4,8 @@ using Sussudio.Services.Audio;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Telemetry;
-
-const int CmdAudioFormat = 0x04;
-const int CmdAudioSamplingRate = 0x06;
-const int CmdAudioSetAdcVolumeGain = 0x0A;
-const int CmdAudioGetAdcVolumeGain = 0x0B;
-const int CmdAudioSetHdmiDprxVolumeGain = 0x0C;
-const int CmdAudioGetHdmiDprxVolumeGain = 0x0D;
-const int CmdAudioSetUacVolumeGain = 0x10;
-const int CmdAudioGetUacVolumeGain = 0x11;
-const int CmdAudioSetUacOut2MixerSource = 0x26;
-const int CmdAudioGetUacOut2MixerSource = 0x27;
-const int CmdAudioSetDacHpMixerSource = 0x28;
-const int CmdAudioGetDacHpMixerSource = 0x29;
-const int CmdAudioSetI2sOutMixerSource = 0x2A;
-const int CmdAudioGetI2sOutMixerSource = 0x2B;
-const int CmdAudioSetUacOut1Mute = 0x2C;
-const int CmdAudioGetUacOut1Mute = 0x2D;
-const int CmdAudioSetUacOut2Mute = 0x2E;
-const int CmdAudioGetUacOut2Mute = 0x2F;
-const int CmdAudioSetDacHpMute = 0x30;
-const int CmdAudioGetDacHpMute = 0x31;
-const int CmdAudioSetI2sOutMute = 0x32;
-const int CmdAudioGetI2sOutMute = 0x33;
-const int CmdSetInputSource = 0x34;
-const int CmdInputSource = 0x35;
-const int CmdAudioSetAdcOnOff = 0x08;
-const int CmdAudioSetDacHpOnOff = 0x09;
-const int CmdAudioGetAdcOnOff = 0x74;
-const int CmdAudioGetDacHpOnOff = 0x75;
-const int CmdGetAuxInVolume = 0x7F;
-const int CmdSetAuxInVolume = 0x80;
-const int CmdGetAuxOutVolume = 0x81;
-const int CmdSetAuxOutVolume = 0x82;
+using static NativeXuProbeCommands;
+using static NativeXuProbeExperimentPayloads;
 
 var deviceNameFilter = args.Length > 0 ? args[0] : "4K X";
 if (args.Length > 0 && string.Equals(args[0], "rtk-i2c", StringComparison.OrdinalIgnoreCase))
@@ -1287,50 +1256,6 @@ await RunAnalogGainSequenceAsync(device);
 var finalSnapshot = await new NativeXuAtCommandProvider().ReadAsync(device);
 PrintSnapshot("Final snapshot", finalSnapshot);
 return 0;
-
-static IEnumerable<SetExperiment> BuildShortExperiments(string group, IReadOnlyList<SetterSpec> setters, IReadOnlyList<short> values)
-{
-    foreach (var setter in setters)
-    {
-        foreach (var value in values)
-        {
-            yield return new SetExperiment(group, setter, value.ToString(CultureInfo.InvariantCulture), BuildPayload(setter.PayloadWidth, value));
-        }
-    }
-}
-
-static IEnumerable<SetExperiment> BuildIntExperiments(string group, IReadOnlyList<SetterSpec> setters, IReadOnlyList<int> values)
-{
-    foreach (var setter in setters)
-    {
-        foreach (var value in values)
-        {
-            yield return new SetExperiment(group, setter, value.ToString(CultureInfo.InvariantCulture), BuildPayload(setter.PayloadWidth, value));
-        }
-    }
-}
-
-static IEnumerable<SetExperiment> BuildByteExperiments(string group, IReadOnlyList<SetterSpec> setters, IReadOnlyList<byte> values)
-{
-    foreach (var setter in setters)
-    {
-        foreach (var value in values)
-        {
-            yield return new SetExperiment(group, setter, value.ToString(CultureInfo.InvariantCulture), BuildPayload(setter.PayloadWidth, value));
-        }
-    }
-}
-
-static byte[] BuildPayload(int width, long value)
-{
-    return width switch
-    {
-        1 => new[] { unchecked((byte)value) },
-        2 => BitConverter.GetBytes(unchecked((short)value)),
-        4 => BitConverter.GetBytes(unchecked((int)value)),
-        _ => throw new InvalidOperationException($"Unsupported payload width {width}.")
-    };
-}
 
 static async Task RunAnalogGainSequenceAsync(CaptureDevice device)
 {
