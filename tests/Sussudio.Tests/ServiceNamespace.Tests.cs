@@ -199,6 +199,7 @@ static partial class Program
         var probeI2cCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.cs"));
         var probeI2cCommandsHighSelectorProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.HighSelectorProbe.cs"));
         var probeI2cCommandsSelectorProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.SelectorProbe.cs"));
+        var probeI2cCommandsTopologyProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.TopologyProbe.cs"));
         var probeI2cCommandsVerifyText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.Verify.cs"));
         var probeI2cSwitchText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs"));
         var probeI2cTransportText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs"));
@@ -249,6 +250,8 @@ static partial class Program
         AssertContains(probeI2cCommandsText, "Usage: i2c-cmd get|set|scan");
         AssertContains(probeI2cCommandsText, "RunVerifyAsync(dev)");
         AssertDoesNotContain(probeI2cCommandsText, "I2C SET/verify via AT envelope");
+        AssertContains(probeI2cCommandsText, "RunTopologyProbe(dev)");
+        AssertDoesNotContain(probeI2cCommandsText, "Testing with own GUID as property set");
         AssertContains(probeI2cCommandsText, "RunSelectorProbeAsync(dev)");
         AssertDoesNotContain(probeI2cCommandsText, "Full Selector 3 dump");
         AssertContains(probeI2cCommandsText, "RunHighSelectorProbeAsync(dev)");
@@ -259,6 +262,9 @@ static partial class Program
         AssertContains(probeI2cCommandsSelectorProbeText, "static partial class NativeXuProbeI2cCommands");
         AssertContains(probeI2cCommandsSelectorProbeText, "public static async Task<int> RunSelectorProbeAsync");
         AssertContains(probeI2cCommandsSelectorProbeText, "Full Selector 3 dump");
+        AssertContains(probeI2cCommandsTopologyProbeText, "static partial class NativeXuProbeI2cCommands");
+        AssertContains(probeI2cCommandsTopologyProbeText, "public static int RunTopologyProbe");
+        AssertContains(probeI2cCommandsTopologyProbeText, "Testing with own GUID as property set");
         AssertContains(probeI2cCommandsVerifyText, "static partial class NativeXuProbeI2cCommands");
         AssertContains(probeI2cCommandsVerifyText, "public static async Task<int> RunVerifyAsync");
         AssertContains(probeI2cCommandsVerifyText, "I2C SET/verify via AT envelope");
