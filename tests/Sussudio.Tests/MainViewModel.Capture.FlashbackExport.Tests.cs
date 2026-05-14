@@ -1,0 +1,92 @@
+using System.Reflection;
+using System.Threading.Tasks;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+
+static partial class Program
+{
+    private static Task CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport()
+    {
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
+                .Replace("\r\n", "\n");
+
+        var rangeExport = ExtractTextBetween(
+            captureServiceText,
+            "internal async Task<FinalizeResult> ExportFlashbackRangeAsync",
+            "    internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
+        AssertContains(rangeExport, "FlashbackExporter? flashbackExporter;");
+        AssertContains(rangeExport, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
+        AssertContains(rangeExport, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);\n            exportOperationLockHeld = true;");
+        AssertOccursBefore(rangeExport, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
+        AssertContains(rangeExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
+        AssertOccursBefore(rangeExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
+        AssertContains(rangeExport, "snapshotExporter: flashbackExporter,");
+        AssertContains(rangeExport, "exportOperationLockAlreadyHeld: true,");
+
+        var lastNExport = ExtractTextBetween(
+            captureServiceText,
+            "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
+            "    private void ReleaseFlashbackBackendLeaseIfHeld");
+        AssertContains(lastNExport, "FlashbackExporter? flashbackExporter;");
+        AssertContains(lastNExport, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
+        AssertContains(lastNExport, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);\n            exportOperationLockHeld = true;");
+        AssertOccursBefore(lastNExport, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
+        AssertContains(lastNExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
+        AssertOccursBefore(lastNExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
+        AssertContains(lastNExport, "snapshotExporter: flashbackExporter,");
+        AssertContains(lastNExport, "exportOperationLockAlreadyHeld: true,");
+
+        var exportCore = ExtractTextBetween(
+            captureServiceText,
+            "    private async Task<FinalizeResult> ExportFlashbackCoreAsync",
+            "\n}\n\nusing System;");
+        AssertContains(exportCore, "FlashbackExporter? snapshotExporter = null,");
+        AssertContains(exportCore, "bool exportOperationLockAlreadyHeld = false,");
+        AssertContains(exportCore, "var exportOperationLockHeld = exportOperationLockAlreadyHeld;");
+        AssertContains(exportCore, "if (!exportOperationLockAlreadyHeld)");
+        AssertContains(exportCore, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
+        AssertOccursBefore(exportCore, "if (bufferManager == null)", "var exporter = snapshotExporter;");
+        AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackExporter ??= new FlashbackExporter();\n            }");
+        AssertContains(exportCore, "var forceRotateFallbackUsed = false;");
+        AssertContains(exportCore, "forceRotateFallbackUsed = true;");
+        AssertContains(exportCore, "live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames");
+        AssertContains(exportCore, "if (forceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
+        AssertContains(exportCore, "RecordLastFlashbackExportResult(exportId, result);\n            CompleteFlashbackExportDiagnostics(exportId, result);");
+
+        var backendCleanup = ExtractTextBetween(
+            captureServiceText,
+            "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync",
+            "    private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+        AssertContains(backendCleanup, "bool exportOperationLockAlreadyHeld = false)");
+        AssertContains(backendCleanup, "var lockAcquired = exportOperationLockAlreadyHeld;");
+        AssertContains(backendCleanup, "if (!exportOperationLockAlreadyHeld)");
+        AssertContains(backendCleanup, "FLASHBACK_BACKEND_CLEANUP_LOCK_REUSED");
+        AssertContains(backendCleanup, "if (lockAcquired && releaseLockOnExit)");
+
+        var disposeBackend = ExtractTextBetween(
+            captureServiceText,
+            "private async Task DisposeFlashbackPreviewBackendAsync",
+            "    private async Task DisposeFlashbackPreviewBackendCoreAsync");
+        AssertContains(disposeBackend, "await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(disposeBackend, "exportOperationLockAlreadyHeld: true");
+        AssertContains(disposeBackend, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
+
+        var disposeBackendCore = ExtractTextBetween(
+            captureServiceText,
+            "private async Task DisposeFlashbackPreviewBackendCoreAsync",
+            "    /// <summary>\n    /// Cycles the flashback encoder sink after recording stops.");
+        AssertContains(disposeBackendCore, "bool exportOperationLockAlreadyHeld = false)");
+        AssertContains(disposeBackendCore, "\"preview_backend_dispose\",\n                exportOperationLockAlreadyHeld)");
+
+        return Task.CompletedTask;
+    }
+
+}

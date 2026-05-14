@@ -596,6 +596,21 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.FlashbackCleanup.Tests.cs`
   owns Flashback startup-cache and session-recovery cleanup ownership
   assertions that used to live in the automation test catch-all.
+- `tests/Sussudio.Tests/MainViewModel.Capture.Tests.cs` owns capture-facing
+  MainViewModel surface assertions and shared source-inspection helpers.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` owns
+  preview startup, preview reveal, and preview stop ordering assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
+  Flashback export backend-lease and export-operation lock assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Tests.cs` owns
+  MainViewModel Flashback coordinator-routing and Flashback UI interaction
+  assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.Tests.cs` owns
+  retained Flashback preview backend, device-switch teardown, and Flashback
+  lifecycle log-token assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackFrameRate.Tests.cs`
+  owns Flashback delivered-cadence rational and enable/disable preview-state
+  assertions.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing and formatter batch tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the
