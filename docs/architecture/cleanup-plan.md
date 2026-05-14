@@ -304,6 +304,11 @@ reflection/spec helper shell. Snapshot model contract coverage is split into
 CaptureDiagnosticsSnapshot, CaptureHealthSnapshot, and
 SourceSignalTelemetrySnapshot owner files.
 
+`tests/Sussudio.Tests/RecordingQueue.Tests.cs` is now the shared recording
+queue source-reader helper shell. Recording queue coverage is split into queue
+overload policy, LibAv sink, WASAPI, and capture fan-out / Flashback backend
+owner files.
+
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
 to the public toggle/state surface, `FullScreenController.Transitions.cs` to
@@ -1516,6 +1521,8 @@ Remaining `tools/Common` ownership:
    Flashback backend, and Flashback frame-rate/lifecycle owners. Continue with
    low-risk contract groups first. Snapshot-model contract tests are split by
    CaptureDiagnostics, CaptureHealth, and source-signal telemetry model owner.
+   Recording queue tests are split into overload policy, LibAv sink, WASAPI,
+   and capture fan-out/backend owners.
 
 3. Continue converting MainWindow partial concerns into controllers.
 

@@ -620,6 +620,19 @@ Primary current owners:
   model checks.
 - `tests/Sussudio.Tests/SnapshotModels.SourceSignalTelemetry.Tests.cs` owns
   SourceSignalTelemetrySnapshot and SourceTelemetryDetailEntry contract checks.
+- `tests/Sussudio.Tests/RecordingQueue.Tests.cs` owns shared recording queue
+  source readers and source-block extraction helpers.
+- `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the
+  recording/Flashback queue overload, fatal-failure, recovery-preserve, and
+  snapshot projection policy assertion.
+- `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Tests.cs` owns LibAv recording
+  sink output validation, try-enqueue, drain-loop, encoding-loop, and lifecycle
+  ownership assertions.
+- `tests/Sussudio.Tests/RecordingQueue.Wasapi.Tests.cs` owns WASAPI hot-write,
+  conversion, diagnostics, COM contract, and bounded stop assertions.
+- `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` owns
+  UnifiedVideoCapture sink fan-out and CaptureService Flashback backend
+  aggregate ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing and formatter batch tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the
