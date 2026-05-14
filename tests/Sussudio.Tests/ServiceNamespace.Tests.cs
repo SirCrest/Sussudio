@@ -49,6 +49,7 @@ static partial class Program
         AssertDoesNotContain(nativeXuProbeProjectText, "<ProjectReference");
         AssertDoesNotContain(nativeXuProbeProjectText, "Sussudio.csproj");
         AssertContains(nativeXuProbeProjectText, "NativeXuAudioControlService.cs");
+        AssertContains(nativeXuProbeProjectText, "NativeXuAudioControlService.Transport.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DiagnosticSummary.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DeviceCommands.cs");
@@ -80,11 +81,13 @@ static partial class Program
         AssertContains(nativeXuAtProviderText, "EnumerateKsInterfaces(vendorId, productId, device)");
 
         var nativeXuAudioServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Audio", "NativeXuAudioControlService.cs"));
-        AssertContains(nativeXuAudioServiceText, "device?.NativeXuInterfacePath");
-        AssertContains(nativeXuAudioServiceText, "missing-selected-interface");
-        AssertContains(nativeXuAudioServiceText, "NATIVEXU_AUDIO_PAYLOAD_READ missing-selected-interface");
-        AssertContains(nativeXuAudioServiceText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
-        AssertContains(nativeXuAudioServiceText, "EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath)");
+        var nativeXuAudioTransportText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Audio", "NativeXuAudioControlService.Transport.cs"));
+        AssertContains(nativeXuAudioServiceText, "ReadPreferredPayloadAsync(device, cancellationToken)");
+        AssertContains(nativeXuAudioTransportText, "device?.NativeXuInterfacePath");
+        AssertContains(nativeXuAudioTransportText, "missing-selected-interface");
+        AssertContains(nativeXuAudioTransportText, "NATIVEXU_AUDIO_PAYLOAD_READ missing-selected-interface");
+        AssertContains(nativeXuAudioTransportText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
+        AssertContains(nativeXuAudioTransportText, "EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath)");
 
         var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.cs"));
         var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs"));

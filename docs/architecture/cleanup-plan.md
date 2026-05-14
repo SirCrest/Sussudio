@@ -74,8 +74,10 @@ format allocation/parsing, COM activation/release, endpoint volume, and
 AudioClient3 initialization.
 `NativeXuAudioControlService.Profiles.cs` owns 4K X selector-3 byte indexes,
 HDMI/Analog reference payloads, gain-profile placeholders, hex parsing, and
-payload decode/confidence helpers. `NativeXuAudioControlService.cs` owns the
-public service flow and raw XU read/modify/write transport.
+payload decode/confidence helpers. `NativeXuAudioControlService.Transport.cs`
+owns selector-3 XU read/modify/write, candidate enumeration, raw payload
+normalization/rehydration, and transport gate acquisition/release.
+`NativeXuAudioControlService.cs` owns the public service flow and snapshot DTOs.
 `AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
 capture/playback callback, queue, gap, glitch, and latency projection consumed
 by the automation snapshot DTO.

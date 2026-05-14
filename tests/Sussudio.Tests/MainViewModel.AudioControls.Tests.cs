@@ -200,8 +200,8 @@ static partial class Program
 
         AssertContains(rootText, "internal sealed partial class NativeXuAudioControlService");
         AssertContains(rootText, "public async Task<DeviceAudioControlState> ReadStateAsync(");
-        AssertContains(rootText, "private async Task<bool> UpdatePayloadAsync(");
-        AssertContains(rootText, "private static IEnumerable<RawControlCandidate> EnumerateCandidates(");
+        AssertContains(rootText, "public async Task<bool> SetAudioModeAsync(");
+        AssertContains(rootText, "public async Task<bool> SetAnalogGainPercentAsync(");
         AssertContains(rootText, "internal sealed record DeviceAudioControlState(");
         AssertContains(ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj"), "NativeXuAudioControlService.Profiles.cs");
         AssertContains(profilesText, "internal sealed partial class NativeXuAudioControlService");
@@ -217,6 +217,37 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static readonly int[] InputByteIndexes");
         AssertDoesNotContain(rootText, "private static AudioDecodeDecision DecodeInput(byte[] payload)");
         AssertDoesNotContain(rootText, "private static byte[] ParseHex(string hex)");
+        AssertDoesNotContain(rootText, "private async Task<bool> UpdatePayloadAsync(");
+        AssertDoesNotContain(rootText, "private static IEnumerable<RawControlCandidate> EnumerateCandidates(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task NativeXuAudioControlService_TransportLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Audio/NativeXuAudioControlService.cs")
+            .Replace("\r\n", "\n");
+        var transportText = ReadRepoFile("Sussudio/Services/Audio/NativeXuAudioControlService.Transport.cs")
+            .Replace("\r\n", "\n");
+        var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
+
+        AssertContains(transportText, "internal sealed partial class NativeXuAudioControlService");
+        AssertContains(transportText, "private async Task<bool> UpdatePayloadAsync(");
+        AssertContains(transportText, "private async Task<RawPayloadSnapshot?> ReadPreferredPayloadAsync(");
+        AssertContains(transportText, "private static IEnumerable<RawControlCandidate> EnumerateCandidates(");
+        AssertContains(transportText, "private static bool TryReadRawPayload(");
+        AssertContains(transportText, "private static bool TryWriteRawPayload(");
+        AssertContains(transportText, "private static byte[] NormalizePayload(byte[] rawPayload)");
+        AssertContains(transportText, "private static byte[] RehydrateRawPayload(byte[] rawPayload, byte[] normalizedPayload)");
+        AssertContains(transportText, "private static async Task<bool> TryAcquireTransportGateAsync(CancellationToken cancellationToken)");
+        AssertContains(transportText, "private readonly record struct RawControlCandidate");
+        AssertContains(transportText, "private readonly record struct RawPayloadSnapshot");
+        AssertContains(transportText, "NATIVEXU_AUDIO_PAYLOAD_READ missing-selected-interface");
+        AssertContains(transportText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
+        AssertContains(probeProjectText, "NativeXuAudioControlService.Transport.cs");
+        AssertDoesNotContain(rootText, "private static readonly Guid XuGuid");
+        AssertDoesNotContain(rootText, "private async Task<RawPayloadSnapshot?> ReadPreferredPayloadAsync(");
+        AssertDoesNotContain(rootText, "private static bool TryReadRawPayload(");
 
         return Task.CompletedTask;
     }

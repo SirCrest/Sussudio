@@ -597,6 +597,9 @@ static partial class Program
                 "Native XU audio control profiles live in focused partial",
                 NativeXuAudioControlService_ProfilesLiveInFocusedPartial),
             await RunCheckAsync(
+                "Native XU audio control transport lives in focused partial",
+                NativeXuAudioControlService_TransportLivesInFocusedPartial),
+            await RunCheckAsync(
                 "MainViewModel audio meters own callback meter state",
                 MainViewModelAudioMeters_OwnCallbackMeterState),
             await RunCheckAsync(
