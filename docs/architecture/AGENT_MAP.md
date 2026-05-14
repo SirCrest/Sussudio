@@ -1135,8 +1135,18 @@ Primary owners:
 - `tools/Common/DiagnosticSessionSampler.cs` owns snapshot sample collection.
   Preserve its ordering: append the cloned sample before running checkpoint
   callbacks.
-- `tools/Common/DiagnosticSessionResultFormatter.cs` owns the human-readable
-  diagnostic-session text used by ssctl and MCP. Keep
+- `tools/Common/DiagnosticSessionResultFormatter.cs` owns the public
+  human-readable diagnostic-session text flow used by ssctl and MCP.
+- `tools/Common/DiagnosticSessionResultFormatter.Overview.cs` owns header,
+  capture-mode, recording-verification, PresentMon, and process sections.
+- `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs` owns Flashback
+  playback command/performance/decode/stage, recording, and export sections.
+- `tools/Common/DiagnosticSessionResultFormatter.Preview.cs` owns preview
+  scheduler, D3D performance/CPU timing, and visual cadence sections.
+- `tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs` owns artifact,
+  action, and warning sections.
+- `tools/Common/DiagnosticSessionResultFormatter.Helpers.cs` owns small text
+  helpers such as frame-rate formatting. Keep
   `DiagnosticSessionRunner.Format(...)` as the stable compatibility wrapper.
 - `tools/Common/DiagnosticSessionText.cs` owns shared diagnostic-session text
   helpers used by the runner, formatter, and validation policies.

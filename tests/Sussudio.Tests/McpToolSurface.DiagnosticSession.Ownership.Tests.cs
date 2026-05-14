@@ -58,12 +58,15 @@ static partial class Program
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         var builderText = ReadDiagnosticSessionResultBuilderSource();
-        var formatterText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
-            .Replace("\r\n", "\n");
+        var formatterText = ReadDiagnosticSessionResultFormatterSource();
 
-        AssertContains(formatterText, "public static class DiagnosticSessionResultFormatter");
+        AssertContains(formatterText, "public static partial class DiagnosticSessionResultFormatter");
         AssertContains(formatterText, "public static string Format(DiagnosticSessionResult result)");
         AssertContains(formatterText, "== Diagnostic Session:");
+        AssertContains(formatterText, "private static void AppendOverview(");
+        AssertContains(formatterText, "private static void AppendFlashbackSections(");
+        AssertContains(formatterText, "private static void AppendPreviewSections(");
+        AssertContains(formatterText, "private static void AppendArtifacts(");
         AssertContains(formatterText, "\"Flashback Playback Perf: \"");
         AssertContains(formatterText, "private static string FormatFrameRate(");
         AssertContains(runnerText, "return DiagnosticSessionResultFormatter.Format(result);");
@@ -155,8 +158,7 @@ static partial class Program
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         var builderText = ReadDiagnosticSessionResultBuilderSource();
-        var formatterText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
-            .Replace("\r\n", "\n");
+        var formatterText = ReadDiagnosticSessionResultFormatterSource();
         var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
             .Replace("\r\n", "\n");
         var textHelpersText = ReadRepoFile("tools/Common/DiagnosticSessionText.cs")

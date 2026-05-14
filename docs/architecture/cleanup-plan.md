@@ -1311,10 +1311,14 @@ Diagnostic session DTOs now live in
 owns orchestration and scenario execution, but the public options/result/sample
 contracts are separated from runner behavior.
 
-Diagnostic-session result text now lives in
-`tools/Common/DiagnosticSessionResultFormatter.cs`. The runner keeps
-`Format(...)` as a compatibility wrapper so existing ssctl and MCP callers do
-not need to know about the formatter owner.
+Diagnostic-session result text now lives in a focused partial family rooted at
+`tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
+`Format(...)` flow, `.Overview.cs` owns header/capture/verification/PresentMon
+and process sections, `.Flashback.cs` owns Flashback playback/recording/export
+sections, `.Preview.cs` owns preview scheduler/D3D/visual cadence sections,
+`.Artifacts.cs` owns artifact/action/warning sections, and `.Helpers.cs` owns
+small text helpers. The runner keeps `Format(...)` as a compatibility wrapper
+so existing ssctl and MCP callers do not need to know about the formatter owner.
 
 Diagnostic-session result construction now lives in
 `tools/Common/DiagnosticSessionResultBuilder.cs`. It owns final
@@ -1588,6 +1592,11 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`
+- `DiagnosticSessionResultFormatter.Overview.cs`
+- `DiagnosticSessionResultFormatter.Flashback.cs`
+- `DiagnosticSessionResultFormatter.Preview.cs`
+- `DiagnosticSessionResultFormatter.Artifacts.cs`
+- `DiagnosticSessionResultFormatter.Helpers.cs`
 - `DiagnosticSessionSummaryWriter.cs`
 - `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionSampler.cs`
