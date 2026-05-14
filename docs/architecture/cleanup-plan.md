@@ -489,8 +489,13 @@ telemetry polling and snapshot assembly.
 
 Native XU reference full-snapshot reads now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.FullSnapshot.cs`. Keep
-the legacy all-command source snapshot path there; the root provider owns the
-active rolling poll path and shared command/cache state.
+the legacy all-command source snapshot path there; the root provider owns
+selected-interface validation and dispatch into the active rolling poll path.
+
+Native XU active rolling polling now lives in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs`. Keep
+rolling command groups, cached AT-command fields, VIC/frame-rate lookup, and
+active snapshot assembly there.
 
 Flashback encoder sink options and packet helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs`. Keep
@@ -808,7 +813,7 @@ Native XU AT-command transport and payload parsing now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs`. Keep raw
 AT read/write frames, LRC/envelope handling, payload decoders, device-ID
 parsing, and command failure formatting there; keep rolling telemetry polling
-and snapshot assembly in the root provider.
+and active snapshot assembly in `NativeXuAtCommandProvider.RollingPoll.cs`.
 
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns

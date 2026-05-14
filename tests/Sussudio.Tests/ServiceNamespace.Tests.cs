@@ -54,6 +54,7 @@ static partial class Program
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DiagnosticSummary.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DeviceCommands.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.FullSnapshot.cs");
+        AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.cs");
         AssertContains(File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Models", "Capture", "CaptureDevice.cs")), "NativeXuInterfacePath");
         AssertContains(File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "ToolCaptureDevice.cs")), "NativeXuInterfacePath");
@@ -71,12 +72,13 @@ static partial class Program
             "KsExtensionUnitNative.EnumerateKsInterfaces(");
 
         var nativeXuAtProviderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.cs"));
+        var nativeXuAtRollingPollText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.RollingPoll.cs"));
         AssertContains(nativeXuAtProviderText, "device?.NativeXuInterfacePath");
         AssertContains(nativeXuAtProviderText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
         AssertContains(nativeXuAtProviderText, "return Array.Empty<KsExtensionUnitNative.KsInterfacePath>()");
         AssertContains(nativeXuAtProviderText, "nativexu-interface-ambiguous");
         AssertContains(nativeXuAtProviderText, "missing_selected_interface");
-        AssertContains(nativeXuAtProviderText, "_rollingInterfacePath");
+        AssertContains(nativeXuAtRollingPollText, "_rollingInterfacePath");
         AssertContains(nativeXuAtProviderText, "cancellationToken.ThrowIfCancellationRequested()");
         AssertContains(nativeXuAtProviderText, "EnumerateKsInterfaces(vendorId, productId, device)");
 
