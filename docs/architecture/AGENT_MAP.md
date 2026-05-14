@@ -849,8 +849,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns temp artifact
   finalize/rollback behavior for recording output cleanup.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Tests.cs` owns dispatcher
-  payload parsing, readiness gating, authorization, response, command-kind
-  handling, and dispatcher source-ownership contract tests.
+  payload parsing, readiness gating, ready-independent no-hardware command
+  coverage, authorization, response, command-kind handling, and dispatcher
+  source-ownership contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers for automation tool contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns

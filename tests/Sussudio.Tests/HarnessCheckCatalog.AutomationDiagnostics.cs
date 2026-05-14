@@ -54,6 +54,9 @@ static partial class Program
             "Automation dispatcher ready-device gate classifies commands",
             AutomationCommandDispatcher_RequiresReadyDevices_ClassifiesCommands);
         await AddCheckAsync(results,
+            "Automation dispatcher ready-independent catalog commands bypass device readiness",
+            AutomationCommandDispatcher_CatalogReadyIndependentCommands_BypassDeviceReadiness);
+        await AddCheckAsync(results,
             "Automation dispatcher window close waits for completion",
             AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion);
         await AddCheckAsync(results,
