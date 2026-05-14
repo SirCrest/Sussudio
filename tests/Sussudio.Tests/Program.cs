@@ -1648,6 +1648,9 @@ static partial class Program
                 "Flashback encoder sink interleaves audio with bounded video batches",
                 FlashbackEncoderSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches),
             await RunCheckAsync(
+                "Flashback encoder sink packet drains live in focused partial",
+                FlashbackEncoderSink_PacketDrainLivesInFocusedPartial),
+            await RunCheckAsync(
                 "Flashback encoder sink startup lives in focused partial",
                 FlashbackEncoderSink_StartupLivesInFocusedPartial),
             await RunCheckAsync(

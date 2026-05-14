@@ -742,10 +742,15 @@ Flashback encoder queue helpers now live in
 completion/signaling, queue-depth accounting, enqueue rejection guards/logging,
 hot audio packet enqueue, and queued-buffer cleanup there.
 
-Flashback encoder loop and packet drains now live in
+Flashback encoder loop orchestration now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs`. Keep the
-background encode loop, bounded video/GPU/audio/microphone drain order, encoder
-PTS resolution, and frame-encoded event dispatch there.
+background encode loop, drain ordering, force-rotate drain orchestration,
+cancellation handling, fatal cleanup, and final segment registration there.
+
+Flashback encoder packet drains now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.PacketDrain.cs`. Keep bounded
+video/GPU/audio/microphone packet drains, encoder PTS resolution, latest-PTS and
+disk-byte refresh, and frame-encoded event dispatch there.
 
 Flashback encoder rolling segment rotation now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.SegmentRotation.cs`. Keep
