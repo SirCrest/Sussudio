@@ -671,8 +671,9 @@ Primary current owners:
   text assignment and snapshot assembly for now.
 - `Sussudio/MainWindow.FrameTimeOverlay.cs` owns compact frame-time overlay
   text projection and graph line drawing. Keep frame-time canvas math there,
-  while `StatsPresentationBuilder` owns the range/sample text policy and
-  `StatsPresentationBuilder.Diagnostics.cs` owns diagnostic summary/row parsing.
+  while `StatsPresentationBuilder` owns compact preview-stat formatting,
+  range/sample text policy, and `StatsPresentationBuilder.Diagnostics.cs` owns
+  diagnostic summary/row parsing.
   `StatsPresentationBuilder.Status.cs` owns stats lane status classification and
   visual-repeat drift policy.
   `StatsPresentationModels.cs` owns the internal DTO records/enums consumed by
@@ -974,6 +975,10 @@ Primary current owners:
   `Runner.FlashbackPlayback`, `Runner.InitialSnapshot`, `Runner.PipeRetry`,
   and `Runner.Concurrency` files that execute the reflective runner against
   synthetic command delegates.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Helpers.cs`
+  owns shared reflective runner setup for diagnostic-session runner behavior
+  tests: loading `ssctl`, creating `DiagnosticSessionOptions`, invoking
+  `DiagnosticSessionRunner.RunAsync`, and parsing synthetic JSON responses.
 - `tests/Sussudio.Tests/McpToolSurface.Performance.Tests.cs` owns MCP
   performance timeline and frame-pacing verdict tests.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` owns MCP wait,
@@ -1227,7 +1232,13 @@ Primary owners:
 - `tools/Common/AutomationPipeClient.Models.cs` owns pipe command result and
   exception types.
 - `tools/AutomationClient/Program.cs` owns the low-level pipe client entry
-  point for scripts and ad hoc automation calls.
+  flow, cancellation handling, shared-protocol command resolution, timeout
+  selection, response printing, and the local options DTO for scripts and ad
+  hoc automation calls.
+- `tools/AutomationClient/Program.Arguments.cs` owns AutomationClient flag
+  parsing and help text.
+- `tools/AutomationClient/Program.Payload.cs` owns AutomationClient JSON,
+  base64, and key/value payload construction.
 - `tools/AutomationClient/README.md` owns AutomationClient usage notes.
 - `tools/send-automation-command.ps1` owns the PowerShell helper wrapper and
   its AutomationClient rebuild freshness inputs.

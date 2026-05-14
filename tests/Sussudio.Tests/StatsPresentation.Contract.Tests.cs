@@ -45,6 +45,7 @@ static partial class Program
     private static Task StatsLiveSummary_ShowsCurrentPreviewFrameTimeAndOnePercentLow()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs").Replace("\r\n", "\n");
         var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs").Replace("\r\n", "\n");
@@ -53,9 +54,7 @@ static partial class Program
 
         AssertContains(statsOverlayText, "PreviewOnePercentLowFps: presentCadence?.OnePercentLowFps ?? 0");
         AssertContains(statsSnapshotBuilderText, "PreviewOnePercentLowFps: StatsPresentationBuilder.Sanitize(renderer.PreviewOnePercentLowFps)");
-        AssertContains(statsPresentationText, "ResolveCurrentPreviewFrameTimeMs(snapshot)");
-        AssertContains(statsPresentationText, "1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps");
-        AssertContains(statsPresentationText, "return $\"{currentFrameTime} | {onePercentLow}\";");
+        AssertStatsPresentationPreviewFormattingLivesInBuilder(statsPresentationText, statsOverlayText, frameTimeOverlayText);
         AssertContains(statsOverlayText, "SetMetricBrush(Stats_SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);");
         AssertContains(statsSnapshotText, "double PreviewOnePercentLowFps");
         AssertDoesNotContain(statsWindowText, "double PreviewFivePercentLowFps");
@@ -64,6 +63,22 @@ static partial class Program
         AssertContains(mainWindowXaml, "MaxLines=\"1\"");
 
         return Task.CompletedTask;
+    }
+
+    private static void AssertStatsPresentationPreviewFormattingLivesInBuilder(
+        string statsPresentationText,
+        string statsOverlayText,
+        string frameTimeOverlayText)
+    {
+        AssertContains(statsPresentationText, "private static string FormatPreviewCadenceSummary(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationText, "private static double ResolveCurrentPreviewFrameTimeMs(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationText, "ResolveCurrentPreviewFrameTimeMs(snapshot)");
+        AssertContains(statsPresentationText, "1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps");
+        AssertContains(statsPresentationText, "return $\"{currentFrameTime} | {onePercentLow}\";");
+        AssertDoesNotContain(statsOverlayText, "private static string FormatPreviewCadenceSummary(");
+        AssertDoesNotContain(statsOverlayText, "private static double ResolveCurrentPreviewFrameTimeMs(");
+        AssertDoesNotContain(frameTimeOverlayText, "private static string FormatPreviewCadenceSummary(");
+        AssertDoesNotContain(frameTimeOverlayText, "private static double ResolveCurrentPreviewFrameTimeMs(");
     }
 
     private static Task FrameTimeOverlay_UsesDetectedFpsBoundedRange()

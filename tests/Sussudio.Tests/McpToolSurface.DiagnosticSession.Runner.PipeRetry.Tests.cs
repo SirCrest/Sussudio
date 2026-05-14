@@ -1,8 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
-using System.Reflection;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -14,17 +12,13 @@ static partial class Program
 
         try
         {
-            var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
-            var optionsType = assembly.GetType("Sussudio.Tools.DiagnosticSessionOptions")
-                ?? throw new InvalidOperationException("DiagnosticSessionOptions type was not found.");
-            var runnerType = assembly.GetType("Sussudio.Tools.DiagnosticSessionRunner")
-                ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
-            var options = Activator.CreateInstance(optionsType)
-                ?? throw new InvalidOperationException("DiagnosticSessionOptions instance could not be created.");
-            optionsType.GetProperty("Scenario")!.SetValue(options, "observe");
-            optionsType.GetProperty("DurationSeconds")!.SetValue(options, 0);
-            optionsType.GetProperty("SampleIntervalMs")!.SetValue(options, 100);
-            optionsType.GetProperty("OutputDirectory")!.SetValue(options, outputDirectory);
+            var assembly = LoadDiagnosticSessionRunnerAssembly();
+            var options = CreateDiagnosticSessionOptions(
+                assembly,
+                "observe",
+                durationSeconds: 0,
+                sampleIntervalMs: 100,
+                outputDirectory: outputDirectory);
 
             Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommand = (command, _, _) =>
             {
@@ -79,14 +73,7 @@ static partial class Program
                     """));
             };
 
-            var runAsync = runnerType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .FirstOrDefault(method => method.Name == "RunAsync" && method.GetParameters().Length == 3)
-                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync overload was not found.");
-            var task = runAsync.Invoke(null, new object?[] { options, sendCommand, CancellationToken.None }) as Task
-                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync did not return a Task.");
-            await task.ConfigureAwait(false);
-            var result = task.GetType().GetProperty("Result")!.GetValue(task)
-                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync returned null.");
+            var result = await RunDiagnosticSessionRunnerAsync(assembly, options, sendCommand).ConfigureAwait(false);
 
             AssertEqual(true, GetBoolProperty(result, "Success"), "diagnostic synthetic connect retry result success");
             AssertEqual(true, getSnapshotAttempts >= 3, "diagnostic synthetic connect failure was retried");
@@ -101,12 +88,6 @@ static partial class Program
             {
                 Directory.Delete(outputDirectory, recursive: true);
             }
-        }
-
-        static JsonElement ParseDiagnosticSessionJson(string json)
-        {
-            using var document = JsonDocument.Parse(json);
-            return document.RootElement.Clone();
         }
     }
 }

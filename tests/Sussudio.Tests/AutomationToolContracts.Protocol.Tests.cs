@@ -188,12 +188,23 @@ static partial class Program
 
     private static Task AutomationClient_UsesSharedProtocol_ForCommandResolution()
     {
-        var clientText = ReadRepoFile("tools/AutomationClient/Program.cs");
+        var entryText = ReadRepoFile("tools/AutomationClient/Program.cs");
+        var argumentsText = ReadRepoFile("tools/AutomationClient/Program.Arguments.cs");
+        var payloadText = ReadRepoFile("tools/AutomationClient/Program.Payload.cs");
+        var clientText = string.Join("\n", entryText, argumentsText, payloadText);
 
         // AutomationClient should delegate to AutomationPipeProtocol, not have its own CommandMap
         AssertContains(clientText, "AutomationPipeProtocol");
-        AssertContains(clientText, "--payload-base64");
-        AssertContains(clientText, "Convert.FromBase64String(options.PayloadBase64)");
+        AssertContains(entryText, "var options = ParseArgs(args);");
+        AssertContains(entryText, "var payload = BuildPayload(options);");
+        AssertContains(entryText, "public int? ResponseTimeoutMs { get; set; }");
+        AssertDoesNotContain(entryText, "private static Options ParseArgs(string[] args)");
+        AssertDoesNotContain(entryText, "private static object BuildPayload(Options options)");
+        AssertContains(argumentsText, "private static Options ParseArgs(string[] args)");
+        AssertContains(argumentsText, "private static void WriteHelp()");
+        AssertContains(argumentsText, "--payload-base64");
+        AssertContains(payloadText, "private static object BuildPayload(Options options)");
+        AssertContains(payloadText, "Convert.FromBase64String(options.PayloadBase64)");
         AssertDoesNotContain(clientText, "CommandMap = new");
 
         return Task.CompletedTask;
