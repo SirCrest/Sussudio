@@ -148,6 +148,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task D3D11PreviewRenderer_SlowFrameDiagnosticsLiveInFocusedPartial()
+    {
+        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
+            .Replace("\r\n", "\n");
+        var slowFrameDiagnosticsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.SlowFrameDiagnostics.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(slowFrameDiagnosticsText, "public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(int maxEntries = 16)");
+        AssertContains(slowFrameDiagnosticsText, "private void RecordSlowFrameDiagnostic(");
+        AssertContains(slowFrameDiagnosticsText, "private static string BuildSlowFrameDiagnosticReason(");
+        AssertContains(slowFrameDiagnosticsText, "private static void AppendSlowFrameReason(");
+        AssertContains(slowFrameDiagnosticsText, "DxgiMissedRefreshCount = missedRefreshCount");
+        AssertContains(slowFrameDiagnosticsText, "\"dxgi_refresh_slip\"");
+        AssertDoesNotContain(metricsText, "public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(");
+        AssertDoesNotContain(metricsText, "private void RecordSlowFrameDiagnostic(");
+        AssertDoesNotContain(metricsText, "private static string BuildSlowFrameDiagnosticReason(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task D3D11PreviewRenderer_FrameLatencyLivesInFocusedPartial()
     {
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
