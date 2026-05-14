@@ -1004,8 +1004,11 @@ Primary owners:
   result, and sample DTOs. Keep summary/live JSON shape changes there rather
   than expanding the runner header.
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
-  result DTO construction, artifact-write handoff, summary-write handoff, and
-  final success calculation. Keep `summary.json` field shape stable there.
+  result phase orchestration, artifact-write handoff, summary-write handoff,
+  and final summary emission. Keep `summary.json` field shape stable in the
+  builder family.
+- `tools/Common/DiagnosticSessionResultBuilder.Result.cs` owns
+  diagnostic-session result DTO projection and final success calculation.
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
   diagnostic-session health analysis, warning tolerance, and metric preparation
   before summary construction.

@@ -1321,11 +1321,13 @@ small text helpers. The runner keeps `Format(...)` as a compatibility wrapper
 so existing ssctl and MCP callers do not need to know about the formatter owner.
 
 Diagnostic-session result construction now lives in
-`tools/Common/DiagnosticSessionResultBuilder.cs`. It owns final
-`DiagnosticSessionResult` construction, artifact-write handoff,
-summary-write handoff, and the success calculation while the runner keeps the
-phase sequence. Diagnostic health analysis, Flashback warning tolerance, metric
-gathering, and result-build handoff models live beside it in
+`tools/Common/DiagnosticSessionResultBuilder.cs`. The root owns result phase
+orchestration, artifact-write handoff, summary-write handoff, and final
+summary emission while the runner keeps the phase sequence.
+`DiagnosticSessionResultBuilder.Result.cs` owns the
+`DiagnosticSessionResult` DTO projection and success calculation. Diagnostic
+health analysis, Flashback warning tolerance, metric gathering, and
+result-build handoff models live beside it in
 `DiagnosticSessionResultBuilder.Analysis.cs` and
 `DiagnosticSessionResultBuilder.Models.cs`.
 
@@ -1589,6 +1591,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionPostRunSnapshots.cs`
 - `DiagnosticSessionResultArtifacts.cs`
 - `DiagnosticSessionResultBuilder.cs`
+- `DiagnosticSessionResultBuilder.Result.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`

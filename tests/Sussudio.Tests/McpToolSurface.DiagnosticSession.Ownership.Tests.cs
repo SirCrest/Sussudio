@@ -85,6 +85,7 @@ static partial class Program
 
         AssertContains(builderText, "internal static partial class DiagnosticSessionResultBuilder");
         AssertContains(builderText, "internal static async Task<DiagnosticSessionResult> BuildAndWriteAsync(");
+        AssertContains(builderText, "private static DiagnosticSessionResult CreateResult(");
         AssertContains(builderText, "internal sealed record DiagnosticSessionResultBuildRequest(");
         AssertContains(builderText, "runState.SetStage(\"result-analysis\")");
         AssertContains(builderText, "var result = new DiagnosticSessionResult");
