@@ -8,25 +8,15 @@ public sealed partial class AutomationDiagnosticsHub
         PreviewRuntimeSnapshot previewRuntime,
         PreviewHdrState previewHdrState,
         CaptureRuntimeSnapshot captureRuntime)
-        => new()
+    {
+        var cadence = BuildPreviewRuntimeCadenceProjection(previewRuntime);
+
+        return new()
         {
             FramesArrived = previewRuntime.FramesArrived,
             FramesDisplayed = previewRuntime.FramesDisplayed,
             FramesDropped = previewRuntime.FramesDropped,
-            CadenceSampleCount = previewRuntime.DisplayCadenceSampleCount,
-            CadenceObservedFps = previewRuntime.DisplayCadenceObservedFps,
-            CadenceExpectedIntervalMs = previewRuntime.DisplayCadenceExpectedIntervalMs,
-            CadenceAverageIntervalMs = previewRuntime.DisplayCadenceAverageIntervalMs,
-            CadenceP95IntervalMs = previewRuntime.DisplayCadenceP95IntervalMs,
-            CadenceP99IntervalMs = previewRuntime.DisplayCadenceP99IntervalMs,
-            CadenceMaxIntervalMs = previewRuntime.DisplayCadenceMaxIntervalMs,
-            CadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,
-            CadenceFivePercentLowFps = previewRuntime.DisplayCadenceFivePercentLowFps,
-            CadenceSampleDurationMs = previewRuntime.DisplayCadenceSampleDurationMs,
-            CadenceRecentIntervalsMs = previewRuntime.DisplayCadenceRecentIntervalsMs,
-            CadenceJitterStdDevMs = previewRuntime.DisplayCadenceJitterStdDevMs,
-            CadenceSlowFrameCount = previewRuntime.DisplayCadenceSlowFrameCount,
-            CadenceSlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent,
+            Cadence = cadence,
             GpuActive = previewRuntime.GpuActive,
             PlaceholderVisible = previewRuntime.PlaceholderVisible,
             GpuElementVisible = previewRuntime.GpuElementVisible,
@@ -59,26 +49,14 @@ public sealed partial class AutomationDiagnosticsHub
             ColorContext = captureRuntime.NegotiatedPixelFormat,
             AdapterColorMetadata = captureRuntime.PreviewColorMetadata
         };
+    }
 
     private readonly record struct PreviewRuntimeProjection
     {
         public long FramesArrived { get; init; }
         public long FramesDisplayed { get; init; }
         public long FramesDropped { get; init; }
-        public int CadenceSampleCount { get; init; }
-        public double CadenceObservedFps { get; init; }
-        public double CadenceExpectedIntervalMs { get; init; }
-        public double CadenceAverageIntervalMs { get; init; }
-        public double CadenceP95IntervalMs { get; init; }
-        public double CadenceP99IntervalMs { get; init; }
-        public double CadenceMaxIntervalMs { get; init; }
-        public double CadenceOnePercentLowFps { get; init; }
-        public double CadenceFivePercentLowFps { get; init; }
-        public double CadenceSampleDurationMs { get; init; }
-        public double[] CadenceRecentIntervalsMs { get; init; }
-        public double CadenceJitterStdDevMs { get; init; }
-        public long CadenceSlowFrameCount { get; init; }
-        public double CadenceSlowFramePercent { get; init; }
+        public PreviewRuntimeCadenceProjection Cadence { get; init; }
         public bool GpuActive { get; init; }
         public bool PlaceholderVisible { get; init; }
         public bool GpuElementVisible { get; init; }
