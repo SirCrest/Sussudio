@@ -458,6 +458,14 @@ enumeration orchestration in `DeviceService.cs`, format cache serialization in
 `DeviceService.AudioAssociation.cs`, and native XU interface path resolution in
 `DeviceService.NativeXu.cs`.
 
+Native device enumeration ownership is split across `MfDeviceEnumerator.*.cs`.
+Keep shared Media Foundation constants, GUIDs, and P/Invoke declarations in
+`MfDeviceEnumerator.cs`, MF video-device enumeration in
+`MfDeviceEnumerator.VideoDevices.cs`, WASAPI capture endpoint enumeration and
+friendly-name reads in `MfDeviceEnumerator.AudioEndpoints.cs`, and native video
+format probing/source fallback/subtype naming in
+`MfDeviceEnumerator.FormatProbe.cs`.
+
 Capture service source telemetry and observed pixel-format accounting now live
 in `Sussudio/Services/Capture/CaptureService.Telemetry.cs`. The root capture
 service owns shared state, construction, initialization, and public event

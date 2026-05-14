@@ -456,6 +456,9 @@ static partial class Program
                 "Service namespaces follow service folders",
                 ServiceNamespaces_FollowServiceFolders),
             await RunCheckAsync(
+                "MF device enumerator source ownership lives in focused partials",
+                MfDeviceEnumerator_SourceOwnershipLivesInFocusedPartials),
+            await RunCheckAsync(
                 "AutomationCommandKind source ownership is contract-aligned",
                 AutomationCommandKind_SourceOwnership_IsModelAligned),
             await RunCheckAsync(
