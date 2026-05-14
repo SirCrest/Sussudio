@@ -7,6 +7,7 @@ public sealed partial class AutomationDiagnosticsHub
     private static FlashbackPlaybackProjection BuildFlashbackPlaybackProjection(CaptureHealthSnapshot health)
     {
         var audioMaster = BuildFlashbackPlaybackAudioMasterProjection(health);
+        var decode = BuildFlashbackPlaybackDecodeProjection(health);
         var commands = BuildFlashbackPlaybackCommandProjection(health);
 
         return new()
@@ -56,22 +57,7 @@ public sealed partial class AutomationDiagnosticsHub
             LastPtsCadenceMismatchUtcUnixMs = health.FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs,
             LastPtsCadenceDeltaMs = health.FlashbackPlaybackLastPtsCadenceDeltaMs,
             LastPtsCadenceExpectedMs = health.FlashbackPlaybackLastPtsCadenceExpectedMs,
-            SeekForwardDecodeCapHits = health.FlashbackPlaybackSeekForwardDecodeCapHits,
-            LastSeekHitForwardDecodeCap = health.FlashbackPlaybackLastSeekHitForwardDecodeCap,
-            DecodeSampleCount = health.FlashbackPlaybackDecodeSampleCount,
-            DecodeAvgMs = health.FlashbackPlaybackDecodeAvgMs,
-            DecodeP95Ms = health.FlashbackPlaybackDecodeP95Ms,
-            DecodeP99Ms = health.FlashbackPlaybackDecodeP99Ms,
-            DecodeMaxMs = health.FlashbackPlaybackDecodeMaxMs,
-            MaxDecodePhase = health.FlashbackPlaybackMaxDecodePhase,
-            MaxDecodeReceiveMs = health.FlashbackPlaybackMaxDecodeReceiveMs,
-            MaxDecodeFeedMs = health.FlashbackPlaybackMaxDecodeFeedMs,
-            MaxDecodeReadMs = health.FlashbackPlaybackMaxDecodeReadMs,
-            MaxDecodeSendMs = health.FlashbackPlaybackMaxDecodeSendMs,
-            MaxDecodeAudioMs = health.FlashbackPlaybackMaxDecodeAudioMs,
-            MaxDecodeConvertMs = health.FlashbackPlaybackMaxDecodeConvertMs,
-            MaxDecodeUtcUnixMs = health.FlashbackPlaybackMaxDecodeUtcUnixMs,
-            MaxDecodePositionMs = health.FlashbackPlaybackMaxDecodePositionMs,
+            Decode = decode,
             AvDriftMs = health.FlashbackAvDriftMs,
             ThreadAlive = commands.ThreadAlive,
             CommandsEnqueued = commands.Enqueued,
@@ -142,22 +128,7 @@ public sealed partial class AutomationDiagnosticsHub
         public long LastPtsCadenceMismatchUtcUnixMs { get; init; }
         public double LastPtsCadenceDeltaMs { get; init; }
         public double LastPtsCadenceExpectedMs { get; init; }
-        public long SeekForwardDecodeCapHits { get; init; }
-        public bool LastSeekHitForwardDecodeCap { get; init; }
-        public int DecodeSampleCount { get; init; }
-        public double DecodeAvgMs { get; init; }
-        public double DecodeP95Ms { get; init; }
-        public double DecodeP99Ms { get; init; }
-        public double DecodeMaxMs { get; init; }
-        public string MaxDecodePhase { get; init; }
-        public double MaxDecodeReceiveMs { get; init; }
-        public double MaxDecodeFeedMs { get; init; }
-        public double MaxDecodeReadMs { get; init; }
-        public double MaxDecodeSendMs { get; init; }
-        public double MaxDecodeAudioMs { get; init; }
-        public double MaxDecodeConvertMs { get; init; }
-        public long MaxDecodeUtcUnixMs { get; init; }
-        public long MaxDecodePositionMs { get; init; }
+        public FlashbackPlaybackDecodeProjection Decode { get; init; }
         public double AvDriftMs { get; init; }
         public bool ThreadAlive { get; init; }
         public long CommandsEnqueued { get; init; }
