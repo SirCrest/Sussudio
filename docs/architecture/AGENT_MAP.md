@@ -1069,9 +1069,14 @@ Primary owners:
   session/result DTOs; `.Recording.cs`, `.PlaybackSession.cs`,
   `.PlaybackResult.cs`, and `.Export.cs` own read-only recording, playback,
   result-copy, and export metric projections.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` owns
-  Flashback diagnostic preview stop/restart flows for normal Flashback,
-  playback, and recording-backed scenarios.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` is the
+  Flashback preview-cycle marker shell and predicate owner.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
+  owns normal Flashback preview stop/restart diagnostic flow.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
+  owns playback-under-preview-stop diagnostic flow.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
+  owns Flashback-recording-backed preview stop/restart diagnostic flow.
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback
   rejected-export diagnostic scenarios for inactive buffers and active
   Flashback recording backends.

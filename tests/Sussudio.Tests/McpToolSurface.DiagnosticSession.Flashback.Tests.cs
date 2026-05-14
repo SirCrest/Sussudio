@@ -136,10 +136,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
             .Replace("\r\n", "\n");
-        var cyclesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs")
-            .Replace("\r\n", "\n");
+        var cyclesText = ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource();
 
-        AssertContains(cyclesText, "internal static class DiagnosticSessionFlashbackPreviewCycleScenarios");
+        AssertContains(cyclesText, "internal static partial class DiagnosticSessionFlashbackPreviewCycleScenarios");
         AssertContains(cyclesText, "internal static async Task RunFlashbackPreviewCycleAsync(");
         AssertContains(cyclesText, "\"flashback-preview-off-export.mp4\"");
         AssertContains(cyclesText, "flashback preview cycle export verified");

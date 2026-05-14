@@ -1460,10 +1460,12 @@ is only a marker shell; DTOs, recording metrics, playback session aggregation,
 playback result copying, and export metrics each have named owner files. These
 helpers remain snapshot-only projections and must not send automation commands.
 
-Diagnostic-session Flashback preview-cycle scenarios now live in
-`tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`. They own
-preview stop/restart flows for normal Flashback, playback, and recording-backed
-diagnostics while the runner only starts the scenario tasks.
+Diagnostic-session Flashback preview-cycle scenarios now live in a focused
+partial family. `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
+is the marker shell and preview-cycle predicate owner. `.Flashback.cs`,
+`.Playback.cs`, and `.Recording.cs` own preview stop/restart flows for normal
+Flashback, playback, and recording-backed diagnostics while the runner only
+starts the scenario tasks.
 
 Diagnostic-session Flashback rejected-export scenarios now live in
 `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs`. They own inactive
@@ -1534,6 +1536,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
