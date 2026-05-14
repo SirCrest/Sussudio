@@ -1920,8 +1920,8 @@ Remaining `tools/Common` ownership:
    Capture-mode automation mutators for resolution, frame rate, video format,
    and MJPEG decoder count now live in
    `MainViewModel.AutomationCaptureMode.cs`.
-   Startup refresh for FFmpeg-backed recording formats and split-encode modes
-   now lives in `MainViewModel.RecordingOptionsRefresh.cs`.
+   Startup FFmpeg capability probes for recording formats and split-encode modes
+   now live in `MainViewModel.RecordingCapabilityRefresh.cs`.
    Keep the remaining command mutation code in `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.

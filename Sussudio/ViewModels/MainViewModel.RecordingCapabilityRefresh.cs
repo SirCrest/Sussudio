@@ -7,14 +7,14 @@ using Sussudio.Services.Runtime;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Startup refresh for encoder-backed recording format and split-encode options.
+/// Startup FFmpeg capability probes for encoder-backed recording format and split-encode options.
 /// </summary>
 public partial class MainViewModel
 {
-    private void StartRecordingOptionsRefresh()
+    private void StartRecordingCapabilityRefresh()
     {
-        TrackStartupRefreshTask(RefreshRecordingFormatsAsync(), "recording formats");
-        TrackStartupRefreshTask(RefreshSplitEncodeModesAsync(), "split encode modes");
+        TrackStartupRefreshTask(RefreshRecordingFormatCapabilitiesAsync(), "recording formats");
+        TrackStartupRefreshTask(RefreshSplitEncodeCapabilitiesAsync(), "split encode modes");
     }
 
     private static void TrackStartupRefreshTask(Task task, string description)
@@ -24,7 +24,7 @@ public partial class MainViewModel
             TaskContinuationOptions.OnlyOnFaulted);
     }
 
-    private async Task RefreshRecordingFormatsAsync()
+    private async Task RefreshRecordingFormatCapabilitiesAsync()
     {
         var support = await FfmpegRuntimeLocator.GetEncoderSupportAsync();
         var formats = new List<string>();
@@ -71,7 +71,7 @@ public partial class MainViewModel
         }
     }
 
-    private async Task RefreshSplitEncodeModesAsync()
+    private async Task RefreshSplitEncodeCapabilitiesAsync()
     {
         var modes = new List<string> { "Auto", "Disabled", "2-way", "3-way" };
         var support = await FfmpegRuntimeLocator.GetSplitEncodeSupportAsync();

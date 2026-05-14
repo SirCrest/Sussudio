@@ -11,30 +11,30 @@ static partial class Program
     {
         var settingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Settings.cs")
             .Replace("\r\n", "\n");
-        var recordingOptionsRefreshText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingOptionsRefresh.cs")
+        var recordingCapabilityRefreshText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingCapabilityRefresh.cs")
             .Replace("\r\n", "\n");
         var deviceManagementText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceManagement.cs")
             .Replace("\r\n", "\n");
 
         var initialize = ExtractMemberCode(settingsText, "InitializeAsync");
         AssertContains(initialize, "LoadSettings();");
-        AssertContains(initialize, "StartRecordingOptionsRefresh();");
+        AssertContains(initialize, "StartRecordingCapabilityRefresh();");
         AssertContains(initialize, "return Task.CompletedTask;");
         AssertDoesNotContain(initialize, "await Task.WhenAll");
-        AssertOccursBefore(initialize, "LoadSettings();", "StartRecordingOptionsRefresh();");
+        AssertOccursBefore(initialize, "LoadSettings();", "StartRecordingCapabilityRefresh();");
 
-        var startupRefresh = ExtractMemberCode(recordingOptionsRefreshText, "StartRecordingOptionsRefresh");
-        AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshRecordingFormatsAsync(), \"recording formats\");");
-        AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshSplitEncodeModesAsync(), \"split encode modes\");");
-        AssertDoesNotContain(settingsText, "private void StartRecordingOptionsRefresh()");
+        var startupRefresh = ExtractMemberCode(recordingCapabilityRefreshText, "StartRecordingCapabilityRefresh");
+        AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshRecordingFormatCapabilitiesAsync(), \"recording formats\");");
+        AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshSplitEncodeCapabilitiesAsync(), \"split encode modes\");");
+        AssertDoesNotContain(settingsText, "private void StartRecordingCapabilityRefresh()");
 
-        var recordingFormatRefresh = ExtractMemberCode(recordingOptionsRefreshText, "RefreshRecordingFormatsAsync");
+        var recordingFormatRefresh = ExtractMemberCode(recordingCapabilityRefreshText, "RefreshRecordingFormatCapabilitiesAsync");
         AssertContains(recordingFormatRefresh, "support.HasH264Nvenc");
         AssertContains(recordingFormatRefresh, "support.HasHevcNvenc");
         AssertContains(recordingFormatRefresh, "support.HasAv1Nvenc");
         AssertDoesNotContain(recordingFormatRefresh, "support.HasAv1)");
 
-        var splitEncodeRefresh = ExtractMemberCode(recordingOptionsRefreshText, "RefreshSplitEncodeModesAsync");
+        var splitEncodeRefresh = ExtractMemberCode(recordingCapabilityRefreshText, "RefreshSplitEncodeCapabilitiesAsync");
         AssertContains(splitEncodeRefresh, "if (!support.Supports2Way)");
         AssertContains(splitEncodeRefresh, "modes.Remove(\"2-way\");");
         AssertContains(splitEncodeRefresh, "if (!support.Supports3Way)");

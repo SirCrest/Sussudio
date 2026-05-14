@@ -1186,8 +1186,8 @@ Primary current owners:
   reinitialization gate used after active capture-mode changes.
   `MainViewModel.AutomationRecordingSettings.cs` owns recording format,
   encoder preset/quality/split-mode/custom-bitrate, and output-path automation
-  mutators. `MainViewModel.RecordingOptionsRefresh.cs` owns startup refresh for
-  FFmpeg-backed recording formats and split-encode modes.
+  mutators. `MainViewModel.RecordingCapabilityRefresh.cs` owns startup FFmpeg
+  capability probes for recording formats and split-encode modes.
   Remaining automation command mutation code stays in `MainViewModel.Automation.cs`.
 
 Refactor direction:

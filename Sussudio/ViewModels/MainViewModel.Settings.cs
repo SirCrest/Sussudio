@@ -15,7 +15,7 @@ public partial class MainViewModel
     public Task InitializeAsync()
     {
         LoadSettings();
-        StartRecordingOptionsRefresh();
+        StartRecordingCapabilityRefresh();
         return Task.CompletedTask;
     }
 
