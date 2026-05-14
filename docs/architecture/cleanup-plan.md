@@ -875,7 +875,7 @@ exporter keeps shared native state, constants, and fields only.
 Flashback exporter infrastructure now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
 lock/disposal helpers, native cleanup, cancellation-source handling, FFmpeg
-error strings, timestamp math, and orphan temp cleanup there so
+error strings, timestamp math, and saturated arithmetic there so
 `FlashbackExporter.cs` stays focused on export native state and shared policy.
 Progress normalization/reporting, heartbeat cadence, and export writer
 throttle/yield policy live in
@@ -888,6 +888,8 @@ segment stream-layout checks live in
 `Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`. Temp output
 validation, atomic replacement, overwrite policy, and invalid final-output cleanup live in
 `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
+Temp output cleanup, stale temp preparation, and orphan `.mp4.tmp` cleanup live
+in `Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs`.
 
 D3D preview renderer metrics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep read-only

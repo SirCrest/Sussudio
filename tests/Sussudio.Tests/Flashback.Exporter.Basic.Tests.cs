@@ -333,6 +333,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var progressText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Progress.cs")
             .Replace("\r\n", "\n");
+        var tempFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs")
+            .Replace("\r\n", "\n");
         var infrastructureText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs")
             .Replace("\r\n", "\n");
 
@@ -358,6 +360,10 @@ static partial class Program
         AssertContains(progressText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
         AssertDoesNotContain(infrastructureText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)");
         AssertDoesNotContain(infrastructureText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
+        AssertContains(tempFilesText, "private static void DeleteTempFileIfPresent(string tmpPath)");
+        AssertContains(tempFilesText, "private static bool TryPrepareTempOutputFile(string tmpPath, string outputPath, out string failureMessage)");
+        AssertContains(tempFilesText, "internal static void CleanupOrphanedTempFiles(string directory)");
+        AssertDoesNotContain(infrastructureText, "internal static void CleanupOrphanedTempFiles(string directory)");
         AssertDoesNotContain(rootText, "public Task<FinalizeResult> ExportAsync(");
         AssertDoesNotContain(rootText, "public void Dispose()");
         AssertDoesNotContain(rootText, "private FinalizeResult ExportCore(");

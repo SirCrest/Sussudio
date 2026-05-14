@@ -555,9 +555,11 @@ Entry points:
   destination replacement, overwrite policy, and invalid final-output cleanup.
 - `FlashbackExporter.Progress.cs` owns progress normalization/reporting,
   heartbeat cadence, and export writer throttle/yield policy.
+- `FlashbackExporter.TempFiles.cs` owns temp output cleanup, stale temp
+  preparation, and orphaned `.mp4.tmp` cleanup.
 - `FlashbackExporter.Infrastructure.cs` owns export lock/disposal helpers,
   native cleanup, cancellation sources, FFmpeg error strings, time-span
-  timestamp math, and orphan temp cleanup.
+  timestamp math, and saturated arithmetic.
 
 Invariants:
 
