@@ -27,8 +27,10 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs");
-        var captureSnapshotsSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs");
+        var captureHealthSnapshotRootSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs");
+        var captureSnapshotsSource = captureHealthSnapshotRootSource
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs");
         var unifiedVideoCaptureSource = ReadUnifiedVideoCaptureSource();
         var recordingContractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
             + "\n"
@@ -550,7 +552,10 @@ static partial class Program
         AssertContains(captureServiceSource, "ClearLastFlashbackFailure");
         AssertContains(captureSnapshotsSource, "GetLastFailureTelemetry");
         AssertContains(captureSnapshotsSource, "IsFlashbackRecordingBackendOwnedByRecording()");
-        AssertContains(captureSnapshotsSource, "var mjpegTimingSnapshot = unifiedVideoCapture?.GetMjpegPipelineTimingSnapshot();");
+        AssertContains(captureHealthSnapshotRootSource, "var mjpegHealth = CaptureMjpegHealthSnapshotFields(unifiedVideoCapture);");
+        AssertDoesNotContain(captureHealthSnapshotRootSource, "GetMjpegPipelineTimingSnapshot()");
+        AssertContains(captureSnapshotsSource, "var timingSnapshot = unifiedVideoCapture?.GetMjpegPipelineTimingSnapshot();");
+        AssertContains(captureSnapshotsSource, "private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(");
         AssertDoesNotContain(captureSnapshotsSource, "unifiedVideoCapture?.GetMjpegPipelineTimingMetrics()");
         AssertDoesNotContain(captureSnapshotsSource, "unifiedVideoCapture?.GetFullMjpegPipelineTimingMetrics()");
         AssertContains(captureSnapshotsSource, "var flashbackVideoQueueLatencyMetrics = fbSink?.VideoQueueLatencyMetrics");

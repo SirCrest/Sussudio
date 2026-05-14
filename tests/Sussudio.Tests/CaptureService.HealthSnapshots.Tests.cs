@@ -68,6 +68,34 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureService_HealthSnapshotMjpegFields_LiveInFocusedPartial()
+    {
+        var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var mjpegText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(healthSnapshotText, "var mjpegHealth = CaptureMjpegHealthSnapshotFields(unifiedVideoCapture);");
+        AssertContains(healthSnapshotText, "MjpegDecodeSampleCount = mjpegHealth.Timing.DecodeSampleCount,");
+        AssertContains(healthSnapshotText, "MjpegPreviewJitterEnabled = mjpegHealth.PreviewJitter.Enabled,");
+        AssertContains(healthSnapshotText, "VisualCadenceSampleCount = mjpegHealth.VisualCadence.SampleCount,");
+        AssertContains(healthSnapshotText, "MjpegPerDecoder = mjpegHealth.PerDecoder,");
+        AssertDoesNotContain(healthSnapshotText, "GetMjpegPipelineTimingSnapshot()");
+        AssertDoesNotContain(healthSnapshotText, "GetMjpegPreviewJitterMetrics()");
+        AssertDoesNotContain(healthSnapshotText, "FrameFingerprintCadenceTracker.Empty");
+        AssertDoesNotContain(healthSnapshotText, "new MjpegDecoderHealthSnapshot(");
+
+        AssertContains(mjpegText, "private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(");
+        AssertContains(mjpegText, "GetMjpegPipelineTimingSnapshot()");
+        AssertContains(mjpegText, "GetMjpegPreviewJitterMetrics()");
+        AssertContains(mjpegText, "GetPreviewVisualCadenceMetrics()");
+        AssertContains(mjpegText, "FrameFingerprintCadenceTracker.Empty");
+        AssertContains(mjpegText, "new MjpegDecoderHealthSnapshot(");
+        AssertContains(mjpegText, "private readonly record struct MjpegHealthSnapshotFields");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
