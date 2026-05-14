@@ -43,6 +43,9 @@ snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns requested,
 actual, negotiated, observed, and encoder format projection inputs consumed by
 the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs` owns active
+Flashback export progress, failure, force-rotate fallback, and last-result
+projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
 swap-chain, render timing, frame-latency wait, frame statistics, and submitted /
 rendered / dropped frame projection consumed by the automation snapshot DTO.
