@@ -156,6 +156,8 @@ Primary current owner: `Sussudio/Services/Capture/`
 Important entry points:
 
 - `CaptureSessionCoordinator.cs` serializes lifecycle mutations.
+- `CaptureSessionCoordinator.Models.cs` owns command enums, queue receipts,
+  session snapshots, and Flashback playback/buffer status projections.
 - `CaptureSessionTransitionPolicy.cs` owns pure transition legality and
   steady-state resolution for `CaptureService`.
 - `CaptureService.cs` still owns too many resource lifetimes and should not

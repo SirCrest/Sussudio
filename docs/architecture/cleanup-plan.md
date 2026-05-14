@@ -166,6 +166,11 @@ Capture session transition legality now lives in
 `Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs`. `CaptureService`
 uses it before entering a transition and delegates steady-state resolution to
 the same pure policy; resource ownership has not moved in this slice.
+Capture session coordinator command enums, queue receipt records, session
+snapshots, and Flashback playback/buffer status projections now live in
+`Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs`, leaving
+`CaptureSessionCoordinator.cs` focused on queue serialization and lifecycle
+mutation routing.
 
 Capture service source telemetry and observed pixel-format accounting now live
 in `Sussudio/Services/Capture/CaptureService.Telemetry.cs`. The root capture

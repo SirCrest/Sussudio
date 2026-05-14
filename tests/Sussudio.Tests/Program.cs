@@ -423,6 +423,9 @@ static partial class Program
                 "Capture session coordinator logs inactive flashback command rejections",
                 CaptureSessionCoordinator_LogsInactiveFlashbackCommandRejections),
             await RunCheckAsync(
+                "Capture session coordinator models live in focused file",
+                CaptureSessionCoordinator_ModelsLiveInFocusedFile),
+            await RunCheckAsync(
                 "Service namespaces follow service folders",
                 ServiceNamespaces_FollowServiceFolders),
             await RunCheckAsync(

@@ -5,6 +5,17 @@ static partial class Program
 {
     // ── CaptureSessionCoordinator: API surface contract ──
 
+    private static string ReadCaptureSessionCoordinatorSource()
+    {
+        var parts = new[]
+        {
+            ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs").Replace("\r\n", "\n")
+        };
+
+        return string.Join("\n", parts);
+    }
+
     private static Task CaptureSessionCoordinator_HasExpectedPublicMethods()
     {
         var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
@@ -356,8 +367,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_CoalescesFlashbackEncoderCycles()
     {
-        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
-            .Replace("\r\n", "\n");
+        var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var cycleMethod = ExtractTextBetween(
             coordinatorText,
             "public Task CycleFlashbackEncoderSettingsAsync",
@@ -380,8 +390,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_DisposalAccounting_ClassifiesCanceledQueuedCommands()
     {
-        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
-            .Replace("\r\n", "\n");
+        var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var failPending = ExtractTextBetween(
             coordinatorText,
             "private void FailPendingCommands(Exception ex)",
@@ -402,8 +411,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation()
     {
-        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
-            .Replace("\r\n", "\n");
+        var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var restartNoSettings = ExtractTextBetween(
             coordinatorText,
             "public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)",
@@ -428,8 +436,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_CommittedStopsDoNotPropagateRequestCancellation()
     {
-        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
-            .Replace("\r\n", "\n");
+        var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var stopVideo = ExtractTextBetween(
             coordinatorText,
             "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)",
@@ -458,8 +465,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_LogsInactiveFlashbackCommandRejections()
     {
-        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
-            .Replace("\r\n", "\n");
+        var coordinatorText = ReadCaptureSessionCoordinatorSource();
 
         AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackBeginScrub), out var controller)");
         AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackUpdateScrub), out var controller)");
@@ -477,6 +483,28 @@ static partial class Program
         AssertContains(coordinatorText, "_lastFlashbackCommandRejection = $\"{reason}:{command}\";");
         AssertContains(coordinatorText, "Interlocked.Exchange(ref _lastFlashbackCommandRejectionUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());");
         AssertContains(coordinatorText, "Logger.Log($\"FLASHBACK_COORD_COMMAND_REJECTED command={command} reason={reason}\");");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureSessionCoordinator_ModelsLiveInFocusedFile()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
+            .Replace("\r\n", "\n");
+        var modelText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(modelText, "public enum CaptureCommandKind");
+        AssertContains(modelText, "public enum CaptureCommandOutcome");
+        AssertContains(modelText, "public readonly record struct CaptureCommand(");
+        AssertContains(modelText, "public sealed class CaptureSessionSnapshot");
+        AssertContains(modelText, "internal readonly record struct FlashbackPlaybackSnapshot(");
+        AssertContains(modelText, "internal readonly record struct FlashbackBufferStatus(");
+        AssertDoesNotContain(rootText, "public enum CaptureCommandKind");
+        AssertDoesNotContain(rootText, "public enum CaptureCommandOutcome");
+        AssertDoesNotContain(rootText, "public sealed class CaptureSessionSnapshot");
+        AssertDoesNotContain(rootText, "internal readonly record struct FlashbackPlaybackSnapshot(");
+        AssertDoesNotContain(rootText, "internal readonly record struct FlashbackBufferStatus(");
 
         return Task.CompletedTask;
     }

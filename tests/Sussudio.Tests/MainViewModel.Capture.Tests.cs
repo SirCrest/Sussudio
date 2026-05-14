@@ -438,8 +438,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rawFlashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackSettings.cs")
             .Replace("\r\n", "\n");
-        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
-            .Replace("\r\n", "\n");
+        var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
@@ -810,8 +809,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
             .Replace("\r\n", "\n");
-        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
-            .Replace("\r\n", "\n");
+        var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var viewModelCaptureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
         var startVideoPreview = ExtractTextBetween(
