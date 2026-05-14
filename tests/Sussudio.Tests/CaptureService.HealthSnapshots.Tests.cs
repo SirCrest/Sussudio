@@ -22,6 +22,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureService_HealthSnapshotFlashbackBufferFields_LiveInFocusedPartial()
+    {
+        var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(healthSnapshotText, "var flashbackBuffer = CaptureFlashbackBufferHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "FlashbackBufferedDurationMs = flashbackBuffer.BufferedDurationMs,");
+        AssertContains(healthSnapshotText, "FlashbackBackendSettingsStaleReason = flashbackBuffer.BackendSettingsStaleReason,");
+        AssertContains(healthSnapshotText, "EncoderTargetBitRate = flashbackBuffer.EncoderTargetBitRate,");
+        AssertDoesNotContain(healthSnapshotText, "FlashbackBufferedDurationMs = (long)(bufMgr?.BufferedDuration.TotalMilliseconds ?? 0)");
+        AssertDoesNotContain(healthSnapshotText, "ResolveFlashbackBackendSettingsStaleReason(flashbackBackendSettings, _currentSettings)");
+
+        AssertContains(flashbackBufferText, "private FlashbackBufferHealthSnapshotFields CaptureFlashbackBufferHealthSnapshotFields(");
+        AssertContains(flashbackBufferText, "ResolveFlashbackBackendSettingsStaleReason(flashbackBackendSettings, currentSettings)");
+        AssertContains(flashbackBufferText, "bufMgr?.StartupCacheOverBudget ?? false");
+        AssertContains(flashbackBufferText, "fbSink?.EncoderFrameRateDenominator");
+        AssertContains(flashbackBufferText, "private readonly record struct FlashbackBufferHealthSnapshotFields");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_HealthSnapshotRecordingFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")

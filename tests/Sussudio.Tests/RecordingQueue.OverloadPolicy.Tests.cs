@@ -30,6 +30,7 @@ static partial class Program
         var captureHealthSnapshotRootSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs");
         var captureSnapshotsSource = captureHealthSnapshotRootSource
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs");
         var unifiedVideoCaptureSource = ReadUnifiedVideoCaptureSource();
         var recordingContractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
@@ -578,8 +579,10 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "FlashbackForceRotateRequested = fbSink?.IsForceRotateRequested");
         AssertContains(captureSnapshotsSource, "FlashbackForceRotateDraining = fbSink?.IsForceRotateDraining");
         AssertContains(captureSnapshotsSource, "FlashbackEncodingFailureMessage");
-        AssertContains(captureSnapshotsSource, "FlashbackStartupCacheBytes = bufMgr?.StartupCacheBytes");
-        AssertContains(captureSnapshotsSource, "FlashbackTempDriveFreeBytes = bufMgr?.TempDriveAvailableFreeBytes");
+        AssertContains(captureSnapshotsSource, "FlashbackStartupCacheBytes = flashbackBuffer.StartupCacheBytes");
+        AssertContains(captureSnapshotsSource, "bufMgr?.StartupCacheBytes ?? 0");
+        AssertContains(captureSnapshotsSource, "FlashbackTempDriveFreeBytes = flashbackBuffer.TempDriveFreeBytes");
+        AssertContains(captureSnapshotsSource, "bufMgr?.TempDriveAvailableFreeBytes ?? 0");
         var sharedFormatterSource = ReadAutomationSnapshotFormatterSource();
         var ssctlFormatterSource = ReadSsctlSnapshotFormatterSource();
         var mcpAppStateSource = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");

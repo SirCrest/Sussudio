@@ -28,6 +28,11 @@ public partial class CaptureService
         var recordingHealth = CaptureRecordingHealthSnapshotFields(sink, fbSink);
         var flashbackExport = CaptureFlashbackExportHealthSnapshotFields();
         var flashbackBackendSettings = _flashbackBackendSettings;
+        var flashbackBuffer = CaptureFlashbackBufferHealthSnapshotFields(
+            fbSink,
+            bufMgr,
+            flashbackBackendSettings,
+            _currentSettings);
 
         var snapshotUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var flashbackExportElapsedMs = ComputeFlashbackExportElapsedMs(
@@ -47,9 +52,6 @@ public partial class CaptureService
         var flashbackExportThroughputBytesPerSec = flashbackExportElapsedMs > 0
             ? flashbackExportOutputBytes / (flashbackExportElapsedMs / 1000.0)
             : 0;
-        var flashbackBackendSettingsStaleReason = fbSink == null
-            ? string.Empty
-            : ResolveFlashbackBackendSettingsStaleReason(flashbackBackendSettings, _currentSettings);
         var flashbackPlayback = CaptureFlashbackPlaybackHealthSnapshotFields(fbPlayback);
 
         return new CaptureHealthSnapshot
@@ -58,36 +60,36 @@ public partial class CaptureService
             SessionState = _sessionState,
             IsRecording = _isRecording,
             RecordingBackend = ResolveRecordingBackendName(),
-            FlashbackActive = fbSink != null,
-            FlashbackBufferedDurationMs = (long)(bufMgr?.BufferedDuration.TotalMilliseconds ?? 0),
-            FlashbackSegmentCount = bufMgr?.SegmentCount ?? 0,
-            FlashbackDiskBytes = bufMgr?.TotalDiskBytes ?? 0,
-            FlashbackTotalBytesWritten = bufMgr?.TotalBytesWritten ?? 0,
-            FlashbackTempDriveFreeBytes = bufMgr?.TempDriveAvailableFreeBytes ?? 0,
-            FlashbackStartupCacheBudgetBytes = bufMgr?.StartupCacheBudgetBytes ?? 0,
-            FlashbackStartupCacheBytes = bufMgr?.StartupCacheBytes ?? 0,
-            FlashbackStartupCacheSessionCount = bufMgr?.StartupCacheSessionCount ?? 0,
-            FlashbackStartupCacheDeletedSessionCount = bufMgr?.StartupCacheDeletedSessionCount ?? 0,
-            FlashbackStartupCacheFreedBytes = bufMgr?.StartupCacheFreedBytes ?? 0,
-            FlashbackStartupCacheOverBudget = bufMgr?.StartupCacheOverBudget ?? false,
-            FlashbackOutputBytes = fbSink?.OutputBytes ?? 0,
-            FlashbackFilePath = bufMgr?.ActiveFilePath,
-            FlashbackEncodedFrames = fbSink?.EncodedVideoFrames ?? 0,
-            FlashbackDroppedFrames = fbSink?.DroppedVideoFrames ?? 0,
-            FlashbackGpuEncoding = fbSink?.GpuEncodingEnabled ?? false,
-            FlashbackBackendSettingsStale = !string.IsNullOrEmpty(flashbackBackendSettingsStaleReason),
-            FlashbackBackendSettingsStaleReason = flashbackBackendSettingsStaleReason,
-            FlashbackBackendActiveFormat = flashbackBackendSettings?.Format.ToString() ?? string.Empty,
-            FlashbackBackendRequestedFormat = _currentSettings?.Format.ToString() ?? string.Empty,
-            FlashbackBackendActivePreset = flashbackBackendSettings?.NvencPreset.ToString() ?? string.Empty,
-            FlashbackBackendRequestedPreset = _currentSettings?.NvencPreset.ToString() ?? string.Empty,
-            EncoderCodecName = fbSink?.CodecName,
-            EncoderTargetBitRate = fbSink?.TargetBitRate ?? 0,
-            EncoderWidth = fbSink?.EncoderWidth ?? 0,
-            EncoderHeight = fbSink?.EncoderHeight ?? 0,
-            EncoderFrameRate = fbSink?.EncoderFrameRate ?? 0,
-            EncoderFrameRateNumerator = fbSink?.EncoderFrameRateNumerator,
-            EncoderFrameRateDenominator = fbSink?.EncoderFrameRateDenominator,
+            FlashbackActive = flashbackBuffer.Active,
+            FlashbackBufferedDurationMs = flashbackBuffer.BufferedDurationMs,
+            FlashbackSegmentCount = flashbackBuffer.SegmentCount,
+            FlashbackDiskBytes = flashbackBuffer.DiskBytes,
+            FlashbackTotalBytesWritten = flashbackBuffer.TotalBytesWritten,
+            FlashbackTempDriveFreeBytes = flashbackBuffer.TempDriveFreeBytes,
+            FlashbackStartupCacheBudgetBytes = flashbackBuffer.StartupCacheBudgetBytes,
+            FlashbackStartupCacheBytes = flashbackBuffer.StartupCacheBytes,
+            FlashbackStartupCacheSessionCount = flashbackBuffer.StartupCacheSessionCount,
+            FlashbackStartupCacheDeletedSessionCount = flashbackBuffer.StartupCacheDeletedSessionCount,
+            FlashbackStartupCacheFreedBytes = flashbackBuffer.StartupCacheFreedBytes,
+            FlashbackStartupCacheOverBudget = flashbackBuffer.StartupCacheOverBudget,
+            FlashbackOutputBytes = flashbackBuffer.OutputBytes,
+            FlashbackFilePath = flashbackBuffer.FilePath,
+            FlashbackEncodedFrames = flashbackBuffer.EncodedFrames,
+            FlashbackDroppedFrames = flashbackBuffer.DroppedFrames,
+            FlashbackGpuEncoding = flashbackBuffer.GpuEncoding,
+            FlashbackBackendSettingsStale = flashbackBuffer.BackendSettingsStale,
+            FlashbackBackendSettingsStaleReason = flashbackBuffer.BackendSettingsStaleReason,
+            FlashbackBackendActiveFormat = flashbackBuffer.BackendActiveFormat,
+            FlashbackBackendRequestedFormat = flashbackBuffer.BackendRequestedFormat,
+            FlashbackBackendActivePreset = flashbackBuffer.BackendActivePreset,
+            FlashbackBackendRequestedPreset = flashbackBuffer.BackendRequestedPreset,
+            EncoderCodecName = flashbackBuffer.EncoderCodecName,
+            EncoderTargetBitRate = flashbackBuffer.EncoderTargetBitRate,
+            EncoderWidth = flashbackBuffer.EncoderWidth,
+            EncoderHeight = flashbackBuffer.EncoderHeight,
+            EncoderFrameRate = flashbackBuffer.EncoderFrameRate,
+            EncoderFrameRateNumerator = flashbackBuffer.EncoderFrameRateNumerator,
+            EncoderFrameRateDenominator = flashbackBuffer.EncoderFrameRateDenominator,
             FlashbackVideoQueueDepth = fbSink?.VideoQueueCount ?? 0,
             FlashbackAudioQueueDepth = fbSink?.AudioQueueCount ?? 0,
             FlashbackAudioQueueCapacity = fbSink?.AudioQueueCapacityPackets ?? 0,
