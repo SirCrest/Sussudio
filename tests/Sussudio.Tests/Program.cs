@@ -459,6 +459,9 @@ static partial class Program
                 "Automation diagnostics Flashback recording projection lives in focused partial",
                 AutomationDiagnosticsFlashbackRecordingProjection_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Automation diagnostics Flashback playback projection lives in focused partial",
+                AutomationDiagnosticsFlashbackPlaybackProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Automation SetRecordingEnabled uses recording-sized client timeout",
                 AutomationProtocol_SetRecordingUsesRecordingSizedTimeout),
             await RunCheckAsync(
