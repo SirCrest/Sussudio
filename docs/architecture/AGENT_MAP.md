@@ -290,9 +290,18 @@ Primary current owner: `Sussudio/Services/Capture/`
 
 Important entry points:
 
-- `CaptureSessionCoordinator.cs` serializes lifecycle mutations.
+- `CaptureSessionCoordinator.cs` owns construction, shared state fields, and
+  public lifecycle/audio mutation routing into the serialized worker.
 - `CaptureSessionCoordinator.Models.cs` owns command enums, queue receipts,
   session snapshots, and Flashback playback/buffer status projections.
+- `CaptureSessionCoordinator.Queue.cs` owns work-item creation, command
+  enqueueing, worker-loop execution, command coalescing, cancellation/failure
+  accounting, and pending-command counters.
+- `CaptureSessionCoordinator.Snapshot.cs` owns queue/session snapshot
+  projection, last-command state, pending-command age bookkeeping, and queue
+  latency accounting.
+- `CaptureSessionCoordinator.Disposal.cs` owns dispose/drain/cancel lifecycle
+  for the worker queue and cancellation token source.
 - `CaptureSessionCoordinator.Flashback.cs` owns queued Flashback mutations,
   read-only Flashback status/projections, export forwarding, and active
   playback-controller readiness checks.

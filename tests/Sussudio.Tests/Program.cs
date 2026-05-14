@@ -447,6 +447,15 @@ static partial class Program
                 "Capture session coordinator Flashback facade lives in focused partial",
                 CaptureSessionCoordinator_FlashbackFacadeLivesInFocusedPartial),
             await RunCheckAsync(
+                "Capture session coordinator queue worker lives in focused partial",
+                CaptureSessionCoordinator_QueueWorkerLivesInFocusedPartial),
+            await RunCheckAsync(
+                "Capture session coordinator snapshot projection lives in focused partial",
+                CaptureSessionCoordinator_SnapshotProjectionLivesInFocusedPartial),
+            await RunCheckAsync(
+                "Capture session coordinator disposal lives in focused partial",
+                CaptureSessionCoordinator_DisposalLivesInFocusedPartial),
+            await RunCheckAsync(
                 "Service namespaces follow service folders",
                 ServiceNamespaces_FollowServiceFolders),
             await RunCheckAsync(
