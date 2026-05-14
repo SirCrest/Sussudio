@@ -1,8 +1,5 @@
-using System.Diagnostics;
-using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -254,102 +251,6 @@ static partial class Program
         AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackLifecycleScenarios;");
         AssertContains(startupText, "RunFlashbackLifecycleAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackLifecycleAsync(");
-
-        return Task.CompletedTask;
-    }
-
-    private static Task DiagnosticSessionFlashbackExportScenarios_OwnExportFlows()
-    {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
-        var startupText = ReadDiagnosticSessionScenarioStartupSource();
-        var scenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
-
-        AssertContains(scenariosText, "internal static partial class DiagnosticSessionFlashbackExportScenarios");
-        AssertContains(scenariosText, "internal static async Task RunFlashbackExportConcurrentAsync(");
-        AssertContains(scenariosText, "\"flashback-concurrent-a.mp4\"");
-        AssertContains(scenariosText, "flashback concurrent exports verified");
-        AssertContains(scenariosText, "internal static async Task RunFlashbackDisableDuringExportAsync(");
-        AssertContains(scenariosText, "\"flashback-disable-during-export.mp4\"");
-        AssertContains(scenariosText, "SendCommandWithConnectRetryAsync(");
-        AssertContains(scenariosText, "internal static async Task RunFlashbackRotatedExportAsync(");
-        AssertContains(scenariosText, "TryParseFlashbackExportSegmentCount(exportMessage)");
-        AssertContains(scenariosText, "internal static async Task RunFlashbackExportPlaybackAsync(");
-        AssertContains(scenariosText, "flashback export during playback verified");
-        AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
-        AssertContains(scenariosText, "[\"useSelectionRange\"] = true");
-        AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExportScenarios;");
-        AssertContains(startupText, "RunFlashbackExportConcurrentAsync(");
-        AssertContains(startupText, "RunFlashbackDisableDuringExportAsync(");
-        AssertContains(startupText, "RunFlashbackRotatedExportAsync(");
-        AssertContains(startupText, "RunFlashbackExportPlaybackAsync(");
-        AssertContains(startupText, "RunFlashbackRangeExportAsync(");
-        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackExportConcurrentAsync(");
-        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackDisableDuringExportAsync(");
-        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRotatedExportAsync(");
-        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackExportPlaybackAsync(");
-        AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRangeExportAsync(");
-
-        return Task.CompletedTask;
-    }
-
-    private static Task DiagnosticSessionFlashbackExports_OwnsExportHelpers()
-    {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
-        var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
-        var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
-        var exportsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(exportsText, "internal static class DiagnosticSessionFlashbackExports");
-        AssertContains(exportsText, "internal static int? TryParseFlashbackExportSegmentCount(");
-        AssertContains(exportsText, "const string marker = \" from \";");
-        AssertContains(exportsText, "suffix.Contains(\"segment\", StringComparison.OrdinalIgnoreCase)");
-        AssertContains(exportsText, "internal static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath)");
-        AssertContains(exportsText, "[\"verificationProfile\"] = \"flashback-export\"");
-        AssertContains(exportsText, "internal static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
-        AssertContains(exportsText, "\"SetAudioEnabled\"");
-        AssertContains(exportsText, "internal static async Task CleanupFlashbackSelectionAsync(");
-        AssertContains(exportsText, "\"clear-in-out-points\"");
-        AssertContains(exportsText, "\"go-live\"");
-        AssertContains(exportScenariosText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExports;");
-        AssertContains(stressText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExports;");
-        AssertDoesNotContain(runnerText, "private static int? TryParseFlashbackExportSegmentCount(");
-        AssertDoesNotContain(runnerText, "private static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(");
-        AssertDoesNotContain(runnerText, "private static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
-        AssertDoesNotContain(runnerText, "private static async Task CleanupFlashbackSelectionAsync(");
-
-        return Task.CompletedTask;
-    }
-
-    private static Task DiagnosticSessionFlashbackSegments_OwnsSegmentWaitsAndParsing()
-    {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
-        var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
-        var segmentPlaybackText = ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource();
-        var segmentsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(segmentsText, "internal static class DiagnosticSessionFlashbackSegments");
-        AssertContains(segmentsText, "internal readonly record struct FlashbackSegmentProbe(");
-        AssertContains(segmentsText, "internal readonly record struct FlashbackSegmentPlaybackTarget(");
-        AssertContains(segmentsText, "internal static async Task<FlashbackSegmentProbe?> WaitForFlashbackCompletedSegmentAsync(");
-        AssertContains(segmentsText, "internal static bool TryGetFlashbackSegments(");
-        AssertContains(segmentsText, "internal static async Task<FlashbackSegmentPlaybackTarget?> WaitForFlashbackPlayableCompletedSegmentAsync(");
-        AssertContains(segmentsText, "internal static async Task<bool> WaitForFlashbackSegmentPlaybackHeadroomAsync(");
-        AssertContains(segmentsText, "\"FlashbackGetSegments\"");
-        AssertContains(segmentsText, "data.TryGetProperty(\"Segments\", out var segmentsElement)");
-        AssertContains(segmentsText, "const int requiredHeadroomMs = 8_000;");
-        AssertContains(exportScenariosText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;");
-        AssertContains(segmentPlaybackText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;");
-        AssertDoesNotContain(runnerText, "private readonly record struct FlashbackSegmentProbe(");
-        AssertDoesNotContain(runnerText, "private readonly record struct FlashbackSegmentPlaybackTarget(");
-        AssertDoesNotContain(runnerText, "private static async Task<FlashbackSegmentProbe?> WaitForFlashbackCompletedSegmentAsync(");
-        AssertDoesNotContain(runnerText, "private static bool TryGetFlashbackSegments(");
-        AssertDoesNotContain(runnerText, "private static async Task<FlashbackSegmentPlaybackTarget?> WaitForFlashbackPlayableCompletedSegmentAsync(");
-        AssertDoesNotContain(runnerText, "private static async Task<bool> WaitForFlashbackSegmentPlaybackHeadroomAsync(");
 
         return Task.CompletedTask;
     }

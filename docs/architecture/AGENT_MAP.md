@@ -722,6 +722,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.AlertEvents.Tests.cs`
   owns diagnostics alert/event ownership assertions for UpdateAlerts,
   diagnostic events, signal alerts, and Flashback alert routing.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.CoreOwnership.Tests.cs`
+  owns diagnostics refresh core ownership assertions for evaluation policy,
+  diagnostic evaluation lanes, verification, preview pacing, lifecycle, HDR,
+  and the initial snapshot/BuildAutomationSnapshot shape.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
   owns the diagnostics hub source-family reader used by refresh ownership
   assertions.
@@ -803,8 +807,10 @@ Primary current owners:
   source readers and source-block extraction helpers.
 - `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the
   recording/Flashback queue overload, fatal-failure, recovery-preserve, and
-  snapshot projection policy assertion. `RecordingQueue.OverloadPolicy.LibAvSpec.cs`
-  owns the LibAv overload and queue-depth assertion subgroup.
+  snapshot projection policy assertion. `RecordingQueue.OverloadPolicy.SourceReaders.cs`
+  owns source-loading setup for the overload policy assertion.
+  `RecordingQueue.OverloadPolicy.LibAvSpec.cs` owns the LibAv overload and
+  queue-depth assertion subgroup.
   `RecordingQueue.OverloadPolicy.FlashbackSpec.cs` owns the Flashback overload,
   fatal-failure, queue-depth, and frame-validation assertion subgroup.
   `CaptureService.RecordingOwnership.Tests.cs` owns
@@ -1014,8 +1020,11 @@ Primary current owners:
   owns diagnostic-session model, formatter, result-builder, summary-writer,
   JSON artifact, and shared text ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Tests.cs`
-  owns diagnostic-session Flashback scenario, metrics, waits, export, and
-  validation ownership assertions.
+  owns diagnostic-session Flashback scenario, metrics, waits, and validation
+  ownership assertions.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Export.Tests.cs`
+  owns diagnostic-session Flashback export ownership assertions for export
+  scenario flows, export helpers, and shared segment wait/parsing collaborators.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs` is
   the diagnostic-session runner behavior marker shell. Focused runner behavior
   coverage lives beside it in `Runner.Artifacts`, `Runner.HealthPolicy`,
@@ -1062,8 +1071,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.EncoderSink.ForceRotate.Tests.cs` owns
   Flashback encoder sink force-rotate and segment-registration recovery tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback
-  exporter basic validation, task-wrapper, ownership, and failure classifier
-  tests.
+  exporter basic validation, export throttle, and failure classifier tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.Infrastructure.Tests.cs` owns
+  Flashback exporter task-wrapper infrastructure and source-ownership tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Cleanup.Tests.cs` owns Flashback
   exporter orphan temp-file cleanup and output-directory scan guard tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Segments.Tests.cs` owns Flashback

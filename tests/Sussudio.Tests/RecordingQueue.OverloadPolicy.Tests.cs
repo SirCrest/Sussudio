@@ -6,39 +6,17 @@ static partial class Program
 {
     private static Task RecordingVideoQueues_FailExplicitlyInsteadOfEvictingFrames()
     {
-        var libAvSource = ReadLibAvRecordingSinkSource();
-        var flashbackSource = ReadFlashbackEncoderSinkSource();
-        var flashbackBackendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
-        var flashbackBufferSource = ReadFlashbackBufferManagerSource();
-        var flashbackCleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs");
-        var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
-            + "\n" + ReadCaptureServiceAudioSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs")
-            + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
-            + "\n" + ReadCaptureServiceRecordingFinalizationSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs");
-        var captureHealthSnapshotRootSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs");
-        var captureSnapshotsSource = captureHealthSnapshotRootSource
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackQueues.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotCaptureCadence.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs");
-        var unifiedVideoCaptureSource = ReadUnifiedVideoCaptureSource();
-        var recordingContractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
-            + "\n"
-            + ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs");
+        var sources = ReadRecordingQueueOverloadPolicySources();
+        var libAvSource = sources.LibAvSource;
+        var flashbackSource = sources.FlashbackSource;
+        var flashbackBackendSource = sources.FlashbackBackendSource;
+        var flashbackBufferSource = sources.FlashbackBufferSource;
+        var flashbackCleanupSource = sources.FlashbackCleanupSource;
+        var captureServiceSource = sources.CaptureServiceSource;
+        var captureHealthSnapshotRootSource = sources.CaptureHealthSnapshotRootSource;
+        var captureSnapshotsSource = sources.CaptureSnapshotsSource;
+        var unifiedVideoCaptureSource = sources.UnifiedVideoCaptureSource;
+        var recordingContractsSource = sources.RecordingContractsSource;
 
         AssertDoesNotContain(libAvSource, "LIBAV_SINK_BURST_EVICT");
         AssertDoesNotContain(flashbackSource, "FLASHBACK_SINK_BURST_EVICT");
