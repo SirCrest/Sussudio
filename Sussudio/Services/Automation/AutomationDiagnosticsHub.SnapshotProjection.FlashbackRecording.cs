@@ -7,7 +7,10 @@ public sealed partial class AutomationDiagnosticsHub
     private static FlashbackRecordingProjection BuildFlashbackRecordingProjection(
         CaptureRuntimeSnapshot captureRuntime,
         CaptureHealthSnapshot health)
-        => new()
+    {
+        var startupCache = BuildFlashbackRecordingStartupCacheProjection(health);
+
+        return new()
         {
             EncodingFailed = health.FlashbackEncodingFailed,
             EncodingFailureType = health.FlashbackEncodingFailureType,
@@ -17,13 +20,7 @@ public sealed partial class AutomationDiagnosticsHub
             ForceRotateActive = health.FlashbackForceRotateActive,
             ForceRotateRequested = health.FlashbackForceRotateRequested,
             ForceRotateDraining = health.FlashbackForceRotateDraining,
-            TempDriveFreeBytes = health.FlashbackTempDriveFreeBytes,
-            StartupCacheBudgetBytes = health.FlashbackStartupCacheBudgetBytes,
-            StartupCacheBytes = health.FlashbackStartupCacheBytes,
-            StartupCacheSessionCount = health.FlashbackStartupCacheSessionCount,
-            StartupCacheDeletedSessionCount = health.FlashbackStartupCacheDeletedSessionCount,
-            StartupCacheFreedBytes = health.FlashbackStartupCacheFreedBytes,
-            StartupCacheOverBudget = health.FlashbackStartupCacheOverBudget,
+            StartupCache = startupCache,
             VideoQueueCapacity = health.FlashbackVideoQueueCapacity,
             VideoQueueMaxDepth = health.FlashbackVideoQueueMaxDepth,
             VideoFramesSubmittedToEncoder = health.FlashbackVideoFramesSubmittedToEncoder,
@@ -79,6 +76,7 @@ public sealed partial class AutomationDiagnosticsHub
             AudioQueueDepth = health.FlashbackAudioQueueDepth,
             AudioQueueCapacity = health.FlashbackAudioQueueCapacity
         };
+    }
 
     private readonly record struct FlashbackRecordingProjection
     {
@@ -90,13 +88,7 @@ public sealed partial class AutomationDiagnosticsHub
         public bool ForceRotateActive { get; init; }
         public bool ForceRotateRequested { get; init; }
         public bool ForceRotateDraining { get; init; }
-        public long TempDriveFreeBytes { get; init; }
-        public long StartupCacheBudgetBytes { get; init; }
-        public long StartupCacheBytes { get; init; }
-        public int StartupCacheSessionCount { get; init; }
-        public int StartupCacheDeletedSessionCount { get; init; }
-        public long StartupCacheFreedBytes { get; init; }
-        public bool StartupCacheOverBudget { get; init; }
+        public FlashbackRecordingStartupCacheProjection StartupCache { get; init; }
         public int VideoQueueCapacity { get; init; }
         public int VideoQueueMaxDepth { get; init; }
         public long VideoFramesSubmittedToEncoder { get; init; }

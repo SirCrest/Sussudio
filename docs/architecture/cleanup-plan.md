@@ -83,6 +83,9 @@ projection consumed by the automation snapshot DTO.
 Flashback recording, buffer, backend, encoder, and queue projection, including
 the export verification and codec-downgrade fallback policy consumed by the
 automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecordingStartupCache.cs`
+owns Flashback temp-drive and startup cache projection consumed by the
+automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs` owns
 Flashback playback state and frame cadence metrics consumed by the automation
 snapshot DTO.
