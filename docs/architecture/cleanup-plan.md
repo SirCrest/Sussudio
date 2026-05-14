@@ -67,9 +67,12 @@ projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs` owns source
 capture cadence, preview visual cadence, and center-crop visual cadence
 projection inputs consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` owns CPU MJPEG decode,
-reorder, compressed queue, and per-decoder projection inputs consumed by the
-automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` owns CPU MJPEG totals,
+compressed queue, and failure projection inputs consumed by the automation
+snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.MjpegTiming.cs` owns CPU MJPEG
+decode, interop-copy, callback, reorder, pipeline timing, decoder count, and
+per-decoder projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs` owns MJPEG
 preview jitter queue, timing, drop, underflow, and adaptive-depth projection
 inputs consumed by the automation snapshot DTO.
