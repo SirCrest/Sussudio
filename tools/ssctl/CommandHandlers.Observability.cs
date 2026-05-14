@@ -1,0 +1,164 @@
+﻿using Sussudio.Tools;
+
+namespace Sussudio.Tools.Ssctl;
+
+internal static partial class CommandHandlers
+{
+    private static async Task<int> HandleStateAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        var response = await context.Transport.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+        return WriteResponse(response, json, Formatters.FormatSnapshot);
+    }
+
+    private static async Task<int> HandleDiagnosticsAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        var max = ParseOptionalIntFlag(context.Rest, "--max") ?? 100;
+        EnsureNoArgs(context.Rest, "diagnostics [--max N] [--json]");
+
+        var response = await context.Transport.SendCommandAsync(
+            "GetDiagnostics",
+            new Dictionary<string, object?> { ["maxEvents"] = max }).ConfigureAwait(false);
+        return WriteResponse(response, json, Formatters.FormatDiagnostics);
+    }
+
+    private static async Task<int> HandleOptionsAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        EnsureNoArgs(context.Rest, "options [--json]");
+
+        var response = await context.Transport.SendCommandAsync("GetCaptureOptions").ConfigureAwait(false);
+        return WriteResponse(response, json, Formatters.FormatOptions);
+    }
+
+    private static async Task<int> HandleManifestAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        EnsureNoArgs(context.Rest, "manifest [--json]");
+
+        var response = await context.Transport.SendCommandAsync("GetAutomationManifest").ConfigureAwait(false);
+        return WriteResponse(response, json, responseValue => Formatters.FormatResult(responseValue, includeData: true));
+    }
+
+    private static async Task<int> HandleTimelineAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        var max = ParseOptionalIntFlag(context.Rest, "--max") ?? 240;
+        EnsureNoArgs(context.Rest, "timeline [--max N] [--json]");
+
+        var response = await context.Transport.SendCommandAsync(
+            "GetPerformanceTimeline",
+            new Dictionary<string, object?> { ["maxEntries"] = max }).ConfigureAwait(false);
+        return WriteResponse(response, json, Formatters.FormatTimeline);
+    }
+
+    private static async Task<int> HandleMemoryAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        EnsureNoArgs(context.Rest, "memory [--json]");
+
+        var response = await context.Transport.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+        return WriteResponse(response, json, Formatters.FormatMemory);
+    }
+
+    private static async Task<int> HandleAudioRampTraceAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        EnsureNoArgs(context.Rest, "audio-ramp-trace [--json]");
+
+        var response = await context.Transport.SendCommandAsync("GetAudioRampTrace").ConfigureAwait(false);
+        return WriteResponse(response, json, responseValue => Formatters.FormatResult(responseValue, includeData: true));
+    }
+
+    private static async Task<int> HandlePresentMonAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        var seconds = ParseOptionalIntFlag(context.Rest, "--seconds") ?? 10;
+        var pid = ParseOptionalIntFlag(context.Rest, "--pid");
+        var processName = ParseOptionalStringFlag(context.Rest, "--process") ?? "Sussudio";
+        var presentMonPath = ParseOptionalStringFlag(context.Rest, "--presentmon");
+        var outputPath = ParseOptionalStringFlag(context.Rest, "--output");
+        var swapChainAddress = ParseOptionalStringFlag(context.Rest, "--swapchain");
+        var appPresentId = ParseOptionalLongFlag(context.Rest, "--app-present-id");
+        var appSourceSequenceNumber = ParseOptionalLongFlag(context.Rest, "--app-source-seq");
+        var appPresentUtcUnixMs = ParseOptionalLongFlag(context.Rest, "--app-present-utc-ms");
+        var captureStartUtcUnixMs = ParseOptionalLongFlag(context.Rest, "--capture-start-utc-ms");
+        var keepCsv = ConsumeFlag(context.Rest, "--keep-csv");
+        var noGpuVideo = ConsumeFlag(context.Rest, "--no-gpu-video");
+        EnsureNoArgs(context.Rest, "presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--app-present-id N] [--app-source-seq N] [--app-present-utc-ms N] [--capture-start-utc-ms N] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
+        swapChainAddress ??= await TryResolvePreviewSwapChainAddressAsync(context).ConfigureAwait(false);
+
+        var result = await PresentMonProbe.RunAsync(new PresentMonProbeOptions
+        {
+            ProcessId = pid,
+            ProcessName = processName,
+            DurationSeconds = seconds,
+            PresentMonPath = presentMonPath,
+            OutputFile = outputPath,
+            ExpectedSwapChainAddress = swapChainAddress,
+            AppPresentId = appPresentId,
+            AppSourceSequenceNumber = appSourceSequenceNumber,
+            AppPresentUtcUnixMs = appPresentUtcUnixMs,
+            CaptureStartUtcUnixMs = captureStartUtcUnixMs,
+            KeepCsv = keepCsv,
+            TrackGpuVideo = !noGpuVideo
+        }).ConfigureAwait(false);
+
+        Console.WriteLine(json ? PrettyJson(result) : PresentMonProbe.Format(result));
+        return result.Success ? 0 : 3;
+    }
+
+    private static async Task<int> HandleDiagnosticSessionAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        var scenario = ParseOptionalStringFlag(context.Rest, "--scenario") ?? "observe";
+        var seconds = ParseOptionalIntFlag(context.Rest, "--seconds") ?? 10;
+        var sampleIntervalMs = ParseOptionalIntFlag(context.Rest, "--sample-ms") ?? 1000;
+        var outputDirectory = ParseOptionalStringFlag(context.Rest, "--output");
+        var presentMonPath = ParseOptionalStringFlag(context.Rest, "--presentmon-path");
+        var includePresentMon = ConsumeFlag(context.Rest, "--presentmon");
+        var verify = ConsumeFlag(context.Rest, "--verify");
+        var leaveRunning = ConsumeFlag(context.Rest, "--leave-running");
+        EnsureNoArgs(context.Rest, $"diagnostic-session [--scenario {DiagnosticSessionScenarios.HelpList}] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
+
+        var result = await DiagnosticSessionRunner.RunAsync(
+                new DiagnosticSessionOptions
+                {
+                    Scenario = scenario,
+                    DurationSeconds = seconds,
+                    SampleIntervalMs = sampleIntervalMs,
+                    OutputDirectory = outputDirectory,
+                    IncludePresentMon = includePresentMon,
+                    PresentMonPath = presentMonPath,
+                    VerifyRecording = verify,
+                    LeaveRunning = leaveRunning
+                },
+                (command, payload, responseTimeoutMs) => context.Transport.SendCommandAsync(command, payload, responseTimeoutMs))
+            .ConfigureAwait(false);
+
+        Console.WriteLine(json ? PrettyJson(result) : DiagnosticSessionRunner.Format(result));
+        return result.Success ? 0 : 3;
+    }
+
+    private static async Task<string?> TryResolvePreviewSwapChainAddressAsync(CommandContext context)
+    {
+        try
+        {
+            var response = await context.Transport.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+            if (!AutomationSnapshotFormatter.IsSuccess(response) ||
+                !response.TryGetProperty("Snapshot", out var snapshot))
+            {
+                return null;
+            }
+
+            var address = AutomationSnapshotFormatter.Get(snapshot, "PreviewD3DSwapChainAddress", string.Empty);
+            return string.IsNullOrWhiteSpace(address) ? null : address;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+}

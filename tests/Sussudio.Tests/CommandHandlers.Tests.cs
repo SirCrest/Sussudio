@@ -9,7 +9,12 @@ static partial class Program
         var files = new[]
         {
             "tools/ssctl/CommandHandlers.cs",
+            "tools/ssctl/CommandHandlers.AutomationFlow.cs",
+            "tools/ssctl/CommandHandlers.CaptureControls.cs",
             "tools/ssctl/CommandHandlers.Context.cs",
+            "tools/ssctl/CommandHandlers.DeviceWindow.cs",
+            "tools/ssctl/CommandHandlers.Flashback.cs",
+            "tools/ssctl/CommandHandlers.Observability.cs",
             "tools/ssctl/CommandHandlers.Parsing.cs",
             "tools/ssctl/CommandHandlers.Transport.cs"
         };
@@ -212,6 +217,13 @@ static partial class Program
         AssertEqual(false, assertPayload.GetProperty("value").GetBoolean(), "assert simple value");
 
         var commandHandlersSource = ReadSsctlCommandHandlersFamilyText();
+        var commandHandlersRootSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs");
+        AssertDoesNotContain(commandHandlersRootSource, "private static Task<int> HandleFlashbackAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandleDiagnosticSessionAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.CaptureControls.cs"), "HandleSetAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.DeviceWindow.cs"), "HandleWindowAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleAssertAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "HandleFlashbackAsync");
         AssertContains(commandHandlersSource, "\"manifest\" => HandleManifestAsync(context)");
         AssertContains(commandHandlersSource, "\"audio-ramp-trace\" => HandleAudioRampTraceAsync(context)");
         AssertContains(commandHandlersSource, "\"recordings\" => HandleRecordingsAsync(context)");

@@ -754,8 +754,18 @@ Primary owners:
   pipe client, snapshot formatting, diagnostic sessions, diagnostic scenario
   cataloging, diagnostic-session pipe retry policy, PresentMon probing, and
   shared JSON options.
-- `tools/ssctl/CommandHandlers.cs` owns top-level CLI routing and command
-  group handlers.
+- `tools/ssctl/CommandHandlers.cs` owns top-level CLI routing only.
+- `tools/ssctl/CommandHandlers.Observability.cs` owns state, diagnostics,
+  options, manifest, timeline, memory, audio-ramp, PresentMon, and
+  diagnostic-session commands.
+- `tools/ssctl/CommandHandlers.CaptureControls.cs` owns preview/record,
+  screenshot/frame capture, and `set` capture/audio/output mutations.
+- `tools/ssctl/CommandHandlers.DeviceWindow.cs` owns device, window, and
+  recordings commands.
+- `tools/ssctl/CommandHandlers.AutomationFlow.cs` owns wait/assert/probe,
+  stats/settings/frame-time, and verification commands.
+- `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enablement,
+  playback, scrub, marker, export, segment, and restart commands.
 - `tools/ssctl/CommandHandlers.Context.cs` owns the per-invocation command
   context wrapper.
 - `tools/ssctl/CommandHandlers.Parsing.cs` owns flag parsing, value parsing,

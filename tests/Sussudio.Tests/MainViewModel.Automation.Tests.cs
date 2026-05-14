@@ -1855,7 +1855,8 @@ static partial class Program
 
         var ssctlProgramText = ReadRepoFile("tools/ssctl/Program.cs")
             .Replace("\r\n", "\n");
-        var ssctlCommandHandlersText = ReadRepoFile("tools/ssctl/CommandHandlers.cs")
+        var ssctlCommandHandlersText = (ReadRepoFile("tools/ssctl/CommandHandlers.cs")
+            + "\n" + ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"))
             .Replace("\r\n", "\n");
         var mcpDiagnosticSessionText = ReadRepoFile("tools/McpServer/Tools/DiagnosticSessionTools.cs")
             .Replace("\r\n", "\n");

@@ -250,9 +250,16 @@ JSON framing and dispatch timeouts in `NamedPipeAutomationServer.Connections.cs`
 Windows pipe security/PInvoke in `NamedPipeAutomationServer.Security.cs`, and
 error/timeout responses plus fallback tracing in `NamedPipeAutomationServer.Responses.cs`.
 
-`tools/ssctl/CommandHandlers.cs` is now the top-level CLI router plus command
-group handler owner. `CommandHandlers.Context.cs` owns per-invocation command
-context, `CommandHandlers.Parsing.cs` owns CLI flag/value/usage parsing, and
+`tools/ssctl/CommandHandlers.cs` is now only the top-level CLI router.
+`CommandHandlers.Observability.cs` owns state, diagnostics, options, manifest,
+timeline, memory, audio-ramp, PresentMon, and diagnostic-session commands.
+`CommandHandlers.CaptureControls.cs` owns preview/record/screenshot/frame and
+`set` capture/audio/output mutations. `CommandHandlers.DeviceWindow.cs` owns
+device, window, and recordings commands. `CommandHandlers.AutomationFlow.cs`
+owns wait/assert/probe/stats/settings/frame-time and verification commands.
+`CommandHandlers.Flashback.cs` owns Flashback CLI commands. Support partials
+remain: `CommandHandlers.Context.cs` owns per-invocation command context,
+`CommandHandlers.Parsing.cs` owns CLI flag/value/usage parsing, and
 `CommandHandlers.Transport.cs` owns shared command sending plus response
 exit-code shaping.
 
