@@ -648,6 +648,23 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` owns
   UnifiedVideoCapture sink fan-out and CaptureService Flashback backend
   aggregate ownership assertions.
+- `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns shared
+  fake process-supervisor, runtime-snapshot, verifier-construction, and
+  verification-invocation helpers for recording verifier integration tests.
+- `tests/Sussudio.Tests/RecordingVerifier.Integration.Failures.Tests.cs` owns
+  ffprobe unavailable/nonzero failure scenarios.
+- `tests/Sussudio.Tests/RecordingVerifier.Integration.Priority.Tests.cs` owns
+  ffprobe process-priority assertions.
+- `tests/Sussudio.Tests/RecordingVerifier.Integration.Codec.Tests.cs` owns
+  HEVC/H264 codec success and codec-mismatch scenarios.
+- `tests/Sussudio.Tests/RecordingVerifier.Integration.Flashback.Tests.cs`
+  owns Flashback export/recording verification format scenarios.
+- `tests/Sussudio.Tests/RecordingVerifier.Integration.Mismatches.Tests.cs`
+  owns resolution and frame-rate mismatch scenarios.
+- `tests/Sussudio.Tests/RecordingVerifier.Integration.Hdr.Tests.cs` owns HDR
+  validation success and colorimetry/pixel-format mismatch scenarios.
+- `tests/Sussudio.Tests/RecordingVerifier.Integration.Cadence.Tests.cs` owns
+  NTSC frame-rate tolerance scenarios.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.Tests.cs` is the preview-renderer
   test family marker shell.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.Geometry.Tests.cs` owns letterbox,

@@ -617,6 +617,11 @@ scalar parsing in `RecordingVerifier.ProbeParsing.cs`, stream/container/HDR and
 cadence validation policy in `RecordingVerifier.Validation.cs`, result/taxonomy
 shaping in `RecordingVerifier.Results.cs`, and ffprobe frame timestamp cadence
 analysis in `RecordingVerifier.Cadence.cs`.
+`tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` now keeps only
+shared fake process-supervisor, runtime snapshot, verifier construction, and
+verification invocation helpers. Recording verifier integration scenarios are
+split into ffprobe failure, process-priority, codec, Flashback verification
+format, mismatch, HDR, and cadence owner files.
 
 Native XU source telemetry detail presentation now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs`.
