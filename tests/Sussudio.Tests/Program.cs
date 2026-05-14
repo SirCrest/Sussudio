@@ -1077,6 +1077,9 @@ static partial class Program
                 "WASAPI audio capture conversion lives in focused partial",
                 WasapiAudioCapture_ConversionLivesInFocusedPartial),
             await RunCheckAsync(
+                "WASAPI audio capture diagnostics live in focused partial",
+                WasapiAudioCapture_DiagnosticsLivesInFocusedPartial),
+            await RunCheckAsync(
                 "WASAPI audio capture stop uses bounded thread join",
                 WasapiAudioCapture_StopUsesBoundedThreadJoin),
             await RunCheckAsync(

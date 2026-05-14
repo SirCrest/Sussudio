@@ -786,6 +786,28 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task WasapiAudioCapture_DiagnosticsLivesInFocusedPartial()
+    {
+        var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticsSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.Diagnostics.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(wasapiSource, "TrackCaptureCallback(Environment.TickCount64);");
+        AssertContains(wasapiSource, "TrackCapturePacketFlags(flags);");
+        AssertContains(diagnosticsSource, "public long AudioFramesArrived => Interlocked.Read(ref _audioFramesArrived);");
+        AssertContains(diagnosticsSource, "public (double AvgIntervalMs, double MaxIntervalMs) GetCaptureCallbackIntervalSnapshot()");
+        AssertContains(diagnosticsSource, "private void TrackCaptureCallback(long callbackTickMs)");
+        AssertContains(diagnosticsSource, "private CallbackIntervalMetrics GetCaptureCallbackIntervalMetrics()");
+        AssertContains(diagnosticsSource, "private void TrackCapturePacketFlags(uint flags)");
+        AssertContains(diagnosticsSource, "private readonly record struct CallbackIntervalMetrics");
+        AssertDoesNotContain(wasapiSource, "public long AudioFramesArrived => Interlocked.Read(ref _audioFramesArrived);");
+        AssertDoesNotContain(wasapiSource, "private void TrackCaptureCallback(long callbackTickMs)");
+        AssertDoesNotContain(wasapiSource, "private readonly record struct CallbackIntervalMetrics");
+
+        return Task.CompletedTask;
+    }
+
     private static Task WasapiAudioCapture_StopUsesBoundedThreadJoin()
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
