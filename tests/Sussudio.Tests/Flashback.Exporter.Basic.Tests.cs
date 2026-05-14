@@ -16,8 +16,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var sourceText = exportOperationsText
             + "\n" + exportPlanningText
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
-                .Replace("\r\n", "\n");
+            + "\n" + ReadCaptureServiceRecordingFinalizationSource();
 
         AssertEqual(0, (int)resolve.Invoke(null, new object[] { 0.49, 29L, false })!, "Flashback export throttle idle");
         AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.49, 0L, true })!, "Flashback export throttle high-resolution live baseline");

@@ -11,10 +11,21 @@ static partial class Program
         "Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs"
     };
 
+    private static readonly string[] CaptureServiceRecordingFinalizationFiles =
+    {
+        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs",
+        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs"
+    };
+
     private static string ReadCaptureServiceFlashbackOrchestrationSource()
         => string.Join(
             "\n",
             CaptureServiceFlashbackOrchestrationFiles.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
+
+    private static string ReadCaptureServiceRecordingFinalizationSource()
+        => string.Join(
+            "\n",
+            CaptureServiceRecordingFinalizationFiles.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 
     private static string ReadCaptureServiceFlashbackOrchestrationCodeWithoutCommentsOrStrings()
         => string.Join(
@@ -39,6 +50,22 @@ static partial class Program
         AssertDoesNotContain(orchestrationText, "private async Task EnsureFlashbackPreviewBackendAsync(");
         AssertDoesNotContain(orchestrationText, "private async Task DisposeFlashbackPreviewBackendAsync(");
         AssertDoesNotContain(orchestrationText, "private async Task CycleFlashbackBufferAsync(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_RecordingFinalizationLivesInFocusedPartials()
+    {
+        var recordFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs");
+        var flashbackFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs");
+
+        AssertContains(recordFinalizationText, "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(");
+        AssertContains(flashbackFinalizationText, "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync(");
+        AssertContains(flashbackFinalizationText, "private sealed class FlashbackRecordingBoundarySnapshot");
+        AssertContains(flashbackFinalizationText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
+        AssertContains(flashbackFinalizationText, "private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)");
+        AssertDoesNotContain(recordFinalizationText, "private sealed class FlashbackRecordingBoundarySnapshot");
+        AssertDoesNotContain(recordFinalizationText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
 
         return Task.CompletedTask;
     }

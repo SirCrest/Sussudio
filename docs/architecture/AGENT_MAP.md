@@ -385,6 +385,12 @@ Important entry points:
 - `CaptureService.RecordingLifecycle.cs` owns public recording start/stop
   transitions, Flashback recording fast-path reuse, standard LibAv recording
   startup, and start rollback ordering.
+- `CaptureService.RecordingFinalizeRecord.cs` owns recording stop/finalize
+  routing for active Flashback and LibAv backends plus shared post-stop state
+  cleanup.
+- `CaptureService.RecordingFinalizeFlashback.cs` owns Flashback recording
+  export finalization, live-edge boundary snapshots, and cancellation-result
+  classification.
 - `CaptureService.RecordingRollback.cs` owns transient backend teardown after
   recording-start failures, including best-effort sink, WASAPI, unified-video,
   and deferred LibAv drain cleanup.
@@ -724,7 +730,8 @@ Primary current owners:
   aggregate ownership assertions.
 - `tests/Sussudio.Tests/CaptureService.FlashbackOrchestrationSource.Tests.cs`
   owns the source family helper for Flashback backend orchestration partials
-  plus the focused-partial ownership contract.
+  and recording finalization partials plus the focused-partial ownership
+  contracts.
 - `tests/Sussudio.Tests/CaptureCadence.Tests.cs` owns packet-hash duplicate
   cadence and visual-cadence crop sampling assertions.
 - `tests/Sussudio.Tests/UnifiedVideoCapture.Runtime.Tests.cs` owns

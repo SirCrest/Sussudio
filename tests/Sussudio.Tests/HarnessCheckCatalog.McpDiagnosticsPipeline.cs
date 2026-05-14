@@ -338,5 +338,8 @@ static partial class Program
         await AddCheckAsync(results,
             "CaptureService Flashback orchestration lives in focused partials",
             CaptureService_FlashbackOrchestrationLivesInFocusedPartials);
+        await AddCheckAsync(results,
+            "CaptureService recording finalization lives in focused partials",
+            CaptureService_RecordingFinalizationLivesInFocusedPartials);
     }
 }

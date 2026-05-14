@@ -724,8 +724,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportFailureClassification.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
-                .Replace("\r\n", "\n");
+            + "\n" + ReadCaptureServiceRecordingFinalizationSource();
         var flashbackBackendText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
             .Replace("\r\n", "\n");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");

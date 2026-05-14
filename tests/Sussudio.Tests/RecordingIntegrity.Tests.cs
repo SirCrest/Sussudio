@@ -157,12 +157,7 @@ static partial class Program
             "Services",
             "Capture",
             "CaptureService.SnapshotAvSync.cs"));
-        var serviceText = System.IO.File.ReadAllText(System.IO.Path.Combine(
-            GetRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.RecordingFinalizeRecord.cs"));
+        var serviceText = ReadCaptureServiceRecordingFinalizationSource();
 
         AssertContains(unifiedText, "public long FlashbackRecordingSequenceGaps");
         AssertContains(unifiedText, "TrackFlashbackRecordingAcceptedSequence(sourceSequence)");
