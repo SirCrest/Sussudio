@@ -287,6 +287,8 @@ Automation diagnostics ownership:
   owns HDR availability/request state, runtime/readiness fallback, HDR
   warmup/downgrade, pipeline parity, and telemetry-alignment projection consumed
   by `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.HdrTruth.cs`
+  owns HDR truth verdict projection consumed by `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotState.cs` owns
   stateful snapshot bookkeeping for audio mute suspicion and recording file
   growth tracking.
@@ -710,11 +712,13 @@ Primary current owners:
   automation capture-mode reinitialization and device-selection routing
   contracts.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
-  owns serialized diagnostics refresh and automation diagnostics hub ownership
-  assertions.
+  owns serialized diagnostics refresh and remaining automation diagnostics hub
+  ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
   owns the diagnostics hub source-family reader used by refresh ownership
   assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.PreviewRuntime.Tests.cs`
+  owns diagnostics snapshot preview runtime projection ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Hdr.Tests.cs`
   owns diagnostics HDR truth verdict behavior.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsLoop.Tests.cs`
@@ -812,10 +816,11 @@ Primary current owners:
   cleanup and faulted-session state assertions.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.Tests.cs` owns
   CaptureService health/diagnostics snapshot behavior scenarios for structured
-  source telemetry, cached MJPEG timing metrics, and health field ownership for
-  capture cadence, source telemetry, MJPEG, Flashback buffer/backend,
-  Flashback queue state, Flashback export, Flashback playback, AV-sync, and
-  recording.
+  source telemetry and health field ownership for capture cadence, source
+  telemetry, MJPEG, Flashback buffer/backend, Flashback queue state, Flashback
+  export, Flashback playback, AV-sync, and recording.
+- `tests/Sussudio.Tests/CaptureService.HealthSnapshots.MjpegCachedMetrics.Tests.cs`
+  owns cached MJPEG timing propagation for health and diagnostics snapshots.
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns shared
   fake process-supervisor, runtime-snapshot, verifier-construction, and
   verification-invocation helpers for recording verifier integration tests.
@@ -1034,8 +1039,10 @@ Primary current owners:
   exporter range, segment-list, progress, timestamp, stream-count, and template
   validation tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Output.Tests.cs` owns Flashback
-  exporter cancellation, missing-segment, overwrite, final-output, and temp-path
-  tests.
+  exporter cancellation, missing-segment, overwrite-refusal, source-overwrite,
+  and temp-path tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.OutputFinalization.Tests.cs` owns
+  Flashback exporter final-output replacement and force-overwrite tests.
 - `tests/Sussudio.Tests/Flashback.Playback.State.Tests.cs` owns Flashback
   playback state, marker, position, snap-live, and no-op command tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Thread.Tests.cs` owns Flashback

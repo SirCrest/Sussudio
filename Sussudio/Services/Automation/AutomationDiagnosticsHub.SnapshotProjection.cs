@@ -54,6 +54,7 @@ public sealed partial class AutomationDiagnosticsHub
             recentD3DMissedRefreshes,
             recentD3DStatsFailures);
         var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime);
+        var hdrTruth = BuildHdrTruthProjection(hdrTruthVerdict);
         var flashbackExport = BuildFlashbackExportProjection(health);
         var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);
         var flashbackPlayback = BuildFlashbackPlaybackProjection(health);
@@ -677,7 +678,7 @@ public sealed partial class AutomationDiagnosticsHub
             LastOutputExists = recordingOutput.LastOutputExists,
             LastOutputSizeBytes = recordingOutput.LastOutputSizeBytes,
             LastVerification = recordingOutput.LastVerification,
-            HdrTruthVerdict = hdrTruthVerdict,
+            HdrTruthVerdict = hdrTruth.Verdict,
             MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,
             MemoryPrivateBytesMb = processResourceProjection.MemoryPrivateBytesMb,
             MemoryManagedHeapMb = processResourceProjection.MemoryManagedHeapMb,
