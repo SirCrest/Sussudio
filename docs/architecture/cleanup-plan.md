@@ -45,6 +45,9 @@ actual, negotiated, observed, and encoder format projection inputs consumed by
 the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs` owns
 recording-integrity projection inputs consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns encoder
+queue ages, conversion queue depths, and recording video/GPU/CUDA health inputs
+consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.SourceTelemetry.cs` owns source
 telemetry fallback policy, age calculation, and source-target summary inputs
 consumed by the automation snapshot DTO.

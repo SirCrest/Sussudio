@@ -447,6 +447,9 @@ static partial class Program
                 "Automation diagnostics source telemetry projection lives in focused partial",
                 AutomationDiagnosticsSourceTelemetryProjection_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Automation diagnostics recording pipeline projection lives in focused partial",
+                AutomationDiagnosticsRecordingPipelineProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Automation SetRecordingEnabled uses recording-sized client timeout",
                 AutomationProtocol_SetRecordingUsesRecordingSizedTimeout),
             await RunCheckAsync(
