@@ -978,6 +978,9 @@ static partial class Program
                 "Recording video try enqueue paths do not block capture callbacks",
                 RecordingVideoTryEnqueuePaths_DoNotBlockCaptureCallbacks),
             await RunCheckAsync(
+                "Unified video capture sink fan-out lives in focused partial",
+                UnifiedVideoCapture_SinkFanoutLivesInFocusedPartial),
+            await RunCheckAsync(
                 "WASAPI audio capture rejects incomplete hot audio writes",
                 WasapiAudioCapture_HotAudioWritesRejectIncompleteTasks),
             await RunCheckAsync(
@@ -3963,9 +3966,7 @@ static partial class Program
     private static Task VisualCadenceTracker_UsesExactCropPixelsWithOnePassDiff()
     {
         var trackerSource = ReadRepoFile("Sussudio/Services/Capture/VisualCadenceTracker.cs").Replace("\r\n", "\n");
-        var captureSource = (ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs"))
-            .Replace("\r\n", "\n");
+        var captureSource = ReadUnifiedVideoCaptureSource();
 
         AssertContains(trackerSource, "DefaultSampleColumns = 640");
         AssertContains(trackerSource, "DefaultSampleRows = 360");

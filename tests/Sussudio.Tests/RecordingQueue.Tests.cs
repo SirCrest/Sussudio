@@ -20,6 +20,7 @@ static partial class Program
         var parts = new[]
         {
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs").Replace("\r\n", "\n")
         };
@@ -683,6 +684,27 @@ static partial class Program
         AssertContains(libAvCudaEnqueue, "ffmpeg.av_frame_free(&overloadedFrame);");
         AssertContains(flashbackVideoEnqueue, "TrackVideoQueueRejected(\"queue_full\");");
         AssertContains(flashbackGpuEnqueue, "TrackGpuQueueRejected(\"queue_full\");");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task UnifiedVideoCapture_SinkFanoutLivesInFocusedPartial()
+    {
+        var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
+            .Replace("\r\n", "\n");
+        var fanoutSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(fanoutSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
+        AssertContains(fanoutSource, "private void EnqueueRecordingFrame(PooledVideoFrame frame)");
+        AssertContains(fanoutSource, "private void EnqueueGpuRecordingFrame(IGpuVideoFrameEncoder encoder, IntPtr texture, int subresource, long sourceSequence)");
+        AssertContains(fanoutSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
+        AssertContains(fanoutSource, "private void EnqueueFlashbackFrame(PooledVideoFrame frame)");
+        AssertContains(fanoutSource, "private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource, long sourceSequence)");
+        AssertContains(fanoutSource, "private void TrackFlashbackRecordingAcceptedSequence(long sourceSequence)");
+        AssertDoesNotContain(rootSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
+        AssertDoesNotContain(rootSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
+        AssertDoesNotContain(rootSource, "private static bool TryLegacyRawVideoEnqueue(");
 
         return Task.CompletedTask;
     }

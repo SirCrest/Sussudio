@@ -138,12 +138,7 @@ static partial class Program
 
     private static Task FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps()
     {
-        var unifiedText = System.IO.File.ReadAllText(System.IO.Path.Combine(
-            GetRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "UnifiedVideoCapture.cs"));
+        var unifiedText = ReadUnifiedVideoCaptureSource();
         var snapshotsText = System.IO.File.ReadAllText(System.IO.Path.Combine(
             GetRepoRoot(),
             "Sussudio",
