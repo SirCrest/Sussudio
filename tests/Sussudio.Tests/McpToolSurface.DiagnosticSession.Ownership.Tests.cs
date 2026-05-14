@@ -427,12 +427,11 @@ static partial class Program
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         var builderText = ReadDiagnosticSessionResultBuilderSource();
-        var cleanupActionsText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.cs")
-            .Replace("\r\n", "\n");
+        var cleanupActionsText = ReadDiagnosticSessionCleanupActionsSource();
         var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(cleanupActionsText, "internal static class DiagnosticSessionCleanupActions");
+        AssertContains(cleanupActionsText, "internal static partial class DiagnosticSessionCleanupActions");
         AssertContains(cleanupActionsText, "internal static async Task<DiagnosticSessionCleanupResult> RunAsync(");
         AssertContains(cleanupActionsText, "internal readonly record struct DiagnosticSessionCleanupResult(bool StoppedRecordingForVerification)");
         AssertContains(cleanupActionsText, "setStage(\"cleanup-stop-recording\")");

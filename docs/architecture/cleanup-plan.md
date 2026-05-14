@@ -1405,10 +1405,12 @@ mutations before sampling: Flashback enable/disable for scenario requirements,
 preview start, recording start, and readiness waits.
 
 Diagnostic-session cleanup mutations now live in
-`tools/Common/DiagnosticSessionCleanupActions.cs`. It owns recording stop for
-verification, Flashback playback go-live restore, preview stop, and Flashback
-enable-state restore while `DiagnosticSessionCleanupPolicy.cs` remains the
-post-cleanup warning validator.
+`tools/Common/DiagnosticSessionCleanupActions.cs`. The root owns recording stop
+for verification and the public cleanup flow. Flashback playback go-live
+restore, preview stop, and Flashback enable-state restore live beside it in
+`DiagnosticSessionCleanupActions.StateRestore.cs`. The cleanup result record
+lives in `DiagnosticSessionCleanupActions.Models.cs`, while
+`DiagnosticSessionCleanupPolicy.cs` remains the post-cleanup warning validator.
 
 Diagnostic-session recording checks now live in
 `tools/Common/DiagnosticSessionRecordingChecks.cs`. It owns deferred Flashback
@@ -1565,6 +1567,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`
 - `DiagnosticSessionBackgroundTasks.Models.cs`
 - `DiagnosticSessionCleanupActions.cs`
+- `DiagnosticSessionCleanupActions.StateRestore.cs`
+- `DiagnosticSessionCleanupActions.Models.cs`
 - `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`

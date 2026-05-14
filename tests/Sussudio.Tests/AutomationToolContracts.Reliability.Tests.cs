@@ -12,8 +12,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var diagnosticSessionCleanupActionsText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupActions.cs")
-            .Replace("\r\n", "\n");
+        var diagnosticSessionCleanupActionsText = ReadDiagnosticSessionCleanupActionsSource();
 
         AssertContains(scriptText, "$testProjectPath = Join-Path $repoRoot \"tests\\Sussudio.Tests\\Sussudio.Tests.csproj\"");
         AssertContains(scriptText, "$ssctlProjectPath = Join-Path $repoRoot \"tools\\ssctl\\ssctl.csproj\"");

@@ -1052,9 +1052,13 @@ Primary owners:
   scenarios, starting preview, starting recording, and waiting for the
   associated readiness conditions.
 - `tools/Common/DiagnosticSessionCleanupActions.cs` owns diagnostic-session
-  cleanup mutations: recording stop for verification, Flashback playback
-  go-live restore, preview stop, and Flashback enable-state restore. Keep
-  cleanup stage/action names stable there.
+  cleanup flow and recording stop for verification. Keep cleanup stage/action
+  names stable in the cleanup family.
+- `tools/Common/DiagnosticSessionCleanupActions.StateRestore.cs` owns
+  Flashback playback go-live restore, preview stop, and Flashback enable-state
+  restore.
+- `tools/Common/DiagnosticSessionCleanupActions.Models.cs` owns the cleanup
+  result handoff record.
 - `tools/Common/DiagnosticSessionRecordingChecks.cs` owns post-cleanup
   diagnostic-session recording checks: deferred Flashback recording-settings
   restore, last-recording or Flashback export verification, and Flashback
