@@ -6,7 +6,8 @@ static partial class Program
         {
             "tools/ssctl/Formatters.Snapshot.cs",
             "tools/ssctl/Formatters.Snapshot.Flashback.cs",
-            "tools/ssctl/Formatters.Snapshot.Mjpeg.cs"
+            "tools/ssctl/Formatters.Snapshot.Mjpeg.cs",
+            "tools/ssctl/Formatters.Snapshot.Preview.cs"
         };
         var parts = new string[files.Length];
         for (var i = 0; i < files.Length; i++)

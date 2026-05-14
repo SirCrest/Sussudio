@@ -1023,6 +1023,8 @@ Primary owners:
   non-Flashback text sections.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer snapshot
+  text.
 - `tools/ssctl/Formatters.Diagnostics.cs` owns recent diagnostic-event output.
 - `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
 - `tools/ssctl/Formatters.Timeline.cs` owns performance timeline table output

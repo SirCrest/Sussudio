@@ -266,7 +266,8 @@ exit-code shaping.
 `tools/ssctl/Formatters.cs` is only the projection facade for console output.
 Keep app snapshot orchestration in `Formatters.Snapshot.cs`, Flashback snapshot
 text in `Formatters.Snapshot.Flashback.cs`, MJPEG timing text in
-`Formatters.Snapshot.Mjpeg.cs`, diagnostic-event text in
+`Formatters.Snapshot.Mjpeg.cs`, preview renderer text in
+`Formatters.Snapshot.Preview.cs`, diagnostic-event text in
 `Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
 performance timeline tables in `Formatters.Timeline.cs`, memory/GC summaries in
 `Formatters.Memory.cs`, and shared JSON/result helpers in
