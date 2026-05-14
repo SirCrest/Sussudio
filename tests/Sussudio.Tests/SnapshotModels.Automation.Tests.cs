@@ -43,27 +43,8 @@ static partial class Program
     private static Task AutomationSnapshot_ExposesFullCpuMjpegMetrics()
     {
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
-        var decoderType = RequireType("Sussudio.Models.MjpegDecoderAutomationSnapshot");
 
-        AssertNotNull(snapshotType.GetProperty("MjpegDecoderCount"), "AutomationSnapshot.MjpegDecoderCount");
-        AssertNotNull(snapshotType.GetProperty("MjpegReorderSampleCount"), "AutomationSnapshot.MjpegReorderSampleCount");
-        AssertNotNull(snapshotType.GetProperty("MjpegPipelineSampleCount"), "AutomationSnapshot.MjpegPipelineSampleCount");
-        AssertNotNull(snapshotType.GetProperty("MjpegTotalDecoded"), "AutomationSnapshot.MjpegTotalDecoded");
-        AssertNotNull(snapshotType.GetProperty("MjpegTotalEmitted"), "AutomationSnapshot.MjpegTotalEmitted");
-        AssertNotNull(snapshotType.GetProperty("MjpegTotalDropped"), "AutomationSnapshot.MjpegTotalDropped");
-        AssertNotNull(snapshotType.GetProperty("MjpegCompressedFramesQueued"), "AutomationSnapshot.MjpegCompressedFramesQueued");
-        AssertNotNull(snapshotType.GetProperty("MjpegCompressedFramesDequeued"), "AutomationSnapshot.MjpegCompressedFramesDequeued");
-        AssertNotNull(snapshotType.GetProperty("MjpegCompressedDropsQueueFull"), "AutomationSnapshot.MjpegCompressedDropsQueueFull");
-        AssertNotNull(snapshotType.GetProperty("MjpegCompressedDropsByteBudget"), "AutomationSnapshot.MjpegCompressedDropsByteBudget");
-        AssertNotNull(snapshotType.GetProperty("MjpegCompressedDropsDisposed"), "AutomationSnapshot.MjpegCompressedDropsDisposed");
-        AssertNotNull(snapshotType.GetProperty("MjpegDecodeFailures"), "AutomationSnapshot.MjpegDecodeFailures");
-        AssertNotNull(snapshotType.GetProperty("MjpegReorderCollisions"), "AutomationSnapshot.MjpegReorderCollisions");
-        AssertNotNull(snapshotType.GetProperty("MjpegEmitFailures"), "AutomationSnapshot.MjpegEmitFailures");
-        AssertNotNull(snapshotType.GetProperty("MjpegCompressedQueueDepth"), "AutomationSnapshot.MjpegCompressedQueueDepth");
-        AssertNotNull(snapshotType.GetProperty("MjpegCompressedQueueBytes"), "AutomationSnapshot.MjpegCompressedQueueBytes");
-        AssertNotNull(snapshotType.GetProperty("MjpegCompressedQueueByteBudget"), "AutomationSnapshot.MjpegCompressedQueueByteBudget");
-        AssertNotNull(snapshotType.GetProperty("MjpegReorderSkips"), "AutomationSnapshot.MjpegReorderSkips");
-        AssertNotNull(snapshotType.GetProperty("MjpegReorderBufferDepth"), "AutomationSnapshot.MjpegReorderBufferDepth");
+        AssertAutomationSnapshotCpuMjpegMetricContract(snapshotType);
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastSelectedPreviewPresentId"), "AutomationSnapshot.MjpegPreviewJitterLastSelectedPreviewPresentId");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastSelectedSourceSequenceNumber"), "AutomationSnapshot.MjpegPreviewJitterLastSelectedSourceSequenceNumber");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastSelectedSourceLatencyMs"), "AutomationSnapshot.MjpegPreviewJitterLastSelectedSourceLatencyMs");
@@ -253,18 +234,6 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("VisualCenterCadenceRepeatFramePercent"), "AutomationSnapshot.VisualCenterCadenceRepeatFramePercent");
         AssertNotNull(snapshotType.GetProperty("VisualCenterCadenceMotionConfidence"), "AutomationSnapshot.VisualCenterCadenceMotionConfidence");
         AssertNotNull(snapshotType.GetProperty("VisualCenterCadenceRecentChangeIntervalsMs"), "AutomationSnapshot.VisualCenterCadenceRecentChangeIntervalsMs");
-
-        var perDecoderProperty = snapshotType.GetProperty("MjpegPerDecoder")
-            ?? throw new InvalidOperationException("AutomationSnapshot.MjpegPerDecoder missing.");
-        var elementType = perDecoderProperty.PropertyType.GetElementType()
-            ?? throw new InvalidOperationException("AutomationSnapshot.MjpegPerDecoder element type missing.");
-        AssertEqual(decoderType, elementType, "AutomationSnapshot.MjpegPerDecoder[] element type");
-
-        AssertNotNull(decoderType.GetProperty("WorkerIndex"), "MjpegDecoderAutomationSnapshot.WorkerIndex");
-        AssertNotNull(decoderType.GetProperty("SampleCount"), "MjpegDecoderAutomationSnapshot.SampleCount");
-        AssertNotNull(decoderType.GetProperty("AvgMs"), "MjpegDecoderAutomationSnapshot.AvgMs");
-        AssertNotNull(decoderType.GetProperty("P95Ms"), "MjpegDecoderAutomationSnapshot.P95Ms");
-        AssertNotNull(decoderType.GetProperty("MaxMs"), "MjpegDecoderAutomationSnapshot.MaxMs");
 
         return Task.CompletedTask;
     }

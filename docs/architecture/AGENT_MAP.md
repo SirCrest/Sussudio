@@ -751,6 +751,8 @@ Primary current owners:
   reflection/spec helpers, including the CaptureDiagnostics property spec.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.Tests.cs` owns automation
   snapshot/options DTO shape checks and source-signal projection drift guards.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpegContractSpec.cs` owns
+  the CPU MJPEG automation snapshot property-list contract used by that check.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns
   CaptureDiagnosticsSnapshot default, round-trip, and reflection JSON checks.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns
