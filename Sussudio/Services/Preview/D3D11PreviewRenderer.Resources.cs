@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Vortice.Direct3D;
@@ -198,45 +197,6 @@ internal sealed partial class D3D11PreviewRenderer
         catch (Exception ex)
         {
             Logger.Log($"D3D11 preview media present duration failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
-        }
-    }
-
-    private void ConfigureFrameLatencyWaitableObject()
-    {
-        _frameLatencyWaitHandle = IntPtr.Zero;
-        _swapChain2?.Dispose();
-        _swapChain2 = null;
-
-        if (!_waitableSwapChainEnabled || _swapChain == null)
-        {
-            return;
-        }
-
-        _swapChain2 = _swapChain.QueryInterfaceOrNull<IDXGISwapChain2>();
-        if (_swapChain2 == null)
-        {
-            Logger.Log("D3D11 preview waitable swap chain unavailable: IDXGISwapChain2 not supported.");
-            return;
-        }
-
-        _swapChain2.MaximumFrameLatency = (uint)_dxgiMaxFrameLatency;
-        _frameLatencyWaitHandle = _swapChain2.FrameLatencyWaitableObject;
-        Logger.Log($"D3D11 preview waitable swap chain configured handle=0x{_frameLatencyWaitHandle.ToInt64():X} latency={_dxgiMaxFrameLatency}.");
-    }
-
-    private void WaitForFrameLatencySignal()
-    {
-        if (!_waitableSwapChainEnabled || _frameLatencyWaitHandle == IntPtr.Zero)
-        {
-            return;
-        }
-
-        var waitStart = Stopwatch.GetTimestamp();
-        var result = WaitForSingleObject(_frameLatencyWaitHandle, 8);
-        TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);
-        if (result != WaitObject0 && result != WaitTimeout)
-        {
-            Logger.Log($"D3D11 preview waitable swap chain wait returned {result}.");
         }
     }
 

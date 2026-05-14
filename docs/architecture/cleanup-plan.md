@@ -528,6 +528,12 @@ Keep `GetFrameStatistics`, optional `DwmFlush`, visible-frame tick estimation,
 and `IPreviewDisplayClock` snapshot construction there; keep slow-frame
 diagnostic consumption of the latest DXGI counters in `D3D11PreviewRenderer.Metrics.cs`.
 
+D3D preview renderer frame-latency waitable swap-chain setup now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.FrameLatency.cs`. Keep
+`ConfigureFrameLatencyWaitableObject`, `WaitForFrameLatencySignal`, the native
+`WaitForSingleObject` import, and wait-result constants there so resource
+construction and render drawing stay focused.
+
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep device
 initialization, shared-device handoff, pipeline texture/view setup, swap-chain

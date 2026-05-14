@@ -675,6 +675,9 @@ static partial class Program
                 "D3D preview frame upload lives in focused partial",
                 D3D11PreviewRenderer_FrameUploadLivesInFocusedPartial),
             await RunCheckAsync(
+                "D3D preview frame-latency wait lives in focused partial",
+                D3D11PreviewRenderer_FrameLatencyLivesInFocusedPartial),
+            await RunCheckAsync(
                 "Preview pacing classifier rejects weak samples",
                 PreviewPacingClassifier_RequiresStableSampleUnlessHardSignal),
             await RunCheckAsync(

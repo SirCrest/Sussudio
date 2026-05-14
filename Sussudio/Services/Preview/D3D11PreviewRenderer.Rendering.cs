@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Sussudio.Services.Runtime;
 using Microsoft.UI.Dispatching;
@@ -13,9 +12,6 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
-    private const uint WaitObject0 = 0;
-    private const uint WaitTimeout = 258;
-
     // Reused at every shader bind in the per-frame render path; the LINQ-friendly
     // overloads on Vortice's device context allocate an IReadOnlyList wrapper from
     // Array.Empty<T>() each call, which adds up at 60-120 fps.
@@ -721,7 +717,4 @@ internal sealed partial class D3D11PreviewRenderer
             throw new ObjectDisposedException(nameof(D3D11PreviewRenderer));
         }
     }
-
-    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
-    private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
 }

@@ -224,6 +224,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs");
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameLatency.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs");
         var captureSource = ReadUnifiedVideoCaptureSource();
@@ -772,6 +773,25 @@ static partial class Program
         AssertContains(frameUploadText, "_deviceContext.CopyResource(inputTexture, stagingTexture);");
         AssertDoesNotContain(renderingText, "private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)");
         AssertDoesNotContain(renderingText, "private unsafe bool UploadRawFrameViaStaging(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_FrameLatencyLivesInFocusedPartial()
+    {
+        var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
+            .Replace("\r\n", "\n");
+        var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
+            .Replace("\r\n", "\n");
+        var frameLatencyText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameLatency.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(frameLatencyText, "private void ConfigureFrameLatencyWaitableObject()");
+        AssertContains(frameLatencyText, "private void WaitForFrameLatencySignal()");
+        AssertContains(frameLatencyText, "TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);");
+        AssertContains(frameLatencyText, "private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);");
+        AssertDoesNotContain(resourcesText, "private void WaitForFrameLatencySignal()");
+        AssertDoesNotContain(renderingText, "private static extern uint WaitForSingleObject");
 
         return Task.CompletedTask;
     }
