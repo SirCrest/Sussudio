@@ -676,6 +676,16 @@ Primary current owners:
   DTO contract tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.RecordingPipeline.Tests.cs`
   owns recording pipeline queue capacity and drop-policy tests.
+- `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` owns shared pooled-frame
+  reflection, frame factory, jitter-buffer factory, and tracking pool helpers.
+- `tests/Sussudio.Tests/PooledVideoFrame.Leases.Tests.cs` owns pooled video
+  frame lease lifecycle and MJPEG pooled-frame fan-out contract tests.
+- `tests/Sussudio.Tests/PooledVideoFrame.MjpegJitterPolicy.Tests.cs` owns the
+  MJPEG preview jitter adaptive deadline policy source-ownership assertion.
+- `tests/Sussudio.Tests/PooledVideoFrame.MjpegJitterQueue.Tests.cs` owns
+  MJPEG preview jitter queue/drop/reprime behavior tests.
+- `tests/Sussudio.Tests/PooledVideoFrame.QueuedLeaseRelease.Tests.cs` owns
+  D3D pending-frame and recording/Flashback queued lease return tests.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing and formatter batch tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the

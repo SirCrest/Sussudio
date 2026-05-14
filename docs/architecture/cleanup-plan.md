@@ -325,6 +325,12 @@ shared reflection helpers. Capture configuration model coverage is split into
 capture mode options, capture settings/MJPEG HFR policy, encoder support,
 Flashback DTO contracts, and recording pipeline option contracts.
 
+`tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` now keeps only shared
+pooled-frame and jitter-buffer helpers. Pooled-frame coverage is split into
+lease lifecycle/fan-out contracts, MJPEG jitter adaptive policy, MJPEG jitter
+queue/drop/reprime behavior, and queued lease release contracts for D3D,
+recording, and Flashback paths.
+
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
 to the public toggle/state surface, `FullScreenController.Transitions.cs` to
@@ -1543,7 +1549,9 @@ Remaining `tools/Common` ownership:
    and frame-flow owners. Automation tool contract tests are split into
    protocol, catalog/manifest, reliability-gates, and snapshot formatter
    owners. Capture configuration model tests are split into option, settings,
-   encoder support, Flashback DTO, and recording pipeline owners.
+   encoder support, Flashback DTO, and recording pipeline owners. Pooled-frame
+   tests are split into lease lifecycle, MJPEG jitter policy, MJPEG jitter
+   queue behavior, and queued lease release owners.
 
 3. Continue converting MainWindow partial concerns into controllers.
 
