@@ -783,6 +783,9 @@ static partial class Program
                 "D3D preview lifecycle lives in focused partial",
                 D3D11PreviewRenderer_LifecycleLivesInFocusedPartial),
             await RunCheckAsync(
+                "D3D preview device initialization lives in focused partial",
+                D3D11PreviewRenderer_DeviceInitializationLivesInFocusedPartial),
+            await RunCheckAsync(
                 "D3D preview viewport helpers live in focused partial",
                 D3D11PreviewRenderer_ViewportHelpersLiveInFocusedPartial),
             await RunCheckAsync(

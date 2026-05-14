@@ -227,6 +227,28 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task D3D11PreviewRenderer_DeviceInitializationLivesInFocusedPartial()
+    {
+        var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
+            .Replace("\r\n", "\n");
+        var deviceInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(deviceInitializationText, "private void InitializeD3D()");
+        AssertContains(deviceInitializationText, "private void ConfigureMediaPresentDuration()");
+        AssertContains(deviceInitializationText, "private bool TryInitializeWithSharedDevice(out FeatureLevel featureLevel)");
+        AssertContains(deviceInitializationText, "private void CreateRendererOwnedDevice(out FeatureLevel featureLevel)");
+        AssertContains(deviceInitializationText, "_factory.CreateSwapChainForComposition(device, swapChainDescription, null);");
+        AssertContains(resourcesText, "private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)");
+        AssertContains(resourcesText, "private void DisposeProcessorResources()");
+        AssertContains(resourcesText, "private void CleanupD3DResources()");
+        AssertDoesNotContain(resourcesText, "private void InitializeD3D()");
+        AssertDoesNotContain(resourcesText, "private bool TryInitializeWithSharedDevice(");
+        AssertDoesNotContain(resourcesText, "private void CreateRendererOwnedDevice(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task D3D11PreviewRenderer_ViewportHelpersLiveInFocusedPartial()
     {
         var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
