@@ -379,6 +379,9 @@ and button enable/disable state.
 Renderer-level preview frame capture request state and timeout/cancellation
 handling now live with the capture implementation in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs`.
+Screenshot BMP/error result construction, mapped-frame buffer copying, and
+capture pixel statistics now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotEncoding.cs`.
 
 Window geometry automation and the recordings-folder command now live in
 `Sussudio/Controllers/WindowAutomationController.cs`.

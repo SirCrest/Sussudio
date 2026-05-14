@@ -243,4 +243,24 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task D3D11PreviewRenderer_ScreenshotEncodingLivesInFocusedPartial()
+    {
+        var captureText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs")
+            .Replace("\r\n", "\n");
+        var encodingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotEncoding.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(captureText, "private void TryCaptureFrameBeforePresent(string rendererMode)");
+        AssertContains(captureText, "PreviewScreenshotCapture.CaptureFrameBufferTo16BitPng(");
+        AssertContains(captureText, "private void FailPendingFrameCapture(string message)");
+        AssertContains(encodingText, "private static PreviewFrameCaptureResult CaptureMappedFrameToBmp(");
+        AssertContains(encodingText, "private static byte[] CopyMappedFrameToBuffer(");
+        AssertContains(encodingText, "private static void WriteBitmapHeaders(");
+        AssertContains(encodingText, "private static PreviewFrameCaptureResult CreateFrameCaptureError(");
+        AssertDoesNotContain(captureText, "private static PreviewFrameCaptureResult CaptureMappedFrameToBmp(");
+        AssertDoesNotContain(captureText, "private static void WriteBitmapHeaders(");
+
+        return Task.CompletedTask;
+    }
 }
