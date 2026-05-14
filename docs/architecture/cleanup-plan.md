@@ -1126,11 +1126,14 @@ Parallel MJPEG decode pipeline lifecycle now lives in
 stop/dispose, emitter signaling, shutdown joins, cleanup of remaining work and
 reorder frames, fatal-callback dispatch, and remaining-timeout helpers there.
 
-CUDA/D3D11 preview interop behavior stays in
-`Sussudio/Services/Gpu/CudaD3D11Interop.cs`, while CUDA constants, P/Invoke
-entry points, and the `CUDA_MEMCPY2D` native struct live in
-`Sussudio/Services/Gpu/CudaD3D11Interop.Native.cs`. Keep native declarations
-there so the copy-path file remains about zero-copy/staging behavior.
+CUDA/D3D11 preview interop ownership is split by runtime boundary:
+`Sussudio/Services/Gpu/CudaD3D11Interop.cs` keeps bridge state and public
+texture handles, `CudaD3D11Interop.Initialization.cs` owns constructor setup and
+zero-copy registration, `CudaD3D11Interop.Copy.cs` owns the zero-copy and staging
+frame-copy paths, `CudaD3D11Interop.Lifetime.cs` owns disposal and CUDA resource
+unregistration, and `CudaD3D11Interop.Native.cs` owns CUDA constants, P/Invoke
+entry points, and the `CUDA_MEMCPY2D` native struct. Keep D3D11 locking,
+primary-context ownership, and fallback-to-staging behavior unchanged.
 
 NVDEC MJPEG decoder ownership is now split around the hot-path boundaries:
 `Sussudio/Services/Gpu/NvdecMjpegDecoder.cs` keeps shared decoder state,
