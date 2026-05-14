@@ -826,6 +826,8 @@ the legacy harness body in `tests/Sussudio.Tests/Program.cs`.
 Stats diagnostic summary/row parsing now lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs`; keep the root
 `StatsPresentationBuilder.cs` focused on dock and frame-time presentation.
+Stats lane status classification and visual-repeat drift policy now live in
+`Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`.
 Stats presentation DTO records/enums now live in
 `Sussudio/ViewModels/StatsPresentationModels.cs`.
 

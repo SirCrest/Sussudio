@@ -501,6 +501,8 @@ Primary current owners:
   text projection and graph line drawing. Keep frame-time canvas math there,
   while `StatsPresentationBuilder` owns the range/sample text policy and
   `StatsPresentationBuilder.Diagnostics.cs` owns diagnostic summary/row parsing.
+  `StatsPresentationBuilder.Status.cs` owns stats lane status classification and
+  visual-repeat drift policy.
   `StatsPresentationModels.cs` owns the internal DTO records/enums consumed by
   the stats overlay controllers.
 - `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` owns legacy
