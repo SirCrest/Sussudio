@@ -1179,9 +1179,13 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs")
                 .Replace("\r\n", "\n");
-        AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
-        AssertContains(automationDiagnosticsHubText, "FlashbackCodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason,");
+        AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = flashbackRecording.ExportVerificationFormat,");
+        AssertContains(automationDiagnosticsHubText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
+        AssertContains(automationDiagnosticsHubText, "FlashbackCodecDowngradeReason = flashbackRecording.CodecDowngradeReason,");
+        AssertContains(automationDiagnosticsHubText, "CodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason,");
         AssertDoesNotContain(captureServiceText, "var fbFileNameFormatOverride =");
         AssertDoesNotContain(captureServiceText, "FileNameFormatOverride = fbFileNameFormatOverride");
         AssertContains(ensureFlashbackPreviewBackend, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");

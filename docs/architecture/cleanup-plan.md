@@ -46,6 +46,10 @@ the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs` owns active
 Flashback export progress, failure, force-rotate fallback, and last-result
 projection consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs` owns
+Flashback recording, buffer, backend, encoder, and queue projection, including
+the export verification and codec-downgrade fallback policy consumed by the
+automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
 swap-chain, render timing, frame-latency wait, frame statistics, and submitted /
 rendered / dropped frame projection consumed by the automation snapshot DTO.
