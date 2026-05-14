@@ -858,6 +858,8 @@ Primary current owners:
   serialization contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
   reliability-gates script contract test.
+- `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` owns AGENT_MAP file/folder
+  reference drift checks.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Tests.cs`
   owns shared/ssctl snapshot formatter text, MJPEG timing rendering, parity,
   and typed-accessor contract tests.

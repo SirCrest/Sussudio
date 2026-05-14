@@ -41,6 +41,9 @@ static partial class Program
             "Reliability gates run tools and offline regression harness",
             ReliabilityGates_RunToolsAndOfflineHarness);
         await AddCheckAsync(results,
+            "Architecture agent map references existing files",
+            ArchitectureAgentMap_FileReferencesResolve);
+        await AddCheckAsync(results,
             "Automation manifest covers catalog metadata",
             AutomationManifest_CoversCatalogMetadata);
         await AddCheckAsync(results,
