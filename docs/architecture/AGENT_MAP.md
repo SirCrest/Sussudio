@@ -679,9 +679,12 @@ Primary current owners:
   snapshot builder contract checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Tests.cs` owns MainWindow
   shell/startup/title/close/preview-runtime partial ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs` owns
+  MainWindow controller-adapter ownership assertions for control bar, shell
+  elevation, preview-transition, and record-button width visual controllers.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` owns MainWindow
-  controller-adapter ownership assertions for control bar, shell elevation,
-  preview/recording controls, capture selections, output path, and screenshots.
+  controller-adapter ownership assertions for recording controls, capture
+  selections, output path, and screenshots.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Tests.cs` owns MainWindow
   Flashback polling, playhead motion, and marker-presentation ownership
   assertions.
