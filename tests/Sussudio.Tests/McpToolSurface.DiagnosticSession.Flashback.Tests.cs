@@ -79,8 +79,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
-            .Replace("\r\n", "\n");
+        var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var cyclesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs")
             .Replace("\r\n", "\n");
 
@@ -134,8 +133,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
-            .Replace("\r\n", "\n");
+        var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var cyclesText = ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource();
 
         AssertContains(cyclesText, "internal static partial class DiagnosticSessionFlashbackPreviewCycleScenarios");
@@ -187,8 +185,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
-            .Replace("\r\n", "\n");
+        var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var segmentPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
             .Replace("\r\n", "\n");
 
@@ -214,8 +211,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
-            .Replace("\r\n", "\n");
+        var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
             .Replace("\r\n", "\n");
         var settingsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs")
@@ -245,8 +241,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
-            .Replace("\r\n", "\n");
+        var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var lifecycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs")
             .Replace("\r\n", "\n");
 
@@ -268,8 +263,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
-            .Replace("\r\n", "\n");
+        var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var scenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
 
         AssertContains(scenariosText, "internal static partial class DiagnosticSessionFlashbackExportScenarios");
@@ -366,8 +360,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
-            .Replace("\r\n", "\n");
+        var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
 
         AssertContains(stressText, "internal static partial class DiagnosticSessionFlashbackStressScenario");

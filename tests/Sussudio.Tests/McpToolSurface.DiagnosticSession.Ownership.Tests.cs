@@ -359,14 +359,13 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
-            .Replace("\r\n", "\n");
+        var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
             .Replace("\r\n", "\n");
         var tasksText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(startupText, "internal static class DiagnosticSessionScenarioStartup");
+        AssertContains(startupText, "internal static partial class DiagnosticSessionScenarioStartup");
         AssertContains(startupText, "internal static async Task<DiagnosticSessionScenarioStartupResult> StartAsync(");
         AssertContains(startupText, "internal readonly record struct DiagnosticSessionScenarioStartupResult(bool StartedFlashbackPlayback)");
         AssertContains(tasksText, "internal sealed class DiagnosticSessionBackgroundTasks");
@@ -378,6 +377,9 @@ static partial class Program
         AssertContains(tasksText, "flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
         AssertContains(tasksText, "internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(");
         AssertContains(runnerText, "var backgroundTasks = new DiagnosticSessionBackgroundTasks();");
+        AssertContains(startupText, "private static void RegisterFlashbackScenarioTasks(");
+        AssertContains(startupText, "private static void RegisterDeferredFlashbackRecordingSettingsTask(");
+        AssertContains(startupText, "private static async Task<bool> TryStartFlashbackPlaybackAsync(");
         AssertContains(startupText, "backgroundTasks.AddScenario(");
         AssertContains(startupText, "DiagnosticSessionPresentMonStartup.StartAsync(");
         AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(");
@@ -396,8 +398,7 @@ static partial class Program
 
     private static Task DiagnosticSessionPresentMonStartup_OwnsPresentMonLaunch()
     {
-        var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
-            .Replace("\r\n", "\n");
+        var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
             .Replace("\r\n", "\n");
 

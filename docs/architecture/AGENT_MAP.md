@@ -1019,9 +1019,13 @@ Primary owners:
   background task registration, deterministic await/drain order, PresentMon
   task completion, and interrupted-task warning collection.
 - `tools/Common/DiagnosticSessionScenarioStartup.cs` owns diagnostic-session
-  optional background startup: Flashback scenario task registration, deferred
-  recording-settings task registration, and the direct Flashback playback start
-  command. Keep task stage names stable there.
+  optional background startup orchestration.
+- `tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs` owns
+  Flashback scenario task registration and deferred recording-settings task
+  registration. Keep task stage names stable there.
+- `tools/Common/DiagnosticSessionScenarioStartup.Playback.cs` owns the direct
+  Flashback playback start command, playback buffer readiness warning, and
+  playback-state wait.
 - `tools/Common/DiagnosticSessionPresentMonStartup.cs` owns optional PresentMon
   launch, correlation snapshot capture, and `presentmon.csv` output selection
   for diagnostic sessions.
