@@ -676,6 +676,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` owns
   UnifiedVideoCapture sink fan-out and CaptureService Flashback backend
   aggregate ownership assertions.
+- `tests/Sussudio.Tests/CaptureCadence.Tests.cs` owns packet-hash duplicate
+  cadence and visual-cadence crop sampling assertions.
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns shared
   fake process-supervisor, runtime-snapshot, verifier-construction, and
   verification-invocation helpers for recording verifier integration tests.
