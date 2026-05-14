@@ -1,4 +1,4 @@
-# Sussudio Agent Map
+﻿# Sussudio Agent Map
 
 Last reviewed: 2026-05-14.
 
@@ -868,9 +868,14 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCheckCatalog.CoreRuntime.cs` owns runtime,
   telemetry, recording verifier, LibAv encoder, and basic app contract check
   registration.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.AutomationDiagnostics.cs` owns
+- 	ests/Sussudio.Tests/HarnessCheckCatalog.AutomationDiagnostics.cs owns
   automation, coordinator, service namespace, and automation diagnostics
   projection check registration.
+- 	ests/Sussudio.Tests/ServiceNamespace.Tests.cs owns service namespace and
+  project-reference architecture assertions.
+- 	ests/Sussudio.Tests/ServiceNamespace.Helpers.Tests.cs owns the shared source
+  enumeration, project XML, and C# comment/string stripping helpers used by
+  service namespace architecture assertions.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.PresentationPreview.cs` owns
   MainViewModel, MainWindow, stats, preview renderer, and preview pacing check
   registration.
