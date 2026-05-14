@@ -457,10 +457,20 @@ guards, FFmpeg error string conversion, structured libav exceptions, and
 D3D11 device-removed checks there.
 
 LibAv encoder audio stream handling now lives in
-`Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone send
-entry points, stream creation, packet writing, pending-sample flush, and sample
-queue/drain helpers there; leave video send, rotation, and finalization in
-`LibAvEncoder.cs`.
+`Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone
+stream state, public status properties, packet writing, pending-sample flush,
+and sample queue/drain helpers there; leave video send, rotation, and
+finalization in `LibAvEncoder.cs`.
+
+LibAv encoder audio submission now lives in
+`Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs`. Keep the public
+audio/microphone sample entry points, payload alignment checks, accumulator
+handoff, and stream-chunk submission there.
+
+LibAv encoder audio stream initialization now lives in
+`Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs`. Keep audio
+and microphone AAC stream creation, codec opening, stream time-base setup,
+resampler/frame/buffer setup calls, and microphone-specific setup there.
 
 LibAv encoder audio setup helpers now live in
 `Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs`. Keep AAC codec

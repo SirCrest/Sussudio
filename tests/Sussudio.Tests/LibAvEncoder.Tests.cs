@@ -10,12 +10,14 @@ static partial class Program
         {
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Audio.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AvSync.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.FrameCopy.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Diagnostics.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Models.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs").Replace("\r\n", "\n"),
@@ -446,6 +448,12 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
+        var audioText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Audio.cs")
+            .Replace("\r\n", "\n");
+        var audioInitializationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs")
+            .Replace("\r\n", "\n");
+        var audioSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs")
+            .Replace("\r\n", "\n");
         var audioSetupText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs")
             .Replace("\r\n", "\n");
         var hdrSideDataText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs")
@@ -453,6 +461,11 @@ static partial class Program
         var modelsText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Models.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(audioSubmissionText, "public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)");
+        AssertContains(audioSubmissionText, "public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)");
+        AssertContains(audioInitializationText, "private void InitializeAudioIfNeeded(LibAvEncoderOptions options)");
+        AssertContains(audioInitializationText, "private void InitializeMicrophoneIfNeeded(LibAvEncoderOptions options)");
+        AssertContains(audioInitializationText, "ffmpeg.avcodec_find_encoder(AVCodecID.AV_CODEC_ID_AAC)");
         AssertContains(audioSetupText, "private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)");
         AssertContains(audioSetupText, "private void InitializeAudioResampler(LibAvEncoderOptions options)");
         AssertContains(audioSetupText, "private void AllocateAudioFrame()");
@@ -464,6 +477,10 @@ static partial class Program
         AssertContains(hdrSideDataText, "ffmpeg.av_mastering_display_metadata_create_side_data(_hwFrame)");
         AssertContains(modelsText, "internal sealed record LibAvEncoderOptions");
         AssertContains(modelsText, "internal readonly record struct RotateOutputResult");
+        AssertDoesNotContain(audioText, "public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)");
+        AssertDoesNotContain(audioText, "public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)");
+        AssertDoesNotContain(audioText, "private void InitializeAudioIfNeeded(LibAvEncoderOptions options)");
+        AssertDoesNotContain(audioText, "private void InitializeMicrophoneIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(rootText, "private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)");
         AssertDoesNotContain(rootText, "private void InitializeAudioResampler(LibAvEncoderOptions options)");
         AssertDoesNotContain(rootText, "private void AllocateAudioFrame()");
