@@ -331,6 +331,9 @@ frame-flow/shared-device assertions.
 reflection helpers. Automation tool contract coverage is split into protocol
 and pipe-failure contracts, catalog/manifest/path-policy contracts,
 reliability-gates script checks, and snapshot formatter contracts.
+Shared tool assembly loading and stale-build detection now live in
+`tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` so the legacy harness body
+no longer owns tool DLL resolution or freshness policy.
 
 `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` now keeps only
 shared reflection helpers. Capture configuration model coverage is split into
