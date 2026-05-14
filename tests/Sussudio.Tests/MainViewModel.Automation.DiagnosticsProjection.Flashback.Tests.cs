@@ -8,23 +8,33 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackExportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs")
             .Replace("\r\n", "\n");
+        var flashbackExportLastResultProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackExportLastResult.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var flashbackExport = BuildFlashbackExportProjection(health);");
+        AssertContains(snapshotProjectionText, "var flashbackExportLastResult = BuildFlashbackExportLastResultProjection(health);");
         AssertContains(snapshotProjectionText, "FlashbackExportActive = flashbackExport.Active,");
         AssertContains(snapshotProjectionText, "FlashbackExportPercent = flashbackExport.Percent,");
         AssertContains(snapshotProjectionText, "FlashbackExportLastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,");
-        AssertContains(snapshotProjectionText, "LastExportId = flashbackExport.LastExportId,");
-        AssertContains(snapshotProjectionText, "LastExportMessage = flashbackExport.LastExportMessage");
+        AssertContains(snapshotProjectionText, "LastExportId = flashbackExportLastResult.LastExportId,");
+        AssertContains(snapshotProjectionText, "LastExportMessage = flashbackExportLastResult.LastExportMessage");
         AssertDoesNotContain(snapshotProjectionText, "FlashbackExportActive = health.FlashbackExportActive,");
         AssertDoesNotContain(snapshotProjectionText, "FlashbackExportPercent = health.FlashbackExportPercent,");
         AssertDoesNotContain(snapshotProjectionText, "LastExportId = health.LastExportId,");
+        AssertDoesNotContain(snapshotProjectionText, "LastExportId = flashbackExport.LastExportId,");
 
         AssertContains(flashbackExportProjectionText, "private static FlashbackExportProjection BuildFlashbackExportProjection(CaptureHealthSnapshot health)");
         AssertContains(flashbackExportProjectionText, "Active = health.FlashbackExportActive,");
         AssertContains(flashbackExportProjectionText, "Percent = health.FlashbackExportPercent,");
         AssertContains(flashbackExportProjectionText, "LastForceRotateFallbackSegments = health.FlashbackExportLastForceRotateFallbackSegments,");
-        AssertContains(flashbackExportProjectionText, "LastExportId = health.LastExportId,");
         AssertContains(flashbackExportProjectionText, "private readonly record struct FlashbackExportProjection");
+        AssertDoesNotContain(flashbackExportProjectionText, "LastExportId = health.LastExportId,");
+        AssertDoesNotContain(flashbackExportProjectionText, "public long LastExportId { get; init; }");
+
+        AssertContains(flashbackExportLastResultProjectionText, "private static FlashbackExportLastResultProjection BuildFlashbackExportLastResultProjection(CaptureHealthSnapshot health)");
+        AssertContains(flashbackExportLastResultProjectionText, "LastExportId = health.LastExportId,");
+        AssertContains(flashbackExportLastResultProjectionText, "LastExportMessage = health.LastExportMessage");
+        AssertContains(flashbackExportLastResultProjectionText, "private readonly record struct FlashbackExportLastResultProjection");
 
         return Task.CompletedTask;
     }

@@ -29,11 +29,7 @@ public sealed partial class AutomationDiagnosticsHub
             LastForceRotateFallbackUtcUnixMs = health.FlashbackExportLastForceRotateFallbackUtcUnixMs,
             LastForceRotateFallbackSegments = health.FlashbackExportLastForceRotateFallbackSegments,
             LastForceRotateFallbackInPointMs = health.FlashbackExportLastForceRotateFallbackInPointMs,
-            LastForceRotateFallbackOutPointMs = health.FlashbackExportLastForceRotateFallbackOutPointMs,
-            LastExportId = health.LastExportId,
-            LastExportPath = health.LastExportPath,
-            LastExportSuccess = health.LastExportSuccess,
-            LastExportMessage = health.LastExportMessage
+            LastForceRotateFallbackOutPointMs = health.FlashbackExportLastForceRotateFallbackOutPointMs
         };
 
     private readonly record struct FlashbackExportProjection
@@ -61,9 +57,5 @@ public sealed partial class AutomationDiagnosticsHub
         public int LastForceRotateFallbackSegments { get; init; }
         public long LastForceRotateFallbackInPointMs { get; init; }
         public long LastForceRotateFallbackOutPointMs { get; init; }
-        public long LastExportId { get; init; }
-        public string? LastExportPath { get; init; }
-        public bool? LastExportSuccess { get; init; }
-        public string? LastExportMessage { get; init; }
     }
 }

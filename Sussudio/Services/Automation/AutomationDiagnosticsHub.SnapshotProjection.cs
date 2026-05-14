@@ -57,6 +57,7 @@ public sealed partial class AutomationDiagnosticsHub
         var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime);
         var hdrTruth = BuildHdrTruthProjection(hdrTruthVerdict);
         var flashbackExport = BuildFlashbackExportProjection(health);
+        var flashbackExportLastResult = BuildFlashbackExportLastResultProjection(health);
         var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);
         var flashbackPlayback = BuildFlashbackPlaybackProjection(health);
         var snapshot = new AutomationSnapshot
@@ -831,10 +832,10 @@ public sealed partial class AutomationDiagnosticsHub
             FlashbackExportLastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,
             FlashbackExportLastForceRotateFallbackInPointMs = flashbackExport.LastForceRotateFallbackInPointMs,
             FlashbackExportLastForceRotateFallbackOutPointMs = flashbackExport.LastForceRotateFallbackOutPointMs,
-            LastExportId = flashbackExport.LastExportId,
-            LastExportPath = flashbackExport.LastExportPath,
-            LastExportSuccess = flashbackExport.LastExportSuccess,
-            LastExportMessage = flashbackExport.LastExportMessage
+            LastExportId = flashbackExportLastResult.LastExportId,
+            LastExportPath = flashbackExportLastResult.LastExportPath,
+            LastExportSuccess = flashbackExportLastResult.LastExportSuccess,
+            LastExportMessage = flashbackExportLastResult.LastExportMessage
         };
         return snapshot;
     }
