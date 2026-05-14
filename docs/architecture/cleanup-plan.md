@@ -80,6 +80,9 @@ DTO.
 drift and encoder correction projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs` owns
 recording-integrity projection inputs consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.RecordingBackend.cs` owns
+recording backend, audio path mode, and mux-result projection consumed by the
+automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns encoder
 queue ages, conversion queue depths, and recording video/GPU/CUDA health inputs
 consumed by the automation snapshot DTO.

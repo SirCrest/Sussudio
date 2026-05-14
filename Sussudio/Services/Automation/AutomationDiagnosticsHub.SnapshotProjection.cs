@@ -44,6 +44,7 @@ public sealed partial class AutomationDiagnosticsHub
         var avSync = BuildAvSyncProjection(captureRuntime);
         var captureTransport = BuildCaptureTransportProjection(captureRuntime);
         var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);
+        var recordingBackend = BuildRecordingBackendProjection(captureRuntime);
         var recordingPipeline = BuildRecordingPipelineProjection(health);
         var captureCadence = BuildCaptureCadenceProjection(health);
         var mjpeg = BuildMjpegProjection(health);
@@ -229,11 +230,9 @@ public sealed partial class AutomationDiagnosticsHub
             EncoderVideoFramesEncoded = recordingPipeline.EncoderVideoFramesEncoded,
             EncoderLastEnqueueAgeMs = recordingPipeline.EncoderLastEnqueueAgeMs,
             EncoderLastWriteAgeMs = recordingPipeline.EncoderLastWriteAgeMs,
-            RecordingBackend = captureRuntime.RecordingBackend,
-            AudioPathMode = captureRuntime.AudioPathMode,
-            MuxResult = captureRuntime.MuxSucceeded.HasValue
-                ? (captureRuntime.MuxSucceeded.Value ? "Succeeded" : "Failed")
-                : "NotAttempted",
+            RecordingBackend = recordingBackend.Backend,
+            AudioPathMode = recordingBackend.AudioPathMode,
+            MuxResult = recordingBackend.MuxResult,
             RecordingIntegrityStatus = recordingIntegrity.Status,
             RecordingIntegrityComplete = recordingIntegrity.Complete,
             RecordingIntegrityBackend = recordingIntegrity.Backend,

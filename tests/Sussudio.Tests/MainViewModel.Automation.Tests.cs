@@ -357,6 +357,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionRecordingIntegrityText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs")
             .Replace("\r\n", "\n");
+        var diagnosticsSnapshotProjectionRecordingBackendText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingBackend.cs")
+            .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionRecordingPipelineText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs")
             .Replace("\r\n", "\n");
         var diagnosticsSnapshotProjectionRecordingOutputText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs")
@@ -381,7 +383,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsTimelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsDiagnosticEvaluationFlashbackText + "\n" + diagnosticsDiagnosticEvaluationRealtimeText + "\n" + diagnosticsDiagnosticEvaluationLanesText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsSignalAlertsText + "\n" + diagnosticsFlashbackAlertsText + "\n" + diagnosticsFlashbackRecordingAlertsText + "\n" + diagnosticsFlashbackPlaybackAlertsText + "\n" + diagnosticsFlashbackPlaybackCommandAlertsText + "\n" + diagnosticsFlashbackPlaybackPerformanceAlertsText + "\n" + diagnosticsEventsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotProjectionText + "\n" + diagnosticsSnapshotProjectionAvSyncText + "\n" + diagnosticsSnapshotProjectionAudioText + "\n" + diagnosticsSnapshotProjectionCaptureCommandsText + "\n" + diagnosticsSnapshotProjectionCaptureFormatText + "\n" + diagnosticsSnapshotProjectionCaptureTransportText + "\n" + diagnosticsSnapshotProjectionCaptureCadenceText + "\n" + diagnosticsSnapshotProjectionMjpegText + "\n" + diagnosticsSnapshotProjectionFlashbackExportText + "\n" + diagnosticsSnapshotProjectionFlashbackPlaybackText + "\n" + diagnosticsSnapshotProjectionFlashbackRecordingText + "\n" + diagnosticsSnapshotProjectionPreviewD3DText + "\n" + diagnosticsSnapshotProjectionPreviewRuntimeText + "\n" + diagnosticsSnapshotProjectionProcessResourcesText + "\n" + diagnosticsSnapshotProjectionRecordingIntegrityText + "\n" + diagnosticsSnapshotProjectionRecordingPipelineText + "\n" + diagnosticsSnapshotProjectionRecordingOutputText + "\n" + diagnosticsSnapshotProjectionSourceSignalText + "\n" + diagnosticsSnapshotProjectionSourceTelemetryText + "\n" + diagnosticsSnapshotProjectionUserSettingsText + "\n" + diagnosticsSnapshotProjectionHdrPipelineText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText + "\n" + diagnosticsTimelineProjectionText;
+        var diagnosticsText = diagnosticsHubText + "\n" + diagnosticsEvaluationText + "\n" + diagnosticsEvaluationPolicyText + "\n" + diagnosticsDiagnosticEvaluationText + "\n" + diagnosticsDiagnosticEvaluationFlashbackText + "\n" + diagnosticsDiagnosticEvaluationRealtimeText + "\n" + diagnosticsDiagnosticEvaluationLanesText + "\n" + diagnosticsAlertsText + "\n" + diagnosticsSignalAlertsText + "\n" + diagnosticsFlashbackAlertsText + "\n" + diagnosticsFlashbackRecordingAlertsText + "\n" + diagnosticsFlashbackPlaybackAlertsText + "\n" + diagnosticsFlashbackPlaybackCommandAlertsText + "\n" + diagnosticsFlashbackPlaybackPerformanceAlertsText + "\n" + diagnosticsEventsText + "\n" + diagnosticsVerificationText + "\n" + diagnosticsLifecycleText + "\n" + diagnosticsHdrText + "\n" + diagnosticsSnapshotsText + "\n" + diagnosticsSnapshotProjectionText + "\n" + diagnosticsSnapshotProjectionAvSyncText + "\n" + diagnosticsSnapshotProjectionAudioText + "\n" + diagnosticsSnapshotProjectionCaptureCommandsText + "\n" + diagnosticsSnapshotProjectionCaptureFormatText + "\n" + diagnosticsSnapshotProjectionCaptureTransportText + "\n" + diagnosticsSnapshotProjectionCaptureCadenceText + "\n" + diagnosticsSnapshotProjectionMjpegText + "\n" + diagnosticsSnapshotProjectionFlashbackExportText + "\n" + diagnosticsSnapshotProjectionFlashbackPlaybackText + "\n" + diagnosticsSnapshotProjectionFlashbackRecordingText + "\n" + diagnosticsSnapshotProjectionPreviewD3DText + "\n" + diagnosticsSnapshotProjectionPreviewRuntimeText + "\n" + diagnosticsSnapshotProjectionProcessResourcesText + "\n" + diagnosticsSnapshotProjectionRecordingIntegrityText + "\n" + diagnosticsSnapshotProjectionRecordingBackendText + "\n" + diagnosticsSnapshotProjectionRecordingPipelineText + "\n" + diagnosticsSnapshotProjectionRecordingOutputText + "\n" + diagnosticsSnapshotProjectionSourceSignalText + "\n" + diagnosticsSnapshotProjectionSourceTelemetryText + "\n" + diagnosticsSnapshotProjectionUserSettingsText + "\n" + diagnosticsSnapshotProjectionHdrPipelineText + "\n" + diagnosticsSnapshotStateText + "\n" + diagnosticsPreviewPacingText + "\n" + diagnosticsOutputFilesText + "\n" + diagnosticsProcessMetricsText + "\n" + diagnosticsTimelineText + "\n" + diagnosticsTimelineProjectionText;
         var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
@@ -535,6 +537,11 @@ static partial class Program
         AssertContains(diagnosticsSnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityProjection BuildRecordingIntegrityProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnosticsSnapshotProjectionRecordingIntegrityText, "Status = captureRuntime.RecordingIntegrityStatus,");
         AssertDoesNotContain(diagnosticsSnapshotProjectionText, "RecordingIntegrityStatus = captureRuntime.RecordingIntegrityStatus,");
+        AssertContains(diagnosticsSnapshotProjectionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
+        AssertContains(diagnosticsSnapshotProjectionRecordingBackendText, "private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)");
+        AssertContains(diagnosticsSnapshotProjectionRecordingBackendText, "MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)");
+        AssertDoesNotContain(diagnosticsSnapshotProjectionText, "RecordingBackend = captureRuntime.RecordingBackend,");
+        AssertDoesNotContain(diagnosticsSnapshotProjectionText, "MuxResult = captureRuntime.MuxSucceeded.HasValue");
         AssertContains(diagnosticsSnapshotProjectionText, "var recordingPipeline = BuildRecordingPipelineProjection(health);");
         AssertContains(diagnosticsSnapshotProjectionRecordingPipelineText, "private static RecordingPipelineProjection BuildRecordingPipelineProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnosticsSnapshotProjectionRecordingPipelineText, "RecordingVideoQueueCapacity = health.RecordingVideoQueueCapacity,");
@@ -2089,6 +2096,30 @@ static partial class Program
         AssertContains(recordingPipelineProjectionText, "ConversionQueueDepth = health.ConversionQueueDepth,");
         AssertContains(recordingPipelineProjectionText, "RecordingVideoQueueCapacity = health.RecordingVideoQueueCapacity,");
         AssertContains(recordingPipelineProjectionText, "RecordingCudaFramesDropped = health.RecordingCudaFramesDropped");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AutomationDiagnosticsRecordingBackendProjection_LivesInFocusedPartial()
+    {
+        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
+            .Replace("\r\n", "\n");
+        var recordingBackendProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingBackend.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(snapshotProjectionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
+        AssertContains(snapshotProjectionText, "RecordingBackend = recordingBackend.Backend,");
+        AssertContains(snapshotProjectionText, "AudioPathMode = recordingBackend.AudioPathMode,");
+        AssertContains(snapshotProjectionText, "MuxResult = recordingBackend.MuxResult,");
+        AssertDoesNotContain(snapshotProjectionText, "RecordingBackend = captureRuntime.RecordingBackend,");
+        AssertDoesNotContain(snapshotProjectionText, "MuxResult = captureRuntime.MuxSucceeded.HasValue");
+
+        AssertContains(recordingBackendProjectionText, "private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)");
+        AssertContains(recordingBackendProjectionText, "Backend = captureRuntime.RecordingBackend,");
+        AssertContains(recordingBackendProjectionText, "AudioPathMode = captureRuntime.AudioPathMode,");
+        AssertContains(recordingBackendProjectionText, "MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)");
+        AssertContains(recordingBackendProjectionText, "private static string ResolveMuxResult(bool? muxSucceeded)");
+        AssertContains(recordingBackendProjectionText, "private readonly record struct RecordingBackendProjection");
 
         return Task.CompletedTask;
     }

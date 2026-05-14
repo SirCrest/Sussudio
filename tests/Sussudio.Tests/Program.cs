@@ -471,6 +471,9 @@ static partial class Program
                 "Automation diagnostics recording pipeline projection lives in focused partial",
                 AutomationDiagnosticsRecordingPipelineProjection_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Automation diagnostics recording backend projection lives in focused partial",
+                AutomationDiagnosticsRecordingBackendProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Automation diagnostics recording output projection lives in focused partial",
                 AutomationDiagnosticsRecordingOutputProjection_LivesInFocusedPartial),
             await RunCheckAsync(
