@@ -706,12 +706,17 @@ Keep AVI InfoFrame decoding, HDR metadata decoding, scalar/ascii payload reads,
 frame-rate rational inference, confidence scoring, and boolean token helpers
 there.
 
+Flashback encoder sink startup now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs`. Keep session
+validation, buffer session creation, encoder initialization, queue creation,
+background task startup, and startup rollback there.
+
 Flashback encoder sink options and packet helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs`. Keep
 recording-context mapping, encoder option creation, segment extension policy,
 packet records, and buffer/COM release helpers there so
-`FlashbackEncoderSink.cs` stays focused on lifecycle, the encode loop, and
-rotation.
+`FlashbackEncoderSink.cs` stays focused on construction, core state, and small
+shared helpers.
 
 Flashback encoder queue helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep queue
