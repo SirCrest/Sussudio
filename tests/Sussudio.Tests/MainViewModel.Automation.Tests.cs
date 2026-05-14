@@ -1185,11 +1185,20 @@ static partial class Program
             .Replace("\r\n", "\n");
         var sourceReaderLifecycleText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs")
             .Replace("\r\n", "\n");
+        var sourceReaderInitializationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs")
+            .Replace("\r\n", "\n");
+        var sourceReaderReadLoopText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.ReadLoop.cs")
+            .Replace("\r\n", "\n");
+        var sourceReaderFrameDeliveryText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs")
+            .Replace("\r\n", "\n");
         var sourceReaderText = sourceReaderRootText
             + "\n" + sourceReaderDiagnosticsText
             + "\n" + sourceReaderDxgiBuffersText
             + "\n" + sourceReaderFrameLayoutText
             + "\n" + sourceReaderLifecycleText
+            + "\n" + sourceReaderInitializationText
+            + "\n" + sourceReaderReadLoopText
+            + "\n" + sourceReaderFrameDeliveryText
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs")
                 .Replace("\r\n", "\n");
         AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
@@ -1216,6 +1225,26 @@ static partial class Program
         AssertDoesNotContain(sourceReaderRootText, "public async Task StopAsync()");
         AssertDoesNotContain(sourceReaderRootText, "private void ReleaseReaderAndSource()");
         AssertDoesNotContain(sourceReaderRootText, "private void SignalFatalError(Exception ex)");
+        AssertContains(sourceReaderInitializationText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
+        AssertContains(sourceReaderInitializationText, "MF_SOURCE_READER_INIT ");
+        AssertContains(sourceReaderInitializationText, "SelectConvertedMediaType(");
+        AssertDoesNotContain(sourceReaderRootText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
+        AssertContains(sourceReaderReadLoopText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
+        AssertContains(sourceReaderReadLoopText, "reader.ReadSample(");
+        AssertContains(sourceReaderReadLoopText, "DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);");
+        AssertDoesNotContain(sourceReaderRootText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
+        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverFrame(");
+        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverDualFrameFromBuffer(");
+        AssertContains(sourceReaderFrameDeliveryText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertContains(sourceReaderFrameDeliveryText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
+        AssertContains(sourceReaderFrameDeliveryText, "ArrayPool<byte>.Shared.Rent");
+        AssertContains(sourceReaderFrameDeliveryText, "Marshal.Release(gpuTexture)");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverFrame(");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverDualFrameFromBuffer(");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertDoesNotContain(sourceReaderRootText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
 
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n")

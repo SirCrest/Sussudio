@@ -786,8 +786,26 @@ Media Foundation source-reader negotiation now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs`. Keep
 DXGI manager attachment, device-source open/enumeration fallback, native
 media-type selection, converted-type construction, frame-size/frame-rate
-attribute reads, and optional media-attribute copy helpers there; keep the read
-loop and frame delivery in the root source-reader file.
+attribute reads, and optional media-attribute copy helpers there; keep
+high-level source-reader state fields in the root source-reader file.
+
+Media Foundation source-reader initialization now lives in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs`. Keep
+public initialization validation, startup-reference acquisition/release, reader
+attribute construction, negotiated/actual media-type application, runtime field
+reset, and initialization success/failure logging there.
+
+Media Foundation source-reader read-loop ownership now lives in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.ReadLoop.cs`. Keep the
+read thread priority, `ReadSample` outstanding-state tracking, sample timestamp
+cadence handoff, frame-delivery invocation, frame-drop accounting, and fatal
+D3D output failure break behavior there.
+
+Media Foundation source-reader frame delivery now lives in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs`. Keep
+sample-to-buffer conversion, compressed MJPG byte extraction, raw CPU frame
+delivery, dual GPU/CPU delivery, 2D buffer handling, readback fallback, packed
+stride copies, and GPU texture release there.
 
 Media Foundation interop declarations now live in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Interop.cs`. Keep MF
@@ -799,30 +817,33 @@ Media Foundation source cadence metrics now live in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs`. Keep the
 public cadence snapshot record, expected-rate/window sizing, stop-time cadence
 reset, timestamp interval tracking, and percentile/drop estimate calculations
-there; keep sample reading and frame delivery in the root source-reader file.
+there; keep sample reading and frame delivery in their named source-reader
+partials.
 
 Media Foundation source-reader diagnostics now live in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Diagnostics.cs`. Keep the
 debug-only COM vtable diagnostic there; keep sample reading, frame delivery,
-and read-loop control flow in the root source-reader file.
+and read-loop control flow in their named source-reader partials.
 
 Media Foundation source-reader DXGI buffer extraction now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.DxgiBuffers.cs`. Keep
 IMFDXGIBuffer texture/subresource extraction, D3D texture IID lookup, and DXGI
-fallback diagnostics there; keep frame delivery in the root source-reader file
-and reader start/stop/dispose in the lifecycle partial.
+fallback diagnostics there; keep frame delivery in
+`MfSourceReaderVideoCapture.FrameDelivery.cs` and reader start/stop/dispose in
+the lifecycle partial.
 
 Media Foundation packed-frame layout helpers now live in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs`. Keep
 frame-size/row-byte calculation, packed-stride inference, stride-aware YUV
-copying, and source subtype labels there; keep frame delivery in the root
-source-reader file and reader start/stop/dispose in the lifecycle partial.
+copying, and source subtype labels there; keep frame delivery in
+`MfSourceReaderVideoCapture.FrameDelivery.cs` and reader start/stop/dispose in
+the lifecycle partial.
 
 Media Foundation source-reader lifecycle now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs`. Keep
 public start/stop/dispose, reader/source COM release, lifecycle logging, and
 fatal-error callback dispatch there; keep initialization and frame delivery in
-the root source-reader file.
+their named source-reader partials.
 
 Unified capture diagnostic metric projection now lives in
 `Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs`. Keep MJPEG timing
