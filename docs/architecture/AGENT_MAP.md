@@ -708,6 +708,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.FrameFlow.Tests.cs` owns pending
   frame draining, frame-capture cancellation, and shared D3D device reference
   lifecycle assertions.
+- `tests/Sussudio.Tests/GpuTelemetry.Nvml.Tests.cs` owns NVML snapshot
+  computed-property and unit-conversion contract checks.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers for automation tool contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Protocol.Tests.cs` owns
