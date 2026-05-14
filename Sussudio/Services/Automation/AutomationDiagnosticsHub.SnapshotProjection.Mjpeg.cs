@@ -6,7 +6,10 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static MjpegProjection BuildMjpegProjection(CaptureHealthSnapshot health)
-        => new()
+    {
+        var previewJitter = BuildMjpegPreviewJitterProjection(health);
+
+        return new()
         {
             DecodeSampleCount = health.MjpegDecodeSampleCount,
             DecodeAvgMs = health.MjpegDecodeAvgMs,
@@ -45,46 +48,7 @@ public sealed partial class AutomationDiagnosticsHub
             CompressedQueueByteBudget = health.MjpegCompressedQueueByteBudget,
             ReorderSkips = health.MjpegReorderSkips,
             ReorderBufferDepth = health.MjpegReorderBufferDepth,
-            PreviewJitterEnabled = health.MjpegPreviewJitterEnabled,
-            PreviewJitterTargetDepth = health.MjpegPreviewJitterTargetDepth,
-            PreviewJitterMaxDepth = health.MjpegPreviewJitterMaxDepth,
-            PreviewJitterQueueDepth = health.MjpegPreviewJitterQueueDepth,
-            PreviewJitterTotalQueued = health.MjpegPreviewJitterTotalQueued,
-            PreviewJitterTotalSubmitted = health.MjpegPreviewJitterTotalSubmitted,
-            PreviewJitterTotalDropped = health.MjpegPreviewJitterTotalDropped,
-            PreviewJitterUnderflowCount = health.MjpegPreviewJitterUnderflowCount,
-            PreviewJitterResumeReprimeCount = health.MjpegPreviewJitterResumeReprimeCount,
-            PreviewJitterInputSampleCount = health.MjpegPreviewJitterInputSampleCount,
-            PreviewJitterInputAvgMs = health.MjpegPreviewJitterInputAvgMs,
-            PreviewJitterInputP95Ms = health.MjpegPreviewJitterInputP95Ms,
-            PreviewJitterInputMaxMs = health.MjpegPreviewJitterInputMaxMs,
-            PreviewJitterOutputSampleCount = health.MjpegPreviewJitterOutputSampleCount,
-            PreviewJitterOutputAvgMs = health.MjpegPreviewJitterOutputAvgMs,
-            PreviewJitterOutputP95Ms = health.MjpegPreviewJitterOutputP95Ms,
-            PreviewJitterOutputMaxMs = health.MjpegPreviewJitterOutputMaxMs,
-            PreviewJitterLatencySampleCount = health.MjpegPreviewJitterLatencySampleCount,
-            PreviewJitterLatencyAvgMs = health.MjpegPreviewJitterLatencyAvgMs,
-            PreviewJitterLatencyP95Ms = health.MjpegPreviewJitterLatencyP95Ms,
-            PreviewJitterLatencyMaxMs = health.MjpegPreviewJitterLatencyMaxMs,
-            PreviewJitterDeadlineDropCount = health.MjpegPreviewJitterDeadlineDropCount,
-            PreviewJitterClearedDropCount = health.MjpegPreviewJitterClearedDropCount,
-            PreviewJitterTargetIncreaseCount = health.MjpegPreviewJitterTargetIncreaseCount,
-            PreviewJitterTargetDecreaseCount = health.MjpegPreviewJitterTargetDecreaseCount,
-            PreviewJitterLastSelectedPreviewPresentId = health.MjpegPreviewJitterLastSelectedPreviewPresentId,
-            PreviewJitterLastSelectedSourceSequenceNumber = health.MjpegPreviewJitterLastSelectedSourceSequenceNumber,
-            PreviewJitterLastSelectedQpc = health.MjpegPreviewJitterLastSelectedQpc,
-            PreviewJitterLastSelectedSourceLatencyMs = health.MjpegPreviewJitterLastSelectedSourceLatencyMs,
-            PreviewJitterLastDroppedSourceSequenceNumber = health.MjpegPreviewJitterLastDroppedSourceSequenceNumber,
-            PreviewJitterLastDropQpc = health.MjpegPreviewJitterLastDropQpc,
-            PreviewJitterLastDropReason = health.MjpegPreviewJitterLastDropReason,
-            PreviewJitterLastUnderflowQpc = health.MjpegPreviewJitterLastUnderflowQpc,
-            PreviewJitterLastUnderflowReason = health.MjpegPreviewJitterLastUnderflowReason,
-            PreviewJitterLastUnderflowQueueDepth = health.MjpegPreviewJitterLastUnderflowQueueDepth,
-            PreviewJitterLastUnderflowInputAgeMs = health.MjpegPreviewJitterLastUnderflowInputAgeMs,
-            PreviewJitterLastUnderflowOutputAgeMs = health.MjpegPreviewJitterLastUnderflowOutputAgeMs,
-            PreviewJitterLastScheduleLateMs = health.MjpegPreviewJitterLastScheduleLateMs,
-            PreviewJitterMaxScheduleLateMs = health.MjpegPreviewJitterMaxScheduleLateMs,
-            PreviewJitterScheduleLateCount = health.MjpegPreviewJitterScheduleLateCount,
+            PreviewJitter = previewJitter,
             PacketHashSampleCount = health.MjpegPacketHashSampleCount,
             PacketHashUniqueFrameCount = health.MjpegPacketHashUniqueFrameCount,
             PacketHashDuplicateFrameCount = health.MjpegPacketHashDuplicateFrameCount,
@@ -109,6 +73,7 @@ public sealed partial class AutomationDiagnosticsHub
                         worker.MaxMs))
                 : Array.Empty<MjpegDecoderAutomationSnapshot>()
         };
+    }
 
     private readonly record struct MjpegProjection
     {
@@ -149,46 +114,7 @@ public sealed partial class AutomationDiagnosticsHub
         public long CompressedQueueByteBudget { get; init; }
         public long ReorderSkips { get; init; }
         public int ReorderBufferDepth { get; init; }
-        public bool PreviewJitterEnabled { get; init; }
-        public int PreviewJitterTargetDepth { get; init; }
-        public int PreviewJitterMaxDepth { get; init; }
-        public int PreviewJitterQueueDepth { get; init; }
-        public long PreviewJitterTotalQueued { get; init; }
-        public long PreviewJitterTotalSubmitted { get; init; }
-        public long PreviewJitterTotalDropped { get; init; }
-        public long PreviewJitterUnderflowCount { get; init; }
-        public long PreviewJitterResumeReprimeCount { get; init; }
-        public int PreviewJitterInputSampleCount { get; init; }
-        public double PreviewJitterInputAvgMs { get; init; }
-        public double PreviewJitterInputP95Ms { get; init; }
-        public double PreviewJitterInputMaxMs { get; init; }
-        public int PreviewJitterOutputSampleCount { get; init; }
-        public double PreviewJitterOutputAvgMs { get; init; }
-        public double PreviewJitterOutputP95Ms { get; init; }
-        public double PreviewJitterOutputMaxMs { get; init; }
-        public int PreviewJitterLatencySampleCount { get; init; }
-        public double PreviewJitterLatencyAvgMs { get; init; }
-        public double PreviewJitterLatencyP95Ms { get; init; }
-        public double PreviewJitterLatencyMaxMs { get; init; }
-        public long PreviewJitterDeadlineDropCount { get; init; }
-        public long PreviewJitterClearedDropCount { get; init; }
-        public long PreviewJitterTargetIncreaseCount { get; init; }
-        public long PreviewJitterTargetDecreaseCount { get; init; }
-        public long PreviewJitterLastSelectedPreviewPresentId { get; init; }
-        public long PreviewJitterLastSelectedSourceSequenceNumber { get; init; }
-        public long PreviewJitterLastSelectedQpc { get; init; }
-        public double PreviewJitterLastSelectedSourceLatencyMs { get; init; }
-        public long PreviewJitterLastDroppedSourceSequenceNumber { get; init; }
-        public long PreviewJitterLastDropQpc { get; init; }
-        public string PreviewJitterLastDropReason { get; init; }
-        public long PreviewJitterLastUnderflowQpc { get; init; }
-        public string PreviewJitterLastUnderflowReason { get; init; }
-        public int PreviewJitterLastUnderflowQueueDepth { get; init; }
-        public double PreviewJitterLastUnderflowInputAgeMs { get; init; }
-        public double PreviewJitterLastUnderflowOutputAgeMs { get; init; }
-        public double PreviewJitterLastScheduleLateMs { get; init; }
-        public double PreviewJitterMaxScheduleLateMs { get; init; }
-        public long PreviewJitterScheduleLateCount { get; init; }
+        public MjpegPreviewJitterProjection PreviewJitter { get; init; }
         public int PacketHashSampleCount { get; init; }
         public long PacketHashUniqueFrameCount { get; init; }
         public long PacketHashDuplicateFrameCount { get; init; }
