@@ -1182,7 +1182,9 @@ Primary owners:
   `Program.AtCommands.cs` owns direct AT read/write/input subcommands;
   `Program.DefaultExperiment.cs` owns the default baseline/experiment/restore
   runner; `Program.Formatting.cs` owns shared byte formatting;
-  `Program.I2cCommands.cs` owns the exploratory `i2c-cmd` subcommand family;
+  `Program.I2cCommands.cs` owns the exploratory `i2c-cmd` router/basic
+  get/set/scan paths; `Program.I2cCommands.SelectorProbe.cs` owns selector
+  transport probing for that command family;
   `Program.I2cSwitch.cs` owns the captured audio-switch replay workflow;
   `Program.ExperimentPayloads.cs` owns experiment payload construction;
   `Program.I2cTransport.cs` owns I2C-over-AT transport helpers; and

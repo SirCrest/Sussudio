@@ -197,6 +197,7 @@ static partial class Program
         var probeExperimentPayloadsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ExperimentPayloads.cs"));
         var probeFormattingText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Formatting.cs"));
         var probeI2cCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.cs"));
+        var probeI2cCommandsSelectorProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.SelectorProbe.cs"));
         var probeI2cSwitchText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs"));
         var probeI2cTransportText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs"));
         var probeServiceText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ServiceProbe.cs"));
@@ -241,10 +242,15 @@ static partial class Program
         AssertContains(probeExperimentPayloadsText, "public static byte[] BuildPayload(int width, long value)");
         AssertContains(probeFormattingText, "static class NativeXuProbeFormatting");
         AssertContains(probeFormattingText, "public static string FormatRaw");
-        AssertContains(probeI2cCommandsText, "static class NativeXuProbeI2cCommands");
+        AssertContains(probeI2cCommandsText, "static partial class NativeXuProbeI2cCommands");
         AssertContains(probeI2cCommandsText, "public static async Task<int> RunAsync");
         AssertContains(probeI2cCommandsText, "Usage: i2c-cmd get|set|scan");
         AssertContains(probeI2cCommandsText, "I2C SET/verify via AT envelope");
+        AssertContains(probeI2cCommandsText, "RunSelectorProbeAsync(dev)");
+        AssertDoesNotContain(probeI2cCommandsText, "Full Selector 3 dump");
+        AssertContains(probeI2cCommandsSelectorProbeText, "static partial class NativeXuProbeI2cCommands");
+        AssertContains(probeI2cCommandsSelectorProbeText, "public static async Task<int> RunSelectorProbeAsync");
+        AssertContains(probeI2cCommandsSelectorProbeText, "Full Selector 3 dump");
         AssertContains(probeI2cSwitchText, "static class NativeXuProbeI2cSwitch");
         AssertContains(probeI2cSwitchText, "public static async Task<int> RunAsync");
         AssertContains(probeI2cSwitchText, "Sending audio switch sequence");
