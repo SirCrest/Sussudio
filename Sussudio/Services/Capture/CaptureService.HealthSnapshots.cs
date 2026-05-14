@@ -19,8 +19,7 @@ public partial class CaptureService
         var flashbackCleanupInProgress = Volatile.Read(ref _flashbackCleanupInProgress) != 0;
         var observedTelemetry = ResolveObservedFrameTelemetry();
         var sourceTelemetry = CaptureSourceTelemetryHealthSnapshotFields(_latestSourceTelemetry);
-        var sourceCadence = unifiedVideoCapture?.GetSourceCadenceMetrics()
-            ?? default(MfSourceReaderVideoCapture.SourceCadenceMetrics);
+        var captureCadence = BuildCaptureCadenceHealthSnapshotFields(unifiedVideoCapture);
         var mjpegHealth = CaptureMjpegHealthSnapshotFields(unifiedVideoCapture);
         var (avSyncDriftMs, avSyncDriftRate) = ComputeAvSyncDrift();
         var (avSyncEncoderDriftMs, avSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
@@ -337,21 +336,21 @@ public partial class CaptureService
             VideoFramesEnqueued = recordingHealth.VideoFramesEnqueued,
             LastVideoEnqueueAgeMs = ComputeTickAge(recordingHealth.LastVideoEnqueueTick),
             LastVideoWriteAgeMs = ComputeTickAge(recordingHealth.LastVideoWriteTick),
-            CaptureCadenceSampleCount = sourceCadence.SampleCount,
-            CaptureCadenceObservedFps = sourceCadence.ObservedFps,
-            CaptureCadenceExpectedIntervalMs = sourceCadence.ExpectedIntervalMs,
-            CaptureCadenceAverageIntervalMs = sourceCadence.AverageIntervalMs,
-            CaptureCadenceP95IntervalMs = sourceCadence.P95IntervalMs,
-            CaptureCadenceP99IntervalMs = sourceCadence.P99IntervalMs,
-            CaptureCadenceMaxIntervalMs = sourceCadence.MaxIntervalMs,
-            CaptureCadenceOnePercentLowFps = sourceCadence.OnePercentLowFps,
-            CaptureCadenceFivePercentLowFps = sourceCadence.FivePercentLowFps,
-            CaptureCadenceSampleDurationMs = sourceCadence.SampleDurationMs,
-            CaptureCadenceRecentIntervalsMs = sourceCadence.RecentIntervalsMs,
-            CaptureCadenceJitterStdDevMs = sourceCadence.JitterStdDevMs,
-            CaptureCadenceSevereGapCount = sourceCadence.SevereGapCount,
-            CaptureCadenceEstimatedDroppedFrames = sourceCadence.EstimatedDroppedFrames,
-            CaptureCadenceEstimatedDropPercent = sourceCadence.EstimatedDropPercent,
+            CaptureCadenceSampleCount = captureCadence.SampleCount,
+            CaptureCadenceObservedFps = captureCadence.ObservedFps,
+            CaptureCadenceExpectedIntervalMs = captureCadence.ExpectedIntervalMs,
+            CaptureCadenceAverageIntervalMs = captureCadence.AverageIntervalMs,
+            CaptureCadenceP95IntervalMs = captureCadence.P95IntervalMs,
+            CaptureCadenceP99IntervalMs = captureCadence.P99IntervalMs,
+            CaptureCadenceMaxIntervalMs = captureCadence.MaxIntervalMs,
+            CaptureCadenceOnePercentLowFps = captureCadence.OnePercentLowFps,
+            CaptureCadenceFivePercentLowFps = captureCadence.FivePercentLowFps,
+            CaptureCadenceSampleDurationMs = captureCadence.SampleDurationMs,
+            CaptureCadenceRecentIntervalsMs = captureCadence.RecentIntervalsMs,
+            CaptureCadenceJitterStdDevMs = captureCadence.JitterStdDevMs,
+            CaptureCadenceSevereGapCount = captureCadence.SevereGapCount,
+            CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames,
+            CaptureCadenceEstimatedDropPercent = captureCadence.EstimatedDropPercent,
             MjpegDecodeSampleCount = mjpegHealth.Timing.DecodeSampleCount,
             MjpegDecodeAvgMs = mjpegHealth.Timing.DecodeAvgMs,
             MjpegDecodeP95Ms = mjpegHealth.Timing.DecodeP95Ms,

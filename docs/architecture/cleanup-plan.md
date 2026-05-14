@@ -1178,6 +1178,8 @@ per-decoder projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs`;
 source telemetry, backend, suppression, and circuit-state projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs`;
+capture cadence projection lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotCaptureCadence.cs`;
 Flashback buffer, startup-cache, backend-staleness, and encoder summary
 projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs`;

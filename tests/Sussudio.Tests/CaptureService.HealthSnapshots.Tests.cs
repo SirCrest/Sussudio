@@ -114,6 +114,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureService_HealthSnapshotCaptureCadenceFields_LiveInFocusedPartial()
+    {
+        var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var captureCadenceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotCaptureCadence.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(healthSnapshotText, "var captureCadence = BuildCaptureCadenceHealthSnapshotFields(unifiedVideoCapture);");
+        AssertContains(healthSnapshotText, "CaptureCadenceSampleCount = captureCadence.SampleCount,");
+        AssertContains(healthSnapshotText, "CaptureCadenceEstimatedDropPercent = captureCadence.EstimatedDropPercent,");
+        AssertDoesNotContain(healthSnapshotText, "GetSourceCadenceMetrics()");
+        AssertDoesNotContain(healthSnapshotText, "MfSourceReaderVideoCapture.SourceCadenceMetrics");
+
+        AssertContains(captureCadenceText, "private static CaptureCadenceHealthSnapshotFields BuildCaptureCadenceHealthSnapshotFields(");
+        AssertContains(captureCadenceText, "unifiedVideoCapture?.GetSourceCadenceMetrics()");
+        AssertContains(captureCadenceText, "default(MfSourceReaderVideoCapture.SourceCadenceMetrics)");
+        AssertContains(captureCadenceText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_HealthSnapshotMjpegFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
