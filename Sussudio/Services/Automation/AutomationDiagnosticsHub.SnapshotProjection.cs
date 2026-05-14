@@ -27,6 +27,7 @@ public sealed partial class AutomationDiagnosticsHub
         long recentD3DStatsFailures)
     {
         var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);
+        var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);
         var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);
         var captureFormat = BuildCaptureFormatProjection(captureRuntime);
         var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);
@@ -69,20 +70,20 @@ public sealed partial class AutomationDiagnosticsHub
             PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage,
             PreviewPacingSlowStageConfidence = previewPacingClassification.Confidence,
             PreviewPacingSlowStageEvidence = previewPacingClassification.Evidence,
-            CaptureCommandCommandsEnqueued = viewModelSnapshot.CaptureCommandCommandsEnqueued,
-            CaptureCommandCommandsCompleted = viewModelSnapshot.CaptureCommandCommandsCompleted,
-            CaptureCommandCommandsFailed = viewModelSnapshot.CaptureCommandCommandsFailed,
-            CaptureCommandCommandsCanceled = viewModelSnapshot.CaptureCommandCommandsCanceled,
-            CaptureCommandCommandsCoalesced = viewModelSnapshot.CaptureCommandCommandsCoalesced,
-            CaptureCommandPendingCommands = viewModelSnapshot.CaptureCommandPendingCommands,
-            CaptureCommandMaxPendingCommands = viewModelSnapshot.CaptureCommandMaxPendingCommands,
-            CaptureCommandOldestPendingCommandAgeMs = viewModelSnapshot.CaptureCommandOldestPendingCommandAgeMs,
-            CaptureCommandLastQueueLatencyMs = viewModelSnapshot.CaptureCommandLastQueueLatencyMs,
-            CaptureCommandMaxQueueLatencyMs = viewModelSnapshot.CaptureCommandMaxQueueLatencyMs,
-            CaptureCommandLastCommand = viewModelSnapshot.CaptureCommandLastCommand,
-            CaptureCommandLastOutcome = viewModelSnapshot.CaptureCommandLastOutcome,
-            CaptureCommandLastCorrelationId = viewModelSnapshot.CaptureCommandLastCorrelationId,
-            CaptureCommandLastError = viewModelSnapshot.CaptureCommandLastError,
+            CaptureCommandCommandsEnqueued = captureCommands.CommandsEnqueued,
+            CaptureCommandCommandsCompleted = captureCommands.CommandsCompleted,
+            CaptureCommandCommandsFailed = captureCommands.CommandsFailed,
+            CaptureCommandCommandsCanceled = captureCommands.CommandsCanceled,
+            CaptureCommandCommandsCoalesced = captureCommands.CommandsCoalesced,
+            CaptureCommandPendingCommands = captureCommands.PendingCommands,
+            CaptureCommandMaxPendingCommands = captureCommands.MaxPendingCommands,
+            CaptureCommandOldestPendingCommandAgeMs = captureCommands.OldestPendingCommandAgeMs,
+            CaptureCommandLastQueueLatencyMs = captureCommands.LastQueueLatencyMs,
+            CaptureCommandMaxQueueLatencyMs = captureCommands.MaxQueueLatencyMs,
+            CaptureCommandLastCommand = captureCommands.LastCommand,
+            CaptureCommandLastOutcome = captureCommands.LastOutcome,
+            CaptureCommandLastCorrelationId = captureCommands.LastCorrelationId,
+            CaptureCommandLastError = captureCommands.LastError,
             PerformanceThresholdCaptureDropPercent = _perfectionCaptureDropPercentThreshold,
             PerformanceThresholdCaptureP95Multiplier = _perfectionCaptureP95MultiplierThreshold,
             PerformanceThresholdPreviewSlowPercent = _perfectionPreviewSlowPercentThreshold,
