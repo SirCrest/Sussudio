@@ -18,15 +18,7 @@ public sealed partial class AutomationDiagnosticsHub
             FrameCount = health.FlashbackPlaybackFrameCount,
             LateFrames = health.FlashbackPlaybackLateFrames,
             DroppedFrames = health.FlashbackPlaybackDroppedFrames,
-            AudioMasterDelayDoubles = audioMaster.DelayDoubles,
-            AudioMasterDelayShrinks = audioMaster.DelayShrinks,
-            AudioMasterFallbacks = audioMaster.Fallbacks,
-            AudioMasterUnavailableFallbacks = audioMaster.UnavailableFallbacks,
-            AudioMasterStaleFallbacks = audioMaster.StaleFallbacks,
-            AudioMasterDriftOutlierFallbacks = audioMaster.DriftOutlierFallbacks,
-            AudioMasterLastFallbackReason = audioMaster.LastFallbackReason,
-            AudioMasterLastFallbackDriftMs = audioMaster.LastFallbackDriftMs,
-            AudioMasterLastFallbackClockAgeMs = audioMaster.LastFallbackClockAgeMs,
+            AudioMaster = audioMaster,
             SegmentSwitches = health.FlashbackPlaybackSegmentSwitches,
             Fmp4Reopens = health.FlashbackPlaybackFmp4Reopens,
             WriteHeadWaits = health.FlashbackPlaybackWriteHeadWaits,
@@ -59,25 +51,7 @@ public sealed partial class AutomationDiagnosticsHub
             LastPtsCadenceExpectedMs = health.FlashbackPlaybackLastPtsCadenceExpectedMs,
             Decode = decode,
             AvDriftMs = health.FlashbackAvDriftMs,
-            ThreadAlive = commands.ThreadAlive,
-            CommandsEnqueued = commands.Enqueued,
-            CommandsProcessed = commands.Processed,
-            CommandsDropped = commands.Dropped,
-            CommandsSkippedNotReady = commands.SkippedNotReady,
-            ScrubUpdatesCoalesced = commands.ScrubUpdatesCoalesced,
-            SeekCommandsCoalesced = commands.SeekCommandsCoalesced,
-            CommandQueueCapacity = commands.QueueCapacity,
-            PendingCommands = commands.Pending,
-            MaxPendingCommands = commands.MaxPending,
-            LastCommandQueueLatencyMs = commands.LastQueueLatencyMs,
-            MaxCommandQueueLatencyMs = commands.MaxQueueLatencyMs,
-            MaxCommandQueueLatencyCommand = commands.MaxQueueLatencyCommand,
-            LastCommandQueued = commands.LastQueued,
-            LastCommandProcessed = commands.LastProcessed,
-            LastCommandQueuedUtcUnixMs = commands.LastQueuedUtcUnixMs,
-            LastCommandProcessedUtcUnixMs = commands.LastProcessedUtcUnixMs,
-            LastCommandFailureUtcUnixMs = commands.LastFailureUtcUnixMs,
-            LastCommandFailure = commands.LastFailure
+            Commands = commands
         };
     }
 
@@ -89,15 +63,7 @@ public sealed partial class AutomationDiagnosticsHub
         public long FrameCount { get; init; }
         public long LateFrames { get; init; }
         public long DroppedFrames { get; init; }
-        public long AudioMasterDelayDoubles { get; init; }
-        public long AudioMasterDelayShrinks { get; init; }
-        public long AudioMasterFallbacks { get; init; }
-        public long AudioMasterUnavailableFallbacks { get; init; }
-        public long AudioMasterStaleFallbacks { get; init; }
-        public long AudioMasterDriftOutlierFallbacks { get; init; }
-        public string AudioMasterLastFallbackReason { get; init; }
-        public double AudioMasterLastFallbackDriftMs { get; init; }
-        public double AudioMasterLastFallbackClockAgeMs { get; init; }
+        public FlashbackPlaybackAudioMasterProjection AudioMaster { get; init; }
         public long SegmentSwitches { get; init; }
         public long Fmp4Reopens { get; init; }
         public long WriteHeadWaits { get; init; }
@@ -130,24 +96,6 @@ public sealed partial class AutomationDiagnosticsHub
         public double LastPtsCadenceExpectedMs { get; init; }
         public FlashbackPlaybackDecodeProjection Decode { get; init; }
         public double AvDriftMs { get; init; }
-        public bool ThreadAlive { get; init; }
-        public long CommandsEnqueued { get; init; }
-        public long CommandsProcessed { get; init; }
-        public long CommandsDropped { get; init; }
-        public long CommandsSkippedNotReady { get; init; }
-        public long ScrubUpdatesCoalesced { get; init; }
-        public long SeekCommandsCoalesced { get; init; }
-        public int CommandQueueCapacity { get; init; }
-        public int PendingCommands { get; init; }
-        public int MaxPendingCommands { get; init; }
-        public long LastCommandQueueLatencyMs { get; init; }
-        public long MaxCommandQueueLatencyMs { get; init; }
-        public string MaxCommandQueueLatencyCommand { get; init; }
-        public string LastCommandQueued { get; init; }
-        public string LastCommandProcessed { get; init; }
-        public long LastCommandQueuedUtcUnixMs { get; init; }
-        public long LastCommandProcessedUtcUnixMs { get; init; }
-        public long LastCommandFailureUtcUnixMs { get; init; }
-        public string LastCommandFailure { get; init; }
+        public FlashbackPlaybackCommandProjection Commands { get; init; }
     }
 }
