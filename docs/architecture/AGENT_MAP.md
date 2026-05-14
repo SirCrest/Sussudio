@@ -1010,11 +1010,23 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCheckCatalog.AutomationDiagnostics.cs` owns
   automation, coordinator, service namespace, and automation diagnostics
   projection check registration.
-- `tests/Sussudio.Tests/ServiceNamespace.Tests.cs` owns service namespace and
-  project-reference architecture assertions.
+- `tests/Sussudio.Tests/ServiceNamespace.Tests.cs` owns the harness-visible
+  service namespace/source ownership orchestrator.
+- `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` owns service
+  folder-to-namespace architecture assertions and flat `Sussudio.Services`
+  import bans.
 - `tests/Sussudio.Tests/ServiceNamespace.Helpers.Tests.cs` owns the shared source
   enumeration, project XML, and C# comment/string stripping helpers used by
   service namespace architecture assertions.
+- `tests/Sussudio.Tests/ServiceNamespace.NativeXuProbe.Tests.cs` owns
+  NativeXuAudioProbe linked-source, split-source, locator, and no-reflection
+  source ownership assertions.
+- `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.Tests.cs` owns
+  DeviceService, GPU interop, decoder, capture telemetry, audio controls,
+  UI-enqueue, format-probe, and preview renderer source ownership assertions.
+- `tests/Sussudio.Tests/ServiceNamespace.AutomationContracts.Tests.cs` owns
+  AutomationCommandKind project/source ownership alignment across the app and
+  automation tools.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.PresentationPreview.cs` owns
   MainViewModel, MainWindow, stats, preview renderer, and preview pacing check
   registration.
