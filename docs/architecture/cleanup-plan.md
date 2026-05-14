@@ -1187,7 +1187,7 @@ Flashback live queue, force-rotate, backpressure, and GPU queue projection lives
 in `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackQueues.cs`;
 active recording queue/failure projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs`,
-Flashback export diagnostic projection lives in
+Flashback export diagnostic and derived progress/throughput projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs`,
 and Flashback playback state/cadence/decode/command projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`.

@@ -4,11 +4,13 @@ namespace Sussudio.Services.Capture;
 
 public partial class CaptureService
 {
-    private FlashbackExportHealthSnapshotFields CaptureFlashbackExportHealthSnapshotFields()
+    private FlashbackExportHealthSnapshotFields CaptureFlashbackExportHealthSnapshotFields(
+        long snapshotUtcUnixMs)
     {
+        FlashbackExportHealthSnapshotFields export;
         lock (_flashbackExportDiagnosticsLock)
         {
-            return new FlashbackExportHealthSnapshotFields(
+            export = new FlashbackExportHealthSnapshotFields(
                 _flashbackExportActive,
                 _flashbackExportId,
                 _flashbackExportStatus,
@@ -29,8 +31,38 @@ public partial class CaptureService
                 _flashbackExportLastForceRotateFallbackInPointMs,
                 _flashbackExportLastForceRotateFallbackOutPointMs,
                 _lastFlashbackExportResultId,
-                _lastExportResult);
+                _lastExportResult,
+                0,
+                0,
+                0,
+                0);
         }
+
+        var elapsedMs = ComputeFlashbackExportElapsedMs(
+            export.Active,
+            export.StartedUtcUnixMs,
+            export.CompletedUtcUnixMs,
+            snapshotUtcUnixMs);
+        var lastProgressAgeMs = ComputeFlashbackExportLastProgressAgeMs(
+            export.Active,
+            export.StartedUtcUnixMs,
+            export.LastProgressUtcUnixMs,
+            snapshotUtcUnixMs);
+        var outputBytes = GetFileLengthOrZero(
+            !string.IsNullOrWhiteSpace(export.OutputPath)
+                ? export.OutputPath
+                : export.LastResult?.OutputPath);
+        var throughputBytesPerSec = elapsedMs > 0
+            ? outputBytes / (elapsedMs / 1000.0)
+            : 0;
+
+        return export with
+        {
+            ElapsedMs = elapsedMs,
+            LastProgressAgeMs = lastProgressAgeMs,
+            OutputBytes = outputBytes,
+            ThroughputBytesPerSec = throughputBytesPerSec
+        };
     }
 
     private readonly record struct FlashbackExportHealthSnapshotFields(
@@ -54,5 +86,9 @@ public partial class CaptureService
         long LastForceRotateFallbackInPointMs,
         long LastForceRotateFallbackOutPointMs,
         long LastResultId,
-        FinalizeResult? LastResult);
+        FinalizeResult? LastResult,
+        long ElapsedMs,
+        long LastProgressAgeMs,
+        long OutputBytes,
+        double ThroughputBytesPerSec);
 }

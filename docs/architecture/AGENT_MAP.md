@@ -392,7 +392,8 @@ Important entry points:
   backend, suppression, and circuit-state field projection for health
   snapshots.
 - `CaptureService.HealthSnapshotFlashbackExport.cs` owns the locked Flashback
-  export diagnostic field copy used by health snapshot projection.
+  export diagnostic field copy and derived progress/throughput projection used
+  by health snapshots.
 - `CaptureService.HealthSnapshotFlashbackPlayback.cs` owns Flashback playback
   state, cadence, decode, audio-master, and command-queue field projection for
   health snapshots.

@@ -10,13 +10,20 @@ static partial class Program
         var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(healthSnapshotText, "var flashbackExport = CaptureFlashbackExportHealthSnapshotFields();");
+        AssertContains(healthSnapshotText, "var flashbackExport = CaptureFlashbackExportHealthSnapshotFields(snapshotUtcUnixMs);");
         AssertContains(healthSnapshotText, "FlashbackExportActive = flashbackExport.Active,");
+        AssertContains(healthSnapshotText, "FlashbackExportElapsedMs = flashbackExport.ElapsedMs,");
+        AssertContains(healthSnapshotText, "FlashbackExportThroughputBytesPerSec = flashbackExport.ThroughputBytesPerSec,");
         AssertContains(healthSnapshotText, "LastExportId = flashbackExport.LastResultId,");
         AssertDoesNotContain(healthSnapshotText, "lock (_flashbackExportDiagnosticsLock)");
+        AssertDoesNotContain(healthSnapshotText, "ComputeFlashbackExportElapsedMs(");
+        AssertDoesNotContain(healthSnapshotText, "GetFileLengthOrZero(");
 
-        AssertContains(flashbackExportText, "private FlashbackExportHealthSnapshotFields CaptureFlashbackExportHealthSnapshotFields()");
+        AssertContains(flashbackExportText, "private FlashbackExportHealthSnapshotFields CaptureFlashbackExportHealthSnapshotFields(");
         AssertContains(flashbackExportText, "lock (_flashbackExportDiagnosticsLock)");
+        AssertContains(flashbackExportText, "ComputeFlashbackExportElapsedMs(");
+        AssertContains(flashbackExportText, "GetFileLengthOrZero(");
+        AssertContains(flashbackExportText, "ThroughputBytesPerSec = throughputBytesPerSec");
         AssertContains(flashbackExportText, "FinalizeResult? LastResult");
 
         return Task.CompletedTask;
