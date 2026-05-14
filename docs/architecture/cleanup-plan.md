@@ -853,21 +853,28 @@ D3D preview renderer metrics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep present
 cadence, pipeline latency, render CPU timing, frame-latency wait metrics,
 and metric reset logic there; keep slow-frame diagnostic ring/write logic in
-`D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, queueing/lifecycle in the root
-renderer, VideoProcessor/present work in `D3D11PreviewRenderer.Rendering.cs`,
-and shader drawing in `D3D11PreviewRenderer.ShaderRendering.cs`.
+`D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, lifecycle in
+`D3D11PreviewRenderer.Lifecycle.cs`, queueing in
+`D3D11PreviewRenderer.PendingFrames.cs`, VideoProcessor/present work in
+`D3D11PreviewRenderer.Rendering.cs`, and shader drawing in
+`D3D11PreviewRenderer.ShaderRendering.cs`.
 
 D3D preview renderer nested frame and metrics model types now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameTypes.cs`. Keep the
 `PendingFrame` lifetime wrapper and renderer metric record structs there so the
-root renderer stays focused on lifecycle, submission entry points, and public
-state.
+root renderer stays focused on construction, public state, and cross-cutting
+interop declarations.
 
 D3D preview renderer frame submission now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs`. Keep public raw
 frame, lease, texture, and NV12 plane submission entry points plus the NV12
-pending-frame adapter there; keep start/stop, panel sizing, and disposal in the
-root renderer.
+pending-frame adapter there; keep render-thread start/stop and disposal in
+`D3D11PreviewRenderer.Lifecycle.cs` and panel sizing in the root renderer.
+
+D3D preview renderer lifecycle now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs`. Keep
+render-thread start/stop, reinit stop, native-call drain fencing, pending-frame
+shutdown cleanup, and renderer disposal there.
 
 D3D preview renderer frame upload now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs`. Keep

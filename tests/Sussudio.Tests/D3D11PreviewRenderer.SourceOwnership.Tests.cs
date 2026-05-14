@@ -206,6 +206,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task D3D11PreviewRenderer_LifecycleLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
+        var lifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(lifecycleText, "public void Start(int width, int height, double fps, bool isHdr)");
+        AssertContains(lifecycleText, "public void StopRenderThread()");
+        AssertContains(lifecycleText, "public void Stop()");
+        AssertContains(lifecycleText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
+        AssertContains(lifecycleText, "public void Dispose()");
+        AssertContains(lifecycleText, "WaitForNativeCallToDrainOrThrow(\"stop\");");
+        AssertContains(lifecycleText, "FailPendingFrameCapture(\"Preview renderer stopped before frame capture completed.\");");
+        AssertDoesNotContain(rootText, "public void Start(int width, int height, double fps, bool isHdr)");
+        AssertDoesNotContain(rootText, "public void StopRenderThread()");
+        AssertDoesNotContain(rootText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task D3D11PreviewRenderer_ViewportHelpersLiveInFocusedPartial()
     {
         var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
