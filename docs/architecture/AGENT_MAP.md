@@ -918,7 +918,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/McpToolSurface.Performance.Tests.cs` owns MCP
   performance timeline and frame-pacing verdict tests.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` owns MCP wait,
-  window, preview, Flashback, screenshot, and probe tests.
+  window, preview, Flashback, and screenshot tests.
+- `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Probes.Tests.cs` owns MCP
+  preview color probe and video source probe formatting tests.
 - `tests/Sussudio.Tests/McpToolSurface.Helpers.cs` owns the shared MCP process,
   reflection, pipe-capture, JSON assertion, and tool-result helpers.
 - `tests/Sussudio.Tests/Flashback.Tests.cs` owns shared Flashback test helper

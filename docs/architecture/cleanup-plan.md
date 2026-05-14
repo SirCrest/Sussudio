@@ -1786,8 +1786,9 @@ Remaining `tools/Common` ownership:
    surface tests are now split into command-routing, diagnostic-session tool,
    diagnostic-session ownership, diagnostic-session result ownership,
    diagnostic-session Flashback, diagnostic-session runner, performance,
-   window/preview, and helper partial files. Flashback tests are also split by
-   buffer, encoder, exporter, playback, decoder, and support owners. Capture
+   window/preview, window/preview probes, and helper partial files. Flashback
+   tests are also split by buffer, encoder, exporter, playback, decoder, and
+   support owners. Capture
    session coordinator tests
    are split into API/contracts, queue behavior, Flashback behavior,
    transition policy, ownership, and harness-helper owners. MainViewModel
