@@ -225,6 +225,7 @@ static partial class Program
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameLatency.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs");
         var captureSource = ReadUnifiedVideoCaptureSource();
@@ -792,6 +793,23 @@ static partial class Program
         AssertContains(frameLatencyText, "private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);");
         AssertDoesNotContain(resourcesText, "private void WaitForFrameLatencySignal()");
         AssertDoesNotContain(renderingText, "private static extern uint WaitForSingleObject");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_ViewportHelpersLiveInFocusedPartial()
+    {
+        var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
+            .Replace("\r\n", "\n");
+        var viewportText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(viewportText, "private Viewport ComputeLetterboxViewport(int sourceWidth, int sourceHeight)");
+        AssertContains(viewportText, "private void UpdateViewportConstantBuffer(Viewport viewport)");
+        AssertContains(viewportText, "private static Vortice.RawRect ComputeLetterboxRect(");
+        AssertContains(viewportText, "MapMode.WriteDiscard");
+        AssertDoesNotContain(renderingText, "private Viewport ComputeLetterboxViewport(");
+        AssertDoesNotContain(renderingText, "private static Vortice.RawRect ComputeLetterboxRect(");
 
         return Task.CompletedTask;
     }

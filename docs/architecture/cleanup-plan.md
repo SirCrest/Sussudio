@@ -516,6 +516,13 @@ video-processor input view resolution, external texture input-view creation,
 direct raw-frame texture updates, and staging uploads there; keep shader draw
 paths and present tracking in `D3D11PreviewRenderer.Rendering.cs`.
 
+D3D preview renderer viewport and letterbox helpers now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs`. Keep
+`ComputeLetterboxViewport`, `UpdateViewportConstantBuffer`, and
+`ComputeLetterboxRect` there; keep shader draw path ordering in
+`D3D11PreviewRenderer.Rendering.cs` and D3D resource creation in
+`D3D11PreviewRenderer.Resources.cs`.
+
 D3D preview renderer submitted/rendered/dropped frame ownership tracking now
 lives in `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs`.
 Keep frame ownership snapshot projection and submitted/presented/dropped
