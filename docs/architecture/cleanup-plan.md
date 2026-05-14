@@ -439,7 +439,7 @@ leave live send/drain/finalize paths in the owner partials.
 LibAv encoder A/V sync diagnostics now live in
 `Sussudio/Services/Recording/LibAvEncoder.AvSync.cs`. Keep drift-correction
 thresholds, sync counters, current-drift reporting, and sync warning logs there
-so the root encoder stays focused on video send paths, lifecycle, and teardown.
+so the root encoder stays focused on initialization, lifecycle, and teardown.
 
 LibAv encoder packet writing now lives in
 `Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs`. Keep video encoder
@@ -459,8 +459,8 @@ D3D11 device-removed checks there.
 LibAv encoder audio stream handling now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone
 stream state, public status properties, packet writing, pending-sample flush,
-and sample queue/drain helpers there; leave video send, rotation, and
-finalization in `LibAvEncoder.cs`.
+and sample queue/drain helpers there; leave encoder initialization, rotation,
+and finalization in `LibAvEncoder.cs`.
 
 LibAv encoder audio submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs`. Keep the public
@@ -491,14 +491,19 @@ LibAv encoder video setup now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs`. Keep video codec
 context configuration, NVENC private option application, D3D11/CUDA hardware
 frames setup, texture-pool creation, and video bitstream-filter initialization
-there; leave per-frame video send paths, rotation, and finalization
-in `LibAvEncoder.cs`.
+there; leave rotation and finalization in `LibAvEncoder.cs`.
+
+LibAv encoder video submission now lives in
+`Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep CPU packed
+frame submission, D3D11 texture submission, CUDA frame submission, forced
+keyframe handling, per-frame HDR side-data attachment/removal, and video packet
+drains there.
 
 LibAv encoder output lifecycle now lives in
 `Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs`. Keep rotation IO
 close/reopen, stream reinitialization, MP4 muxer option application, segment
-runtime resets, and native cleanup/freeing there; keep active send paths and
-generic error helpers in the root encoder.
+runtime resets, and native cleanup/freeing there; keep generic error helpers in
+`LibAvEncoder.Diagnostics.cs`.
 
 LibAv recording sink queue ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`. Keep public
