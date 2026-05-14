@@ -697,6 +697,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` owns shared tool
   assembly loading, isolated load contexts, freshness checks, and tool build
   command mapping used by the legacy harness and xUnit slices.
+- `tests/Sussudio.Tests/HarnessCore.Helpers.cs` owns shared repo-file reads,
+  reflection/property access, assertion helpers, wait helpers, and synthetic
+  capture/recording object factories used by the legacy harness and xUnit
+  slices.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` owns shared
   reflection helpers for capture configuration model contract tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.Options.Tests.cs` owns

@@ -334,6 +334,10 @@ reliability-gates script checks, and snapshot formatter contracts.
 Shared tool assembly loading and stale-build detection now live in
 `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` so the legacy harness body
 no longer owns tool DLL resolution or freshness policy.
+Shared repo-file reads, reflection/property access, assertion helpers, wait
+helpers, and synthetic capture/recording object factories now live in
+`tests/Sussudio.Tests/HarnessCore.Helpers.cs` instead of the legacy harness
+body.
 
 `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` now keeps only
 shared reflection helpers. Capture configuration model coverage is split into
