@@ -444,6 +444,9 @@ static partial class Program
                 "Automation diagnostics capture command projection lives in focused partial",
                 AutomationDiagnosticsCaptureCommandProjection_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Automation diagnostics user settings projection lives in focused partial",
+                AutomationDiagnosticsUserSettingsProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Automation diagnostics capture format projection lives in focused partial",
                 AutomationDiagnosticsCaptureFormatProjection_LivesInFocusedPartial),
             await RunCheckAsync(
