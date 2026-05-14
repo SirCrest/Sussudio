@@ -1006,6 +1006,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadDiagnosticSessionMetricsSource()
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
                 .Replace("\r\n", "\n")
@@ -1065,7 +1067,8 @@ static partial class Program
         AssertContains(diagnosticSessionModelsText, "public sealed class DiagnosticSessionResult");
         AssertContains(diagnosticSessionModelsText, "public string TerminalState { get; set; }");
         AssertContains(diagnosticSessionText, "var livePath = runState.LivePath;");
-        AssertContains(diagnosticSessionText, "var initialSnapshotKnown = false;");
+        AssertContains(diagnosticSessionText, "DiagnosticSessionInitialSnapshot.CreateUnknown()");
+        AssertContains(diagnosticSessionText, "var initialSnapshotKnown = initialSnapshotResult.Known;");
         AssertContains(diagnosticSessionText, "skipped state-mutating scenario");
         AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs))");
         AssertContains(diagnosticSessionText, "\"SetRecordingEnabled\",");

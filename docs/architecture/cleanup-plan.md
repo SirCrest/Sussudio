@@ -1369,6 +1369,11 @@ Diagnostic-session JSON artifact helpers now live in
 session lifecycle, but JSON writing, frame-ledger extraction, and snapshot /
 verification response extraction have a smaller home.
 
+Diagnostic-session initial snapshot capture now lives in
+`tools/Common/DiagnosticSessionInitialSnapshot.cs`. It owns the baseline
+`GetSnapshot`, the unknown-state warning, and initial-snapshot exception
+recording while the runner keeps phase ordering.
+
 Diagnostic-session run state now lives in
 `tools/Common/DiagnosticSessionRunState.cs`. It owns last-stage tracking,
 terminal exception classification, `session-live.json` breadcrumbs, and
@@ -1594,6 +1599,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
+- `DiagnosticSessionInitialSnapshot.cs`
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionMetrics.Models.cs`
 - `DiagnosticSessionMetrics.SourceCadence.cs`

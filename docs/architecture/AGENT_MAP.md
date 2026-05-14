@@ -1025,6 +1025,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionJsonArtifacts.cs` owns diagnostic-session JSON
   artifact writing, frame-ledger extraction, and automation response shape
   helpers.
+- `tools/Common/DiagnosticSessionInitialSnapshot.cs` owns the diagnostic-session
+  baseline `GetSnapshot` capture, unknown-state warning, and initial-snapshot
+  exception recording.
 - `tools/Common/DiagnosticSessionRunState.cs` owns diagnostic-session terminal
   exception state, last-stage tracking, live-state breadcrumbs, and
   best-effort artifact write failure recording.

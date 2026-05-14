@@ -858,6 +858,9 @@ static partial class Program
                 "Diagnostic session model ownership is split from runner behavior",
                 DiagnosticSessionModels_AreSplitFromRunnerBehavior),
             await RunCheckAsync(
+                "Diagnostic session initial snapshot has a named owner",
+                DiagnosticSessionInitialSnapshot_OwnsBaselineCapture),
+            await RunCheckAsync(
                 "Diagnostic session result formatting has a named owner",
                 DiagnosticSessionResultFormatter_OwnsFormattedSummaryText),
             await RunCheckAsync(

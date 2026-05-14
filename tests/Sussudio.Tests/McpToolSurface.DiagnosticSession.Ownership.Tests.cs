@@ -52,6 +52,40 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionInitialSnapshot_OwnsBaselineCapture()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var initialSnapshotText = ReadRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(initialSnapshotText, "internal static class DiagnosticSessionInitialSnapshot");
+        AssertContains(initialSnapshotText, "internal static DiagnosticSessionInitialSnapshotResult CreateUnknown()");
+        AssertContains(initialSnapshotText, "internal static async Task<DiagnosticSessionInitialSnapshotResult> CaptureAsync(");
+        AssertContains(initialSnapshotText, "CreateEmptyJsonObject()");
+        AssertContains(initialSnapshotText, "var unknownSnapshot = CreateUnknown();");
+        AssertContains(initialSnapshotText, "setStage(\"initial-snapshot\")");
+        AssertContains(initialSnapshotText, "commandChannel.SendAsync(\"GetSnapshot\", null, null)");
+        AssertContains(initialSnapshotText, "TryGetSnapshot(initialResponse, out var initial)");
+        AssertContains(initialSnapshotText, "commandChannel.RecordFailure(\"initial-snapshot: baseline snapshot unavailable; state-mutating scenarios will be skipped\")");
+        AssertContains(initialSnapshotText, "recordTerminalException(ex, \"initial-snapshot\")");
+        AssertContains(initialSnapshotText, "await writeLiveStateAsync().ConfigureAwait(false);");
+        AssertContains(initialSnapshotText, "internal sealed class DiagnosticSessionInitialSnapshotResult");
+        AssertContains(initialSnapshotText, "internal DiagnosticSessionInitialSnapshotResult(JsonElement snapshot, bool known)");
+        AssertContains(initialSnapshotText, "internal JsonElement Snapshot { get; }");
+        AssertContains(initialSnapshotText, "internal bool Known { get; }");
+        AssertContains(runnerText, "var initialSnapshotResult = DiagnosticSessionInitialSnapshot.CreateUnknown();");
+        AssertContains(runnerText, "DiagnosticSessionInitialSnapshot.CaptureAsync(");
+        AssertContains(runnerText, "initialSnapshot = initialSnapshotResult.Snapshot;");
+        AssertContains(runnerText, "initialSnapshotKnown = initialSnapshotResult.Known;");
+        AssertDoesNotContain(runnerText, "CreateEmptyJsonObject()");
+        AssertDoesNotContain(runnerText, "var initialResponse = await commandChannel.SendAsync(\"GetSnapshot\", null, null)");
+        AssertDoesNotContain(runnerText, "TryGetSnapshot(initialResponse, out var initial)");
+        AssertDoesNotContain(runnerText, "baseline snapshot unavailable; state-mutating scenarios will be skipped");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionResultFormatter_OwnsFormattedSummaryText()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
@@ -236,6 +270,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var initialSnapshotText = ReadRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
+            .Replace("\r\n", "\n");
         var artifactsText = ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
             .Replace("\r\n", "\n");
 
@@ -245,7 +281,8 @@ static partial class Program
         AssertContains(artifactsText, "internal static object BuildFrameLedgerTrace(");
         AssertContains(artifactsText, "internal static bool TryGetSnapshot(");
         AssertContains(artifactsText, "internal static bool TryGetVerification(");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
+        AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
+        AssertDoesNotContain(runnerText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
         AssertDoesNotContain(runnerText, "private static async Task WriteJsonAsync<T>(");
         AssertDoesNotContain(runnerText, "private static bool TryGetSnapshot(");
         AssertDoesNotContain(runnerText, "private static bool TryGetVerification(");

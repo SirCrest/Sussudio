@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
 using static Sussudio.Tools.DiagnosticSessionFlashbackRejectedExports;
-using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 using static Sussudio.Tools.DiagnosticSessionSampler;
 
 namespace Sussudio.Tools;
@@ -64,28 +63,18 @@ public static class DiagnosticSessionRunner
         using var commandChannel = new DiagnosticSessionCommandChannel(sendCommandAsync, scenarioCancellationToken, warnings);
         var backgroundTasks = new DiagnosticSessionBackgroundTasks();
 
-        JsonElement initialSnapshot = CreateEmptyJsonObject();
-        var initialSnapshotKnown = false;
+        var initialSnapshotResult = DiagnosticSessionInitialSnapshot.CreateUnknown();
+        var initialSnapshot = initialSnapshotResult.Snapshot;
+        var initialSnapshotKnown = initialSnapshotResult.Known;
         await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
-        try
-        {
-            SetStage("initial-snapshot");
-            var initialResponse = await commandChannel.SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
-            if (TryGetSnapshot(initialResponse, out var initial))
-            {
-                initialSnapshot = initial;
-                initialSnapshotKnown = true;
-            }
-            else
-            {
-                commandChannel.RecordFailure("initial-snapshot: baseline snapshot unavailable; state-mutating scenarios will be skipped");
-            }
-        }
-        catch (Exception ex)
-        {
-            RecordTerminalException(ex, "initial-snapshot");
-            await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
-        }
+        initialSnapshotResult = await DiagnosticSessionInitialSnapshot.CaptureAsync(
+                commandChannel,
+                SetStage,
+                RecordTerminalException,
+                () => WriteLiveStateBestEffortAsync())
+            .ConfigureAwait(false);
+        initialSnapshot = initialSnapshotResult.Snapshot;
+        initialSnapshotKnown = initialSnapshotResult.Known;
 
         try
         {
