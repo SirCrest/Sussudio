@@ -54,4 +54,30 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task NativeXuAtCommandProvider_PayloadDecodingLivesInFocusedPartial()
+    {
+        var atProtocolText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs")
+            .Replace("\r\n", "\n");
+        var payloadDecodingText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.PayloadDecoding.cs")
+            .Replace("\r\n", "\n");
+        var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
+
+        AssertContains(atProtocolText, "private static AtCommandResult SendAtCommand(");
+        AssertContains(atProtocolText, "private static byte[] BuildAtWriteFrame(int cmdCode, byte[] inputData)");
+        AssertContains(atProtocolText, "private static byte[] StripAtFrameEnvelope(byte[] responseFrame, int frameLength)");
+        AssertDoesNotContain(atProtocolText, "private static AviInfoFrameInfo DecodeAviInfoFrame(byte[] buffer)");
+        AssertDoesNotContain(atProtocolText, "private static HdrMetadataInfo DecodeHdrMetadata(byte[] buffer)");
+        AssertDoesNotContain(atProtocolText, "private static string? InferFrameRateRational(double? frameRate)");
+        AssertContains(payloadDecodingText, "public sealed partial class NativeXuAtCommandProvider");
+        AssertContains(payloadDecodingText, "private static AviInfoFrameInfo DecodeAviInfoFrame(byte[] buffer)");
+        AssertContains(payloadDecodingText, "private static HdrMetadataInfo DecodeHdrMetadata(byte[] buffer)");
+        AssertContains(payloadDecodingText, "private static string? InferFrameRateRational(double? frameRate)");
+        AssertContains(payloadDecodingText, "private static SourceTelemetryConfidence ResolveConfidence(");
+        AssertContains(payloadDecodingText, "private static string? TryDecodePrintableAscii(byte[] buffer)");
+        AssertContains(payloadDecodingText, "private static string BoolToToken(bool? value)");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.PayloadDecoding.cs");
+
+        return Task.CompletedTask;
+    }
 }

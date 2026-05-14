@@ -502,6 +502,12 @@ Native XU active rolling polling now lives in
 rolling command groups, cached AT-command fields, VIC/frame-rate lookup, and
 active snapshot assembly there.
 
+Native XU payload decoding now lives in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.PayloadDecoding.cs`.
+Keep AVI InfoFrame decoding, HDR metadata decoding, scalar/ascii payload reads,
+frame-rate rational inference, confidence scoring, and boolean token helpers
+there.
+
 Flashback encoder sink options and packet helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs`. Keep
 recording-context mapping, encoder option creation, segment extension policy,
@@ -816,9 +822,10 @@ matches the snapshot surface they own.
 
 Native XU AT-command transport and payload parsing now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs`. Keep raw
-AT read/write frames, LRC/envelope handling, payload decoders, device-ID
-parsing, and command failure formatting there; keep rolling telemetry polling
-and active snapshot assembly in `NativeXuAtCommandProvider.RollingPoll.cs`.
+AT read/write frames, LRC/envelope handling, device-ID parsing, and command
+failure formatting there; keep payload decoders in
+`NativeXuAtCommandProvider.PayloadDecoding.cs`, and keep rolling telemetry
+polling and active snapshot assembly in `NativeXuAtCommandProvider.RollingPoll.cs`.
 
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns

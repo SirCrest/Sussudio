@@ -51,6 +51,9 @@ static partial class Program
                 "NativeXu audio command sequences live in focused partial",
                 NativeXuAtCommandProvider_AudioCommandsLiveInFocusedPartial),
             await RunCheckAsync(
+                "NativeXu payload decoding lives in focused partial",
+                NativeXuAtCommandProvider_PayloadDecodingLivesInFocusedPartial),
+            await RunCheckAsync(
                 "Health snapshot propagates structured source telemetry details",
                 CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails),
             await RunCheckAsync(

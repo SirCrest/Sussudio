@@ -55,6 +55,7 @@ static partial class Program
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DiagnosticSummary.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DeviceCommands.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.FullSnapshot.cs");
+        AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.PayloadDecoding.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.cs");
         AssertContains(File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Models", "Capture", "CaptureDevice.cs")), "NativeXuInterfacePath");
