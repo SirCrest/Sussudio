@@ -1010,7 +1010,12 @@ Parallel MJPEG decode pipeline timing now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs`. Keep timing
 record structs, timing snapshot construction, per-decoder sample windows,
 packet-hash metric access, and stopwatch conversion helpers there; keep worker
-decode, reorder, and emit behavior in the root pipeline.
+decode ingress in the root pipeline.
+
+Parallel MJPEG decode pipeline decoded-frame ordering and emission now lives in
+`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs`. Keep strict
+missing-sequence waits, known-missing skips, preview decoded-frame notification,
+and ordered final drain there.
 
 Parallel MJPEG decode pipeline lifecycle now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs`. Keep

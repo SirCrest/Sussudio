@@ -1032,6 +1032,9 @@ static partial class Program
                 "MJPEG pipeline lifecycle lives in focused partial",
                 ParallelMjpegDecodePipeline_LifecycleLivesInFocusedPartial),
             await RunCheckAsync(
+                "MJPEG pipeline reorder lives in focused partial",
+                ParallelMjpegDecodePipeline_ReorderLivesInFocusedPartial),
+            await RunCheckAsync(
                 "MJPEG pipeline timing metrics expose expected properties",
                 ParallelMjpegDecodePipeline_PipelineTimingMetrics_HasExpectedProperties),
             await RunCheckAsync(

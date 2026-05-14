@@ -14,7 +14,8 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Queue.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Adaptive.cs");
-        var pipelineSource = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
+        var pipelineSource = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs");
         var captureSource = ReadUnifiedVideoCaptureSource();
         AssertContains(source, "DropDeadlineExpiredFrames");
         AssertContains(source, "DropLatencyOverflowFrames");

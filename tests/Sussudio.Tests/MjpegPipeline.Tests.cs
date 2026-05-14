@@ -189,6 +189,7 @@ static partial class Program
     private static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
     {
         var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs");
         AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
         AssertContains(source, "HasJpegStartOfImage");
@@ -223,6 +224,28 @@ static partial class Program
             "if (_reorderFrames.ContainsKey(seqNo))",
             "_reorderFrames.Add(seqNo, new DecodedFrame(seqNo, frame, decodedTick));");
         AssertDoesNotContain(duplicateBlock, "MarkKnownMissing");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ParallelMjpegDecodePipeline_ReorderLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
+            .Replace("\r\n", "\n");
+        var reorderText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(reorderText, "private void EmitLoop()");
+        AssertContains(reorderText, "private bool DrainReadyFrames()");
+        AssertContains(reorderText, "private void DetectAndResetStall(bool emittedAny)");
+        AssertContains(reorderText, "private void MarkKnownMissing(long seqNo, string reason)");
+        AssertContains(reorderText, "private bool ConsumeKnownMissingFrames()");
+        AssertContains(reorderText, "private void NotifyPreviewFrameDecoded(PooledVideoFrame frame)");
+        AssertContains(reorderText, "private bool TryAddDecodedFrame(long seqNo, PooledVideoFrame frame, long decodedTick)");
+        AssertContains(reorderText, "private void DrainRemainingFramesInOrder()");
+        AssertDoesNotContain(rootText, "private void EmitLoop()");
+        AssertDoesNotContain(rootText, "private bool DrainReadyFrames()");
+        AssertDoesNotContain(rootText, "private bool TryAddDecodedFrame(long seqNo, PooledVideoFrame frame, long decodedTick)");
 
         return Task.CompletedTask;
     }
