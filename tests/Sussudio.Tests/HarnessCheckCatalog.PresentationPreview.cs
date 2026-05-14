@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -293,6 +293,9 @@ static partial class Program
         await AddCheckAsync(results,
             "Preview pacing classifier flags recent jitter schedule-late",
             PreviewPacingClassifier_ClassifiesRecentJitterScheduleLate);
+        await AddCheckAsync(results,
+            "Preview pacing classifier models live in focused file",
+            PreviewPacingClassifier_ModelsLiveInFocusedFile);
         await AddCheckAsync(results,
             "Preview pacing classifier is wired into automation snapshots",
             PreviewPacingClassifier_IsWiredIntoAutomationSnapshots);

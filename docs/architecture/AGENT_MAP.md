@@ -146,6 +146,9 @@ Automation diagnostics ownership:
   cached last-output file existence and size probing.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.PreviewPacing.cs` owns
   automation snapshot input projection for preview pacing stage classification.
+- `Sussudio/Services/Automation/PreviewPacingClassificationModels.cs` owns the
+  preview pacing classifier DTOs; `PreviewPacingSlowStageClassifier.cs` owns
+  pure slow-stage classification policy.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.ProcessMetrics.cs`
   owns process CPU, memory, GC, and thread-pool sampling.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns

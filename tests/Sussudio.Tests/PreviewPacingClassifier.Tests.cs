@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -113,6 +113,21 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewPacingClassifier_ModelsLiveInFocusedFile()
+    {
+        var classifierText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.cs")
+            .Replace("\r\n", "\n");
+        var modelText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingClassificationModels.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(modelText, "public sealed class PreviewPacingClassificationInput");
+        AssertContains(modelText, "public readonly record struct PreviewPacingClassification(");
+        AssertContains(classifierText, "public static class PreviewPacingSlowStageClassifier");
+        AssertDoesNotContain(classifierText, "public sealed class PreviewPacingClassificationInput");
+        AssertDoesNotContain(classifierText, "public readonly record struct PreviewPacingClassification(");
+
+        return Task.CompletedTask;
+    }
     private static Task PreviewPacingClassifier_IsWiredIntoAutomationSnapshots()
     {
         var contractsText = ReadAutomationSnapshotFamilyText();
