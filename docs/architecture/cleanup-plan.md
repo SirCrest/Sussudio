@@ -43,9 +43,18 @@ status-text projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs` owns
 performance score, diagnostic lane, preview pacing classifier, and performance
 threshold projection consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns the audio, ingest,
-source-reader, and WASAPI runtime projection inputs consumed by the automation
-snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` composes audio, ingest,
+and WASAPI projection owners into the automation snapshot audio/ingest DTO
+fields.
+`AutomationDiagnosticsHub.SnapshotProjection.AudioSignal.cs` owns view-model
+audio peak/clipping and derived signal-present/muted projection consumed by the
+automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs` owns capture
+audio/video reader, source-reader, and ingest counter projection consumed by the
+automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
+capture/playback callback, queue, gap, glitch, and latency projection consumed
+by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCommands.cs` owns capture
 session command queue counters, latency, last-command, and last-error
 projection inputs consumed by the automation snapshot DTO.
