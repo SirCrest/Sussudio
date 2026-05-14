@@ -650,6 +650,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackFrameRate.Tests.cs`
   owns Flashback delivered-cadence rational and enable/disable preview-state
   assertions.
+- `tests/Sussudio.Tests/DeviceModels.Tests.cs` owns capture/audio device,
+  audio-level, and MediaFormat model contract checks.
 - `tests/Sussudio.Tests/SnapshotModels.Tests.cs` owns shared snapshot-model
   reflection/spec helpers, including the CaptureDiagnostics property spec.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns
