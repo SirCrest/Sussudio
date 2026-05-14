@@ -1179,6 +1179,8 @@ Primary owners:
 - `tools/NativeXuAudioProbe/Program.cs` owns probe command routing and command
   workflows; `Program.Models.cs` owns probe experiment/readback DTOs and
   result-diff records; `Program.Commands.cs` owns Native XU command IDs;
+  `Program.DefaultExperiment.cs` owns the default baseline/experiment/restore
+  runner; `Program.Formatting.cs` owns shared byte formatting;
   `Program.ExperimentPayloads.cs` owns experiment payload construction;
   `Program.I2cTransport.cs` owns I2C-over-AT transport helpers; and
   `Program.ServiceProbe.cs` owns service-control smoke/payload workflows.
