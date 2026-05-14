@@ -810,6 +810,36 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task WasapiComInterop_ContractsLiveInFocusedFile()
+    {
+        var rootSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.cs")
+            .Replace("\r\n", "\n");
+        var contractsSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.Contracts.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(rootSource, "internal static class WasapiComInterop");
+        AssertContains(rootSource, "internal static WasapiAudioFormat ReadAudioFormat(IntPtr formatPtr)");
+        AssertContains(rootSource, "private static WasapiSampleType ResolveSampleType(");
+        AssertContains(contractsSource, "internal enum EDataFlow");
+        AssertContains(contractsSource, "internal enum WasapiSampleType");
+        AssertContains(contractsSource, "internal readonly record struct WasapiAudioFormat(");
+        AssertContains(contractsSource, "internal struct WAVEFORMATEX");
+        AssertContains(contractsSource, "internal struct WAVEFORMATEXTENSIBLE");
+        AssertContains(contractsSource, "internal struct PropVariant : IDisposable");
+        AssertContains(contractsSource, "internal interface IMMDeviceEnumerator");
+        AssertContains(contractsSource, "internal interface IAudioClient");
+        AssertContains(contractsSource, "internal interface IAudioClient3 : IAudioClient");
+        AssertContains(contractsSource, "internal interface IAudioCaptureClient");
+        AssertContains(contractsSource, "internal interface IAudioRenderClient");
+        AssertContains(contractsSource, "internal interface IMMNotificationClient");
+        AssertDoesNotContain(rootSource, "internal readonly record struct WasapiAudioFormat(");
+        AssertDoesNotContain(rootSource, "internal struct WAVEFORMATEX");
+        AssertDoesNotContain(rootSource, "internal interface IAudioClient");
+        AssertDoesNotContain(rootSource, "internal interface IMMDeviceEnumerator");
+
+        return Task.CompletedTask;
+    }
+
     private static Task WasapiAudioCapture_StopUsesBoundedThreadJoin()
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")

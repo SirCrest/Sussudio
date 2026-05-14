@@ -68,6 +68,10 @@ chunk returns.
 `WasapiAudioPlayback.RenderThread.cs` owns the WASAPI render-thread loop,
 pause/resume execution, resume prebuffer wait, endpoint buffer writes, render
 buffer filling, and render-side PTS advancement.
+`WasapiComInterop.Contracts.cs` owns WASAPI/Core Audio enums, structs, records,
+and COM interface declarations. `WasapiComInterop.cs` owns helper methods,
+format allocation/parsing, COM activation/release, endpoint volume, and
+AudioClient3 initialization.
 `AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
 capture/playback callback, queue, gap, glitch, and latency projection consumed
 by the automation snapshot DTO.
