@@ -681,6 +681,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.Tests.cs` owns
   CaptureService runtime snapshot behavior scenarios for observed formats,
   source-telemetry alignment, HDR pipeline parity, and inactive thread probes.
+- `tests/Sussudio.Tests/CaptureService.HealthSnapshots.Tests.cs` owns
+  CaptureService health/diagnostics snapshot behavior scenarios for structured
+  source telemetry and cached MJPEG timing metrics.
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns shared
   fake process-supervisor, runtime-snapshot, verifier-construction, and
   verification-invocation helpers for recording verifier integration tests.
