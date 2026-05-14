@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 static partial class Program
@@ -4734,14 +4733,4 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static async Task<JsonElement> CapturePipeRequestAsync(string pipeName, Func<Task> clientAction)
-    {
-        var requests = await CapturePipeRequestsAsync(
-                pipeName,
-                expectedCount: 1,
-                clientAction,
-                _ => "{\"Success\":true}")
-            .ConfigureAwait(false);
-        return requests[0];
-    }
 }
