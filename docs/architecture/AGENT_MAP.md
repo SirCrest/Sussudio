@@ -611,6 +611,15 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackFrameRate.Tests.cs`
   owns Flashback delivered-cadence rational and enable/disable preview-state
   assertions.
+- `tests/Sussudio.Tests/SnapshotModels.Tests.cs` owns shared snapshot-model
+  reflection/spec helpers, including the CaptureDiagnostics property spec.
+- `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns
+  CaptureDiagnosticsSnapshot default, round-trip, and reflection JSON checks.
+- `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns
+  CaptureHealthSnapshot extension, Flashback, source telemetry, and A/V sync
+  model checks.
+- `tests/Sussudio.Tests/SnapshotModels.SourceSignalTelemetry.Tests.cs` owns
+  SourceSignalTelemetrySnapshot and SourceTelemetryDetailEntry contract checks.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing and formatter batch tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the

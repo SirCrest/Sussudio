@@ -299,6 +299,11 @@ Capture regression coverage is split into preview startup, Flashback export
 locking, Flashback coordinator/UI routing, Flashback backend lifecycle, and
 Flashback frame-rate/enable-disable owner files.
 
+`tests/Sussudio.Tests/SnapshotModels.Tests.cs` is now the shared snapshot-model
+reflection/spec helper shell. Snapshot model contract coverage is split into
+CaptureDiagnosticsSnapshot, CaptureHealthSnapshot, and
+SourceSignalTelemetrySnapshot owner files.
+
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
 to the public toggle/state surface, `FullScreenController.Transitions.cs` to
@@ -1509,7 +1514,8 @@ Remaining `tools/Common` ownership:
    runtime-safety, and Flashback cleanup owners. MainViewModel capture tests
    are split into preview startup, Flashback export, Flashback routing,
    Flashback backend, and Flashback frame-rate/lifecycle owners. Continue with
-   low-risk contract groups first.
+   low-risk contract groups first. Snapshot-model contract tests are split by
+   CaptureDiagnostics, CaptureHealth, and source-signal telemetry model owner.
 
 3. Continue converting MainWindow partial concerns into controllers.
 
