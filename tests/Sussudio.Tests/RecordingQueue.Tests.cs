@@ -9,7 +9,11 @@ static partial class Program
         var parts = new[]
         {
             ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Diagnostics.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Lifetime.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Options.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.OutputValidation.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs").Replace("\r\n", "\n")
         };
 
@@ -952,6 +956,34 @@ static partial class Program
         AssertDoesNotContain(rootText, "private void EncodingLoop(CancellationToken cancellationToken)");
         AssertDoesNotContain(rootText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertDoesNotContain(rootText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task LibAvRecordingSink_LifecycleHelpersLiveInFocusedPartials()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
+            .Replace("\r\n", "\n");
+        var diagnosticsText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Diagnostics.cs")
+            .Replace("\r\n", "\n");
+        var lifetimeText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Lifetime.cs")
+            .Replace("\r\n", "\n");
+        var optionsText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Options.cs")
+            .Replace("\r\n", "\n");
+        var outputValidationText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.OutputValidation.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(diagnosticsText, "public long DroppedVideoFrames =>");
+        AssertContains(diagnosticsText, "public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)");
+        AssertContains(lifetimeText, "public async ValueTask DisposeAsync()");
+        AssertContains(lifetimeText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
+        AssertContains(optionsText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
+        AssertContains(optionsText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
+        AssertContains(outputValidationText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
+        AssertDoesNotContain(rootText, "public long DroppedVideoFrames =>");
+        AssertDoesNotContain(rootText, "public async ValueTask DisposeAsync()");
+        AssertDoesNotContain(rootText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
+        AssertDoesNotContain(rootText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
 
         return Task.CompletedTask;
     }
