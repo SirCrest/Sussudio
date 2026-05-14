@@ -1107,6 +1107,9 @@ static partial class Program
                 "Unified video capture sink fan-out lives in focused partial",
                 UnifiedVideoCapture_SinkFanoutLivesInFocusedPartial),
             await RunCheckAsync(
+                "Unified video capture lifecycle lives in focused partial",
+                UnifiedVideoCapture_LifecycleLivesInFocusedPartial),
+            await RunCheckAsync(
                 "WASAPI audio capture rejects incomplete hot audio writes",
                 WasapiAudioCapture_HotAudioWritesRejectIncompleteTasks),
             await RunCheckAsync(

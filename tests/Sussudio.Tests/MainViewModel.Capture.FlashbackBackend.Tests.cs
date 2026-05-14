@@ -205,8 +205,10 @@ static partial class Program
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
             .Replace("\r\n", "\n");
-        var unifiedVideoCaptureText = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
-            .Replace("\r\n", "\n");
+        var unifiedVideoCaptureText = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
+                .Replace("\r\n", "\n");
         var disposePreviewPipeline = ExtractTextBetween(
             captureServiceText,
             "private async Task DisposePreviewPipelineAsync",

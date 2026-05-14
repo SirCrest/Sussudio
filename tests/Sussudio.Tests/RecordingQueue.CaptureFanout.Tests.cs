@@ -25,6 +25,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task UnifiedVideoCapture_LifecycleLivesInFocusedPartial()
+    {
+        var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
+            .Replace("\r\n", "\n");
+        var lifecycleSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(lifecycleSource, "public async Task InitializeAsync(");
+        AssertContains(lifecycleSource, "public void Start()");
+        AssertContains(lifecycleSource, "public async Task StopAsync()");
+        AssertContains(lifecycleSource, "public async ValueTask DisposeAsync()");
+        AssertContains(lifecycleSource, "public async ValueTask DisposeForPreviewReinitAsync()");
+        AssertContains(lifecycleSource, "private async ValueTask DisposeCoreAsync(bool disposeSharedD3DDeviceManager)");
+        AssertContains(lifecycleSource, "private void ThrowIfDisposed()");
+        AssertContains(lifecycleSource, "private void OnCaptureFatalError(object? sender, Exception ex)");
+        AssertContains(lifecycleSource, "private void OnMjpegPipelineFatalError(Exception ex)");
+        AssertDoesNotContain(rootSource, "public async Task InitializeAsync(");
+        AssertDoesNotContain(rootSource, "public async Task StopAsync()");
+        AssertDoesNotContain(rootSource, "private async ValueTask DisposeCoreAsync(bool disposeSharedD3DDeviceManager)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_FlashbackBackendOwnershipUsesResourceAggregate()
     {
         var captureSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
