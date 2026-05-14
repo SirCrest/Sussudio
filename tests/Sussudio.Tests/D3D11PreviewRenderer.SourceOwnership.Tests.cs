@@ -168,6 +168,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task D3D11PreviewRenderer_MetricTrackingLivesInFocusedPartial()
+    {
+        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
+            .Replace("\r\n", "\n");
+        var trackingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricsTracking.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(metricsText, "public PresentCadenceMetrics GetPresentCadenceMetrics(double expectedIntervalMs)");
+        AssertContains(metricsText, "public RenderCpuTimingMetrics GetRenderCpuTimingMetrics()");
+        AssertContains(metricsText, "public FrameLatencyWaitMetrics GetFrameLatencyWaitMetrics()");
+        AssertContains(trackingText, "private double TrackPresentCadence(bool countSample)");
+        AssertContains(trackingText, "private void TrackPipelineLatency(long arrivalTick, long estimatedVisibleTick)");
+        AssertContains(trackingText, "private void TrackRenderCpuTiming(");
+        AssertContains(trackingText, "private void TrackFrameLatencyWait(uint result, long waitTicks)");
+        AssertContains(trackingText, "public void SetExpectedFrameRate(double fps)");
+        AssertContains(trackingText, "private void ResetPresentCadence()");
+        AssertDoesNotContain(metricsText, "private double TrackPresentCadence(");
+        AssertDoesNotContain(metricsText, "private void TrackRenderCpuTiming(");
+        AssertDoesNotContain(metricsText, "private void ResetPresentCadence()");
+
+        return Task.CompletedTask;
+    }
+
     private static Task D3D11PreviewRenderer_FrameLatencyLivesInFocusedPartial()
     {
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")

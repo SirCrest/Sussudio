@@ -869,10 +869,12 @@ validation, atomic replacement, overwrite policy, and invalid final-output clean
 `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
 
 D3D preview renderer metrics now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep present
-cadence, pipeline latency, render CPU timing, frame-latency wait metrics,
-and metric reset logic there; keep slow-frame diagnostic ring/write logic in
-`D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, lifecycle in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep read-only
+present cadence, pipeline latency, render CPU timing, frame-latency wait metric
+snapshots, recent sample copies, and timing summaries there. Render-loop metric
+window updates, expected-frame-rate window resizing, and metric reset logic now
+live in `D3D11PreviewRenderer.MetricsTracking.cs`. Keep slow-frame diagnostic
+ring/write logic in `D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, lifecycle in
 `D3D11PreviewRenderer.Lifecycle.cs`, queueing in
 `D3D11PreviewRenderer.PendingFrames.cs`, VideoProcessor/present work in
 `D3D11PreviewRenderer.Rendering.cs`, and shader drawing in

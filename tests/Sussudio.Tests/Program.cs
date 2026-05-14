@@ -774,6 +774,9 @@ static partial class Program
                 "D3D preview slow-frame diagnostics live in focused partial",
                 D3D11PreviewRenderer_SlowFrameDiagnosticsLiveInFocusedPartial),
             await RunCheckAsync(
+                "D3D preview metric tracking lives in focused partial",
+                D3D11PreviewRenderer_MetricTrackingLivesInFocusedPartial),
+            await RunCheckAsync(
                 "D3D preview frame-latency wait lives in focused partial",
                 D3D11PreviewRenderer_FrameLatencyLivesInFocusedPartial),
             await RunCheckAsync(
