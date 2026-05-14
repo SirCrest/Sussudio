@@ -120,6 +120,9 @@ static partial class Program
             "Recording integrity tolerates active in-flight frame",
             RecordingIntegritySummary_ToleratesSingleActiveInFlightFrame);
         await AddCheckAsync(results,
+            "CaptureService recording integrity ownership lives in focused partials",
+            CaptureService_RecordingIntegrityLivesInFocusedPartials);
+        await AddCheckAsync(results,
             "Recording verifier fails when output file is missing",
             RecordingVerifier_ReturnsFailure_WhenFileDoesNotExist);
         await AddCheckAsync(results,

@@ -24,6 +24,16 @@ static partial class Program
         "Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs"
     };
 
+    private static readonly string[] CaptureServiceRecordingIntegrityFiles =
+    {
+        "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs",
+        "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Models.cs",
+        "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Summary.cs",
+        "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Counters.cs",
+        "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Audio.cs",
+        "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Logging.cs"
+    };
+
     private static string ReadCaptureServiceFlashbackOrchestrationSource()
         => string.Join(
             "\n",
@@ -38,6 +48,11 @@ static partial class Program
         => string.Join(
             "\n",
             CaptureServiceAudioFiles.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
+
+    private static string ReadCaptureServiceRecordingIntegritySource()
+        => string.Join(
+            "\n",
+            CaptureServiceRecordingIntegrityFiles.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 
     private static string ReadCaptureServiceFlashbackOrchestrationCodeWithoutCommentsOrStrings()
         => string.Join(

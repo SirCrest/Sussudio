@@ -139,12 +139,7 @@ static partial class Program
     private static Task FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps()
     {
         var unifiedText = ReadUnifiedVideoCaptureSource();
-        var snapshotsText = System.IO.File.ReadAllText(System.IO.Path.Combine(
-            GetRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.RecordingIntegrity.cs"));
+        var snapshotsText = ReadCaptureServiceRecordingIntegritySource();
         var snapshotHelpersText = System.IO.File.ReadAllText(System.IO.Path.Combine(
             GetRepoRoot(),
             "Sussudio",
@@ -171,6 +166,37 @@ static partial class Program
         AssertContains(snapshotsText, "encoderAvSyncDriftMs = driftMs;");
         AssertContains(snapshotsText, "encoderAvSyncCorrectionSamples = correctionSamples;");
         AssertContains(snapshotsText, "avSyncDriftMs: null,\n            avSyncDriftRateMsPerSec: null,\n            encoderAvSyncDriftMs: null,\n            encoderAvSyncCorrectionSamples: null");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_RecordingIntegrityLivesInFocusedPartials()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs");
+        var modelsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Models.cs");
+        var summaryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Summary.cs");
+        var countersText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Counters.cs");
+        var audioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Audio.cs");
+        var loggingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Logging.cs");
+
+        AssertContains(rootText, "private RecordingIntegritySummary ResolveRecordingIntegritySummary(");
+        AssertDoesNotContain(rootText, "private sealed record RecordingIntegrityCounterSnapshot(");
+        AssertDoesNotContain(rootText, "private static RecordingIntegritySummary BuildRecordingIntegritySummary(");
+        AssertDoesNotContain(rootText, "private RecordingIntegrityCounterSnapshot GetRecordingIntegrityCountersSinceBaseline(");
+        AssertDoesNotContain(rootText, "private RecordingAudioIntegrityCounterSnapshot GetRecordingAudioCountersSinceBaseline(");
+        AssertDoesNotContain(rootText, "private static void LogRecordingIntegritySummary(");
+
+        AssertContains(modelsText, "private sealed record RecordingIntegrityCounterSnapshot(");
+        AssertContains(modelsText, "private sealed record RecordingAudioIntegrityCounterSnapshot(");
+        AssertContains(summaryText, "private static RecordingIntegritySummary BuildRecordingIntegritySummary(");
+        AssertContains(summaryText, "RecordingIntegrityAvSyncDriftWarningMs");
+        AssertContains(countersText, "private RecordingIntegrityCounterSnapshot GetRecordingIntegrityCountersSinceBaseline(");
+        AssertContains(countersText, "private RecordingIntegrityCounterSnapshot CaptureFlashbackRecordingIntegrityCountersSinceBaseline(");
+        AssertContains(countersText, "private static long DeltaCounter(");
+        AssertContains(audioText, "private RecordingAudioIntegrityCounterSnapshot GetRecordingAudioCountersSinceBaseline(");
+        AssertContains(audioText, "private RecordingAudioIntegrityCounterSnapshot CaptureRecordingAudioCounters(");
+        AssertContains(audioText, "CreateRecordingAudioCounters(");
+        AssertContains(loggingText, "private static void LogRecordingIntegritySummary(");
 
         return Task.CompletedTask;
     }
