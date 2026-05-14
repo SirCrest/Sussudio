@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
 // Tests for recording sink queue limits, drops, and latency accounting.
@@ -10,6 +10,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var fanoutSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.Fanout.cs")
             .Replace("\r\n", "\n");
+        var captureLoopSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.CaptureLoop.cs")
+            .Replace("\r\n", "\n");
         var contractsSource = (ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
                 + "\n"
                 + ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs"))
@@ -18,12 +20,13 @@ static partial class Program
         var flashbackSource = ReadFlashbackEncoderSinkSource();
 
         var drainBlock = ExtractSourceBlock(
-            wasapiSource,
+            captureLoopSource,
             "private void DrainCapturePackets()",
             "private void OnCaptureFailed");
         AssertContains(drainBlock, "InvokeHotAudioWriter(");
         AssertContains(drainBlock, "WriteAudioToSinkOnCaptureThread(");
         AssertDoesNotContain(drainBlock, ".GetAwaiter()");
+        AssertContains(captureLoopSource, "private void CaptureThreadMain()");
         AssertContains(fanoutSource, "private static void InvokeHotAudioWriter(");
         AssertContains(fanoutSource, "private static void WriteAudioToSinkOnCaptureThread(");
         AssertContains(fanoutSource, "private static void CompleteHotAudioWrite(Task task, string target)");
@@ -71,6 +74,8 @@ static partial class Program
         AssertContains(conversionSource, "private static unsafe float ReadSample(");
         AssertContains(conversionSource, "private static void ReturnPacketBuffer(ConvertedAudioPacket packet)");
         AssertContains(conversionSource, "private readonly struct ConvertedAudioPacket");
+        AssertDoesNotContain(wasapiSource, "private void CaptureThreadMain()");
+        AssertDoesNotContain(wasapiSource, "private void DrainCapturePackets()");
         AssertDoesNotContain(wasapiSource, "private ConvertedAudioPacket ConvertToOutputFormat(");
         AssertDoesNotContain(wasapiSource, "private static void ResampleStereoLinear(");
         AssertDoesNotContain(wasapiSource, "private readonly struct ConvertedAudioPacket");
@@ -86,9 +91,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.Diagnostics.cs")
             .Replace("\r\n", "\n");
+        var captureLoopSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.CaptureLoop.cs")
+            .Replace("\r\n", "\n");
 
-        AssertContains(wasapiSource, "TrackCaptureCallback(Environment.TickCount64);");
-        AssertContains(wasapiSource, "TrackCapturePacketFlags(flags);");
+        AssertContains(captureLoopSource, "TrackCaptureCallback(Environment.TickCount64);");
+        AssertContains(captureLoopSource, "TrackCapturePacketFlags(flags);");
         AssertContains(diagnosticsSource, "public long AudioFramesArrived => Interlocked.Read(ref _audioFramesArrived);");
         AssertContains(diagnosticsSource, "public (double AvgIntervalMs, double MaxIntervalMs) GetCaptureCallbackIntervalSnapshot()");
         AssertContains(diagnosticsSource, "private void RaiseAudioLevelIfDue(ReadOnlySpan<byte> f32leBytes)");
