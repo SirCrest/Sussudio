@@ -678,6 +678,9 @@ Primary current owners:
   aggregate ownership assertions.
 - `tests/Sussudio.Tests/CaptureCadence.Tests.cs` owns packet-hash duplicate
   cadence and visual-cadence crop sampling assertions.
+- `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.Tests.cs` owns
+  CaptureService runtime snapshot behavior scenarios for observed formats,
+  source-telemetry alignment, HDR pipeline parity, and inactive thread probes.
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns shared
   fake process-supervisor, runtime-snapshot, verifier-construction, and
   verification-invocation helpers for recording verifier integration tests.
