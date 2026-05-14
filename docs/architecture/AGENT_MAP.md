@@ -715,7 +715,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns RuntimePaths,
   MMCSS registration, ProcessSpec, and ProcessRunResult contract checks.
 - `tests/Sussudio.Tests/RecordingContracts.Models.Tests.cs` owns recording
-  service contract DTO checks such as GpuPipelineHandles and RecordingContextRequest.
+  service contract DTO checks such as GpuPipelineHandles,
+  RecordingContextRequest, and FinalizeResult.
+- `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns temp artifact
+  finalize/rollback behavior for recording output cleanup.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers for automation tool contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns
