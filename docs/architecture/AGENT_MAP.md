@@ -623,6 +623,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` owns MainWindow
   controller-adapter ownership assertions for control bar, shell elevation,
   preview/recording controls, capture selections, output path, and screenshots.
+- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Tests.cs` owns MainWindow
+  Flashback polling, playhead motion, and marker-presentation ownership
+  assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` owns automation
   view-model surface, async method contract, and recording-transition routing
   assertions.
@@ -634,6 +637,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns serialized diagnostics refresh and automation diagnostics hub ownership
   assertions, including HDR truth verdict behavior.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsLoop.Tests.cs`
+  owns diagnostics-loop polling contracts that keep options snapshots out of
+  hot diagnostics refresh paths.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
   is now only the automation diagnostics projection test family marker shell.
   Keep new projection ownership assertions in the focused owner files:
@@ -650,6 +656,9 @@ Primary current owners:
   assertions that used to live in the automation test catch-all.
 - `tests/Sussudio.Tests/MainViewModel.Capture.Tests.cs` owns capture-facing
   MainViewModel surface assertions and shared source-inspection helpers.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` owns
+  capture option, resolution, frame-rate timing, live pixel-format, and runtime
+  error-projection ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` owns
   preview startup, preview reveal, and preview stop ordering assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
@@ -663,6 +672,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackFrameRate.Tests.cs`
   owns Flashback delivered-cadence rational and enable/disable preview-state
   assertions.
+- `tests/Sussudio.Tests/MainViewModel.AudioRuntime.Tests.cs` owns audio
+  monitoring visual state and audio-ramp trace telemetry ownership assertions.
 - `tests/Sussudio.Tests/DeviceModels.Tests.cs` owns capture/audio device,
   audio-level, and MediaFormat model contract checks.
 - `tests/Sussudio.Tests/SnapshotModels.Tests.cs` owns shared snapshot-model
@@ -695,9 +706,17 @@ Primary current owners:
   aggregate ownership assertions.
 - `tests/Sussudio.Tests/CaptureCadence.Tests.cs` owns packet-hash duplicate
   cadence and visual-cadence crop sampling assertions.
+- `tests/Sussudio.Tests/UnifiedVideoCapture.Runtime.Tests.cs` owns
+  UnifiedVideoCapture CPU-MJPEG format reporting and stop-failure retention
+  behavior scenarios.
 - `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.Tests.cs` owns
   CaptureService runtime snapshot behavior scenarios for observed formats,
   source-telemetry alignment, HDR pipeline parity, and inactive thread probes.
+- `tests/Sussudio.Tests/CaptureService.PreviewLifecycle.Tests.cs` owns
+  video-only preview fallback, missing audio endpoint, and preview backend log
+  contracts.
+- `tests/Sussudio.Tests/CaptureService.Failures.Tests.cs` owns capture fatal
+  cleanup and faulted-session state assertions.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.Tests.cs` owns
   CaptureService health/diagnostics snapshot behavior scenarios for structured
   source telemetry and cached MJPEG timing metrics.
@@ -740,6 +759,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns RuntimePaths,
   FFmpeg runtime location, MMCSS registration, ProcessSpec, and
   ProcessRunResult contract checks.
+- `tests/Sussudio.Tests/ProjectBuildContracts.Tests.cs` owns project-file build
+  and publish policy contract checks.
 - `tests/Sussudio.Tests/RecordingContracts.Models.Tests.cs` owns recording
   service contract DTO checks such as GpuPipelineHandles,
   RecordingContextRequest, and FinalizeResult.
