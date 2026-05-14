@@ -27,6 +27,7 @@ public sealed partial class AutomationDiagnosticsHub
         var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime);
         var snapshotEvaluation = BuildSnapshotEvaluationProjection(performance, diagnostic, previewPacingClassification);
         var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);
+        var audioDrops = BuildAudioDropsProjection(health);
         var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);
         var userSettings = BuildUserSettingsProjection(viewModelSnapshot);
         var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);
@@ -525,11 +526,11 @@ public sealed partial class AutomationDiagnosticsHub
             FlashbackGpuFramesDropped = flashbackRecording.Queues.GpuFramesDropped,
             FlashbackGpuQueueRejectedFrames = flashbackRecording.Queues.GpuQueueRejectedFrames,
             FlashbackGpuQueueLastRejectReason = flashbackRecording.Queues.GpuQueueLastRejectReason,
-            AudioDropsQueueSaturated = health.AudioDropsQueueSaturated,
-            AudioDropsBacklogEviction = health.AudioDropsBacklogEviction,
-            AudioChunksDropped = health.AudioChunksDropped,
-            AudioQueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,
-            AudioQueueDropsFileWriter = health.AudioChunksDropped,
+            AudioDropsQueueSaturated = audioDrops.QueueSaturated,
+            AudioDropsBacklogEviction = audioDrops.BacklogEviction,
+            AudioChunksDropped = audioDrops.ChunksDropped,
+            AudioQueueDropsRealtime = audioDrops.QueueDropsRealtime,
+            AudioQueueDropsFileWriter = audioDrops.QueueDropsFileWriter,
             EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,
             ExpectedCaptureFrameRate = captureCadence.ExpectedFrameRate,
             CaptureCadenceSampleCount = captureCadence.SampleCount,

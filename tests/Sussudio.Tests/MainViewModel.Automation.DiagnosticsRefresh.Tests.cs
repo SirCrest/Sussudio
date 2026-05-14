@@ -100,6 +100,12 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PerformanceThresholdCaptureDropPercent = _perfectionCaptureDropPercentThreshold,");
         AssertContains(diagnostics.SnapshotProjectionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var audioDrops = BuildAudioDropsProjection(health);");
+        AssertContains(diagnostics.SnapshotProjectionAudioDropsText, "private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.SnapshotProjectionAudioDropsText, "QueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
+        AssertContains(diagnostics.SnapshotProjectionText, "AudioQueueDropsRealtime = audioDrops.QueueDropsRealtime,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "AudioDropsQueueSaturated = health.AudioDropsQueueSaturated,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "AudioQueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
         AssertContains(diagnostics.SnapshotProjectionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionText, "var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
