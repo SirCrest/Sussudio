@@ -1,4 +1,4 @@
-﻿# Sussudio Agent Map
+# Sussudio Agent Map
 
 Last reviewed: 2026-05-14.
 

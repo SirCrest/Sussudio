@@ -190,6 +190,11 @@ static partial class Program
         AssertContains(probeProgramText, "string.Equals(arg, \"--device\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(probeProgramText, "NativeXuProbeDeviceLocator.Find(null)");
         AssertContains(probeProgramText, "RtkI2cProbe.Run(rtkArgs, dev)");
+        var probeModelsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Models.cs"));
+        AssertDoesNotContain(probeProgramText, "sealed record GetterSpec");
+        AssertDoesNotContain(probeProgramText, "sealed class ExperimentResult");
+        AssertContains(probeModelsText, "sealed record GetterSpec");
+        AssertContains(probeModelsText, "sealed class ExperimentResult");
         var rtkProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "RtkI2cProbe.cs"));
         AssertContains(rtkProbeText, "Run(string[] args, CaptureDevice device)");
         AssertContains(rtkProbeText, "RTK I2C switch is disabled");
