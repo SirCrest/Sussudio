@@ -924,8 +924,11 @@ Primary current owners:
   window, preview, Flashback, and screenshot tests.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Probes.Tests.cs` owns MCP
   preview color probe and video source probe formatting tests.
-- `tests/Sussudio.Tests/McpToolSurface.Helpers.cs` owns the shared MCP process,
-  reflection, pipe-capture, JSON assertion, and tool-result helpers.
+- `tests/Sussudio.Tests/McpToolSurface.Helpers.Process.cs`,
+  `McpToolSurface.Helpers.Reflection.cs`,
+  `McpToolSurface.Helpers.PipeCapture.cs`, and
+  `McpToolSurface.Helpers.Assertions.cs` own shared MCP process/JSON-RPC,
+  reflection/tool-result, pipe-capture, and JSON assertion helpers respectively.
 - `tests/Sussudio.Tests/Flashback.Tests.cs` owns shared Flashback test helper
   source readers and helper methods only.
 - `tests/Sussudio.Tests/Flashback.Buffer.Tests.cs` owns Flashback buffer option
