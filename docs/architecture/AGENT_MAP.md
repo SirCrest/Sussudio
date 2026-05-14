@@ -1146,8 +1146,14 @@ Primary owners:
   fields, and percentile metric aggregation.
 - `tools/Common/PresentMonProbe.Csv.Models.cs` owns the private parsed-row
   shape.
-- `tools/Common/PresentMonProbe.cs` owns PresentMon process execution, path
-  resolution, command-line construction, and temp CSV cleanup.
+- `tools/Common/PresentMonProbe.cs` owns PresentMon public run orchestration and
+  result-message shaping.
+- `tools/Common/PresentMonProbe.Paths.cs` owns target process, PresentMon
+  executable, and output-path resolution.
+- `tools/Common/PresentMonProbe.Arguments.cs` owns PresentMon command-line
+  construction and argument quoting.
+- `tools/Common/PresentMonProbe.Process.cs` owns process supervision,
+  stdout/stderr drain, timeout kill, and temp CSV cleanup.
 
 Invariants:
 

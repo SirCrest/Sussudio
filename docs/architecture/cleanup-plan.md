@@ -1522,9 +1522,12 @@ normalization, artifact filtering, and selected-chain summaries.
 `PresentMonProbe.Csv.Correlation.cs` owns app-present correlation, while
 `PresentMonProbe.Csv.Summary.cs` owns warnings, counted text fields, and
 percentile metric aggregation. `PresentMonProbe.Csv.Models.cs` owns the private
-parsed-row shape.
-`PresentMonProbe.cs` keeps process execution, path resolution, command-line
-construction, and temp CSV cleanup.
+parsed-row shape. `PresentMonProbe.cs` keeps the public run orchestration and
+result-message shaping. `PresentMonProbe.Paths.cs` owns target process,
+PresentMon executable, and output-path resolution. `PresentMonProbe.Arguments.cs`
+owns command-line construction and argument quoting. `PresentMonProbe.Process.cs`
+owns process supervision, stdout/stderr drain, timeout kill, and temp CSV
+cleanup.
 
 Remaining `tools/Common` ownership:
 
@@ -1574,6 +1577,9 @@ Remaining `tools/Common` ownership:
 - `AutomationResponseState.cs`
 - `JsonOptions.cs`
 - `PresentMonProbe.cs`
+- `PresentMonProbe.Paths.cs`
+- `PresentMonProbe.Arguments.cs`
+- `PresentMonProbe.Process.cs`
 
 ## Next Slices
 
