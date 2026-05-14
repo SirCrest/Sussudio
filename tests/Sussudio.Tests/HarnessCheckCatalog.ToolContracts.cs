@@ -77,6 +77,9 @@ static partial class Program
             "AutomationClient delegates to shared protocol for command resolution",
             AutomationClient_UsesSharedProtocol_ForCommandResolution);
         await AddCheckAsync(results,
+            "send-automation-command tracks automation contract inputs",
+            SendAutomationCommand_HelperTracksAutomationContractsInputs);
+        await AddCheckAsync(results,
             "ssctl CommandHandlers route core command groups",
             SsctlCommandHandlers_RouteCoreCommandGroups);
         await AddCheckAsync(results,

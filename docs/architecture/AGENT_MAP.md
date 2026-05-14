@@ -1221,6 +1221,11 @@ Primary owners:
   state parsing.
 - `tools/Common/AutomationPipeClient.Models.cs` owns pipe command result and
   exception types.
+- `tools/AutomationClient/Program.cs` owns the low-level pipe client entry
+  point for scripts and ad hoc automation calls.
+- `tools/AutomationClient/README.md` owns AutomationClient usage notes.
+- `tools/send-automation-command.ps1` owns the PowerShell helper wrapper and
+  its AutomationClient rebuild freshness inputs.
 - `tools/ssctl/CommandHandlers.cs` owns top-level CLI routing only.
 - `tools/ssctl/CommandHandlers.Observability.cs` owns state, diagnostics,
   options, manifest, timeline, memory, audio-ramp, PresentMon, and

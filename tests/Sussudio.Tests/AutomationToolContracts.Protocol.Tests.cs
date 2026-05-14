@@ -158,6 +158,23 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task SendAutomationCommand_HelperTracksAutomationContractsInputs()
+    {
+        var scriptText = ReadRepoFile("tools/send-automation-command.ps1")
+            .Replace("\r\n", "\n");
+
+        AssertContains(scriptText, "Get-AutomationClientInputWriteTimeUtc");
+        AssertContains(scriptText, "(Join-Path $PSScriptRoot \"AutomationClient\")");
+        AssertContains(scriptText, "(Join-Path $PSScriptRoot \"Common\")");
+        AssertContains(scriptText, "(Join-Path $repoRoot \"Sussudio.Automation.Contracts\")");
+        AssertContains(scriptText, "$_.Extension -in @(\".cs\", \".csproj\", \".props\", \".targets\")");
+        AssertContains(scriptText, "$_.FullName -notmatch \"\\\\(bin|obj)\\\\\"");
+        AssertDoesNotContain(scriptText, "Sussudio\\Models\\AutomationCommandKind.cs");
+        AssertDoesNotContain(scriptText, "Models\\AutomationCommandKind.cs");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PipeClient_UsesSharedProtocol_ForCommandResolution()
     {
         var pipeClientText = ReadRepoFile("tools/McpServer/PipeClient.cs");
