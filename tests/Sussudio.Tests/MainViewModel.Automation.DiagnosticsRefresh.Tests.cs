@@ -7,8 +7,7 @@ static partial class Program
     private static Task DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses()
     {
         var diagnostics = ReadAutomationDiagnosticsHubSourceFamily();
-        var countersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs")
-            .Replace("\r\n", "\n");
+        var countersText = ReadAutomationDiagnosticsHubCountersSource();
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
         AssertContains(diagnostics.EvaluationPolicyText, "private static string FormatPreviewSlowFrameAlertDetail");
@@ -531,25 +530,8 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "if (recentRendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&\n            recentRendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)");
         AssertDoesNotContain(diagnostics.SourceFamilyText, "rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||\n            previewRuntime.DisplayCadenceSlowFramePercent > 1.0");
 
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Coordination.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadCaptureServiceAudioSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportFailureClassification.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
-            + "\n" + ReadCaptureServiceRecordingFinalizationSource();
-        var flashbackBackendText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
-            .Replace("\r\n", "\n");
+        var captureServiceText = ReadCaptureServiceDiagnosticsRefreshSource();
+        var flashbackBackendText = ReadFlashbackBackendResourcesSource();
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
         AssertContains(captureServiceText, "FlashbackExporter? snapshotExporter = null,");
@@ -714,32 +696,16 @@ static partial class Program
         AssertContains(flashbackExporterText, "ResolveSegmentBoundaryTimestampRepairUs(");
         AssertContains(flashbackExporterText, "FLASHBACK_EXPORT_SEGMENT_PTS_REPAIR");
 
-        var sourceReaderRootText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs")
-            .Replace("\r\n", "\n");
-        var sourceReaderDiagnosticsText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Diagnostics.cs")
-            .Replace("\r\n", "\n");
-        var sourceReaderDxgiBuffersText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.DxgiBuffers.cs")
-            .Replace("\r\n", "\n");
-        var sourceReaderFrameLayoutText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs")
-            .Replace("\r\n", "\n");
-        var sourceReaderLifecycleText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs")
-            .Replace("\r\n", "\n");
-        var sourceReaderInitializationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs")
-            .Replace("\r\n", "\n");
-        var sourceReaderReadLoopText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.ReadLoop.cs")
-            .Replace("\r\n", "\n");
-        var sourceReaderFrameDeliveryText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs")
-            .Replace("\r\n", "\n");
-        var sourceReaderText = sourceReaderRootText
-            + "\n" + sourceReaderDiagnosticsText
-            + "\n" + sourceReaderDxgiBuffersText
-            + "\n" + sourceReaderFrameLayoutText
-            + "\n" + sourceReaderLifecycleText
-            + "\n" + sourceReaderInitializationText
-            + "\n" + sourceReaderReadLoopText
-            + "\n" + sourceReaderFrameDeliveryText
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs")
-                .Replace("\r\n", "\n");
+        var sourceReaderSources = ReadMfSourceReaderVideoCaptureSourceFamily();
+        var sourceReaderRootText = sourceReaderSources.RootText;
+        var sourceReaderDiagnosticsText = sourceReaderSources.DiagnosticsText;
+        var sourceReaderDxgiBuffersText = sourceReaderSources.DxgiBuffersText;
+        var sourceReaderFrameLayoutText = sourceReaderSources.FrameLayoutText;
+        var sourceReaderLifecycleText = sourceReaderSources.LifecycleText;
+        var sourceReaderInitializationText = sourceReaderSources.InitializationText;
+        var sourceReaderReadLoopText = sourceReaderSources.ReadLoopText;
+        var sourceReaderFrameDeliveryText = sourceReaderSources.FrameDeliveryText;
+        var sourceReaderText = sourceReaderSources.SourceFamilyText;
         AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
         AssertContains(sourceReaderText, "lock (_cadenceLock)");
         AssertContains(sourceReaderDiagnosticsText, "private unsafe void DiagnoseVtable(IMFSample sample)");
@@ -785,69 +751,10 @@ static partial class Program
         AssertDoesNotContain(sourceReaderRootText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
         AssertDoesNotContain(sourceReaderRootText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
 
-        var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadDiagnosticSessionScenarioStartupSource()
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadDiagnosticSessionCleanupActionsSource()
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionPostRunSnapshots.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadDiagnosticSessionResultBuilderSource()
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionResultArtifacts.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionSummaryWriter.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadDiagnosticSessionBackgroundTasksSource()
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionRunState.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadDiagnosticSessionFlashbackExportScenariosSource()
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadDiagnosticSessionFlashbackMetricsSource()
-            + "\n" + ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadDiagnosticSessionFlashbackStressScenarioSource()
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadDiagnosticSessionFlashbackWaitsSource()
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadDiagnosticSessionMetricsSource()
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadDiagnosticSessionResultFormatterSource()
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionSampler.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionText.cs")
-                .Replace("\r\n", "\n");
-        var diagnosticSessionModelsText = ReadDiagnosticSessionModelsSource();
-        var diagnosticScenariosText = ReadRepoFile("tools/Common/DiagnosticSessionScenarios.cs")
-            .Replace("\r\n", "\n");
+        var diagnosticSessionSources = ReadDiagnosticSessionSourceFamily();
+        var diagnosticSessionText = diagnosticSessionSources.SourceFamilyText;
+        var diagnosticSessionModelsText = diagnosticSessionSources.ModelsText;
+        var diagnosticScenariosText = diagnosticSessionSources.ScenariosText;
         AssertContains(diagnosticSessionText, "var scenario = DiagnosticSessionScenarios.Normalize(options.Scenario);");
         AssertContains(diagnosticSessionText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
         AssertContains(diagnosticSessionText, "var backgroundTasks = new DiagnosticSessionBackgroundTasks();");
@@ -1382,13 +1289,10 @@ static partial class Program
         AssertContains(diagnosticScenariosText, "internal static string HelpList { get; } = string.Join(\"|\", All);");
         AssertContains(diagnosticScenariosText, "All.Contains(normalized, StringComparer.Ordinal)");
 
-        var ssctlProgramText = ReadRepoFile("tools/ssctl/Program.cs")
-            .Replace("\r\n", "\n");
-        var ssctlCommandHandlersText = (ReadRepoFile("tools/ssctl/CommandHandlers.cs")
-            + "\n" + ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"))
-            .Replace("\r\n", "\n");
-        var mcpDiagnosticSessionText = ReadRepoFile("tools/McpServer/Tools/DiagnosticSessionTools.cs")
-            .Replace("\r\n", "\n");
+        var diagnosticSessionToolSources = ReadDiagnosticSessionToolSurfaceSourceFamily();
+        var ssctlProgramText = diagnosticSessionToolSources.SsctlProgramText;
+        var ssctlCommandHandlersText = diagnosticSessionToolSources.SsctlCommandHandlersText;
+        var mcpDiagnosticSessionText = diagnosticSessionToolSources.McpDiagnosticSessionText;
         AssertContains(ssctlProgramText, "DiagnosticSessionScenarios.HelpList");
         AssertContains(ssctlCommandHandlersText, "DiagnosticSessionScenarios.HelpList");
         AssertContains(mcpDiagnosticSessionText, "flashback-export-playback");

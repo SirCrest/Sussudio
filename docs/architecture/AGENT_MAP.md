@@ -725,6 +725,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
   owns the diagnostics hub source-family reader used by refresh ownership
   assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceReaders.cs`
+  owns diagnostics refresh source/fixture readers for capture service, source
+  reader, diagnostic-session, and tool-surface source text used by refresh
+  ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.PreviewRuntime.Tests.cs`
   owns diagnostics snapshot preview runtime projection ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotStatus.Tests.cs`
@@ -884,6 +888,10 @@ Primary current owners:
   RecordingContextRequest, and FinalizeResult.
 - `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns temp artifact
   finalize/rollback behavior for recording output cleanup.
+- `tests/Sussudio.Tests/LibAvEncoder.Options.Tests.cs` owns LibAvEncoder
+  ValidateOptions reflection coverage for valid options, output path and
+  dimension rejection, HDR codec/P010 constraints, and frame-rate
+  numerator/denominator pairing.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Tests.cs` owns dispatcher
   readiness gating, authorization, response, command-kind handling, and
   dispatcher source-ownership contract tests.
@@ -947,9 +955,11 @@ Primary current owners:
   pipeline, NVML, capture-session/process, automation protocol, tool formatter,
   and RTK probe check registration.
 - `tests/Sussudio.Tests/HarnessCore.Helpers.cs` owns shared repo-file reads,
-  reflection/property access, assertion helpers, wait helpers, and synthetic
-  capture/recording object factories used by the legacy harness and xUnit
-  slices.
+  reflection/property access, wait helpers, and synthetic capture/recording
+  object factories used by the legacy harness and xUnit slices.
+- `tests/Sussudio.Tests/HarnessCore.Assertions.cs` owns generic harness
+  assertion helpers: `AssertEqual<T>`, `AssertNearlyEqual`, `AssertContains`,
+  `AssertDoesNotContain`, and `AssertNotNull`.
 - `tests/Sussudio.Tests/MjpegTimingMetrics.Helpers.cs` owns synthetic MJPEG
   timing metric factories and the closed-pipeline emit delegate used by
   harness-level MJPEG and snapshot tests.
@@ -1068,7 +1078,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Exporter.OutputFinalization.Tests.cs` owns
   Flashback exporter final-output replacement and force-overwrite tests.
 - `tests/Sussudio.Tests/Flashback.Playback.State.Tests.cs` owns Flashback
-  playback state, marker, position, snap-live, and no-op command tests.
+  playback state, position, snap-live, and no-op command tests.
+- `tests/Sussudio.Tests/Flashback.Playback.Markers.Tests.cs` owns Flashback
+  playback in/out marker API, normalization, disposal, and marker clamp tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Thread.Tests.cs` owns Flashback
   playback thread recovery and live-preview transition tests.
 - `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` is the
