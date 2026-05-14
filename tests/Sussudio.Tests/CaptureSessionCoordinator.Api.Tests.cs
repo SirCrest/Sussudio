@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -111,6 +112,22 @@ static partial class Program
         AssertEqual(0L, Convert.ToInt64(GetPropertyValue(snapshot, "MaxCommandQueueLatencyMs")), "Default MaxCommandQueueLatencyMs");
         AssertEqual(0L, Convert.ToInt64(GetPropertyValue(snapshot, "CommandsCoalesced")), "Default CommandsCoalesced");
         AssertEqual("None", GetStringProperty(snapshot, "LastOutcome"), "Default LastOutcome");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureSessionSnapshot_DefaultState()
+    {
+        var snapshotType = RequireType("Sussudio.Services.Capture.CaptureSessionSnapshot");
+        var snapshot = RuntimeHelpers.GetUninitializedObject(snapshotType);
+
+        AssertEqual(false, GetBoolProperty(snapshot, "IsRecording"), "IsRecording default");
+        AssertEqual(false, GetBoolProperty(snapshot, "IsInitialized"), "IsInitialized default");
+        AssertEqual(false, GetBoolProperty(snapshot, "IsVideoPreviewActive"), "IsVideoPreviewActive default");
+        AssertEqual(false, GetBoolProperty(snapshot, "IsAudioPreviewActive"), "IsAudioPreviewActive default");
+        AssertEqual(0, (int)GetPropertyValue(snapshot, "PendingCommands")!, "PendingCommands default");
+        AssertEqual(0L, GetLongProperty(snapshot, "CommandsCoalesced"), "CommandsCoalesced default");
+        AssertEqual("None", GetStringProperty(snapshot, "LastOutcome"), "LastOutcome default");
 
         return Task.CompletedTask;
     }

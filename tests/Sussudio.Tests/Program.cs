@@ -4789,22 +4789,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureSessionSnapshot_DefaultState()
-    {
-        var snapshotType = RequireType("Sussudio.Services.Capture.CaptureSessionSnapshot");
-        var snapshot = RuntimeHelpers.GetUninitializedObject(snapshotType);
-
-        AssertEqual(false, GetBoolProperty(snapshot, "IsRecording"), "IsRecording default");
-        AssertEqual(false, GetBoolProperty(snapshot, "IsInitialized"), "IsInitialized default");
-        AssertEqual(false, GetBoolProperty(snapshot, "IsVideoPreviewActive"), "IsVideoPreviewActive default");
-        AssertEqual(false, GetBoolProperty(snapshot, "IsAudioPreviewActive"), "IsAudioPreviewActive default");
-        AssertEqual(0, (int)GetPropertyValue(snapshot, "PendingCommands")!, "PendingCommands default");
-        AssertEqual(0L, GetLongProperty(snapshot, "CommandsCoalesced"), "CommandsCoalesced default");
-        AssertEqual("None", GetStringProperty(snapshot, "LastOutcome"), "LastOutcome default");
-
-        return Task.CompletedTask;
-    }
-
     private static Task ProcessSpec_DefaultTimeout_Is30Seconds()
     {
         var specType = RequireType("Sussudio.Services.Runtime.ProcessSpec");
