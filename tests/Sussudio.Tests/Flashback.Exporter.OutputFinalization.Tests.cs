@@ -41,6 +41,44 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExporter_RefusesOverwriteWhenDestinationExistsAndForceFalse()
+    {
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var finalizeTemp = exporterType.GetMethod("TryFinalizeTempOutputFile", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("TryFinalizeTempOutputFile not found.");
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_refuse_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "existing-take.mp4");
+            var tmpPath = outputPath + ".tmp";
+            var existingBytes = new byte[] { 0x66, 0x69, 0x72, 0x73, 0x74 };
+            var freshTempBytes = new byte[] { 0x6e, 0x65, 0x77 };
+            File.WriteAllBytes(outputPath, existingBytes);
+            File.WriteAllBytes(tmpPath, freshTempBytes);
+
+            // allowOverwrite=false â†’ destination must be preserved, tmp must be deleted,
+            // and a structured refusal message must surface in the out failureMessage.
+            var args = new object?[] { tmpPath, outputPath, false, 0L, string.Empty };
+            var finalized = (bool)(finalizeTemp.Invoke(null, args)
+                ?? throw new InvalidOperationException("TryFinalizeTempOutputFile returned null."));
+
+            AssertEqual(false, finalized, "Refuse-on-collision rejects the overwrite");
+            AssertContains((string)args[4]!, "destination file already exists");
+            AssertEqual(true, File.Exists(outputPath), "Existing take is preserved on refusal");
+            AssertEqual(existingBytes.Length, new FileInfo(outputPath).Length, "Existing take bytes are preserved on refusal");
+            AssertEqual(false, File.Exists(tmpPath), "Temporary export is cleaned up on refusal");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackExporter_OverwritesWhenForceTrue()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");

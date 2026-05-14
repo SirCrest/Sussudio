@@ -795,12 +795,26 @@ Primary current owners:
   preview startup, preview reveal, and preview stop ordering assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease and export-operation lock assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Tests.cs` owns
-  MainViewModel Flashback coordinator-routing and Flashback UI interaction
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Tests.cs` is the
+  Flashback routing test family marker shell.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`
+  owns MainViewModel Flashback coordinator-routing assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Scrub.Tests.cs`
+  owns Flashback scrub, release/cancel/capture-lost, and fullscreen scrub-end
   assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.Tests.cs` owns
-  retained Flashback preview backend, device-switch teardown, and Flashback
-  lifecycle log-token assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Toggle.Tests.cs`
+  owns Flashback timeline toggle rollback and lockout assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.Tests.cs` is the
+  Flashback backend test family marker shell.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.PreviewPipeline.Tests.cs`
+  owns retained Flashback preview backend, audio restoration, and preview stop
+  rollback assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.Teardown.Tests.cs`
+  owns device-switch teardown ordering between video stop, Flashback backend
+  disposal, and preview reinit disposal.
+- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.LifecycleLogs.Tests.cs`
+  owns Flashback lifecycle outcome log-token, codec no-downgrade, export
+  force-rotate, and buffer-cycle assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackFrameRate.Tests.cs`
   owns Flashback delivered-cadence rational and enable/disable preview-state
   assertions.
@@ -1120,22 +1134,37 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.EncoderSink.ForceRotate.Tests.cs` owns
   Flashback encoder sink force-rotate and segment-registration recovery tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback
-  exporter basic validation, export throttle, and failure classifier tests.
+  exporter request-surface smoke tests, export throttle, and failure
+  classifier tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Infrastructure.Tests.cs` owns
   Flashback exporter task-wrapper infrastructure and source-ownership tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Cleanup.Tests.cs` owns Flashback
   exporter orphan temp-file cleanup and output-directory scan guard tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.Cancellation.Tests.cs` owns
+  Flashback exporter cancellation precedence and cancelled lock-wait behavior.
+- `tests/Sussudio.Tests/Flashback.Exporter.Lifetime.Tests.cs` owns Flashback
+  exporter disposal timeout and active native-state lifetime guards.
+- `tests/Sussudio.Tests/Flashback.Exporter.SegmentPaths.Tests.cs` owns
+  Flashback exporter segment path, duplicate path, and missing segment tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Segments.Tests.cs` owns Flashback
-  exporter range, segment-list, timestamp, stream-count, and template
-  validation tests.
+  exporter range validation and buffered-packet failure cleanup tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Segments.Progress.Tests.cs` owns
   Flashback exporter progress and progress-adjacent cleanup/finalization source
   assertions.
-- `tests/Sussudio.Tests/Flashback.Exporter.Output.Tests.cs` owns Flashback
-  exporter cancellation, missing-segment, overwrite-refusal, source-overwrite,
-  and temp-path tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.PacketTiming.Tests.cs` owns
+  Flashback exporter timestamp saturation and packet timestamp normalization
+  tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.Streams.Tests.cs` owns Flashback
+  exporter stream-count bounds and template stream-copy tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.SegmentTemplate.Tests.cs` owns
+  Flashback exporter segment template selection, stream-layout validation, and
+  requested-segment skip policy tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.OutputPaths.Tests.cs` owns Flashback
+  exporter output path validation, source-overwrite guards, and blocked
+  temp-path tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.OutputFinalization.Tests.cs` owns
-  Flashback exporter final-output replacement and force-overwrite tests.
+  Flashback exporter final-output replacement, overwrite refusal/force
+  behavior, and final validation cleanup tests.
 - `tests/Sussudio.Tests/Flashback.Playback.State.Tests.cs` owns Flashback
   playback state, position, snap-live, and no-op command tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Markers.Tests.cs` owns Flashback
