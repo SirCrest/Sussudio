@@ -1425,8 +1425,10 @@ now live in `Sussudio/Controllers/ResponsiveShellLayoutController.cs`.
 `MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
-`Sussudio/Controllers/CaptureSelectionBindingController.cs`. It owns
-collection-change debounce, pending-device apply state, and device-audio
+the `Sussudio/Controllers/CaptureSelectionBindingController*.cs` family. The
+root controller owns selection reconciliation and pending-device apply state,
+`.Context.cs` owns the XAML control dependency bag, `.SelectionSync.cs` owns
+collection-change debounce/queued sync, and `.DeviceAudio.cs` owns device-audio
 mode/gain projection while `MainWindow.CaptureSelectionBindings.cs` keeps the
 old method names for `PropertyChanged` and binding setup.
 

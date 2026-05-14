@@ -313,6 +313,9 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.CaptureSelectionBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
+        var contextText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.Context.cs").Replace("\r\n", "\n");
+        var deviceAudioText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs").Replace("\r\n", "\n");
+        var selectionSyncText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.SelectionSync.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private CaptureSelectionBindingController _captureSelectionBindingController = null!;");
         AssertContains(adapterText, "private void InitializeCaptureSelectionBindingController()");
@@ -325,14 +328,18 @@ static partial class Program
         AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
         AssertContains(propertyChangedText, "EnsureResolutionSelection();");
         AssertContains(propertyChangedText, "ApplyDeviceAudioControlState();");
-        AssertContains(controllerText, "internal sealed class CaptureSelectionBindingController");
-        AssertContains(controllerText, "private readonly int[] _selectionSyncQueued = new int[9];");
+        AssertContains(controllerText, "internal sealed partial class CaptureSelectionBindingController");
+        AssertContains(contextText, "internal sealed class CaptureSelectionBindingControllerContext");
+        AssertContains(selectionSyncText, "private readonly int[] _selectionSyncQueued = new int[9];");
         AssertContains(controllerText, "public void AttachCollectionBindings()");
         AssertContains(controllerText, "_context.DeviceComboBox.ItemsSource = _context.ViewModel.Devices;");
         AssertContains(controllerText, "AttachCollectionSync(_context.ViewModel.AvailableFrameRates, QueueFrameRateSelectionSync);");
-        AssertContains(controllerText, "public void ApplyDeviceAudioControlState()");
+        AssertContains(deviceAudioText, "public void ApplyDeviceAudioControlState()");
+        AssertContains(deviceAudioText, "public void EnsureDeviceAudioModeSelection()");
         AssertContains(controllerText, "public bool HasPendingDeviceSelection()");
-        AssertContains(controllerText, "private void QueueSelectionSync(int syncIndex, Action ensureMethod)");
+        AssertContains(selectionSyncText, "private void QueueSelectionSync(int syncIndex, Action ensureMethod)");
+        AssertDoesNotContain(controllerText, "private void QueueSelectionSync(int syncIndex, Action ensureMethod)");
+        AssertDoesNotContain(controllerText, "public void ApplyDeviceAudioControlState()");
         AssertDoesNotContain(mainWindowText, "_selectionSyncQueued");
         AssertDoesNotContain(bindingsText, "private void QueueSelectionSync(");
         AssertDoesNotContain(bindingsText, "private static void AttachCollectionSync(");

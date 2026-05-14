@@ -1,51 +1,14 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Linq;
-using System.Threading;
-using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Sussudio.Models;
-using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
 
-internal sealed class CaptureSelectionBindingControllerContext
+internal sealed partial class CaptureSelectionBindingController
 {
-    public required DispatcherQueue DispatcherQueue { get; init; }
-    public required MainViewModel ViewModel { get; init; }
-    public required ComboBox DeviceComboBox { get; init; }
-    public required ComboBox AudioInputComboBox { get; init; }
-    public required ComboBox MicrophoneComboBox { get; init; }
-    public required ComboBox ResolutionComboBox { get; init; }
-    public required ComboBox FrameRateComboBox { get; init; }
-    public required ComboBox FormatComboBox { get; init; }
-    public required ComboBox QualityComboBox { get; init; }
-    public required ComboBox PresetComboBox { get; init; }
-    public required ComboBox SplitEncodeComboBox { get; init; }
-    public required Button ApplyDeviceButton { get; init; }
-    public required StackPanel DeviceAudioControlPanel { get; init; }
-    public required ToggleSwitch DeviceAudioModeToggle { get; init; }
-    public required StackPanel AnalogAudioGainPanel { get; init; }
-    public required Slider AnalogAudioGainSlider { get; init; }
-    public required TextBlock AnalogAudioGainValueTextBlock { get; init; }
-}
-
-internal sealed class CaptureSelectionBindingController
-{
-    private const int SyncDevice = 0;
-    private const int SyncAudio = 1;
-    private const int SyncResolution = 2;
-    private const int SyncFrameRate = 3;
-    private const int SyncFormat = 4;
-    private const int SyncQuality = 5;
-    private const int SyncPreset = 6;
-    private const int SyncSplitEncode = 7;
-    private const int SyncMicrophone = 8;
-
     private readonly CaptureSelectionBindingControllerContext _context;
-    private readonly int[] _selectionSyncQueued = new int[9];
 
     public CaptureSelectionBindingController(CaptureSelectionBindingControllerContext context)
     {
@@ -162,61 +125,6 @@ internal sealed class CaptureSelectionBindingController
         {
             _context.MicrophoneComboBox.SelectedItem = matchingDevice;
         }
-    }
-
-    public void EnsureDeviceAudioModeSelection()
-    {
-        if (_context.ViewModel.AvailableDeviceAudioModes.Count == 0)
-        {
-            return;
-        }
-
-        var selectedMode = _context.ViewModel.SelectedDeviceAudioMode;
-        var matchingMode = _context.ViewModel.AvailableDeviceAudioModes.FirstOrDefault(mode =>
-            string.Equals(mode, selectedMode, StringComparison.OrdinalIgnoreCase))
-            ?? _context.ViewModel.AvailableDeviceAudioModes.FirstOrDefault();
-        if (matchingMode == null)
-        {
-            return;
-        }
-
-        if (!string.Equals(_context.ViewModel.SelectedDeviceAudioMode, matchingMode, StringComparison.OrdinalIgnoreCase))
-        {
-            _context.ViewModel.SelectedDeviceAudioMode = matchingMode;
-        }
-
-        var shouldBeOn = string.Equals(matchingMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase);
-        if (_context.DeviceAudioModeToggle.IsOn != shouldBeOn)
-        {
-            _context.DeviceAudioModeToggle.IsOn = shouldBeOn;
-        }
-    }
-
-    public void ApplyDeviceAudioControlState()
-    {
-        _context.DeviceAudioControlPanel.Visibility =
-            _context.ViewModel.IsDeviceAudioControlSupported ? Visibility.Visible : Visibility.Collapsed;
-        EnsureDeviceAudioModeSelection();
-
-        var analogGain = Math.Clamp(_context.ViewModel.AnalogAudioGainPercent, 0.0, 100.0);
-        if (Math.Abs(_context.AnalogAudioGainSlider.Value - analogGain) > 0.1)
-        {
-            _context.AnalogAudioGainSlider.Value = analogGain;
-        }
-
-        _context.AnalogAudioGainValueTextBlock.Text = $"{(int)Math.Round(analogGain)}%";
-        var analogModeActive = string.Equals(
-            _context.ViewModel.SelectedDeviceAudioMode,
-            DeviceAudioMode.Analog,
-            StringComparison.OrdinalIgnoreCase);
-        _context.AnalogAudioGainPanel.Visibility =
-            _context.ViewModel.IsDeviceAudioControlSupported && analogModeActive
-                ? Visibility.Visible
-                : Visibility.Collapsed;
-        _context.AnalogAudioGainSlider.IsEnabled =
-            _context.ViewModel.IsDeviceAudioControlSupported &&
-            analogModeActive &&
-            !_context.ViewModel.IsRecording;
     }
 
     public void EnsureResolutionSelection()
@@ -396,49 +304,6 @@ internal sealed class CaptureSelectionBindingController
             comboBox.SelectedItem = match;
         }
     }
-
-    private static void AttachCollectionSync(INotifyCollectionChanged collection, Action queueSync)
-    {
-        collection.CollectionChanged += (_, e) =>
-        {
-            if (e.Action is NotifyCollectionChangedAction.Add
-                or NotifyCollectionChangedAction.Reset
-                or NotifyCollectionChangedAction.Remove)
-            {
-                queueSync();
-            }
-        };
-    }
-
-    private void QueueSelectionSync(int syncIndex, Action ensureMethod)
-    {
-        if (Interlocked.Exchange(ref _selectionSyncQueued[syncIndex], 1) != 0)
-        {
-            return;
-        }
-
-        _context.DispatcherQueue.TryEnqueue(() =>
-        {
-            try
-            {
-                ensureMethod();
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _selectionSyncQueued[syncIndex], 0);
-            }
-        });
-    }
-
-    private void QueueDeviceSelectionSync() => QueueSelectionSync(SyncDevice, EnsureDeviceSelection);
-    private void QueueAudioSelectionSync() => QueueSelectionSync(SyncAudio, EnsureAudioInputSelection);
-    private void QueueMicrophoneSelectionSync() => QueueSelectionSync(SyncMicrophone, EnsureMicrophoneSelection);
-    private void QueueResolutionSelectionSync() => QueueSelectionSync(SyncResolution, EnsureResolutionSelection);
-    private void QueueFrameRateSelectionSync() => QueueSelectionSync(SyncFrameRate, EnsureFrameRateSelection);
-    private void QueueFormatSelectionSync() => QueueSelectionSync(SyncFormat, EnsureFormatSelection);
-    private void QueueQualitySelectionSync() => QueueSelectionSync(SyncQuality, EnsureQualitySelection);
-    private void QueuePresetSelectionSync() => QueueSelectionSync(SyncPreset, EnsurePresetSelection);
-    private void QueueSplitEncodeModeSelectionSync() => QueueSelectionSync(SyncSplitEncode, EnsureSplitEncodeModeSelection);
 
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;

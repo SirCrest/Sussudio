@@ -1062,11 +1062,13 @@ Primary current owners:
 - `Sussudio/Controllers/ResponsiveShellLayoutController.cs` owns control-bar
   label visibility and capture-settings narrow/wide grid placement.
   `MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/CaptureSelectionBindingController.cs` owns
-  capture/audio/microphone/encoder selection synchronization, collection-change
-  debounce, pending-device apply state, and device-audio mode/gain control
-  projection. `MainWindow.CaptureSelectionBindings.cs` is the XAML-facing
-  adapter.
+- `Sussudio/Controllers/CaptureSelectionBindingController*.cs` owns
+  capture/audio/microphone/encoder selection synchronization. The root
+  controller owns selection reconciliation and pending-device apply state,
+  `.Context.cs` owns the XAML control dependency bag, `.SelectionSync.cs` owns
+  collection-change debounce/queued sync, and `.DeviceAudio.cs` owns
+  device-audio mode/gain control projection. `MainWindow.CaptureSelectionBindings.cs`
+  is the XAML-facing adapter.
 - `Sussudio/Controllers/CaptureDeviceActionController.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
   path. `MainWindow.CaptureDeviceActions.cs` is the XAML-facing adapter.
