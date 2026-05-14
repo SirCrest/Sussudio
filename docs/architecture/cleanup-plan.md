@@ -511,6 +511,12 @@ Keep frame ownership snapshot projection and submitted/presented/dropped
 ownership state updates there; keep cadence, latency, DXGI, and slow-frame
 timing in `D3D11PreviewRenderer.Metrics.cs`.
 
+D3D preview renderer DXGI frame statistics and display-clock projection now
+live in `Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs`.
+Keep `GetFrameStatistics`, optional `DwmFlush`, visible-frame tick estimation,
+and `IPreviewDisplayClock` snapshot construction there; keep slow-frame
+diagnostic consumption of the latest DXGI counters in `D3D11PreviewRenderer.Metrics.cs`.
+
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep device
 initialization, shared-device handoff, pipeline texture/view setup, swap-chain

@@ -666,6 +666,9 @@ static partial class Program
                 "D3D preview frame ownership lives in focused partial",
                 D3D11PreviewRenderer_FrameOwnershipLivesInFocusedPartial),
             await RunCheckAsync(
+                "D3D preview DXGI frame statistics live in focused partial",
+                D3D11PreviewRenderer_DxgiFrameStatisticsLiveInFocusedPartial),
+            await RunCheckAsync(
                 "Preview pacing classifier rejects weak samples",
                 PreviewPacingClassifier_RequiresStableSampleUnlessHardSignal),
             await RunCheckAsync(

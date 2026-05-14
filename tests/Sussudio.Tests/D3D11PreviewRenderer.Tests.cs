@@ -218,6 +218,7 @@ static partial class Program
         var source = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameTypes.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs");
@@ -708,6 +709,28 @@ static partial class Program
         AssertDoesNotContain(metricsText, "public FrameOwnershipMetrics GetFrameOwnershipMetrics()");
         AssertDoesNotContain(metricsText, "private void TrackFrameSubmitted(PendingFrame frame)");
         AssertDoesNotContain(metricsText, "private void TrackFrameDropped(PendingFrame frame, string reason)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_DxgiFrameStatisticsLiveInFocusedPartial()
+    {
+        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
+            .Replace("\r\n", "\n");
+        var dxgiText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(dxgiText, "public DxgiFrameStatisticsMetrics GetDxgiFrameStatisticsMetrics()");
+        AssertContains(dxgiText, "private void TrackDxgiFrameStatistics()");
+        AssertContains(dxgiText, "private long EstimateVisibleTick(long presentReturnTick)");
+        AssertContains(dxgiText, "private long GetEstimatedDisplayFrameIntervalTicks()");
+        AssertContains(dxgiText, "public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)");
+        AssertContains(dxgiText, "_ = DwmFlush();");
+        AssertContains(dxgiText, "_swapChain.GetFrameStatistics(out var stats)");
+        AssertDoesNotContain(metricsText, "public DxgiFrameStatisticsMetrics GetDxgiFrameStatisticsMetrics()");
+        AssertDoesNotContain(metricsText, "private void TrackDxgiFrameStatistics()");
+        AssertDoesNotContain(metricsText, "private long EstimateVisibleTick(long presentReturnTick)");
+        AssertDoesNotContain(metricsText, "public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)");
 
         return Task.CompletedTask;
     }
