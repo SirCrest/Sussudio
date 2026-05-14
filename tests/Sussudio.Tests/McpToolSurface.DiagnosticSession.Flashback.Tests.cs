@@ -273,10 +273,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs")
             .Replace("\r\n", "\n");
-        var scenariosText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
-            .Replace("\r\n", "\n");
+        var scenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
 
-        AssertContains(scenariosText, "internal static class DiagnosticSessionFlashbackExportScenarios");
+        AssertContains(scenariosText, "internal static partial class DiagnosticSessionFlashbackExportScenarios");
         AssertContains(scenariosText, "internal static async Task RunFlashbackExportConcurrentAsync(");
         AssertContains(scenariosText, "\"flashback-concurrent-a.mp4\"");
         AssertContains(scenariosText, "flashback concurrent exports verified");
@@ -308,8 +307,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var exportScenariosText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
-            .Replace("\r\n", "\n");
+        var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var stressText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.cs")
             .Replace("\r\n", "\n");
         var exportsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
@@ -340,8 +338,7 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
-        var exportScenariosText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
-            .Replace("\r\n", "\n");
+        var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var segmentPlaybackText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
             .Replace("\r\n", "\n");
         var segmentsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")

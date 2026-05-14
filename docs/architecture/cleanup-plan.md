@@ -1439,11 +1439,11 @@ verification payload construction, rotated-export segment-count parsing,
 range-selection cleanup, and the range export audio-switch companion command
 while scenario command sequencing lives in a separate owner.
 
-Diagnostic-session Flashback export scenarios now live in
-`tools/Common/DiagnosticSessionFlashbackExportScenarios.cs`. They own
-concurrent export, disable-during-export, rotated export, export during
-playback, and selection-range export flows while the runner only starts the
-scenario tasks.
+Diagnostic-session Flashback export scenarios now live in a focused partial
+family rooted at `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs`.
+The root is only a marker shell; concurrent export, disable-during-export,
+rotated export, export during playback, and selection-range export flows each
+have their own named file while the runner only starts the scenario tasks.
 
 Diagnostic-session Flashback lifecycle checks now live in
 `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`. They own the
@@ -1521,7 +1521,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
-- `DiagnosticSessionFlashbackExportScenarios.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
