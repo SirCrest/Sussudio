@@ -110,6 +110,15 @@ static partial class Program
         AssertContains(nativeXuAudioTransportText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
         AssertContains(nativeXuAudioTransportText, "EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath)");
 
+        var cudaInteropText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.cs"));
+        var cudaInteropNativeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Native.cs"));
+        AssertContains(cudaInteropText, "internal sealed unsafe partial class CudaD3D11InteropBridge");
+        AssertDoesNotContain(cudaInteropText, "DllImport(\"nvcuda.dll\")");
+        AssertDoesNotContain(cudaInteropText, "private struct CUDA_MEMCPY2D");
+        AssertContains(cudaInteropNativeText, "private const uint CU_MEMORYTYPE_DEVICE");
+        AssertContains(cudaInteropNativeText, "DllImport(\"nvcuda.dll\")");
+        AssertContains(cudaInteropNativeText, "private struct CUDA_MEMCPY2D");
+
         var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.cs"));
         var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs"));
         AssertContains(captureServiceTelemetryText, "pollGeneration != Volatile.Read(ref _telemetryPollGeneration)");

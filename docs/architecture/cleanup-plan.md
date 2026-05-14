@@ -1126,6 +1126,12 @@ Parallel MJPEG decode pipeline lifecycle now lives in
 stop/dispose, emitter signaling, shutdown joins, cleanup of remaining work and
 reorder frames, fatal-callback dispatch, and remaining-timeout helpers there.
 
+CUDA/D3D11 preview interop behavior stays in
+`Sussudio/Services/Gpu/CudaD3D11Interop.cs`, while CUDA constants, P/Invoke
+entry points, and the `CUDA_MEMCPY2D` native struct live in
+`Sussudio/Services/Gpu/CudaD3D11Interop.Native.cs`. Keep native declarations
+there so the copy-path file remains about zero-copy/staging behavior.
+
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`. The broad automation evidence DTO is split as an
 `AutomationSnapshot*.cs` partial family by domain: root lifecycle/diagnostics,
