@@ -449,7 +449,10 @@ static partial class Program
         AssertDoesNotContain(diagnosticsSnapshotProjectionText, "FlashbackExportActive = health.FlashbackExportActive,");
         AssertContains(diagnosticsSnapshotProjectionText, "var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);");
         AssertContains(diagnosticsSnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingProjection BuildFlashbackRecordingProjection(");
+        AssertContains(diagnosticsSnapshotProjectionText, "FlashbackEncodingFailed = flashbackRecording.EncodingFailed,");
+        AssertContains(diagnosticsSnapshotProjectionFlashbackRecordingText, "EncodingFailed = health.FlashbackEncodingFailed,");
         AssertContains(diagnosticsSnapshotProjectionFlashbackRecordingText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
+        AssertDoesNotContain(diagnosticsSnapshotProjectionText, "FlashbackEncodingFailed = health.FlashbackEncodingFailed,");
         AssertDoesNotContain(diagnosticsSnapshotProjectionText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
         AssertContains(diagnosticsSnapshotProjectionText, "var flashbackPlayback = BuildFlashbackPlaybackProjection(health);");
         AssertContains(diagnosticsSnapshotProjectionFlashbackPlaybackText, "private static FlashbackPlaybackProjection BuildFlashbackPlaybackProjection(CaptureHealthSnapshot health)");
@@ -588,8 +591,10 @@ static partial class Program
         AssertContains(diagnosticsText, "Flashback export rotation skipped live-edge frames:");
         AssertContains(diagnosticsText, "forceRotate={snapshot.FlashbackForceRotateActive}");
         AssertContains(diagnosticsText, "requested={snapshot.FlashbackForceRotateRequested} draining={snapshot.FlashbackForceRotateDraining}");
+        AssertContains(diagnosticsText, "FatalCleanupInProgress = flashbackRecording.FatalCleanupInProgress");
         AssertContains(diagnosticsText, "FatalCleanupInProgress = health.FatalCleanupInProgress");
-        AssertContains(diagnosticsText, "FlashbackCleanupInProgress = health.FlashbackCleanupInProgress");
+        AssertContains(diagnosticsText, "FlashbackCleanupInProgress = flashbackRecording.CleanupInProgress");
+        AssertContains(diagnosticsText, "CleanupInProgress = health.FlashbackCleanupInProgress");
         AssertContains(diagnosticsText, "recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents}");
         AssertContains(diagnosticsText, "\"flashback-playback-slow\"");
         AssertContains(diagnosticsText, "\"flashback-playback-target-below-selection\"");
@@ -1874,17 +1879,26 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);");
+        AssertContains(snapshotProjectionText, "FlashbackEncodingFailed = flashbackRecording.EncodingFailed,");
+        AssertContains(snapshotProjectionText, "FlashbackVideoQueueCapacity = flashbackRecording.VideoQueueCapacity,");
+        AssertContains(snapshotProjectionText, "FlashbackGpuQueueLastRejectReason = flashbackRecording.GpuQueueLastRejectReason,");
         AssertContains(snapshotProjectionText, "FlashbackActive = flashbackRecording.Active,");
         AssertContains(snapshotProjectionText, "FlashbackBackendSettingsStale = flashbackRecording.BackendSettingsStale,");
         AssertContains(snapshotProjectionText, "FlashbackExportVerificationFormat = flashbackRecording.ExportVerificationFormat,");
         AssertContains(snapshotProjectionText, "EncoderCodecName = flashbackRecording.EncoderCodecName,");
         AssertContains(snapshotProjectionText, "FlashbackAudioQueueCapacity = flashbackRecording.AudioQueueCapacity,");
+        AssertDoesNotContain(snapshotProjectionText, "FlashbackEncodingFailed = health.FlashbackEncodingFailed,");
+        AssertDoesNotContain(snapshotProjectionText, "FlashbackVideoQueueCapacity = health.FlashbackVideoQueueCapacity,");
+        AssertDoesNotContain(snapshotProjectionText, "FlashbackGpuQueueLastRejectReason = health.FlashbackGpuQueueLastRejectReason,");
         AssertDoesNotContain(snapshotProjectionText, "FlashbackActive = health.FlashbackActive,");
         AssertDoesNotContain(snapshotProjectionText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
         AssertDoesNotContain(snapshotProjectionText, "EncoderCodecName = health.EncoderCodecName,");
 
         AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingProjection BuildFlashbackRecordingProjection(");
         AssertContains(flashbackRecordingProjectionText, "CaptureRuntimeSnapshot captureRuntime,");
+        AssertContains(flashbackRecordingProjectionText, "EncodingFailed = health.FlashbackEncodingFailed,");
+        AssertContains(flashbackRecordingProjectionText, "VideoQueueCapacity = health.FlashbackVideoQueueCapacity,");
+        AssertContains(flashbackRecordingProjectionText, "GpuQueueLastRejectReason = health.FlashbackGpuQueueLastRejectReason,");
         AssertContains(flashbackRecordingProjectionText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
         AssertContains(flashbackRecordingProjectionText, "CodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason,");
         AssertContains(flashbackRecordingProjectionText, "AudioQueueCapacity = health.FlashbackAudioQueueCapacity");

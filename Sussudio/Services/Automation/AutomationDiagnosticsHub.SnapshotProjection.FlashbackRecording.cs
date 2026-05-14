@@ -9,6 +9,48 @@ public sealed partial class AutomationDiagnosticsHub
         CaptureHealthSnapshot health)
         => new()
         {
+            EncodingFailed = health.FlashbackEncodingFailed,
+            EncodingFailureType = health.FlashbackEncodingFailureType,
+            EncodingFailureMessage = health.FlashbackEncodingFailureMessage,
+            FatalCleanupInProgress = health.FatalCleanupInProgress,
+            CleanupInProgress = health.FlashbackCleanupInProgress,
+            ForceRotateActive = health.FlashbackForceRotateActive,
+            ForceRotateRequested = health.FlashbackForceRotateRequested,
+            ForceRotateDraining = health.FlashbackForceRotateDraining,
+            TempDriveFreeBytes = health.FlashbackTempDriveFreeBytes,
+            StartupCacheBudgetBytes = health.FlashbackStartupCacheBudgetBytes,
+            StartupCacheBytes = health.FlashbackStartupCacheBytes,
+            StartupCacheSessionCount = health.FlashbackStartupCacheSessionCount,
+            StartupCacheDeletedSessionCount = health.FlashbackStartupCacheDeletedSessionCount,
+            StartupCacheFreedBytes = health.FlashbackStartupCacheFreedBytes,
+            StartupCacheOverBudget = health.FlashbackStartupCacheOverBudget,
+            VideoQueueCapacity = health.FlashbackVideoQueueCapacity,
+            VideoQueueMaxDepth = health.FlashbackVideoQueueMaxDepth,
+            VideoFramesSubmittedToEncoder = health.FlashbackVideoFramesSubmittedToEncoder,
+            VideoEncoderPts = health.FlashbackVideoEncoderPts,
+            VideoEncoderPacketsWritten = health.FlashbackVideoEncoderPacketsWritten,
+            VideoEncoderDroppedFrames = health.FlashbackVideoEncoderDroppedFrames,
+            VideoSequenceGaps = health.FlashbackVideoSequenceGaps,
+            VideoQueueRejectedFrames = health.FlashbackVideoQueueRejectedFrames,
+            VideoQueueLastRejectReason = health.FlashbackVideoQueueLastRejectReason,
+            VideoQueueOldestFrameAgeMs = health.FlashbackVideoQueueOldestFrameAgeMs,
+            VideoQueueLastLatencyMs = health.FlashbackVideoQueueLastLatencyMs,
+            VideoQueueLatencySampleCount = health.FlashbackVideoQueueLatencySampleCount,
+            VideoQueueLatencyAvgMs = health.FlashbackVideoQueueLatencyAvgMs,
+            VideoQueueLatencyP95Ms = health.FlashbackVideoQueueLatencyP95Ms,
+            VideoQueueLatencyP99Ms = health.FlashbackVideoQueueLatencyP99Ms,
+            VideoQueueLatencyMaxMs = health.FlashbackVideoQueueLatencyMaxMs,
+            VideoBackpressureWaitMs = health.FlashbackVideoBackpressureWaitMs,
+            VideoBackpressureEvents = health.FlashbackVideoBackpressureEvents,
+            VideoBackpressureLastWaitMs = health.FlashbackVideoBackpressureLastWaitMs,
+            VideoBackpressureMaxWaitMs = health.FlashbackVideoBackpressureMaxWaitMs,
+            GpuQueueDepth = health.FlashbackGpuQueueDepth,
+            GpuQueueCapacity = health.FlashbackGpuQueueCapacity,
+            GpuQueueMaxDepth = health.FlashbackGpuQueueMaxDepth,
+            GpuFramesEnqueued = health.FlashbackGpuFramesEnqueued,
+            GpuFramesDropped = health.FlashbackGpuFramesDropped,
+            GpuQueueRejectedFrames = health.FlashbackGpuQueueRejectedFrames,
+            GpuQueueLastRejectReason = health.FlashbackGpuQueueLastRejectReason,
             Active = health.FlashbackActive,
             BufferedDurationMs = health.FlashbackBufferedDurationMs,
             DiskBytes = health.FlashbackDiskBytes,
@@ -40,6 +82,48 @@ public sealed partial class AutomationDiagnosticsHub
 
     private readonly record struct FlashbackRecordingProjection
     {
+        public bool EncodingFailed { get; init; }
+        public string? EncodingFailureType { get; init; }
+        public string? EncodingFailureMessage { get; init; }
+        public bool FatalCleanupInProgress { get; init; }
+        public bool CleanupInProgress { get; init; }
+        public bool ForceRotateActive { get; init; }
+        public bool ForceRotateRequested { get; init; }
+        public bool ForceRotateDraining { get; init; }
+        public long TempDriveFreeBytes { get; init; }
+        public long StartupCacheBudgetBytes { get; init; }
+        public long StartupCacheBytes { get; init; }
+        public int StartupCacheSessionCount { get; init; }
+        public int StartupCacheDeletedSessionCount { get; init; }
+        public long StartupCacheFreedBytes { get; init; }
+        public bool StartupCacheOverBudget { get; init; }
+        public int VideoQueueCapacity { get; init; }
+        public int VideoQueueMaxDepth { get; init; }
+        public long VideoFramesSubmittedToEncoder { get; init; }
+        public long VideoEncoderPts { get; init; }
+        public long VideoEncoderPacketsWritten { get; init; }
+        public long VideoEncoderDroppedFrames { get; init; }
+        public long VideoSequenceGaps { get; init; }
+        public long VideoQueueRejectedFrames { get; init; }
+        public string VideoQueueLastRejectReason { get; init; }
+        public long VideoQueueOldestFrameAgeMs { get; init; }
+        public long VideoQueueLastLatencyMs { get; init; }
+        public int VideoQueueLatencySampleCount { get; init; }
+        public double VideoQueueLatencyAvgMs { get; init; }
+        public double VideoQueueLatencyP95Ms { get; init; }
+        public double VideoQueueLatencyP99Ms { get; init; }
+        public double VideoQueueLatencyMaxMs { get; init; }
+        public long VideoBackpressureWaitMs { get; init; }
+        public long VideoBackpressureEvents { get; init; }
+        public long VideoBackpressureLastWaitMs { get; init; }
+        public long VideoBackpressureMaxWaitMs { get; init; }
+        public int GpuQueueDepth { get; init; }
+        public int GpuQueueCapacity { get; init; }
+        public int GpuQueueMaxDepth { get; init; }
+        public long GpuFramesEnqueued { get; init; }
+        public long GpuFramesDropped { get; init; }
+        public long GpuQueueRejectedFrames { get; init; }
+        public string GpuQueueLastRejectReason { get; init; }
         public bool Active { get; init; }
         public long BufferedDurationMs { get; init; }
         public long DiskBytes { get; init; }
