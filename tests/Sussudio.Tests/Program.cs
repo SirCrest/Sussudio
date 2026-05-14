@@ -1083,6 +1083,9 @@ static partial class Program
                 "MJPEG preview jitter exposes adaptive deadline policy",
                 MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy),
             await RunCheckAsync(
+                "MJPEG preview jitter emit loop lives in focused partial",
+                MjpegPreviewJitter_EmitLoopLivesInFocusedPartial),
+            await RunCheckAsync(
                 "MJPEG preview jitter drops soft deadline overflow to recover latency",
                 MjpegPreviewJitter_DropsSoftDeadlineOverflowToRecoverLatency),
             await RunCheckAsync(

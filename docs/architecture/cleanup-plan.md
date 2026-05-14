@@ -1034,17 +1034,19 @@ MJPEG preview jitter-buffer metrics now live in
 `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs`. Keep metrics
 records, snapshot construction, timing samples, selected/dropped-frame
 telemetry, and tick/millisecond conversion helpers there; keep queue ordering,
-deadline drops, adaptive target depth, and emit-loop pacing in
-`MjpegPreviewJitterBuffer.cs`.
+deadline drops, adaptive target depth, and emit-loop pacing in their focused
+owners.
 
 MJPEG preview jitter-buffer queueing and adaptive deadline policy now have
 their own owners. `MjpegPreviewJitterBuffer.Queue.cs` owns queue depth, ordered
 frame insertion/dequeue, missing-sequence recovery, clear behavior, and resume
 reprime accounting. `MjpegPreviewJitterBuffer.Adaptive.cs` owns hard/soft
 deadline drops, adjusted output cadence, target-depth increase/decrease, and
-latency-pressure classification. Keep the root file focused on construction,
-public enqueue/suppression lifecycle, frame submission, display-clock pacing,
-and timer/MMCSS infrastructure.
+latency-pressure classification. `MjpegPreviewJitterBuffer.EmitLoop.cs` owns
+the paced emit loop, display-clock alignment, frame submission to the preview
+sink, tick waits, timer-resolution P/Invoke, and MMCSS registration. Keep the
+root file focused on construction, public enqueue/suppression lifecycle, and
+dispose-time queue teardown.
 
 Parallel MJPEG decode pipeline timing now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs`. Keep timing

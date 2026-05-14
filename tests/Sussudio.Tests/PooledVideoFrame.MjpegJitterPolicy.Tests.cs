@@ -13,6 +13,7 @@ static partial class Program
         var source = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Queue.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.EmitLoop.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Adaptive.cs");
         var pipelineSource = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs");
@@ -54,6 +55,27 @@ static partial class Program
         AssertContains(captureSource, "OnMjpegPipelinePreviewFrameDecoded");
         AssertContains(captureSource, "Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ResetForPreviewSuppression()");
         AssertContains(captureSource, "Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ReprimeAfterPreviewResume()");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task MjpegPreviewJitter_EmitLoopLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs")
+            .Replace("\r\n", "\n");
+        var emitLoopText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.EmitLoop.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(emitLoopText, "private void EmitLoop()");
+        AssertContains(emitLoopText, "private long AlignDueTickToDisplayClock(IPreviewFrameSink? sink, long currentDueTick, long nowTick)");
+        AssertContains(emitLoopText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
+        AssertContains(emitLoopText, "private void WaitForTicks(long ticks)");
+        AssertContains(emitLoopText, "private static extern uint timeBeginPeriod(uint uPeriod);");
+        AssertContains(emitLoopText, "private static extern uint timeEndPeriod(uint uPeriod);");
+        AssertContains(emitLoopText, "MmcssThreadRegistration.TryRegister(_mmcssTask, _mmcssPriority");
+        AssertDoesNotContain(rootText, "private void EmitLoop()");
+        AssertDoesNotContain(rootText, "private long AlignDueTickToDisplayClock(");
+        AssertDoesNotContain(rootText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
 
         return Task.CompletedTask;
     }
