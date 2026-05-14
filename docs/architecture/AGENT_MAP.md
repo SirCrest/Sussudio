@@ -1098,6 +1098,11 @@ Primary owners:
   `DiagnosticSessionRunner.Format(...)` as the stable compatibility wrapper.
 - `tools/Common/DiagnosticSessionText.cs` owns shared diagnostic-session text
   helpers used by the runner, formatter, and validation policies.
+- `tools/Common/AutomationSnapshotFormatter.cs` owns the top-level shared
+  automation snapshot console text flow. `AutomationSnapshotFormatter.Values.cs`
+  owns tolerant JSON accessors plus byte/interval formatting helpers, while
+  `AutomationSnapshotFormatter.Flashback.cs`, `.MjpegTiming.cs`, `.AvSync.cs`,
+  `.Preview.cs`, and `.Source.cs` own the named snapshot sections.
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
   connect retry classification and local failure-response envelopes.
 - `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized

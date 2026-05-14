@@ -54,7 +54,7 @@ static partial class Program
         AssertContains(ssctlFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
         AssertContains(ssctlFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
         AssertContains(ssctlFormatterSource, "ProcessCpuPercent");
-        var sharedFormatterSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
+        var sharedFormatterSource = ReadAutomationSnapshotFormatterSource();
         AssertContains(sharedFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
         AssertContains(sharedFormatterSource, "CaptureCommandMaxQueueLatencyMs");
         AssertContains(sharedFormatterSource, "CaptureCommandCommandsCoalesced");

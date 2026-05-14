@@ -270,6 +270,14 @@ Keep snapshot text in `Formatters.Snapshot.cs`, diagnostic-event text in
 `Formatters.Timeline.cs`, memory/GC summaries in `Formatters.Memory.cs`, and
 shared JSON/result helpers in `Formatters.Common.cs`.
 
+`tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
+snapshot formatter facade for top-level text flow. Tolerant JSON accessors and
+byte/interval helpers live in `AutomationSnapshotFormatter.Values.cs`; the
+Flashback, MJPEG timing, AV sync, preview/slow-frame diagnostics, and source
+sections live in focused formatter partials. Tests that reason about formatter
+source use `ReadAutomationSnapshotFormatterSource()` so ownership checks cover
+the full partial family.
+
 `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is now only
 the diagnostic-session MCP surface index shell. Diagnostic-session coverage is
 split into `McpToolSurface.DiagnosticSession.Tool.Tests.cs` for MCP tool
@@ -1543,7 +1551,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionPresentMonStartup.cs`
 - `DiagnosticSessionText.cs`
 - `DiagnosticSessionRunner.cs`
-- `AutomationSnapshotFormatter.cs`
 - `AutomationResponseState.cs`
 - `JsonOptions.cs`
 - `PresentMonProbe.cs`
