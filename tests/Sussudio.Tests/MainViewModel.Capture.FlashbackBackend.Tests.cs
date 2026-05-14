@@ -10,6 +10,7 @@ static partial class Program
     private static Task CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange()
     {
         var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.cs")
+            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.Audio.cs")
@@ -17,6 +18,8 @@ static partial class Program
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs");
         var captureServiceRawText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")

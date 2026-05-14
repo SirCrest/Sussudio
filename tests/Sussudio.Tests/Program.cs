@@ -1098,6 +1098,9 @@ static partial class Program
                 "Recording video queues fail explicitly instead of evicting frames",
                 RecordingVideoQueues_FailExplicitlyInsteadOfEvictingFrames),
             await RunCheckAsync(
+                "Capture service recording lifecycle lives in focused partial",
+                CaptureService_RecordingLifecycleLivesInFocusedPartial),
+            await RunCheckAsync(
                 "LibAv recording stop validates final output",
                 LibAvRecordingSink_StopValidatesFinalOutput),
             await RunCheckAsync(

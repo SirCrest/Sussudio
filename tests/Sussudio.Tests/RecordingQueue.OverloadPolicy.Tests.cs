@@ -12,6 +12,7 @@ static partial class Program
         var flashbackBufferSource = ReadFlashbackBufferManagerSource();
         var flashbackCleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs");
         var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
@@ -596,6 +597,25 @@ static partial class Program
             ssctlFormatterSource,
             "var flashbackFailed = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackEncodingFailed\", \"false\");",
             "builder.AppendLine(\"== Flashback ==\");");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_RecordingLifecycleLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
+        var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
+            .Replace("\r\n", "\n");
+
+        AssertDoesNotContain(rootText, "public Task StartRecordingAsync(");
+        AssertDoesNotContain(rootText, "public Task StopRecordingAsync(");
+        AssertContains(lifecycleText, "public Task StartRecordingAsync(");
+        AssertContains(lifecycleText, "public Task StopRecordingAsync(");
+        AssertContains(lifecycleText, "internal Task StopRecordingAsync(bool emergency");
+        AssertContains(lifecycleText, "FLASHBACK_UNIFIED_RECORDING_START");
+        AssertContains(lifecycleText, "await recordingSink.StartAsync(recordingContext, transitionToken)");
+        AssertContains(lifecycleText, "await StopAndDisposeRecordingBackendAsync(\"Stopped\", emergency, transitionToken)");
 
         return Task.CompletedTask;
     }

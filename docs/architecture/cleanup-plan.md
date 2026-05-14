@@ -460,9 +460,10 @@ enumeration orchestration in `DeviceService.cs`, format cache serialization in
 
 Capture service source telemetry and observed pixel-format accounting now live
 in `Sussudio/Services/Capture/CaptureService.Telemetry.cs`. The root capture
-service still owns runtime resources, but telemetry polling, fallback merging,
-NTSC frame-rate correction, and pixel-format counters are no longer embedded in
-the lifecycle/orchestration file.
+service owns shared state, construction, initialization, and public event
+surface, but telemetry polling, fallback merging, NTSC frame-rate correction,
+and pixel-format counters are no longer embedded in the lifecycle/orchestration
+file.
 
 Capture audio preview and microphone monitoring now live in
 `Sussudio/Services/Capture/CaptureService.Audio.cs`. This includes preview
@@ -509,6 +510,12 @@ Flashback recording policy and session-context helpers now live in
 Flashback backend ownership checks, audio attach, session-context construction,
 frame-rate rational inference, codec/HDR guardrails, encoded-frame forwarding,
 and recording topology validation.
+
+Recording start/stop lifecycle now lives in
+`Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`. That file owns
+the public recording transition surface, Flashback recording fast-path reuse,
+standard LibAv recording startup, recording rollback cleanup, and the emergency
+stop overload that feeds finalization.
 
 Flashback export failure classification now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportFailureClassification.cs`.
