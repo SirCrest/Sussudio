@@ -943,8 +943,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs` owns Flashback encoder
   sink frame-rate, queue, force-rotate, and segment-registration tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback
-  exporter cleanup, basic validation, task-wrapper, ownership, and failure
-  classifier tests.
+  exporter basic validation, task-wrapper, ownership, and failure classifier
+  tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.Cleanup.Tests.cs` owns Flashback
+  exporter orphan temp-file cleanup and output-directory scan guard tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Segments.Tests.cs` owns Flashback
   exporter range, segment-list, progress, timestamp, stream-count, and template
   validation tests.

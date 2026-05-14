@@ -1787,8 +1787,8 @@ Remaining `tools/Common` ownership:
    diagnostic-session ownership, diagnostic-session result ownership,
    diagnostic-session Flashback, diagnostic-session runner, performance,
    window/preview, window/preview probes, and helper partial files. Flashback
-   tests are also split by buffer, encoder, exporter, playback, decoder, and
-   support owners. Capture
+   tests are also split by buffer, encoder, exporter, exporter cleanup,
+   playback, decoder, and support owners. Capture
    session coordinator tests
    are split into API/contracts, queue behavior, Flashback behavior,
    transition policy, ownership, and harness-helper owners. MainViewModel
