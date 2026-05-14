@@ -55,7 +55,6 @@ static partial class Program
         AssertContains(healthSnapshotText, "var recordingHealth = CaptureRecordingHealthSnapshotFields(sink, fbSink);");
         AssertContains(healthSnapshotText, "RecordingEncodingFailed = recordingHealth.EncodingFailed,");
         AssertContains(healthSnapshotText, "RecordingVideoQueueLatencyP95Ms = recordingHealth.VideoQueueLatencyMetrics.P95Ms,");
-        AssertContains(healthSnapshotText, "FlashbackVideoQueueLatencyP99Ms = recordingHealth.FlashbackVideoQueueLatencyMetrics.P99Ms,");
         AssertDoesNotContain(healthSnapshotText, "var activeRecordingVideoQueueLatencyMetrics");
         AssertDoesNotContain(healthSnapshotText, "var flashbackIsRecordingBackend = IsFlashbackRecordingBackendOwnedByRecording();");
 
@@ -64,6 +63,31 @@ static partial class Program
         AssertContains(recordingText, "IsFlashbackRecordingBackendOwnedByRecording()");
         AssertContains(recordingText, "Interlocked.Read(ref _videoFramesDropped)");
         AssertContains(recordingText, "private readonly record struct RecordingHealthSnapshotFields");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_HealthSnapshotFlashbackQueueFields_LiveInFocusedPartial()
+    {
+        var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var flashbackQueueText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackQueues.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(healthSnapshotText, "var flashbackQueues = CaptureFlashbackQueueHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "FlashbackVideoQueueDepth = flashbackQueues.VideoQueueDepth,");
+        AssertContains(healthSnapshotText, "FlashbackForceRotateActive = flashbackQueues.ForceRotateActive,");
+        AssertContains(healthSnapshotText, "FlashbackVideoQueueLatencyP99Ms = flashbackQueues.VideoQueueLatencyMetrics.P99Ms,");
+        AssertContains(healthSnapshotText, "FlashbackGpuQueueLastRejectReason = flashbackQueues.GpuQueueLastRejectReason,");
+        AssertDoesNotContain(healthSnapshotText, "FlashbackVideoQueueDepth = fbSink?.VideoQueueCount");
+        AssertDoesNotContain(healthSnapshotText, "FlashbackForceRotateActive = fbSink?.IsForceRotateActive");
+        AssertDoesNotContain(healthSnapshotText, "FlashbackGpuQueueLastRejectReason = fbSink?.LastGpuQueueRejectReason");
+
+        AssertContains(flashbackQueueText, "private static FlashbackQueueHealthSnapshotFields CaptureFlashbackQueueHealthSnapshotFields(");
+        AssertContains(flashbackQueueText, "fbSink?.VideoQueueOldestFrameAgeMs ?? 0");
+        AssertContains(flashbackQueueText, "fbSink?.IsForceRotateActive ?? false");
+        AssertContains(flashbackQueueText, "fbSink?.LastGpuQueueRejectReason ?? string.Empty");
+        AssertContains(flashbackQueueText, "private readonly record struct FlashbackQueueHealthSnapshotFields");
 
         return Task.CompletedTask;
     }

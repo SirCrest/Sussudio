@@ -31,6 +31,7 @@ static partial class Program
         var captureSnapshotsSource = captureHealthSnapshotRootSource
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackQueues.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotCaptureCadence.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs");
@@ -570,16 +571,16 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "RecordingVideoQueueLatencyP99Ms = recordingHealth.VideoQueueLatencyMetrics.P99Ms");
         AssertContains(captureSnapshotsSource, "RecordingVideoQueueOldestFrameAgeMs = recordingHealth.VideoQueueOldestFrameAgeMs");
         AssertContains(captureSnapshotsSource, "RecordingVideoBackpressureWaitMs = recordingHealth.VideoBackpressureWaitMs");
-        AssertContains(captureSnapshotsSource, "FlashbackVideoEncoderPacketsWritten = fbSink?.VideoEncoderPacketsWritten");
-        AssertContains(captureSnapshotsSource, "FlashbackVideoSequenceGaps = fbSink?.VideoSequenceGaps");
-        AssertContains(captureSnapshotsSource, "FlashbackVideoQueueOldestFrameAgeMs = fbSink?.VideoQueueOldestFrameAgeMs");
-        AssertContains(captureSnapshotsSource, "FlashbackVideoQueueLatencyP99Ms = recordingHealth.FlashbackVideoQueueLatencyMetrics.P99Ms");
-        AssertContains(captureSnapshotsSource, "FlashbackVideoBackpressureWaitMs = fbSink?.VideoBackpressureWaitMs");
+        AssertContains(captureSnapshotsSource, "fbSink?.VideoEncoderPacketsWritten ?? 0");
+        AssertContains(captureSnapshotsSource, "fbSink?.VideoSequenceGaps ?? 0");
+        AssertContains(captureSnapshotsSource, "fbSink?.VideoQueueOldestFrameAgeMs ?? 0");
+        AssertContains(captureSnapshotsSource, "FlashbackVideoQueueLatencyP99Ms = flashbackQueues.VideoQueueLatencyMetrics.P99Ms");
+        AssertContains(captureSnapshotsSource, "fbSink?.VideoBackpressureWaitMs ?? 0");
         AssertContains(captureSnapshotsSource, "FatalCleanupInProgress = fatalCleanupInProgress");
         AssertContains(captureSnapshotsSource, "FlashbackCleanupInProgress = flashbackCleanupInProgress");
-        AssertContains(captureSnapshotsSource, "FlashbackForceRotateActive = fbSink?.IsForceRotateActive");
-        AssertContains(captureSnapshotsSource, "FlashbackForceRotateRequested = fbSink?.IsForceRotateRequested");
-        AssertContains(captureSnapshotsSource, "FlashbackForceRotateDraining = fbSink?.IsForceRotateDraining");
+        AssertContains(captureSnapshotsSource, "fbSink?.IsForceRotateActive ?? false");
+        AssertContains(captureSnapshotsSource, "fbSink?.IsForceRotateRequested ?? false");
+        AssertContains(captureSnapshotsSource, "fbSink?.IsForceRotateDraining ?? false");
         AssertContains(captureSnapshotsSource, "FlashbackEncodingFailureMessage");
         AssertContains(captureSnapshotsSource, "FlashbackStartupCacheBytes = flashbackBuffer.StartupCacheBytes");
         AssertContains(captureSnapshotsSource, "bufMgr?.StartupCacheBytes ?? 0");

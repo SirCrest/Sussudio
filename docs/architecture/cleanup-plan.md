@@ -1183,6 +1183,8 @@ capture cadence projection lives in
 Flashback buffer, startup-cache, backend-staleness, and encoder summary
 projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs`;
+Flashback live queue, force-rotate, backpressure, and GPU queue projection lives
+in `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackQueues.cs`;
 active recording queue/failure projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs`,
 Flashback export diagnostic projection lives in
