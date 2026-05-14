@@ -320,6 +320,11 @@ reflection helpers. Automation tool contract coverage is split into protocol
 and pipe-failure contracts, catalog/manifest/path-policy contracts,
 reliability-gates script checks, and snapshot formatter contracts.
 
+`tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` now keeps only
+shared reflection helpers. Capture configuration model coverage is split into
+capture mode options, capture settings/MJPEG HFR policy, encoder support,
+Flashback DTO contracts, and recording pipeline option contracts.
+
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
 to the public toggle/state surface, `FullScreenController.Transitions.cs` to
@@ -1537,7 +1542,8 @@ Remaining `tools/Common` ownership:
    into geometry, cadence, diagnostics-contract, source-ownership, device-lost,
    and frame-flow owners. Automation tool contract tests are split into
    protocol, catalog/manifest, reliability-gates, and snapshot formatter
-   owners.
+   owners. Capture configuration model tests are split into option, settings,
+   encoder support, Flashback DTO, and recording pipeline owners.
 
 3. Continue converting MainWindow partial concerns into controllers.
 

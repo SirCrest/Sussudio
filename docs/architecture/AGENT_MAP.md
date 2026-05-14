@@ -662,6 +662,20 @@ Primary current owners:
   reliability-gates script contract test.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Tests.cs`
   owns shared snapshot formatter text and typed-accessor contract tests.
+- `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` owns shared
+  reflection helpers for capture configuration model contract tests.
+- `tests/Sussudio.Tests/CaptureConfigurationModels.Options.Tests.cs` owns
+  capture mode option display metadata and builder policy tests.
+- `tests/Sussudio.Tests/CaptureConfigurationModels.Settings.Tests.cs` owns
+  capture settings defaults, output path, split-encode support, and MJPEG HFR
+  policy tests.
+- `tests/Sussudio.Tests/CaptureConfigurationModels.EncoderSupport.Tests.cs`
+  owns encoder availability and preferred encoder policy tests.
+- `tests/Sussudio.Tests/CaptureConfigurationModels.Flashback.Tests.cs` owns
+  Flashback buffer, session, playback, export progress, segment, and request
+  DTO contract tests.
+- `tests/Sussudio.Tests/CaptureConfigurationModels.RecordingPipeline.Tests.cs`
+  owns recording pipeline queue capacity and drop-policy tests.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing and formatter batch tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the
