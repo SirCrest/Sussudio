@@ -499,6 +499,12 @@ D3D preview renderer nested frame and metrics model types now live in
 root renderer stays focused on lifecycle, submission entry points, and public
 state.
 
+D3D preview renderer frame submission now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs`. Keep public raw
+frame, lease, texture, and NV12 plane submission entry points plus the NV12
+pending-frame adapter there; keep start/stop, panel sizing, and disposal in the
+root renderer.
+
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep device
 initialization, shared-device handoff, pipeline texture/view setup, swap-chain

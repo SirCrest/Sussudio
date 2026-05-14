@@ -217,6 +217,7 @@ static partial class Program
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var source = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameTypes.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs");
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
@@ -665,6 +666,27 @@ static partial class Program
         AssertDoesNotContain(rootText, "private sealed class PendingFrame : IDisposable");
         AssertDoesNotContain(rootText, "public readonly record struct PresentCadenceMetrics(");
         AssertDoesNotContain(rootText, "public readonly record struct DxgiFrameStatisticsMetrics(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_SubmissionLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
+        var submissionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(submissionText, "public void SubmitRawFrame(");
+        AssertContains(submissionText, "public void SubmitRawFrameLease(");
+        AssertContains(submissionText, "public void SubmitTexture(");
+        AssertContains(submissionText, "public void SubmitNv12PlaneTextures(");
+        AssertContains(submissionText, "private void EnqueueNv12Frame(");
+        AssertContains(submissionText, "EnqueuePendingFrame(frame);");
+        AssertDoesNotContain(rootText, "public void SubmitRawFrame(");
+        AssertDoesNotContain(rootText, "public void SubmitRawFrameLease(");
+        AssertDoesNotContain(rootText, "public void SubmitTexture(");
+        AssertDoesNotContain(rootText, "public void SubmitNv12PlaneTextures(");
 
         return Task.CompletedTask;
     }
