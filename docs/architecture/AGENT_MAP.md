@@ -15,7 +15,7 @@ folder.
 | Area | Current large files | Preferred next owner |
 |------|---------------------|----------------------|
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
-| Offline regression harness | `tests/Sussudio.Tests/Program.cs`, `tests/Sussudio.Tests/HarnessCheckCatalog.cs` | runner entry point, check catalog, xUnit slices, and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
+| Offline regression harness | `tests/Sussudio.Tests/Program.cs`, `tests/Sussudio.Tests/HarnessCheckCatalog*.cs` | runner entry point, topic check catalogs, xUnit slices, and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackOrchestration.cs`, `CaptureService.FlashbackAudioInputs.cs`, `CaptureService.FlashbackPreviewBackend.cs`, `CaptureService.FlashbackPreviewBackendDisposal.cs`, `CaptureService.FlashbackBufferCycle.cs`, `CaptureService.FlashbackExportDiagnostics.cs`, `CaptureService.FlashbackExportFailureClassification.cs`, `CaptureService.FlashbackExportOperations.cs`, `CaptureService.FlashbackExportPlanning.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RecordingRollback.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.Snapshots.cs`, `CaptureService.SnapshotAvSync.cs`, `CaptureService.SnapshotTelemetry.cs`, `CaptureService.Telemetry.cs` | service state and construction owner, audio owner, cleanup owner, transition/disposal owner, deferred cleanup owner, failure owner, Flashback control owner, Flashback restart orchestration owner, Flashback audio input restoration owner, Flashback preview backend startup owner, Flashback preview backend disposal owner, Flashback buffer cycle owner, Flashback export diagnostics/progress owner, Flashback export failure taxonomy, Flashback export entry/core owner, Flashback export planning/throttle owner, Flashback recording policy owner, health snapshot builder, preview lifecycle owner, preview pipeline owner, probe owner, recording integrity owner, recording start/stop transition owner, transient recording rollback owner, runtime snapshot builder, shared snapshot helper policy, A/V sync snapshot policy, source telemetry snapshot policy, telemetry owner, resource managers |
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `DeviceService.FormatCache.cs`, `DeviceService.FormatProbe.cs`, `DeviceService.Scoring.cs`, `DeviceService.AudioAssociation.cs`, `DeviceService.NativeXu.cs`, `MfDeviceEnumerator.cs`, `MfDeviceEnumerator.VideoDevices.cs`, `MfDeviceEnumerator.AudioEndpoints.cs`, `MfDeviceEnumerator.FormatProbe.cs` | device enumeration orchestration, persisted format cache, inline/background format probing, priority/capability scoring, audio endpoint association, Native XU interface path resolution, shared MF constants/P/Invokes, MF video device enumeration, WASAPI capture endpoint enumeration, native MF format probing and source fallback |
 | Native XU KS bridge | `Sussudio/Services/Capture/KsExtensionUnitNative.cs`, `KsExtensionUnitNative.Interfaces.cs`, `KsExtensionUnitNative.Handles.cs`, `KsExtensionUnitNative.Topology.cs`, `KsExtensionUnitNative.Transfers.cs`, `KsExtensionUnitNative.Interop.cs` | KS category constants and DTOs, SetupAPI interface enumeration, file-handle open policy, topology node parsing, XU GET/SET transfer helpers, P/Invoke declarations and structs |
@@ -808,9 +808,29 @@ Primary current owners:
 - `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` owns shared tool
   assembly loading, isolated load contexts, freshness checks, and tool build
   command mapping used by the legacy harness and xUnit slices.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.cs` owns the ordered offline
-  harness check list. Keep `Program.cs` as the runner, not the assertion
-  registry.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.cs` owns ordered offline harness
+  topic sequencing and shared catalog registration helpers. Keep `Program.cs`
+  as the runner, not the assertion registry.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.CoreRuntime.cs` owns runtime,
+  telemetry, recording verifier, LibAv encoder, and basic app contract check
+  registration.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.AutomationDiagnostics.cs` owns
+  automation, coordinator, service namespace, and automation diagnostics
+  projection check registration.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.PresentationPreview.cs` owns
+  MainViewModel, MainWindow, stats, preview renderer, and preview pacing check
+  registration.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.McpDiagnosticsPipeline.cs` owns MCP,
+  diagnostic-session, unified-video, MJPEG, D3D pending-frame, and recording
+  queue check registration.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.RecordingModels.cs` owns LibAv sink,
+  capture settings, recording/finalize model, Flashback buffer, and core model
+  check registration.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.cs` owns Flashback model,
+  playback, decoder, encoder sink, and exporter check registration.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.ToolContracts.cs` owns recording
+  pipeline, NVML, capture-session/process, automation protocol, tool formatter,
+  and RTK probe check registration.
 - `tests/Sussudio.Tests/HarnessCore.Helpers.cs` owns shared repo-file reads,
   reflection/property access, assertion helpers, wait helpers, and synthetic
   capture/recording object factories used by the legacy harness and xUnit

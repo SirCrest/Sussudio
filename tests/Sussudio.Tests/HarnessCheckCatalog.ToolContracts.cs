@@ -1,0 +1,92 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+static partial class Program
+{
+    private static async Task AddToolContractChecksAsync(List<CheckResult> results)
+    {
+        await AddCheckAsync(results,
+            "Recording pipeline options preserve defaults and capacity bounds",
+            RecordingPipelineOptions_DefaultsAndCapacityBounds);
+        await AddCheckAsync(results,
+            "RecordingPipelineOptions resolves video queue capacity from frame rate",
+            RecordingPipelineOptions_ResolvesVideoQueueCapacity);
+
+        // --- NvmlSnapshot computed properties ---
+        await AddCheckAsync(results,
+            "NvmlSnapshot computed properties convert units correctly",
+            NvmlSnapshot_ComputedProperties_ConvertUnits);
+
+        // --- CaptureSessionSnapshot defaults ---
+        await AddCheckAsync(results,
+            "CaptureSessionSnapshot has correct default state",
+            CaptureSessionSnapshot_DefaultState);
+
+        // --- ProcessSpec and ProcessRunResult contracts ---
+        await AddCheckAsync(results,
+            "ProcessSpec default timeout is 30 seconds",
+            ProcessSpec_DefaultTimeout_Is30Seconds);
+
+        // --- Tool CommandMap & Formatter Alignment ---
+        await AddCheckAsync(results,
+            "Automation pipe protocol resolves commands timeouts auth and envelopes",
+            AutomationPipeProtocol_ResolvesCommandsTimeoutsAuthAndEnvelopes);
+        await AddCheckAsync(results,
+            "Automation command catalog covers command metadata and policy",
+            AutomationCommandCatalog_CoversCommandsAndPolicyMetadata);
+        await AddCheckAsync(results,
+            "Automation pipe connect failures are classified for CLI and MCP",
+            AutomationPipeConnectFailures_AreClassifiedForCliAndMcp);
+        await AddCheckAsync(results,
+            "Reliability gates run tools and offline regression harness",
+            ReliabilityGates_RunToolsAndOfflineHarness);
+        await AddCheckAsync(results,
+            "Automation manifest covers catalog metadata",
+            AutomationManifest_CoversCatalogMetadata);
+        await AddCheckAsync(results,
+            "Automation path-bearing commands have validation coverage",
+            AutomationCommandCatalog_PathBearingCommandsHaveValidationCoverage);
+        await AddCheckAsync(results,
+            "Automation manifest serialization is stable",
+            AutomationManifest_SerializationIsStable);
+        await AddCheckAsync(results,
+            "Automation response state parses status and retry contracts",
+            AutomationResponseState_ParsesStatusAndRetryContracts);
+        await AddCheckAsync(results,
+            "Automation snapshot formatter formats core sections and typed accessors",
+            AutomationSnapshotFormatter_FormatsCoreSectionsAndTypedAccessors);
+        await AddCheckAsync(results,
+            "Shared AutomationPipeProtocol CommandMap covers every AutomationCommandKind enum value",
+            SharedProtocol_CommandMap_CoversEveryAutomationCommandKind);
+        await AddCheckAsync(results,
+            "MCP PipeClient delegates to shared protocol for command resolution",
+            PipeClient_UsesSharedProtocol_ForCommandResolution);
+        await AddCheckAsync(results,
+            "ResponseFormatter.IsSuccess correctly parses success and failure JSON",
+            ResponseFormatter_IsSuccess_ParsesSuccessAndFailureJson);
+        await AddCheckAsync(results,
+            "ResponseFormatter.Get handles all JSON value kinds correctly",
+            ResponseFormatter_Get_HandlesAllJsonValueKinds);
+        await AddCheckAsync(results,
+            "ssctl Formatters snapshot fields align with MCP ResponseFormatter",
+            SsctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter);
+        await AddCheckAsync(results,
+            "AutomationClient delegates to shared protocol for command resolution",
+            AutomationClient_UsesSharedProtocol_ForCommandResolution);
+        await AddCheckAsync(results,
+            "ssctl CommandHandlers route core command groups",
+            SsctlCommandHandlers_RouteCoreCommandGroups);
+        await AddCheckAsync(results,
+            "PresentMon parser selects dominant non-artifact swap chain",
+            PresentMonParser_SelectsDominantNonArtifactSwapChain);
+        await AddCheckAsync(results,
+            "ssctl Formatters emit core snapshot sections",
+            SsctlFormatters_EmitCoreSnapshotSections);
+        await AddCheckAsync(results,
+            "ssctl PipeTransport exposes advanced automation command ids",
+            SsctlPipeTransport_ExposesAdvancedAutomationCommandIds);
+        await AddCheckAsync(results,
+            "RTK I2C probe guards unsafe native paths",
+            RtkI2cProbe_GuardsUnsafeNativePaths);
+    }
+}
