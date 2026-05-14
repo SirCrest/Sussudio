@@ -1,6 +1,6 @@
 # Sussudio Agent Map
 
-Last reviewed: 2026-05-13.
+Last reviewed: 2026-05-14.
 
 This file maps the current repo shape to named owners, entry points, invariants,
 and fast checks. It is intentionally mechanical so future agents can find the
@@ -584,8 +584,19 @@ Primary current owners:
   `tests/Sussudio.Tests/Program.cs`.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing and formatter batch tests.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` owns MCP
-  diagnostic-session tool and diagnostic-session runner contract tests.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the
+  diagnostic-session MCP surface index shell.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Tests.cs` owns
+  MCP `run_diagnostic_session` success/failure artifact contract tests.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`
+  owns diagnostic-session helper ownership assertions for core runner
+  collaborators.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Tests.cs`
+  owns diagnostic-session Flashback scenario, metrics, waits, export, and
+  validation ownership assertions.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs`
+  owns diagnostic-session runner behavior tests that execute the reflective
+  runner against synthetic command delegates.
 - `tests/Sussudio.Tests/McpToolSurface.Performance.Tests.cs` owns MCP
   performance timeline and frame-pacing verdict tests.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` owns MCP wait,

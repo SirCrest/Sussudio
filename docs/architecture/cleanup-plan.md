@@ -1,6 +1,6 @@
 # Architecture Cleanup Plan
 
-Last reviewed: 2026-05-13.
+Last reviewed: 2026-05-14.
 
 ## Objective
 
@@ -269,6 +269,15 @@ Keep snapshot text in `Formatters.Snapshot.cs`, diagnostic-event text in
 `Formatters.Options.cs`, performance timeline tables in
 `Formatters.Timeline.cs`, memory/GC summaries in `Formatters.Memory.cs`, and
 shared JSON/result helpers in `Formatters.Common.cs`.
+
+`tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is now only
+the diagnostic-session MCP surface index shell. Diagnostic-session coverage is
+split into `McpToolSurface.DiagnosticSession.Tool.Tests.cs` for MCP tool
+artifact contracts, `McpToolSurface.DiagnosticSession.Ownership.Tests.cs` for
+core helper ownership assertions, `McpToolSurface.DiagnosticSession.Flashback.Tests.cs`
+for Flashback scenario/metrics/wait/export ownership assertions, and
+`McpToolSurface.DiagnosticSession.Runner.Tests.cs` for reflective runner
+behavior tests with synthetic automation delegates.
 
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
@@ -1471,9 +1480,10 @@ Remaining `tools/Common` ownership:
    `tests/Sussudio.Tests/Program.cs` should keep the legacy runner entry point,
    but checks should keep migrating into focused xUnit files or focused
    partial contract files while the dual-stack harness remains. MCP tool
-   surface tests are now split into command-routing, diagnostic-session,
-   performance, window/preview, and helper partial files; continue with
-   low-risk contract groups first.
+   surface tests are now split into command-routing, diagnostic-session tool,
+   diagnostic-session ownership, diagnostic-session Flashback,
+   diagnostic-session runner, performance, window/preview, and helper partial
+   files; continue with low-risk contract groups first.
 
 3. Continue converting MainWindow partial concerns into controllers.
 
