@@ -159,4 +159,22 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackPlaybackState_HasAllExpectedStates()
+    {
+        var enumType = RequireType("Sussudio.Models.FlashbackPlaybackState");
+        var names = Enum.GetNames(enumType);
+
+        // Expected states from the state machine design
+        var expected = new HashSet<string> { "Disabled", "Buffering", "Live", "Scrubbing", "Playing", "Paused" };
+        foreach (var name in expected)
+        {
+            if (!names.Contains(name))
+                throw new InvalidOperationException($"Missing FlashbackPlaybackState: {name}");
+        }
+
+        AssertEqual(expected.Count, names.Length, "FlashbackPlaybackState count");
+
+        return Task.CompletedTask;
+    }
 }
