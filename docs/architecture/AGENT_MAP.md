@@ -695,7 +695,9 @@ Primary current owners:
   contracts.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns serialized diagnostics refresh and automation diagnostics hub ownership
-  assertions, including HDR truth verdict behavior.
+  assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Hdr.Tests.cs`
+  owns diagnostics HDR truth verdict behavior.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsLoop.Tests.cs`
   owns diagnostics-loop polling contracts that keep options snapshots out of
   hot diagnostics refresh paths.
