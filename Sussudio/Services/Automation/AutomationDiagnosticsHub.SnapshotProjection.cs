@@ -1,5 +1,3 @@
-using System;
-using System.Threading;
 using Sussudio.Models;
 using Sussudio.Services.Runtime;
 
@@ -26,6 +24,7 @@ public sealed partial class AutomationDiagnosticsHub
         long recentD3DMissedRefreshes,
         long recentD3DStatsFailures)
     {
+        var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime);
         var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);
         var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);
         var userSettings = BuildUserSettingsProjection(viewModelSnapshot);
@@ -58,16 +57,16 @@ public sealed partial class AutomationDiagnosticsHub
         var flashbackPlayback = BuildFlashbackPlaybackProjection(health);
         var snapshot = new AutomationSnapshot
         {
-            TimestampUtc = DateTimeOffset.UtcNow,
-            IsInitialized = viewModelSnapshot.IsInitialized,
-            IsPreviewing = viewModelSnapshot.IsPreviewing,
-            IsRecording = viewModelSnapshot.IsRecording,
-            VerificationInProgress = Volatile.Read(ref _verificationInProgress) != 0,
-            IsAudioEnabled = viewModelSnapshot.IsAudioEnabled,
-            IsAudioPreviewEnabled = viewModelSnapshot.IsAudioPreviewEnabled,
-            IsCustomAudioInputEnabled = viewModelSnapshot.IsCustomAudioInputEnabled,
-            SessionState = captureRuntime.SessionState,
-            StatusText = viewModelSnapshot.StatusText,
+            TimestampUtc = snapshotStatus.TimestampUtc,
+            IsInitialized = snapshotStatus.IsInitialized,
+            IsPreviewing = snapshotStatus.IsPreviewing,
+            IsRecording = snapshotStatus.IsRecording,
+            VerificationInProgress = snapshotStatus.VerificationInProgress,
+            IsAudioEnabled = snapshotStatus.IsAudioEnabled,
+            IsAudioPreviewEnabled = snapshotStatus.IsAudioPreviewEnabled,
+            IsCustomAudioInputEnabled = snapshotStatus.IsCustomAudioInputEnabled,
+            SessionState = snapshotStatus.SessionState,
+            StatusText = snapshotStatus.StatusText,
             PerformanceScore = performance.Score,
             PerformancePerfectionMet = performance.PerfectionMet,
             PerformanceSummary = performance.Summary,
