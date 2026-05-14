@@ -978,8 +978,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionSummaryWriter.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
-                .Replace("\r\n", "\n")
+            + "\n" + ReadDiagnosticSessionBackgroundTasksSource()
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionRunState.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
@@ -1035,7 +1034,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesSourceSignalHealthWarning");
         AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesFlashbackForceRotateDrainWarning");
         AssertContains(diagnosticSessionText, "scenarioPlan.IsPreviewCycleScenario");
-        AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionBackgroundTasks");
+        AssertContains(diagnosticSessionText, "internal sealed partial class DiagnosticSessionBackgroundTasks");
         AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionRunState");
         AssertContains(diagnosticSessionText, "var runState = new DiagnosticSessionRunState(");
         AssertContains(diagnosticSessionText, "backgroundTasks.AwaitScenarioTasksAsync()");

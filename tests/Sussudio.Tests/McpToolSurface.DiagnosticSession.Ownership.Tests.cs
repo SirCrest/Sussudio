@@ -365,13 +365,12 @@ static partial class Program
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
             .Replace("\r\n", "\n");
-        var tasksText = ReadRepoFile("tools/Common/DiagnosticSessionBackgroundTasks.cs")
-            .Replace("\r\n", "\n");
+        var tasksText = ReadDiagnosticSessionBackgroundTasksSource();
 
         AssertContains(startupText, "internal static partial class DiagnosticSessionScenarioStartup");
         AssertContains(startupText, "internal static async Task<DiagnosticSessionScenarioStartupResult> StartAsync(");
         AssertContains(startupText, "internal readonly record struct DiagnosticSessionScenarioStartupResult(bool StartedFlashbackPlayback)");
-        AssertContains(tasksText, "internal sealed class DiagnosticSessionBackgroundTasks");
+        AssertContains(tasksText, "internal sealed partial class DiagnosticSessionBackgroundTasks");
         AssertContains(tasksText, "internal void AddScenario(int awaitOrder, string stage, Task task)");
         AssertContains(tasksText, "internal async Task AwaitScenarioTasksAsync()");
         AssertContains(tasksText, "internal async Task<PresentMonProbeResult?> AwaitPresentMonAsync(");
