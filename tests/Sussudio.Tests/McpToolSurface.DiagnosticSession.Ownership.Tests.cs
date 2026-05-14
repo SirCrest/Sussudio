@@ -399,6 +399,10 @@ static partial class Program
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
+        var startupRegistrationText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs")
+            .Replace("\r\n", "\n");
+        var deferredSettingsStartupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.DeferredSettings.cs")
+            .Replace("\r\n", "\n");
         var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
             .Replace("\r\n", "\n");
         var tasksText = ReadDiagnosticSessionBackgroundTasksSource();
@@ -421,7 +425,10 @@ static partial class Program
         AssertContains(startupText, "backgroundTasks.AddScenario(");
         AssertContains(startupText, "DiagnosticSessionPresentMonStartup.StartAsync(");
         AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(");
-        AssertContains(startupText, "backgroundTasks.SetRecordingSettingsDeferred(");
+        AssertContains(deferredSettingsStartupText, "backgroundTasks.SetRecordingSettingsDeferred(");
+        AssertContains(deferredSettingsStartupText, "RunFlashbackRecordingSettingsDeferredAsync(");
+        AssertContains(deferredSettingsStartupText, "actions.Add(\"flashback recording settings deferred started\")");
+        AssertDoesNotContain(startupRegistrationText, "RunFlashbackRecordingSettingsDeferredAsync(");
         AssertContains(runnerText, "DiagnosticSessionScenarioStartup.StartAsync(");
         AssertContains(runnerText, "startedFlashbackPlayback = scenarioStartup.StartedFlashbackPlayback;");
         AssertContains(runnerText, "backgroundTasks.AwaitScenarioTasksAsync()");

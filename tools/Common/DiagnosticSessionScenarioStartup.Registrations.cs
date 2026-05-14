@@ -3,7 +3,6 @@ using static Sussudio.Tools.DiagnosticSessionFlashbackCycleScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackExportScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackLifecycleScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;
-using static Sussudio.Tools.DiagnosticSessionFlashbackRecordingSettingsScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackStressScenario;
 
@@ -230,26 +229,5 @@ internal static partial class DiagnosticSessionScenarioStartup
                     cancellationToken));
             actions.Add("flashback recording preview cycle started");
         }
-    }
-
-    private static void RegisterDeferredFlashbackRecordingSettingsTask(
-        DiagnosticSessionScenarioPlan scenarioPlan,
-        DiagnosticSessionBackgroundTasks backgroundTasks,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, bool, Task<JsonElement>> sendAsyncWithFailurePolicy,
-        CancellationToken cancellationToken)
-    {
-        if (!scenarioPlan.RunFlashbackRecordingSettingsDeferred)
-        {
-            return;
-        }
-
-        backgroundTasks.SetRecordingSettingsDeferred(RunFlashbackRecordingSettingsDeferredAsync(
-            actions,
-            warnings,
-            sendAsyncWithFailurePolicy,
-            cancellationToken));
-        actions.Add("flashback recording settings deferred started");
     }
 }
