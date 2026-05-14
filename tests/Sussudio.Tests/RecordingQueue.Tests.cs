@@ -714,6 +714,8 @@ static partial class Program
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
+        var fanoutSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.Fanout.cs")
+            .Replace("\r\n", "\n");
         var contractsSource = (ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs")
                 + "\n"
                 + ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs"))
@@ -724,13 +726,16 @@ static partial class Program
         var drainBlock = ExtractSourceBlock(
             wasapiSource,
             "private void DrainCapturePackets()",
-            "private static void InvokeHotAudioWriter");
+            "private void RaiseAudioLevelIfDue");
         AssertContains(drainBlock, "InvokeHotAudioWriter(");
         AssertContains(drainBlock, "WriteAudioToSinkOnCaptureThread(");
         AssertDoesNotContain(drainBlock, ".GetAwaiter()");
-        AssertContains(wasapiSource, "private static void CompleteHotAudioWrite(Task task, string target)");
-        AssertContains(wasapiSource, "if (!task.IsCompleted)");
-        AssertContains(wasapiSource, "Audio writers must copy/enqueue synchronously and return Task.CompletedTask.");
+        AssertContains(fanoutSource, "private static void InvokeHotAudioWriter(");
+        AssertContains(fanoutSource, "private static void WriteAudioToSinkOnCaptureThread(");
+        AssertContains(fanoutSource, "private static void CompleteHotAudioWrite(Task task, string target)");
+        AssertContains(fanoutSource, "if (!task.IsCompleted)");
+        AssertContains(fanoutSource, "Audio writers must copy/enqueue synchronously and return Task.CompletedTask.");
+        AssertDoesNotContain(wasapiSource, "private static void CompleteHotAudioWrite(Task task, string target)");
         AssertContains(contractsSource, "Hot WASAPI callback write.");
         AssertContains(contractsSource, "must not do blocking/async work");
 
@@ -754,11 +759,17 @@ static partial class Program
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
+        var fanoutSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.Fanout.cs")
+            .Replace("\r\n", "\n");
         var conversionSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.Conversion.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(wasapiSource, "internal sealed partial class WasapiAudioCapture");
+        AssertContains(fanoutSource, "internal sealed partial class WasapiAudioCapture");
         AssertContains(conversionSource, "internal sealed partial class WasapiAudioCapture");
+        AssertContains(fanoutSource, "public void AttachRecordingSink(IRecordingSink sink)");
+        AssertContains(fanoutSource, "public void SetAudioWriter(Func<ReadOnlyMemory<byte>, Task>? writer)");
+        AssertContains(fanoutSource, "internal void SetPlayback(WasapiAudioPlayback? playback)");
         AssertContains(conversionSource, "private ConvertedAudioPacket ConvertToOutputFormat(");
         AssertContains(conversionSource, "private int ComputeResampledFrameCount(");
         AssertContains(conversionSource, "private static void ResampleStereoLinear(");
@@ -769,6 +780,8 @@ static partial class Program
         AssertDoesNotContain(wasapiSource, "private ConvertedAudioPacket ConvertToOutputFormat(");
         AssertDoesNotContain(wasapiSource, "private static void ResampleStereoLinear(");
         AssertDoesNotContain(wasapiSource, "private readonly struct ConvertedAudioPacket");
+        AssertDoesNotContain(wasapiSource, "public void AttachRecordingSink(IRecordingSink sink)");
+        AssertDoesNotContain(wasapiSource, "public void SetAudioWriter(Func<ReadOnlyMemory<byte>, Task>? writer)");
 
         return Task.CompletedTask;
     }
