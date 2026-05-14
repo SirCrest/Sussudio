@@ -53,10 +53,11 @@ every check has a `[Fact]`/`[Theory]` equivalent:
    `GpuPipelineHandles`, `IRecordingSink` shape).
 3. **Behavioral service tests** that exercise pure logic
    (`FrameLedger`, `RecordingPipelineOptions`, `PresentMonProbe`).
-4. **Source-text-grep tests** — replace each with a behavioral test that calls
-   the real method and asserts on outputs or recorded log lines. Keep one
-   tightly-scoped Roslyn-syntax-API test per public surface where stability
-   itself is the contract (e.g. `IAutomationCommandDispatcher` shape).
+4. **Source-shape tests** - replace broad implementation-grep tests with
+   behavioral tests where behavior is the contract. Keep focused ownership and
+   source-shape assertions when the architecture boundary itself is the
+   contract, and keep them small enough that a legitimate move has one obvious
+   test update.
 5. **Reflection-over-private tests** — rewrite to use the now-internal API
    directly. If a test still needs to peek at a private field, the design is
    probably the bug; consider exposing the value or restructuring.

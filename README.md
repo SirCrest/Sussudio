@@ -113,7 +113,7 @@ The automation smoke test requires the app to be running.
 |------|---------|
 | `Sussudio/` | WinUI app, capture pipeline, preview renderer, recording, audio, Flashback, automation server |
 | `Sussudio.Automation.Contracts/` | Shared automation command IDs, protocol constants, manifest/catalog, and pipe security policy |
-| `tests/Sussudio.Tests/` | Console-based regression harness |
+| `tests/Sussudio.Tests/` | Legacy console regression harness plus xUnit and source-shape architecture contract tests |
 | `tests/Sussudio.HdrLab/` | HDR ingest/validation lab |
 | `tests/Sussudio.FfmpegEncodeLab/` | FFmpeg/libav encode lab |
 | `tools/Common/` | Shared automation client, formatting, and diagnostic-session helpers |
@@ -137,9 +137,12 @@ SussudioAutomation
 
 The shared command IDs, protocol constants, manifest/catalog, and pipe security
 policy live in `Sussudio.Automation.Contracts/`.
-When adding automation commands, keep these in sync:
+When adding automation commands, treat `Sussudio.Automation.Contracts/` as the
+source of truth for command IDs, protocol constants, command metadata, payload
+shape, readiness gating, timeouts, path policy, CLI help, and MCP descriptions.
+Then keep these consumers in sync:
 
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.cs`
+- `Sussudio/Services/Automation/AutomationCommandDispatcher*.cs`
 - `Sussudio.Automation.Contracts/AutomationCommandKind.cs`
 - `Sussudio.Automation.Contracts/AutomationCommandCatalog.cs`
 - `Sussudio.Automation.Contracts/AutomationPipeProtocol.cs`
