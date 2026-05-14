@@ -717,7 +717,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
   reliability-gates script contract test.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Tests.cs`
-  owns shared snapshot formatter text and typed-accessor contract tests.
+  owns shared/ssctl snapshot formatter text, parity, and typed-accessor
+  contract tests.
 - `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` owns shared tool
   assembly loading, isolated load contexts, freshness checks, and tool build
   command mapping used by the legacy harness and xUnit slices.
