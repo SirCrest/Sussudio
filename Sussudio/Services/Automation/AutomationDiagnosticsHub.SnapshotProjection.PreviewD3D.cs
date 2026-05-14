@@ -10,6 +10,7 @@ public sealed partial class AutomationDiagnosticsHub
         long recentD3DStatsFailures)
     {
         var cpuTiming = BuildPreviewD3DCpuTimingProjection(previewRuntime);
+        var frameFlow = BuildPreviewD3DFrameFlowProjection(previewRuntime);
         var frameLatencyWait = BuildPreviewD3DFrameLatencyWaitProjection(previewRuntime);
         var frameStats = BuildPreviewD3DFrameStatsProjection(
             previewRuntime,
@@ -35,25 +36,7 @@ public sealed partial class AutomationDiagnosticsHub
             CpuTiming = cpuTiming,
             FrameLatencyWait = frameLatencyWait,
             FrameStats = frameStats,
-            LastSubmittedPreviewPresentId = previewRuntime.D3DLastSubmittedPreviewPresentId,
-            LastSubmittedSourceSequenceNumber = previewRuntime.D3DLastSubmittedSourceSequenceNumber,
-            LastSubmittedSourcePtsTicks = previewRuntime.D3DLastSubmittedSourcePtsTicks,
-            LastSubmittedQpc = previewRuntime.D3DLastSubmittedQpc,
-            LastSubmittedUtcUnixMs = previewRuntime.D3DLastSubmittedUtcUnixMs,
-            LastRenderedPreviewPresentId = previewRuntime.D3DLastRenderedPreviewPresentId,
-            LastRenderedSourceSequenceNumber = previewRuntime.D3DLastRenderedSourceSequenceNumber,
-            LastRenderedSourcePtsTicks = previewRuntime.D3DLastRenderedSourcePtsTicks,
-            LastRenderedQpc = previewRuntime.D3DLastRenderedQpc,
-            LastRenderedUtcUnixMs = previewRuntime.D3DLastRenderedUtcUnixMs,
-            LastRenderedSchedulerToPresentMs = previewRuntime.D3DLastRenderedSchedulerToPresentMs,
-            LastRenderedPipelineLatencyMs = previewRuntime.D3DLastRenderedPipelineLatencyMs,
-            LastDroppedPreviewPresentId = previewRuntime.D3DLastDroppedPreviewPresentId,
-            LastDroppedSourceSequenceNumber = previewRuntime.D3DLastDroppedSourceSequenceNumber,
-            LastDroppedSourcePtsTicks = previewRuntime.D3DLastDroppedSourcePtsTicks,
-            LastDroppedQpc = previewRuntime.D3DLastDroppedQpc,
-            LastDroppedUtcUnixMs = previewRuntime.D3DLastDroppedUtcUnixMs,
-            LastDropReason = previewRuntime.D3DLastDropReason,
-            RecentSlowFrames = previewRuntime.D3DRecentSlowFrames
+            FrameFlow = frameFlow
         };
     }
 
@@ -76,24 +59,6 @@ public sealed partial class AutomationDiagnosticsHub
         public PreviewD3DCpuTimingProjection CpuTiming { get; init; }
         public PreviewD3DFrameLatencyWaitProjection FrameLatencyWait { get; init; }
         public PreviewD3DFrameStatsProjection FrameStats { get; init; }
-        public long LastSubmittedPreviewPresentId { get; init; }
-        public long LastSubmittedSourceSequenceNumber { get; init; }
-        public long LastSubmittedSourcePtsTicks { get; init; }
-        public long LastSubmittedQpc { get; init; }
-        public long LastSubmittedUtcUnixMs { get; init; }
-        public long LastRenderedPreviewPresentId { get; init; }
-        public long LastRenderedSourceSequenceNumber { get; init; }
-        public long LastRenderedSourcePtsTicks { get; init; }
-        public long LastRenderedQpc { get; init; }
-        public long LastRenderedUtcUnixMs { get; init; }
-        public double LastRenderedSchedulerToPresentMs { get; init; }
-        public double LastRenderedPipelineLatencyMs { get; init; }
-        public long LastDroppedPreviewPresentId { get; init; }
-        public long LastDroppedSourceSequenceNumber { get; init; }
-        public long LastDroppedSourcePtsTicks { get; init; }
-        public long LastDroppedQpc { get; init; }
-        public long LastDroppedUtcUnixMs { get; init; }
-        public string LastDropReason { get; init; }
-        public PreviewSlowFrameDiagnostic[] RecentSlowFrames { get; init; }
+        public PreviewD3DFrameFlowProjection FrameFlow { get; init; }
     }
 }
