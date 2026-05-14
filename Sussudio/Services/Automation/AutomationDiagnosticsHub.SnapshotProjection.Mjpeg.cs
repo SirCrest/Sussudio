@@ -8,6 +8,7 @@ public sealed partial class AutomationDiagnosticsHub
     private static MjpegProjection BuildMjpegProjection(CaptureHealthSnapshot health)
     {
         var previewJitter = BuildMjpegPreviewJitterProjection(health);
+        var packetHash = BuildMjpegPacketHashProjection(health);
 
         return new()
         {
@@ -49,19 +50,7 @@ public sealed partial class AutomationDiagnosticsHub
             ReorderSkips = health.MjpegReorderSkips,
             ReorderBufferDepth = health.MjpegReorderBufferDepth,
             PreviewJitter = previewJitter,
-            PacketHashSampleCount = health.MjpegPacketHashSampleCount,
-            PacketHashUniqueFrameCount = health.MjpegPacketHashUniqueFrameCount,
-            PacketHashDuplicateFrameCount = health.MjpegPacketHashDuplicateFrameCount,
-            PacketHashLongestDuplicateRun = health.MjpegPacketHashLongestDuplicateRun,
-            PacketHashInputObservedFps = health.MjpegPacketHashInputObservedFps,
-            PacketHashUniqueObservedFps = health.MjpegPacketHashUniqueObservedFps,
-            PacketHashDuplicateFramePercent = health.MjpegPacketHashDuplicateFramePercent,
-            PacketHashLastHash = health.MjpegPacketHashLastHash,
-            PacketHashLastFrameDuplicate = health.MjpegPacketHashLastFrameDuplicate,
-            PacketHashPattern = health.MjpegPacketHashPattern,
-            PacketHashRecentInputIntervalsMs = health.MjpegPacketHashRecentInputIntervalsMs,
-            PacketHashRecentUniqueIntervalsMs = health.MjpegPacketHashRecentUniqueIntervalsMs,
-            PacketHashRecentDuplicateFlags = health.MjpegPacketHashRecentDuplicateFlags,
+            PacketHash = packetHash,
             PerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder
                 ? Array.ConvertAll(
                     perDecoder,
@@ -115,19 +104,7 @@ public sealed partial class AutomationDiagnosticsHub
         public long ReorderSkips { get; init; }
         public int ReorderBufferDepth { get; init; }
         public MjpegPreviewJitterProjection PreviewJitter { get; init; }
-        public int PacketHashSampleCount { get; init; }
-        public long PacketHashUniqueFrameCount { get; init; }
-        public long PacketHashDuplicateFrameCount { get; init; }
-        public long PacketHashLongestDuplicateRun { get; init; }
-        public double PacketHashInputObservedFps { get; init; }
-        public double PacketHashUniqueObservedFps { get; init; }
-        public double PacketHashDuplicateFramePercent { get; init; }
-        public string PacketHashLastHash { get; init; }
-        public bool PacketHashLastFrameDuplicate { get; init; }
-        public string PacketHashPattern { get; init; }
-        public double[] PacketHashRecentInputIntervalsMs { get; init; }
-        public double[] PacketHashRecentUniqueIntervalsMs { get; init; }
-        public int[] PacketHashRecentDuplicateFlags { get; init; }
+        public MjpegPacketHashProjection PacketHash { get; init; }
         public MjpegDecoderAutomationSnapshot[] PerDecoder { get; init; }
     }
 }
