@@ -458,9 +458,24 @@ D3D11 device-removed checks there.
 
 LibAv encoder audio stream handling now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone send
-entry points, AAC stream setup, resamplers, packet writing, pending-sample
-flush, and sample queue/drain helpers there; leave video send, rotation, and
-finalization in `LibAvEncoder.cs`.
+entry points, stream creation, packet writing, pending-sample flush, and sample
+queue/drain helpers there; leave video send, rotation, and finalization in
+`LibAvEncoder.cs`.
+
+LibAv encoder audio setup helpers now live in
+`Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs`. Keep AAC codec
+context configuration, resampler setup, audio frame allocation, accumulator
+allocation, and sample-queue allocation there.
+
+LibAv encoder HDR frame side-data helpers now live in
+`Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs`. Keep software-frame
+and hardware-frame HDR mastering display and content-light metadata attachment
+there.
+
+LibAv encoder models now live in
+`Sussudio/Services/Recording/LibAvEncoder.Models.cs`. Keep `LibAvEncoderOptions`
+and `RotateOutputResult` there so the root encoder remains runtime behavior
+rather than DTO storage.
 
 LibAv encoder video setup now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs`. Keep video codec

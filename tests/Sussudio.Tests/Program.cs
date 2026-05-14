@@ -243,6 +243,9 @@ static partial class Program
                 "LibAv encoder diagnostics helpers live in focused partial",
                 LibAvEncoder_DiagnosticsHelpersLiveInFocusedPartial),
             await RunCheckAsync(
+                "LibAv encoder setup and models live in focused partials",
+                LibAvEncoder_SetupAndModelsLiveInFocusedPartials),
+            await RunCheckAsync(
                 "Flashback integrity uses recording-scoped sequence gaps",
                 FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps),
             await RunCheckAsync(

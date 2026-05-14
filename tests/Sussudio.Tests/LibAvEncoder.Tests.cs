@@ -15,6 +15,9 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.FrameCopy.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Diagnostics.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Models.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs").Replace("\r\n", "\n")
         };
@@ -435,6 +438,39 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static string GetErrorString(int errorCode)");
         AssertDoesNotContain(rootText, "private static InvalidOperationException CreateLibAvException(string message)");
         AssertDoesNotContain(rootText, "private static void CheckDeviceRemoved(IntPtr d3d11Device)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task LibAvEncoder_SetupAndModelsLiveInFocusedPartials()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
+            .Replace("\r\n", "\n");
+        var audioSetupText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs")
+            .Replace("\r\n", "\n");
+        var hdrSideDataText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs")
+            .Replace("\r\n", "\n");
+        var modelsText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Models.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(audioSetupText, "private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)");
+        AssertContains(audioSetupText, "private void InitializeAudioResampler(LibAvEncoderOptions options)");
+        AssertContains(audioSetupText, "private void AllocateAudioFrame()");
+        AssertContains(audioSetupText, "private void AllocateAudioAccumulator(LibAvEncoderOptions options)");
+        AssertContains(audioSetupText, "private void AllocateAudioSampleQueue(LibAvEncoderOptions options)");
+        AssertContains(hdrSideDataText, "private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)");
+        AssertContains(hdrSideDataText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
+        AssertContains(hdrSideDataText, "ffmpeg.av_mastering_display_metadata_create_side_data(_videoFrame)");
+        AssertContains(hdrSideDataText, "ffmpeg.av_mastering_display_metadata_create_side_data(_hwFrame)");
+        AssertContains(modelsText, "internal sealed record LibAvEncoderOptions");
+        AssertContains(modelsText, "internal readonly record struct RotateOutputResult");
+        AssertDoesNotContain(rootText, "private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)");
+        AssertDoesNotContain(rootText, "private void InitializeAudioResampler(LibAvEncoderOptions options)");
+        AssertDoesNotContain(rootText, "private void AllocateAudioFrame()");
+        AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)");
+        AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
+        AssertDoesNotContain(rootText, "internal sealed record LibAvEncoderOptions");
+        AssertDoesNotContain(rootText, "internal readonly record struct RotateOutputResult");
 
         return Task.CompletedTask;
     }
