@@ -701,6 +701,9 @@ Primary current owners:
   reflection/property access, assertion helpers, wait helpers, and synthetic
   capture/recording object factories used by the legacy harness and xUnit
   slices.
+- `tests/Sussudio.Tests/MjpegTimingMetrics.Helpers.cs` owns synthetic MJPEG
+  timing metric factories and the closed-pipeline emit delegate used by
+  harness-level MJPEG and snapshot tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` owns shared
   reflection helpers for capture configuration model contract tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.Options.Tests.cs` owns

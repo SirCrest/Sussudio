@@ -338,6 +338,8 @@ Shared repo-file reads, reflection/property access, assertion helpers, wait
 helpers, and synthetic capture/recording object factories now live in
 `tests/Sussudio.Tests/HarnessCore.Helpers.cs` instead of the legacy harness
 body.
+Synthetic MJPEG timing metric factories and the closed-pipeline emit delegate
+now live in `tests/Sussudio.Tests/MjpegTimingMetrics.Helpers.cs`.
 
 `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` now keeps only
 shared reflection helpers. Capture configuration model coverage is split into
