@@ -115,7 +115,7 @@ static partial class Program
 
     private static Task PreviewPacingClassifier_IsWiredIntoAutomationSnapshots()
     {
-        var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs");
+        var contractsText = ReadAutomationSnapshotFamilyText();
         var diagnosticsSnapshotsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
         var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
         var diagnosticsSnapshotProjectionSnapshotEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs");

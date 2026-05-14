@@ -2049,7 +2049,7 @@ static partial class Program
 
     private static Task AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields()
     {
-        var contractsText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs").Replace("\r\n", "\n");
+        var contractsText = ReadAutomationSnapshotFamilyText();
         var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs").Replace("\r\n", "\n");
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs").Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs").Replace("\r\n", "\n")
@@ -7077,6 +7077,32 @@ static partial class Program
 
     private static string ReadRepoFile(string relativePath)
         => File.ReadAllText(Path.Combine(GetRepoRoot(), relativePath));
+
+    private static string ReadAutomationSnapshotFamilyText()
+    {
+        var files = new[]
+        {
+            "Sussudio/Models/Automation/AutomationSnapshot.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.UserSettings.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.Hdr.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.AudioIngest.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.Recording.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.CaptureFormat.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.SourceTelemetry.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.Preview.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.Mjpeg.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.SystemHealth.cs",
+            "Sussudio/Models/Automation/AutomationSnapshot.Flashback.cs"
+        };
+
+        var parts = new List<string>();
+        foreach (var file in files)
+        {
+            parts.Add(ReadRepoFile(file).Replace("\r\n", "\n"));
+        }
+
+        return string.Join("\n", parts);
+    }
 
     private static Type RequireType(string typeName)
     {

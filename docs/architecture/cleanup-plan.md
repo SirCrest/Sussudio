@@ -839,12 +839,15 @@ stop/dispose, emitter signaling, shutdown joins, cleanup of remaining work and
 reorder frames, fatal-callback dispatch, and remaining-timeout helpers there.
 
 Automation snapshot contracts now live in named model files under
-`Sussudio/Models/Automation/`: `AutomationSnapshot.cs`,
-`CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,
+`Sussudio/Models/Automation/`. The broad automation evidence DTO is split as an
+`AutomationSnapshot*.cs` partial family by domain: root lifecycle/diagnostics,
+user settings, HDR, audio/ingest, recording, capture format, source telemetry,
+preview, MJPEG/cadence, system health, and Flashback. Other snapshot contracts
+remain in `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`,
 `PerformanceTimelineEntry.cs`, `FlashbackSegmentInfo.cs`, and
 `ViewModelRuntimeSnapshot.cs`. Do not recreate a broad
-`AutomationRuntimeSnapshots.cs` catch-all; add new DTOs to a named file that
-matches the snapshot surface they own.
+`AutomationRuntimeSnapshots.cs` catch-all; add new DTO fields to the partial
+that matches the snapshot surface they own.
 
 Native XU AT-command transport and payload parsing now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs`. Keep raw
