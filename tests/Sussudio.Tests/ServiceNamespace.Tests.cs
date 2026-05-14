@@ -119,6 +119,27 @@ static partial class Program
         AssertContains(cudaInteropNativeText, "DllImport(\"nvcuda.dll\")");
         AssertContains(cudaInteropNativeText, "private struct CUDA_MEMCPY2D");
 
+        var nvdecText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.cs"));
+        var nvdecInitializationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Initialization.cs"));
+        var nvdecDecodeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Decode.cs"));
+        var nvdecDownloadText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Download.cs"));
+        var nvdecLifetimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Lifetime.cs"));
+        AssertContains(nvdecText, "internal sealed unsafe partial class NvdecMjpegDecoder");
+        AssertDoesNotContain(nvdecText, "public void Initialize(");
+        AssertDoesNotContain(nvdecText, "public AVFrame* DecodeFrame(");
+        AssertDoesNotContain(nvdecText, "public bool TryDownloadToCpu(");
+        AssertDoesNotContain(nvdecText, "public void Dispose()");
+        AssertContains(nvdecInitializationText, "public void Initialize(int width, int height)");
+        AssertContains(nvdecInitializationText, "public void Initialize(int width, int height, AVBufferRef* sharedHwDeviceCtx");
+        AssertContains(nvdecInitializationText, "FfmpegRuntimeInit.EnsureInitialized");
+        AssertContains(nvdecDecodeText, "public AVFrame* DecodeFrame(");
+        AssertContains(nvdecDecodeText, "public IntPtr GetCudaContext()");
+        AssertContains(nvdecDownloadText, "public bool TryDownloadToCpu(");
+        AssertContains(nvdecDownloadText, "private void EnsurePackedBufferCapacity");
+        AssertContains(nvdecDownloadText, "private static void CopyPlane");
+        AssertContains(nvdecLifetimeText, "public void Dispose()");
+        AssertContains(nvdecLifetimeText, "private static string GetErrorString");
+
         var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.cs"));
         var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs"));
         AssertContains(captureServiceTelemetryText, "pollGeneration != Volatile.Read(ref _telemetryPollGeneration)");

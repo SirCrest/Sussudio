@@ -1132,6 +1132,14 @@ entry points, and the `CUDA_MEMCPY2D` native struct live in
 `Sussudio/Services/Gpu/CudaD3D11Interop.Native.cs`. Keep native declarations
 there so the copy-path file remains about zero-copy/staging behavior.
 
+NVDEC MJPEG decoder ownership is now split around the hot-path boundaries:
+`Sussudio/Services/Gpu/NvdecMjpegDecoder.cs` keeps shared decoder state,
+`NvdecMjpegDecoder.Initialization.cs` owns both context initialization paths,
+`NvdecMjpegDecoder.Decode.cs` owns packet decode and CUDA context access,
+`NvdecMjpegDecoder.Download.cs` owns CPU download/packed-buffer copies, and
+`NvdecMjpegDecoder.Lifetime.cs` owns disposal plus FFmpeg error text. Keep
+shared-context ownership and disposal order unchanged when touching these files.
+
 Automation snapshot contracts now live in named model files under
 `Sussudio/Models/Automation/`. The broad automation evidence DTO is split as an
 `AutomationSnapshot*.cs` partial family by domain: root lifecycle/diagnostics,
