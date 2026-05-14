@@ -44,6 +44,9 @@ static partial class Program
             "Architecture agent map references existing files",
             ArchitectureAgentMap_FileReferencesResolve);
         await AddCheckAsync(results,
+            "Architecture agent map test-owner paths use resolving code spans",
+            ArchitectureAgentMap_TestOwnerPathsUseCodeSpansAndResolve);
+        await AddCheckAsync(results,
             "Automation manifest covers catalog metadata",
             AutomationManifest_CoversCatalogMetadata);
         await AddCheckAsync(results,
