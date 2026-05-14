@@ -895,10 +895,13 @@ reinitialize scheduling there; keep generic resource disposal in
 
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep device
-initialization, shared-device handoff, pipeline texture/view setup, swap-chain
-RTV creation, color-space application, and D3D resource disposal there.
-Device-lost recovery has its own focused owner; keep per-frame rendering and
-draw paths in `D3D11PreviewRenderer.Rendering.cs`.
+initialization, shared-device handoff, video-processor setup, swap-chain RTV
+creation, color-space application, and D3D resource disposal there.
+Raw-frame and HDR shader input texture allocation now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.InputResources.cs`. Keep
+NV12/P010 input textures, staging textures, input views, and HDR plane SRV
+creation there. Device-lost recovery has its own focused owner; keep per-frame
+rendering and draw paths in `D3D11PreviewRenderer.Rendering.cs`.
 
 D3D preview renderer swap-chain panel binding now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs`. Keep

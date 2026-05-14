@@ -147,6 +147,25 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task D3D11PreviewRenderer_InputResourcesLiveInFocusedPartial()
+    {
+        var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
+            .Replace("\r\n", "\n");
+        var inputResourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.InputResources.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(inputResourcesText, "private void EnsureInputResources(int width, int height, bool isHdr)");
+        AssertContains(inputResourcesText, "private void EnsureHdrInputResources(int width, int height)");
+        AssertContains(inputResourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView(Format format, uint planeSlice)");
+        AssertContains(inputResourcesText, "_inputTexture = _device.CreateTexture2D(inputDescription);");
+        AssertContains(inputResourcesText, "_hdrYPlaneSRV = CreateHdrPlaneView(Format.R16_UNorm, planeSlice: 0);");
+        AssertDoesNotContain(resourcesText, "private void EnsureInputResources(int width, int height, bool isHdr)");
+        AssertDoesNotContain(resourcesText, "private void EnsureHdrInputResources(int width, int height)");
+        AssertDoesNotContain(resourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView");
+
+        return Task.CompletedTask;
+    }
+
     private static Task D3D11PreviewRenderer_ViewportHelpersLiveInFocusedPartial()
     {
         var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
