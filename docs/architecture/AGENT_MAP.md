@@ -382,6 +382,8 @@ Important entry points:
   codec/HDR guardrails, and recording topology validation.
 - `CaptureService.HealthSnapshots.cs` builds health snapshots consumed by
   diagnostics and automation health checks.
+- `CaptureService.HealthSnapshots.AvSync.cs` owns A/V sync field projection for
+  health snapshots while sharing drift calculation policy with runtime snapshots.
 - `CaptureService.HealthSnapshotCaptureCadence.cs` owns source-reader capture
   cadence field projection for health snapshots.
 - `CaptureService.HealthSnapshotFlashbackBuffer.cs` owns Flashback buffer,
@@ -707,6 +709,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns serialized diagnostics refresh and automation diagnostics hub ownership
   assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
+  owns the diagnostics hub source-family reader used by refresh ownership
+  assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Hdr.Tests.cs`
   owns diagnostics HDR truth verdict behavior.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsLoop.Tests.cs`
@@ -803,7 +808,8 @@ Primary current owners:
   CaptureService health/diagnostics snapshot behavior scenarios for structured
   source telemetry, cached MJPEG timing metrics, and health field ownership for
   capture cadence, source telemetry, MJPEG, Flashback buffer/backend,
-  Flashback queue state, Flashback export, Flashback playback, and recording.
+  Flashback queue state, Flashback export, Flashback playback, AV-sync, and
+  recording.
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns shared
   fake process-supervisor, runtime-snapshot, verifier-construction, and
   verification-invocation helpers for recording verifier integration tests.
@@ -852,9 +858,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns temp artifact
   finalize/rollback behavior for recording output cleanup.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Tests.cs` owns dispatcher
-  payload parsing, readiness gating, ready-independent no-hardware command
-  coverage, authorization, response, command-kind handling, and dispatcher
-  source-ownership contract tests.
+  payload parsing, readiness gating, authorization, response, command-kind
+  handling, and dispatcher source-ownership contract tests.
+- `tests/Sussudio.Tests/AutomationCommandDispatcher.ReadyIndependent.Tests.cs`
+  owns ready-independent no-hardware command coverage and harness payload/fake
+  device support.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers for automation tool contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns

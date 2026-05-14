@@ -51,6 +51,9 @@ static partial class Program
             "Health snapshot Flashback playback fields live in focused partial",
             CaptureService_HealthSnapshotFlashbackPlaybackFields_LiveInFocusedPartial);
         await AddCheckAsync(results,
+            "Health snapshot AV-sync fields live in focused partial",
+            CaptureService_HealthSnapshotAvSyncFields_LiveInFocusedPartial);
+        await AddCheckAsync(results,
             "Automation snapshots expose high-confidence source telemetry fields",
             AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields);
         await AddCheckAsync(results,

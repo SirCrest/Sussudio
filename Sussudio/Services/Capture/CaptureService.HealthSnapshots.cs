@@ -21,8 +21,7 @@ public partial class CaptureService
         var sourceTelemetry = CaptureSourceTelemetryHealthSnapshotFields(_latestSourceTelemetry);
         var captureCadence = BuildCaptureCadenceHealthSnapshotFields(unifiedVideoCapture);
         var mjpegHealth = CaptureMjpegHealthSnapshotFields(unifiedVideoCapture);
-        var (avSyncDriftMs, avSyncDriftRate) = ComputeAvSyncDrift();
-        var (avSyncEncoderDriftMs, avSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
+        var avSyncHealth = CaptureAvSyncHealthSnapshotFields();
         var recordingHealth = CaptureRecordingHealthSnapshotFields(sink, fbSink);
         var flashbackQueues = CaptureFlashbackQueueHealthSnapshotFields(
             fbSink,
@@ -456,10 +455,10 @@ public partial class CaptureService
             VisualCenterCadenceRecentOutputIntervalsMs = mjpegHealth.VisualCenterCadence.RecentOutputIntervalsMs,
             VisualCenterCadenceRecentChangeIntervalsMs = mjpegHealth.VisualCenterCadence.RecentChangeIntervalsMs,
             MjpegPerDecoder = mjpegHealth.PerDecoder,
-            AvSyncCaptureDriftMs = avSyncDriftMs,
-            AvSyncCaptureDriftRateMsPerSec = avSyncDriftRate,
-            AvSyncEncoderDriftMs = avSyncEncoderDriftMs,
-            AvSyncEncoderCorrectionSamples = avSyncEncoderCorrectionSamples
+            AvSyncCaptureDriftMs = avSyncHealth.CaptureDriftMs,
+            AvSyncCaptureDriftRateMsPerSec = avSyncHealth.CaptureDriftRateMsPerSec,
+            AvSyncEncoderDriftMs = avSyncHealth.EncoderDriftMs,
+            AvSyncEncoderCorrectionSamples = avSyncHealth.EncoderCorrectionSamples
         };
     }
 }

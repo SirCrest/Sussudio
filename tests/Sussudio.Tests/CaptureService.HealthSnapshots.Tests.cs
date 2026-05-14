@@ -194,6 +194,28 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureService_HealthSnapshotAvSyncFields_LiveInFocusedPartial()
+    {
+        var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var avSyncText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.AvSync.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(healthSnapshotText, "var avSyncHealth = CaptureAvSyncHealthSnapshotFields();");
+        AssertContains(healthSnapshotText, "AvSyncCaptureDriftMs = avSyncHealth.CaptureDriftMs,");
+        AssertContains(healthSnapshotText, "AvSyncCaptureDriftRateMsPerSec = avSyncHealth.CaptureDriftRateMsPerSec,");
+        AssertContains(healthSnapshotText, "AvSyncEncoderCorrectionSamples = avSyncHealth.EncoderCorrectionSamples");
+        AssertDoesNotContain(healthSnapshotText, "var (avSyncDriftMs, avSyncDriftRate) = ComputeAvSyncDrift();");
+        AssertDoesNotContain(healthSnapshotText, "var (avSyncEncoderDriftMs, avSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();");
+
+        AssertContains(avSyncText, "private AvSyncHealthSnapshotFields CaptureAvSyncHealthSnapshotFields()");
+        AssertContains(avSyncText, "var (captureDriftMs, captureDriftRateMsPerSec) = ComputeAvSyncDrift();");
+        AssertContains(avSyncText, "var (encoderDriftMs, encoderCorrectionSamples) = GetEncoderAvSyncDrift();");
+        AssertContains(avSyncText, "private readonly record struct AvSyncHealthSnapshotFields");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
