@@ -750,8 +750,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/CaptureConfigurationModels.Options.Tests.cs` owns
   capture mode option display metadata and builder policy tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.Settings.Tests.cs` owns
-  capture settings defaults, output path, split-encode support, and MJPEG HFR
-  policy tests.
+  capture settings defaults, output path/file naming, bitrate policy,
+  split-encode support, and MJPEG HFR policy tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.EncoderSupport.Tests.cs`
   owns encoder availability and preferred encoder policy tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.Flashback.Tests.cs` owns
