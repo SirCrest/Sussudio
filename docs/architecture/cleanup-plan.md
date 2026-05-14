@@ -823,6 +823,9 @@ belongs to `StatsDiagnosticRowsController`.
 Stats presentation and frame-time overlay contract checks now live in
 `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` instead of expanding
 the legacy harness body in `tests/Sussudio.Tests/Program.cs`.
+Stats diagnostic summary/row parsing now lives in
+`Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs`; keep the root
+`StatsPresentationBuilder.cs` focused on dock and frame-time presentation.
 
 Dynamic stats diagnostic row pools now live in
 `Sussudio/Controllers/StatsDiagnosticRowsController.cs`. It owns decode/GPU
