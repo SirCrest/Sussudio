@@ -837,8 +837,14 @@ Primary current owners:
   snapshot property-list, nullability, and helper assertion methods.
 - `tests/Sussudio.Tests/SnapshotModels.ReflectionJson.cs` owns shared
   reflection JSON round-trip and registered-property coverage helpers.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.Tests.cs` owns automation
-  snapshot/options DTO shape checks and source-signal projection drift guards.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.Tests.cs` is the automation
+  snapshot model marker shell.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.SourceTelemetry.Tests.cs`
+  owns source-signal projection drift guards.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpeg.Tests.cs` owns
+  automation snapshot CPU MJPEG metric shape checks.
+- `tests/Sussudio.Tests/SnapshotModels.Automation.Options.Tests.cs` owns
+  automation options DTO shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpegContractSpec.cs` owns
   the CPU MJPEG automation snapshot property-list contract used by that check.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns
