@@ -1804,7 +1804,9 @@ Remaining `tools/Common` ownership:
    owners. Capture configuration model tests are split into option, settings,
    encoder support, Flashback DTO, and recording pipeline owners. Pooled-frame
    tests are split into lease lifecycle, MJPEG jitter policy, MJPEG jitter
-   queue behavior, and queued lease release owners.
+   queue behavior, and queued lease release owners. Flashback buffer segment
+   tests are split between mutation/accounting/disposal coverage and segment
+   lookup/list projection coverage.
 
 3. Continue converting MainWindow partial concerns into controllers.
 

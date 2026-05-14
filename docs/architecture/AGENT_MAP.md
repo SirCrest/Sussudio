@@ -927,7 +927,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Buffer.SourceOwnership.Tests.cs` owns
   Flashback buffer-manager partial ownership assertions.
 - `tests/Sussudio.Tests/Flashback.Buffer.Segments.Tests.cs` owns Flashback
-  buffer segment completion, query, PTS, and segment-list behavior tests.
+  buffer segment completion, accounting, disposal, and recovery-preserve tests.
+- `tests/Sussudio.Tests/Flashback.Buffer.SegmentLookups.Tests.cs` owns
+  Flashback buffer segment query, path lookup, PTS, active path, segment-count,
+  and segment-list behavior tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Retention.Tests.cs` owns Flashback
   buffer eviction, purge, stale-session, and startup-cache budget tests.
 - `tests/Sussudio.Tests/Flashback.Buffer.Validation.Tests.cs` owns Flashback
