@@ -762,6 +762,14 @@ Primary owners:
   usage validation, path/argument joining, and CLI value normalization.
 - `tools/ssctl/CommandHandlers.Transport.cs` owns shared command sending and
   response exit-code shaping.
+- `tools/ssctl/Formatters.cs` is the console projection facade only.
+- `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot text sections.
+- `tools/ssctl/Formatters.Diagnostics.cs` owns recent diagnostic-event output.
+- `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
+- `tools/ssctl/Formatters.Timeline.cs` owns performance timeline table output
+  and its row model.
+- `tools/ssctl/Formatters.Memory.cs` owns memory and GC summaries.
+- `tools/ssctl/Formatters.Common.cs` owns shared result/JSON helpers.
 - `tools/Common/DiagnosticSessionModels.cs` owns diagnostic session options,
   result, and sample DTOs. Keep summary/live JSON shape changes there rather
   than expanding the runner header.

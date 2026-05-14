@@ -256,6 +256,13 @@ context, `CommandHandlers.Parsing.cs` owns CLI flag/value/usage parsing, and
 `CommandHandlers.Transport.cs` owns shared command sending plus response
 exit-code shaping.
 
+`tools/ssctl/Formatters.cs` is only the projection facade for console output.
+Keep snapshot text in `Formatters.Snapshot.cs`, diagnostic-event text in
+`Formatters.Diagnostics.cs`, capture option/device text in
+`Formatters.Options.cs`, performance timeline tables in
+`Formatters.Timeline.cs`, memory/GC summaries in `Formatters.Memory.cs`, and
+shared JSON/result helpers in `Formatters.Common.cs`.
+
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
 to the public toggle/state surface, `FullScreenController.Transitions.cs` to

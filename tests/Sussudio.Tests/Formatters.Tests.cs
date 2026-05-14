@@ -38,7 +38,14 @@ static partial class Program
         AssertContains(output, "Written: 150 MB");
         AssertContains(output, "submitFailures=1");
         AssertContains(output, "A/V Drift: -1.5ms");
-        var ssctlFormatterSource = ReadRepoFile("tools/ssctl/Formatters.cs");
+        var ssctlFormatterRoot = ReadRepoFile("tools/ssctl/Formatters.cs");
+        var ssctlFormatterSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
+        AssertDoesNotContain(ssctlFormatterRoot, "public static string FormatSnapshot");
+        AssertContains(ReadRepoFile("tools/ssctl/Formatters.Diagnostics.cs"), "public static string FormatDiagnostics");
+        AssertContains(ReadRepoFile("tools/ssctl/Formatters.Options.cs"), "public static string FormatOptions");
+        AssertContains(ReadRepoFile("tools/ssctl/Formatters.Timeline.cs"), "public static string FormatTimeline");
+        AssertContains(ReadRepoFile("tools/ssctl/Formatters.Memory.cs"), "public static string FormatMemory");
+        AssertContains(ReadRepoFile("tools/ssctl/Formatters.Common.cs"), "public static string FormatResult");
         AssertContains(ssctlFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
         AssertContains(ssctlFormatterSource, "CaptureCommandMaxQueueLatencyMs");
         AssertContains(ssctlFormatterSource, "CaptureCommandCommandsCoalesced");
