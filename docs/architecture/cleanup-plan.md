@@ -315,6 +315,11 @@ split into geometry/screenshot helper contracts, cadence contracts, the large
 diagnostics contract, source ownership assertions, device-lost behavior, and
 frame-flow/shared-device assertions.
 
+`tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` now keeps only shared
+reflection helpers. Automation tool contract coverage is split into protocol
+and pipe-failure contracts, catalog/manifest/path-policy contracts,
+reliability-gates script checks, and snapshot formatter contracts.
+
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
 to the public toggle/state surface, `FullScreenController.Transitions.cs` to
@@ -1530,7 +1535,9 @@ Remaining `tools/Common` ownership:
    Recording queue tests are split into overload policy, LibAv sink, WASAPI,
    and capture fan-out/backend owners. D3D preview renderer tests are split
    into geometry, cadence, diagnostics-contract, source-ownership, device-lost,
-   and frame-flow owners.
+   and frame-flow owners. Automation tool contract tests are split into
+   protocol, catalog/manifest, reliability-gates, and snapshot formatter
+   owners.
 
 3. Continue converting MainWindow partial concerns into controllers.
 

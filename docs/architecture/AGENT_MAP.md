@@ -650,6 +650,18 @@ Primary current owners:
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.FrameFlow.Tests.cs` owns pending
   frame draining, frame-capture cancellation, and shared D3D device reference
   lifecycle assertions.
+- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
+  reflection helpers for automation tool contract tests.
+- `tests/Sussudio.Tests/AutomationToolContracts.Protocol.Tests.cs` owns
+  automation pipe protocol, pipe-connect failure, and response-state contract
+  tests.
+- `tests/Sussudio.Tests/AutomationToolContracts.Catalog.Tests.cs` owns
+  automation command catalog, manifest, path policy, and manifest
+  serialization contract tests.
+- `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
+  reliability-gates script contract test.
+- `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Tests.cs`
+  owns shared snapshot formatter text and typed-accessor contract tests.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing and formatter batch tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the
