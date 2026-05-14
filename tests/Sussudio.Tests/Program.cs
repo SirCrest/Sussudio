@@ -447,6 +447,9 @@ static partial class Program
                 "Automation diagnostics capture cadence projection lives in focused partial",
                 AutomationDiagnosticsCaptureCadenceProjection_LivesInFocusedPartial),
             await RunCheckAsync(
+                "Automation diagnostics MJPEG projection lives in focused partial",
+                AutomationDiagnosticsMjpegProjection_LivesInFocusedPartial),
+            await RunCheckAsync(
                 "Automation diagnostics source telemetry projection lives in focused partial",
                 AutomationDiagnosticsSourceTelemetryProjection_LivesInFocusedPartial),
             await RunCheckAsync(

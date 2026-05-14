@@ -46,6 +46,9 @@ the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs` owns source
 capture cadence, preview visual cadence, and center-crop visual cadence
 projection inputs consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` owns CPU MJPEG decode,
+reorder, compressed queue, preview jitter, packet-hash, and per-decoder
+projection inputs consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs` owns active
 Flashback export progress, failure, force-rotate fallback, and last-result
 projection consumed by the automation snapshot DTO.
