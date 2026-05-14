@@ -539,13 +539,16 @@ static partial class Program
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         var builderText = ReadDiagnosticSessionResultBuilderSource();
-        var metricsText = ReadRepoFile("tools/Common/DiagnosticSessionMetrics.cs")
-            .Replace("\r\n", "\n");
+        var metricsText = ReadDiagnosticSessionMetricsSource();
 
-        AssertContains(metricsText, "internal static class DiagnosticSessionMetrics");
+        AssertContains(metricsText, "internal static partial class DiagnosticSessionMetrics");
         AssertContains(metricsText, "internal sealed class SourceCadenceSessionMetrics");
+        AssertContains(metricsText, "internal sealed class PreviewCadenceSessionMetrics");
+        AssertContains(metricsText, "internal sealed class VisualCadenceSessionMetrics");
         AssertContains(metricsText, "internal sealed class PreviewD3DMetrics");
         AssertContains(metricsText, "internal static SourceCadenceSessionMetrics BuildSourceCadenceSessionMetrics(");
+        AssertContains(metricsText, "internal static PreviewCadenceSessionMetrics BuildPreviewCadenceSessionMetrics(");
+        AssertContains(metricsText, "internal static VisualCadenceSessionMetrics BuildVisualCadenceSessionMetrics(");
         AssertContains(metricsText, "internal static PreviewD3DMetrics BuildPreviewD3DMetrics(");
         AssertContains(metricsText, "internal static PlaybackCommandHealth BuildPlaybackCommandHealth(");
         AssertContains(metricsText, "internal static long GetResetAwareCounterDelta(");

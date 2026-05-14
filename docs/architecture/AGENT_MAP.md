@@ -1053,10 +1053,19 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback
   diagnostic restart-cycle and encoder-cycle command flows, including export
   verification and preset restoration.
-- `tools/Common/DiagnosticSessionMetrics.cs` owns read-only projection from
-  diagnostic snapshots into session metrics: source cadence, preview cadence,
-  visual cadence, D3D slow-frame summaries, playback command health, and
-  counter deltas.
+- `tools/Common/DiagnosticSessionMetrics.cs` is the diagnostic-session metric
+  projection marker shell.
+- `tools/Common/DiagnosticSessionMetrics.Models.cs` owns metric DTOs.
+- `tools/Common/DiagnosticSessionMetrics.SourceCadence.cs` owns source-cadence
+  projection from sampled snapshots.
+- `tools/Common/DiagnosticSessionMetrics.PreviewCadence.cs` owns preview and
+  visual cadence projection plus visual-cadence health classification.
+- `tools/Common/DiagnosticSessionMetrics.PreviewD3D.cs` owns D3D slow-frame and
+  CPU timing summaries.
+- `tools/Common/DiagnosticSessionMetrics.PlaybackCommands.cs` owns playback
+  command-health deltas.
+- `tools/Common/DiagnosticSessionMetrics.Counters.cs` owns shared counter-delta
+  helpers.
 - `tools/Common/DiagnosticSessionFlashbackExports.cs` owns Flashback export
   diagnostic helpers: strict export verification payloads, rotated-export
   segment-count parsing, range-selection cleanup, and the audio-toggle

@@ -1433,10 +1433,14 @@ Diagnostic-session sampling now lives in
 optional checkpoint callback so checkpoint failures cannot orphan an unseen
 sample.
 
-Diagnostic-session metric projection now lives in
-`tools/Common/DiagnosticSessionMetrics.cs`. It owns snapshot-only projections
-for source cadence, preview cadence, visual cadence, D3D slow-frame summaries,
-playback command health, and reset-aware counter deltas.
+Diagnostic-session metric projection now lives in a focused partial family
+rooted at `tools/Common/DiagnosticSessionMetrics.cs`. The root is only a
+marker shell. `DiagnosticSessionMetrics.Models.cs` owns metric DTOs,
+`.SourceCadence.cs` owns source cadence projection, `.PreviewCadence.cs` owns
+preview/visual cadence projection and health classification, `.PreviewD3D.cs`
+owns D3D slow-frame and CPU timing summaries, `.PlaybackCommands.cs` owns
+playback command-health deltas, and `.Counters.cs` owns shared counter-delta
+helpers.
 
 Diagnostic-session Flashback export helpers now live in
 `tools/Common/DiagnosticSessionFlashbackExports.cs`. They own strict export
@@ -1557,6 +1561,12 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
 - `DiagnosticSessionMetrics.cs`
+- `DiagnosticSessionMetrics.Models.cs`
+- `DiagnosticSessionMetrics.SourceCadence.cs`
+- `DiagnosticSessionMetrics.PreviewCadence.cs`
+- `DiagnosticSessionMetrics.PreviewD3D.cs`
+- `DiagnosticSessionMetrics.PlaybackCommands.cs`
+- `DiagnosticSessionMetrics.Counters.cs`
 - `DiagnosticSessionModels.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionCommandChannel.cs`
