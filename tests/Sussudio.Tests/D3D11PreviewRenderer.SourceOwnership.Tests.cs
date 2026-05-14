@@ -148,6 +148,44 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task D3D11PreviewRenderer_ShaderSourcesLiveInFocusedFile()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
+        var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
+            .Replace("\r\n", "\n");
+        var shaderSourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderSources.cs")
+            .Replace("\r\n", "\n");
+        var previewShaderSourcesText = ReadRepoFile("Sussudio/Services/Preview/PreviewShaderSources.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(previewShaderSourcesText, "internal static class PreviewShaderSources");
+        AssertContains(previewShaderSourcesText, "internal const string FullscreenVertex");
+        AssertContains(previewShaderSourcesText, "internal const string HdrTonemapPixel");
+        AssertContains(previewShaderSourcesText, "internal const string HdrPassthroughPixel");
+        AssertContains(previewShaderSourcesText, "internal const string Nv12Pixel");
+        AssertContains(previewShaderSourcesText, "static const float PQ_m1");
+        AssertContains(previewShaderSourcesText, "Texture2D<float> yPlane : register(t0);");
+        AssertContains(previewShaderSourcesText, "BT2020_to_BT709");
+
+        AssertContains(shaderSourcesText, "private unsafe void CompileTonemapShaders()");
+        AssertContains(shaderSourcesText, "private static byte[] CompileShader(string hlslSource, string entryPoint, string profile)");
+        AssertContains(shaderSourcesText, "PreviewShaderSources.FullscreenVertex");
+        AssertContains(shaderSourcesText, "PreviewShaderSources.HdrTonemapPixel");
+        AssertContains(shaderSourcesText, "PreviewShaderSources.HdrPassthroughPixel");
+        AssertContains(shaderSourcesText, "PreviewShaderSources.Nv12Pixel");
+        AssertContains(shaderSourcesText, "D3DCompileNative(");
+
+        AssertDoesNotContain(rootText, "internal const string FullscreenVertex");
+        AssertDoesNotContain(rootText, "static const float PQ_m1");
+        AssertDoesNotContain(renderingText, "internal const string HdrTonemapPixel");
+        AssertDoesNotContain(renderingText, "BT2020_to_BT709");
+        AssertDoesNotContain(shaderSourcesText, "static const float PQ_m1");
+        AssertDoesNotContain(shaderSourcesText, "Texture2D<float> yPlane : register(t0);");
+
+        return Task.CompletedTask;
+    }
+
     private static Task D3D11PreviewRenderer_SlowFrameDiagnosticsLiveInFocusedPartial()
     {
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")

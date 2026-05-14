@@ -827,7 +827,8 @@ Primary current owners:
   diagnostics contract assertion.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.Tests.cs` owns
   renderer partial ownership assertions for frame types, submission, ownership,
-  DXGI stats, panel binding, upload, frame latency, and viewport helpers.
+  DXGI stats, panel binding, upload, shader source/compile boundaries, frame
+  latency, and viewport helpers.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DeviceLost.Tests.cs` owns device
   lost classification and recovery ownership assertions.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.FrameFlow.Tests.cs` owns pending

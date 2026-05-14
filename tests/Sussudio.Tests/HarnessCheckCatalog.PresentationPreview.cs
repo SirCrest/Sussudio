@@ -246,6 +246,9 @@ static partial class Program
             "D3D preview shader rendering lives in focused partial",
             D3D11PreviewRenderer_ShaderRenderingLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "D3D preview shader sources live in focused file",
+            D3D11PreviewRenderer_ShaderSourcesLiveInFocusedFile);
+        await AddCheckAsync(results,
             "D3D preview slow-frame diagnostics live in focused partial",
             D3D11PreviewRenderer_SlowFrameDiagnosticsLiveInFocusedPartial);
         await AddCheckAsync(results,
