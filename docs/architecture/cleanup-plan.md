@@ -368,6 +368,11 @@ UI-thread dispatching helpers and guarded async event-handler execution now
 live in `Sussudio/MainWindow.Dispatching.cs`. Window close completion and
 recording-aware close handling remain in `MainWindow.CloseLifecycle.cs`.
 
+`tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` is now only the
+MCP command-routing test family marker shell. MCP command-routing coverage is
+split into capture, host/pipe, recording, formatter batching, device, pipeline,
+UI, and verification owner files.
+
 First-load startup, first-frame uncloaking, initial ViewModel/device refresh,
 automation pipe hosting, and the launch entrance trigger now live in
 `Sussudio/MainWindow.Startup.cs`. Window close completion and recording-aware

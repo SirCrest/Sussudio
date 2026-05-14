@@ -718,8 +718,12 @@ Primary current owners:
   MJPEG preview jitter queue/drop/reprime behavior tests.
 - `tests/Sussudio.Tests/PooledVideoFrame.QueuedLeaseRelease.Tests.cs` owns
   D3D pending-frame and recording/Flashback queued lease return tests.
-- `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
-  command-routing and formatter batch tests.
+- `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` is now the
+  MCP command-routing test family marker shell. Keep route/formatter assertions
+  in the focused `CommandRouting.Capture`, `CommandRouting.Host`,
+  `CommandRouting.Recording`, `CommandRouting.Formatting`,
+  `CommandRouting.Device`, `CommandRouting.Pipeline`, `CommandRouting.Ui`, and
+  `CommandRouting.Verification` owner files.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the
   diagnostic-session MCP surface index shell.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Tests.cs` owns
