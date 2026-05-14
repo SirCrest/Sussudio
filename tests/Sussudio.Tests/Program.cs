@@ -594,6 +594,9 @@ static partial class Program
                 "MainViewModel audio controls preserve microphone and device guards",
                 MainViewModelAudioControls_PreserveMicrophoneVolumeAndDeviceGuards),
             await RunCheckAsync(
+                "Native XU audio control profiles live in focused partial",
+                NativeXuAudioControlService_ProfilesLiveInFocusedPartial),
+            await RunCheckAsync(
                 "MainViewModel audio meters own callback meter state",
                 MainViewModelAudioMeters_OwnCallbackMeterState),
             await RunCheckAsync(

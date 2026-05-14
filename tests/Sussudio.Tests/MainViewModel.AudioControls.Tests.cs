@@ -191,6 +191,36 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task NativeXuAudioControlService_ProfilesLiveInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Audio/NativeXuAudioControlService.cs")
+            .Replace("\r\n", "\n");
+        var profilesText = ReadRepoFile("Sussudio/Services/Audio/NativeXuAudioControlService.Profiles.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(rootText, "internal sealed partial class NativeXuAudioControlService");
+        AssertContains(rootText, "public async Task<DeviceAudioControlState> ReadStateAsync(");
+        AssertContains(rootText, "private async Task<bool> UpdatePayloadAsync(");
+        AssertContains(rootText, "private static IEnumerable<RawControlCandidate> EnumerateCandidates(");
+        AssertContains(rootText, "internal sealed record DeviceAudioControlState(");
+        AssertContains(ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj"), "NativeXuAudioControlService.Profiles.cs");
+        AssertContains(profilesText, "internal sealed partial class NativeXuAudioControlService");
+        AssertContains(profilesText, "private static readonly int[] InputByteIndexes");
+        AssertContains(profilesText, "private static readonly int[] DynamicByteIndexes");
+        AssertContains(profilesText, "private static readonly byte[] HdmiReference = ParseHex(");
+        AssertContains(profilesText, "private static readonly byte[] AnalogReference = ParseHex(");
+        AssertContains(profilesText, "private static bool TryGetTargetInputReference(string? mode, out byte[] reference)");
+        AssertContains(profilesText, "private static AudioDecodeDecision DecodeInput(byte[] payload)");
+        AssertContains(profilesText, "private static AnalogGainDecision DecodeGain(byte[] payload)");
+        AssertContains(profilesText, "private static byte[] ParseHex(string hex)");
+        AssertContains(profilesText, "private readonly record struct GainProfile");
+        AssertDoesNotContain(rootText, "private static readonly int[] InputByteIndexes");
+        AssertDoesNotContain(rootText, "private static AudioDecodeDecision DecodeInput(byte[] payload)");
+        AssertDoesNotContain(rootText, "private static byte[] ParseHex(string hex)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task MainViewModelAudioMeters_OwnCallbackMeterState()
     {
         var baseText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
