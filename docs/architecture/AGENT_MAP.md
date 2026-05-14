@@ -582,6 +582,20 @@ Primary current owners:
   harness contract checks for stats presentation and frame-time overlay policy.
   Keep new stats presentation ownership assertions there instead of growing
   `tests/Sussudio.Tests/Program.cs`.
+- `tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` owns automation
+  view-model surface, async method contract, and recording-transition routing
+  assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
+  owns serialized diagnostics refresh and automation diagnostics hub ownership
+  assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
+  owns focused automation snapshot projection ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.RuntimeSafety.Tests.cs` owns
+  automation timeout, recording failure propagation, safe close, screenshot,
+  preview-stop surface, process supervisor, and emergency-stop assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.FlashbackCleanup.Tests.cs`
+  owns Flashback startup-cache and session-recovery cleanup ownership
+  assertions that used to live in the automation test catch-all.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing and formatter batch tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the

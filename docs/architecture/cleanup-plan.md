@@ -286,6 +286,13 @@ thread, playback command-queue, playback cadence, decoder, and support partial
 files. Keep new Flashback tests in the closest owner file instead of regrowing
 the root helper shell.
 
+`tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` is now only the
+automation view-model surface and shared reflection-helper shell. Automation
+view-model regression coverage is split into diagnostics refresh, diagnostics
+projection ownership, runtime-safety behavior, and Flashback cleanup ownership
+partials. Keep new automation tests in the closest owner file instead of
+regrowing the root catch-all.
+
 Fullscreen transition mechanics now live under the
 `Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
 to the public toggle/state surface, `FullScreenController.Transitions.cs` to
@@ -1491,8 +1498,10 @@ Remaining `tools/Common` ownership:
    diagnostic-session ownership, diagnostic-session Flashback,
    diagnostic-session runner, performance, window/preview, and helper partial
    files. Flashback tests are also split by buffer, encoder, exporter,
-   playback, decoder, and support owners. Continue with low-risk contract
-   groups first.
+   playback, decoder, and support owners. MainViewModel automation tests are
+   split into surface, diagnostics refresh, diagnostics projection,
+   runtime-safety, and Flashback cleanup owners. Continue with low-risk
+   contract groups first.
 
 3. Continue converting MainWindow partial concerns into controllers.
 
