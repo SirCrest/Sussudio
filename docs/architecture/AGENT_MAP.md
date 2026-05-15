@@ -1752,8 +1752,13 @@ Primary owners:
   CLI help lines.
 - `tools/ssctl/CommandHandlers.Context.cs` owns the per-invocation command
   context wrapper.
-- `tools/ssctl/CommandHandlers.Parsing.cs` owns flag parsing, value parsing,
-  usage validation, path/argument joining, and CLI value normalization.
+- `tools/ssctl/CommandHandlers.Flags.cs` owns flag consumption and optional
+  flag value parsing. `CommandHandlers.Arguments.cs` owns usage validation,
+  required words, and argument joining. `CommandHandlers.Json.cs` owns
+  command-handler JSON detection/pretty-printing. `CommandHandlers.Values.cs`
+  owns primitive parsing, Flashback numeric validation, on/off and show/hide
+  parsing, recording format normalization, snap action mapping, and assertion
+  value parsing.
 - `tools/ssctl/CommandHandlers.Transport.cs` owns shared command sending and
   response exit-code shaping.
 - `tools/ssctl/Formatters.cs` is the console projection facade only.

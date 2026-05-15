@@ -204,6 +204,10 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.DeviceWindow.cs"), "HandleWindowAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleAssertAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "HandleFlashbackAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flags.cs"), "private static bool ConsumeFlag(List<string> args, string flag)");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static string JoinRemaining(IReadOnlyList<string> args, int startIndex)");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Json.cs"), "private static bool LooksLikeJson(string value)");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Values.cs"), "private static object? ParseAssertionValue(string value)");
         AssertContains(commandHandlersSource, "\"manifest\" => HandleManifestAsync(context)");
         AssertContains(commandHandlersSource, "\"audio-ramp-trace\" => HandleAudioRampTraceAsync(context)");
         AssertContains(commandHandlersSource, "\"recordings\" => HandleRecordingsAsync(context)");
@@ -230,5 +234,9 @@ static partial class Program
         AssertContains(commandHandlersSource, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
         AssertContains(commandHandlersSource, "assert <json> OR assert <field> <op> <value>");
         AssertContains(commandHandlersSource, "private static object? ParseAssertionValue(string value)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers" + ".Parsing" + ".cs")),
+            "old ssctl parsing grab-bag removed");
     }
 }

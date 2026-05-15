@@ -268,9 +268,11 @@ device, window, and recordings commands. `CommandHandlers.AutomationFlow.cs`
 owns wait/assert/probe/stats/settings/frame-time and verification commands.
 `CommandHandlers.Flashback.cs` owns Flashback CLI commands. Support partials
 remain: `CommandHandlers.Context.cs` owns per-invocation command context,
-`CommandHandlers.Parsing.cs` owns CLI flag/value/usage parsing, and
-`CommandHandlers.Transport.cs` owns shared command sending plus response
-exit-code shaping.
+`CommandHandlers.Flags.cs` owns flag consumption and optional flag values,
+`CommandHandlers.Arguments.cs` owns usage validation and argument joining,
+`CommandHandlers.Json.cs` owns JSON detection/pretty-printing, `CommandHandlers.Values.cs`
+owns primitive/domain value parsing, and `CommandHandlers.Transport.cs` owns
+shared command sending plus response exit-code shaping.
 
 `tools/ssctl/Formatters.cs` is only the projection facade for console output.
 Keep app snapshot orchestration in `Formatters.Snapshot.cs`, Flashback snapshot
