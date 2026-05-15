@@ -2,10 +2,8 @@ using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;
 using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;
 using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;
-using static Sussudio.Tools.DiagnosticSessionHealthPolicy;
 using static Sussudio.Tools.DiagnosticSessionHealthTolerances;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
-using static Sussudio.Tools.DiagnosticSessionText;
 
 namespace Sussudio.Tools;
 
@@ -108,69 +106,19 @@ internal static partial class DiagnosticSessionResultBuilder
                 warnings);
         }
 
-        var diagnosticHealthObservation = BuildSessionDiagnosticHealthObservation(
+        var toleratesFlashbackForceRotateDrainWarning = request.ScenarioPlan.ToleratesFlashbackForceRotateDrainWarning;
+        var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(
             samples,
             diagnosticHealthSnapshot,
-            isFlashbackScenario);
-        var sparseSourceCaptureCadenceWarning =
-            isFlashbackScenario &&
-            IsSparseSourceCaptureCadenceWarningRun(
-                diagnosticHealthObservation,
-                sourceCadenceMetrics,
-                sourceReaderFramesDroppedDelta,
-                videoIngestErrorsDelta,
-                request.DurationSeconds,
-                IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate")));
-        var toleratesFlashbackForceRotateDrainWarning = request.ScenarioPlan.ToleratesFlashbackForceRotateDrainWarning;
-        var diagnosticHealthTolerated =
-            (toleratesSourceSignalHealthWarning &&
-             IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)) ||
-            (toleratesFlashbackForceRotateDrainWarning &&
-             IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)) ||
-            sparseSourceCaptureCadenceWarning ||
-            (isFlashbackScenario &&
-             request.ScenarioPlan.IsPreviewCycleScenario &&
-             IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate")) &&
-             IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)) ||
-            (isFlashbackScenario &&
-             IsSparsePreviewSchedulerDeadlineDropRun(
-                 previewScheduler.DeadlineDropsDelta,
-                 previewScheduler.UnderflowsDelta,
-                 request.DurationSeconds,
-                 IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate"))) &&
-             IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation));
-        var diagnosticHealthSucceeded =
-            !IsFailingDiagnosticHealthSeverity(diagnosticHealthObservation.Severity) ||
-            diagnosticHealthTolerated;
-        if (!diagnosticHealthSucceeded)
-        {
-            warnings.Add(
-                "diagnostic health degraded during session: " +
-                $"health={diagnosticHealthObservation.HealthStatus} " +
-                $"stage={diagnosticHealthObservation.LikelyStage} " +
-                $"offsetMs={diagnosticHealthObservation.OffsetMs} " +
-                $"evidence={FormatOptional(diagnosticHealthObservation.Evidence)}");
-        }
-        else if (diagnosticHealthTolerated &&
-                 !sparseSourceCaptureCadenceWarning &&
-                 !IsSparsePreviewSchedulerDeadlineDropRun(
-                     previewScheduler.DeadlineDropsDelta,
-                     previewScheduler.UnderflowsDelta,
-                     request.DurationSeconds,
-                     IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate"))))
-        {
-            var toleratedReason = IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)
-                ? "preview scheduler transition warning tolerated for preview-cycle scenario"
-                : IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)
-                    ? "flashback force-rotate drain warning tolerated for flashback scenario"
-                : "source-signal warning tolerated for export reliability scenario";
-            warnings.Add(
-                $"diagnostic health {toleratedReason}: " +
-                $"health={diagnosticHealthObservation.HealthStatus} " +
-                $"stage={diagnosticHealthObservation.LikelyStage} " +
-                $"offsetMs={diagnosticHealthObservation.OffsetMs} " +
-                $"evidence={FormatOptional(diagnosticHealthObservation.Evidence)}");
-        }
+            request.ScenarioPlan,
+            sourceCadenceMetrics,
+            sourceReaderFramesDroppedDelta,
+            videoIngestErrorsDelta,
+            request.DurationSeconds,
+            previewScheduler,
+            visualCadenceMetrics,
+            GetDouble(lastSnapshot, "ExpectedCaptureFrameRate"),
+            warnings);
 
         var flashbackWarningsSucceeded = !isFlashbackScenario ||
                                          warnings.All(warning => IsToleratedFlashbackScenarioWarning(

@@ -131,6 +131,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesInFocusedPartial()
+    {
+        var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
+            .Replace("\r\n", "\n");
+        var healthText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(analysisText, "var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(");
+        AssertContains(healthText, "private static bool AnalyzeDiagnosticHealth(");
+        AssertContains(healthText, "BuildSessionDiagnosticHealthObservation(");
+        AssertContains(healthText, "IsSparseSourceCaptureCadenceWarningRun(");
+        AssertContains(healthText, "IsSparsePreviewSchedulerDeadlineDropRun(");
+        AssertContains(healthText, "IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)");
+        AssertContains(healthText, "diagnostic health degraded during session");
+        AssertContains(healthText, "diagnostic health {toleratedReason}:");
+        AssertContains(healthText, "flashback force-rotate drain warning tolerated for flashback scenario");
+        AssertDoesNotContain(analysisText, "BuildSessionDiagnosticHealthObservation(");
+        AssertDoesNotContain(analysisText, "diagnostic health degraded during session");
+        AssertDoesNotContain(analysisText, "diagnostic health {toleratedReason}:");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionSummaryWriter_OwnsSummaryWriteFailures()
     {
         var builderText = ReadDiagnosticSessionResultBuilderSource();

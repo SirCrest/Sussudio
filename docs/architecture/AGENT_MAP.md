@@ -2029,8 +2029,10 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.Result.cs` owns
   diagnostic-session result DTO projection and final success calculation.
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
-  diagnostic-session health analysis, warning tolerance, and metric preparation
-  before summary construction.
+  diagnostic-session metric preparation before summary construction.
+- `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
+  diagnostic-session health verdict composition, warning tolerance, and health
+  warning text emitted during result construction.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs` owns
   Flashback-specific analysis warning text for playback forward-decode caps and
   export force-rotate fallback observations.
