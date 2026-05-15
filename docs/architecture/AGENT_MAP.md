@@ -829,8 +829,18 @@ Primary current owners:
   assertions.
 - `tests/Sussudio.Tests/MainViewModel.AudioRuntime.Tests.cs` owns audio
   monitoring visual state and audio-ramp trace telemetry ownership assertions.
-- `tests/Sussudio.Tests/DeviceModels.Tests.cs` owns capture/audio device,
-  audio-level, and MediaFormat model contract checks.
+- `tests/Sussudio.Tests/DeviceModels.Tests.cs` is the device model marker
+  shell.
+- `tests/Sussudio.Tests/DeviceModels.AudioInput.Tests.cs` owns audio input
+  model display-name contract checks.
+- `tests/Sussudio.Tests/DeviceModels.AudioLevel.Tests.cs` owns audio level
+  event model contract checks.
+- `tests/Sussudio.Tests/DeviceModels.CaptureDevice.Tests.cs` owns capture
+  device metadata and default collection contract checks.
+- `tests/Sussudio.Tests/DeviceModels.MediaFormat.Tests.cs` owns MediaFormat
+  equality and hash-code contract checks.
+- `tests/Sussudio.Tests/DeviceModels.PropertyAssertions.cs` owns shared device
+  model property reflection assertions.
 - `tests/Sussudio.Tests/SnapshotModels.Tests.cs` owns shared snapshot-model
   spec DTOs and registration state.
 - `tests/Sussudio.Tests/SnapshotModels.PropertyAssertions.cs` owns shared
