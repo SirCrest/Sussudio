@@ -1,35 +1,26 @@
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
+using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// Loading overlay presentation used while preview startup waits for visual
-// confirmation. Timeout and watchdog behavior stays in MainWindow.PreviewStartup.cs.
+// XAML-facing adapter for preview startup loading overlay presentation.
+// Timeout and watchdog behavior stays in MainWindow.PreviewStartup.cs.
 public sealed partial class MainWindow
 {
-    private void StartPreviewStartupOverlay()
+    private PreviewStartupOverlayController _previewStartupOverlayController = null!;
+
+    private void InitializePreviewStartupOverlayController()
     {
-        var ring = (ProgressRing)PreviewLoadingOverlay.Children[0];
-        ring.IsActive = true;
-        FadeInElement(PreviewLoadingOverlay);
+        _previewStartupOverlayController = new PreviewStartupOverlayController(new PreviewStartupOverlayControllerContext
+        {
+            PreviewLoadingOverlay = PreviewLoadingOverlay,
+            FadeInElement = FadeInElement,
+            FadeOutElement = FadeOutElement,
+        });
     }
+
+    private void StartPreviewStartupOverlay()
+        => _previewStartupOverlayController.Start();
 
     private void StopPreviewStartupOverlay()
-    {
-        if (PreviewLoadingOverlay.Visibility == Visibility.Collapsed)
-        {
-            return;
-        }
-
-        var ring = (ProgressRing)PreviewLoadingOverlay.Children[0];
-        ring.IsActive = false;
-        if (_isPreviewReinitAnimating)
-        {
-            PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
-            PreviewLoadingOverlay.Opacity = 1.0;
-            return;
-        }
-
-        FadeOutElement(PreviewLoadingOverlay);
-    }
+        => _previewStartupOverlayController.Stop(_isPreviewReinitAnimating);
 }

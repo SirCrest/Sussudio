@@ -1457,7 +1457,9 @@ Delayed preview reveal after first visual now lives in
 `Sussudio/MainWindow.PreviewFadeIn.cs`; watchdog/timeout recovery remains in
 `MainWindow.PreviewStartup.cs`.
 Preview startup loading overlay presentation now lives in
-`Sussudio/MainWindow.PreviewStartupOverlay.cs`.
+`Sussudio/Controllers/PreviewStartupOverlayController.cs`.
+`MainWindow.PreviewStartupOverlay.cs` is the XAML-facing adapter; watchdog and
+timeout recovery stay in `MainWindow.PreviewStartup.cs`.
 
 Preview-specific ViewModel events and property-change projections now live in
 `Sussudio/MainWindow.PropertyChangedPreview.cs`. The broad

@@ -52,6 +52,9 @@ static partial class Program
             "Preview transition animations live in controller",
             PreviewTransitionAnimations_LiveInController);
         await AddCheckAsync(results,
+            "Preview startup overlay lives in controller",
+            PreviewStartupOverlay_LivesInController);
+        await AddCheckAsync(results,
             "Record button width animation lives in controller",
             RecordButtonWidthAnimation_LivesInController);
         await AddCheckAsync(results,

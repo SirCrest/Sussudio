@@ -96,6 +96,35 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewStartupOverlay_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupOverlay.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewStartupOverlayController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private PreviewStartupOverlayController _previewStartupOverlayController = null!;");
+        AssertContains(adapterText, "private void InitializePreviewStartupOverlayController()");
+        AssertContains(adapterText, "PreviewLoadingOverlay = PreviewLoadingOverlay,");
+        AssertContains(adapterText, "FadeInElement = FadeInElement,");
+        AssertContains(adapterText, "FadeOutElement = FadeOutElement,");
+        AssertContains(adapterText, "=> _previewStartupOverlayController.Start();");
+        AssertContains(adapterText, "=> _previewStartupOverlayController.Stop(_isPreviewReinitAnimating);");
+        AssertContains(mainWindowText, "InitializePreviewStartupOverlayController();");
+        AssertContains(controllerText, "internal sealed class PreviewStartupOverlayController");
+        AssertContains(controllerText, "public void Start()");
+        AssertContains(controllerText, "public void Stop(bool isPreviewReinitAnimating)");
+        AssertContains(controllerText, "var ring = (ProgressRing)_context.PreviewLoadingOverlay.Children[0];");
+        AssertContains(controllerText, "ring.IsActive = true;");
+        AssertContains(controllerText, "ring.IsActive = false;");
+        AssertContains(controllerText, "_context.PreviewLoadingOverlay.Visibility = Visibility.Collapsed;");
+        AssertContains(controllerText, "_context.PreviewLoadingOverlay.Opacity = 1.0;");
+        AssertContains(controllerText, "_context.FadeOutElement(_context.PreviewLoadingOverlay);");
+        AssertDoesNotContain(adapterText, "var ring = (ProgressRing)");
+        AssertDoesNotContain(adapterText, "PreviewLoadingOverlay.Visibility = Visibility.Collapsed;");
+
+        return Task.CompletedTask;
+    }
+
     private static Task RecordButtonWidthAnimation_LivesInController()
     {
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
