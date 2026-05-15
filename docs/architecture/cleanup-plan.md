@@ -405,6 +405,11 @@ handling, section ordering, and the Flashback opt-in gate; Flashback output,
 Preview D3D output, MJPEG timing, response accessors, and shared-vs-ssctl field
 parity live in focused `AutomationToolContracts.SnapshotFormatter.*.Tests.cs`
 owners registered with the offline harness.
+ssctl command-handler routing coverage now mirrors command-group ownership:
+device, capture controls, recordings, Flashback, window, manifest,
+observability, automation-flow, UI visibility, and verification checks live in
+focused `CommandHandlers.Routing.*.Tests.cs` files, with source ownership kept
+separate in `CommandHandlers.SourceOwnership.Tests.cs`.
 Shared tool assembly loading and stale-build detection now live in
 `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` so the legacy harness body
 no longer owns tool DLL resolution or freshness policy.
