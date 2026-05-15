@@ -369,13 +369,14 @@ split into capacity/drop policy, scrub coalescing, and seek-slot barrier
 owners. Keep new Flashback tests in the closest owner file instead of
 regrowing the root helper shell.
 
-`tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` still owns automation
-view-model surface, async interface contracts, recording-transition routing,
-and legacy broad routing assertions that have not yet moved to focused owners.
-Automation view-model regression coverage is split into diagnostics refresh,
-diagnostics projection ownership, runtime-safety behavior, audio command guards,
-and Flashback cleanup ownership partials. Keep new automation tests in the
-closest owner file instead of regrowing the root catch-all.
+`tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` is now only the
+automation view-model test family marker shell. Automation view-model
+regression coverage is split into preview-volume persistence, recording
+transition routing, async Flashback/probe surface assertions, diagnostics
+refresh, diagnostics projection ownership, runtime-safety behavior, audio
+command guards, UI settings, capture-mode routing, and Flashback cleanup
+ownership partials. Keep new automation tests in the closest owner file instead
+of regrowing the root catch-all.
 
 `tests/Sussudio.Tests/MainViewModel.Capture.Tests.cs` is now only the
 capture-facing MainViewModel surface and shared source-inspection helper shell.

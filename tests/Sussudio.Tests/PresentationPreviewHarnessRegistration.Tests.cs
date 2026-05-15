@@ -23,7 +23,7 @@ static partial class Program
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs",
-        "tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs",
+        "tests/Sussudio.Tests/MainViewModel.Automation.PreviewVolume.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.AudioControls.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.AudioRuntime.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.AudioMonitoring.Tests.cs",
@@ -47,8 +47,6 @@ static partial class Program
 
     private static readonly HashSet<string> PresentationPreviewUiOwnershipCatalogExclusions = new(StringComparer.Ordinal)
     {
-        "MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate",
-        "MainViewModelAutomation_UsesAsyncFlashbackAndProbeSurface",
         "CaptureErrors_RefreshViewModelRuntimeFlags"
     };
 

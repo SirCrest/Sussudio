@@ -859,9 +859,16 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Tests.cs` owns MainWindow
   Flashback polling, playhead motion, and marker-presentation ownership
   assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` owns automation
-  view-model surface, async method contract, recording-transition routing, and
-  legacy broad routing assertions that have not yet moved to focused owners.
+- `tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` is the automation
+  view-model test family marker shell.
+- `tests/Sussudio.Tests/MainViewModel.Automation.PreviewVolume.Tests.cs` owns
+  preview-volume persistence and automation options surface assertions.
+- `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
+  owns recording-transition routing through the shared lifecycle gate.
+- `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs` owns
+  async automation view-model surface, Flashback/probe routing, cancellation,
+  timeout, audio, preview, and device-routing assertions that have not yet
+  moved to narrower owners.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Audio.Tests.cs` owns
   automation audio/microphone command entry-point and runtime-guard assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` owns
