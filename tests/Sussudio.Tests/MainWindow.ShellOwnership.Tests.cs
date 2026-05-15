@@ -169,7 +169,7 @@ static partial class Program
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
         var previewSurfaceText = ReadRepoFile("Sussudio/MainWindow.PreviewSurface.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
-        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsSnapshot.cs").Replace("\r\n", "\n");
 
         AssertContains(previewRendererText, "private SoftwareBitmapSource? _previewSource;");
         AssertContains(previewRendererText, "private D3D11PreviewRenderer? _d3dRenderer;");
@@ -197,7 +197,7 @@ static partial class Program
         AssertContains(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
         AssertContains(previewRendererText, "return Math.Max(1.0, 1000.0 / sourceFps);");
         AssertContains(previewRendererText, "_previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();");
-        AssertContains(statsOverlayText, "GetPresentCadenceMetrics(_previewMinPresentationIntervalMs)");
+        AssertContains(statsSnapshotText, "GetPresentCadenceMetrics(_previewMinPresentationIntervalMs)");
         AssertDoesNotContain(mainWindowText, "private SoftwareBitmapSource? _previewSource;");
         AssertDoesNotContain(mainWindowText, "private D3D11PreviewRenderer? _d3dRenderer;");
         AssertDoesNotContain(mainWindowText, "private SpriteVisual? _videoShadowVisual;");

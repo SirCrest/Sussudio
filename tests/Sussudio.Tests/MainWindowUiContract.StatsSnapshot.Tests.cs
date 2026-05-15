@@ -5,6 +5,7 @@ static partial class Program
     private static Task StatsSnapshotConstruction_LivesInFocusedBuilder()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var mainWindowStatsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsSnapshot.cs").Replace("\r\n", "\n");
         var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs").Replace("\r\n", "\n");
         var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
@@ -15,8 +16,10 @@ static partial class Program
         AssertContains(statsSnapshotBuilderText, "internal readonly record struct StatsSnapshotViewState(");
         AssertContains(statsSnapshotBuilderText, "return new StatsSnapshot(");
         AssertContains(statsSnapshotText, "public sealed record StatsSnapshot(");
-        AssertContains(statsOverlayText, "var renderer = new StatsSnapshotRenderMetrics(");
-        AssertContains(statsOverlayText, "return StatsSnapshotBuilder.Build(health, renderer, viewState);");
+        AssertContains(mainWindowStatsSnapshotText, "private StatsSnapshot GetStatsSnapshot()");
+        AssertContains(mainWindowStatsSnapshotText, "var renderer = new StatsSnapshotRenderMetrics(");
+        AssertContains(mainWindowStatsSnapshotText, "return StatsSnapshotBuilder.Build(health, renderer, viewState);");
+        AssertDoesNotContain(statsOverlayText, "var renderer = new StatsSnapshotRenderMetrics(");
         AssertDoesNotContain(statsOverlayText, "return new StatsSnapshot(");
         AssertContains(statsWindowText, "private readonly Func<StatsSnapshot> _dataProvider;");
         AssertDoesNotContain(statsWindowText, "public sealed record StatsSnapshot(");

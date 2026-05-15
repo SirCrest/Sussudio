@@ -697,8 +697,9 @@ Primary current owners:
   surface is split separately.
 - `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility,
   frame-time overlay visibility, polling lifetime, and dock show/hide
-  animations. `MainWindow.StatsOverlay.cs` still owns metric text projection
-  and snapshot assembly for now.
+  animations. `Sussudio/MainWindow.StatsSnapshot.cs` owns shell stats snapshot
+  assembly from renderer and capture-health state. `MainWindow.StatsOverlay.cs`
+  still owns metric text projection.
 - `Sussudio/MainWindow.StatsSections.cs` owns stats dock section expand/collapse
   chrome and automation-visible section visibility application.
 - `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
@@ -707,7 +708,7 @@ Primary current owners:
 - `Sussudio/Controllers/StatsDiagnosticRowsController.cs` owns dynamic
   decode/GPU/diagnostic row pools, empty-state rows, group headers, and
   diagnostic row style updates. `MainWindow.StatsOverlay.cs` still owns metric
-  text assignment and snapshot assembly for now.
+  text assignment.
 - `Sussudio/MainWindow.FrameTimeOverlay.cs` owns compact frame-time overlay
   text projection and graph line drawing. Keep frame-time canvas math there,
   while `StatsPresentationBuilder` owns compact preview-stat formatting,

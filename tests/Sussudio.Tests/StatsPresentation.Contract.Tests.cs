@@ -45,6 +45,7 @@ static partial class Program
     private static Task StatsLiveSummary_ShowsCurrentPreviewFrameTimeAndOnePercentLow()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var mainWindowStatsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsSnapshot.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs").Replace("\r\n", "\n");
@@ -52,7 +53,7 @@ static partial class Program
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayText, "PreviewOnePercentLowFps: presentCadence?.OnePercentLowFps ?? 0");
+        AssertContains(mainWindowStatsSnapshotText, "PreviewOnePercentLowFps: presentCadence?.OnePercentLowFps ?? 0");
         AssertContains(statsSnapshotBuilderText, "PreviewOnePercentLowFps: StatsPresentationBuilder.Sanitize(renderer.PreviewOnePercentLowFps)");
         AssertStatsPresentationPreviewFormattingLivesInBuilder(statsPresentationText, statsOverlayText, frameTimeOverlayText);
         AssertContains(statsOverlayText, "SetMetricBrush(Stats_SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);");
