@@ -2119,8 +2119,10 @@ Primary owners:
   `DiagnosticSessionRunner`.
 - `tools/Common/PresentMonProbe.Models.cs` owns PresentMon option/result,
   summary, swap-chain, correlation, and metric DTOs.
-- `tools/Common/PresentMonProbe.Format.cs` owns PresentMon result-message
-  shaping and text rendering used by diagnostic-session output surfaces.
+- `tools/Common/PresentMonProbe.ResultMessage.cs` owns PresentMon result-message
+  shaping for success, expected-swap-chain mismatch, and no-frame outcomes.
+- `tools/Common/PresentMonProbe.Format.cs` owns PresentMon result text rendering
+  used by diagnostic-session output surfaces.
 - `tools/Common/PresentMonProbe.Csv.cs` owns PresentMon CSV parse overloads,
   row projection, and summary assembly.
 - `tools/Common/PresentMonProbe.Csv.Fields.cs` owns header/field parsing and

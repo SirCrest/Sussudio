@@ -7,6 +7,7 @@ static partial class Program
         var rootText = ReadRepoFile("tools/Common/PresentMonProbe.cs").Replace("\r\n", "\n");
         var modelsText = ReadRepoFile("tools/Common/PresentMonProbe.Models.cs").Replace("\r\n", "\n");
         var formatText = ReadRepoFile("tools/Common/PresentMonProbe.Format.cs").Replace("\r\n", "\n");
+        var resultMessageText = ReadRepoFile("tools/Common/PresentMonProbe.ResultMessage.cs").Replace("\r\n", "\n");
         var csvText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.cs").Replace("\r\n", "\n");
         var fieldsText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.Fields.cs").Replace("\r\n", "\n");
         var swapChainsText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.SwapChains.cs").Replace("\r\n", "\n");
@@ -34,11 +35,16 @@ static partial class Program
         AssertContains(modelsText, "public sealed class PresentMonMetricSummary");
 
         AssertContains(formatText, "public static string Format(PresentMonProbeResult result)");
-        AssertContains(formatText, "private static string BuildResultMessage(");
         AssertContains(formatText, "private static void AppendSummaryContext(");
         AssertContains(formatText, "private static void AppendMetric(");
         AssertContains(formatText, "private static void AppendAppCorrelation(");
         AssertContains(formatText, "private static void AppendSwapChains(");
+        AssertDoesNotContain(formatText, "private static string BuildResultMessage(");
+
+        AssertContains(resultMessageText, "private static string BuildResultMessage(");
+        AssertContains(resultMessageText, "Captured {summary.RawSampleCount} PresentMon frame rows");
+        AssertContains(resultMessageText, "expected swap chain {summary.ExpectedSwapChainAddress} was not present");
+        AssertContains(resultMessageText, "PresentMon capture did not produce frame rows.");
 
         AssertContains(csvText, "private static PresentMonCaptureSummary ParseCsv(");
         AssertContains(csvText, "var swapChains = BuildSwapChainSummaries(rows, selectedSwapChain);");

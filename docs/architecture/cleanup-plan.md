@@ -1969,8 +1969,9 @@ and `AutomationPipeClient.Models.cs` owns command result and exception types.
 PresentMon model and text ownership is split from the probe runner.
 `tools/Common/PresentMonProbe.Models.cs` owns PresentMon options, result,
 summary, swap-chain, correlation, and metric DTOs.
-`tools/Common/PresentMonProbe.Format.cs` owns result-message shaping and result
-text formatting while
+`tools/Common/PresentMonProbe.ResultMessage.cs` owns success, expected-swap-chain
+mismatch, and no-frame result-message shaping.
+`tools/Common/PresentMonProbe.Format.cs` owns result text formatting while
 `tools/Common/PresentMonProbe.Csv.cs` owns CSV parse overloads, row projection,
 and summary assembly. `PresentMonProbe.Csv.Fields.cs` owns header/field parsing
 and CSV line tokenization. `PresentMonProbe.Csv.SwapChains.cs` owns swap-chain
@@ -2089,6 +2090,7 @@ Remaining `tools/Common` ownership:
 - `PresentMonProbe.Paths.cs`
 - `PresentMonProbe.Arguments.cs`
 - `PresentMonProbe.Process.cs`
+- `PresentMonProbe.ResultMessage.cs`
 
 ## Next Slices
 
