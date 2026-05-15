@@ -1293,7 +1293,9 @@ Stats lane status classification and visual-repeat drift policy now live in
 Stats presentation DTO records/enums now live in
 `Sussudio/ViewModels/StatsPresentationModels.cs`.
 The UI stats snapshot contract lives in `Sussudio/ViewModels/StatsSnapshot.cs`;
-projection from capture health, renderer metrics, and shell view state lives in
+renderer/capture-health acquisition lives in
+`Sussudio/Controllers/StatsSnapshotProvider.cs`, and projection from capture
+health, renderer metrics, and shell view state lives in
 `Sussudio/ViewModels/StatsSnapshotBuilder.cs`.
 Pure capture option construction lives in
 `Sussudio/ViewModels/CaptureModeOptionsBuilder.cs`.

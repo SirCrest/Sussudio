@@ -6,6 +6,8 @@ static partial class Program
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var mainWindowStatsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsSnapshot.cs").Replace("\r\n", "\n");
+        var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/StatsSnapshotProvider.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs").Replace("\r\n", "\n");
         var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
@@ -16,9 +18,26 @@ static partial class Program
         AssertContains(statsSnapshotBuilderText, "internal readonly record struct StatsSnapshotViewState(");
         AssertContains(statsSnapshotBuilderText, "return new StatsSnapshot(");
         AssertContains(statsSnapshotText, "public sealed record StatsSnapshot(");
+        AssertContains(mainWindowText, "InitializeStatsSnapshotProvider();");
         AssertContains(mainWindowStatsSnapshotText, "private StatsSnapshot GetStatsSnapshot()");
-        AssertContains(mainWindowStatsSnapshotText, "var renderer = new StatsSnapshotRenderMetrics(");
-        AssertContains(mainWindowStatsSnapshotText, "return StatsSnapshotBuilder.Build(health, renderer, viewState);");
+        AssertContains(mainWindowStatsSnapshotText, "private StatsSnapshotProvider _statsSnapshotProvider = null!;");
+        AssertContains(mainWindowStatsSnapshotText, "GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,");
+        AssertContains(mainWindowStatsSnapshotText, "GetRenderer = () => _d3dRenderer,");
+        AssertContains(mainWindowStatsSnapshotText, "GetPreviewMinPresentationIntervalMs = () => _previewMinPresentationIntervalMs");
+        AssertContains(mainWindowStatsSnapshotText, "IsPreviewing = () => ViewModel.IsPreviewing,");
+        AssertContains(mainWindowStatsSnapshotText, "IsRecording = () => ViewModel.IsRecording");
+        AssertContains(mainWindowStatsSnapshotText, "=> _statsSnapshotProvider.GetSnapshot();");
+        AssertContains(statsSnapshotProviderText, "internal sealed class StatsSnapshotProvider");
+        AssertContains(statsSnapshotProviderText, "private const int RecentSampleCount = 180;");
+        AssertContains(statsSnapshotProviderText, "var health = _context.GetCaptureHealthSnapshot();");
+        AssertContains(statsSnapshotProviderText, "BuildRenderMetrics(_context.GetRenderer(), _context.GetPreviewMinPresentationIntervalMs())");
+        AssertContains(statsSnapshotProviderText, "new StatsSnapshotViewState(_context.IsPreviewing(), _context.IsRecording())");
+        AssertContains(statsSnapshotProviderText, "return StatsSnapshotBuilder.Build(health, renderer, viewState);");
+        AssertDoesNotContain(statsSnapshotProviderText, "MainViewModel ViewModel");
+        AssertContains(statsSnapshotProviderText, "var presentCadence = renderer?.GetPresentCadenceMetrics(previewMinPresentationIntervalMs);");
+        AssertContains(statsSnapshotProviderText, "PreviewRecentPresentIntervalsMs: renderer?.GetRecentPresentIntervalsMs(RecentSampleCount) ?? Array.Empty<double>()");
+        AssertDoesNotContain(mainWindowStatsSnapshotText, "var renderer = new StatsSnapshotRenderMetrics(");
+        AssertDoesNotContain(mainWindowStatsSnapshotText, "return StatsSnapshotBuilder.Build(health, renderer, viewState);");
         AssertDoesNotContain(statsOverlayText, "var renderer = new StatsSnapshotRenderMetrics(");
         AssertDoesNotContain(statsOverlayText, "return new StatsSnapshot(");
         AssertContains(statsWindowText, "private readonly Func<StatsSnapshot> _dataProvider;");

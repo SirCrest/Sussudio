@@ -218,7 +218,7 @@ static partial class Program
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var dockPresentationControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockPresentationController.cs").Replace("\r\n", "\n");
-        var mainWindowStatsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsSnapshot.cs").Replace("\r\n", "\n");
+        var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/StatsSnapshotProvider.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
         var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
@@ -228,7 +228,7 @@ static partial class Program
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
 
-        AssertContains(mainWindowStatsSnapshotText, "PreviewOnePercentLowFps: presentCadence?.OnePercentLowFps ?? 0");
+        AssertContains(statsSnapshotProviderText, "PreviewOnePercentLowFps: presentCadence?.OnePercentLowFps ?? 0");
         AssertContains(statsSnapshotBuilderText, "PreviewOnePercentLowFps: StatsPresentationBuilder.Sanitize(renderer.PreviewOnePercentLowFps)");
         AssertStatsPresentationPreviewFormattingLivesInBuilder(statsPresentationFrameTimeText, statsPresentationText, statsOverlayText, frameTimeOverlayText, frameTimeOverlayControllerText);
         AssertContains(dockPresentationControllerText, "SetMetricBrush(_context.SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);");

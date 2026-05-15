@@ -40,6 +40,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _automationTokenRequired = automationHost.TokenRequired;
         _automationPipeName = automationHost.PipeName;
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
+        InitializeStatsSnapshotProvider();
         InitializeStatsOverlayController();
         InitializeStatsSectionChromeController();
 

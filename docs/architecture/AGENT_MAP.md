@@ -728,8 +728,9 @@ Primary current owners:
   visibility application, and `Sussudio/MainWindow.StatsSections.cs` is its
   XAML/automation adapter. `Sussudio/Controllers/StatsWindowPresentationController.cs`
   owns detached stats-window metric text and telemetry-detail row rendering.
-  `Sussudio/MainWindow.StatsSnapshot.cs`
-  owns shell stats snapshot assembly from renderer and capture-health state.
+  `Sussudio/Controllers/StatsSnapshotProvider.cs` owns shell stats snapshot
+  acquisition from renderer and capture-health state; `Sussudio/MainWindow.StatsSnapshot.cs`
+  is the XAML-facing adapter.
   `MainWindow.StatsOverlay.cs` adapts snapshots/polling to presentation
   builders and delegates dock value application.
 - `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
@@ -762,7 +763,7 @@ Primary current owners:
   records/enums consumed by the stats overlay and stats-window controllers.
   `Sussudio/ViewModels/StatsSnapshot.cs` owns the UI stats snapshot DTO, and
   `Sussudio/ViewModels/StatsSnapshotBuilder.cs` owns capture-health, renderer,
-  and shell view-state projection into that DTO.
+  and shell view-state projection into that DTO after acquisition.
 - `Sussudio/ViewModels/CaptureModeOptionsBuilder.cs` owns pure resolution and
   video-format option construction, HDR mode enablement, and source aspect-ratio
   filtering. Shell files bind and display those options.

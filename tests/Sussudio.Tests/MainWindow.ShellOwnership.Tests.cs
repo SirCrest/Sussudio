@@ -173,6 +173,7 @@ static partial class Program
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
         var statsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsSnapshot.cs").Replace("\r\n", "\n");
+        var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/StatsSnapshotProvider.cs").Replace("\r\n", "\n");
 
         AssertContains(previewRendererText, "private SoftwareBitmapSource? _previewSource;");
         AssertContains(previewRendererText, "private D3D11PreviewRenderer? _d3dRenderer;");
@@ -211,7 +212,8 @@ static partial class Program
         AssertContains(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
         AssertContains(previewRendererText, "return Math.Max(1.0, 1000.0 / sourceFps);");
         AssertContains(previewRendererText, "_previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();");
-        AssertContains(statsSnapshotText, "GetPresentCadenceMetrics(_previewMinPresentationIntervalMs)");
+        AssertContains(statsSnapshotText, "GetPreviewMinPresentationIntervalMs = () => _previewMinPresentationIntervalMs");
+        AssertContains(statsSnapshotProviderText, "GetPresentCadenceMetrics(previewMinPresentationIntervalMs)");
         AssertDoesNotContain(previewRuntimeSnapshotText, "return new PreviewRuntimeSnapshot");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetRenderCpuTimingMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetFrameOwnershipMetrics()");
