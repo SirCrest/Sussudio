@@ -1,4 +1,3 @@
-using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionResultArtifacts;
 using static Sussudio.Tools.DiagnosticSessionSummaryWriter;
 
@@ -23,9 +22,6 @@ internal static partial class DiagnosticSessionResultBuilder
                 runState)
             .ConfigureAwait(false);
 
-        var verificationSucceeded = request.Verification.HasValue
-            ? GetBool(request.Verification.Value, "Succeeded")
-            : (bool?)null;
         var completedUtc = DateTimeOffset.UtcNow;
         var terminalState = runState.GetTerminalState();
         runState.SetStage("summary");
@@ -35,7 +31,6 @@ internal static partial class DiagnosticSessionResultBuilder
             runState,
             analysis,
             artifactPaths,
-            verificationSucceeded,
             completedUtc,
             terminalState);
 

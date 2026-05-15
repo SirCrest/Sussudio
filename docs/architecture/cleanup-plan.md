@@ -1835,7 +1835,10 @@ Diagnostic-session result construction now lives in
 orchestration, artifact-write handoff, summary-write handoff, and final
 summary emission while the runner keeps the phase sequence.
 `DiagnosticSessionResultBuilder.Result.cs` owns final
-`DiagnosticSessionResult` construction and success calculation. Diagnostic
+`DiagnosticSessionResult` construction from named result projections. Overview
+outcome policy plus process CPU, recording verification, and PresentMon DTO
+projection values live in `DiagnosticSessionResultBuilder.OverviewResult.cs`.
+Diagnostic
 metric gathering and result-build handoff models live beside it in
 `DiagnosticSessionResultBuilder.Analysis.cs` and
 `DiagnosticSessionResultBuilder.Models.cs`. Diagnostic health verdict
@@ -2232,6 +2235,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultArtifacts.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultBuilder.Result.cs`
+- `DiagnosticSessionResultBuilder.OverviewResult.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`

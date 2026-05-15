@@ -1,5 +1,3 @@
-using static Sussudio.Tools.AutomationSnapshotFormatter;
-
 namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionResultBuilder
@@ -9,35 +7,25 @@ internal static partial class DiagnosticSessionResultBuilder
         DiagnosticSessionRunState runState,
         DiagnosticSessionResultAnalysis analysis,
         DiagnosticSessionResultArtifactPaths artifactPaths,
-        bool? verificationSucceeded,
         DateTimeOffset completedUtc,
         string terminalState)
     {
-        var warnings = request.Warnings;
-        var lastSnapshot = analysis.LastSnapshot;
         var healthStatus = analysis.HealthStatus;
         var likelyStage = analysis.LikelyStage;
         var summary = analysis.Summary;
         var evidence = analysis.Evidence;
+        var overviewResult = BuildOverviewResultProjection(request, runState, analysis);
         var captureResult = BuildCaptureResultProjection(analysis);
         var flashbackPlaybackResult = BuildFlashbackPlaybackResultProjection(analysis);
         var flashbackRecordingResult = BuildFlashbackRecordingResultProjection(analysis);
         var flashbackExportResult = BuildFlashbackExportResultProjection(analysis);
         var previewResult = BuildPreviewResultProjection(analysis);
-        var diagnosticHealthSucceeded = analysis.DiagnosticHealthSucceeded;
-        var flashbackWarningsSucceeded = analysis.FlashbackWarningsSucceeded;
-        var processCpuMaxPercentObserved = analysis.ProcessCpuMaxPercentObserved;
 
         var result = new DiagnosticSessionResult
         {
             SessionId = request.SessionId,
             Scenario = request.Scenario,
-            Success = request.CommandFailureCount == 0 &&
-                      runState.TerminalException is null &&
-                      diagnosticHealthSucceeded &&
-                      (request.PresentMon is null || request.PresentMon.Success) &&
-                      (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      flashbackWarningsSucceeded,
+            Success = overviewResult.Success,
             StartedUtc = request.StartedUtc,
             CompletedUtc = completedUtc,
             TerminalState = terminalState,
@@ -222,16 +210,14 @@ internal static partial class DiagnosticSessionResultBuilder
             VisualCadenceMaxRepeatPercentObserved = previewResult.VisualCadenceMaxRepeatPercentObserved,
             VisualCadenceRepeatFramesAtEnd = previewResult.VisualCadenceRepeatFramesAtEnd,
             VisualCadenceLongestRepeatRunAtEnd = previewResult.VisualCadenceLongestRepeatRunAtEnd,
-            ProcessCpuPercentAtEnd = GetDouble(lastSnapshot, "ProcessCpuPercent"),
-            ProcessCpuMaxPercentObserved = processCpuMaxPercentObserved,
-            RecordingVerificationRun = request.Verification.HasValue,
-            RecordingVerificationSucceeded = verificationSucceeded,
-            RecordingVerificationMessage = request.Verification.HasValue
-                ? GetString(request.Verification.Value, "Message") ?? string.Empty
-                : null,
-            PresentMon = request.PresentMon,
+            ProcessCpuPercentAtEnd = overviewResult.ProcessCpuPercentAtEnd,
+            ProcessCpuMaxPercentObserved = overviewResult.ProcessCpuMaxPercentObserved,
+            RecordingVerificationRun = overviewResult.RecordingVerificationRun,
+            RecordingVerificationSucceeded = overviewResult.RecordingVerificationSucceeded,
+            RecordingVerificationMessage = overviewResult.RecordingVerificationMessage,
+            PresentMon = overviewResult.PresentMon,
             Actions = request.Actions.ToArray(),
-            Warnings = warnings.ToArray()
+            Warnings = request.Warnings.ToArray()
         };
 
         return result;
