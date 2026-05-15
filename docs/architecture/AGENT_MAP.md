@@ -2082,10 +2082,13 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs` owns
   preview D3D frame-stats, slow-frame, and CPU-timing DTO projection values
   consumed by the final result initializer.
+- `tools/Common/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
+  owns preview visual-cadence DTO projection values consumed by the final
+  result initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs` owns preview
-  cadence, scheduler, and visual-cadence DTO projection values consumed by the
-  final result initializer. It maps `analysis.PreviewScheduler` and should not
-  reread MJPEG jitter-buffer snapshot keys or D3D metrics directly.
+  cadence and scheduler DTO projection values consumed by the final result
+  initializer. It maps `analysis.PreviewScheduler` and should not reread MJPEG
+  jitter-buffer snapshot keys, D3D metrics, or visual-cadence metrics directly.
 - `tools/Common/DiagnosticSessionResultBuilder.Models.cs` owns the builder
   request record and private analysis handoff record, including the single
   `PreviewScheduler` record property used by preview result projection.

@@ -26,6 +26,7 @@ internal static partial class DiagnosticSessionResultBuilder
         var flashbackExportResult = BuildFlashbackExportResultProjection(analysis);
         var previewResult = BuildPreviewResultProjection(analysis);
         var previewD3DResult = BuildPreviewD3DResultProjection(analysis);
+        var previewVisualCadenceResult = BuildPreviewVisualCadenceResultProjection(analysis);
 
         var result = new DiagnosticSessionResult
         {
@@ -209,13 +210,13 @@ internal static partial class DiagnosticSessionResultBuilder
             PreviewD3DPresentCallMaxMsObserved = previewD3DResult.PreviewD3DPresentCallMaxMsObserved,
             PreviewD3DTotalFrameCpuP99MsAtEnd = previewD3DResult.PreviewD3DTotalFrameCpuP99MsAtEnd,
             PreviewD3DTotalFrameCpuMaxMsObserved = previewD3DResult.PreviewD3DTotalFrameCpuMaxMsObserved,
-            VisualCadenceOutputFpsAtEnd = previewResult.VisualCadenceOutputFpsAtEnd,
-            VisualCadenceChangeFpsAtEnd = previewResult.VisualCadenceChangeFpsAtEnd,
-            VisualCadenceMinChangeFpsObserved = previewResult.VisualCadenceMinChangeFpsObserved,
-            VisualCadenceRepeatPercentAtEnd = previewResult.VisualCadenceRepeatPercentAtEnd,
-            VisualCadenceMaxRepeatPercentObserved = previewResult.VisualCadenceMaxRepeatPercentObserved,
-            VisualCadenceRepeatFramesAtEnd = previewResult.VisualCadenceRepeatFramesAtEnd,
-            VisualCadenceLongestRepeatRunAtEnd = previewResult.VisualCadenceLongestRepeatRunAtEnd,
+            VisualCadenceOutputFpsAtEnd = previewVisualCadenceResult.VisualCadenceOutputFpsAtEnd,
+            VisualCadenceChangeFpsAtEnd = previewVisualCadenceResult.VisualCadenceChangeFpsAtEnd,
+            VisualCadenceMinChangeFpsObserved = previewVisualCadenceResult.VisualCadenceMinChangeFpsObserved,
+            VisualCadenceRepeatPercentAtEnd = previewVisualCadenceResult.VisualCadenceRepeatPercentAtEnd,
+            VisualCadenceMaxRepeatPercentObserved = previewVisualCadenceResult.VisualCadenceMaxRepeatPercentObserved,
+            VisualCadenceRepeatFramesAtEnd = previewVisualCadenceResult.VisualCadenceRepeatFramesAtEnd,
+            VisualCadenceLongestRepeatRunAtEnd = previewVisualCadenceResult.VisualCadenceLongestRepeatRunAtEnd,
             ProcessCpuPercentAtEnd = overviewResult.ProcessCpuPercentAtEnd,
             ProcessCpuMaxPercentObserved = overviewResult.ProcessCpuMaxPercentObserved,
             RecordingVerificationRun = overviewResult.RecordingVerificationRun,

@@ -1,0 +1,28 @@
+namespace Sussudio.Tools;
+
+internal static partial class DiagnosticSessionResultBuilder
+{
+    private readonly record struct DiagnosticSessionPreviewVisualCadenceResultProjection(
+        double VisualCadenceOutputFpsAtEnd,
+        double VisualCadenceChangeFpsAtEnd,
+        double VisualCadenceMinChangeFpsObserved,
+        double VisualCadenceRepeatPercentAtEnd,
+        double VisualCadenceMaxRepeatPercentObserved,
+        long VisualCadenceRepeatFramesAtEnd,
+        long VisualCadenceLongestRepeatRunAtEnd);
+
+    private static DiagnosticSessionPreviewVisualCadenceResultProjection BuildPreviewVisualCadenceResultProjection(
+        DiagnosticSessionResultAnalysis analysis)
+    {
+        var visualCadenceMetrics = analysis.VisualCadenceMetrics;
+
+        return new DiagnosticSessionPreviewVisualCadenceResultProjection(
+            VisualCadenceOutputFpsAtEnd: visualCadenceMetrics.OutputFpsAtEnd,
+            VisualCadenceChangeFpsAtEnd: visualCadenceMetrics.ChangeFpsAtEnd,
+            VisualCadenceMinChangeFpsObserved: visualCadenceMetrics.MinChangeFpsObserved,
+            VisualCadenceRepeatPercentAtEnd: visualCadenceMetrics.RepeatPercentAtEnd,
+            VisualCadenceMaxRepeatPercentObserved: visualCadenceMetrics.MaxRepeatPercentObserved,
+            VisualCadenceRepeatFramesAtEnd: visualCadenceMetrics.RepeatFramesAtEnd,
+            VisualCadenceLongestRepeatRunAtEnd: visualCadenceMetrics.LongestRepeatRunAtEnd);
+    }
+}
