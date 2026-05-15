@@ -37,6 +37,7 @@ static partial class Program
     private static Task LiveSignalInfoPresentation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var liveSignalAdapterText = ReadRepoFile("Sussudio/MainWindow.LiveSignalInfo.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
@@ -52,6 +53,7 @@ static partial class Program
         AssertContains(liveSignalAdapterText, "private void StopLiveSignalInfoTimers()");
         AssertContains(liveSignalAdapterText, "=> _liveSignalInfoController.StopTimers();");
         AssertContains(mainWindowText, "InitializeLiveSignalInfoController();");
+        AssertContains(bindingsText, "UpdateLiveSignalInfoVisibility();");
         AssertContains(shutdownCleanupText, "StopLiveSignalInfoTimers();");
         AssertContains(controllerText, "internal sealed class LiveSignalInfoController");
         AssertContains(controllerText, "private DispatcherQueueTimer? _showDebounceTimer;");
@@ -99,7 +101,6 @@ static partial class Program
         AssertContains(adapterText, "private void UpdateDiskWarningPresentation()");
         AssertContains(mainWindowText, "InitializeStatusStripPresentationController();");
         AssertContains(bindingsText, "ApplyInitialStatusStripPresentation();");
-        AssertContains(bindingsText, "UpdateLiveSignalInfoVisibility();");
         AssertContains(propertyChangedText, "UpdateStatusTextPresentation();");
         AssertContains(propertyChangedText, "UpdateRecordingTimePresentation();");
         AssertContains(propertyChangedText, "UpdateDiskSpacePresentation();");

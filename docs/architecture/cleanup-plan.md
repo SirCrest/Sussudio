@@ -1463,10 +1463,11 @@ Recording button command execution and preview-state logging after a recording
 start now live in `Sussudio/Controllers/RecordingButtonActionController.cs`.
 `MainWindow.RecordingActions.cs` is the XAML-facing adapter.
 
-Live-signal pill visibility state, show/hide debounce timers, and the small
-scale/fade animation now live in
+Live-signal pill text application, visibility state, show/hide debounce timers,
+and the small scale/fade animation now live in
 `Sussudio/Controllers/LiveSignalInfoController.cs`. `MainWindow.LiveSignalInfo.cs`
-is the XAML-facing adapter.
+is the XAML-facing adapter, while
+`Sussudio/ViewModels/MainViewModel.LiveSignalText.cs` owns label formatting.
 
 Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
 and volume save suppression now live in
