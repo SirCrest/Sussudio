@@ -1633,8 +1633,10 @@ Primary owners:
   response exit-code shaping.
 - `tools/ssctl/Formatters.cs` is the console projection facade only.
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration and
-  non-Flashback text sections.
+  remaining root text sections.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Memory.cs` owns embedded snapshot Memory/GC
+  text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer snapshot
   text.
@@ -1642,7 +1644,7 @@ Primary owners:
 - `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
 - `tools/ssctl/Formatters.Timeline.cs` owns performance timeline table output
   and its row model.
-- `tools/ssctl/Formatters.Memory.cs` owns memory and GC summaries.
+- `tools/ssctl/Formatters.Memory.cs` owns standalone memory and GC summaries.
 - `tools/ssctl/Formatters.Common.cs` owns shared result/JSON helpers.
 - `tools/McpServer/Tools/PerformanceTimelineTools.cs` owns the public MCP
   tool entry point and command response handling.
