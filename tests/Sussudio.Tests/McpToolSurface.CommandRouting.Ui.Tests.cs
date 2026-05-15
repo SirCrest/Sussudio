@@ -26,7 +26,7 @@ static partial class Program
         string result = string.Empty;
         var requests = await CapturePipeRequestsAsync(
                 pipeName,
-                expectedCount: 5,
+                expectedCount: 7,
                 async () =>
                 {
                     results.Add(await InvokeMcpToolStringAsync(
@@ -45,6 +45,18 @@ static partial class Program
                         .ConfigureAwait(false));
                     results.Add(await InvokeMcpToolStringAsync(
                             uiSettingsTools,
+                            "configure_frametime_graph",
+                            pipeClient,
+                            true)
+                        .ConfigureAwait(false));
+                    results.Add(await InvokeMcpToolStringAsync(
+                            uiSettingsTools,
+                            "configure_flashback_timeline",
+                            pipeClient,
+                            false)
+                        .ConfigureAwait(false));
+                    results.Add(await InvokeMcpToolStringAsync(
+                            uiSettingsTools,
                             "configure_stats_section",
                             pipeClient,
                             "Source",
@@ -59,7 +71,9 @@ static partial class Program
         AssertCommandRequest(requests[1], "SetPreviewVolume", ("previewVolumePercent", 33.5d));
         AssertCommandRequest(requests[2], "SetStatsVisible", ("visible", false));
         AssertCommandRequest(requests[3], "SetSettingsVisible", ("visible", true));
-        AssertCommandRequest(requests[4], "SetStatsSectionVisible", ("section", "Source"), ("visible", false));
+        AssertCommandRequest(requests[4], "SetFrameTimeOverlayVisible", ("visible", true));
+        AssertCommandRequest(requests[5], "SetFlashbackTimelineVisible", ("visible", false));
+        AssertCommandRequest(requests[6], "SetStatsSectionVisible", ("section", "Source"), ("visible", false));
         AssertEqual(
             string.Join(
                 Environment.NewLine,
@@ -67,7 +81,9 @@ static partial class Program
                 "[OK] SetPreviewVolume: ui command 1 ok",
                 "[OK] SetStatsVisible: ui command 2 ok",
                 "[OK] SetSettingsVisible: ui command 3 ok",
-                "[OK] SetStatsSectionVisible: ui command 4 ok"),
+                "[OK] SetFrameTimeOverlayVisible: ui command 4 ok",
+                "[OK] SetFlashbackTimelineVisible: ui command 5 ok",
+                "[OK] SetStatsSectionVisible: ui command 6 ok"),
             result,
             "MCP UI command formatted output");
     }

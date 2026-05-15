@@ -106,5 +106,25 @@ static partial class Program
         AssertCommandRequest(exportRequests[0], "FlashbackExport", ("seconds", 1d), ("outputPath", "temp/fb-failure-kind.mp4"), ("useSelectionRange", false), ("force", false));
         AssertContains(result, "[ERROR] FlashbackExport: Flashback buffer not active");
         AssertContains(result, "FailureKind: BufferInactive");
+
+        var segmentsPipeName = NewMcpToolPipeName("flashback-segments");
+        var segmentsPipeClient = CreateMcpPipeClient(segmentsPipeName);
+        var segmentsRequests = await CapturePipeRequestsAsync(
+                segmentsPipeName,
+                expectedCount: 1,
+                async () =>
+                {
+                    result = await InvokeMcpToolStringAsync(
+                            flashbackTools,
+                            "flashback_segments",
+                            segmentsPipeClient)
+                        .ConfigureAwait(false);
+                },
+                _ => "{\"Success\":true,\"Message\":\"1 segment.\",\"Data\":{\"Segments\":[{\"Path\":\"temp/segment-000.mp4\",\"DurationMs\":1000,\"FrameCount\":60}]}}")
+            .ConfigureAwait(false);
+
+        AssertCommandRequest(segmentsRequests[0], "FlashbackGetSegments");
+        AssertContains(result, "[OK] FlashbackGetSegments: 1 segment.");
+        AssertContains(result, "\"FrameCount\":60");
     }
 }

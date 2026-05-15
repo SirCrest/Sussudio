@@ -1,4 +1,5 @@
 using System.Globalization;
+using Sussudio.Models;
 using Sussudio.Tools;
 
 namespace Sussudio.Tools.Ssctl;
@@ -111,54 +112,54 @@ internal static class Program
         Console.WriteLine("  ssctl [--json] [--pipe NAME] [--timeout MS] <command>");
         Console.WriteLine();
         Console.WriteLine("Query:");
-        Console.WriteLine("  state [--json]");
-        Console.WriteLine("  diagnostics [--max N] [--json]");
-        Console.WriteLine("  options [--json]");
-        Console.WriteLine("  manifest [--json]");
-        Console.WriteLine("  timeline [--max N] [--json]");
+        WriteCatalogHelpLine(AutomationCommandKind.GetSnapshot, "[--json]");
+        WriteCatalogHelpLine(AutomationCommandKind.GetDiagnostics, "[--json]");
+        WriteCatalogHelpLine(AutomationCommandKind.GetCaptureOptions, "[--json]");
+        WriteCatalogHelpLine(AutomationCommandKind.GetAutomationManifest, "[--json]");
+        WriteCatalogHelpLine(AutomationCommandKind.GetPerformanceTimeline, "[--json]");
         Console.WriteLine("  memory [--json]");
-        Console.WriteLine("  audio-ramp-trace [--json]");
+        WriteCatalogHelpLine(AutomationCommandKind.GetAudioRampTrace, "[--json]");
         Console.WriteLine("  presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--app-present-id N] [--app-source-seq N] [--app-present-utc-ms N] [--capture-start-utc-ms N] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
         Console.WriteLine($"  diagnostic-session [--scenario {DiagnosticSessionScenarios.HelpList}] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
         Console.WriteLine();
         Console.WriteLine("Control:");
-        Console.WriteLine("  preview start|stop");
-        Console.WriteLine("  record start|stop");
-        Console.WriteLine("  screenshot [path]");
-        Console.WriteLine("  frame [path]");
-        Console.WriteLine("  recordings open");
+        WriteCatalogHelpLine(AutomationCommandKind.SetPreviewEnabled);
+        WriteCatalogHelpLine(AutomationCommandKind.SetRecordingEnabled);
+        WriteCatalogHelpLine(AutomationCommandKind.CaptureWindowScreenshot);
+        WriteCatalogHelpLine(AutomationCommandKind.CapturePreviewFrame);
+        WriteCatalogHelpLine(AutomationCommandKind.OpenRecordingsFolder);
         Console.WriteLine();
         Console.WriteLine("Configure:");
-        Console.WriteLine("  set resolution <value>");
-        Console.WriteLine("  set fps <value>");
-        Console.WriteLine("  set format <value>");
-        Console.WriteLine("  set quality <value>");
-        Console.WriteLine("  set bitrate <value>");
-        Console.WriteLine("  set preset <value>");
-        Console.WriteLine("  set split <value>");
-        Console.WriteLine("  set video-format <value>");
-        Console.WriteLine("  set decoders <value>");
-        Console.WriteLine("  set hdr on|off");
-        Console.WriteLine("  set hdr-preview on|off");
-        Console.WriteLine("  set audio on|off");
-        Console.WriteLine("  set audio-preview on|off");
-        Console.WriteLine("  set volume <value>");
-        Console.WriteLine("  set audio-mode hdmi|analog");
-        Console.WriteLine("  set gain <value>");
-        Console.WriteLine("  set output <path>");
-        Console.WriteLine("  set show-all on|off");
-        Console.WriteLine("  set mic on|off");
+        WriteCatalogHelpLine(AutomationCommandKind.SetResolution);
+        WriteCatalogHelpLine(AutomationCommandKind.SetFrameRate);
+        WriteCatalogHelpLine(AutomationCommandKind.SetRecordingFormat);
+        WriteCatalogHelpLine(AutomationCommandKind.SetQuality);
+        WriteCatalogHelpLine(AutomationCommandKind.SetCustomBitrate);
+        WriteCatalogHelpLine(AutomationCommandKind.SetPreset);
+        WriteCatalogHelpLine(AutomationCommandKind.SetSplitEncodeMode);
+        WriteCatalogHelpLine(AutomationCommandKind.SetVideoFormat);
+        WriteCatalogHelpLine(AutomationCommandKind.SetMjpegDecoderCount);
+        WriteCatalogHelpLine(AutomationCommandKind.SetHdrEnabled);
+        WriteCatalogHelpLine(AutomationCommandKind.SetTrueHdrPreviewEnabled);
+        WriteCatalogHelpLine(AutomationCommandKind.SetAudioEnabled);
+        WriteCatalogHelpLine(AutomationCommandKind.SetAudioPreviewEnabled);
+        WriteCatalogHelpLine(AutomationCommandKind.SetPreviewVolume);
+        WriteCatalogHelpLine(AutomationCommandKind.SetDeviceAudioMode);
+        WriteCatalogHelpLine(AutomationCommandKind.SetAnalogAudioGain);
+        WriteCatalogHelpLine(AutomationCommandKind.SetOutputPath);
+        WriteCatalogHelpLine(AutomationCommandKind.SetShowAllCaptureOptions);
+        WriteCatalogHelpLine(AutomationCommandKind.SetMicrophoneEnabled);
         Console.WriteLine();
         Console.WriteLine("Device:");
-        Console.WriteLine("  device refresh");
+        WriteCatalogHelpLine(AutomationCommandKind.RefreshDevices);
         Console.WriteLine("  device list");
-        Console.WriteLine("  device select <name>");
-        Console.WriteLine("  device audio-select <name>");
-        Console.WriteLine("  device custom-audio on|off");
+        WriteCatalogHelpLine(AutomationCommandKind.SelectDevice);
+        WriteCatalogHelpLine(AutomationCommandKind.SelectAudioInputDevice);
+        WriteCatalogHelpLine(AutomationCommandKind.SetCustomAudioInput);
         Console.WriteLine();
         Console.WriteLine("Flashback:");
-        Console.WriteLine("  flashback on|off");
-        Console.WriteLine("  flashback timeline show|hide");
+        WriteCatalogHelpLine(AutomationCommandKind.SetFlashbackEnabled);
+        WriteCatalogHelpLine(AutomationCommandKind.SetFlashbackTimelineVisible);
         Console.WriteLine("  flashback play [<ms>]");
         Console.WriteLine("  flashback pause");
         Console.WriteLine("  flashback go-live");
@@ -167,25 +168,26 @@ internal static class Program
         Console.WriteLine("  flashback update-scrub <ms>");
         Console.WriteLine("  flashback end-scrub [<ms>]");
         Console.WriteLine("  flashback set-in|set-out|clear-range");
-        Console.WriteLine("  flashback export [seconds] [path] [--range] [--force]");
-        Console.WriteLine("  flashback apply");
+        WriteCatalogHelpLine(AutomationCommandKind.FlashbackExport);
+        WriteCatalogHelpLine(AutomationCommandKind.FlashbackGetSegments);
+        WriteCatalogHelpLine(AutomationCommandKind.RestartFlashback);
         Console.WriteLine();
         Console.WriteLine("Window:");
         Console.WriteLine("  window close|minimize|maximize|restore|center");
-        Console.WriteLine("  window fullscreen on|off");
+        WriteCatalogHelpLine(AutomationCommandKind.SetFullScreenEnabled);
         Console.WriteLine("  window snap left|right|top-left|top-right|bottom-left|bottom-right");
         Console.WriteLine("  window move <x> <y>");
         Console.WriteLine("  window resize <w> <h>");
         Console.WriteLine();
         Console.WriteLine("Wait / Verify:");
-        Console.WriteLine("  wait <condition> [--timeout MS] [--poll MS]");
+        WriteCatalogHelpLine(AutomationCommandKind.WaitForCondition, "[--timeout MS] [--poll MS]");
         Console.WriteLine("  verify [path] [--profile NAME|--verification-profile NAME]");
         Console.WriteLine("  assert <json>|<field> <op> <value>");
         Console.WriteLine("  probe source|color");
-        Console.WriteLine("  stats show|hide");
-        Console.WriteLine("  stats section <name> show|hide");
-        Console.WriteLine("  frametime show|hide");
-        Console.WriteLine("  settings show|hide");
+        WriteCatalogHelpLine(AutomationCommandKind.SetStatsVisible);
+        WriteCatalogHelpLine(AutomationCommandKind.SetStatsSectionVisible);
+        WriteCatalogHelpLine(AutomationCommandKind.SetFrameTimeOverlayVisible);
+        WriteCatalogHelpLine(AutomationCommandKind.SetSettingsVisible);
         Console.WriteLine();
         Console.WriteLine("Flags:");
         Console.WriteLine("  --json            Print raw JSON responses where supported");
@@ -193,6 +195,14 @@ internal static class Program
         Console.WriteLine("  --timeout MS      Response timeout override for pipe calls");
         Console.WriteLine("  --verbose         On error, print full stack trace + InnerException chain to stderr");
         Console.WriteLine("  --help            Show this help");
+    }
+
+    private static void WriteCatalogHelpLine(AutomationCommandKind kind, string? suffix = null)
+    {
+        var command = AutomationCommandCatalog.Get(kind).CliHelp;
+        Console.WriteLine(string.IsNullOrWhiteSpace(suffix)
+            ? $"  {command}"
+            : $"  {command} {suffix}");
     }
 
     private sealed class CliOptions
