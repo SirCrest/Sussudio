@@ -754,10 +754,13 @@ Primary current owners:
   audio/microphone initial control projection and event hookup during
   `SetupBindings()`. `Sussudio/MainWindow.AudioBindings.cs` is its
   XAML-facing adapter.
-- `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility,
-  frame-time overlay visibility, polling lifetime, and dock show/hide
-  animations. `Sussudio/Controllers/StatsDockRefreshController.cs` owns stats
-  dock refresh orchestration: snapshot acquisition, dock presentation build/apply,
+- `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility
+  orchestration, frame-time overlay visibility, and polling lifetime.
+  `Sussudio/Controllers/StatsOverlayController.DockAnimation.cs` owns stats dock
+  show/hide storyboard construction, dock visibility mutations, and completion
+  state.
+  `Sussudio/Controllers/StatsDockRefreshController.cs` owns stats dock refresh
+  orchestration: snapshot acquisition, dock presentation build/apply,
   diagnostics visibility gating, and decode/GPU row refresh ordering.
   `Sussudio/Controllers/StatsDockPresentationController.cs` owns
   stats dock metric text, visibility, and status brush application after the

@@ -1386,6 +1386,10 @@ is now the XAML-facing adapter for stats dock visibility, polling, and refresh
 controllers; polling, visibility state, dock refresh ordering, dynamic
 diagnostic row pools, dock metric value/brush application, and dock animations
 are out of the shell fields.
+Stats dock show/hide animation mechanics now live in
+`Sussudio/Controllers/StatsOverlayController.DockAnimation.cs`, keeping
+storyboards, dock visibility mutations, dock width/fade targets, and animation
+completion state out of the polling/visibility orchestration controller root.
 Stats dock refresh orchestration now lives in
 `Sussudio/Controllers/StatsDockRefreshController.cs`: snapshot acquisition,
 dock presentation build/apply, diagnostics visibility gating, and decode/GPU
