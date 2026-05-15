@@ -434,7 +434,9 @@ cloak/dark-mode helpers.
 Audio and microphone meter rendering now lives in
 `Sussudio/Controllers/AudioMeterController.cs`. Audio/microphone initial control
 projection and event hookup now live in `Sussudio/MainWindow.AudioBindings.cs`;
-the broader non-audio control-bar binding code remains in `MainWindow.Bindings.cs`.
+capture/recording option collection setup, initial projection, and code-attached
+resolution/frame-rate handlers now live in `Sussudio/MainWindow.CaptureOptionBindings.cs`.
+The remaining non-audio control-bar binding code stays in `MainWindow.Bindings.cs`.
 
 Capture session transition legality now lives in
 `Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs`. `CaptureService`

@@ -1420,6 +1420,9 @@ Primary current owners:
   rules for capture option affordances: HDR readiness hints, FPS telemetry
   tooltips, MJPEG decoder count selection/visibility, bitrate mode visibility,
   and audio clipping visibility.
+- `Sussudio/MainWindow.CaptureOptionBindings.cs` owns capture/recording option
+  collection binding, initial selection projection, resolution/frame-rate
+  selection handlers, and decoder-count seeding during `SetupBindings()`.
 - `Sussudio/MainWindow.RecordingOptionBindings.cs` owns recording/capture
   option event bindings: recording format, quality, preset, split encode,
   video format, custom bitrate, HDR, and true-HDR preview toggles.

@@ -3,7 +3,7 @@ using System;
 namespace Sussudio;
 
 // Recording and capture-option event bindings. Initial value projection and
-// option visibility stay in MainWindow.Bindings.cs/CaptureOptionPresentation.cs.
+// option visibility stay in CaptureOptionBindings.cs/CaptureOptionPresentation.cs.
 public sealed partial class MainWindow
 {
     private void AttachRecordingOptionBindings()
