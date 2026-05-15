@@ -217,6 +217,10 @@ static partial class Program
     private static Task AutomationPipeConnectFailures_AreClassifiedForCliAndMcp()
     {
         var sharedClientText = ReadAutomationPipeClientSource();
+        var pipeClientTransportText = ReadRepoFile("tools/Common/AutomationPipeClient.Transport.cs")
+            .Replace("\r\n", "\n");
+        var pipeClientConnectErrorsText = ReadRepoFile("tools/Common/AutomationPipeClient.ConnectErrors.cs")
+            .Replace("\r\n", "\n");
         var ssctlPipeText = ReadRepoFile("tools/ssctl/PipeTransport.cs")
             .Replace("\r\n", "\n");
         var mcpPipeText = ReadRepoFile("tools/McpServer/PipeClient.cs")
@@ -233,9 +237,20 @@ static partial class Program
         AssertContains(sharedClientText, "internal static async Task<AutomationPipeCommandResult> SendCommandWithResultAsync(");
         AssertContains(sharedClientText, "internal static bool TryReadResponseState(");
         AssertContains(sharedClientText, "internal readonly record struct AutomationPipeCommandResult(");
-        AssertContains(sharedClientText, "catch (UnauthorizedAccessException ex)");
-        AssertContains(sharedClientText, "\"pipe-access-denied\"");
-        AssertContains(sharedClientText, "AutomationPipeProtocol.AutomationKeyEnvVar");
+        AssertContains(pipeClientTransportText, "ConnectWithClassifiedErrorsAsync(");
+        AssertContains(pipeClientTransportText, "await writer.WriteLineAsync(requestJson)");
+        AssertDoesNotContain(pipeClientTransportText, "catch (UnauthorizedAccessException ex)");
+        AssertDoesNotContain(pipeClientTransportText, "\"pipe-access-denied\"");
+        AssertContains(pipeClientConnectErrorsText, "private static async Task ConnectWithClassifiedErrorsAsync(");
+        AssertContains(pipeClientConnectErrorsText, "await client.ConnectAsync(connectTimeoutMs, cancellationToken).ConfigureAwait(false);");
+        AssertContains(pipeClientConnectErrorsText, "catch (TimeoutException ex)");
+        AssertContains(pipeClientConnectErrorsText, "\"pipe-connect-timeout\"");
+        AssertContains(pipeClientConnectErrorsText, "catch (OperationCanceledException)\n        {\n            throw;\n        }");
+        AssertContains(pipeClientConnectErrorsText, "catch (UnauthorizedAccessException ex)");
+        AssertContains(pipeClientConnectErrorsText, "\"pipe-access-denied\"");
+        AssertContains(pipeClientConnectErrorsText, "AutomationPipeProtocol.AutomationKeyEnvVar");
+        AssertContains(pipeClientConnectErrorsText, "catch (Exception ex)");
+        AssertContains(pipeClientConnectErrorsText, "\"pipe-connect-failed\"");
         AssertContains(sharedClientText, "public string ErrorCode { get; }");
 
         AssertContains(ssctlPipeText, "catch (AutomationPipeConnectException ex)");

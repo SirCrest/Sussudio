@@ -1681,9 +1681,10 @@ Primary owners:
   shared JSON options.
 - `tools/Common/AutomationPipeClient.cs` is the shared automation pipe client
   marker shell used by ssctl, MCP, diagnostic sessions, and smoke tools.
-- `tools/Common/AutomationPipeClient.Transport.cs` owns named-pipe connect,
-  request/response framing, response timeout, and pipe connect failure
-  classification.
+- `tools/Common/AutomationPipeClient.Transport.cs` owns named-pipe connect
+  orchestration, request/response framing, and response timeout.
+- `tools/Common/AutomationPipeClient.ConnectErrors.cs` owns pipe connect
+  failure classification and exact CLI/MCP diagnostic error codes.
 - `tools/Common/AutomationPipeClient.Commands.cs` owns command envelope sending
   and `not_ready` retry behavior.
 - `tools/Common/AutomationPipeClient.ResponseState.cs` owns tolerant response

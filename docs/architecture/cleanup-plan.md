@@ -1863,7 +1863,9 @@ emission.
 Shared automation pipe client ownership is split from a single helper into a
 focused partial family. `tools/Common/AutomationPipeClient.cs` is the public
 client marker shell, `AutomationPipeClient.Transport.cs` owns named-pipe
-connect/write/read and pipe error classification, `AutomationPipeClient.Commands.cs`
+connect orchestration, write/read framing, and response timeout,
+`AutomationPipeClient.ConnectErrors.cs` owns pipe connect failure
+classification and exact CLI/MCP diagnostic error codes, `AutomationPipeClient.Commands.cs`
 owns command envelope sending and `not_ready` retry policy,
 `AutomationPipeClient.ResponseState.cs` owns tolerant response-state parsing,
 and `AutomationPipeClient.Models.cs` owns command result and exception types.
@@ -1891,6 +1893,7 @@ Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient.cs`
 - `AutomationPipeClient.Transport.cs`
+- `AutomationPipeClient.ConnectErrors.cs`
 - `AutomationPipeClient.Commands.cs`
 - `AutomationPipeClient.ResponseState.cs`
 - `AutomationPipeClient.Models.cs`
