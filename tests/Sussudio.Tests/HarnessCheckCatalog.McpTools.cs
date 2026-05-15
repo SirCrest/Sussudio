@@ -52,6 +52,9 @@ static partial class Program
     private static async Task AddMcpPerformanceAndProbeToolChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
+            "MCP PresentMon tool routes snapshot correlation",
+            McpPresentMonTools_RouteSnapshotCorrelation);
+        await AddCheckAsync(results,
             "MCP performance timeline exposes D3D P99 stage timing",
             McpPerformanceTimelineTool_ExposesD3DP99StageTiming);
         await AddCheckAsync(results,

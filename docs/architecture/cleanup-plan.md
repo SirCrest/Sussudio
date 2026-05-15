@@ -1738,6 +1738,11 @@ keep report section layout in `PreviewFrameCaptureTools.Rendering.cs`; keep
 16-bin histogram math/rendering in `PreviewFrameCaptureTools.Histogram.cs`; and
 keep anomaly diagnosis policy and aspect checks in
 `PreviewFrameCaptureTools.Diagnosis.cs`.
+PresentMon MCP stays intentionally shallow: keep `capture_presentmon`,
+`capture_presentmon_raw`, structured-content shape, option precedence, and
+`PresentMonProbe.RunAsync` invocation in `PresentMonTools.cs`; keep only
+snapshot-derived correlation fallback and preview-present field extraction in
+`PresentMonTools.Correlation.cs`.
 
 Diagnostic-session pipe retry/error classification now lives in
 `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a

@@ -1306,7 +1306,8 @@ Primary current owners:
   `DiagnosticSessionRunner.RunAsync`, and parsing synthetic JSON responses.
 - `tests/Sussudio.Tests/McpToolSurface.Performance.*.Tests.cs` owns MCP
   performance timeline contract, Flashback timeline formatting, and
-  frame-pacing verdict tests.
+  frame-pacing verdict tests, plus PresentMon MCP correlation and option
+  precedence coverage.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.*.Tests.cs` owns MCP
   wait, window action, preview toggle, Flashback toggle, screenshot, and probe
   tests.
@@ -1871,6 +1872,11 @@ Primary owners:
   `tools/McpServer/Tools/PreviewFrameCaptureTools.Diagnosis.cs` owns blank,
   dark, bright, letterbox, pillarbox, low-contrast, and aspect-ratio diagnosis
   policy.
+- `tools/McpServer/Tools/PresentMonTools.cs` owns public PresentMon MCP entry
+  points, structured-content shape, option precedence, and probe invocation.
+  `tools/McpServer/Tools/PresentMonTools.Correlation.cs` owns app-snapshot
+  correlation fallback, preview-present field extraction, and malformed
+  snapshot/pipe-failure fallback behavior.
 - `tools/Common/DiagnosticSessionOptions.cs` owns diagnostic session run
   options.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic session summary and
