@@ -1500,9 +1500,12 @@ Capture-device refresh/apply button workflows now live in
 explicit apply/reinit path separate from selection synchronization.
 
 Presentation-only rules for capture option affordances now live in
-`Sussudio/MainWindow.CaptureOptionPresentation.cs`: HDR readiness hints, FPS
-telemetry tooltips, MJPEG decoder count selection/visibility, bitrate mode
-visibility, and audio clipping visibility.
+`Sussudio/Controllers/CaptureOptionPresentationController.cs`: HDR readiness
+hints, FPS telemetry tooltips, MJPEG decoder count selection/visibility,
+bitrate mode visibility, and audio clipping visibility.
+`MainWindow.CaptureOptionPresentation.cs` is the XAML-facing adapter and keeps
+the existing method names for binding setup, property-change projection, and
+the XAML decoder-count selection event.
 
 Recording output-path truncation and tooltip updates now live in
 `Sussudio/Controllers/OutputPathDisplayController.cs`.

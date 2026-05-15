@@ -1,119 +1,51 @@
-using System;
-using System.Collections.Generic;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Sussudio.Models;
+using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// Presentation rules for capture option affordances: HDR readiness hints,
-// FPS telemetry hints, MJPEG decoder visibility, bitrate mode, and audio clip
-// status.
+// XAML-facing adapter for capture option affordance presentation.
 public sealed partial class MainWindow
 {
-    private int _selectedDecoderCount = 4;
+    private CaptureOptionPresentationController _captureOptionPresentationController = null!;
+
+    private void InitializeCaptureOptionPresentationController()
+    {
+        _captureOptionPresentationController = new CaptureOptionPresentationController(new CaptureOptionPresentationControllerContext
+        {
+            ViewModel = ViewModel,
+            VideoFormatComboBox = VideoFormatComboBox,
+            FrameRateComboBox = FrameRateComboBox,
+            DecoderCountPanel = DecoderCountPanel,
+            DecoderCountComboBox = DecoderCountComboBox,
+            HdrToggle = HdrToggle,
+            TrueHdrPreviewToggle = TrueHdrPreviewToggle,
+            CustomBitratePanel = CustomBitratePanel,
+            PresetPanel = PresetPanel,
+            AudioClipText = AudioClipText
+        });
+    }
+
+    private void ApplyInitialDecoderCountSelection()
+        => _captureOptionPresentationController.ApplyInitialDecoderCountSelection();
 
     private void UpdateDecoderCountVisibility()
-    {
-        var selectedFormat = VideoFormatComboBox.SelectedItem as string ?? ViewModel.SelectedVideoFormat;
-        var selectedFrameRate = GetSelectedFriendlyFrameRate();
-
-        // Show decoder count when MJPG is explicitly selected, OR when auto
-        // resolves to a format that would use the parallel MJPEG pipeline
-        // (i.e. the device's native format is MJPG at high frame rates).
-        var isExplicitMjpg = string.Equals(selectedFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
-        var isAutoWithMjpgDevice = string.Equals(selectedFormat, "Auto", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(ViewModel.SelectedFormat?.PixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
-
-        DecoderCountPanel.Visibility =
-            (isExplicitMjpg || isAutoWithMjpgDevice) && selectedFrameRate >= 90
-                ? Visibility.Visible
-                : Visibility.Collapsed;
-    }
-
-    private double GetSelectedFriendlyFrameRate()
-    {
-        if (FrameRateComboBox.SelectedItem is FrameRateOption option)
-        {
-            if (option.FriendlyValue > 0)
-            {
-                return option.FriendlyValue;
-            }
-
-            if (option.Value > 0)
-            {
-                return option.Value;
-            }
-        }
-
-        return ViewModel.SelectedFrameRate;
-    }
+        => _captureOptionPresentationController.UpdateDecoderCountVisibility();
 
     private void DecoderCountComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (DecoderCountComboBox.SelectedItem is int count)
-        {
-            _selectedDecoderCount = count;
-            if (ViewModel.MjpegDecoderCount != count)
-            {
-                ViewModel.MjpegDecoderCount = count;
-            }
-        }
-    }
+        => _captureOptionPresentationController.HandleDecoderCountSelectionChanged();
 
     private void RefreshHdrHintText()
-    {
-        var resolutionHint = ViewModel.HdrResolutionSupportHint?.Trim();
-        var readinessHint = ViewModel.HdrReadinessReason?.Trim();
-        var combinedHint = string.IsNullOrWhiteSpace(readinessHint)
-            ? resolutionHint
-            : string.IsNullOrWhiteSpace(resolutionHint)
-                ? readinessHint
-                : $"{readinessHint}{Environment.NewLine}{resolutionHint}";
-        if (ViewModel.IsRecording)
-        {
-            combinedHint = string.IsNullOrWhiteSpace(combinedHint)
-                ? "Stop recording before switching between HDR and SDR pipelines."
-                : $"{combinedHint}{Environment.NewLine}Stop recording before switching between HDR and SDR pipelines.";
-        }
-
-        ToolTipService.SetToolTip(HdrToggle,
-            string.IsNullOrWhiteSpace(combinedHint) ? null : combinedHint);
-    }
+        => _captureOptionPresentationController.RefreshHdrHintText();
 
     private void UpdateFpsTelemetryTooltip()
-    {
-        var parts = new List<string>();
-        if (!string.IsNullOrWhiteSpace(ViewModel.SourceTelemetrySummaryText))
-        {
-            parts.Add(ViewModel.SourceTelemetrySummaryText);
-        }
-
-        if (!string.IsNullOrWhiteSpace(ViewModel.SourceTargetSummaryText))
-        {
-            parts.Add(ViewModel.SourceTargetSummaryText);
-        }
-
-        ToolTipService.SetToolTip(FrameRateComboBox,
-            parts.Count > 0 ? string.Join(Environment.NewLine, parts) : null);
-    }
+        => _captureOptionPresentationController.UpdateFpsTelemetryTooltip();
 
     private void ApplyHdrToggleEnabledState()
-    {
-        HdrToggle.IsEnabled = ViewModel.IsHdrAvailable &&
-                              !ViewModel.IsRecording &&
-                              ViewModel.SourceIsHdr != false;
-        TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
-    }
+        => _captureOptionPresentationController.ApplyHdrToggleEnabledState();
 
     private void ApplyBitrateVisibility()
-    {
-        CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
-        PresetPanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Collapsed : Visibility.Visible;
-    }
+        => _captureOptionPresentationController.ApplyBitrateVisibility();
 
     private void ApplyAudioClipVisibility()
-    {
-        AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
-    }
+        => _captureOptionPresentationController.ApplyAudioClipVisibility();
 }

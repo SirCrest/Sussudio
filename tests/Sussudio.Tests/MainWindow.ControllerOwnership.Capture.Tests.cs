@@ -79,14 +79,55 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureOptionPresentation_LivesInFocusedPartial()
+    private static Task CaptureOptionPresentation_LivesInController()
     {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
         var captureOptionText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionPresentation.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
         var recordingOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.RecordingOptionBindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
 
+        AssertContains(captureOptionText, "private CaptureOptionPresentationController _captureOptionPresentationController = null!;");
+        AssertContains(captureOptionText, "private void InitializeCaptureOptionPresentationController()");
+        AssertContains(captureOptionText, "VideoFormatComboBox = VideoFormatComboBox,");
+        AssertContains(captureOptionText, "AudioClipText = AudioClipText");
+        AssertContains(captureOptionText, "private void UpdateDecoderCountVisibility()");
+        AssertContains(captureOptionText, "=> _captureOptionPresentationController.UpdateDecoderCountVisibility();");
+        AssertContains(captureOptionText, "private void DecoderCountComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)");
+        AssertContains(captureOptionText, "=> _captureOptionPresentationController.HandleDecoderCountSelectionChanged();");
+        AssertContains(captureOptionText, "private void RefreshHdrHintText()");
+        AssertContains(captureOptionText, "=> _captureOptionPresentationController.RefreshHdrHintText();");
+        AssertContains(captureOptionText, "private void UpdateFpsTelemetryTooltip()");
+        AssertContains(captureOptionText, "=> _captureOptionPresentationController.UpdateFpsTelemetryTooltip();");
+        AssertContains(captureOptionText, "private void ApplyHdrToggleEnabledState()");
+        AssertContains(captureOptionText, "=> _captureOptionPresentationController.ApplyHdrToggleEnabledState();");
+        AssertContains(captureOptionText, "private void ApplyBitrateVisibility()");
+        AssertContains(captureOptionText, "=> _captureOptionPresentationController.ApplyBitrateVisibility();");
+        AssertContains(captureOptionText, "private void ApplyAudioClipVisibility()");
+        AssertContains(captureOptionText, "=> _captureOptionPresentationController.ApplyAudioClipVisibility();");
+
+        AssertContains(controllerText, "internal sealed class CaptureOptionPresentationControllerContext");
+        AssertContains(controllerText, "internal sealed class CaptureOptionPresentationController");
+        AssertContains(controllerText, "private int _selectedDecoderCount = 4;");
+        AssertContains(controllerText, "public void ApplyInitialDecoderCountSelection()");
+        AssertContains(controllerText, "_selectedDecoderCount = Math.Clamp(_context.ViewModel.MjpegDecoderCount, 1, 8);");
+        AssertContains(controllerText, "_context.DecoderCountComboBox.SelectedItem = _selectedDecoderCount;");
+        AssertContains(controllerText, "public void UpdateDecoderCountVisibility()");
+        AssertContains(controllerText, "private double GetSelectedFriendlyFrameRate()");
+        AssertContains(controllerText, "public void HandleDecoderCountSelectionChanged()");
+        AssertContains(controllerText, "_context.ViewModel.MjpegDecoderCount = count;");
+        AssertContains(controllerText, "public void RefreshHdrHintText()");
+        AssertContains(controllerText, "public void UpdateFpsTelemetryTooltip()");
+        AssertContains(controllerText, "public void ApplyHdrToggleEnabledState()");
+        AssertContains(controllerText, "public void ApplyBitrateVisibility()");
+        AssertContains(controllerText, "public void ApplyAudioClipVisibility()");
+        AssertContains(controllerText, "_context.ViewModel.SelectedFormat?.PixelFormat");
+        AssertContains(controllerText, "Stop recording before switching between HDR and SDR pipelines.");
+        AssertContains(controllerText, "_context.ViewModel.SourceTelemetrySummaryText");
+        AssertContains(controllerText, "_context.ViewModel.SourceTargetSummaryText");
+        AssertContains(mainWindowText, "InitializeCaptureOptionPresentationController();");
         AssertContains(captureOptionBindingsText, "private void InitializeCaptureOptionCollections()");
         AssertContains(captureOptionBindingsText, "VideoFormatComboBox.ItemsSource = ViewModel.AvailableVideoFormats;");
         AssertContains(captureOptionBindingsText, "DecoderCountComboBox.Items.Add(i);");
@@ -94,25 +135,13 @@ static partial class Program
         AssertContains(captureOptionBindingsText, "FormatComboBox.SelectedItem = ViewModel.SelectedRecordingFormat;");
         AssertContains(captureOptionBindingsText, "CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;");
         AssertContains(captureOptionBindingsText, "TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;");
+        AssertContains(captureOptionBindingsText, "ApplyInitialDecoderCountSelection();");
         AssertContains(captureOptionBindingsText, "private void EnsureInitialCaptureOptionSelections()");
         AssertContains(captureOptionBindingsText, "EnsureSplitEncodeModeSelection();");
         AssertContains(captureOptionBindingsText, "private void AttachCaptureModeSelectionBindings()");
         AssertContains(captureOptionBindingsText, "ResolutionComboBox.SelectionChanged +=");
         AssertContains(captureOptionBindingsText, "FrameRateComboBox.SelectionChanged +=");
         AssertContains(captureOptionBindingsText, "UpdateDecoderCountVisibility();");
-        AssertContains(captureOptionText, "private void UpdateDecoderCountVisibility()");
-        AssertContains(captureOptionText, "private int _selectedDecoderCount = 4;");
-        AssertContains(captureOptionText, "private void DecoderCountComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)");
-        AssertContains(captureOptionText, "ViewModel.MjpegDecoderCount = count;");
-        AssertContains(captureOptionText, "private double GetSelectedFriendlyFrameRate()");
-        AssertContains(captureOptionText, "private void RefreshHdrHintText()");
-        AssertContains(captureOptionText, "private void UpdateFpsTelemetryTooltip()");
-        AssertContains(captureOptionText, "private void ApplyHdrToggleEnabledState()");
-        AssertContains(captureOptionText, "private void ApplyBitrateVisibility()");
-        AssertContains(captureOptionText, "private void ApplyAudioClipVisibility()");
-        AssertContains(captureOptionText, "ViewModel.SelectedFormat?.PixelFormat");
-        AssertContains(captureOptionText, "Stop recording before switching between HDR and SDR pipelines.");
-        AssertContains(captureOptionText, "ViewModel.SourceTelemetrySummaryText");
         AssertContains(bindingsText, "InitializeCaptureOptionCollections();");
         AssertContains(bindingsText, "ApplyInitialCaptureOptionSelections();");
         AssertContains(bindingsText, "EnsureInitialCaptureOptionSelections();");
@@ -155,6 +184,10 @@ static partial class Program
         AssertDoesNotContain(bindingsText, "CustomBitrateNumberBox.ValueChanged +=");
         AssertDoesNotContain(bindingsText, "HdrToggle.Click +=");
         AssertDoesNotContain(ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n"), "private int _selectedDecoderCount = 4;");
+        AssertDoesNotContain(captureOptionText, "private int _selectedDecoderCount = 4;");
+        AssertDoesNotContain(captureOptionText, "ViewModel.MjpegDecoderCount = count;");
+        AssertDoesNotContain(captureOptionText, "ViewModel.SelectedFormat?.PixelFormat");
+        AssertDoesNotContain(captureOptionText, "Stop recording before switching between HDR and SDR pipelines.");
 
         return Task.CompletedTask;
     }

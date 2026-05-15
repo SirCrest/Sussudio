@@ -79,8 +79,8 @@ static partial class Program
             "Capture device button actions live in controller",
             CaptureDeviceButtonActions_LiveInController);
         await AddCheckAsync(results,
-            "Capture option presentation lives in focused partial",
-            CaptureOptionPresentation_LivesInFocusedPartial);
+            "Capture option presentation lives in controller",
+            CaptureOptionPresentation_LivesInController);
         await AddCheckAsync(results,
             "Output path display lives in controller",
             OutputPathDisplay_LivesInController);

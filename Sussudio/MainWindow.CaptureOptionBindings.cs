@@ -5,7 +5,7 @@ namespace Sussudio;
 
 // Capture option binding setup and initial capture/recording selection projection.
 // Recording option event handlers stay in MainWindow.RecordingOptionBindings.cs;
-// presentation-only option affordance rules stay in MainWindow.CaptureOptionPresentation.cs.
+// presentation-only option affordance rules stay in CaptureOptionPresentationController.
 public sealed partial class MainWindow
 {
     private void InitializeCaptureOptionCollections()
@@ -25,8 +25,7 @@ public sealed partial class MainWindow
         PresetComboBox.SelectedItem = ViewModel.SelectedPreset;
         SplitEncodeComboBox.SelectedItem = ViewModel.SelectedSplitEncodeMode;
         VideoFormatComboBox.SelectedItem = ViewModel.SelectedVideoFormat;
-        _selectedDecoderCount = Math.Clamp(ViewModel.MjpegDecoderCount, 1, 8);
-        DecoderCountComboBox.SelectedItem = _selectedDecoderCount;
+        ApplyInitialDecoderCountSelection();
         CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
         ApplyBitrateVisibility();
         HdrToggle.IsChecked = ViewModel.IsHdrEnabled;

@@ -100,6 +100,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeResponsiveShellLayoutController();
         InitializeCaptureSelectionBindingController();
         InitializeCaptureDeviceActionController();
+        InitializeCaptureOptionPresentationController();
         InitializeOutputPathDisplayController();
         InitializeOutputPathActionController();
         InitializePreviewScreenshotController();
