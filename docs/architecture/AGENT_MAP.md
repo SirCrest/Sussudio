@@ -1475,8 +1475,10 @@ Primary current owners:
   rational parsing, source-rate fallback, and preferred-format ranking helpers
   used by frame-rate, resolution, capture-settings, and automation projections.
   `MainViewModel.FormatSelection.cs` owns pixel-format option building,
-  recording-format filtering, HDR toggle side effects, and selected-format
-  selection policy.
+  recording-format policy application, HDR toggle side effects, and
+  selected-format selection policy. `RecordingFormatSelectionPolicy.cs` owns
+  pure recording codec filtering and selected-codec fallback policy shared by
+  UI and automation.
   Video device enumeration and selected-device capability rebuilds stay in
   `MainViewModel.DeviceManagement.cs`; watcher-driven audio endpoint refresh
   and capture-card endpoint filtering live in `MainViewModel.AudioDeviceDiscovery.cs`.

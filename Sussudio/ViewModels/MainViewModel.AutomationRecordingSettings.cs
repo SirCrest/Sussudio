@@ -22,7 +22,7 @@ public partial class MainViewModel
             {
                 throw new InvalidOperationException($"Recording format '{format}' is not available.");
             }
-            if (IsHdrEnabled && !IsHdrCompatibleRecordingFormat(matched))
+            if (IsHdrEnabled && !RecordingFormatSelectionPolicy.IsHdrCompatible(matched))
             {
                 throw new InvalidOperationException("HDR recording requires HEVC or AV1 (10-bit).");
             }

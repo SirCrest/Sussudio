@@ -8,7 +8,7 @@ namespace Sussudio.ViewModels;
 
 /// <summary>
 /// Format and frame-rate selection: pixel-format option building, recording format filtering,
-/// and HDR toggle side-effects for the capture mode pipeline.
+/// recording format policy delegation, and HDR toggle side-effects for the capture mode pipeline.
 /// </summary>
 public partial class MainViewModel
 {
@@ -135,88 +135,31 @@ public partial class MainViewModel
             .ToList();
     }
 
-    /// <summary>
-    /// H.264 is intentionally excluded from HDR recording: the nvenc H.264
-    /// encoder has no 10-bit profile, so it cannot carry bt2020/PQ metadata.
-    /// Only HEVC (Main 10) and AV1 (main profile, 10-bit) support HDR output.
-    /// When HDR is enabled, <see cref="RebuildRecordingFormatOptions"/> filters
-    /// the codec list to these two formats and the UI hides H.264.
-    /// </summary>
-    private static bool IsHdrCompatibleRecordingFormat(string format)
-        => format.Contains("HEVC", StringComparison.OrdinalIgnoreCase) ||
-           format.Contains("AV1", StringComparison.OrdinalIgnoreCase);
-
     private void RebuildRecordingFormatOptions()
     {
-        var sourceFormats = _detectedRecordingFormats.Count > 0
-            ? _detectedRecordingFormats.ToList()
-            : AvailableRecordingFormats.ToList();
-        if (sourceFormats.Count == 0)
-        {
-            sourceFormats.Add(DefaultRecordingFormat);
-        }
-        var formats = IsHdrEnabled
-            ? sourceFormats.Where(IsHdrCompatibleRecordingFormat).ToList()
-            : sourceFormats.ToList();
-        if (formats.Count == 0 && AvailableRecordingFormats.Count > 0)
-        {
-            // Keep the last known real formats visible if capability refresh temporarily produced none.
-            formats = AvailableRecordingFormats.ToList();
-        }
+        var selection = RecordingFormatSelectionPolicy.Select(
+            _detectedRecordingFormats,
+            AvailableRecordingFormats,
+            SelectedRecordingFormat,
+            IsHdrEnabled,
+            DefaultRecordingFormat,
+            HevcRecordingFormat,
+            Av1RecordingFormat);
 
         AvailableRecordingFormats.Clear();
-        foreach (var format in formats)
+        foreach (var format in selection.AvailableFormats)
         {
             AvailableRecordingFormats.Add(format);
         }
 
-        string? targetFormat;
-        if (IsHdrEnabled)
-        {
-            // Preserve the user's codec when it already supports HDR (AV1 or HEVC).
-            // Only override to HEVC/AV1 when the current selection is incompatible
-            // (e.g. H.264, which has no 10-bit HDR profile on nvenc).
-            if (!string.IsNullOrWhiteSpace(SelectedRecordingFormat) &&
-                formats.Any(format => string.Equals(format, SelectedRecordingFormat, StringComparison.OrdinalIgnoreCase)) &&
-                IsHdrCompatibleRecordingFormat(SelectedRecordingFormat))
-            {
-                targetFormat = SelectedRecordingFormat;
-            }
-            else
-            {
-                targetFormat = formats.FirstOrDefault(format =>
-                    string.Equals(format, HevcRecordingFormat, StringComparison.OrdinalIgnoreCase))
-                    ?? formats.FirstOrDefault(format =>
-                        string.Equals(format, Av1RecordingFormat, StringComparison.OrdinalIgnoreCase))
-                    ?? formats.FirstOrDefault();
-            }
-        }
-        else
-        {
-            targetFormat = SelectedRecordingFormat;
-            if (string.IsNullOrWhiteSpace(targetFormat) ||
-                !formats.Any(format => string.Equals(format, targetFormat, StringComparison.OrdinalIgnoreCase)))
-            {
-                targetFormat = formats.FirstOrDefault(format =>
-                    format.Contains("H.264", StringComparison.OrdinalIgnoreCase) ||
-                    format.Contains("H264", StringComparison.OrdinalIgnoreCase))
-                    ?? formats.FirstOrDefault();
-            }
-        }
-
-        if (string.IsNullOrWhiteSpace(targetFormat))
-        {
-            targetFormat = DefaultRecordingFormat;
-        }
-
         var previousSelection = SelectedRecordingFormat;
-        SelectedRecordingFormat = targetFormat;
-        if (string.Equals(previousSelection, targetFormat, StringComparison.Ordinal))
+        SelectedRecordingFormat = selection.SelectedFormat;
+        if (string.Equals(previousSelection, selection.SelectedFormat, StringComparison.Ordinal))
         {
             OnPropertyChanged(nameof(SelectedRecordingFormat));
         }
 
-        if (IsHdrEnabled && !IsHdrCompatibleRecordingFormat(SelectedRecordingFormat))
+        if (IsHdrEnabled && !RecordingFormatSelectionPolicy.IsHdrCompatible(SelectedRecordingFormat))
         {
             StatusText = "HDR recording requires HEVC or AV1 (10-bit).";
         }

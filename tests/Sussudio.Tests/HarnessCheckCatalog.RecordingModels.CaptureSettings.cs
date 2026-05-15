@@ -13,6 +13,9 @@ static partial class Program
             "Capture mode options builder builds resolution and video format options",
             CaptureModeOptionsBuilder_BuildsResolutionAndVideoFormatOptions);
         await AddCheckAsync(results,
+            "Recording format selection policy preserves HDR and SDR choices",
+            RecordingFormatSelectionPolicy_PreservesHdrAndSdrChoices);
+        await AddCheckAsync(results,
             "Capture settings defaults preserve output and pipeline contracts",
             CaptureSettings_DefaultsAndOutputContracts);
         await AddCheckAsync(results,

@@ -1923,7 +1923,11 @@ Remaining `tools/Common` ownership:
    `MainViewModel.FrameRateOptions.cs`. Shared frame-rate timing family,
    rational parsing, source-rate fallback, and preferred-format ranking now live
    in `MainViewModel.FrameRateTiming.cs`; keep device enumeration and selected
-   device capability rebuilds in `MainViewModel.DeviceManagement.cs`.
+   device capability rebuilds in `MainViewModel.DeviceManagement.cs`. Pure
+   recording codec filtering and selected-codec fallback policy now live in
+   `RecordingFormatSelectionPolicy.cs`, while `MainViewModel.FormatSelection.cs`
+   keeps collection mutation, HDR side effects, and selected capture-format
+   policy.
    Late-arriving device format probe reconciliation and active-preview retarget
    checks now live in `MainViewModel.DeviceFormatProbes.cs`.
    Automatic resolution ranking, source-aware auto-selection, and auto-resolved

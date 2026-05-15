@@ -133,4 +133,106 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task RecordingFormatSelectionPolicy_PreservesHdrAndSdrChoices()
+    {
+        AssertRecordingFormatSelection(
+            "HDR filters H.264 and falls back to HEVC",
+            detectedFormats: new[] { "H.264", "HEVC", "AV1" },
+            currentAvailableFormats: Array.Empty<string>(),
+            selectedFormat: "H.264",
+            isHdrEnabled: true,
+            expectedFormats: new[] { "HEVC", "AV1" },
+            expectedSelectedFormat: "HEVC");
+
+        AssertRecordingFormatSelection(
+            "HDR preserves existing AV1 selection",
+            detectedFormats: new[] { "H.264", "HEVC", "AV1" },
+            currentAvailableFormats: Array.Empty<string>(),
+            selectedFormat: "AV1",
+            isHdrEnabled: true,
+            expectedFormats: new[] { "HEVC", "AV1" },
+            expectedSelectedFormat: "AV1");
+
+        AssertRecordingFormatSelection(
+            "HDR falls back to AV1 when HEVC is unavailable",
+            detectedFormats: new[] { "H.264", "AV1" },
+            currentAvailableFormats: Array.Empty<string>(),
+            selectedFormat: "H.264",
+            isHdrEnabled: true,
+            expectedFormats: new[] { "AV1" },
+            expectedSelectedFormat: "AV1");
+
+        AssertRecordingFormatSelection(
+            "HDR preserves last known real formats when refresh has no HDR formats",
+            detectedFormats: new[] { "H.264" },
+            currentAvailableFormats: new[] { "HEVC", "AV1" },
+            selectedFormat: "H.264",
+            isHdrEnabled: true,
+            expectedFormats: new[] { "HEVC", "AV1" },
+            expectedSelectedFormat: "HEVC");
+
+        AssertRecordingFormatSelection(
+            "SDR preserves valid current format",
+            detectedFormats: new[] { "H.264", "HEVC" },
+            currentAvailableFormats: Array.Empty<string>(),
+            selectedFormat: "HEVC",
+            isHdrEnabled: false,
+            expectedFormats: new[] { "H.264", "HEVC" },
+            expectedSelectedFormat: "HEVC");
+
+        AssertRecordingFormatSelection(
+            "SDR prefers H.264 when current format is unavailable",
+            detectedFormats: new[] { "HEVC", "H264" },
+            currentAvailableFormats: Array.Empty<string>(),
+            selectedFormat: "VP9",
+            isHdrEnabled: false,
+            expectedFormats: new[] { "HEVC", "H264" },
+            expectedSelectedFormat: "H264");
+
+        AssertRecordingFormatSelection(
+            "Empty SDR capabilities fall back to default format",
+            detectedFormats: Array.Empty<string>(),
+            currentAvailableFormats: Array.Empty<string>(),
+            selectedFormat: null,
+            isHdrEnabled: false,
+            expectedFormats: new[] { "H.264" },
+            expectedSelectedFormat: "H.264");
+
+        return Task.CompletedTask;
+    }
+
+    private static void AssertRecordingFormatSelection(
+        string fieldName,
+        string[] detectedFormats,
+        string[] currentAvailableFormats,
+        string? selectedFormat,
+        bool isHdrEnabled,
+        string[] expectedFormats,
+        string expectedSelectedFormat)
+    {
+        var policyType = RequireType("Sussudio.ViewModels.RecordingFormatSelectionPolicy");
+        var select = policyType.GetMethod("Select", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("RecordingFormatSelectionPolicy.Select missing.");
+        var selection = select.Invoke(
+                null,
+                new object?[]
+                {
+                    detectedFormats,
+                    currentAvailableFormats,
+                    selectedFormat,
+                    isHdrEnabled,
+                    "H.264",
+                    "HEVC",
+                    "AV1"
+                })
+            ?? throw new InvalidOperationException("RecordingFormatSelectionPolicy.Select returned null.");
+        var availableFormats = ((IEnumerable)selection.GetType().GetProperty("AvailableFormats")!.GetValue(selection)!)
+            .Cast<string>()
+            .ToArray();
+        var selected = (string)selection.GetType().GetProperty("SelectedFormat")!.GetValue(selection)!;
+
+        AssertSequenceEqual(expectedFormats, availableFormats, $"{fieldName} formats");
+        AssertEqual(expectedSelectedFormat, selected, $"{fieldName} selected format");
+    }
 }
