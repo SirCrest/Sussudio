@@ -14,7 +14,7 @@ public sealed partial class MainWindow
         {
             StatsDockPanel = StatsDockPanel,
             DiagnosticsContent = Diagnostics_Content,
-            RefreshDiagnosticsSection = RefreshDiagnosticsSection
+            RefreshDiagnosticsSection = _statsDockRefreshController.RefreshDiagnosticsSection
         });
     }
 

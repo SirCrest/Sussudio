@@ -3,6 +3,7 @@ static partial class Program
     private static Task StatsPanels_UseSourceTelemetry_ForHdmiInput()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRefreshController.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationDockText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs").Replace("\r\n", "\n");
         var statsPresentationWindowText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Window.cs").Replace("\r\n", "\n");
@@ -15,7 +16,7 @@ static partial class Program
         AssertContains(statsPresentationDockText, "var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
         AssertContains(statsPresentationDockText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
         AssertDoesNotContain(statsPresentationText, "var sourceFormat =\n            snapshot.ReaderSourceSubtype ??");
-        AssertContains(statsOverlayText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
+        AssertContains(statsDockRefreshControllerText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
         AssertContains(statsWindowText, "StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot)");
         AssertContains(statsPresentationWindowText, "SourceHdr: FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry),");
         AssertContains(statsPresentationWindowText, "SourceFormat: snapshot.SourceVideoFormat ?? \"\\u2014\",");
@@ -44,6 +45,7 @@ static partial class Program
         AssertContains(statsOverlayText, "private void InitializeStatsOverlayController()");
         AssertContains(statsOverlayText, "_frameTimeOverlayPresentationController = new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext");
         AssertContains(statsOverlayText, "ExpectedLine = FrameTime_ExpectedLine");
+        AssertContains(statsOverlayText, "UpdateStatsDock = _statsDockRefreshController.RefreshDock,");
         AssertContains(statsOverlayText, "=> _statsOverlayController.ApplyStatsVisibility(visible, immediate);");
         AssertContains(statsOverlayText, "=> _statsOverlayController.SetFrameTimeOverlayVisible(visible);");
         AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
@@ -71,10 +73,24 @@ static partial class Program
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/StatsDockPresentationController.cs").Replace("\r\n", "\n");
+        var refreshControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayText, "private StatsDockPresentationController _statsDockPresentationController = null!;");
-        AssertContains(statsOverlayText, "_statsDockPresentationController = new StatsDockPresentationController(new StatsDockPresentationControllerContext");
-        AssertContains(statsOverlayText, "_statsDockPresentationController.Apply(presentation);");
+        AssertContains(statsOverlayText, "private StatsDockRefreshController _statsDockRefreshController = null!;");
+        AssertContains(statsOverlayText, "var statsDockPresentationController = new StatsDockPresentationController(new StatsDockPresentationControllerContext");
+        AssertContains(statsOverlayText, "_statsDockRefreshController = new StatsDockRefreshController(new StatsDockRefreshControllerContext");
+        AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshControllerContext");
+        AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshController");
+        AssertContains(refreshControllerText, "public required Func<bool> IsStatsDockVisible { get; init; }");
+        AssertContains(refreshControllerText, "public required Func<bool> IsDiagnosticsSectionVisible { get; init; }");
+        AssertContains(refreshControllerText, "public void RefreshDock()");
+        AssertContains(refreshControllerText, "public void RefreshDiagnosticsSection()");
+        AssertContains(refreshControllerText, "_context.IsWindowClosing() || !_context.IsStatsDockVisible()");
+        AssertContains(refreshControllerText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
+        AssertContains(refreshControllerText, "_context.DockPresentationController.Apply(presentation);");
+        AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateDecodeSection();");
+        AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateGpuSection();");
+        AssertContains(refreshControllerText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
+        AssertContains(refreshControllerText, "if (!_context.IsDiagnosticsSectionVisible())");
         AssertContains(controllerText, "internal sealed class StatsDockPresentationControllerContext");
         AssertContains(controllerText, "internal sealed class StatsDockPresentationController");
         AssertContains(controllerText, "public void Apply(StatsDockPresentation presentation)");
@@ -86,6 +102,11 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "SetMetricBrush(");
         AssertDoesNotContain(statsOverlayText, "SetTextIfChanged(Stats_");
         AssertDoesNotContain(statsOverlayText, "private static readonly SolidColorBrush MetricNeutralBrush");
+        AssertDoesNotContain(statsOverlayText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
+        AssertDoesNotContain(statsOverlayText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
+        AssertDoesNotContain(statsOverlayText, "private void UpdateStatsDock()");
+        AssertDoesNotContain(statsOverlayText, "private void RefreshDiagnosticsSection()");
+        AssertDoesNotContain(statsOverlayText, "private void UpdateDiagnosticsSection(");
 
         return Task.CompletedTask;
     }
@@ -114,7 +135,7 @@ static partial class Program
         AssertContains(controllerText, "_context.RefreshDiagnosticsSection();");
         AssertContains(mainWindowText, "ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;");
         AssertContains(mainWindowText, "InitializeStatsSectionChromeController();");
-        AssertContains(statsOverlayText, "private void RefreshDiagnosticsSection()");
+        AssertContains(statsSectionsText, "RefreshDiagnosticsSection = _statsDockRefreshController.RefreshDiagnosticsSection");
         AssertDoesNotContain(statsSectionsText, "StatsDockPanel.FindName(contentName)");
         AssertDoesNotContain(statsSectionsText, "rotate.Angle =");
         AssertDoesNotContain(statsSectionsText, "UpdateDiagnosticsSection(snapshot");
@@ -127,25 +148,21 @@ static partial class Program
     private static Task StatsDiagnosticRowPooling_LivesInController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var hardwareSectionsText = ReadRepoFile("Sussudio/MainWindow.StatsHardwareSections.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
         var hardwareRowsControllerText = ReadRepoFile("Sussudio/Controllers/StatsHardwareRowsController.cs").Replace("\r\n", "\n");
+        var refreshControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayText, "private StatsDiagnosticRowsController _statsDiagnosticRowsController = null!;");
-        AssertContains(statsOverlayText, "private StatsHardwareRowsController _statsHardwareRowsController = null!;");
-        AssertContains(statsOverlayText, "_statsDiagnosticRowsController = new StatsDiagnosticRowsController");
-        AssertContains(statsOverlayText, "_statsHardwareRowsController = new StatsHardwareRowsController(new StatsHardwareRowsControllerContext");
+        AssertContains(statsOverlayText, "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
+        AssertContains(statsOverlayText, "var statsHardwareRowsController = new StatsHardwareRowsController(new StatsHardwareRowsControllerContext");
         AssertContains(statsOverlayText, "ResourceOwner = StatsDockPanel,");
         AssertContains(statsOverlayText, "DiagnosticsContent = Diagnostics_Content");
         AssertContains(statsOverlayText, "GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,");
         AssertContains(statsOverlayText, "GetPendingPreviewFrameCount = () => _d3dRenderer?.PendingFrameCount,");
         AssertContains(statsOverlayText, "GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot()");
-        AssertContains(hardwareSectionsText, "private void UpdateDecodeSection()");
-        AssertContains(hardwareSectionsText, "private void UpdateGpuSection()");
-        AssertContains(hardwareSectionsText, "=> _statsHardwareRowsController.UpdateDecodeSection();");
-        AssertContains(hardwareSectionsText, "=> _statsHardwareRowsController.UpdateGpuSection();");
-        AssertContains(statsOverlayText, "_statsDiagnosticRowsController.UpdateDiagnostics(presentation);");
+        AssertContains(refreshControllerText, "_context.DiagnosticRowsController.UpdateDiagnostics(presentation);");
+        AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateDecodeSection();");
+        AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateGpuSection();");
         AssertContains(hardwareRowsControllerText, "internal sealed class StatsHardwareRowsControllerContext");
         AssertContains(hardwareRowsControllerText, "internal sealed class StatsHardwareRowsController");
         AssertContains(hardwareRowsControllerText, "public void UpdateDecodeSection()");
@@ -172,8 +189,8 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "private Border CreateDiagnosticRow(");
         AssertDoesNotContain(statsOverlayText, "private void UpdateDecodeSection()");
         AssertDoesNotContain(statsOverlayText, "private void UpdateGpuSection()");
-        AssertDoesNotContain(hardwareSectionsText, "_statsDiagnosticRowsController.");
-        AssertDoesNotContain(hardwareSectionsText, "new List<StatsDiagnosticSimpleRow>");
+        AssertDoesNotContain(statsOverlayText, "_statsDiagnosticRowsController.UpdateDiagnostics(presentation);");
+        AssertDoesNotContain(statsOverlayText, "new List<StatsDiagnosticSimpleRow>");
 
         return Task.CompletedTask;
     }

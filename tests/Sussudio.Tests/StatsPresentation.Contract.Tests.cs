@@ -5,6 +5,7 @@ static partial class Program
     private static Task StatsPresentationLogic_LivesInFocusedBuilder()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRefreshController.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
         var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
@@ -76,7 +77,7 @@ static partial class Program
         AssertDoesNotContain(statsPresentationText, "internal sealed record StatsDockPresentation(");
         AssertDoesNotContain(statsPresentationText, "internal sealed record StatsWindowPresentation(");
         AssertDoesNotContain(statsPresentationText, "internal enum StatsMetricStatus");
-        AssertContains(statsOverlayText, "var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);");
+        AssertContains(statsDockRefreshControllerText, "var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);");
         AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
         AssertContains(frameTimeOverlayControllerText, "internal sealed class FrameTimeOverlayPresentationController");
         AssertContains(frameTimeOverlayControllerText, "public void Apply(StatsSnapshot snapshot)");
@@ -84,7 +85,7 @@ static partial class Program
         AssertContains(frameTimeOverlayControllerText, "UpdateExpectedLine(presentation.Range);");
         AssertContains(frameTimeOverlayControllerText, "UpdateLine(_context.VisualLine, presentation.VisualSamples, presentation.Range);");
         AssertContains(frameTimeOverlayControllerText, "SetTextIfChanged(_context.SourceValue, presentation.SourceText);");
-        AssertContains(statsOverlayText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
+        AssertContains(statsDockRefreshControllerText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
         AssertContains(statsWindowText, "var presentation = StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot);");
         AssertContains(statsWindowText, "_presentationController.Apply(presentation);");
         AssertContains(statsWindowPresentationControllerText, "internal sealed class StatsWindowPresentationController");
@@ -99,6 +100,8 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "private enum MetricStatus");
         AssertDoesNotContain(statsOverlayText, "private static string ResolveCaptureSummaryText");
         AssertDoesNotContain(statsOverlayText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
+        AssertDoesNotContain(statsOverlayText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
+        AssertDoesNotContain(statsOverlayText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
 
         return Task.CompletedTask;
     }

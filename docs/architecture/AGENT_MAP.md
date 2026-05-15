@@ -748,7 +748,10 @@ Primary current owners:
   XAML-facing adapter.
 - `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility,
   frame-time overlay visibility, polling lifetime, and dock show/hide
-  animations. `Sussudio/Controllers/StatsDockPresentationController.cs` owns
+  animations. `Sussudio/Controllers/StatsDockRefreshController.cs` owns stats
+  dock refresh orchestration: snapshot acquisition, dock presentation build/apply,
+  diagnostics visibility gating, and decode/GPU row refresh ordering.
+  `Sussudio/Controllers/StatsDockPresentationController.cs` owns
   stats dock metric text, visibility, and status brush application after the
   presentation model is built. `Sussudio/Controllers/StatsSectionChromeController.cs`
   owns stats dock section expand/collapse chrome and automation-visible section
@@ -758,15 +761,15 @@ Primary current owners:
   `Sussudio/Controllers/StatsSnapshotProvider.cs` owns shell stats snapshot
   acquisition from renderer and capture-health state; `Sussudio/MainWindow.StatsSnapshot.cs`
   is the XAML-facing adapter.
-  `MainWindow.StatsOverlay.cs` adapts snapshots/polling to presentation
-  builders and delegates dock value application.
+  `MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats controllers.
 - `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
   contract checks for stats overlay lifecycle wiring, stats section chrome,
-  source-telemetry panel projection, and diagnostic row pooling.
+  stats dock refresh orchestration, source-telemetry panel projection, and
+  diagnostic row pooling.
 - `Sussudio/Controllers/StatsDiagnosticRowsController.cs` owns dynamic
   decode/GPU/diagnostic row pools, empty-state rows, group headers, and
-  diagnostic row style updates. `MainWindow.StatsOverlay.cs` delegates metric
-  text assignment to presentation controllers.
+  diagnostic row style updates. `Sussudio/Controllers/StatsDockRefreshController.cs`
+  delegates diagnostic row presentation to it.
 - `Sussudio/Controllers/FrameTimeOverlayPresentationController.cs` owns compact
   frame-time overlay text projection and graph line drawing. Keep frame-time
   canvas math there, while `Sussudio/MainWindow.FrameTimeOverlay.cs` remains
@@ -1406,10 +1409,9 @@ Primary current owners:
   audio, timestamp, stream-bound, validation, lifetime, and callback tests.
 - `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
   support/logging contract tests.
-- `Sussudio/MainWindow.StatsHardwareSections.cs` keeps the XAML-facing decode
-  and GPU stats update hooks; `Sussudio/Controllers/StatsHardwareRowsController.cs`
-  owns MJPEG/NVML row projection and delegates row element reuse to
-  `StatsDiagnosticRowsController`.
+- `Sussudio/Controllers/StatsHardwareRowsController.cs` owns MJPEG/NVML row
+  projection and delegates row element reuse to `StatsDiagnosticRowsController`;
+  `StatsDockRefreshController` owns when decode/GPU rows refresh.
 - `Sussudio/Controllers/FlashbackTimelineController.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, and show/hide
   animation state. `MainWindow.FlashbackTimeline.cs` is the XAML-facing

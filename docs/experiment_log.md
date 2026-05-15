@@ -132,8 +132,9 @@ not as current truth. This condensed file is the agent-facing map.
   risks preview and audio continuity.
 - `CaptureModeOptionsBuilder` owns deterministic resolution/video-format option
   construction; `MainViewModel` still owns selection state and reinit decisions.
-- `StatsPresentationBuilder` owns pure stats text/status projection; WinUI files
-  own polling, row pools, brushes, and drawing.
+- `StatsPresentationBuilder` owns pure stats text/status projection; stats
+  controllers own polling, refresh orchestration, row pools, brushes, and
+  drawing while WinUI files stay adapters.
 - `FlashbackBackendResources` is the right place for new backend ownership
   behavior. Avoid adding a second manager or parallel source of truth in
   `CaptureService`.

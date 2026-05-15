@@ -1336,9 +1336,13 @@ source/audio drift calculations and encoder drift/correction projection there.
 
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
-still assembles snapshots and drives presentation builders, but polling,
-visibility state, dynamic diagnostic row pools, dock metric value/brush
+is now the XAML-facing adapter for stats controllers; polling, visibility state,
+dock refresh ordering, dynamic diagnostic row pools, dock metric value/brush
 application, and dock animations are out of the shell fields.
+Stats dock refresh orchestration now lives in
+`Sussudio/Controllers/StatsDockRefreshController.cs`: snapshot acquisition,
+dock presentation build/apply, diagnostics visibility gating, and decode/GPU
+row refresh ordering.
 Stats dock metric value, visibility, and status brush application now live in
 `Sussudio/Controllers/StatsDockPresentationController.cs`.
 Stats section expand/collapse chrome and automation-visible section application
@@ -1354,12 +1358,12 @@ contract checks now live in
 Frame-time overlay graph drawing and compact text application now live in
 `Sussudio/Controllers/FrameTimeOverlayPresentationController.cs`;
 `Sussudio/MainWindow.FrameTimeOverlay.cs` is the XAML-facing visibility
-adapter, and `MainWindow.StatsOverlay.cs` keeps the stats dock projection and
-snapshot adapter.
+adapter, and `Sussudio/Controllers/StatsDockRefreshController.cs` keeps the
+stats dock projection refresh adapter.
 Decode and GPU hardware stats row projection now lives in
-`Sussudio/Controllers/StatsHardwareRowsController.cs`;
-`Sussudio/MainWindow.StatsHardwareSections.cs` keeps only the XAML-facing update
-hooks, and row element pooling still belongs to `StatsDiagnosticRowsController`.
+`Sussudio/Controllers/StatsHardwareRowsController.cs`; row element pooling
+still belongs to `StatsDiagnosticRowsController`, and
+`StatsDockRefreshController` owns when decode/GPU rows refresh.
 Stats presentation and frame-time overlay contract checks now live in
 `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` instead of expanding
 the legacy harness body in `tests/Sussudio.Tests/Program.cs`.
