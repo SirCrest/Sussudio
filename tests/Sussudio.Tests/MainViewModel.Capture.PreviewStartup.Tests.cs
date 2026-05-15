@@ -300,7 +300,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.cs")
             .Replace("\r\n", "\n");
-        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs")
+        var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewActions.cs")
             .Replace("\r\n", "\n");
         var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
             .Replace("\r\n", "\n");
@@ -389,8 +389,12 @@ static partial class Program
         AssertContains(initialAudioBindings, "_context.CancelPreviewAudioFadeInForUser();");
         AssertOccursBefore(initialAudioBindings, "_context.PrimePreviewAudioFadeIn();", "_context.PreviewVolumeSlider.ValueChanged +=");
 
-        var previewButtonClick = ExtractMemberCode(eventHandlersText, "PreviewButton_Click");
-        AssertContains(previewButtonClick, "if (!ViewModel.IsPreviewing)\n                {\n                    RevealPreviewUnavailablePlaceholder();\n                }");
+        var previewButtonClick = ExtractMemberCode(previewActionsText, "PreviewButton_Click");
+        AssertContains(previewButtonClick, "RunUiEventHandlerAsync(() => TogglePreviewFromButtonAsync(), nameof(PreviewButton_Click))");
+        var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonActionController.cs")
+            .Replace("\r\n", "\n");
+        var togglePreviewAsync = ExtractMemberCode(previewButtonActionControllerText, "TogglePreviewAsync");
+        AssertContains(togglePreviewAsync, "if (!viewModel.IsPreviewing)\n        {\n            _context.RevealPreviewUnavailablePlaceholder();\n        }");
 
         var mainWindowLoaded = ExtractMemberCode(startupText, "MainWindow_Loaded");
         AssertOccursBefore(mainWindowLoaded, "PrimePreviewAudioFadeIn();", "await ViewModel.RefreshDevicesAsync();");
@@ -405,7 +409,7 @@ static partial class Program
     {
         var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/PreviewAudioFadeController.cs")
             .Replace("\r\n", "\n");
-        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs")
+        var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewActions.cs")
             .Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
             .Replace("\r\n", "\n");
@@ -416,11 +420,13 @@ static partial class Program
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
 
-        var previewButtonClick = ExtractMemberCode(eventHandlersText, "PreviewButton_Click");
-        AssertContains(previewButtonClick, "var audioFadeOutTask = StartPreviewAudioFadeOutAsync();");
-        AssertContains(previewButtonClick, "var previewFadeOutTask = AnimatePreviewOutAsync();");
+        var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonActionController.cs")
+            .Replace("\r\n", "\n");
+        var previewButtonClick = ExtractMemberCode(previewButtonActionControllerText, "TogglePreviewAsync");
+        AssertContains(previewButtonClick, "var audioFadeOutTask = _context.StartPreviewAudioFadeOutAsync();");
+        AssertContains(previewButtonClick, "var previewFadeOutTask = _context.AnimatePreviewOutAsync();");
         AssertContains(previewButtonClick, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);");
-        AssertOccursBefore(previewButtonClick, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);", "await ViewModel.StopPreviewAsync(userInitiated: true);");
+        AssertOccursBefore(previewButtonClick, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);", "await viewModel.StopPreviewAsync(userInitiated: true);");
 
         var uiFadeOut = ExtractMemberCode(previewAudioFadeControllerText, "StartFadeOutAsync");
         AssertContains(uiFadeOut, "_context.ViewModel.VolumeSaveOverride = volumeTarget;");

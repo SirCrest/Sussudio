@@ -764,8 +764,9 @@ Primary current owners:
 - `Sussudio/MainWindow.Bindings.cs` owns the root `SetupBindings()`
   orchestration and leaves feature-specific binding clusters in focused
   partials or controllers, including initial status-strip projection.
-- `Sussudio/MainWindow.EventHandlers.cs` owns the preview button handler because
-  it coordinates preview fade/reinit behavior. One-line XAML command bridges for
+- `Sussudio/MainWindow.PreviewActions.cs` owns only the preview button XAML
+  command adapter. `PreviewButtonActionController` owns the preview
+  fade/reinit/start/stop command behavior. One-line XAML command bridges for
   capture-device, recording, output-path, and preview-screenshot buttons live in
   their feature adapter partials beside the owning controllers.
 - `Sussudio/MainWindow.PropertyChanged.cs` owns only the root ViewModel
@@ -1605,8 +1606,12 @@ Primary current owners:
   `CompositionShadowFadeAnimator`.
 - `Sussudio/Controllers/PreviewButtonPresentationController.cs` owns preview
   button glyph and tooltip presentation for Start Preview and Stop Preview.
-  `MainWindow.PreviewButtonPresentation.cs` is the XAML-facing adapter; keep
-  `PreviewButton_Click` command behavior outside this controller.
+  `MainWindow.PreviewButtonPresentation.cs` is the XAML-facing adapter.
+- `Sussudio/Controllers/PreviewButtonActionController.cs` owns preview button
+  command choreography: pending-reinit cancel, user stop intent, audio/visual
+  fade-out ordering, preview start/stop calls, reinit animation reset, and
+  unavailable-placeholder reveal. `MainWindow.PreviewActions.cs` keeps the XAML
+  event name stable.
 - `Sussudio/Controllers/RecordButtonAnimationController.cs` owns the recording
   button circle/pill width morph used by recording state changes.
   `MainWindow.RecordButtonAnimations.cs` is the XAML-facing adapter.

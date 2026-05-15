@@ -1,10 +1,10 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
 {
     private static Task SettingsShelfLifecycle_LivesInController()
     {
-        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs").Replace("\r\n", "\n");
         var fullScreenText = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var settingsShelfText = ReadRepoFile("Sussudio/MainWindow.SettingsShelf.cs").Replace("\r\n", "\n");
@@ -26,7 +26,10 @@ static partial class Program
         AssertContains(controllerText, "EnableDependentAnimation = true");
         AssertContains(controllerText, "_context.SettingsOverlayPanel.Visibility = Visibility.Collapsed;");
         AssertDoesNotContain(mainWindowText, "private bool _isSettingsShelfAnimating;");
-        AssertDoesNotContain(eventHandlersText, "private void SettingsToggleButton_Click(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.EventHandlers.cs")),
+            "generic MainWindow event-handler partial removed");
 
         return Task.CompletedTask;
     }

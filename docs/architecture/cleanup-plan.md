@@ -1685,8 +1685,10 @@ shadow opacity fades live in
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives in `Sussudio/Controllers/PreviewButtonPresentationController.cs`.
-`MainWindow.PreviewButtonPresentation.cs` is the XAML-facing adapter; the
-preview button click command path remains unchanged.
+`MainWindow.PreviewButtonPresentation.cs` is the XAML-facing adapter. Preview
+button command choreography now lives in
+`Sussudio/Controllers/PreviewButtonActionController.cs`, while
+`MainWindow.PreviewActions.cs` keeps the XAML event name stable.
 
 Record-button circle/pill width animation now lives in
 `Sussudio/Controllers/RecordButtonAnimationController.cs`.

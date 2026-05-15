@@ -2,8 +2,8 @@ using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// XAML-facing adapter for preview button chrome. PreviewButton_Click still owns
-// the command behavior; this partial only delegates glyph and tooltip state.
+// XAML-facing adapter for preview button chrome. PreviewButtonActionController
+// owns command behavior; this partial only delegates glyph and tooltip state.
 public sealed partial class MainWindow
 {
     private PreviewButtonPresentationController _previewButtonPresentationController = null!;

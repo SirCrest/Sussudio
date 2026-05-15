@@ -258,9 +258,11 @@ static partial class Program
     private static Task PreviewButtonPresentation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewActions.cs").Replace("\r\n", "\n");
         var propertyChangedPreviewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewButtonPresentation.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonPresentationController.cs").Replace("\r\n", "\n");
+        var actionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonActionController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewButtonPresentationController _previewButtonPresentationController = null!;");
         AssertContains(adapterText, "private void InitializePreviewButtonPresentationController()");
@@ -280,6 +282,25 @@ static partial class Program
         AssertContains(controllerText, "ToolTipService.SetToolTip(_context.PreviewButton, \"Stop Preview\");");
         AssertContains(controllerText, "_context.PreviewButtonIcon.Glyph = StartPreviewGlyph;");
         AssertContains(controllerText, "ToolTipService.SetToolTip(_context.PreviewButton, \"Start Preview\");");
+        AssertContains(previewActionsText, "private PreviewButtonActionController _previewButtonActionController = null!;");
+        AssertContains(previewActionsText, "private void InitializePreviewButtonActionController()");
+        AssertContains(previewActionsText, "private Task TogglePreviewFromButtonAsync()");
+        AssertContains(previewActionsText, "=> _previewButtonActionController.TogglePreviewAsync(nameof(PreviewButton_Click));");
+        AssertContains(previewActionsText, "_ = RunUiEventHandlerAsync(() => TogglePreviewFromButtonAsync(), nameof(PreviewButton_Click));");
+        AssertContains(mainWindowText, "InitializePreviewButtonActionController();");
+        AssertContains(actionControllerText, "internal sealed class PreviewButtonActionController");
+        AssertContains(actionControllerText, "public async Task TogglePreviewAsync(string operationName)");
+        AssertContains(actionControllerText, "viewModel.CancelPendingPreviewRestart();");
+        AssertContains(actionControllerText, "Logger.Log($\"PREVIEW_REINIT_CANCEL_REQUESTED attempt={_context.GetPreviewStartupAttemptId() ?? \"none\"}\", operationName);");
+        AssertContains(previewActionsText, "Logger.Log($\"D3D11_RENDERER_REINIT_FLAG flag=false caller={operationName}\", operationName);");
+        AssertContains(actionControllerText, "var audioFadeOutTask = _context.StartPreviewAudioFadeOutAsync();");
+        AssertContains(actionControllerText, "var previewFadeOutTask = _context.AnimatePreviewOutAsync();");
+        AssertContains(actionControllerText, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);");
+        AssertContains(actionControllerText, "await viewModel.StopPreviewAsync(userInitiated: true);");
+        AssertContains(actionControllerText, "_context.ClearPreviewReinitAnimation(operationName);");
+        AssertContains(actionControllerText, "await viewModel.StartPreviewAsync(userInitiated: true);");
+        AssertDoesNotContain(previewActionsText, "var audioFadeOutTask = StartPreviewAudioFadeOutAsync();");
+        AssertDoesNotContain(previewActionsText, "await ViewModel.StopPreviewAsync(userInitiated: true);");
         AssertDoesNotContain(propertyChangedPreviewText, "PreviewButtonIcon.Glyph = \"\\uE71A\";");
         AssertDoesNotContain(propertyChangedPreviewText, "PreviewButtonIcon.Glyph = \"\\uE768\";");
         AssertDoesNotContain(propertyChangedPreviewText, "ToolTipService.SetToolTip(PreviewButton, \"Stop Preview\");");

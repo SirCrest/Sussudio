@@ -6,7 +6,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var closeLifecycleSource = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
             .Replace("\r\n", "\n");
-        var eventHandlersSource = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs")
+        var previewActionsSource = ReadRepoFile("Sussudio/MainWindow.PreviewActions.cs")
             .Replace("\r\n", "\n");
         var flashbackSource = ReadRepoFile("Sussudio/MainWindow.FlashbackCommands.cs")
             .Replace("\r\n", "\n");
@@ -18,7 +18,7 @@ static partial class Program
         AssertContains(dispatchingSource, "private async Task RunUiEventHandlerAsync(Func<Task> operation, string operationName)");
         AssertContains(dispatchingSource, "CompleteWindowCloseRequest(new OperationCanceledException(cancellationToken));");
         AssertContains(dispatchingSource, "ViewModel.StatusText = $\"{operationName} failed: {ex.Message}\";");
-        AssertContains(eventHandlersSource, "RunUiEventHandlerAsync(async () =>");
+        AssertContains(previewActionsSource, "_ = RunUiEventHandlerAsync(() => TogglePreviewFromButtonAsync(), nameof(PreviewButton_Click));");
         AssertContains(flashbackSource, "=> _flashbackCommandController.Export(nameof(FlashbackExportButton_Click));");
         AssertContains(flashbackSource, "=> _flashbackCommandController.SaveLast5m(nameof(FlashbackSaveLast5mButton_Click));");
         AssertContains(flashbackControllerSource, "=> _ = _context.RunUiEventHandlerAsync(() => _context.ViewModel.ExportFlashbackAsync(), operationName);");
