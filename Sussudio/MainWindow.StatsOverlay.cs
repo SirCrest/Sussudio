@@ -4,7 +4,6 @@ using Sussudio.Models;
 using Sussudio.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using Sussudio.Controllers;
 
 namespace Sussudio;
@@ -15,6 +14,7 @@ namespace Sussudio;
 public sealed partial class MainWindow
 {
     private StatsOverlayController _statsOverlayController = null!;
+    private StatsDockPresentationController _statsDockPresentationController = null!;
     private StatsDiagnosticRowsController _statsDiagnosticRowsController = null!;
 
     private void InitializeStatsOverlayController()
@@ -29,6 +29,50 @@ public sealed partial class MainWindow
             UpdateStatsDock = UpdateStatsDock,
             UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,
             Log = message => Logger.Log(message)
+        });
+        _statsDockPresentationController = new StatsDockPresentationController(new StatsDockPresentationControllerContext
+        {
+            SessionStateValue = Stats_SessionStateValue,
+            SummaryCaptureValue = Stats_SummaryCaptureValue,
+            SummaryPreviewValue = Stats_SummaryPreviewValue,
+            SummaryRendererFpsValue = Stats_SummaryRendererFpsValue,
+            SummaryVisualFpsValue = Stats_SummaryVisualFpsValue,
+            SummaryLatencyValue = Stats_SummaryLatencyValue,
+            SourceResolutionValue = Stats_SourceResolutionValue,
+            SourceFrameRateValue = Stats_SourceFrameRateValue,
+            SourceHdrValue = Stats_SourceHdrValue,
+            SourceFormatValue = Stats_SourceFormatValue,
+            TelemetryOriginValue = Stats_TelemetryOriginValue,
+            AdcOnOffValue = Stats_AdcOnOffValue,
+            AdcGainValue = Stats_AdcGainValue,
+            SourceFpsValue = Stats_SourceFpsValue,
+            SourceExpectedFpsValue = Stats_SourceExpectedFpsValue,
+            SourceAvgValue = Stats_SourceAvgValue,
+            SourceP95Value = Stats_SourceP95Value,
+            SourceJitterValue = Stats_SourceJitterValue,
+            SourceGapsValue = Stats_SourceGapsValue,
+            SourceDropsValue = Stats_SourceDropsValue,
+            PreviewFpsValue = Stats_PreviewFpsValue,
+            PreviewAvgValue = Stats_PreviewAvgValue,
+            PreviewP95Value = Stats_PreviewP95Value,
+            PreviewSlowValue = Stats_PreviewSlowValue,
+            VisualFpsValue = Stats_VisualFpsValue,
+            VisualMotionValue = Stats_VisualMotionValue,
+            PipelineLatencyValue = Stats_PipelineLatencyValue,
+            SourceDeliveredValue = Stats_SourceDeliveredValue,
+            SourceDroppedValue = Stats_SourceDroppedValue,
+            RendererRenderedValue = Stats_RendererRenderedValue,
+            RendererDroppedValue = Stats_RendererDroppedValue,
+            PerformanceScoreValue = Stats_PerfScoreValue,
+            AvSyncDriftValue = Stats_AvSyncDriftValue,
+            AvSyncDriftRateValue = Stats_AvSyncDriftRateValue,
+            AvSyncEncoderRow = Stats_AvSyncEncoderRow,
+            AvSyncEncoderValue = Stats_AvSyncEncoderValue,
+            EncoderSection = EncoderSection,
+            EncoderCodecValue = Stats_EncoderCodecValue,
+            EncoderResolutionValue = Stats_EncoderResolutionValue,
+            EncoderFrameRateValue = Stats_EncoderFrameRateValue,
+            EncoderBitrateValue = Stats_EncoderBitrateValue
         });
         _statsDiagnosticRowsController = new StatsDiagnosticRowsController(new StatsDiagnosticRowsControllerContext
         {
@@ -84,59 +128,7 @@ public sealed partial class MainWindow
         var snapshot = GetStatsSnapshot();
         var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);
 
-        SetTextIfChanged(Stats_SessionStateValue, presentation.SessionState);
-        SetTextIfChanged(Stats_SummaryCaptureValue, presentation.SummaryCapture);
-        SetTextIfChanged(Stats_SummaryPreviewValue, presentation.SummaryPreview);
-        SetTextIfChanged(Stats_SummaryRendererFpsValue, presentation.SummaryRendererFps);
-        SetTextIfChanged(Stats_SummaryVisualFpsValue, presentation.SummaryVisualFps);
-        SetTextIfChanged(Stats_SummaryLatencyValue, presentation.SummaryLatency);
-        SetMetricBrush(Stats_SummaryCaptureValue, presentation.SummaryCaptureStatus);
-        SetMetricBrush(Stats_SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);
-        SetMetricBrush(Stats_SummaryVisualFpsValue, presentation.SummaryVisualFpsStatus);
-        SetMetricBrush(Stats_SummaryLatencyValue, presentation.SummaryLatencyStatus);
-        SetTextIfChanged(Stats_SourceResolutionValue, presentation.SourceResolution);
-        SetTextIfChanged(Stats_SourceFrameRateValue, presentation.SourceFrameRate);
-        SetTextIfChanged(Stats_SourceHdrValue, presentation.SourceHdr);
-        SetTextIfChanged(Stats_SourceFormatValue, presentation.SourceFormat);
-        SetTextIfChanged(Stats_TelemetryOriginValue, presentation.TelemetryOrigin);
-        SetTextIfChanged(Stats_AdcOnOffValue, presentation.AdcOnOff);
-        SetTextIfChanged(Stats_AdcGainValue, presentation.AdcGain);
-        SetTextIfChanged(Stats_SourceFpsValue, presentation.SourceFps);
-        SetTextIfChanged(Stats_SourceExpectedFpsValue, presentation.SourceExpectedFps);
-        SetTextIfChanged(Stats_SourceAvgValue, presentation.SourceAvg);
-        SetTextIfChanged(Stats_SourceP95Value, presentation.SourceP95);
-        SetTextIfChanged(Stats_SourceJitterValue, presentation.SourceJitter);
-        SetTextIfChanged(Stats_SourceGapsValue, presentation.SourceGaps);
-        SetTextIfChanged(Stats_SourceDropsValue, presentation.SourceDrops);
-        SetTextIfChanged(Stats_PreviewFpsValue, presentation.PreviewFps);
-        SetTextIfChanged(Stats_PreviewAvgValue, presentation.PreviewAvg);
-        SetTextIfChanged(Stats_PreviewP95Value, presentation.PreviewP95);
-        SetTextIfChanged(Stats_PreviewSlowValue, presentation.PreviewSlow);
-        SetTextIfChanged(Stats_VisualFpsValue, presentation.VisualFps);
-        SetTextIfChanged(Stats_VisualMotionValue, presentation.VisualMotion);
-        SetMetricBrush(Stats_VisualFpsValue, presentation.VisualFpsStatus);
-        SetTextIfChanged(Stats_PipelineLatencyValue, presentation.PipelineLatency);
-        SetTextIfChanged(Stats_SourceDeliveredValue, presentation.SourceDelivered);
-        SetTextIfChanged(Stats_SourceDroppedValue, presentation.SourceDropped);
-        SetTextIfChanged(Stats_RendererRenderedValue, presentation.RendererRendered);
-        SetTextIfChanged(Stats_RendererDroppedValue, presentation.RendererDropped);
-        SetTextIfChanged(Stats_PerfScoreValue, presentation.PerformanceScore);
-        SetTextIfChanged(Stats_AvSyncDriftValue, presentation.AvSyncDrift);
-        SetTextIfChanged(Stats_AvSyncDriftRateValue, presentation.AvSyncDriftRate);
-        SetVisibilityIfChanged(Stats_AvSyncEncoderRow, presentation.EncoderDriftVisible ? Visibility.Visible : Visibility.Collapsed);
-        if (presentation.EncoderDriftVisible)
-        {
-            SetTextIfChanged(Stats_AvSyncEncoderValue, presentation.EncoderDrift);
-        }
-
-        SetVisibilityIfChanged(EncoderSection, presentation.EncoderActive ? Visibility.Visible : Visibility.Collapsed);
-        if (presentation.EncoderActive)
-        {
-            SetTextIfChanged(Stats_EncoderCodecValue, presentation.EncoderCodec);
-            SetTextIfChanged(Stats_EncoderResolutionValue, presentation.EncoderResolution);
-            SetTextIfChanged(Stats_EncoderFrameRateValue, presentation.EncoderFrameRate);
-            SetTextIfChanged(Stats_EncoderBitrateValue, presentation.EncoderBitrate);
-        }
+        _statsDockPresentationController.Apply(presentation);
 
         UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
         UpdateDecodeSection();
@@ -160,31 +152,6 @@ public sealed partial class MainWindow
         _statsDiagnosticRowsController.UpdateDiagnostics(presentation);
     }
 
-    private static readonly SolidColorBrush MetricNeutralBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xF1, 0xF1, 0xF1));
-    private static readonly SolidColorBrush MetricGoodBrush = new(Windows.UI.Color.FromArgb(0xFF, 0x70, 0xF0, 0x8B));
-    private static readonly SolidColorBrush MetricInfoBrush = new(Windows.UI.Color.FromArgb(0xFF, 0x55, 0xD6, 0xFF));
-    private static readonly SolidColorBrush MetricWarningBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xFF, 0xC8, 0x57));
-    private static readonly SolidColorBrush MetricBadBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xFF, 0x6B, 0x6B));
-
-    private static void SetMetricBrush(TextBlock target, StatsMetricStatus status)
-    {
-        target.Foreground = status switch
-        {
-            StatsMetricStatus.Good => MetricGoodBrush,
-            StatsMetricStatus.Info => MetricInfoBrush,
-            StatsMetricStatus.Warning => MetricWarningBrush,
-            StatsMetricStatus.Bad => MetricBadBrush,
-            _ => MetricNeutralBrush
-        };
-    }
-
-    private static void SetVisibilityIfChanged(UIElement element, Visibility visibility)
-    {
-        if (element.Visibility != visibility)
-        {
-            element.Visibility = visibility;
-        }
-    }
     private static void SetTextIfChanged(TextBlock target, string value)
     {
         if (!string.Equals(target.Text, value, StringComparison.Ordinal))

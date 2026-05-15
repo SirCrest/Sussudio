@@ -702,12 +702,15 @@ Primary current owners:
   projection and event hookup during `SetupBindings()`.
 - `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility,
   frame-time overlay visibility, polling lifetime, and dock show/hide
-  animations. `Sussudio/Controllers/StatsSectionChromeController.cs` owns
-  stats dock section expand/collapse chrome and automation-visible section
+  animations. `Sussudio/Controllers/StatsDockPresentationController.cs` owns
+  stats dock metric text, visibility, and status brush application after the
+  presentation model is built. `Sussudio/Controllers/StatsSectionChromeController.cs`
+  owns stats dock section expand/collapse chrome and automation-visible section
   visibility application. `Sussudio/MainWindow.StatsSections.cs` is the
   XAML/automation adapter for that controller. `Sussudio/MainWindow.StatsSnapshot.cs`
   owns shell stats snapshot assembly from renderer and capture-health state.
-  `MainWindow.StatsOverlay.cs` still owns metric text projection.
+  `MainWindow.StatsOverlay.cs` adapts snapshots/polling to presentation
+  builders and delegates dock value application.
 - `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
   contract checks for stats overlay lifecycle wiring, stats section chrome,
   source-telemetry panel projection, and diagnostic row pooling.

@@ -54,6 +54,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task StatsDockPresentationApplication_LivesInController()
+    {
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/StatsDockPresentationController.cs").Replace("\r\n", "\n");
+
+        AssertContains(statsOverlayText, "private StatsDockPresentationController _statsDockPresentationController = null!;");
+        AssertContains(statsOverlayText, "_statsDockPresentationController = new StatsDockPresentationController(new StatsDockPresentationControllerContext");
+        AssertContains(statsOverlayText, "_statsDockPresentationController.Apply(presentation);");
+        AssertContains(controllerText, "internal sealed class StatsDockPresentationControllerContext");
+        AssertContains(controllerText, "internal sealed class StatsDockPresentationController");
+        AssertContains(controllerText, "public void Apply(StatsDockPresentation presentation)");
+        AssertContains(controllerText, "SetTextIfChanged(_context.SessionStateValue, presentation.SessionState);");
+        AssertContains(controllerText, "SetMetricBrush(_context.SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);");
+        AssertContains(controllerText, "SetVisibilityIfChanged(_context.AvSyncEncoderRow, presentation.EncoderDriftVisible ? Visibility.Visible : Visibility.Collapsed);");
+        AssertContains(controllerText, "SetVisibilityIfChanged(_context.EncoderSection, presentation.EncoderActive ? Visibility.Visible : Visibility.Collapsed);");
+        AssertContains(controllerText, "MetricGoodBrush = new(Windows.UI.Color.FromArgb(0xFF, 0x70, 0xF0, 0x8B))");
+        AssertDoesNotContain(statsOverlayText, "SetMetricBrush(");
+        AssertDoesNotContain(statsOverlayText, "SetTextIfChanged(Stats_");
+        AssertDoesNotContain(statsOverlayText, "private static readonly SolidColorBrush MetricNeutralBrush");
+
+        return Task.CompletedTask;
+    }
+
     private static Task StatsSectionChrome_LivesInFocusedPartial()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");

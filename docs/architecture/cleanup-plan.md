@@ -1230,9 +1230,11 @@ source/audio drift calculations and encoder drift/correction projection there.
 
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
-still renders metric values and assembles snapshots, but polling, visibility
-state, dynamic diagnostic row pools, and dock animations are out of the shell
-fields.
+still assembles snapshots and drives presentation builders, but polling,
+visibility state, dynamic diagnostic row pools, dock metric value/brush
+application, and dock animations are out of the shell fields.
+Stats dock metric value, visibility, and status brush application now live in
+`Sussudio/Controllers/StatsDockPresentationController.cs`.
 Stats section expand/collapse chrome and automation-visible section application
 now live in `Sussudio/Controllers/StatsSectionChromeController.cs`.
 `Sussudio/MainWindow.StatsSections.cs` is the XAML/automation adapter.

@@ -9,6 +9,9 @@ static partial class Program
             "Stats overlay lifecycle lives in controller",
             StatsOverlayLifecycle_LivesInController);
         await AddCheckAsync(results,
+            "Stats dock presentation application lives in controller",
+            StatsDockPresentationApplication_LivesInController);
+        await AddCheckAsync(results,
             "Stats section chrome lives in focused partial",
             StatsSectionChrome_LivesInFocusedPartial);
         await AddCheckAsync(results,
