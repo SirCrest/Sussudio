@@ -631,8 +631,8 @@ Entry points:
   and final output validation text.
 - `FlashbackExporter.PathValidation.cs` owns normalized path comparison and
   output path validation.
-- `FlashbackExporter.SegmentSelection.cs` owns segment/export-range overlap
-  classification.
+- `FlashbackExporter.SegmentSelection.cs` owns export-range validation and
+  segment/export-range overlap classification.
 - `FlashbackExporter.NativeState.cs` owns active input/output close and native
   FFmpeg cleanup.
 - `FlashbackExporter.Cancellation.cs` owns linked export cancellation-source

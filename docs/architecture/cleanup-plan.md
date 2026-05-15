@@ -977,7 +977,7 @@ length validation lives in
 `Sussudio/Services/Flashback/FlashbackExporter.OutputValidation.cs`, normalized
 path comparison and output path validation live in
 `Sussudio/Services/Flashback/FlashbackExporter.PathValidation.cs`, and
-segment/export-range overlap classification lives in
+export-range validation plus segment/export-range overlap classification live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentSelection.cs`. Native
 input/output cleanup lives in
 `Sussudio/Services/Flashback/FlashbackExporter.NativeState.cs`, linked export

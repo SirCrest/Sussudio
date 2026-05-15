@@ -129,8 +129,8 @@ static partial class Program
         AssertContains(outputValidationText, "private static bool TryValidateCompletedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
         AssertContains(pathValidationText, "private static bool IsSamePath(string? left, string? right)");
         AssertContains(pathValidationText, "private static bool TryValidateOutputPath(string outputPath, out string fullOutputPath, out string failureMessage)");
-        AssertContains(pathValidationText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
         AssertContains(segmentSelectionText, "private static bool SegmentOverlapsExportRange(");
+        AssertContains(segmentSelectionText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
         AssertContains(nativeStateText, "private void CloseActiveInput()");
         AssertContains(nativeStateText, "private void CloseOutputIo()");
         AssertContains(nativeStateText, "private void CleanupNativeState()");

@@ -63,21 +63,4 @@ internal sealed unsafe partial class FlashbackExporter
         return true;
     }
 
-    private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)
-    {
-        if (inPoint < TimeSpan.Zero)
-        {
-            failureMessage = "Flashback export failed: in point must not be negative.";
-            return false;
-        }
-
-        if (outPoint != TimeSpan.MaxValue && outPoint <= inPoint)
-        {
-            failureMessage = "Flashback export failed: export range is empty or invalid.";
-            return false;
-        }
-
-        failureMessage = string.Empty;
-        return true;
-    }
 }
