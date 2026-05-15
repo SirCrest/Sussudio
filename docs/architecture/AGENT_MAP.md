@@ -2044,8 +2044,11 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns Flashback
   stress thresholds.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.Stress.cs` owns the
-  main Flashback stress command sequence, warm-playback budget, export verify,
-  and playback command drain checks.
+  main Flashback stress command sequence and export verify.
+- `tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs` owns
+  warmed-playback frame/FPS/1% low and audio-master fallback checks.
+- `tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs` owns
+  post-go-live playback command drain, latency, and final-state checks.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs` owns the
   scrub-stress command burst and drain checks.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.AudioMaster.cs` owns

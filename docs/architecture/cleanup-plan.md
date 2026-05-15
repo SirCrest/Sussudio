@@ -1932,7 +1932,9 @@ scenario command sequencing.
 Diagnostic-session Flashback stress orchestration now lives in a focused
 partial family. `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns
 stress thresholds, `.Stress.cs` owns the main stress command sequence,
-`.Scrub.cs` owns scrub-stress command bursts and drain checks, and
+`.WarmPlayback.cs` owns warmed-playback frame/FPS/1% low and audio-master
+fallback checks, `.CommandDrain.cs` owns post-go-live playback command drain
+checks, `.Scrub.cs` owns scrub-stress command bursts and drain checks, and
 `.AudioMaster.cs` owns warmed-playback audio-master fallback classification
 while the runner only starts the scenario tasks.
 
@@ -2019,6 +2021,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionFlashbackStressScenario.Stress.cs`
+- `DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs`
+- `DiagnosticSessionFlashbackStressScenario.CommandDrain.cs`
 - `DiagnosticSessionFlashbackStressScenario.Scrub.cs`
 - `DiagnosticSessionFlashbackStressScenario.AudioMaster.cs`
 - `DiagnosticSessionFlashbackWaits.cs`
