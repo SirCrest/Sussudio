@@ -46,7 +46,7 @@ static partial class Program
             "Audio ramp trace exposes control and render-side envelope telemetry",
             AudioRampTrace_ExposesControlAndRenderEnvelopeTelemetry);
         await AddCheckAsync(results,
-            "Live pixel format surfaces prefer source subtype over decoded output",
-            LivePixelFormatSurfaces_PreferReaderSourceSubtype);
+            "Live signal text projection preserves pixel format fallback order",
+            LiveSignalTextProjection_PreservesPixelFormatFallbackOrder);
     }
 }

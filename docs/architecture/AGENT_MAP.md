@@ -1408,9 +1408,10 @@ Primary current owners:
   button command workflow and preview-state logging after a start.
   `MainWindow.RecordingActions.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/LiveSignalInfoController.cs` owns live-signal pill
-  text projection, visibility state, show/hide debounce timers, and the small
+  text application, visibility state, show/hide debounce timers, and the small
   scale/fade animation. `MainWindow.LiveSignalInfo.cs` is the XAML-facing
-  adapter.
+  adapter. `Sussudio/ViewModels/MainViewModel.LiveSignalText.cs` owns the
+  view-model live-signal label formatting and pixel-format/codec suffix policy.
 - `Sussudio/Controllers/PreviewAudioFadeController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
   save suppression. `MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
@@ -1505,10 +1506,12 @@ Primary current owners:
   device-audio observable property handlers.
   `MainViewModel.Dispatching.cs` owns shared
   dispatcher enqueue/invoke helpers and preview event fan-out for the partial
-  family. `MainViewModel.Runtime.cs` owns live runtime text, timer refreshes,
-  recording bitrate display, capture status/error fan-out, and resume cleanup
-  callbacks. `MainViewModel.CaptureSettings.cs` owns capture settings
-  projection from UI selection and observed runtime/source state.
+  family. `MainViewModel.Runtime.cs` owns timer refreshes, recording bitrate
+  display, capture status/error fan-out, and resume cleanup callbacks, while
+  delegating live-signal label projection to
+  `Sussudio/ViewModels/MainViewModel.LiveSignalText.cs`.
+  `MainViewModel.CaptureSettings.cs` owns capture settings projection from UI
+  selection and observed runtime/source state.
   `MainViewModel.Capture.cs` owns device initialization, preview start/stop,
   selected-device apply, output-path browsing, and preview reinitialization.
   `MainViewModel.RecordingLifecycle.cs` owns recording toggle serialization,

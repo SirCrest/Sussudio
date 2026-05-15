@@ -1978,8 +1978,9 @@ Remaining `tools/Common` ownership:
    bridge methods. Audio, microphone, and device-audio observable property
    handlers now live in `MainViewModel.AudioPropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
-   and live runtime text/timer/status/error handling now lives in
-   `MainViewModel.Runtime.cs`. Capture settings projection from UI/runtime state
+   timer/status/error handling now lives in `MainViewModel.Runtime.cs`, and
+   live-signal label formatting now lives in
+   `Sussudio/ViewModels/MainViewModel.LiveSignalText.cs`. Capture settings projection from UI/runtime state
    now lives in `MainViewModel.CaptureSettings.cs`, leaving
    `MainViewModel.Capture.cs` focused on device/preview/reinitialize
    transitions. Recording toggle serialization, graceful stop, emergency stop,

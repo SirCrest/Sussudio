@@ -56,37 +56,10 @@ public partial class MainViewModel
         var runtime = runtimeSnapshot ?? _captureService.GetRuntimeSnapshot();
         IsAudioPreviewActive = runtime.IsAudioPreviewActive;
 
-        var width = runtime.ActualWidth ?? runtime.NegotiatedWidth ?? runtime.RequestedWidth;
-        var height = runtime.ActualHeight ?? runtime.NegotiatedHeight ?? runtime.RequestedHeight;
-        LiveResolution = width.HasValue && height.HasValue
-            ? $"{width.Value}x{height.Value}"
-            : LiveInfoUnavailable;
-
-        var frameRateValue = runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate ?? runtime.RequestedFrameRate;
-        if (frameRateValue.HasValue && frameRateValue.Value > 0)
-        {
-            LiveFrameRate = frameRateValue.Value.ToString("0.00");
-        }
-        else
-        {
-            LiveFrameRate = LiveInfoUnavailable;
-        }
-
-        var pixelFormat =
-            runtime.ReaderSourceSubtype ??
-            runtime.VideoNegotiatedSubtype ??
-            runtime.NegotiatedPixelFormat ??
-            runtime.LatestObservedFramePixelFormat ??
-            runtime.RequestedReaderSubtype ??
-            runtime.RequestedPixelFormat;
-        var codecSuffix = _captureService.EncoderCodecName switch
-        {
-            "hevc_nvenc" => " / HEVC",
-            "h264_nvenc" => " / H264",
-            "av1_nvenc" => " / AV1",
-            _ => ""
-        };
-        LivePixelFormat = string.IsNullOrWhiteSpace(pixelFormat) ? LiveInfoUnavailable : pixelFormat + codecSuffix;
+        var liveSignalText = BuildLiveSignalText(runtime, _captureService.EncoderCodecName);
+        LiveResolution = liveSignalText.Resolution;
+        LiveFrameRate = liveSignalText.FrameRate;
+        LivePixelFormat = liveSignalText.PixelFormat;
     }
 
     private void ResetLiveCaptureInfo()

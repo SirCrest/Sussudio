@@ -70,16 +70,33 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LivePixelFormatSurfaces_PreferReaderSourceSubtype()
+    private static Task LiveSignalTextProjection_PreservesPixelFormatFallbackOrder()
     {
-        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Runtime.cs")
+        var runtimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Runtime.cs")
+            .Replace("\r\n", "\n");
+        var liveSignalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.LiveSignalText.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(mainViewModelText, "runtime.ReaderSourceSubtype ??");
-        AssertContains(mainViewModelText, "runtime.LatestObservedFramePixelFormat ??");
+        AssertContains(runtimeText, "var liveSignalText = BuildLiveSignalText(runtime, _captureService.EncoderCodecName);");
+        AssertContains(runtimeText, "LiveResolution = liveSignalText.Resolution;");
+        AssertContains(runtimeText, "LiveFrameRate = liveSignalText.FrameRate;");
+        AssertContains(runtimeText, "LivePixelFormat = liveSignalText.PixelFormat;");
+        AssertDoesNotContain(runtimeText, "runtime.ReaderSourceSubtype ??");
+        AssertDoesNotContain(runtimeText, "runtime.LatestObservedFramePixelFormat ??");
+        AssertContains(liveSignalText, "private static LiveSignalText BuildLiveSignalText(CaptureRuntimeSnapshot runtime, string? encoderCodecName)");
+        AssertContains(liveSignalText, "runtime.ActualWidth ?? runtime.NegotiatedWidth ?? runtime.RequestedWidth");
+        AssertContains(liveSignalText, "runtime.ActualHeight ?? runtime.NegotiatedHeight ?? runtime.RequestedHeight");
+        AssertContains(liveSignalText, "runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate ?? runtime.RequestedFrameRate");
+        AssertContains(liveSignalText, "frameRateValue.Value.ToString(\"0.00\")");
+        AssertContains(liveSignalText, "runtime.ReaderSourceSubtype ??");
+        AssertContains(liveSignalText, "runtime.LatestObservedFramePixelFormat ??");
+        AssertContains(liveSignalText, "\"hevc_nvenc\" => \" / HEVC\"");
+        AssertContains(liveSignalText, "\"h264_nvenc\" => \" / H264\"");
+        AssertContains(liveSignalText, "\"av1_nvenc\" => \" / AV1\"");
+        AssertContains(liveSignalText, "? LiveInfoUnavailable");
 
-        if (mainViewModelText.IndexOf("runtime.ReaderSourceSubtype ??", StringComparison.Ordinal) >
-            mainViewModelText.IndexOf("runtime.LatestObservedFramePixelFormat ??", StringComparison.Ordinal))
+        if (liveSignalText.IndexOf("runtime.ReaderSourceSubtype ??", StringComparison.Ordinal) >
+            liveSignalText.IndexOf("runtime.LatestObservedFramePixelFormat ??", StringComparison.Ordinal))
         {
             throw new InvalidOperationException("MainViewModel.LivePixelFormat should prefer ReaderSourceSubtype before LatestObservedFramePixelFormat.");
         }
