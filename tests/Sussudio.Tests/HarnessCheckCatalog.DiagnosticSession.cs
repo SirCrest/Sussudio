@@ -54,6 +54,9 @@ static partial class Program
             "Diagnostic session output lock has a named owner",
             DiagnosticSessionOutputLock_OwnsExclusiveOutputDirectoryLock);
         await AddCheckAsync(results,
+            "Diagnostic session scenario phase has a named owner",
+            DiagnosticSessionRunExecutionScenario_OwnsScenarioPhase);
+        await AddCheckAsync(results,
             "Diagnostic session scenario plan has a named owner",
             DiagnosticSessionScenarioPlan_OwnsScenarioFlags);
         await AddCheckAsync(results,

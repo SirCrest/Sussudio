@@ -90,7 +90,7 @@ public sealed partial class MainWindow
         }
 
         _previewFirstVisualConfirmed = true;
-        _previewStartupReceivedSignals |= PreviewStartupSignalFlags.FirstVisual;
+        MarkPreviewStartupFirstVisualConfirmed();
         _previewFirstVisualUtc = DateTimeOffset.UtcNow;
         SetPreviewStartupState(PreviewStartupState.Rendering);
         StopPreviewStartupWatchdog();

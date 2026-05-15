@@ -71,6 +71,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupSignalsText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupSignals.cs")
             .Replace("\r\n", "\n");
+        var previewStartupReadinessSignalControllerText = ReadRepoFile("Sussudio/Controllers/PreviewStartupReadinessSignalController.cs")
+            .Replace("\r\n", "\n");
         var previewStartupFailureText = ReadRepoFile("Sussudio/Controllers/PreviewStartupFailureTextFormatter.cs")
             .Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs")
@@ -100,12 +102,21 @@ static partial class Program
         AssertContains(previewFadeInControllerText, "public void Schedule()");
         AssertContains(previewFadeInControllerText, "public void Stop()");
         AssertContains(previewStartupSignalsText, "Preview startup readiness-signal tracking");
+        AssertContains(previewStartupSignalsText, "private readonly PreviewStartupReadinessSignalController _previewStartupReadinessSignals = new();");
         AssertContains(previewStartupSignalsText, "private long _previewStartupPositionEventCount;");
         AssertContains(previewStartupSignalsText, "private bool IsPreviewStartupSignalWindowActive()");
         AssertContains(previewStartupSignalsText, "private void ResetPreviewSignalState()");
         AssertContains(previewStartupSignalsText, "private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
         AssertContains(previewStartupSignalsText, "private void LogPreviewStartupPlaybackSnapshot(string reason)");
-        AssertContains(previewStartupSignalsText, "PreviewStartupSignalFormatter.FormatMissingSignals(");
+        AssertContains(previewStartupSignalsText, "_previewStartupReadinessSignals.BuildMissingSignals(_previewFirstVisualConfirmed)");
+        AssertContains(previewStartupSignalsText, "_previewStartupReadinessSignals.TrackPlaybackPosition(");
+        AssertContains(previewStartupReadinessSignalControllerText, "internal sealed class PreviewStartupReadinessSignalController");
+        AssertContains(previewStartupReadinessSignalControllerText, "public static readonly TimeSpan PlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);");
+        AssertContains(previewStartupReadinessSignalControllerText, "public PreviewStartupReadinessSignalSnapshot Snapshot => new(");
+        AssertContains(previewStartupReadinessSignalControllerText, "public string Configure(");
+        AssertContains(previewStartupReadinessSignalControllerText, "public PreviewStartupReadinessSignalResult MarkSignal(");
+        AssertContains(previewStartupReadinessSignalControllerText, "public PreviewStartupPlaybackPositionResult TrackPlaybackPosition(");
+        AssertContains(previewStartupReadinessSignalControllerText, "PreviewStartupSignalFormatter.FormatMissingSignals(");
         AssertContains(previewStartupSignalsText, "PreviewStartupSignalFormatter.FormatSignalList(");
         AssertContains(previewStartupFailureText, "internal static class PreviewStartupFailureTextFormatter");
         AssertContains(previewStartupFailureText, "public static string FormatTimeoutReason(int timeoutMs, string? missingSignals)");
@@ -134,6 +145,65 @@ static partial class Program
         AssertDoesNotContain(previewStartupText, "no-visual-confirmation-within-{PreviewStartupVisualTimeoutMs}ms");
         AssertDoesNotContain(previewStartupText, "Preview failed to attach to UI (session started but no visual confirmation).");
         AssertDoesNotContain(previewStartupText, "Preview failed to start (missing readiness signal:");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewStartupReadinessSignalController_PreservesSignalStateContracts()
+    {
+        var controllerType = RequireType("Sussudio.Controllers.PreviewStartupReadinessSignalController");
+        var signalType = RequireType("Sussudio.Models.PreviewStartupSignalFlags");
+        var strategyType = RequireType("Sussudio.Models.PreviewStartupStrategy");
+        var statusType = RequireType("Sussudio.Controllers.PreviewStartupReadinessSignalStatus");
+        var playbackStatusType = RequireType("Sussudio.Controllers.PreviewStartupPlaybackPositionStatus");
+
+        var controller = Activator.CreateInstance(controllerType, nonPublic: true)!;
+        var configure = controllerType.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.Configure was not found.");
+        var markSignal = controllerType.GetMethod("MarkSignal", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.MarkSignal was not found.");
+        var trackPlaybackPosition = controllerType.GetMethod("TrackPlaybackPosition", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.TrackPlaybackPosition was not found.");
+        var markFirstVisualConfirmed = controllerType.GetMethod("MarkFirstVisualConfirmed", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.MarkFirstVisualConfirmed was not found.");
+        var snapshotProperty = controllerType.GetProperty("Snapshot", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.Snapshot was not found.");
+
+        object Signals(int value) => Enum.ToObject(signalType, value);
+        object Strategy(string name) => Enum.Parse(strategyType, name);
+        object Status(string name) => Enum.Parse(statusType, name);
+        object PlaybackStatus(string name) => Enum.Parse(playbackStatusType, name);
+
+        var requiredSignals = Signals(1 | 2 | 4);
+        var initialMissing = configure.Invoke(controller, new object[] { Strategy("D3D11VideoProcessor"), requiredSignals, true, false })?.ToString();
+        AssertEqual("MediaOpened+FirstCaptureFrame+PlaybackAdvancing", initialMissing, "initial missing readiness signals");
+
+        var mediaOpened = markSignal.Invoke(controller, new object[] { Signals(1), true, false })!;
+        AssertEqual(Status("Accepted"), GetPropertyValue(mediaOpened, "Status"), "media-opened accepted");
+        AssertEqual("FirstCaptureFrame+PlaybackAdvancing", GetStringProperty(mediaOpened, "MissingSignals"), "media-opened missing signals");
+        AssertEqual(false, GetBoolProperty(mediaOpened, "AllRequiredSignalsReceived"), "media-opened not ready");
+
+        var mediaSnapshot = GetPropertyValue(mediaOpened, "Snapshot")!;
+        AssertEqual(true, GetBoolProperty(mediaSnapshot, "GpuSignalMediaOpened"), "media-opened snapshot flag");
+        AssertEqual(Signals(1), GetPropertyValue(mediaSnapshot, "ReceivedSignals"), "media-opened received flags");
+
+        var duplicate = markSignal.Invoke(controller, new object[] { Signals(1), true, false })!;
+        AssertEqual(Status("Duplicate"), GetPropertyValue(duplicate, "Status"), "duplicate media-opened status");
+
+        var playback = trackPlaybackPosition.Invoke(controller, new object[] { TimeSpan.FromMilliseconds(40), true, false })!;
+        AssertEqual(PlaybackStatus("BaselineCaptured"), GetPropertyValue(playback, "Status"), "playback baseline status");
+        var playbackSignal = GetPropertyValue(playback, "SignalResult")!;
+        AssertEqual(Status("Accepted"), GetPropertyValue(playbackSignal, "Status"), "playback advancing accepted");
+        AssertEqual("FirstCaptureFrame", GetStringProperty(playbackSignal, "MissingSignals"), "playback advancing missing signals");
+
+        var firstFrame = markSignal.Invoke(controller, new object[] { Signals(2), true, false })!;
+        AssertEqual(Status("Accepted"), GetPropertyValue(firstFrame, "Status"), "first frame accepted");
+        AssertEqual(true, GetBoolProperty(firstFrame, "AllRequiredSignalsReceived"), "all required readiness signals received");
+        AssertEqual(string.Empty, GetStringProperty(firstFrame, "MissingSignals"), "no missing readiness signals");
+
+        markFirstVisualConfirmed.Invoke(controller, Array.Empty<object>());
+        var finalSnapshot = snapshotProperty.GetValue(controller)!;
+        AssertEqual(Signals(1 | 2 | 4 | 8), GetPropertyValue(finalSnapshot, "ReceivedSignals"), "first visual signal preserved in received flags");
 
         return Task.CompletedTask;
     }
@@ -367,7 +437,7 @@ static partial class Program
         var stopPreview = ExtractTextBetween(
             captureText,
             "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
-            "\n\n    private async Task ReinitializeDeviceAsync(string reason)");
+            "\n}\n");
         AssertContains(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);");
         AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "PreviewStopRequested?.Invoke(this, EventArgs.Empty);");
         AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _sessionCoordinator.StopAudioPreviewAsync(cancellationToken);");

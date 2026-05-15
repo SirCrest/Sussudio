@@ -57,6 +57,9 @@ static partial class Program
             "Preview startup signal formatter preserves string contracts",
             PreviewStartupSignalFormatter_PreservesSignalStrings);
         await AddCheckAsync(results,
+            "Preview startup readiness signal controller preserves state contracts",
+            PreviewStartupReadinessSignalController_PreservesSignalStateContracts);
+        await AddCheckAsync(results,
             "Preview startup failure text formatter preserves string contracts",
             PreviewStartupFailureTextFormatter_PreservesFailureStrings);
         await AddCheckAsync(results,

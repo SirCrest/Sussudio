@@ -5,7 +5,7 @@ namespace Sussudio.Tools;
 public static class DiagnosticSessionRunner
 {
     // Public compatibility wrapper. DiagnosticSessionRunExecution owns the
-    // mutable phase plan for setup, sampling, cleanup, verification, and summary.
+    // mutable phase plan; the scenario partial owns setup, sampling, and drains.
     public static Task<DiagnosticSessionResult> RunAsync(
         DiagnosticSessionOptions options,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,

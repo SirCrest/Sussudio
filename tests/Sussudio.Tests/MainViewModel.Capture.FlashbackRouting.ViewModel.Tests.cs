@@ -62,7 +62,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rawFlashbackExportText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
             .Replace("\r\n", "\n");
-        var rawCaptureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
+        var rawPreviewReinitializationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewReinitialization.cs")
             .Replace("\r\n", "\n");
         var settingsText = viewModelFiles["MainViewModel.Settings.cs"];
         var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackSettings.cs"];
@@ -134,14 +134,14 @@ static partial class Program
         AssertContains(viewModelFlashbackStateText, "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
         AssertContains(viewModelCaptureStateText, "private const int PreviewReinitializeDebounceMs = 250;");
         AssertContains(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
-        AssertContains(rawCaptureText, "var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);");
-        AssertContains(rawCaptureText, "await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);");
-        AssertContains(rawCaptureText, "Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration");
-        AssertContains(rawCaptureText, "REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
-        AssertContains(rawCaptureText, "await AwaitWithTimeoutAsync(\n                    pendingCycle,\n                    FlashbackCycleBeforeReinitializeTimeoutMs,\n                    \"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(false);");
-        AssertContains(rawCaptureText, "catch (TimeoutException ex)\n            {\n                Logger.Log($\"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}\");");
-        AssertContains(rawCaptureText, "REINIT_WAIT_FLASHBACK_CYCLE_FAULT");
-        AssertContains(viewModelFiles["MainViewModel.Capture.cs"], "if (ReferenceEquals(_pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)\n            {\n                _pendingFlashbackCycleTask = null;\n            }");
+        AssertContains(rawPreviewReinitializationText, "var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);");
+        AssertContains(rawPreviewReinitializationText, "await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);");
+        AssertContains(rawPreviewReinitializationText, "Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration");
+        AssertContains(rawPreviewReinitializationText, "REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
+        AssertContains(rawPreviewReinitializationText, "await AwaitWithTimeoutAsync(\n                    pendingCycle,\n                    FlashbackCycleBeforeReinitializeTimeoutMs,\n                    \"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(false);");
+        AssertContains(rawPreviewReinitializationText, "catch (TimeoutException ex)\n            {\n                Logger.Log($\"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}\");");
+        AssertContains(rawPreviewReinitializationText, "REINIT_WAIT_FLASHBACK_CYCLE_FAULT");
+        AssertContains(viewModelFiles["MainViewModel.PreviewReinitialization.cs"], "if (ReferenceEquals(_pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)\n            {\n                _pendingFlashbackCycleTask = null;\n            }");
         AssertContains(flashbackExportText, "private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync");
         AssertContains(flashbackExportText, "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(flashbackExportText, "CancelFlashbackExportCts(oldExportCts);");

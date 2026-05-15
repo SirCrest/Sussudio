@@ -25,6 +25,9 @@ static partial class Program
             "MainViewModel output path selection lives in focused partial",
             MainViewModelOutputPathSelection_LivesInFocusedPartial);
         await AddCheckAsync(results,
+            "MainViewModel preview reinitialization lives in focused partial",
+            MainViewModelPreviewReinitialization_LivesInFocusedPartial);
+        await AddCheckAsync(results,
             "MainViewModel audio controls map analog gain curve and clamp endpoints",
             MainViewModelAudioControls_MapsAnalogGainCurveAndClamps);
         await AddCheckAsync(results,

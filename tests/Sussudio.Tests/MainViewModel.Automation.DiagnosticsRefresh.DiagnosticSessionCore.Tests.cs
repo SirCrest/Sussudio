@@ -65,7 +65,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, ".WaitAsync(cancellationToken)");
         AssertContains(diagnosticSessionText, "scenarioCts.Cancel();");
         AssertContains(diagnosticSessionText, "WriteSamplingLiveStateBestEffortAsync");
-        AssertContains(diagnosticSessionText, "RecordTerminalException(ex, runState.LastStage);");
+        AssertContains(diagnosticSessionText, "recordTerminalException(ex, getLastStage())");
         AssertContains(diagnosticSessionText, "RecordTerminalException(ex, \"final-snapshot\");");
         AssertContains(diagnosticSessionText, "WriteArtifactBestEffortAsync(\"write-samples\", paths.SamplesPath, samples)");
         AssertContains(diagnosticSessionText, "await WriteJsonAsync(result.SummaryPath, result, CancellationToken.None)");

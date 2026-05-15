@@ -1,13 +1,12 @@
 using System.Text.Json;
-using static Sussudio.Tools.DiagnosticSessionSampler;
 
 namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionRunExecution
 {
     // Scenario names and broad requirements live in DiagnosticSessionScenarios.
-    // RunAsync reads like a phase plan: setup, optional background scenario
-    // task, sampling loop, cleanup, then summary.
+    // RunAsync reads like a phase plan: scenario execution, cleanup,
+    // verification, post-run snapshots, then summary.
 
     internal static async Task<DiagnosticSessionResult> RunAsync(
         DiagnosticSessionOptions options,
@@ -42,18 +41,11 @@ internal static partial class DiagnosticSessionRunExecution
             warnings);
         var livePath = runState.LivePath;
         JsonElement? verification = null;
-        PresentMonProbeResult? presentMon = null;
-        var startedPreview = false;
-        var startedRecording = false;
-        var enabledFlashback = false;
-        var disabledFlashback = false;
-        var startedFlashbackPlayback = false;
         var stoppedRecordingForVerification = false;
-        FlashbackRecordingSettingsDeferredPresetState flashbackRecordingSettingsDeferredPresetState = default;
         using var scenarioCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var scenarioCancellationToken = scenarioCts.Token;
         using var commandChannel = new DiagnosticSessionCommandChannel(sendCommandAsync, scenarioCancellationToken, warnings);
-        var backgroundTasks = new DiagnosticSessionBackgroundTasks();
+        var scenarioPhase = new DiagnosticSessionScenarioPhaseState();
 
         var initialSnapshotResult = DiagnosticSessionInitialSnapshot.CreateUnknown();
         var initialSnapshot = initialSnapshotResult.Snapshot;
@@ -70,97 +62,40 @@ internal static partial class DiagnosticSessionRunExecution
 
         try
         {
-            SetStage("scenario-setup");
-            if (!initialSnapshotKnown && scenario != DiagnosticSessionScenarios.Observe)
-            {
-                commandChannel.RecordFailure($"initial-snapshot: skipped state-mutating scenario '{scenario}' because the initial app state is unknown");
-            }
-            else
-            {
-                var setupResult = await DiagnosticSessionScenarioSetup.RunAsync(
-                        scenario,
-                        scenarioPlan,
-                        initialSnapshot,
-                        actions,
-                        warnings,
-                        commandChannel.SendAsync,
-                        commandChannel.TryWaitAsync,
-                        scenarioCancellationToken)
-                    .ConfigureAwait(false);
-                startedPreview = setupResult.StartedPreview;
-                startedRecording = setupResult.StartedRecording;
-                enabledFlashback = setupResult.EnabledFlashback;
-                disabledFlashback = setupResult.DisabledFlashback;
-
-                var scenarioStartup = await DiagnosticSessionScenarioStartup.StartAsync(
-                        options,
-                        scenarioPlan,
-                        durationSeconds,
-                        outputDirectory,
-                        backgroundTasks,
-                        actions,
-                        warnings,
-                        commandChannel.SendAsync,
-                        commandChannel.SendRawWithConnectRetryAsync,
-                        commandChannel.SendAsync,
-                        scenarioCancellationToken)
-                    .ConfigureAwait(false);
-                startedFlashbackPlayback = scenarioStartup.StartedFlashbackPlayback;
-
-                SetStage("sampling");
-                await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
-                await SampleLoopAsync(
-                        durationSeconds,
-                        sampleIntervalMs,
-                        samples,
-                        commandChannel.SendAsync,
-                        scenarioCancellationToken,
-                        WriteSamplingLiveStateBestEffortAsync)
-                    .ConfigureAwait(false);
-
-                await backgroundTasks.AwaitScenarioTasksAsync().ConfigureAwait(false);
-                flashbackRecordingSettingsDeferredPresetState = await backgroundTasks
-                    .AwaitRecordingSettingsDeferredAsync(flashbackRecordingSettingsDeferredPresetState)
-                    .ConfigureAwait(false);
-
-                await DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(
-                        scenarioPlan,
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        commandChannel.SendAsync,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-
-                presentMon = await backgroundTasks.AwaitPresentMonAsync(presentMon, warnings).ConfigureAwait(false);
-            }
-        }
-        catch (Exception ex)
-        {
-            RecordTerminalException(ex, runState.LastStage);
-            scenarioCts.Cancel();
-            var backgroundTaskDrain = await backgroundTasks.ObserveAfterFaultAsync(
+            await RunScenarioPhaseAsync(
+                    options,
+                    scenario,
+                    scenarioPlan,
+                    durationSeconds,
+                    sampleIntervalMs,
+                    outputDirectory,
+                    initialSnapshot,
+                    initialSnapshotKnown,
+                    actions,
                     warnings,
+                    samples,
+                    commandChannel,
+                    scenarioCts,
+                    scenarioCancellationToken,
+                    cancellationToken,
+                    scenarioPhase,
                     SetStage,
+                    () => runState.LastStage,
                     RecordTerminalException,
                     () => WriteLiveStateBestEffortAsync(),
-                    presentMon,
-                    flashbackRecordingSettingsDeferredPresetState)
+                    WriteSamplingLiveStateBestEffortAsync)
                 .ConfigureAwait(false);
-            presentMon = backgroundTaskDrain.PresentMon;
-            flashbackRecordingSettingsDeferredPresetState = backgroundTaskDrain.RecordingSettingsDeferredPresetState;
-            await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
         }
         finally
         {
             var cleanupResult = await DiagnosticSessionCleanupActions.RunAsync(
                     options,
                     initialSnapshot,
-                    startedRecording,
-                    startedPreview,
-                    enabledFlashback,
-                    disabledFlashback,
-                    startedFlashbackPlayback,
+                    scenarioPhase.StartedRecording,
+                    scenarioPhase.StartedPreview,
+                    scenarioPhase.EnabledFlashback,
+                    scenarioPhase.DisabledFlashback,
+                    scenarioPhase.StartedFlashbackPlayback,
                     actions,
                     commandChannel.SendWithTokenAsync,
                     commandChannel.TryWaitWithTokenAsync,
@@ -179,8 +114,8 @@ internal static partial class DiagnosticSessionRunExecution
                 outputDirectory,
                 initialSnapshot,
                 samples,
-                startedRecording,
-                flashbackRecordingSettingsDeferredPresetState,
+                scenarioPhase.StartedRecording,
+                scenarioPhase.FlashbackRecordingSettingsDeferredPresetState,
                 actions,
                 warnings,
                 commandChannel.SendAsync,
@@ -208,10 +143,10 @@ internal static partial class DiagnosticSessionRunExecution
                     initialSnapshot,
                     postRunSnapshots,
                     verification,
-                    presentMon,
-                    startedPreview,
-                    enabledFlashback,
-                    startedFlashbackPlayback,
+                    scenarioPhase.PresentMon,
+                    scenarioPhase.StartedPreview,
+                    scenarioPhase.EnabledFlashback,
+                    scenarioPhase.StartedFlashbackPlayback,
                     stoppedRecordingForVerification,
                     actions,
                     warnings),

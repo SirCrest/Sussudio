@@ -185,7 +185,7 @@ static partial class Program
         var stopPreviewBlock = ExtractTextBetween(
             viewModelCaptureText,
             "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
-            "    private async Task ReinitializeDeviceAsync(string reason)");
+            "\n}\n");
         AssertContains(stopPreviewBlock, "var commitStoppedState = false;");
         AssertContains(stopPreviewBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
         AssertContains(stopPreviewBlock, "if (commitStoppedState)\n            {\n                IsPreviewing = false;\n            }");

@@ -19,7 +19,7 @@ mentions the moved files.
 
 | Area | Current large files | Preferred next owner |
 |------|---------------------|----------------------|
-| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunExecution.cs`, `tools/Common/DiagnosticSessionRunExecution.ResultRequest.cs` | public runner compatibility wrapper, mutable run phase plan, result-build request handoff, run bootstrap/options normalization, scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
+| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunExecution.cs`, `tools/Common/DiagnosticSessionRunExecution.Scenario.cs`, `tools/Common/DiagnosticSessionRunExecution.ResultRequest.cs` | public runner compatibility wrapper, mutable run phase plan, scenario phase execution, result-build request handoff, run bootstrap/options normalization, scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs`, `tests/Sussudio.Tests/HarnessCheckCatalog*.cs` | runner entry point, topic check catalogs, xUnit slices, and focused contract tests such as `StatsPresentation.*.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Initialization.cs`, `CaptureService.Audio.cs`, `CaptureService.MicrophoneMonitor.cs`, `CaptureService.WasapiPlayback.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackOrchestration.cs`, `CaptureService.FlashbackAudioInputs.cs`, `CaptureService.FlashbackPreviewBackend.cs`, `CaptureService.FlashbackPreviewBackendDisposal.cs`, `CaptureService.FlashbackBufferCycle.cs`, `CaptureService.FlashbackExportDiagnostics.cs`, `CaptureService.FlashbackExportFailureClassification.cs`, `CaptureService.FlashbackExportOperations.cs`, `CaptureService.FlashbackExportPlanning.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.HealthSnapshotCaptureCadence.cs`, `CaptureService.HealthSnapshotFlashbackBuffer.cs`, `CaptureService.HealthSnapshotFlashbackQueues.cs`, `CaptureService.HealthSnapshotMjpeg.cs`, `CaptureService.HealthSnapshotSourceTelemetry.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RecordingIntegrity.Models.cs`, `CaptureService.RecordingIntegrity.Summary.cs`, `CaptureService.RecordingIntegrity.Counters.cs`, `CaptureService.RecordingIntegrity.Audio.cs`, `CaptureService.RecordingIntegrity.Logging.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RecordingRollback.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.RuntimeSnapshotIngestAudio.cs`, `CaptureService.RuntimeSnapshotHdrPipeline.cs`, `CaptureService.RuntimeSnapshotSourceTelemetry.cs`, `CaptureService.RuntimeSnapshotRecordingIntegrity.cs`, `CaptureService.Snapshots.cs`, `CaptureService.SnapshotRecordingFormat.cs`, `CaptureService.SnapshotObservedFrames.cs`, `CaptureService.SnapshotAvSync.cs`, `CaptureService.SnapshotTelemetry.cs`, `CaptureService.ObservedPixelTelemetry.cs`, `CaptureService.Telemetry.cs` | service state and construction owner, initialization owner, audio preview/input switching owner, microphone monitoring owner, WASAPI playback routing owner, cleanup owner, transition/disposal owner, deferred cleanup owner, failure owner, Flashback control owner, Flashback restart orchestration owner, Flashback audio input restoration owner, Flashback preview backend startup owner, Flashback preview backend disposal owner, Flashback buffer cycle owner, Flashback export diagnostics/progress owner, Flashback export failure taxonomy, Flashback export entry/core owner, Flashback export planning/throttle owner, Flashback recording policy owner, health snapshot builder, capture cadence health projection, Flashback buffer/backend health projection, Flashback queue health projection, MJPEG health snapshot projection, source telemetry health projection, preview lifecycle owner, preview pipeline owner, probe owner, recording integrity active-backend resolver, integrity DTOs, integrity summary classification, integrity counter capture, audio integrity capture, integrity logging, recording start/stop transition owner, transient recording rollback owner, runtime snapshot builder, runtime ingest/audio projection, runtime HDR/encoder pipeline projection, runtime source-telemetry projection, runtime recording-integrity projection, diagnostics compatibility and shared snapshot utilities, recording format snapshot policy, observed frame snapshot telemetry, A/V sync snapshot policy, source telemetry snapshot policy, observed pixel telemetry owner, telemetry owner, resource managers |
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `DeviceService.FormatCache.cs`, `DeviceService.FormatProbe.cs`, `DeviceService.Scoring.cs`, `DeviceService.AudioAssociation.cs`, `DeviceService.NativeXu.cs`, `MfDeviceEnumerator.cs`, `MfDeviceEnumerator.VideoDevices.cs`, `MfDeviceEnumerator.AudioEndpoints.cs`, `MfDeviceEnumerator.FormatProbe.cs` | device enumeration orchestration, persisted format cache, inline/background format probing, priority/capability scoring, audio endpoint association, Native XU interface path resolution, shared MF constants/P/Invokes, MF video device enumeration, WASAPI capture endpoint enumeration, native MF format probing and source fallback |
@@ -1627,7 +1627,9 @@ Primary current owners:
   owns watchdog/telemetry timers, timeout configuration, timeout recovery, and
   failure-stop scheduling.
   `MainWindow.PreviewStartupSignals.cs` owns readiness-signal
-  collection and playback-progress diagnostics.
+  collection and playback-progress diagnostics. `Sussudio/Controllers/PreviewStartupReadinessSignalController.cs`
+  owns readiness-signal required/received state, missing-signal calculation,
+  playback-advance threshold checks, and readiness result snapshots.
   `Sussudio/Controllers/PreviewStartupSignalFormatter.cs` owns missing-signal
   and signal-list string formatting.
   `Sussudio/Controllers/PreviewStartupFailureTextFormatter.cs` owns preview
@@ -1760,7 +1762,9 @@ Primary current owners:
   `MainViewModel.CaptureSettings.cs` owns capture settings projection from UI
   selection and observed runtime/source state.
   `MainViewModel.Capture.cs` owns device initialization, preview start/stop,
-  selected-device apply, and preview reinitialization.
+  and selected-device apply. `MainViewModel.PreviewReinitialization.cs` owns
+  debounced preview reinitialization, Flashback-cycle wait-before-reinit,
+  renderer-stop handoff, teardown restart, and reinit gate release.
   `MainViewModel.OutputPathSelection.cs` owns output folder picker and path assignment.
   `MainViewModel.RecordingLifecycle.cs` owns recording toggle serialization,
   graceful stop, emergency stop, and start/stop recording transitions.
@@ -2141,6 +2145,13 @@ Primary owners:
 - `tools/Common/DiagnosticSessionRunBootstrap.cs` owns diagnostic-session
   scenario normalization, scenario-plan selection, duration/sample clamping,
   session identity, output-directory creation, and runner process metadata.
+- `tools/Common/DiagnosticSessionRunExecution.cs` owns diagnostic-session phase
+  sequencing around initial snapshot capture, scenario phase invocation,
+  cleanup, recording checks, post-run snapshots, and result handoff.
+- `tools/Common/DiagnosticSessionRunExecution.Scenario.cs` owns the main
+  diagnostic-session scenario phase: state-mutation gating, setup/startup,
+  sampling, background task awaits, rejected-export handling, PresentMon await,
+  fault drain, and the cleanup state consumed by `RunAsync`.
 - `tools/Common/DiagnosticSessionRunExecution.ResultRequest.cs` owns the final
   diagnostic-session result-build request mapping so the runner execution root
   keeps the phase sequence readable.

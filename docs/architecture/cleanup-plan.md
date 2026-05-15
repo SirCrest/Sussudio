@@ -1719,8 +1719,11 @@ constructor partial. Watchdog/telemetry timers, timeout configuration, timeout
 recovery, and failure-stop scheduling live in
 `Sussudio/MainWindow.PreviewStartupWatchdog.cs`. Readiness-signal collection
 and playback-progress diagnostics live in
-`Sussudio/MainWindow.PreviewStartupSignals.cs`; missing-signal and signal-list
-string formatting lives in
+`Sussudio/MainWindow.PreviewStartupSignals.cs`; readiness-signal required/
+received state, missing-signal calculation, playback-advance threshold checks,
+and readiness result snapshots live in
+`Sussudio/Controllers/PreviewStartupReadinessSignalController.cs`. Missing-signal
+and signal-list string formatting lives in
 `Sussudio/Controllers/PreviewStartupSignalFormatter.cs`. Timeout reason,
 timeout status, and failure-stop status text live in
 `Sussudio/Controllers/PreviewStartupFailureTextFormatter.cs`. This keeps the
@@ -1844,7 +1847,10 @@ Diagnostic session DTOs now live in focused model files:
 `tools/Common/DiagnosticSessionResult.Overview.cs`, and
 `tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionRunner.cs` owns the
 public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
-mutable run phase plan for setup, sampling, cleanup, verification, and summary.
+mutable run phase plan around initial snapshot, cleanup, verification, post-run
+snapshots, and summary. `DiagnosticSessionRunExecution.Scenario.cs` owns the
+main scenario execution phase for setup/startup, sampling, background task
+awaits, rejected-export handling, PresentMon await, and fault drain.
 `DiagnosticSessionRunExecution.ResultRequest.cs` owns the final result-build
 request handoff from computed runner state to the result builder.
 The public options/result/sample contracts are separated from runner behavior. The result
@@ -2336,6 +2342,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionText.cs`
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionRunExecution.cs`
+- `DiagnosticSessionRunExecution.Scenario.cs`
 - `DiagnosticSessionRunExecution.ResultRequest.cs`
 - `AutomationResponseState.cs`
 - `JsonOptions.cs`
@@ -2351,7 +2358,8 @@ Remaining `tools/Common` ownership:
 
    `tools/Common/DiagnosticSessionRunner.cs` is now the small public wrapper,
    while `tools/Common/DiagnosticSessionRunExecution.cs` owns the mutable run
-   phase plan. Scenario catalog initial scenario setup, optional scenario
+   phase plan and `DiagnosticSessionRunExecution.Scenario.cs` owns the main
+   scenario execution phase. Scenario catalog, initial scenario setup, optional scenario
    startup, cleanup mutation ownership, post-cleanup recording checks,
    post-run snapshot fetches, command send/failure plumbing, and result
    construction are extracted; next, split remaining production runner
@@ -2438,9 +2446,11 @@ Remaining `tools/Common` ownership:
    formatting now lives in
    `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`. Capture
    settings projection from UI/runtime state now lives in
-   `MainViewModel.CaptureSettings.cs`, leaving
-   `MainViewModel.Capture.cs` focused on device/preview/reinitialize
-   transitions. Output folder selection now lives in
+   `MainViewModel.CaptureSettings.cs`, leaving `MainViewModel.Capture.cs`
+   focused on device initialization, preview start/stop, and selected-device
+   apply. Debounced preview reinitialization, Flashback-cycle wait-before-reinit,
+   renderer-stop handoff, teardown restart, and gate release now live in
+   `MainViewModel.PreviewReinitialization.cs`. Output folder selection now lives in
    `MainViewModel.OutputPathSelection.cs`. Recording toggle serialization, graceful stop, emergency stop,
    and start/stop recording transitions now live in
    `MainViewModel.RecordingLifecycle.cs`. Recording option selections, output
