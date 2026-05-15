@@ -14,6 +14,7 @@ static partial class Program
     private static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
         var settingsPartialText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Settings.cs").Replace("\r\n", "\n");
+        var captureOptionVisibilityText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureOptionVisibility.cs").Replace("\r\n", "\n");
         var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? ShowAllCaptureOptions { get; set; }");
@@ -23,8 +24,10 @@ static partial class Program
         AssertContains(settingsPartialText, "ShowAllCaptureOptions = ShowAllCaptureOptions,");
         AssertContains(settingsPartialText, "IsStatsVisible = IsStatsVisible,");
         AssertContains(settingsPartialText, "partial void OnIsStatsVisibleChanged(bool value)");
-        AssertContains(settingsPartialText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
-        AssertContains(settingsPartialText, "RebuildResolutionOptions();\n        SaveSettings();");
+        AssertContains(captureOptionVisibilityText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
+        AssertContains(captureOptionVisibilityText, "RebuildResolutionOptions();\n        SaveSettings();");
+        AssertDoesNotContain(settingsPartialText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
+        AssertDoesNotContain(settingsPartialText, "RebuildResolutionOptions();\n        SaveSettings();");
 
         return Task.CompletedTask;
     }

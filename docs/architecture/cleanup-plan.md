@@ -2076,7 +2076,9 @@ Remaining `tools/Common` ownership:
    collection mutation, and automatic frame-rate selection now live in
    `MainViewModel.FrameRateOptions.cs`. Source-rate filtering and
    `ShowAllCaptureOptions` unlock policy live in
-   `MainViewModel.FrameRateSourceFilterPolicy.cs`. Shared frame-rate timing family,
+   `MainViewModel.FrameRateSourceFilterPolicy.cs`, while `ShowAllCaptureOptions`
+   change handling and deferred rebuild behavior live in
+   `MainViewModel.CaptureOptionVisibility.cs`. Shared frame-rate timing family,
    rational parsing, source-rate fallback, and preferred-format ranking now live
    in `MainViewModel.FrameRateTiming.cs`; keep device enumeration and selected
    device capability rebuilds in `MainViewModel.DeviceManagement.cs`, while

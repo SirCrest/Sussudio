@@ -109,6 +109,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Audio input/microphone/device-audio property changes: focused partials
     // Device management: MainViewModel.DeviceManagement.cs
     // Device format probes: MainViewModel.DeviceFormatProbes.cs
+    // Capture option visibility: MainViewModel.CaptureOptionVisibility.cs
     // Frame-rate options: MainViewModel.FrameRateOptions.cs
     // Frame-rate timing policy: MainViewModel.FrameRateTiming.cs
     // Auto resolution options: MainViewModel.AutoResolutionOptions.cs

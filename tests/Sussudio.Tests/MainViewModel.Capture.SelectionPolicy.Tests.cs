@@ -7,9 +7,22 @@ static partial class Program
     {
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateSourceFilterPolicy.cs").Replace("\r\n", "\n");
+        var captureOptionVisibilityText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureOptionVisibility.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "FrameRateSourceFilterPolicy.Apply(");
         AssertContains(mainViewModelText, "ShowAllCaptureOptions);");
+        AssertContains(captureOptionVisibilityText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
+        AssertContains(captureOptionVisibilityText, "if (IsRecording)");
+        AssertContains(captureOptionVisibilityText, "_pendingModeOptionsRefresh = true;");
+        AssertContains(captureOptionVisibilityText, "_pendingModeOptionsRefresh = false;");
+        AssertContains(captureOptionVisibilityText, "RebuildResolutionOptions();");
+        AssertContains(captureOptionVisibilityText, "SaveSettings();");
+        AssertOccursBefore(captureOptionVisibilityText, "if (IsRecording)", "_pendingModeOptionsRefresh = true;");
+        AssertOccursBefore(captureOptionVisibilityText, "_pendingModeOptionsRefresh = true;", "SaveSettings();");
+        AssertOccursBefore(captureOptionVisibilityText, "SaveSettings();", "return;");
+        AssertOccursBefore(captureOptionVisibilityText, "return;", "_pendingModeOptionsRefresh = false;");
+        AssertOccursBefore(captureOptionVisibilityText, "_pendingModeOptionsRefresh = false;", "RebuildResolutionOptions();");
+        AssertOccursBefore(captureOptionVisibilityText, "RebuildResolutionOptions();", "SaveSettings();\n    }");
         AssertContains(sourceFilterPolicyText, "showAllCaptureOptions");
         AssertContains(sourceFilterPolicyText, "!IsSourceFilteredFrameRateDisableReason(option.DisableReason)");
         AssertContains(sourceFilterPolicyText, "CloneOption(option, isEnabled: true, disableReason: string.Empty)");
