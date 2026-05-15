@@ -1042,9 +1042,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCheckCatalog.CoreRuntime.cs` owns runtime,
   telemetry, recording verifier, LibAv encoder, and basic app contract check
   registration.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.AutomationDiagnostics.cs` owns
-  automation, coordinator, service namespace, and automation diagnostics
-  projection check registration.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.AutomationDiagnostics.cs`
+  coordinates automation-diagnostics check registration; focused
+  `HarnessCheckCatalog.AutomationDiagnostics.*.cs` partials own app shell,
+  MainWindow surface, dispatcher, pipe/auth, ViewModel/Flashback UI,
+  capture/Flashback routing, snapshot projection, and protocol registration
+  groups.
 - `tests/Sussudio.Tests/ServiceNamespace.Tests.cs` owns the harness-visible
   service namespace/source ownership orchestrator.
 - `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` owns service
@@ -1070,9 +1073,13 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCheckCatalog.McpDiagnosticsPipeline.cs` owns MCP,
   diagnostic-session, unified-video, MJPEG, D3D pending-frame, and recording
   queue check registration.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.RecordingModels.cs` owns LibAv sink,
-  capture settings, recording/finalize model, Flashback buffer, and core model
-  check registration.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.RecordingModels.cs` coordinates
+  recording/model check registration; focused
+  `HarnessCheckCatalog.RecordingModels.*.cs` partials own LibAv sink,
+  capture runtime, recording contracts/artifacts/stats, capture settings,
+  Flashback buffer, recording context, device/media models, automation
+  contracts, runtime paths, source-signal telemetry, and HDR policy
+  registration groups.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.cs` coordinates Flashback
   check registration; `HarnessCheckCatalog.Flashback.*.cs` partials own model,
   playback, decoder, encoder sink, and exporter registration groups.
