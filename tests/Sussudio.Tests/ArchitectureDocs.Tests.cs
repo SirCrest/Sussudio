@@ -163,9 +163,7 @@ static partial class Program
         => consumer switch
         {
             "Sussudio/Services/Automation/AutomationCommandDispatcher*.cs" =>
-                agentMapText.Contains("`Sussudio/Services/Automation/AutomationCommandDispatcher.cs`", StringComparison.Ordinal) &&
-                agentMapText.Contains("`Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`", StringComparison.Ordinal) &&
-                agentMapText.Contains("`Sussudio/Services/Automation/AutomationCommandDispatcher.VerificationCommands.cs`", StringComparison.Ordinal),
+                AgentMapCoversEveryAutomationCommandDispatcherFile(agentMapText),
             "Sussudio.Automation.Contracts/AutomationCommandKind.cs" =>
                 agentMapText.Contains("Primary owner: `Sussudio.Automation.Contracts/`", StringComparison.Ordinal) &&
                 agentMapText.Contains("`AutomationCommandKind.cs` owns numeric command IDs.", StringComparison.Ordinal),
@@ -189,6 +187,10 @@ static partial class Program
                 agentMapText.Contains("`tests/Sussudio.Tests/HarnessCheckCatalog*.cs`", StringComparison.Ordinal),
             _ => agentMapText.Contains($"`{consumer}`", StringComparison.Ordinal)
         };
+
+    private static bool AgentMapCoversEveryAutomationCommandDispatcherFile(string agentMapText)
+        => EnumerateAutomationCommandDispatcherFamilyFiles()
+            .All(file => agentMapText.Contains($"`{file}`", StringComparison.Ordinal));
 
     private static IEnumerable<string> EnumerateAgentMapPathTokens(string markdown)
     {
