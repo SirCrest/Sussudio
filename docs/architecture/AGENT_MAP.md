@@ -2048,6 +2048,10 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs` owns
   Flashback export status, force-rotate fallback, last-result, and progress
   DTO projection values consumed by the final result initializer.
+- `tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs` owns capture
+  selection, negotiated format, source geometry, detected cadence, HDR, and
+  source-telemetry DTO projection values consumed by the final result
+  initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs` owns preview
   scheduler, D3D, cadence, and visual-cadence DTO projection values consumed
   by the final result initializer.

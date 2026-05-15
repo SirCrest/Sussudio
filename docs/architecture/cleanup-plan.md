@@ -1861,6 +1861,9 @@ export status, force-rotate fallback, last-result, and progress DTO projection
 values live in `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`.
 Export force-rotate fallback counters now travel with
 `FlashbackExportSessionMetrics` instead of loose analysis record fields.
+Capture selection, negotiated format, source geometry, detected cadence, HDR,
+and source-telemetry DTO projection values live in
+`DiagnosticSessionResultBuilder.CaptureResult.cs`.
 
 Diagnostic-session summary writing now lives in
 `tools/Common/DiagnosticSessionSummaryWriter.cs`. It owns `summary.json` writes
@@ -2235,6 +2238,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
+- `DiagnosticSessionResultBuilder.CaptureResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewResult.cs`
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`
