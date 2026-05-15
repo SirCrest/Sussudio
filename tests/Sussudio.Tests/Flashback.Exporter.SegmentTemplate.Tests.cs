@@ -46,20 +46,25 @@ static partial class Program
             sourceText,
             "private FinalizeResult ExportSegmentsCore",
             "    private static long ResolveFrameDurationUs");
+        var skipTrackingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentSkipTracking.cs")
+            .Replace("\r\n", "\n");
 
-        AssertContains(segmentExportCore, "var skippedRequestedSegmentCount = 0;");
-        AssertContains(segmentExportCore, "void TrackSkippedRequestedSegment(FlashbackExportSegment segment, string reason)");
-        AssertContains(segmentExportCore, "SegmentOverlapsExportRange(segment, inPoint, outPoint)");
-        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"not_found\");");
-        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"invalid_stream_count\");");
-        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"stream_count_mismatch\");");
-        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"stream_layout_mismatch\");");
-        AssertDoesNotContain(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"video_stream_missing\");");
-        AssertDoesNotContain(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"video_params_incomplete\");");
+        AssertContains(segmentExportCore, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
+        AssertDoesNotContain(segmentExportCore, "void TrackSkippedRequestedSegment(FlashbackExportSegment segment, string reason)");
+        AssertContains(skipTrackingText, "private struct RequestedSegmentSkipTracker");
+        AssertContains(skipTrackingText, "public void Track(FlashbackExportSegment segment, string reason)");
+        AssertContains(skipTrackingText, "SegmentOverlapsExportRange(segment, _inPoint, _outPoint)");
+        AssertContains(skipTrackingText, "public bool TryCreateFailureMessage(out string message)");
+        AssertContains(segmentExportCore, "requestedSegmentSkips.Track(segment, \"not_found\");");
+        AssertContains(segmentExportCore, "requestedSegmentSkips.Track(segment, \"invalid_stream_count\");");
+        AssertContains(segmentExportCore, "requestedSegmentSkips.Track(segment, \"stream_count_mismatch\");");
+        AssertContains(segmentExportCore, "requestedSegmentSkips.Track(segment, \"stream_layout_mismatch\");");
+        AssertDoesNotContain(segmentExportCore, "requestedSegmentSkips.Track(segment, \"video_stream_missing\");");
+        AssertDoesNotContain(segmentExportCore, "requestedSegmentSkips.Track(segment, \"video_params_incomplete\");");
         AssertContains(segmentExportCore, "if (!TryInitializeSegmentOutputTemplate(segments, tmpPath, fastStart, ct, out streamCount, out videoStreamIndex, out streamMap, out var templateFailure))");
         AssertOccursBefore(segmentExportCore, "if (!TryInitializeSegmentOutputTemplate(segments, tmpPath, fastStart, ct, out streamCount, out videoStreamIndex, out streamMap, out var templateFailure))", "for (var segIdx = 0; segIdx < segments.Count; segIdx++)");
-        AssertContains(segmentExportCore, "requested segment(s) were skipped");
-        AssertOccursBefore(segmentExportCore, "if (skippedRequestedSegmentCount > 0)", "if (totalPackets == 0)");
+        AssertContains(skipTrackingText, "requested segment(s) were skipped");
+        AssertOccursBefore(segmentExportCore, "if (requestedSegmentSkips.TryCreateFailureMessage(out var skippedSegmentFailureMessage))", "if (totalPackets == 0)");
 
         return Task.CompletedTask;
     }

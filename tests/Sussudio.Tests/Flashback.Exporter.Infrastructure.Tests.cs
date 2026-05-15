@@ -68,6 +68,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
+        var segmentSkipTrackingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentSkipTracking.cs")
+            .Replace("\r\n", "\n");
         var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
             .Replace("\r\n", "\n");
         var segmentValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentValidation.cs")
@@ -104,6 +106,10 @@ static partial class Program
         AssertContains(segmentsText, "private FinalizeResult ExportSegmentsCore(");
         AssertContains(segmentsText, "TryValidateSegmentExportInputs(");
         AssertContains(segmentsText, "TryEstimateSegmentExportReadableBytes(");
+        AssertContains(segmentsText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
+        AssertContains(segmentSkipTrackingText, "private struct RequestedSegmentSkipTracker");
+        AssertContains(segmentSkipTrackingText, "public void Track(FlashbackExportSegment segment, string reason)");
+        AssertContains(segmentSkipTrackingText, "public bool TryCreateFailureMessage(out string message)");
         AssertContains(segmentsText, "ReleaseExportLockBestEffort(\"segment_export\");");
         AssertContains(segmentTemplateText, "private bool TryInitializeSegmentOutputTemplate(");
         AssertContains(segmentTemplateText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");

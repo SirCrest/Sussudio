@@ -79,8 +79,7 @@ internal sealed unsafe partial class FlashbackExporter
             int[] streamMap = Array.Empty<int>();
             long totalPackets = 0;
             long bytesProcessed = 0;
-            var skippedRequestedSegmentCount = 0;
-            string? firstSkippedRequestedSegmentReason = null;
+            var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);
 
             // Cross-segment PTS tracking (in microseconds)
             long outputPtsOffsetUs = 0; // accumulated offset for output continuity
@@ -88,17 +87,6 @@ internal sealed unsafe partial class FlashbackExporter
             // Per-stream last DTS tracking for monotonicity enforcement
             var lastDtsPerStream = new long[64]; // indexed by OUTPUT stream index
             for (int i = 0; i < lastDtsPerStream.Length; i++) lastDtsPerStream[i] = long.MinValue;
-
-            void TrackSkippedRequestedSegment(FlashbackExportSegment segment, string reason)
-            {
-                if (!SegmentOverlapsExportRange(segment, inPoint, outPoint))
-                {
-                    return;
-                }
-
-                skippedRequestedSegmentCount++;
-                firstSkippedRequestedSegmentReason ??= reason;
-            }
 
             if (!TryInitializeSegmentOutputTemplate(segments, tmpPath, fastStart, ct, out streamCount, out videoStreamIndex, out streamMap, out var templateFailure))
             {
@@ -137,7 +125,7 @@ internal sealed unsafe partial class FlashbackExporter
                     if (!File.Exists(segPath))
                     {
                         Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='not_found'");
-                        TrackSkippedRequestedSegment(segment, "not_found");
+                        requestedSegmentSkips.Track(segment, "not_found");
                         continue;
                     }
 
@@ -147,7 +135,7 @@ internal sealed unsafe partial class FlashbackExporter
                     if (!TryGetInputStreamCount(_activeInputContext, "segment_export", out var currentStreamCount, out var streamCountFailure))
                     {
                         Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='invalid_stream_count' detail='{streamCountFailure}'");
-                        TrackSkippedRequestedSegment(segment, "invalid_stream_count");
+                        requestedSegmentSkips.Track(segment, "invalid_stream_count");
                         CloseActiveInput();
                         continue;
                     }
@@ -159,7 +147,7 @@ internal sealed unsafe partial class FlashbackExporter
                     if (segNbStreams != streamCount)
                     {
                         Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_count_mismatch' expected={streamCount} actual={segNbStreams}");
-                        TrackSkippedRequestedSegment(segment, "stream_count_mismatch");
+                        requestedSegmentSkips.Track(segment, "stream_count_mismatch");
                         CloseActiveInput();
                         continue;
                     }
@@ -172,7 +160,7 @@ internal sealed unsafe partial class FlashbackExporter
                     if (streamLayoutMismatch != null)
                     {
                         Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_layout_mismatch' detail='{streamLayoutMismatch}'");
-                        TrackSkippedRequestedSegment(segment, "stream_layout_mismatch");
+                        requestedSegmentSkips.Track(segment, "stream_layout_mismatch");
                         CloseActiveInput();
                         continue;
                     }
@@ -545,11 +533,10 @@ internal sealed unsafe partial class FlashbackExporter
                 ffmpeg.av_packet_free(&packetToFree);
             }
 
-            if (skippedRequestedSegmentCount > 0)
+            if (requestedSegmentSkips.TryCreateFailureMessage(out var skippedSegmentFailureMessage))
             {
-                var message = $"Flashback export failed: {skippedRequestedSegmentCount} requested segment(s) were skipped; first reason: {firstSkippedRequestedSegmentReason}.";
-                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-                return FinalizeResult.Failure(outputPath, message);
+                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{skippedSegmentFailureMessage}'");
+                return FinalizeResult.Failure(outputPath, skippedSegmentFailureMessage);
             }
 
             if (totalPackets == 0)
