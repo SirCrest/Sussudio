@@ -2093,7 +2093,29 @@ Primary owners:
 - `tools/Common/DiagnosticSessionText.cs` owns shared diagnostic-session text
   helpers used by the runner, formatter, and validation policies.
 - `tools/Common/AutomationSnapshotFormatter.cs` owns the top-level shared
-  automation snapshot console text flow.
+  automation snapshot console text flow and delegates each named output
+  section to a focused partial.
+  `tools/Common/AutomationSnapshotFormatter.State.cs` owns the state,
+  capture-command queue, selected-device, and initialized/preview/recording
+  text.
+  `tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs` owns capture
+  option, recording format, HDR, pipeline, and compact UI setting text.
+  `tools/Common/AutomationSnapshotFormatter.Audio.cs` owns audio enablement,
+  preview/custom input, signal, reader, and frame-count text.
+  `tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs` owns video reader,
+  encoder queue, queue-latency, backpressure, failure, GPU/CUDA queue,
+  freshness, diagnostics, and thread-health routing text.
+  `tools/Common/AutomationSnapshotFormatter.Recording.cs` owns recording
+  summary, integrity, audio integrity, and last-output text.
+  `tools/Common/AutomationSnapshotFormatter.Diagnostics.cs` owns diagnostic
+  health, summary, evidence, and frame-lane text.
+  `tools/Common/AutomationSnapshotFormatter.Performance.cs` owns legacy
+  performance score, summary, and pipeline-latency text.
+  `tools/Common/AutomationSnapshotFormatter.Memory.cs` owns process CPU,
+  working-set/private/managed memory, GC, and thread-pool text.
+  `tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs` owns capture
+  cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled visual
+  cadence, and routing to MJPEG/AV-sync/preview/source sections.
   `tools/Common/AutomationSnapshotFormatter.Values.cs` owns tolerant JSON
   accessors and typed JSON coercion.
   `tools/Common/AutomationSnapshotFormatter.DisplayValues.cs` owns shared

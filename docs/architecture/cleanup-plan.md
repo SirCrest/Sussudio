@@ -317,20 +317,30 @@ projection in `Formatters.Timeline.Rows.cs`, table output in
 `Formatters.Common.cs`.
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
-snapshot formatter facade for top-level text flow. Tolerant JSON accessors live
-in `AutomationSnapshotFormatter.Values.cs`, while byte/number/interval,
+snapshot formatter facade for top-level text flow. State, capture settings,
+audio, video pipeline, recording, diagnostics, performance, memory, and capture
+cadence text live in `AutomationSnapshotFormatter.State.cs`,
+`AutomationSnapshotFormatter.CaptureSettings.cs`,
+`AutomationSnapshotFormatter.Audio.cs`,
+`AutomationSnapshotFormatter.VideoPipeline.cs`,
+`AutomationSnapshotFormatter.Recording.cs`,
+`AutomationSnapshotFormatter.Diagnostics.cs`,
+`AutomationSnapshotFormatter.Performance.cs`,
+`AutomationSnapshotFormatter.Memory.cs`, and
+`AutomationSnapshotFormatter.CaptureCadence.cs`. Tolerant JSON accessors live in
+`AutomationSnapshotFormatter.Values.cs`, while byte/number/interval,
 frame-budget, and tick-age display helpers live in
-`AutomationSnapshotFormatter.DisplayValues.cs`; the
-Flashback gate/header/order lives in `AutomationSnapshotFormatter.Flashback.cs`,
-with encoder/buffer/cache/queue/failure text in
+`AutomationSnapshotFormatter.DisplayValues.cs`; the Flashback gate/header/order
+lives in `AutomationSnapshotFormatter.Flashback.cs`, with
+encoder/buffer/cache/queue/failure text in
 `AutomationSnapshotFormatter.Flashback.Encoding.cs`, playback status/commands
 and cadence/decode/frame/drift text in
 `AutomationSnapshotFormatter.Flashback.Playback.cs`, and export progress/result
 text in `AutomationSnapshotFormatter.Flashback.Export.cs`. MJPEG timing, AV
 sync, preview routing, D3D preview/slow-frame diagnostics, thread-health, and
-source sections live in the remaining focused formatter partials. Tests that reason about
-formatter source use `ReadAutomationSnapshotFormatterSource()` so ownership
-checks cover the full partial family.
+source sections live in the remaining focused formatter partials. Tests that
+reason about formatter source use `ReadAutomationSnapshotFormatterSource()` so
+ownership checks cover the full partial family.
 
 `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is now only
 the diagnostic-session MCP surface index shell. Diagnostic-session coverage is

@@ -5,6 +5,15 @@ static partial class Program
         var files = new[]
         {
             "tools/Common/AutomationSnapshotFormatter.cs",
+            "tools/Common/AutomationSnapshotFormatter.State.cs",
+            "tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs",
+            "tools/Common/AutomationSnapshotFormatter.Audio.cs",
+            "tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs",
+            "tools/Common/AutomationSnapshotFormatter.Recording.cs",
+            "tools/Common/AutomationSnapshotFormatter.Diagnostics.cs",
+            "tools/Common/AutomationSnapshotFormatter.Performance.cs",
+            "tools/Common/AutomationSnapshotFormatter.Memory.cs",
+            "tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs",
             "tools/Common/AutomationSnapshotFormatter.Values.cs",
             "tools/Common/AutomationSnapshotFormatter.DisplayValues.cs",
             "tools/Common/AutomationSnapshotFormatter.Flashback.cs",
