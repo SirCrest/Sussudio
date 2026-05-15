@@ -11,6 +11,8 @@ static partial class Program
         var protocolType = RequireType("Sussudio.Tools.AutomationPipeProtocol");
         AssertEqual("SussudioAutomation", GetConstant<string>(protocolType, "DefaultPipeName"), "AutomationPipeProtocol.DefaultPipeName");
         AssertEqual("SUSSUDIO_AUTOMATION_TOKEN", GetConstant<string>(protocolType, "AutomationKeyEnvVar"), "AutomationPipeProtocol.AutomationKeyEnvVar");
+        var commandManifestRevision = GetConstant<int>(protocolType, "CommandManifestRevision");
+        AssertEqual(1, commandManifestRevision, "AutomationPipeProtocol.CommandManifestRevision");
         AssertEqual(5000, GetConstant<int>(protocolType, "DefaultConnectTimeoutMs"), "AutomationPipeProtocol.DefaultConnectTimeoutMs");
         AssertEqual(15000, GetConstant<int>(protocolType, "DefaultResponseTimeoutMs"), "AutomationPipeProtocol.DefaultResponseTimeoutMs");
         AssertEqual(60000, GetConstant<int>(protocolType, "ExtendedResponseTimeoutMs"), "AutomationPipeProtocol.ExtendedResponseTimeoutMs");
@@ -63,11 +65,13 @@ static partial class Program
             var envelope = (IDictionary<string, object?>)createEnvelope.Invoke(null, new object?[] { 17, payload, null })!;
             AssertEqual(17, (int)envelope["command"]!, "CreateRequestEnvelope command");
             AssertEqual(32, ((string)envelope["correlationId"]!).Length, "CreateRequestEnvelope correlation id length");
+            AssertEqual(commandManifestRevision, (int)envelope["manifestRevision"]!, "CreateRequestEnvelope manifest revision");
             AssertEqual("env-token", (string)envelope["authToken"]!, "CreateRequestEnvelope env auth");
             AssertEqual(true, ReferenceEquals(payload, envelope["payload"]), "CreateRequestEnvelope payload identity");
 
             var explicitEnvelope = (IDictionary<string, object?>)createEnvelope.Invoke(null, new object?[] { 1, null, "explicit-token" })!;
             AssertEqual("explicit-token", (string)explicitEnvelope["authToken"]!, "CreateRequestEnvelope explicit auth");
+            AssertEqual(commandManifestRevision, (int)explicitEnvelope["manifestRevision"]!, "CreateRequestEnvelope explicit manifest revision");
             AssertEqual(true, explicitEnvelope["payload"] is Dictionary<string, object?>, "CreateRequestEnvelope default payload shape");
         }
         finally

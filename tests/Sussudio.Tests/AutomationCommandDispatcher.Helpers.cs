@@ -85,7 +85,8 @@ static partial class Program
     private static object CreateAutomationCommandRequest(
         string commandName,
         string? authToken,
-        string payloadJson)
+        string payloadJson,
+        int? manifestRevision = null)
     {
         var requestType = RequireType("Sussudio.Models.AutomationCommandRequest");
         var commandType = RequireType("Sussudio.Models.AutomationCommandKind");
@@ -95,6 +96,7 @@ static partial class Program
         SetPropertyBackingField(request, "Command", Enum.Parse(commandType, commandName));
         SetPropertyBackingField(request, "CorrelationId", Guid.NewGuid().ToString("N"));
         SetPropertyBackingField(request, "AuthToken", authToken);
+        SetPropertyBackingField(request, "ManifestRevision", manifestRevision);
         SetPropertyBackingField(request, "Payload", payload.RootElement.Clone());
         return request;
     }

@@ -89,7 +89,9 @@ static partial class Program
             }
 
             using var document = JsonDocument.Parse(requestLine);
-            requests.Add(document.RootElement.Clone());
+            var request = document.RootElement.Clone();
+            AssertCapturedPipeRequestEnvelope(request, i + 1);
+            requests.Add(request);
 
             using var writer = new StreamWriter(serverPipe, leaveOpen: true) { AutoFlush = true };
             await writer.WriteLineAsync(CompactJsonLine(responseFactory?.Invoke(i) ?? "{\"Success\":true,\"Message\":\"ok\"}"))
@@ -179,4 +181,41 @@ static partial class Program
 
     private static string NewMcpToolPipeName(string suffix)
         => $"ec-mcp-{suffix}-{Guid.NewGuid():N}";
+
+    private static void AssertCapturedPipeRequestEnvelope(JsonElement request, int requestNumber)
+    {
+        AssertEqual(JsonValueKind.Object, request.ValueKind, $"pipe request {requestNumber} envelope kind");
+
+        if (!request.TryGetProperty("command", out var command) ||
+            command.ValueKind != JsonValueKind.Number ||
+            !command.TryGetInt32(out _))
+        {
+            throw new InvalidOperationException($"Pipe request {requestNumber} envelope command was not a numeric command ID.");
+        }
+
+        if (!request.TryGetProperty("correlationId", out var correlationId) ||
+            correlationId.ValueKind != JsonValueKind.String ||
+            string.IsNullOrWhiteSpace(correlationId.GetString()))
+        {
+            throw new InvalidOperationException($"Pipe request {requestNumber} envelope correlationId was missing or empty.");
+        }
+
+        if (!request.TryGetProperty("manifestRevision", out var manifestRevision) ||
+            manifestRevision.ValueKind != JsonValueKind.Number ||
+            !manifestRevision.TryGetInt32(out var actualManifestRevision))
+        {
+            throw new InvalidOperationException($"Pipe request {requestNumber} envelope manifestRevision was not numeric.");
+        }
+
+        AssertEqual(
+            Sussudio.Tools.AutomationPipeProtocol.CommandManifestRevision,
+            actualManifestRevision,
+            $"pipe request {requestNumber} envelope manifestRevision");
+
+        if (!request.TryGetProperty("payload", out var payload) ||
+            payload.ValueKind is not JsonValueKind.Object and not JsonValueKind.Null)
+        {
+            throw new InvalidOperationException($"Pipe request {requestNumber} envelope payload had unexpected kind {payload.ValueKind}.");
+        }
+    }
 }

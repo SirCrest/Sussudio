@@ -27,5 +27,33 @@ static partial class Program
         AssertEqual("None", (string)GetPublicProperty(manifestCommand, "PathPolicy")!, "manifest path policy");
         AssertEqual("manifest", (string)GetPublicProperty(manifestCommand, "CliHelp")!, "manifest CLI help");
         AssertEqual("Get automation command manifest.", (string)GetPublicProperty(manifestCommand, "McpDescription")!, "manifest MCP description");
+
+        var diagnosticsCalls = 0;
+        var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
+        var mismatchDispatcher = CreateAutomationCommandDispatcher(
+            CreateThrowingProxy(viewModelType),
+            CreateConfiguredProxy(
+                diagnosticsType,
+                (method, _) =>
+                {
+                    diagnosticsCalls++;
+                    return GetDefaultReturnValue(method);
+                }),
+            CreateThrowingProxy(windowControlType),
+            authToken: null);
+        var mismatchResponse = await ExecuteAutomationCommandAsync(
+                mismatchDispatcher,
+                CreateAutomationCommandRequest(
+                    "GetSnapshot",
+                    authToken: null,
+                    payloadJson: "{}",
+                    manifestRevision: Sussudio.Tools.AutomationPipeProtocol.CommandManifestRevision + 1))
+            .ConfigureAwait(false);
+
+        AssertAutomationResponse(mismatchResponse, success: false, errorCode: "manifest-mismatch", status: "error", "manifest revision mismatch");
+        AssertEqual(null, GetPublicProperty(mismatchResponse, "Snapshot"), "manifest mismatch response omits snapshot");
+        AssertEqual(0, diagnosticsCalls, "manifest mismatch does not execute command");
     }
 }
