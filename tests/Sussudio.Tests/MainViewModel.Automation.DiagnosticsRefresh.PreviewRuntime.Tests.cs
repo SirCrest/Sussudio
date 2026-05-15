@@ -3,6 +3,7 @@ static partial class Program
     private static void AssertDiagnosticsPreviewRuntimeProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
         AssertContains(diagnostics.SnapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeProjection BuildPreviewRuntimeProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "var cadence = BuildPreviewRuntimeCadenceProjection(previewRuntime);");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Cadence = cadence,");
@@ -15,10 +16,12 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeStartupText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeStartupText, "RendererMode = previewRuntime.RendererMode");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "FramesArrived = previewRuntime.FramesArrived,");
+        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeStartupText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "HdrInputDetected = previewHdrState.InputDetected,");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "AdapterColorMetadata = captureRuntime.PreviewColorMetadata");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewFramesArrived = previewRuntime.FramesArrived,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewStartupStrategy = previewRuntime.StartupStrategy.ToString(),");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewHdrInputDetected = previewHdrState.InputDetected,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewAdapterColorMetadata = captureRuntime.PreviewColorMetadata,");

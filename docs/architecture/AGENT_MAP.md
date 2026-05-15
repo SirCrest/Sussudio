@@ -258,8 +258,9 @@ Automation diagnostics ownership:
   owns D3D frame-statistics success/failure, missed-refresh, and present-count
   projection consumed by `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs`
-  owns preview frame counters, GPU playback state, preview HDR state, and
-  preview color-context projection consumed by `AutomationSnapshot`.
+  owns preview frame counters, estimated pipeline latency, GPU playback state,
+  preview HDR state, and preview color-context projection consumed by
+  `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntimeCadence.cs`
   owns preview display-cadence interval, jitter, slow-frame, and low-FPS
   projection consumed by `AutomationSnapshot`.

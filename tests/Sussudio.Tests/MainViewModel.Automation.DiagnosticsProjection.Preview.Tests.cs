@@ -15,12 +15,14 @@ static partial class Program
 
         AssertContains(snapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
         AssertContains(snapshotProjectionText, "PreviewFramesArrived = previewSummary.FramesArrived,");
+        AssertContains(snapshotProjectionText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
         AssertContains(snapshotProjectionText, "PreviewCadenceOnePercentLowFps = previewSummary.Cadence.OnePercentLowFps,");
         AssertContains(snapshotProjectionText, "PreviewStartupStrategy = previewSummary.Startup.Strategy,");
         AssertContains(snapshotProjectionText, "PreviewRendererMode = previewSummary.Startup.RendererMode,");
         AssertContains(snapshotProjectionText, "PreviewGpuPlaybackState = previewSummary.GpuPlaybackState,");
         AssertContains(snapshotProjectionText, "PreviewColorContext = previewSummary.ColorContext,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewFramesArrived = previewRuntime.FramesArrived,");
+        AssertDoesNotContain(snapshotProjectionText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewCadenceOnePercentLowFps = previewSummary.CadenceOnePercentLowFps,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
         AssertDoesNotContain(snapshotProjectionText, "PreviewStartupStrategy = previewSummary.StartupStrategy,");
@@ -35,6 +37,7 @@ static partial class Program
         AssertContains(previewRuntimeProjectionText, "var startup = BuildPreviewRuntimeStartupProjection(previewRuntime);");
         AssertContains(previewRuntimeProjectionText, "Startup = startup,");
         AssertContains(previewRuntimeProjectionText, "FramesArrived = previewRuntime.FramesArrived,");
+        AssertContains(previewRuntimeProjectionText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,");
         AssertDoesNotContain(previewRuntimeProjectionText, "CadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
         AssertDoesNotContain(previewRuntimeProjectionText, "CadenceSlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent,");
         AssertDoesNotContain(previewRuntimeProjectionText, "StartupStrategy = previewRuntime.StartupStrategy.ToString(),");

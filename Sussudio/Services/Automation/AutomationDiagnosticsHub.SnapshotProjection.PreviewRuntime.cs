@@ -17,6 +17,7 @@ public sealed partial class AutomationDiagnosticsHub
             FramesArrived = previewRuntime.FramesArrived,
             FramesDisplayed = previewRuntime.FramesDisplayed,
             FramesDropped = previewRuntime.FramesDropped,
+            EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,
             Cadence = cadence,
             GpuActive = previewRuntime.GpuActive,
             PlaceholderVisible = previewRuntime.PlaceholderVisible,
@@ -41,6 +42,7 @@ public sealed partial class AutomationDiagnosticsHub
         public long FramesArrived { get; init; }
         public long FramesDisplayed { get; init; }
         public long FramesDropped { get; init; }
+        public long EstimatedPipelineLatencyMs { get; init; }
         public PreviewRuntimeCadenceProjection Cadence { get; init; }
         public bool GpuActive { get; init; }
         public bool PlaceholderVisible { get; init; }

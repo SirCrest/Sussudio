@@ -534,7 +534,7 @@ public sealed partial class AutomationDiagnosticsHub
             AudioChunksDropped = audioDrops.ChunksDropped,
             AudioQueueDropsRealtime = audioDrops.QueueDropsRealtime,
             AudioQueueDropsFileWriter = audioDrops.QueueDropsFileWriter,
-            EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,
+            EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,
             ExpectedCaptureFrameRate = captureCadence.ExpectedFrameRate,
             CaptureCadenceSampleCount = captureCadence.SampleCount,
             CaptureCadenceObservedFps = captureCadence.ObservedFps,
