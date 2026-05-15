@@ -12,6 +12,9 @@ namespace McpServer.Tools;
 // requested observable state.
 public static class WaitTools
 {
+    private const string WaitForConditionCommandName = "WaitForCondition";
+    private const int ResponseTimeoutBufferMs = 5000;
+
     [McpServerTool, Description("Wait for a condition to be met. Blocks until satisfied or timeout. Conditions: PreviewFramesActive, PreviewRendererHealthy, AudioSignalPresent, RecordingFileGrowing, RecordingStopped, VerificationReady, HdrModeApplied, PerformancePerfectionMet, HdrVerificationReady, AudioFramesFlowing, VideoFramesFlowing")]
     public static async Task<CallToolResult> wait_for_condition(
         PipeClient pipeClient,
@@ -26,8 +29,8 @@ public static class WaitTools
             ["pollMs"] = pollMs
         };
 
-        var responseTimeoutMs = Math.Max(timeoutMs + 5000, AutomationPipeProtocol.DefaultResponseTimeoutMs);
-        var response = await pipeClient.SendCommandAsync("WaitForCondition", payload, responseTimeoutMs).ConfigureAwait(false);
+        var responseTimeoutMs = GetWaitForConditionResponseTimeoutMs(timeoutMs);
+        var response = await pipeClient.SendCommandAsync(WaitForConditionCommandName, payload, responseTimeoutMs).ConfigureAwait(false);
 
         var builder = new StringBuilder();
         builder.AppendLine(AutomationSnapshotFormatter.IsSuccess(response) ? "Condition result: MET" : "Condition result: NOT MET");
@@ -42,6 +45,16 @@ public static class WaitTools
         }
 
         return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
+    }
+
+    internal static int GetWaitForConditionResponseTimeoutMs(int timeoutMs)
+    {
+        var requestedResponseTimeoutMs = (long)timeoutMs + ResponseTimeoutBufferMs;
+        var catalogResponseTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout(WaitForConditionCommandName);
+        var responseTimeoutMs = Math.Max(requestedResponseTimeoutMs, catalogResponseTimeoutMs);
+        return responseTimeoutMs > int.MaxValue
+            ? int.MaxValue
+            : (int)responseTimeoutMs;
     }
 
 }

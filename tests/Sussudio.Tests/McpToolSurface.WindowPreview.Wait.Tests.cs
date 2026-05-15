@@ -2,6 +2,31 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static Task McpWaitTools_UsesCatalogResponseTimeoutForConditionWaits()
+    {
+        var waitToolsSource = ReadRepoFile("tools/McpServer/Tools/WaitTools.cs");
+        AssertContains(waitToolsSource, "AutomationPipeProtocol.GetDefaultResponseTimeout(WaitForConditionCommandName)");
+        AssertDoesNotContain(waitToolsSource, "AutomationPipeProtocol.DefaultResponseTimeoutMs");
+
+        var waitTools = RequireMcpType("McpServer.Tools.WaitTools");
+        var timeoutMethod = RequireNonPublicStaticMethod(waitTools, "GetWaitForConditionResponseTimeoutMs");
+
+        AssertEqual(
+            Sussudio.Tools.AutomationPipeProtocol.ExtendedResponseTimeoutMs,
+            (int)timeoutMethod.Invoke(null, new object[] { 10000 })!,
+            "MCP wait default pipe response timeout follows catalog policy");
+        AssertEqual(
+            65000,
+            (int)timeoutMethod.Invoke(null, new object[] { 60000 })!,
+            "MCP wait explicit timeout keeps response buffer");
+        AssertEqual(
+            int.MaxValue,
+            (int)timeoutMethod.Invoke(null, new object[] { int.MaxValue })!,
+            "MCP wait response timeout saturates on extreme input");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task McpWaitTools_RouteConditionWaits()
     {
         var pipeName = NewMcpToolPipeName("wait");

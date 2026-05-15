@@ -70,6 +70,9 @@ static partial class Program
             "MCP frame pacing verdict ownership is split",
             McpFramePacingVerdictTool_SourceOwnershipIsSplit);
         await AddCheckAsync(results,
+            "MCP wait tool uses catalog response timeout",
+            McpWaitTools_UsesCatalogResponseTimeoutForConditionWaits);
+        await AddCheckAsync(results,
             "MCP wait tool routes condition waits",
             McpWaitTools_RouteConditionWaits);
         await AddCheckAsync(results,
