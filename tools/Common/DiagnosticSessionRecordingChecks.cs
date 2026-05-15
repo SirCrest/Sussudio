@@ -1,8 +1,6 @@
 using System.Text.Json;
-using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackRecordingSettingsScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;
-using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 
 namespace Sussudio.Tools;
 
@@ -45,50 +43,17 @@ internal static class DiagnosticSessionRecordingChecks
             }
         }
 
-        var hasFlashbackExportVerificationPath = DiagnosticSessionScenarios.TryGetFlashbackExportVerificationPath(
-            scenario,
-            outputDirectory,
-            out var flashbackExportVerificationPath);
-        var shouldRunVerification =
-            startedRecording ||
-            (options.VerifyRecording && hasFlashbackExportVerificationPath);
-        if (shouldRunVerification)
-        {
-            try
-            {
-                setStage("recording-verification");
-                var verificationCommand = "VerifyLastRecording";
-                Dictionary<string, object?>? verificationPayload = null;
-                if (!startedRecording)
-                {
-                    verificationCommand = "VerifyFile";
-                    verificationPayload = new Dictionary<string, object?>
-                    {
-                        ["filePath"] = flashbackExportVerificationPath,
-                        ["strict"] = true,
-                        ["verificationProfile"] = "flashback-export"
-                    };
-                }
-
-                var verificationResponse = await sendAsync(verificationCommand, verificationPayload, 60_000).ConfigureAwait(false);
-                if (TryGetVerification(verificationResponse, out var verificationElement))
-                {
-                    verification = verificationElement.Clone();
-                }
-                else
-                {
-                    warnings.Add(AutomationSnapshotFormatter.Get(verificationResponse, "Message", "Verification did not return data."));
-                }
-            }
-            catch (Exception ex)
-            {
-                recordTerminalException(ex, "recording-verification");
-            }
-        }
-        else if (options.VerifyRecording)
-        {
-            actions.Add("recording verification skipped: scenario does not produce a recording or export artifact");
-        }
+        verification = await DiagnosticSessionRecordingVerification.RunAsync(
+                options,
+                scenario,
+                outputDirectory,
+                startedRecording,
+                actions,
+                warnings,
+                sendAsync,
+                setStage,
+                recordTerminalException)
+            .ConfigureAwait(false);
 
         if (scenarioPlan.RequiresFlashbackRecordingValidation)
         {

@@ -263,6 +263,8 @@ static partial class Program
         var completionText = ReadDiagnosticSessionRunExecutionCompletionSource();
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
             .Replace("\r\n", "\n");
+        var recordingVerificationText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingVerification.cs")
+            .Replace("\r\n", "\n");
         var postRunText = ReadRepoFile("tools/Common/DiagnosticSessionPostRunSnapshots.cs")
             .Replace("\r\n", "\n");
         var resultBuilderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
@@ -282,7 +284,7 @@ static partial class Program
         AssertDoesNotContain(executionText, "DiagnosticSessionRecordingChecks.RunAsync(");
         AssertDoesNotContain(executionText, "DiagnosticSessionPostRunSnapshots.CaptureAsync(");
         AssertDoesNotContain(executionText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
-        AssertContains(recordingChecksText, "setStage(\"recording-verification\")");
+        AssertContains(recordingVerificationText, "setStage(\"recording-verification\")");
         AssertContains(postRunText, "setStage(\"timeline\")");
         AssertContains(postRunText, "setStage(\"final-snapshot\")");
         AssertContains(resultBuilderText, "runState.SetStage(\"summary\")");

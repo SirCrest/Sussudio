@@ -219,25 +219,35 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
             .Replace("\r\n", "\n");
+        var recordingVerificationText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingVerification.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(recordingChecksText, "internal static class DiagnosticSessionRecordingChecks");
         AssertContains(recordingChecksText, "internal static async Task<DiagnosticSessionRecordingCheckResult> RunAsync(");
         AssertContains(recordingChecksText, "internal readonly record struct DiagnosticSessionRecordingCheckResult(JsonElement? Verification)");
         AssertContains(recordingChecksText, "setStage(\"settings-deferred-restore\")");
         AssertContains(recordingChecksText, "VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(");
-        AssertContains(recordingChecksText, "DiagnosticSessionScenarios.TryGetFlashbackExportVerificationPath(");
-        AssertContains(recordingChecksText, "setStage(\"recording-verification\")");
-        AssertContains(recordingChecksText, "verificationCommand = \"VerifyFile\"");
-        AssertContains(recordingChecksText, "[\"verificationProfile\"] = \"flashback-export\"");
-        AssertContains(recordingChecksText, "recording verification skipped: scenario does not produce a recording or export artifact");
+        AssertContains(recordingChecksText, "DiagnosticSessionRecordingVerification.RunAsync(");
+        AssertContains(recordingChecksText, "verification = await DiagnosticSessionRecordingVerification.RunAsync(");
         AssertContains(recordingChecksText, "setStage(\"recording-validation\")");
         AssertContains(recordingChecksText, "ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings)");
+        AssertContains(recordingVerificationText, "internal static class DiagnosticSessionRecordingVerification");
+        AssertContains(recordingVerificationText, "internal static async Task<JsonElement?> RunAsync(");
+        AssertContains(recordingVerificationText, "DiagnosticSessionScenarios.TryGetFlashbackExportVerificationPath(");
+        AssertContains(recordingVerificationText, "setStage(\"recording-verification\")");
+        AssertContains(recordingVerificationText, "var verificationCommand = \"VerifyLastRecording\";");
+        AssertContains(recordingVerificationText, "verificationCommand = \"VerifyFile\";");
+        AssertContains(recordingVerificationText, "[\"strict\"] = true");
+        AssertContains(recordingVerificationText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertContains(recordingVerificationText, "sendAsync(verificationCommand, verificationPayload, 60_000)");
+        AssertContains(recordingVerificationText, "return verificationElement.Clone();");
+        AssertContains(recordingVerificationText, "recording verification skipped: scenario does not produce a recording or export artifact");
+        AssertContains(recordingVerificationText, "recordTerminalException(ex, \"recording-verification\")");
         AssertContains(runnerText, "DiagnosticSessionRecordingChecks.RunAsync(");
-        AssertContains(runnerText, "verification = recordingCheckResult.Verification;");
         AssertDoesNotContain(runnerText, "SetStage(\"settings-deferred-restore\")");
-        AssertDoesNotContain(runnerText, "var verificationCommand = \"VerifyLastRecording\"");
+        AssertDoesNotContain(recordingChecksText, "var verificationCommand = \"VerifyLastRecording\"");
         AssertDoesNotContain(runnerText, "DiagnosticSessionScenarios.TryGetFlashbackExportVerificationPath(");
-        AssertDoesNotContain(runnerText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertDoesNotContain(recordingChecksText, "[\"verificationProfile\"] = \"flashback-export\"");
         AssertDoesNotContain(runnerText, "ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings)");
 
         return Task.CompletedTask;
