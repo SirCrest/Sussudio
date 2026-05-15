@@ -249,6 +249,23 @@ static partial class Program
         AssertEqual(@"C:\captures\clip.mp4", verifyRequest.GetProperty("payload").GetProperty("filePath").GetString(), "verify file payload path");
         AssertEqual("flashback-export", verifyRequest.GetProperty("payload").GetProperty("verificationProfile").GetString(), "verify file payload profile");
 
+        var verifyLastPipeName = $"ssctl-verify-last-{Guid.NewGuid():N}";
+        var verifyLastTransport = Activator.CreateInstance(transportType, verifyLastPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for verify last command test.");
+        var verifyLastArguments = new List<string> { "verify" };
+        var verifyLastExitCode = -1;
+        JsonElement verifyLastRequest = await CapturePipeRequestAsync(
+            verifyLastPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { verifyLastTransport, verifyLastArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                verifyLastExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, verifyLastExitCode, "verify last exit code");
+        AssertEqual(21, verifyLastRequest.GetProperty("command").GetInt32(), "verify last command id");
+
         var audioRampPipeName = $"ssctl-audio-ramp-trace-{Guid.NewGuid():N}";
         var audioRampTransport = Activator.CreateInstance(transportType, audioRampPipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for audio ramp trace command test.");
@@ -287,6 +304,100 @@ static partial class Program
         AssertEqual("eq", assertPayload.GetProperty("op").GetString(), "assert simple op");
         AssertEqual(false, assertPayload.GetProperty("value").GetBoolean(), "assert simple value");
 
+        var waitPipeName = $"ssctl-wait-{Guid.NewGuid():N}";
+        var waitTransport = Activator.CreateInstance(transportType, waitPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for wait command test.");
+        var waitArguments = new List<string> { "wait", "preview-ready", "--timeout", "12500", "--poll", "250" };
+        var waitExitCode = -1;
+        JsonElement waitRequest = await CapturePipeRequestAsync(
+            waitPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { waitTransport, waitArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                waitExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, waitExitCode, "wait exit code");
+        AssertEqual(20, waitRequest.GetProperty("command").GetInt32(), "wait command id");
+        var waitPayload = waitRequest.GetProperty("payload");
+        AssertEqual("preview-ready", waitPayload.GetProperty("condition").GetString(), "wait condition payload");
+        AssertEqual(12500, waitPayload.GetProperty("timeoutMs").GetInt32(), "wait timeout payload");
+        AssertEqual(250, waitPayload.GetProperty("pollMs").GetInt32(), "wait poll payload");
+
+        var probePipeName = $"ssctl-probe-color-{Guid.NewGuid():N}";
+        var probeTransport = Activator.CreateInstance(transportType, probePipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for probe command test.");
+        var probeArguments = new List<string> { "probe", "color" };
+        var probeExitCode = -1;
+        JsonElement probeRequest = await CapturePipeRequestAsync(
+            probePipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { probeTransport, probeArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                probeExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, probeExitCode, "probe color exit code");
+        AssertEqual(25, probeRequest.GetProperty("command").GetInt32(), "probe color command id");
+
+        var statsSectionPipeName = $"ssctl-stats-section-{Guid.NewGuid():N}";
+        var statsSectionTransport = Activator.CreateInstance(transportType, statsSectionPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for stats section command test.");
+        var statsSectionArguments = new List<string> { "stats", "section", "Preview Cadence", "hide" };
+        var statsSectionExitCode = -1;
+        JsonElement statsSectionRequest = await CapturePipeRequestAsync(
+            statsSectionPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { statsSectionTransport, statsSectionArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                statsSectionExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, statsSectionExitCode, "stats section exit code");
+        AssertEqual(38, statsSectionRequest.GetProperty("command").GetInt32(), "stats section command id");
+        var statsSectionPayload = statsSectionRequest.GetProperty("payload");
+        AssertEqual("Preview Cadence", statsSectionPayload.GetProperty("section").GetString(), "stats section name payload");
+        AssertEqual(false, statsSectionPayload.GetProperty("visible").GetBoolean(), "stats section visible payload");
+
+        var settingsPipeName = $"ssctl-settings-show-{Guid.NewGuid():N}";
+        var settingsTransport = Activator.CreateInstance(transportType, settingsPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for settings command test.");
+        var settingsArguments = new List<string> { "settings", "show" };
+        var settingsExitCode = -1;
+        JsonElement settingsRequest = await CapturePipeRequestAsync(
+            settingsPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { settingsTransport, settingsArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                settingsExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, settingsExitCode, "settings show exit code");
+        AssertEqual(40, settingsRequest.GetProperty("command").GetInt32(), "settings show command id");
+        AssertEqual(true, settingsRequest.GetProperty("payload").GetProperty("visible").GetBoolean(), "settings show visible payload");
+
+        var frameTimePipeName = $"ssctl-frametime-hide-{Guid.NewGuid():N}";
+        var frameTimeTransport = Activator.CreateInstance(transportType, frameTimePipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for frametime command test.");
+        var frameTimeArguments = new List<string> { "frame-time", "hide" };
+        var frameTimeExitCode = -1;
+        JsonElement frameTimeRequest = await CapturePipeRequestAsync(
+            frameTimePipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { frameTimeTransport, frameTimeArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                frameTimeExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, frameTimeExitCode, "frametime hide exit code");
+        AssertEqual(49, frameTimeRequest.GetProperty("command").GetInt32(), "frametime hide command id");
+        AssertEqual(false, frameTimeRequest.GetProperty("payload").GetProperty("visible").GetBoolean(), "frametime hide visible payload");
+
         var commandHandlersSource = ReadSsctlCommandHandlersFamilyText();
         var commandHandlersRootSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs");
         AssertDoesNotContain(commandHandlersRootSource, "private static Task<int> HandleFlashbackAsync");
@@ -311,7 +422,29 @@ static partial class Program
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleDeviceAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Recordings.cs"), "HandleRecordingsAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Recordings.cs"), "\"OpenRecordingsFolder\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleWaitAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "\"WaitForCondition\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "Math.Max(timeoutMs.GetValueOrDefault(0) + 5000, 60000)");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleAssertAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "JsonDocument.Parse(assertionsJson)");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "\"AssertSnapshot\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleProbeAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "\"ProbeVideoSource\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "\"ProbePreviewColor\"");
+        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleStatsAsync");
+        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleVerifyAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleStatsAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleSettingsAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleFrameTimeAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "\"SetStatsVisible\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "\"SetStatsSectionVisible\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "\"SetSettingsVisible\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "\"SetFrameTimeOverlayVisible\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "HandleVerifyAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "\"VerifyFile\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "\"VerifyLastRecording\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "ConsumeFlag(context.Rest, \"--json\")");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "ParseOptionalStringFlag(context.Rest, \"--verification-profile\")");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "HandleFlashbackAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "return HandleFlashbackExportAsync(context);");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "ParseFlashbackExportSeconds(context.Rest[1])");

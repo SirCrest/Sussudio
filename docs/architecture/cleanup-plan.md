@@ -272,8 +272,10 @@ owns catalog-backed help lines.
 refresh/list/select, audio-input selection, and custom-audio enablement.
 `CommandHandlers.Window.cs` owns window close arming, state/geometry actions,
 fullscreen toggles, and snap commands. `CommandHandlers.Recordings.cs` owns the
-recordings-folder CLI command. `CommandHandlers.AutomationFlow.cs`
-owns wait/assert/probe/stats/settings/frame-time and verification commands.
+recordings-folder CLI command. `CommandHandlers.AutomationFlow.cs` owns
+wait/assert/probe scripting flow commands. `CommandHandlers.UiVisibility.cs`
+owns stats, settings, and frame-time visibility commands.
+`CommandHandlers.Verification.cs` owns recording/file verification commands.
 `CommandHandlers.Flashback.cs` owns Flashback enablement/playback/scrub/marker/
 segment/restart CLI commands. `CommandHandlers.Flashback.Export.cs` owns
 Flashback export flags, output path defaulting, directory creation, and payload

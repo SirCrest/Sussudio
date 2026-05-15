@@ -1733,8 +1733,12 @@ Primary owners:
   state/geometry actions, fullscreen toggles, and snap commands.
 - `tools/ssctl/CommandHandlers.Recordings.cs` owns the recordings-folder CLI
   command.
-- `tools/ssctl/CommandHandlers.AutomationFlow.cs` owns wait/assert/probe,
-  stats/settings/frame-time, and verification commands.
+- `tools/ssctl/CommandHandlers.AutomationFlow.cs` owns wait/assert/probe
+  scripting flow commands.
+- `tools/ssctl/CommandHandlers.UiVisibility.cs` owns stats, settings, and
+  frame-time visibility commands.
+- `tools/ssctl/CommandHandlers.Verification.cs` owns recording/file
+  verification commands.
 - `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enablement,
   playback, scrub, marker, segment, and restart commands.
   `tools/ssctl/CommandHandlers.Flashback.Export.cs` owns Flashback export CLI

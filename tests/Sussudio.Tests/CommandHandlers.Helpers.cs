@@ -19,7 +19,9 @@ static partial class Program
             "tools/ssctl/CommandHandlers.PresentMon.cs",
             "tools/ssctl/CommandHandlers.Recordings.cs",
             "tools/ssctl/CommandHandlers.Transport.cs",
+            "tools/ssctl/CommandHandlers.UiVisibility.cs",
             "tools/ssctl/CommandHandlers.Values.cs",
+            "tools/ssctl/CommandHandlers.Verification.cs",
             "tools/ssctl/CommandHandlers.Window.cs",
         };
 
