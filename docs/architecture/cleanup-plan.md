@@ -2049,7 +2049,8 @@ the small background-task handoff records.
 Diagnostic-session scenario startup now lives in a focused partial family.
 `tools/Common/DiagnosticSessionScenarioStartup.cs` owns the public startup
 orchestration call. `DiagnosticSessionScenarioStartup.Registrations.cs` owns
-non-export Flashback scenario task registration,
+remaining startup-side Flashback scenario task registration and delegates export,
+lifecycle, and preview-cycle registrations to their focused scenario owners,
 `DiagnosticSessionScenarioStartup.DeferredSettings.cs` owns deferred Flashback
 recording-settings task registration, and
 `DiagnosticSessionScenarioStartup.Playback.cs` owns the direct Flashback
@@ -2146,10 +2147,11 @@ snapshot-only projections and must not send automation commands.
 
 Diagnostic-session Flashback preview-cycle scenarios now live in a focused
 partial family. `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
-is the marker shell and preview-cycle predicate owner. `.Flashback.cs`,
-`.Playback.cs`, and `.Recording.cs` own preview stop/restart flows for normal
-Flashback, playback, and recording-backed diagnostics while the runner only
-starts the scenario tasks.
+is the marker shell and preview-cycle predicate owner. `.Registrations.cs` owns
+task registration, priority, task-label, and started-action wiring.
+`.Flashback.cs`, `.Playback.cs`, and `.Recording.cs` own preview stop/restart
+flows for normal Flashback, playback, and recording-backed diagnostics while
+startup only delegates selected scenario registration.
 
 Diagnostic-session Flashback rejected-export scenarios now live in
 `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs`. It owns rejected-export
@@ -2275,6 +2277,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`

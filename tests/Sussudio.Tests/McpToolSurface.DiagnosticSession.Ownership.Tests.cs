@@ -103,6 +103,7 @@ static partial class Program
         var deferredSettingsStartupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.DeferredSettings.cs")
             .Replace("\r\n", "\n");
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
+        var previewCycleScenariosText = ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource();
         var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
             .Replace("\r\n", "\n");
         var tasksText = ReadDiagnosticSessionBackgroundTasksSource();
@@ -130,9 +131,13 @@ static partial class Program
         AssertContains(deferredSettingsStartupText, "actions.Add(\"flashback recording settings deferred started\")");
         AssertDoesNotContain(startupRegistrationText, "RunFlashbackRecordingSettingsDeferredAsync(");
         AssertContains(startupRegistrationText, "DiagnosticSessionFlashbackExportScenarios.RegisterSelectedFlashbackExportScenarioTasks(");
+        AssertContains(startupRegistrationText, "DiagnosticSessionFlashbackPreviewCycleScenarios.RegisterSelectedFlashbackPreviewCycleScenarioTasks(");
         AssertDoesNotContain(startupRegistrationText, "RegisterFlashbackExportPlaybackTask(");
         AssertDoesNotContain(startupRegistrationText, "RegisterFlashbackRangeExportTasks(");
         AssertDoesNotContain(startupRegistrationText, "RegisterFlashbackExportCoordinationTasks(");
+        AssertDoesNotContain(startupRegistrationText, "RunFlashbackPreviewCycleAsync(");
+        AssertDoesNotContain(startupRegistrationText, "RunFlashbackPlaybackPreviewCycleAsync(");
+        AssertDoesNotContain(startupRegistrationText, "RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(exportScenariosText, "internal static void RegisterSelectedFlashbackExportScenarioTasks(");
         AssertContains(exportScenariosText, "private static void RegisterFlashbackExportPlaybackTask(");
         AssertContains(exportScenariosText, "private static void RegisterFlashbackRangeExportTasks(");
@@ -142,6 +147,7 @@ static partial class Program
         AssertContains(exportScenariosText, "RunFlashbackExportConcurrentAsync(");
         AssertContains(exportScenariosText, "RunFlashbackDisableDuringExportAsync(");
         AssertContains(exportScenariosText, "RunFlashbackRotatedExportAsync(");
+        AssertContains(previewCycleScenariosText, "internal static void RegisterSelectedFlashbackPreviewCycleScenarioTasks(");
         AssertDoesNotContain(startupRegistrationText, "RunFlashbackRangeExportAsync(");
         AssertDoesNotContain(startupRegistrationText, "RunFlashbackExportConcurrentAsync(");
         AssertContains(runnerText, "DiagnosticSessionScenarioStartup.StartAsync(");

@@ -2203,8 +2203,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionScenarioStartup.cs` owns diagnostic-session
   optional background startup orchestration.
 - `tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs` owns
-  non-export Flashback scenario task registration. Keep task stage names stable
-  there.
+  remaining startup-side Flashback scenario task registration and delegates
+  export, lifecycle, and preview-cycle registrations to their focused scenario
+  owners. Keep task stage names stable there.
 - `tools/Common/DiagnosticSessionScenarioStartup.DeferredSettings.cs` owns
   deferred Flashback recording-settings task registration.
 - `tools/Common/DiagnosticSessionScenarioStartup.Playback.cs` owns the direct
@@ -2288,6 +2289,9 @@ Primary owners:
   count; keep those counters derived outside export-observed relevance gating.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` is the
   Flashback preview-cycle marker shell and predicate owner.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
+  owns Flashback preview-cycle diagnostic task registration, priorities, task
+  labels, and started action strings.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
   owns normal Flashback preview stop/restart diagnostic flow.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`

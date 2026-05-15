@@ -1,6 +1,5 @@
 using System.Text.Json;
 using static Sussudio.Tools.DiagnosticSessionFlashbackCycleScenarios;
-using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackStressScenario;
 
@@ -104,45 +103,13 @@ internal static partial class DiagnosticSessionScenarioStartup
             sendAsync,
             cancellationToken);
 
-        if (scenarioPlan.RunFlashbackPreviewCycle)
-        {
-            backgroundTasks.AddScenario(
-                13,
-                "flashback-preview-cycle-task",
-                RunFlashbackPreviewCycleAsync(
-                    outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
-            actions.Add("flashback preview cycle started");
-        }
-
-        if (scenarioPlan.RunFlashbackPlaybackPreviewCycle)
-        {
-            backgroundTasks.AddScenario(
-                14,
-                "flashback-playback-preview-cycle-task",
-                RunFlashbackPlaybackPreviewCycleAsync(
-                    outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
-            actions.Add("flashback playback preview cycle started");
-        }
-
-        if (scenarioPlan.RunFlashbackRecordingPreviewCycle)
-        {
-            backgroundTasks.AddScenario(
-                15,
-                "flashback-recording-preview-cycle-task",
-                RunFlashbackRecordingPreviewCycleAsync(
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
-            actions.Add("flashback recording preview cycle started");
-        }
+        DiagnosticSessionFlashbackPreviewCycleScenarios.RegisterSelectedFlashbackPreviewCycleScenarioTasks(
+            scenarioPlan,
+            outputDirectory,
+            backgroundTasks,
+            actions,
+            warnings,
+            sendAsync,
+            cancellationToken);
     }
 }
