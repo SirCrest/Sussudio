@@ -461,9 +461,14 @@ now live in `Sussudio/Controllers/NativeWindowBootstrapController.cs`.
 `Sussudio/MainWindow.NativeWindow.cs` is the XAML-facing adapter and keeps the
 `_hwnd` field consumed by screenshot and window automation paths.
 
-Audio and microphone meter rendering now lives in
-`Sussudio/Controllers/AudioMeterController.cs`. Audio/microphone initial control
-projection and event hookup now live in
+Audio and microphone meter rendering now lives in the
+`Sussudio/Controllers/AudioMeterController*.cs` family: the root controller owns
+setup, `AudioMeterController.Context.cs` owns XAML/view-model dependencies,
+`AudioMeterController.MeterState.cs` owns smoothing, markers, resets, timer
+lifetime, and `TranslateMarker`, and
+`AudioMeterController.PresentationAnimations.cs` owns monitoring/disabled
+animations and rounded clips. Audio/microphone initial control projection and
+event hookup now live in
 `Sussudio/Controllers/AudioControlBindingController.cs`, with
 `Sussudio/MainWindow.AudioBindings.cs` left as the XAML-facing adapter;
 video-format collection setup, initial capture/recording option projection, and
