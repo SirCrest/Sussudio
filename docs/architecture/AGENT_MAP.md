@@ -1433,6 +1433,8 @@ Primary current owners:
   in `MainViewModel.AudioMonitoring.cs`. `MainViewModel.MicrophoneVolume.cs`
   owns microphone endpoint volume synchronization and persistence.
   `MainViewModel.AudioControls.cs` owns device-native audio mode/gain management.
+  `MainViewModel.AudioControlCancellation.cs` owns cancellation cleanup for
+  pending device-audio refresh, mode, XU gain, and flash-persist work.
   `MainViewModel.AudioPropertyChanges.cs` owns audio, microphone, and
   device-audio observable property handlers.
   `MainViewModel.Dispatching.cs` owns shared

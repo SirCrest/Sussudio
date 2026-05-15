@@ -176,25 +176,6 @@ public partial class MainViewModel
         SaveSettings();
     }
 
-    private void CancelPendingAudioControlWork()
-    {
-        var flashCts = _gainFlashDebounceCts;
-        _gainFlashDebounceCts = null;
-        flashCts?.Cancel();
-
-        var xuCts = _gainXuDebounceCts;
-        _gainXuDebounceCts = null;
-        xuCts?.Cancel();
-
-        var modeCts = _deviceAudioModeCts;
-        _deviceAudioModeCts = null;
-        modeCts?.Cancel();
-
-        var refreshCts = _deviceAudioRefreshCts;
-        _deviceAudioRefreshCts = null;
-        refreshCts?.Cancel();
-    }
-
     private void RebuildSelectedDeviceCapabilities(CaptureDevice? device, bool resetTelemetryState)
     {
         _isChangingDevice = true;
