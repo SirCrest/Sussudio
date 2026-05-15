@@ -1626,9 +1626,11 @@ Primary owners:
 - `tools/ssctl/Formatters.Memory.cs` owns memory and GC summaries.
 - `tools/ssctl/Formatters.Common.cs` owns shared result/JSON helpers.
 - `tools/McpServer/Tools/PerformanceTimelineTools.cs` owns the public MCP
-  tool entry point and high-level timeline table/trend rendering.
+  tool entry point and command response handling.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs` owns timeline JSON
   row projection and the private row model.
+- `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs` owns timeline
+  table, trend, Flashback command, export, and target-summary text rendering.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs` owns compact
   cell, byte, D3D bottleneck, cleanup, export, and optional-value formatting.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs` owns 1%-low

@@ -8,9 +8,13 @@ static partial class Program
         var source = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs")
+            + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs")
             + "\n" + ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs");
         AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs"), "private sealed class TimelineRow");
+        AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs"), "new StringBuilder()");
+        AssertDoesNotContain(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs"), "== Trend Summary");
         AssertContains(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs"), "private sealed class TimelineRow");
+        AssertContains(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs"), "BuildPerformanceTimelineText");
         AssertContains(ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs"), "AppendPressureSummary");
         var diagnosticsHubSource = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
