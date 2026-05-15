@@ -224,6 +224,8 @@ static partial class Program
         AssertContains(ssctlFormatterSource, "ProcessCpuPercent");
         var sharedFormatterSource = ReadAutomationSnapshotFormatterSource();
         var sharedFormatterRootSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
+        var sharedFormatterValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Values.cs");
+        var sharedFormatterDisplayValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.DisplayValues.cs");
         var sharedFormatterFlashbackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.cs");
         var sharedFormatterFlashbackEncodingSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.cs");
         var sharedFormatterFlashbackExportSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.Export.cs");
@@ -231,6 +233,16 @@ static partial class Program
         var sharedFormatterPreviewSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Preview.cs");
         var sharedFormatterPreviewD3DSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs");
         var sharedFormatterThreadHealthSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs");
+        AssertContains(sharedFormatterValuesSource, "internal static string Get(JsonElement element, string propertyName, string fallback = \"N/A\")");
+        AssertContains(sharedFormatterValuesSource, "internal static double GetDouble(JsonElement element, string propertyName, double fallback = 0.0)");
+        AssertContains(sharedFormatterValuesSource, "internal static bool GetBool(JsonElement element, string propertyName)");
+        AssertDoesNotContain(sharedFormatterValuesSource, "internal static string FormatBytes(long bytes)");
+        AssertDoesNotContain(sharedFormatterValuesSource, "internal static long ComputeTickAgeMs(long tickMs)");
+        AssertContains(sharedFormatterDisplayValuesSource, "internal static string FormatBytes(long bytes)");
+        AssertContains(sharedFormatterDisplayValuesSource, "internal static string FormatIntervalMs(JsonElement element, string propertyName, string fallback = \"N/A\")");
+        AssertContains(sharedFormatterDisplayValuesSource, "internal static string FormatFrameBudgetMs(JsonElement element, string fpsPropertyName, string fallback = \"N/A\")");
+        AssertContains(sharedFormatterDisplayValuesSource, "internal static string FormatNumber(double value, string format)");
+        AssertContains(sharedFormatterDisplayValuesSource, "internal static long ComputeTickAgeMs(long tickMs)");
         AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterFlashbackSource, "var flashbackActive = Get(snapshot, \"FlashbackActive\", \"false\");");
         AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackEncodingSection(builder, snapshot);");

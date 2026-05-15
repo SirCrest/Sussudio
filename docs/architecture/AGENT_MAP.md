@@ -2090,7 +2090,9 @@ Primary owners:
 - `tools/Common/AutomationSnapshotFormatter.cs` owns the top-level shared
   automation snapshot console text flow.
   `tools/Common/AutomationSnapshotFormatter.Values.cs` owns tolerant JSON
-  accessors plus byte/interval formatting helpers, while
+  accessors and typed JSON coercion.
+  `tools/Common/AutomationSnapshotFormatter.DisplayValues.cs` owns shared
+  byte, number, interval, frame-budget, and tick-age display helpers, while
   `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
   gate, header, and subsection ordering.
   `tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.cs` owns

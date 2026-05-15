@@ -6,6 +6,7 @@ static partial class Program
         {
             "tools/Common/AutomationSnapshotFormatter.cs",
             "tools/Common/AutomationSnapshotFormatter.Values.cs",
+            "tools/Common/AutomationSnapshotFormatter.DisplayValues.cs",
             "tools/Common/AutomationSnapshotFormatter.Flashback.cs",
             "tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.cs",
             "tools/Common/AutomationSnapshotFormatter.Flashback.Playback.cs",

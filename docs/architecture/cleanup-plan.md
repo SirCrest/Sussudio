@@ -317,8 +317,10 @@ projection in `Formatters.Timeline.Rows.cs`, table output in
 `Formatters.Common.cs`.
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
-snapshot formatter facade for top-level text flow. Tolerant JSON accessors and
-byte/interval helpers live in `AutomationSnapshotFormatter.Values.cs`; the
+snapshot formatter facade for top-level text flow. Tolerant JSON accessors live
+in `AutomationSnapshotFormatter.Values.cs`, while byte/number/interval,
+frame-budget, and tick-age display helpers live in
+`AutomationSnapshotFormatter.DisplayValues.cs`; the
 Flashback gate/header/order lives in `AutomationSnapshotFormatter.Flashback.cs`,
 with encoder/buffer/cache/queue/failure text in
 `AutomationSnapshotFormatter.Flashback.Encoding.cs`, playback status/commands
