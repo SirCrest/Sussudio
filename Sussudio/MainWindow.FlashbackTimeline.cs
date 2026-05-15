@@ -45,9 +45,5 @@ public sealed partial class MainWindow
         => _flashbackTimelineController.ResetAnimationForFullScreen();
 
     private void ClearFlashbackScrubInteractionForLockout()
-    {
-        _isFlashbackScrubbing = false;
-        _lastScrubUpdateTick = 0;
-        _lastScrubPointerPosition = null;
-    }
+        => _flashbackScrubInteractionController.ClearForLockout();
 }

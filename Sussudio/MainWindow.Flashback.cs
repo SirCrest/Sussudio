@@ -88,7 +88,7 @@ public sealed partial class MainWindow
             bufferDuration,
             ViewModel.FlashbackGapFromLive);
 
-        if (!_isFlashbackScrubbing
+        if (!_flashbackScrubInteractionController.IsScrubbing
             && state != FlashbackPlaybackState.Playing
             && state != FlashbackPlaybackState.Scrubbing)
         {

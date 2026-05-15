@@ -48,6 +48,7 @@ static partial class Program
     {
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var scrubText = ReadRepoFile("Sussudio/MainWindow.FlashbackScrub.cs").Replace("\r\n", "\n");
+        var scrubControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackScrubInteractionController.cs").Replace("\r\n", "\n");
         var playheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs").Replace("\r\n", "\n");
         var ctiMotionText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs").Replace("\r\n", "\n");
         var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPolling.cs").Replace("\r\n", "\n");
@@ -66,7 +67,8 @@ static partial class Program
         AssertContains(ctiMotionText, "private static void StartLinearKeyframe(");
         AssertContains(ctiMotionText, "private void SnapPlayheadVisualsToFraction(");
         AssertContains(ctiMotionText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
-        AssertContains(scrubText, "PositionFlashbackPlayhead(x, width, FlashbackPlayheadMotion.Magnetic);");
+        AssertContains(scrubText, "PositionMagneticPlayhead = (x, width) => PositionFlashbackPlayhead(x, width, FlashbackPlayheadMotion.Magnetic),");
+        AssertContains(scrubControllerText, "_context.PositionMagneticPlayhead(x, width);");
         AssertContains(flashbackText, "RefreshFlashbackCtiMotion(\"state_change\");");
         AssertContains(pollingAdapterText, "StopFlashbackCtiAnchorTimer();");
         AssertDoesNotContain(playheadText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");

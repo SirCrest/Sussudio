@@ -1495,10 +1495,11 @@ animation state now live in
 live in `Sussudio/Controllers/FlashbackCommandController.cs`.
 
 Active Flashback pointer-scrub state now lives in
-`Sussudio/MainWindow.FlashbackScrub.cs`. It owns scrub throttling,
-release/cancel/capture-lost cleanup, and pointer lifecycle around scrub
-commands. Timeline fraction/duration math used by scrub and playhead
-presentation now lives in
+`Sussudio/Controllers/FlashbackScrubInteractionController.cs`. It owns scrub
+throttling, release/cancel/capture-lost cleanup, fullscreen scrub termination,
+lockout clearing, scrub visual updates, and pointer lifecycle around scrub
+commands. `MainWindow.FlashbackScrub.cs` is the XAML-facing adapter. Timeline
+fraction/duration math used by scrub and playhead presentation now lives in
 `Sussudio/Controllers/FlashbackTimelineGeometry.cs`.
 
 Flashback CTI/playhead compositor visuals now live in

@@ -56,7 +56,7 @@ static partial class Program
         AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.OnToggleChecked();");
         AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.ApplyLockout();");
         AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.ResetAnimationForFullScreen();");
-        AssertContains(flashbackTimelineText, "_isFlashbackScrubbing = false;");
+        AssertContains(flashbackTimelineText, "=> _flashbackScrubInteractionController.ClearForLockout();");
         AssertContains(flashbackTimelineControllerText, "internal sealed class FlashbackTimelineController");
         AssertContains(flashbackTimelineControllerText, "private Storyboard? _timelineStoryboard;");
         AssertContains(flashbackTimelineControllerText, "private bool _suppressToggle;");

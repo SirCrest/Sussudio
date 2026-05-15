@@ -44,7 +44,7 @@ public sealed partial class MainWindow
     // PositionFlashbackPlayhead(.., Magnetic).
     private void RefreshFlashbackCtiMotion(string reason)
     {
-        if (_isFlashbackScrubbing) return;
+        if (_flashbackScrubInteractionController.IsScrubbing) return;
         if (_isWindowClosing) return;
 
         EnsureFlashbackPlayheadVisuals();

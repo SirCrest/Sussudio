@@ -59,23 +59,5 @@ public sealed partial class MainWindow
     }
 
     private void EndFlashbackScrubForFullScreen()
-    {
-        if (!_isFlashbackScrubbing)
-        {
-            return;
-        }
-
-        var carriedPosition = _lastScrubPointerPosition;
-        Logger.Log($"FLASHBACK_SCRUB_END_FULLSCREEN carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}");
-        _isFlashbackScrubbing = false;
-        _lastScrubUpdateTick = 0;
-        _lastScrubPointerPosition = null;
-        var ended = carriedPosition.HasValue
-            ? ViewModel?.FlashbackEndScrubAt(carriedPosition.Value) ?? false
-            : ViewModel?.FlashbackEndScrub() ?? false;
-        if (!ended)
-        {
-            ViewModel?.ReportFlashbackPlaybackRejection("scrub end (fullscreen_enter)", "FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter");
-        }
-    }
+        => _flashbackScrubInteractionController.EndForFullScreen();
 }
