@@ -1719,8 +1719,11 @@ Primary owners:
   its AutomationClient rebuild freshness inputs.
 - `tools/ssctl/CommandHandlers.cs` owns top-level CLI routing only.
 - `tools/ssctl/CommandHandlers.Observability.cs` owns state, diagnostics,
-  options, manifest, timeline, memory, audio-ramp, PresentMon, and
-  diagnostic-session commands.
+  options, manifest, timeline, memory, and audio-ramp commands.
+  `tools/ssctl/CommandHandlers.PresentMon.cs` owns `presentmon` command
+  parsing, swap-chain discovery, and probe invocation.
+  `tools/ssctl/CommandHandlers.DiagnosticSession.cs` owns
+  `diagnostic-session` command parsing and runner invocation.
 - `tools/ssctl/CommandHandlers.CaptureControls.cs` owns preview/record,
   screenshot/frame capture, and `set` capture/audio/output mutations.
 - `tools/ssctl/CommandHandlers.DeviceWindow.cs` owns device, window, and

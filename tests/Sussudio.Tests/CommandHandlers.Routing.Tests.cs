@@ -199,7 +199,12 @@ static partial class Program
         var commandHandlersSource = ReadSsctlCommandHandlersFamilyText();
         var commandHandlersRootSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs");
         AssertDoesNotContain(commandHandlersRootSource, "private static Task<int> HandleFlashbackAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandleDiagnosticSessionAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandleAudioRampTraceAsync");
+        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandleDiagnosticSessionAsync");
+        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"), "HandlePresentMonAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.DiagnosticSession.cs"), "HandleDiagnosticSessionAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.PresentMon.cs"), "HandlePresentMonAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.PresentMon.cs"), "TryResolvePreviewSwapChainAddressAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.CaptureControls.cs"), "HandleSetAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.DeviceWindow.cs"), "HandleWindowAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleAssertAsync");

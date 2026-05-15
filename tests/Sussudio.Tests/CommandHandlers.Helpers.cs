@@ -10,10 +10,12 @@ static partial class Program
             "tools/ssctl/CommandHandlers.CaptureControls.cs",
             "tools/ssctl/CommandHandlers.Context.cs",
             "tools/ssctl/CommandHandlers.DeviceWindow.cs",
+            "tools/ssctl/CommandHandlers.DiagnosticSession.cs",
             "tools/ssctl/CommandHandlers.Flashback.cs",
             "tools/ssctl/CommandHandlers.Flags.cs",
             "tools/ssctl/CommandHandlers.Json.cs",
             "tools/ssctl/CommandHandlers.Observability.cs",
+            "tools/ssctl/CommandHandlers.PresentMon.cs",
             "tools/ssctl/CommandHandlers.Transport.cs",
             "tools/ssctl/CommandHandlers.Values.cs",
         };
