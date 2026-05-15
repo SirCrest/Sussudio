@@ -33,6 +33,12 @@ static partial class Program
             "D3D preview diagnostics expose performance timeline contract",
             D3D11PreviewRenderer_DiagnosticsContract_PerformanceTimelineExposesExpectedProperties);
         await AddCheckAsync(results,
+            "D3D preview configuration lives in focused partial",
+            D3D11PreviewRenderer_ConfigurationLivesInFocusedPartial);
+        await AddCheckAsync(results,
+            "D3D preview native interop lives in focused partial",
+            D3D11PreviewRenderer_NativeInteropLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "D3D preview frame types live in focused partial",
             D3D11PreviewRenderer_FrameTypesLiveInFocusedPartial);
         await AddCheckAsync(results,

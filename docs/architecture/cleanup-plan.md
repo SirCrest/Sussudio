@@ -1058,8 +1058,17 @@ ring/write logic in `D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, lifecycle in
 D3D preview renderer nested frame and metrics model types now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameTypes.cs`. Keep the
 `PendingFrame` lifetime wrapper and renderer metric record structs there so the
-root renderer stays focused on construction, public state, and cross-cutting
-interop declarations.
+root renderer stays focused on construction, public state, panel sizing, and
+user-facing state changes.
+
+D3D preview renderer runtime knobs now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Configuration.cs`. Keep the
+measured 4K120 cadence defaults, swap-chain queue/latency env overrides,
+DXGI statistics toggles, MMCSS settings, and stop-fence timeouts there. Native
+interop declarations now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.NativeInterop.cs`. Keep
+`ISwapChainPanelNative`, `ID3DBlob`, `D3DCompileNative`, and `DwmFlush` there;
+leave `WaitForSingleObject` in `D3D11PreviewRenderer.FrameLatency.cs`.
 
 D3D preview renderer frame submission now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs`. Keep public raw
