@@ -21,8 +21,7 @@ public sealed partial class MainWindow
         uncloakOnFirstFrame = (_, _) =>
         {
             Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= uncloakOnFirstFrame;
-            int cloakFalse = 0;
-            DwmSetWindowAttribute(_hwnd, DWMWA_CLOAK, ref cloakFalse, sizeof(int));
+            UncloakNativeShellWindow();
         };
         Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += uncloakOnFirstFrame;
 

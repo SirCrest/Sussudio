@@ -665,8 +665,8 @@ Primary current owners:
   automation token/pipe-name resolution, diagnostics hub construction,
   command dispatcher construction, and named-pipe server construction.
 - `Sussudio/MainWindow.Startup.cs` owns first-load startup, first-frame
-  uncloaking, initial ViewModel/device refresh, automation pipe hosting, and
-  the launch entrance trigger. Close/finalize behavior stays in
+  uncloak scheduling, initial ViewModel/device refresh, automation pipe hosting,
+  and the launch entrance trigger. Close/finalize behavior stays in
   `MainWindow.CloseLifecycle.cs`.
 - `Sussudio/Controllers/PreviewResizeTelemetryController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
@@ -695,10 +695,12 @@ Primary current owners:
 - `Sussudio/MainWindow.ShutdownCleanup.cs` owns `Closed` shutdown cleanup:
   timer stops, event detaches, preview shutdown, automation diagnostics disposal,
   NVML disposal, and ViewModel disposal.
-- `Sussudio/MainWindow.NativeWindow.cs` owns native window bootstrap:
-  `AppWindow` lookup, ViewModel window handle handoff, minimum-size subclassing,
-  DWM cloak/dark-mode setup, initial shell size, icon, and native helpers used
-  by shell startup and automation controllers.
+- `Sussudio/Controllers/NativeWindowBootstrapController.cs` owns native window
+  bootstrap: `AppWindow` lookup, ViewModel window handle handoff,
+  minimum-size subclassing, DWM cloak/dark-mode setup, initial shell size, icon,
+  and native helpers used by shell startup and automation controllers.
+  `Sussudio/MainWindow.NativeWindow.cs` is the XAML-facing adapter and keeps
+  the `_hwnd` field consumed by screenshot and window automation paths.
 - `Sussudio/MainWindow.Dispatching.cs` owns UI-thread enqueue helpers and
   guarded async event-handler execution used by automation adapters and XAML
   event handlers.

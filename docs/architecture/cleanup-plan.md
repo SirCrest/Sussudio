@@ -419,8 +419,8 @@ MCP command-routing test family marker shell. MCP command-routing coverage is
 split into capture, host/pipe, recording, formatter batching, device, pipeline,
 UI, and verification owner files.
 
-First-load startup, first-frame uncloaking, initial ViewModel/device refresh,
-automation pipe hosting, and the launch entrance trigger now live in
+First-load startup, first-frame uncloak scheduling, initial ViewModel/device
+refresh, automation pipe hosting, and the launch entrance trigger now live in
 `Sussudio/MainWindow.Startup.cs`. Window close completion and recording-aware
 close handling remain in `MainWindow.CloseLifecycle.cs`.
 
@@ -448,8 +448,11 @@ Window close lifecycle and native window helpers are now explicit:
 close completion, and recording-aware pre-close protection. `MainWindow.ShutdownCleanup.cs`
 owns `Closed` shutdown cleanup: timer stops, event detaches, preview shutdown,
 automation diagnostics disposal, NVML disposal, and ViewModel disposal.
-`Sussudio/MainWindow.NativeWindow.cs` owns native `AppWindow` lookup and DWM
-cloak/dark-mode helpers.
+Native `AppWindow` lookup, ViewModel window handle handoff, minimum-size
+subclassing, DWM cloak/dark-mode setup, initial shell size, icon, and uncloaking
+now live in `Sussudio/Controllers/NativeWindowBootstrapController.cs`.
+`Sussudio/MainWindow.NativeWindow.cs` is the XAML-facing adapter and keeps the
+`_hwnd` field consumed by screenshot and window automation paths.
 
 Audio and microphone meter rendering now lives in
 `Sussudio/Controllers/AudioMeterController.cs`. Audio/microphone initial control

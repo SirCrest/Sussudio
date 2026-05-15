@@ -119,7 +119,7 @@ static partial class Program
         AssertContains(startupText, "private int _automationServicesStarted;");
         AssertContains(startupText, "private void MainWindow_Loaded(object sender, RoutedEventArgs e)");
         AssertContains(startupText, "Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += uncloakOnFirstFrame;");
-        AssertContains(startupText, "DwmSetWindowAttribute(_hwnd, DWMWA_CLOAK, ref cloakFalse, sizeof(int));");
+        AssertContains(startupText, "UncloakNativeShellWindow();");
         AssertContains(startupText, "await ViewModel.InitializeAsync();");
         AssertContains(startupText, "PrimePreviewAudioFadeIn();");
         AssertContains(startupText, "await ViewModel.RefreshDevicesAsync();");
@@ -300,6 +300,7 @@ static partial class Program
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var nativeWindowText = ReadRepoFile("Sussudio/MainWindow.NativeWindow.cs").Replace("\r\n", "\n");
+        var nativeWindowControllerText = ReadRepoFile("Sussudio/Controllers/NativeWindowBootstrapController.cs").Replace("\r\n", "\n");
         var oldWindowManagementPath = Path.Combine(
             Directory.GetCurrentDirectory(),
             "Sussudio",
@@ -327,18 +328,34 @@ static partial class Program
         AssertContains(shutdownCleanupText, "StopLiveSignalInfoTimers();");
         AssertContains(shutdownCleanupText, "StopMicMeterRowAnimation();");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
-        AssertContains(nativeWindowText, "private const int MinWindowWidth = 900;");
-        AssertContains(nativeWindowText, "private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;");
+        AssertContains(nativeWindowText, "private readonly NativeWindowBootstrapController _nativeWindowBootstrapController = new();");
         AssertContains(nativeWindowText, "private IntPtr _hwnd;");
-        AssertContains(nativeWindowText, "private Microsoft.UI.Windowing.AppWindow InitializeNativeShellWindow()");
-        AssertContains(nativeWindowText, "ViewModel.SetWindowHandle(_hwnd);");
-        AssertContains(nativeWindowText, "MinSizeWindowSubclass.Install(_hwnd, MinWindowWidth, MinWindowHeight);");
-        AssertContains(nativeWindowText, "appWindow.Resize(new Windows.Graphics.SizeInt32(1950, 1450));");
-        AssertContains(nativeWindowText, "appWindow.SetIcon(\"Assets\\\\AppIcon.ico\");");
-        AssertContains(nativeWindowText, "private Microsoft.UI.Windowing.AppWindow GetAppWindow()");
-        AssertContains(nativeWindowText, "private static extern int DwmSetWindowAttribute(");
-        AssertContains(nativeWindowText, "private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;");
-        AssertContains(nativeWindowText, "private const int DWMWA_CLOAK = 13;");
+        AssertContains(nativeWindowText, "private AppWindow InitializeNativeShellWindow()");
+        AssertContains(nativeWindowText, "var result = _nativeWindowBootstrapController.Initialize(this, ViewModel.SetWindowHandle);");
+        AssertContains(nativeWindowText, "_hwnd = result.Hwnd;");
+        AssertContains(nativeWindowText, "return result.AppWindow;");
+        AssertContains(nativeWindowText, "private AppWindow GetAppWindow()");
+        AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.GetAppWindow(this);");
+        AssertContains(nativeWindowText, "private void UncloakNativeShellWindow()");
+        AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.SetCloaked(_hwnd, cloaked: false);");
+        AssertContains(nativeWindowControllerText, "internal readonly record struct NativeWindowBootstrapResult(IntPtr Hwnd, AppWindow AppWindow);");
+        AssertContains(nativeWindowControllerText, "internal sealed class NativeWindowBootstrapController");
+        AssertContains(nativeWindowControllerText, "private const int MinWindowWidth = 900;");
+        AssertContains(nativeWindowControllerText, "private const int MinWindowHeight = 500;");
+        AssertContains(nativeWindowControllerText, "private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;");
+        AssertContains(nativeWindowControllerText, "private const int DWMWA_CLOAK = 13;");
+        AssertContains(nativeWindowControllerText, "private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;");
+        AssertContains(nativeWindowControllerText, "public NativeWindowBootstrapResult Initialize(Window window, Action<IntPtr> setWindowHandle)");
+        AssertContains(nativeWindowControllerText, "var hwnd = WindowNative.GetWindowHandle(window);");
+        AssertContains(nativeWindowControllerText, "setWindowHandle(hwnd);");
+        AssertContains(nativeWindowControllerText, "SetCloaked(hwnd, cloaked: true);");
+        AssertContains(nativeWindowControllerText, "SetDarkMode(hwnd, enabled: true);");
+        AssertContains(nativeWindowControllerText, "MinSizeWindowSubclass.Install(hwnd, MinWindowWidth, MinWindowHeight);");
+        AssertContains(nativeWindowControllerText, "appWindow.Resize(new Windows.Graphics.SizeInt32(1950, 1450));");
+        AssertContains(nativeWindowControllerText, "appWindow.SetIcon(\"Assets\\\\AppIcon.ico\");");
+        AssertContains(nativeWindowControllerText, "public AppWindow GetAppWindow(Window window)");
+        AssertContains(nativeWindowControllerText, "public void SetCloaked(IntPtr hwnd, bool cloaked)");
+        AssertContains(nativeWindowControllerText, "private static extern int DwmSetWindowAttribute(");
         AssertContains(mainWindowText, "var appWindow = InitializeNativeShellWindow();");
         AssertContains(mainWindowText, "RegisterCloseLifecycle(appWindow);");
         AssertContains(mainWindowText, "InitializeShellControllers();");
@@ -354,6 +371,8 @@ static partial class Program
         AssertDoesNotContain(closeLifecycleText, "private Microsoft.UI.Windowing.AppWindow GetAppWindow()");
         AssertDoesNotContain(closeLifecycleText, "DwmSetWindowAttribute(");
         AssertDoesNotContain(closeLifecycleText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");
+        AssertDoesNotContain(nativeWindowText, "private static extern int DwmSetWindowAttribute(");
+        AssertDoesNotContain(nativeWindowText, "MinSizeWindowSubclass.Install(");
 
         return Task.CompletedTask;
     }
