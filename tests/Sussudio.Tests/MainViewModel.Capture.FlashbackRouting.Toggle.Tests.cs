@@ -13,7 +13,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackTimelineText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs")
             .Replace("\r\n", "\n");
+        var flashbackSettingsText = ReadRepoFile("Sussudio/MainWindow.FlashbackSettingsBindings.cs")
+            .Replace("\r\n", "\n");
         var flashbackTimelineControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackTimelineController.cs")
+            .Replace("\r\n", "\n");
+        var flashbackSettingsControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackSettingsBindingController.cs")
             .Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
@@ -28,10 +32,14 @@ static partial class Program
 
         AssertContains(mainWindowText, "private bool _suppressFlashbackEnabledToggle;");
         AssertContains(mainWindowText, "InitializeFlashbackTimelineController();");
+        AssertContains(mainWindowText, "InitializeFlashbackSettingsBindingController();");
         AssertContains(viewModelText, "partial void OnIsFlashbackEnabledChanged(bool value)");
         AssertContains(viewModelText, "IsFlashbackTimelineVisible = false;");
-        AssertContains(bindingsText, "FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;");
-        AssertContains(bindingsText, "ApplyFlashbackTimelineLockout();");
+        AssertContains(bindingsText, "ApplyInitialFlashbackSettings();");
+        AssertContains(flashbackSettingsText, "private FlashbackSettingsBindingController _flashbackSettingsBindingController = null!;");
+        AssertContains(flashbackSettingsText, "ApplyFlashbackTimelineLockout = ApplyFlashbackTimelineLockout");
+        AssertContains(flashbackSettingsControllerText, "_context.FlashbackEnabledToggle.IsOn = _context.ViewModel.IsFlashbackEnabled;");
+        AssertContains(flashbackSettingsControllerText, "_context.ApplyFlashbackTimelineLockout();");
         AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackEnabled):\n                HandleFlashbackEnabledChanged();");
         AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):\n                HandleFlashbackTimelineVisibleChanged();");
         AssertContains(flashbackPropertyChangedText, "ApplyFlashbackTimelineLockout();");

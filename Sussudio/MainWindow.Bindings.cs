@@ -40,19 +40,7 @@ public sealed partial class MainWindow
     {
         AttachAudioMeterActivationBindings();
 
-        // Flashback defaults (set in code-behind to avoid XAML parse issues with Toggled handler)
-        FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;
-        FlashbackGpuDecodeToggle.IsOn = ViewModel.FlashbackGpuDecode;
-        ApplyFlashbackTimelineLockout();
-        // Sync buffer duration combo to saved setting
-        foreach (ComboBoxItem item in FlashbackBufferDurationCombo.Items)
-        {
-            if (item.Tag is string tag && tag == ViewModel.FlashbackBufferMinutes.ToString())
-            {
-                FlashbackBufferDurationCombo.SelectedItem = item;
-                break;
-            }
-        }
+        ApplyInitialFlashbackSettings();
 
         // Bind all collections to ComboBoxes
         AttachCaptureSelectionBindings();
@@ -92,7 +80,7 @@ public sealed partial class MainWindow
         FrameTimeOverlayToggle.Unchecked += FrameTimeOverlayToggle_Unchecked;
         AttachAudioInputToggleBindings();
         ShowAllCaptureOptionsToggle.Click += (s, e) => ViewModel.ShowAllCaptureOptions = ShowAllCaptureOptionsToggle.IsChecked == true;
-        FlashbackGpuDecodeToggle.Toggled += (s, e) => ViewModel.FlashbackGpuDecode = FlashbackGpuDecodeToggle.IsOn;
+        AttachFlashbackSettingsBindings();
         AttachDeviceAudioGainAndMeterBindings();
         SetupResponsiveShellLayoutBindings();
         AttachOutputPathDisplay();

@@ -1400,6 +1400,12 @@ Primary current owners:
   Flashback export progress-bar value, visibility, and reset-on-complete
   semantics. `MainWindow.FlashbackExportProgressPresentation.cs` is the
   XAML-facing adapter.
+- `Sussudio/Controllers/FlashbackSettingsBindingController.cs` owns Flashback
+  settings-control initialization, GPU decode toggle binding/sync, buffer
+  duration combo selection/sync, and buffer-duration change logging.
+  `MainWindow.FlashbackSettingsBindings.cs` is the XAML-facing adapter.
+  Flashback enable toggle rollback and apply/restart commands remain in
+  `MainWindow.Flashback.cs`.
 - `Sussudio/Controllers/FlashbackPollingController.cs` owns Flashback status
   and playback-position polling timers. `MainWindow.FlashbackPolling.cs` is the
   XAML-facing adapter; CTI anchor timing stays with playhead motion.
@@ -1476,8 +1482,8 @@ Primary current owners:
   glow, pulse, and recording-time lockout projection to
   `RecordingStatePresentationController`.
 - `Sussudio/MainWindow.PropertyChangedFlashback.cs` owns Flashback-specific
-  property-change projections for timeline lockout, markers, playhead updates,
-  export progress adapter dispatch, and settings-control synchronization.
+  property-change adapter dispatch for timeline lockout, markers, playhead
+  updates, export progress, and settings-control synchronization.
 - `Sussudio/Controllers/AudioControlPresentationController.cs` owns audio and
   microphone property-change projections: audio toggles, monitoring meter
   state, preview volume slider sync, microphone enablement, and microphone

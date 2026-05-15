@@ -47,5 +47,8 @@ static partial class Program
         await AddCheckAsync(results,
             "Flashback export progress presentation lives in controller",
             FlashbackExportProgressPresentation_LivesInController);
+        await AddCheckAsync(results,
+            "Flashback settings bindings live in controller",
+            FlashbackSettingsBindings_LiveInController);
     }
 }

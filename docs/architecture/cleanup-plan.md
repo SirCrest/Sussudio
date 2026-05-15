@@ -458,6 +458,9 @@ code-attached resolution/frame-rate handlers now live in
 `Sussudio/Controllers/CaptureOptionBindingController.cs`, with
 `MainWindow.CaptureOptionBindings.cs` and
 `MainWindow.RecordingOptionBindings.cs` left as XAML-facing adapters.
+Flashback settings-control initialization, GPU decode binding/sync, and buffer
+duration combo sync now live in
+`Sussudio/Controllers/FlashbackSettingsBindingController.cs`.
 The remaining non-audio control-bar binding code stays in `MainWindow.Bindings.cs`.
 
 Capture session transition legality now lives in
@@ -1337,6 +1340,14 @@ playhead label text. `MainWindow.FlashbackPlaybackPresentation.cs` wires the
 XAML controls, while `MainWindow.Flashback.cs` keeps command handlers,
 playback-polling start/stop, and CTI re-anchor sequencing.
 
+Flashback settings bindings now live in
+`Sussudio/Controllers/FlashbackSettingsBindingController.cs`: initial settings
+projection, GPU decode toggle binding and reverse-sync, buffer duration combo
+selection, and `FLASHBACK_UI_BUFFER_DURATION_CHANGED` logging. The async
+Flashback enable/disable rollback path and apply/restart command remain in
+`MainWindow.Flashback.cs`; `MainWindow.FlashbackSettingsBindings.cs` is only
+the XAML-facing adapter.
+
 Flashback playback in/out marker state and marker command handling now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs`. Keep
 marker normalization and out-point pause checks there; keep decode pacing,
@@ -1524,7 +1535,7 @@ and the recording-time lockout state for capture/audio controls.
 `Sussudio/Controllers/RecordButtonAnimationController.cs` still owns only the
 circle/pill width morph.
 
-Flashback-specific ViewModel property projections now live in
+Flashback-specific ViewModel property adapter dispatch now lives in
 `Sussudio/MainWindow.PropertyChangedFlashback.cs`: timeline lockout, marker and
 playhead refresh, export progress, and Flashback settings-control sync.
 
