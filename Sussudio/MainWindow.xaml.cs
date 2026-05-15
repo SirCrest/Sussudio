@@ -86,6 +86,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeFlashbackPollingController();
         InitializeFlashbackTimelineController();
         InitializeFlashbackMarkerPresentationController();
+        InitializeFlashbackExportProgressPresentationController();
         InitializeSettingsShelfController();
         InitializeSplashLoadingPhraseController();
         InitializeControlBarAnimationController();

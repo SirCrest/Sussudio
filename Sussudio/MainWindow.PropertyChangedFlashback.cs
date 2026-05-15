@@ -1,4 +1,3 @@
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Sussudio.ViewModels;
 
@@ -47,18 +46,12 @@ public sealed partial class MainWindow
 
     private void HandleFlashbackExportProgressChanged()
     {
-        FlashbackExportProgressBar.Value = ViewModel.FlashbackExportProgress;
+        UpdateFlashbackExportProgress(ViewModel.FlashbackExportProgress);
     }
 
     private void HandleFlashbackExportingChanged()
     {
-        FlashbackExportProgressBar.Visibility = ViewModel.IsFlashbackExporting
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-        if (!ViewModel.IsFlashbackExporting)
-        {
-            FlashbackExportProgressBar.Value = 0;
-        }
+        UpdateFlashbackExportingPresentation(ViewModel.IsFlashbackExporting);
     }
 
     private void HandleFlashbackGpuDecodeChanged()
