@@ -990,9 +990,15 @@ Primary current owners:
   ValidateOptions reflection coverage for valid options, output path and
   dimension rejection, HDR codec/P010 constraints, and frame-rate
   numerator/denominator pairing.
-- `tests/Sussudio.Tests/AutomationCommandDispatcher.Tests.cs` owns dispatcher
-  authorization, response, command-kind handling, and dispatcher
-  source-ownership contract tests.
+- `tests/Sussudio.Tests/LibAvEncoder.Tests.cs` is the marker shell for
+  LibAvEncoder harness checks; `LibAvEncoder.*.Tests.cs` and
+  `LibAvEncoder.Helpers.cs` own codec policy, frame-size, diagnostics,
+  HDR metadata, output lifecycle, source-ownership, and shared source-reading
+  helpers.
+- `tests/Sussudio.Tests/AutomationCommandDispatcher.Tests.cs` owns the
+  dispatcher source-family reader; `AutomationCommandDispatcher.*.Tests.cs`
+  and `AutomationCommandDispatcher.Helpers.cs` own authorization, manifest,
+  Flashback failure response, command-kind handling, and helper coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Tests.cs` owns
   dispatcher JSON payload extraction helper coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Readiness.Tests.cs` owns
