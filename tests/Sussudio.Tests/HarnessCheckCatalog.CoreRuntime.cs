@@ -72,6 +72,9 @@ static partial class Program
             "CaptureService runtime HDR pipeline projection lives in focused partial",
             CaptureService_RuntimeHdrPipelineProjection_LivesInFocusedPartial);
         await AddCheckAsync(results,
+            "CaptureService runtime source telemetry projection lives in focused partial",
+            CaptureService_RuntimeSourceTelemetryProjection_LivesInFocusedPartial);
+        await AddCheckAsync(results,
             "CaptureService runtime recording integrity projection lives in focused partial",
             CaptureService_RuntimeRecordingIntegrityProjection_LivesInFocusedPartial);
         await AddCheckAsync(results,

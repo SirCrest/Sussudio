@@ -1171,8 +1171,10 @@ automation, and verification; video ingest, source-reader health, WASAPI
 capture, and playback output counter projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs`, HDR
 pipeline parity/downgrade projection now lives in
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`, and
-recording-integrity summary projection now lives in
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`,
+source telemetry detail/age/alignment projection now lives in
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`,
+and recording-integrity summary projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotRecordingIntegrity.cs`.
 Recording-format and observed-frame helper policy live in focused snapshot
 partials.

@@ -217,6 +217,31 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureService_RuntimeSourceTelemetryProjection_LivesInFocusedPartial()
+    {
+        var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var sourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(runtimeText, "var sourceTelemetry = CaptureRuntimeSourceTelemetrySnapshotFields(");
+        AssertContains(runtimeText, "DetectedSourceFrameRate = sourceTelemetry.DetectedSourceFrameRate,");
+        AssertContains(runtimeText, "SourceTelemetryAgeSeconds = sourceTelemetry.AgeSeconds,");
+        AssertContains(runtimeText, "TelemetryAlignmentStatus = sourceTelemetry.AlignmentStatus,");
+
+        AssertContains(sourceTelemetryText, "private static RuntimeSourceTelemetrySnapshotFields CaptureRuntimeSourceTelemetrySnapshotFields(");
+        AssertContains(sourceTelemetryText, "TelemetryAgeHelper.ComputeAgeSeconds(telemetryTimestampUtc, DateTimeOffset.UtcNow)");
+        AssertContains(sourceTelemetryText, "ResolveTelemetryAlignment(");
+        AssertContains(sourceTelemetryText, "CircuitState = ResolveSourceTelemetryCircuitState(telemetry.Availability, suppressed)");
+        AssertContains(sourceTelemetryText, "SourceRawTimingHex = telemetry.RawTimingHex,");
+
+        AssertDoesNotContain(runtimeText, "TelemetryAgeHelper.ComputeAgeSeconds(");
+        AssertDoesNotContain(runtimeText, "SourceTelemetryDetails = _latestSourceTelemetry.DetailEntries,");
+        AssertDoesNotContain(runtimeText, "ResolveSourceTelemetryCircuitState(_latestSourceTelemetry.Availability");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_RuntimeRecordingIntegrityProjection_LivesInFocusedPartial()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
