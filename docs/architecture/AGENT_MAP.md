@@ -849,10 +849,18 @@ Primary current owners:
   the CPU MJPEG automation snapshot property-list contract used by that check.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns
   CaptureDiagnosticsSnapshot default, round-trip, and reflection JSON checks.
-- `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns
-  CaptureHealthSnapshot extension, Flashback, source telemetry, and A/V sync
-  model checks; `SnapshotModels.CaptureHealth.PropertySpec.cs` owns the
-  CaptureHealthSnapshot and SourceTelemetryDetailEntry property-list contracts.
+- `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns the
+  CaptureHealthSnapshot registered orchestration check;
+  `SnapshotModels.CaptureHealth.Defaults.Tests.cs` owns defaults and inherited
+  diagnostics assertions;
+  `SnapshotModels.CaptureHealth.SourceTelemetryDetail.Tests.cs` owns
+  SourceTelemetryDetailEntry direct and JSON assertions;
+  `SnapshotModels.CaptureHealth.RoundTrip.Tests.cs` owns the populated
+  CaptureHealthSnapshot fixture and direct round-trip assertions;
+  `SnapshotModels.CaptureHealth.Json.Tests.cs` owns CaptureHealthSnapshot
+  reflection JSON assertions; and `SnapshotModels.CaptureHealth.PropertySpec.cs`
+  owns the CaptureHealthSnapshot and SourceTelemetryDetailEntry property-list
+  contracts.
 - `tests/Sussudio.Tests/SnapshotModels.SourceSignalTelemetry.Tests.cs` owns
   SourceSignalTelemetrySnapshot and SourceTelemetryDetailEntry contract checks.
 - `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs` owns Native XU
