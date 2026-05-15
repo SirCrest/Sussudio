@@ -72,6 +72,9 @@ static partial class Program
             "Thread health probes default cleanly when inactive",
             GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive);
         await AddCheckAsync(results,
+            "CaptureService initialization lives in focused partial",
+            CaptureService_InitializationLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "CaptureService runtime ingest audio projection lives in focused partial",
             CaptureService_RuntimeIngestAudioProjection_LivesInFocusedPartial);
         await AddCheckAsync(results,

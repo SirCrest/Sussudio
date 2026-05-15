@@ -613,10 +613,16 @@ format probing/source fallback/subtype naming in
 
 Capture service source telemetry and observed pixel-format accounting now live
 in `Sussudio/Services/Capture/CaptureService.Telemetry.cs`. The root capture
-service owns shared state, construction, initialization, and public event
-surface, but telemetry polling, fallback merging, NTSC frame-rate correction,
-and pixel-format counters are no longer embedded in the lifecycle/orchestration
-file.
+service owns shared state, construction, and public event surface, but telemetry
+polling, fallback merging, NTSC frame-rate correction, and pixel-format counters
+are no longer embedded in the lifecycle/orchestration file.
+
+Capture service initialization now lives in
+`Sussudio/Services/Capture/CaptureService.Initialization.cs`. That file owns
+the public initialization transition, initial selected device/settings capture,
+negotiated-format seeding, observed pixel telemetry reset, fallback source
+telemetry, source telemetry refresh, NTSC frame-rate correction, and initialized
+status event.
 
 Capture audio preview and live input switching now live in
 `Sussudio/Services/Capture/CaptureService.Audio.cs`. Preview-time microphone
