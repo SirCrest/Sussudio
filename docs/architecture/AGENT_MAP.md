@@ -1598,6 +1598,8 @@ Primary current owners:
   export flow, progress/cancellation state, and segment projection.
   `MainViewModel.FrameRateOptions.cs` owns frame-rate option rebuilding,
   observable collection mutation, and automatic frame-rate selection.
+  `MainViewModel.ModeSelectionState.cs` owns shared frame-rate and capture-mode
+  selection state resets.
   `MainViewModel.FrameRateSourceFilterPolicy.cs` owns source-rate filtering and
   `ShowAllCaptureOptions` unlock policy. `MainViewModel.CaptureOptionVisibility.cs`
   owns `ShowAllCaptureOptions` change handling and deferred rebuild behavior.

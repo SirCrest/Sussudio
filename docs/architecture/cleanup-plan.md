@@ -2074,7 +2074,8 @@ Remaining `tools/Common` ownership:
    flow, progress/cancellation state, and segment projection now live in
    `MainViewModel.FlashbackExport.cs`. Frame-rate option rebuilding, observable
    collection mutation, and automatic frame-rate selection now live in
-   `MainViewModel.FrameRateOptions.cs`. Source-rate filtering and
+   `MainViewModel.FrameRateOptions.cs`. Shared frame-rate/capture-mode selection
+   state resets live in `MainViewModel.ModeSelectionState.cs`. Source-rate filtering and
    `ShowAllCaptureOptions` unlock policy live in
    `MainViewModel.FrameRateSourceFilterPolicy.cs`, while `ShowAllCaptureOptions`
    change handling and deferred rebuild behavior live in

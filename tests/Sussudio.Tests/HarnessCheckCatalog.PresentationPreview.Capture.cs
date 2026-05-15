@@ -39,6 +39,9 @@ static partial class Program
             "Resolution selection policy lives in focused partial",
             ResolutionSelectionPolicy_LivesInFocusedPartial);
         await AddCheckAsync(results,
+            "Mode selection state lives in focused partial",
+            ModeSelectionState_LivesInFocusedPartial);
+        await AddCheckAsync(results,
             "Frame-rate timing policy lives in focused partial",
             FrameRateTimingPolicy_LivesInFocusedPartial);
         await AddCheckAsync(results,

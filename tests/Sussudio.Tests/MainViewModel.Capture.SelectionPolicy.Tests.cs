@@ -36,10 +36,12 @@ static partial class Program
     {
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateSourceFilterPolicy.cs").Replace("\r\n", "\n");
+        var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs").Replace("\r\n", "\n");
 
         AssertContains(frameRateOptionsText, "var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
         AssertContains(frameRateOptionsText, "AvailableFrameRates.Clear();");
         AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selected, fallbackRate);");
+        AssertContains(modeSelectionText, "private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)");
         AssertContains(sourceFilterPolicyText, "private static class FrameRateSourceFilterPolicy");
         AssertContains(sourceFilterPolicyText, "internal static FrameRateSourceFilterResult Apply(");
         AssertContains(sourceFilterPolicyText, "IReadOnlyCollection<FrameRateTimingVariant> resolutionTimingVariants");
@@ -52,6 +54,41 @@ static partial class Program
         AssertDoesNotContain(sourceFilterPolicyText, "AvailableFrameRates.Clear();");
         AssertDoesNotContain(sourceFilterPolicyText, "ApplyResolvedFrameRateSelection(");
         AssertDoesNotContain(sourceFilterPolicyText, "DetectedSourceFrameRate =");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ModeSelectionState_LivesInFocusedPartial()
+    {
+        var resolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptions.cs").Replace("\r\n", "\n");
+        var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
+        var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs").Replace("\r\n", "\n");
+
+        AssertContains(resolutionOptionsText, "private void RebuildResolutionOptions()");
+        AssertContains(resolutionOptionsText, "private bool TryResolveResolutionKey(");
+        AssertDoesNotContain(resolutionOptionsText, "private void ResetFrameRateSelectionState()");
+        AssertDoesNotContain(resolutionOptionsText, "private void ApplyResolvedFrameRateSelection(");
+        AssertDoesNotContain(resolutionOptionsText, "private void ResetModeSelectionState()");
+        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selected, SelectedFrameRate > 0 ? SelectedFrameRate : 60);");
+        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selected, fallbackRate);");
+        AssertContains(modeSelectionText, "private void ResetFrameRateSelectionState()");
+        AssertContains(modeSelectionText, "_hasUserOverriddenFrameRateForCurrentMode = false;");
+        AssertContains(modeSelectionText, "IsAutoFrameRateSelected = true;");
+        AssertContains(modeSelectionText, "private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)");
+        AssertContains(modeSelectionText, "_isApplyingAutomaticFrameRateSelection = true;\n        try\n        {\n            SelectedFrameRate = selected?.Value ?? fallbackRate;\n        }\n        finally\n        {\n            _isApplyingAutomaticFrameRateSelection = false;\n        }");
+        AssertContains(modeSelectionText, "SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(SelectedFrameRate);");
+        AssertContains(modeSelectionText, "SelectedExactFrameRate = selected?.Value ?? SelectedFrameRate;");
+        AssertContains(modeSelectionText, "SelectedExactFrameRateArg = selected?.Rational;");
+        AssertContains(modeSelectionText, "if (IsAutoResolutionValue(SelectedResolution))\n        {\n            AutoResolvedFrameRate = selected?.Value ?? SelectedFrameRate;\n        }");
+        AssertContains(modeSelectionText, "AutoResolvedFrameRate = selected?.Value ?? SelectedFrameRate;");
+        AssertContains(modeSelectionText, "DisabledFrameRateReason = selected is { IsEnabled: false }\n            ? selected.DisableReason\n            : string.Empty;");
+        AssertContains(modeSelectionText, "private void ResetModeSelectionState()");
+        AssertContains(modeSelectionText, "ResetFrameRateSelectionState();");
+        AssertContains(modeSelectionText, "_hasUserOverriddenResolutionForCurrentMode = false;");
+        AssertContains(modeSelectionText, "_forceSourceAutoRetarget = false;");
+        AssertContains(modeSelectionText, "_lastSourceModeKey = null;");
+        AssertContains(modeSelectionText, "_pendingSdrAutoSelectionForDeviceChange = false;");
+        AssertContains(modeSelectionText, "_pendingSdrAutoFriendlyFrameRateBucket = null;");
 
         return Task.CompletedTask;
     }
