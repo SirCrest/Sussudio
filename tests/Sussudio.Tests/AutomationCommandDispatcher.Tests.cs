@@ -8,6 +8,7 @@ static partial class Program
             "Sussudio/Services/Automation/AutomationCommandDispatcher.TrivialHandlers.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs",
+            "Sussudio/Services/Automation/AutomationCommandDispatcher.VerificationCommands.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.CommandParsing.cs",
             "Sussudio/Services/Automation/AutomationCommandDispatcher.WindowActions.cs",

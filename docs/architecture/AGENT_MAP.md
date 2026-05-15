@@ -75,6 +75,9 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs`
   owns Flashback action/export/segment/restart/enable command bodies behind the
   custom command router.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.VerificationCommands.cs`
+  owns file and last-recording verification command bodies behind the custom
+  command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.TrivialHandlers.cs`
   owns the table of simple one-property commands that delegate straight to the
   automation view-model port.

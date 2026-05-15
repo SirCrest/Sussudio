@@ -164,7 +164,8 @@ static partial class Program
         {
             "Sussudio/Services/Automation/AutomationCommandDispatcher*.cs" =>
                 agentMapText.Contains("`Sussudio/Services/Automation/AutomationCommandDispatcher.cs`", StringComparison.Ordinal) &&
-                agentMapText.Contains("`Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`", StringComparison.Ordinal),
+                agentMapText.Contains("`Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`", StringComparison.Ordinal) &&
+                agentMapText.Contains("`Sussudio/Services/Automation/AutomationCommandDispatcher.VerificationCommands.cs`", StringComparison.Ordinal),
             "Sussudio.Automation.Contracts/AutomationCommandKind.cs" =>
                 agentMapText.Contains("Primary owner: `Sussudio.Automation.Contracts/`", StringComparison.Ordinal) &&
                 agentMapText.Contains("`AutomationCommandKind.cs` owns numeric command IDs.", StringComparison.Ordinal),

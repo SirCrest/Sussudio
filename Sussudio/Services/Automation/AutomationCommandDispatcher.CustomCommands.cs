@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
@@ -121,30 +120,7 @@ public sealed partial class AutomationCommandDispatcher
                 return await ExecuteFlashbackGetSegmentsCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.VerifyFile:
-            {
-                var filePath = ValidatePathPayload(
-                    AutomationCommandKind.VerifyFile,
-                    "filePath",
-                    RequireString(payload, "filePath"));
-                var verificationProfile = GetString(payload, "verificationProfile");
-                var verifyStartedAt = Stopwatch.GetTimestamp();
-                var verification = await _diagnosticsHub
-                    .VerifyFileAsync(filePath, verificationProfile, cancellationToken)
-                    .ConfigureAwait(false);
-                var elapsedMs = (long)Math.Round(Stopwatch.GetElapsedTime(verifyStartedAt).TotalMilliseconds);
-                return CreateResponse(
-                    correlationId,
-                    verification.Message,
-                    data: new
-                    {
-                        Verification = verification,
-                        HdrParity = verification.HdrParity
-                    },
-                    errorCode: verification.Succeeded ? null : "verification-failed",
-                    success: verification.Succeeded,
-                    status: verification.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
-                    elapsedMs: elapsedMs);
-            }
+                return await ExecuteVerifyFileCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.SetOutputPath:
             {
@@ -230,23 +206,7 @@ public sealed partial class AutomationCommandDispatcher
             }
 
             case AutomationCommandKind.VerifyLastRecording:
-            {
-                var verifyStartedAt = Stopwatch.GetTimestamp();
-                var verification = await _diagnosticsHub.VerifyLastRecordingAsync(cancellationToken).ConfigureAwait(false);
-                var elapsedMs = (long)Math.Round(Stopwatch.GetElapsedTime(verifyStartedAt).TotalMilliseconds);
-                return CreateResponse(
-                    correlationId,
-                    verification.Message,
-                    data: new
-                    {
-                        Verification = verification,
-                        HdrParity = verification.HdrParity
-                    },
-                    errorCode: verification.Succeeded ? null : "verification-failed",
-                    success: verification.Succeeded,
-                    status: verification.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
-                    elapsedMs: elapsedMs);
-            }
+                return await ExecuteVerifyLastRecordingCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.AssertSnapshot:
             {

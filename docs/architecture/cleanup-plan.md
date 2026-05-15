@@ -226,8 +226,10 @@ recording-start verification reset, and verification-profile adaptation.
 Automation command dispatch now keeps the root router focused on the command
 envelope: manifest revision checks, auth/readiness gates, trivial-handler
 dispatch, and error shaping. `AutomationCommandDispatcher.CustomCommands.cs`
-owns custom switch bodies for commands that need multi-field payloads, special
-response shapes, diagnostics, or capture/Flashback routing.
+owns the custom command switch/router for commands that need multi-field
+payloads, special response shapes, diagnostics, or capture/Flashback routing.
+`AutomationCommandDispatcher.VerificationCommands.cs` owns file and
+last-recording verification command bodies.
 `AutomationCommandDispatcher.TrivialHandlers.cs` owns the simple one-property
 command table. Named partials own support responsibilities:
 `AutomationCommandDispatcher.Authorization.cs` handles auth-token lookup and
