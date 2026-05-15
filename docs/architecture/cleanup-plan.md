@@ -1868,7 +1868,8 @@ and `AutomationPipeClient.Models.cs` owns command result and exception types.
 PresentMon model and text ownership is split from the probe runner.
 `tools/Common/PresentMonProbe.Models.cs` owns PresentMon options, result,
 summary, swap-chain, correlation, and metric DTOs.
-`tools/Common/PresentMonProbe.Format.cs` owns result text formatting while
+`tools/Common/PresentMonProbe.Format.cs` owns result-message shaping and result
+text formatting while
 `tools/Common/PresentMonProbe.Csv.cs` owns CSV parse overloads, row projection,
 and summary assembly. `PresentMonProbe.Csv.Fields.cs` owns header/field parsing
 and CSV line tokenization. `PresentMonProbe.Csv.SwapChains.cs` owns swap-chain
@@ -1876,8 +1877,8 @@ normalization, artifact filtering, and selected-chain summaries.
 `PresentMonProbe.Csv.Correlation.cs` owns app-present correlation, while
 `PresentMonProbe.Csv.Summary.cs` owns warnings, counted text fields, and
 percentile metric aggregation. `PresentMonProbe.Csv.Models.cs` owns the private
-parsed-row shape. `PresentMonProbe.cs` keeps the public run orchestration and
-result-message shaping. `PresentMonProbe.Paths.cs` owns target process,
+parsed-row shape. `PresentMonProbe.cs` keeps the public run orchestration.
+`PresentMonProbe.Paths.cs` owns target process,
 PresentMon executable, and output-path resolution. `PresentMonProbe.Arguments.cs`
 owns command-line construction and argument quoting. `PresentMonProbe.Process.cs`
 owns process supervision, stdout/stderr drain, timeout kill, and temp CSV

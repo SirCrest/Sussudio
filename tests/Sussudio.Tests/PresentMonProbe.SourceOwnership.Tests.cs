@@ -25,7 +25,6 @@ static partial class Program
         AssertContains(rootText, "var run = await RunProcessAsync(");
         AssertContains(rootText, "summary = ParseCsv(outputPath, options.ExpectedSwapChainAddress, options, captureStartUtcUnixMs);");
         AssertContains(rootText, "TryDelete(outputPath);");
-        AssertContains(rootText, "private static string BuildResultMessage(");
 
         AssertContains(modelsText, "public sealed class PresentMonProbeOptions");
         AssertContains(modelsText, "public sealed class PresentMonProbeResult");
@@ -35,6 +34,7 @@ static partial class Program
         AssertContains(modelsText, "public sealed class PresentMonMetricSummary");
 
         AssertContains(formatText, "public static string Format(PresentMonProbeResult result)");
+        AssertContains(formatText, "private static string BuildResultMessage(");
         AssertContains(formatText, "private static void AppendSummaryContext(");
         AssertContains(formatText, "private static void AppendMetric(");
         AssertContains(formatText, "private static void AppendAppCorrelation(");
@@ -75,6 +75,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static IReadOnlyList<PresentMonSwapChainSummary> BuildSwapChainSummaries(");
         AssertDoesNotContain(rootText, "private static PresentMonMetricSummary Summarize(");
         AssertDoesNotContain(rootText, "public static string Format(PresentMonProbeResult result)");
+        AssertDoesNotContain(rootText, "private static string BuildResultMessage(");
 
         return Task.CompletedTask;
     }
