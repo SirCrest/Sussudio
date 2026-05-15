@@ -1462,6 +1462,8 @@ Primary current owners:
   presentation-only rules for capture option affordances: HDR readiness hints,
   FPS telemetry tooltips, MJPEG decoder count selection/visibility, bitrate
   mode visibility, and audio clipping visibility.
+  `Sussudio/Controllers/CaptureOptionTooltipFormatter.cs` owns pure HDR hint
+  and FPS telemetry tooltip text policy.
   `MainWindow.CaptureOptionPresentation.cs` is the XAML-facing adapter.
 - `Sussudio/MainWindow.CaptureOptionBindings.cs` owns video-format collection
   binding, initial capture/recording selection projection, and resolution/frame-

@@ -88,6 +88,9 @@ static partial class Program
             "Capture option presentation lives in controller",
             CaptureOptionPresentation_LivesInController);
         await AddCheckAsync(results,
+            "Capture option tooltip formatter preserves text policy",
+            CaptureOptionTooltipFormatter_PreservesTooltipTextPolicy);
+        await AddCheckAsync(results,
             "Output path display lives in controller",
             OutputPathDisplay_LivesInController);
         await AddCheckAsync(results,

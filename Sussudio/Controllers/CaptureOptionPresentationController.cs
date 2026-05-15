@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -70,39 +69,19 @@ internal sealed class CaptureOptionPresentationController
 
     public void RefreshHdrHintText()
     {
-        var resolutionHint = _context.ViewModel.HdrResolutionSupportHint?.Trim();
-        var readinessHint = _context.ViewModel.HdrReadinessReason?.Trim();
-        var combinedHint = string.IsNullOrWhiteSpace(readinessHint)
-            ? resolutionHint
-            : string.IsNullOrWhiteSpace(resolutionHint)
-                ? readinessHint
-                : $"{readinessHint}{Environment.NewLine}{resolutionHint}";
-        if (_context.ViewModel.IsRecording)
-        {
-            combinedHint = string.IsNullOrWhiteSpace(combinedHint)
-                ? "Stop recording before switching between HDR and SDR pipelines."
-                : $"{combinedHint}{Environment.NewLine}Stop recording before switching between HDR and SDR pipelines.";
-        }
-
-        ToolTipService.SetToolTip(_context.HdrToggle,
-            string.IsNullOrWhiteSpace(combinedHint) ? null : combinedHint);
+        var tooltip = CaptureOptionTooltipFormatter.BuildHdrHintText(
+            _context.ViewModel.HdrResolutionSupportHint,
+            _context.ViewModel.HdrReadinessReason,
+            _context.ViewModel.IsRecording);
+        ToolTipService.SetToolTip(_context.HdrToggle, tooltip);
     }
 
     public void UpdateFpsTelemetryTooltip()
     {
-        var parts = new List<string>();
-        if (!string.IsNullOrWhiteSpace(_context.ViewModel.SourceTelemetrySummaryText))
-        {
-            parts.Add(_context.ViewModel.SourceTelemetrySummaryText);
-        }
-
-        if (!string.IsNullOrWhiteSpace(_context.ViewModel.SourceTargetSummaryText))
-        {
-            parts.Add(_context.ViewModel.SourceTargetSummaryText);
-        }
-
-        ToolTipService.SetToolTip(_context.FrameRateComboBox,
-            parts.Count > 0 ? string.Join(Environment.NewLine, parts) : null);
+        var tooltip = CaptureOptionTooltipFormatter.BuildFpsTelemetryTooltip(
+            _context.ViewModel.SourceTelemetrySummaryText,
+            _context.ViewModel.SourceTargetSummaryText);
+        ToolTipService.SetToolTip(_context.FrameRateComboBox, tooltip);
     }
 
     public void ApplyHdrToggleEnabledState()
