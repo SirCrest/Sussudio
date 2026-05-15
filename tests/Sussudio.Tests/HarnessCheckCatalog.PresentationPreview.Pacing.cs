@@ -27,8 +27,8 @@ static partial class Program
             "Preview pacing classifier flags recent jitter schedule-late",
             PreviewPacingClassifier_ClassifiesRecentJitterScheduleLate);
         await AddCheckAsync(results,
-            "Preview pacing classifier models live in focused file",
-            PreviewPacingClassifier_ModelsLiveInFocusedFile);
+            "Preview pacing classifier source ownership is split",
+            PreviewPacingClassifier_SourceOwnershipIsSplit);
         await AddCheckAsync(results,
             "Preview pacing classifier is wired into automation snapshots",
             PreviewPacingClassifier_IsWiredIntoAutomationSnapshots);

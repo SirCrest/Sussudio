@@ -218,6 +218,10 @@ HDR/tone-map state projection.
 loop. `AutomationDiagnosticsHub.OutputFiles.cs` owns cached last-output file
 existence and size probing. `AutomationDiagnosticsHub.PreviewPacing.cs` owns
 automation snapshot input projection for preview pacing stage classification.
+`PreviewPacingClassificationModels.cs` owns the preview pacing DTOs,
+`PreviewPacingSlowStageClassifier.cs` owns classification ordering and non-D3D
+lane policy, and `PreviewPacingSlowStageClassifier.D3D.cs` owns D3D stage
+dominance policy.
 `AutomationDiagnosticsHub.ProcessMetrics.cs` owns process CPU, memory, GC, and
 thread-pool sampling.
 `AutomationDiagnosticsHub.Verification.cs` owns recording/file verification

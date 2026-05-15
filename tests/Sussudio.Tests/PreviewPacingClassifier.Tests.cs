@@ -113,18 +113,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewPacingClassifier_ModelsLiveInFocusedFile()
+    private static Task PreviewPacingClassifier_SourceOwnershipIsSplit()
     {
         var classifierText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.cs")
             .Replace("\r\n", "\n");
+        var d3dPolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.D3D.cs")
+            .Replace("\r\n", "\n");
         var modelText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingClassificationModels.cs")
             .Replace("\r\n", "\n");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
 
         AssertContains(modelText, "public sealed class PreviewPacingClassificationInput");
         AssertContains(modelText, "public readonly record struct PreviewPacingClassification(");
-        AssertContains(classifierText, "public static class PreviewPacingSlowStageClassifier");
+        AssertContains(classifierText, "public static partial class PreviewPacingSlowStageClassifier");
         AssertDoesNotContain(classifierText, "public sealed class PreviewPacingClassificationInput");
         AssertDoesNotContain(classifierText, "public readonly record struct PreviewPacingClassification(");
+        AssertContains(classifierText, "var dominantStage = ResolveDominantD3DStage(input, targetFrameMs);");
+        AssertDoesNotContain(classifierText, "private static string ResolveDominantD3DStage(");
+        AssertContains(d3dPolicyText, "private static string ResolveDominantD3DStage(");
+        AssertContains(d3dPolicyText, "private static bool IsDominant(");
+        AssertContains(d3dPolicyText, "private static double Positive(double value)");
+        AssertContains(agentMapText, "PreviewPacingSlowStageClassifier.D3D.cs");
 
         return Task.CompletedTask;
     }

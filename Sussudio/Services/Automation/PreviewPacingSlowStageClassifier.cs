@@ -3,12 +3,11 @@ using System.Globalization;
 
 namespace Sussudio.Services.Automation;
 
-public static class PreviewPacingSlowStageClassifier
+public static partial class PreviewPacingSlowStageClassifier
 {
     private const double MinSampleDurationMs = 30_000.0;
     private const double OnePercentLowWarningRatio = 0.98;
     private const double P99OverBudgetRatio = 1.08;
-    private const double StageDominanceRatio = 1.15;
     private const double RendererDropWarningPercent = 1.0;
     private const double VisualRepeatWarningPercent = 8.0;
     private const double MjpegDuplicateWarningPercent = 20.0;
@@ -280,53 +279,6 @@ public static class PreviewPacingSlowStageClassifier
                input.RecentPreviewJitterScheduleLateMs > Math.Max(1.0, targetFrameMs * 0.25);
     }
 
-    private static string ResolveDominantD3DStage(
-        PreviewPacingClassificationInput input,
-        double targetFrameMs)
-    {
-        var threshold = Math.Max(1.0, targetFrameMs * 0.25);
-        var inputUpload = Positive(input.PreviewD3DInputUploadCpuP99Ms);
-        var renderSubmit = Positive(input.PreviewD3DRenderSubmitCpuP99Ms);
-        var presentCall = Positive(input.PreviewD3DPresentCallP99Ms);
-        var wait = Math.Max(
-            Positive(input.PreviewD3DFrameLatencyWaitP95Ms),
-            Positive(input.PreviewD3DFrameLatencyWaitMaxMs) * 0.50);
-
-        if (input.RecentD3DFrameLatencyWaitTimeoutCount > 0)
-        {
-            return "PresentBlocked";
-        }
-
-        var max = Math.Max(Math.Max(inputUpload, renderSubmit), Math.Max(presentCall, wait));
-        if (max < threshold)
-        {
-            if (input.PreviewD3DTotalFrameCpuP99Ms > targetFrameMs * P99OverBudgetRatio)
-            {
-                return "RenderSubmit";
-            }
-
-            return string.Empty;
-        }
-
-        if (inputUpload >= max && IsDominant(inputUpload, renderSubmit, presentCall, wait))
-        {
-            return "RenderUpload";
-        }
-
-        if (renderSubmit >= max && IsDominant(renderSubmit, inputUpload, presentCall, wait))
-        {
-            return "RenderSubmit";
-        }
-
-        if (presentCall >= max && IsDominant(presentCall, inputUpload, renderSubmit, wait) ||
-            wait >= max && IsDominant(wait, inputUpload, renderSubmit, presentCall))
-        {
-            return "PresentBlocked";
-        }
-
-        return string.Empty;
-    }
-
     private static bool IsSampleReady(int sampleCount, double sampleDurationMs, double targetFps)
     {
         var minSamples = targetFps >= 100
@@ -340,19 +292,6 @@ public static class PreviewPacingSlowStageClassifier
            double.IsFinite(onePercentLowFps) &&
            onePercentLowFps > 0 &&
            onePercentLowFps < targetFps * OnePercentLowWarningRatio;
-
-    private static bool IsDominant(double candidate, params double[] others)
-    {
-        foreach (var other in others)
-        {
-            if (other > 0 && candidate < other * StageDominanceRatio)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
 
     private static double ResolveTargetFps(PreviewPacingClassificationInput input)
     {
@@ -386,9 +325,6 @@ public static class PreviewPacingSlowStageClassifier
 
     private static double CalculatePercent(long count, long total)
         => total > 0 ? Math.Max(0.0, count) * 100.0 / total : 0.0;
-
-    private static double Positive(double value)
-        => double.IsFinite(value) && value > 0 ? value : 0.0;
 
     private static bool IsPositiveFinite(double value)
         => double.IsFinite(value) && value > 0;
