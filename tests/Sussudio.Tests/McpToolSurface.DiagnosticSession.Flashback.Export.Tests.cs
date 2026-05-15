@@ -8,6 +8,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var scenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
+        var scenariosTextWithoutSpaces = scenariosText.Replace(" ", string.Empty);
 
         AssertContains(scenariosText, "internal static partial class DiagnosticSessionFlashbackExportScenarios");
         AssertContains(scenariosText, "internal static async Task RunFlashbackExportConcurrentAsync(");
@@ -22,12 +23,23 @@ static partial class Program
         AssertContains(scenariosText, "flashback export during playback verified");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
         AssertContains(scenariosText, "[\"useSelectionRange\"] = true");
-        AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExportScenarios;");
-        AssertContains(startupText, "RunFlashbackExportConcurrentAsync(");
-        AssertContains(startupText, "RunFlashbackDisableDuringExportAsync(");
-        AssertContains(startupText, "RunFlashbackRotatedExportAsync(");
-        AssertContains(startupText, "RunFlashbackExportPlaybackAsync(");
-        AssertContains(startupText, "RunFlashbackRangeExportAsync(");
+        AssertContains(scenariosText, "internal static void RegisterSelectedFlashbackExportScenarioTasks(");
+        AssertContains(scenariosText, "backgroundTasks.AddScenario(");
+        AssertContains(scenariosTextWithoutSpaces, "6,\n\"flashback-export-playback-task\",");
+        AssertContains(scenariosTextWithoutSpaces, "8,\n\"flashback-range-export-task\",");
+        AssertContains(scenariosTextWithoutSpaces, "9,\n\"flashback-range-export-audio-switch-task\",");
+        AssertContains(scenariosTextWithoutSpaces, "10,\n\"flashback-export-concurrent-task\",");
+        AssertContains(scenariosTextWithoutSpaces, "11,\n\"flashback-disable-during-export-task\",");
+        AssertContains(scenariosTextWithoutSpaces, "12,\n\"flashback-rotated-export-task\",");
+        AssertContains(scenariosText, "\"flashback-range-export-task\"");
+        AssertContains(scenariosText, "actions.Add(\"flashback concurrent export started\")");
+        AssertContains(startupText, "DiagnosticSessionFlashbackExportScenarios.RegisterSelectedFlashbackExportScenarioTasks(");
+        AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExportScenarios;");
+        AssertDoesNotContain(startupText, "RunFlashbackExportConcurrentAsync(");
+        AssertDoesNotContain(startupText, "RunFlashbackDisableDuringExportAsync(");
+        AssertDoesNotContain(startupText, "RunFlashbackRotatedExportAsync(");
+        AssertDoesNotContain(startupText, "RunFlashbackExportPlaybackAsync(");
+        AssertDoesNotContain(startupText, "RunFlashbackRangeExportAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackExportConcurrentAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackDisableDuringExportAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRotatedExportAsync(");

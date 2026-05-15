@@ -1605,9 +1605,7 @@ Diagnostic-session scenario startup now lives in a focused partial family.
 orchestration call. `DiagnosticSessionScenarioStartup.Registrations.cs` owns
 non-export Flashback scenario task registration,
 `DiagnosticSessionScenarioStartup.DeferredSettings.cs` owns deferred Flashback
-recording-settings task registration,
-`DiagnosticSessionScenarioStartup.ExportRegistrations.cs` owns Flashback export
-task registration, and
+recording-settings task registration, and
 `DiagnosticSessionScenarioStartup.Playback.cs` owns the direct Flashback
 playback start command and playback-state wait. The runner now delegates
 startup and keeps the setup/sampling/cleanup/summary phase flow.
@@ -1680,7 +1678,9 @@ Diagnostic-session Flashback export scenarios now live in a focused partial
 family rooted at `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs`.
 The root is only a marker shell; concurrent export, disable-during-export,
 rotated export, export during playback, and selection-range export flows each
-have their own named file while the runner only starts the scenario tasks.
+have their own named file. `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
+owns export scenario task registration while diagnostic-session startup makes a
+single qualified call into that owner.
 
 Diagnostic-session Flashback lifecycle checks now live in
 `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`. They own the
@@ -1843,7 +1843,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioStartup.cs`
 - `DiagnosticSessionScenarioStartup.Registrations.cs`
 - `DiagnosticSessionScenarioStartup.DeferredSettings.cs`
-- `DiagnosticSessionScenarioStartup.ExportRegistrations.cs`
 - `DiagnosticSessionScenarioStartup.Playback.cs`
 - `DiagnosticSessionPresentMonStartup.cs`
 - `DiagnosticSessionText.cs`

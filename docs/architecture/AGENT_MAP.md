@@ -1690,9 +1690,6 @@ Primary owners:
   there.
 - `tools/Common/DiagnosticSessionScenarioStartup.DeferredSettings.cs` owns
   deferred Flashback recording-settings task registration.
-- `tools/Common/DiagnosticSessionScenarioStartup.ExportRegistrations.cs` owns
-  Flashback export, range export, export/playback, concurrent export, disable
-  during export, and rotated export task registration.
 - `tools/Common/DiagnosticSessionScenarioStartup.Playback.cs` owns the direct
   Flashback playback start command, playback buffer readiness warning, and
   playback-state wait.
@@ -1748,7 +1745,8 @@ Primary owners:
   export diagnostic scenario marker shell. Concurrent export,
   disable-during-export, rotated export, export-during-playback, and
   selection-range export flows live in focused `DiagnosticSessionFlashbackExportScenarios.*.cs`
-  files.
+  files. `DiagnosticSessionFlashbackExportScenarios.Registrations.cs` owns the
+  export scenario task registration handoff from diagnostic-session startup.
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
   Flashback playback disable/re-enable lifecycle diagnostic flow.
 - `tools/Common/DiagnosticSessionFlashbackMetrics.cs` is the Flashback metric

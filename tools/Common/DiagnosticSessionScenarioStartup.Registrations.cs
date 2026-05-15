@@ -74,15 +74,6 @@ internal static partial class DiagnosticSessionScenarioStartup
             actions.Add("flashback encoder cycle started");
         }
 
-        RegisterFlashbackExportPlaybackTask(
-            scenarioPlan,
-            outputDirectory,
-            backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            cancellationToken);
-
         if (scenarioPlan.RunFlashbackSegmentPlayback)
         {
             backgroundTasks.AddScenario(
@@ -96,7 +87,7 @@ internal static partial class DiagnosticSessionScenarioStartup
             actions.Add("flashback segment playback started");
         }
 
-        RegisterFlashbackRangeExportTasks(
+        DiagnosticSessionFlashbackExportScenarios.RegisterSelectedFlashbackExportScenarioTasks(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
@@ -118,16 +109,6 @@ internal static partial class DiagnosticSessionScenarioStartup
                     cancellationToken));
             actions.Add("flashback lifecycle started");
         }
-
-        RegisterFlashbackExportCoordinationTasks(
-            scenarioPlan,
-            outputDirectory,
-            backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            sendRawWithConnectRetryAsync,
-            cancellationToken);
 
         if (scenarioPlan.RunFlashbackPreviewCycle)
         {
