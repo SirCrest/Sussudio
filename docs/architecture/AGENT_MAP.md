@@ -695,9 +695,16 @@ Primary current owners:
   harness contract checks for stats presentation and frame-time overlay policy.
   Keep new stats presentation ownership assertions there instead of growing
   `tests/Sussudio.Tests/Program.cs`.
-- `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs` owns broad MainWindow
-  automation ID, full-screen/window automation, UI-dispatching, and stats
+- `tests/Sussudio.Tests/MainWindowUiContract.AutomationIds.Tests.cs` owns
+  MainWindow automation ID inventory checks.
+- `tests/Sussudio.Tests/MainWindowUiContract.WindowAutomation.Tests.cs` owns
+  MainWindow full-screen and window automation contract checks.
+- `tests/Sussudio.Tests/MainWindowUiContract.Dispatching.Tests.cs` owns
+  MainWindow UI-dispatching contract checks.
+- `tests/Sussudio.Tests/MainWindowUiContract.StatsSnapshot.Tests.cs` owns stats
   snapshot builder contract checks.
+- `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs` is the MainWindow UI
+  contract marker shell.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Tests.cs` owns MainWindow
   shell/startup/title/close/preview-runtime partial ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs` owns
