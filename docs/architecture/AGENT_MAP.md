@@ -1751,6 +1751,8 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer snapshot
   text.
+- `tools/ssctl/Formatters.Snapshot.ThreadHealth.cs` owns source-reader and
+  WASAPI thread-health snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Source.cs` owns source telemetry snapshot
   text.
 - `tools/ssctl/Formatters.Diagnostics.cs` owns recent diagnostic-event output.
@@ -1967,7 +1969,8 @@ Primary owners:
   `tools/Common/AutomationSnapshotFormatter.Flashback.cs`,
   `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs`,
   `tools/Common/AutomationSnapshotFormatter.AvSync.cs`,
-  `tools/Common/AutomationSnapshotFormatter.Preview.cs`, and
+  `tools/Common/AutomationSnapshotFormatter.Preview.cs`,
+  `tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs`, and
   `tools/Common/AutomationSnapshotFormatter.Source.cs` own the named snapshot
   sections.
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session

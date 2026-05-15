@@ -275,7 +275,8 @@ text in `Formatters.Snapshot.Flashback.cs`, embedded snapshot AV-sync drift text
 in `Formatters.Snapshot.AvSync.cs`, embedded snapshot Memory/GC text in
 `Formatters.Snapshot.Memory.cs`, MJPEG timing text in
 `Formatters.Snapshot.Mjpeg.cs`, preview renderer text in
-`Formatters.Snapshot.Preview.cs`, source telemetry snapshot text in
+`Formatters.Snapshot.Preview.cs`, thread-health text in
+`Formatters.Snapshot.ThreadHealth.cs`, source telemetry snapshot text in
 `Formatters.Snapshot.Source.cs`, diagnostic-event text in
 `Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
 performance timeline orchestration in `Formatters.Timeline.cs`, timeline row
@@ -288,10 +289,10 @@ projection in `Formatters.Timeline.Rows.cs`, table output in
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
 snapshot formatter facade for top-level text flow. Tolerant JSON accessors and
 byte/interval helpers live in `AutomationSnapshotFormatter.Values.cs`; the
-Flashback, MJPEG timing, AV sync, preview/slow-frame diagnostics, and source
-sections live in focused formatter partials. Tests that reason about formatter
-source use `ReadAutomationSnapshotFormatterSource()` so ownership checks cover
-the full partial family.
+Flashback, MJPEG timing, AV sync, preview/slow-frame diagnostics, thread-health,
+and source sections live in focused formatter partials. Tests that reason about
+formatter source use `ReadAutomationSnapshotFormatterSource()` so ownership
+checks cover the full partial family.
 
 `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is now only
 the diagnostic-session MCP surface index shell. Diagnostic-session coverage is

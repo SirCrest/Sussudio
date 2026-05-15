@@ -10,6 +10,7 @@ static partial class Program
             "tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs",
             "tools/Common/AutomationSnapshotFormatter.AvSync.cs",
             "tools/Common/AutomationSnapshotFormatter.Preview.cs",
+            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs",
             "tools/Common/AutomationSnapshotFormatter.Source.cs"
         };
         var parts = new string[files.Length];

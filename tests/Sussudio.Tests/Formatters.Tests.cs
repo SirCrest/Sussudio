@@ -46,6 +46,7 @@ static partial class Program
         AssertContains(output, "Capture Commands:");
         AssertContains(output, "== Capture Settings ==");
         AssertContains(output, "== Audio ==");
+        AssertContains(output, "== Thread Health ==");
         AssertContains(output, "== Flashback ==");
         AssertContains(output, "== Diagnostics ==");
         AssertContains(output, "Process CPU:");
@@ -72,6 +73,7 @@ static partial class Program
         var ssctlSnapshotMemorySource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Memory.cs");
         var ssctlSnapshotMjpegSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Mjpeg.cs");
         var ssctlSnapshotPreviewSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Preview.cs");
+        var ssctlSnapshotThreadHealthSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.ThreadHealth.cs");
         var ssctlSnapshotSourceSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Source.cs");
         AssertDoesNotContain(ssctlFormatterRoot, "public static string FormatSnapshot");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotFlashbackSection(builder, snapshot);");
@@ -79,12 +81,15 @@ static partial class Program
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotMjpegTimingSection(builder, snapshot);");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotAvSyncSection(builder, snapshot);");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotPreviewSection(builder, snapshot);");
+        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotThreadHealthSection(builder, snapshot);");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotSourceSection(builder, snapshot);");
         AssertDoesNotContain(ssctlSnapshotRootSource, "var flashbackActive = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackActive\", \"false\");");
         AssertDoesNotContain(ssctlSnapshotRootSource, "builder.AppendLine(\"== Memory & GC ==\");");
         AssertDoesNotContain(ssctlSnapshotRootSource, "var mjpegDecodeSamples = AutomationSnapshotFormatter.Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
         AssertDoesNotContain(ssctlSnapshotRootSource, "var avSyncDrift = AutomationSnapshotFormatter.Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
         AssertDoesNotContain(ssctlSnapshotRootSource, "var rendererMode = AutomationSnapshotFormatter.Get(snapshot, \"PreviewRendererMode\");");
+        AssertDoesNotContain(ssctlSnapshotRootSource, "builder.AppendLine(\"== Thread Health ==\");");
+        AssertDoesNotContain(ssctlSnapshotRootSource, "var sourceReaderLastFrameAgeMs = AutomationSnapshotFormatter.ComputeTickAgeMs");
         AssertDoesNotContain(ssctlSnapshotRootSource, "builder.AppendLine(\"== Source ==\");");
         AssertContains(ssctlSnapshotAvSyncSource, "private static void AppendSnapshotAvSyncSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotAvSyncSource, "var avSyncDrift = AutomationSnapshotFormatter.Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
@@ -97,6 +102,9 @@ static partial class Program
         AssertContains(ssctlSnapshotMjpegSource, "var mjpegDecodeSamples = AutomationSnapshotFormatter.Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
         AssertContains(ssctlSnapshotPreviewSource, "private static void AppendSnapshotPreviewSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotPreviewSource, "var rendererMode = AutomationSnapshotFormatter.Get(snapshot, \"PreviewRendererMode\");");
+        AssertContains(ssctlSnapshotThreadHealthSource, "private static void AppendSnapshotThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotThreadHealthSource, "builder.AppendLine(\"== Thread Health ==\");");
+        AssertContains(ssctlSnapshotThreadHealthSource, "WasapiPlaybackQueueDropCount");
         AssertContains(ssctlSnapshotSourceSource, "private static void AppendSnapshotSourceSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotSourceSource, "builder.AppendLine(\"== Source ==\");");
         AssertContains(ssctlSnapshotSourceSource, "var sourceFrameRate = AutomationSnapshotFormatter.Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
@@ -130,6 +138,14 @@ static partial class Program
         AssertContains(ssctlFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
         AssertContains(ssctlFormatterSource, "ProcessCpuPercent");
         var sharedFormatterSource = ReadAutomationSnapshotFormatterSource();
+        var sharedFormatterRootSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
+        var sharedFormatterThreadHealthSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs");
+        AssertContains(sharedFormatterRootSource, "AppendThreadHealthSection(builder, snapshot);");
+        AssertDoesNotContain(sharedFormatterRootSource, "builder.AppendLine(\"== Thread Health ==\");");
+        AssertDoesNotContain(sharedFormatterRootSource, "WasapiPlaybackQueueDurationMs");
+        AssertContains(sharedFormatterThreadHealthSource, "private static void AppendThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterThreadHealthSource, "builder.AppendLine(\"== Thread Health ==\");");
+        AssertContains(sharedFormatterThreadHealthSource, "WasapiPlaybackQueueDurationMs");
         AssertContains(sharedFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
         AssertContains(sharedFormatterSource, "CaptureCommandMaxQueueLatencyMs");
         AssertContains(sharedFormatterSource, "CaptureCommandCommandsCoalesced");

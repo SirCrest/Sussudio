@@ -10,6 +10,7 @@ static partial class Program
             "tools/ssctl/Formatters.Snapshot.Memory.cs",
             "tools/ssctl/Formatters.Snapshot.Mjpeg.cs",
             "tools/ssctl/Formatters.Snapshot.Preview.cs",
+            "tools/ssctl/Formatters.Snapshot.ThreadHealth.cs",
             "tools/ssctl/Formatters.Snapshot.Source.cs"
         };
         var parts = new string[files.Length];

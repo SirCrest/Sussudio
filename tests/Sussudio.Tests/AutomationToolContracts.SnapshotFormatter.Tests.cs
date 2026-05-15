@@ -233,6 +233,8 @@ static partial class Program
         AssertContains(formatted, "== Sussudio State ==");
         AssertContains(formatted, "Device: Synthetic (dev-1)");
         AssertContains(formatted, "Frame Rate: 59.94 fps (59.940 fps, 60000/1001)");
+        AssertContains(formatted, "== Thread Health ==");
+        AssertContains(formatted, "WASAPI Playback:");
         AssertContains(formatted, "== Flashback ==");
         AssertContains(formatted, "Encoder: hevc_nvenc 0x0 @ 120 fps (120/1) | Target: 12.3 Mbps");
         AssertContains(formatted, "Buffer: 120.0s | Disk: 1.0 MB | Written: 2 MB");
