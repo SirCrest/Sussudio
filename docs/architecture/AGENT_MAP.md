@@ -2062,8 +2062,10 @@ Primary owners:
   diagnostic-session warning policy for recording, playback, and preview
   scheduler metrics.
 - `tools/Common/DiagnosticSessionHealthPolicy.cs` owns diagnostic-session health
-  severity, warmup filtering, sparse-cadence tolerance, and tolerated Flashback
-  warning classification.
+  observation, severity, and Flashback warmup filtering.
+- `tools/Common/DiagnosticSessionHealthTolerances.cs` owns diagnostic-session
+  source/preview/Flashback health-observation classifiers, sparse-cadence
+  tolerances, and tolerated Flashback warning classification.
 - `tools/Common/DiagnosticSessionSampler.cs` owns snapshot sample collection.
   Preserve its ordering: append the cloned sample before running checkpoint
   callbacks.

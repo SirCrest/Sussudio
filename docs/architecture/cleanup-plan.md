@@ -1952,9 +1952,10 @@ metrics while the runner retains scenario orchestration.
 
 Diagnostic-session health policy now lives in
 `tools/Common/DiagnosticSessionHealthPolicy.cs`. It owns health severity,
-Flashback warmup filtering, sparse cadence tolerances, and tolerated warning
-classification while the runner still owns scenario execution and warning
-emission.
+observation, and Flashback warmup filtering.
+`tools/Common/DiagnosticSessionHealthTolerances.cs` owns source/preview/Flashback
+health-observation classifiers, sparse cadence tolerances, and tolerated warning
+classification while the runner still owns scenario execution and warning emission.
 
 Shared automation pipe client ownership is split from a single helper into a
 focused partial family. `tools/Common/AutomationPipeClient.cs` is the public
@@ -2037,6 +2038,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackWaits.Playback.cs`
 - `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`
+- `DiagnosticSessionHealthTolerances.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
 - `DiagnosticSessionInitialSnapshot.cs`
 - `DiagnosticSessionMetrics.cs`

@@ -3,6 +3,7 @@ using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;
 using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;
 using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;
 using static Sussudio.Tools.DiagnosticSessionHealthPolicy;
+using static Sussudio.Tools.DiagnosticSessionHealthTolerances;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
 using static Sussudio.Tools.DiagnosticSessionText;
 
