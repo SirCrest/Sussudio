@@ -1517,7 +1517,8 @@ now live in `Sussudio/Controllers/ResponsiveShellLayoutController.cs`.
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
 the `Sussudio/Controllers/CaptureSelectionBindingController*.cs` family. The
-root controller owns selection reconciliation and pending-device apply state,
+root controller owns selection reconciliation, recording string-selection event
+handlers, and pending-device apply state,
 `.Context.cs` owns the XAML control dependency bag, `.SelectionSync.cs` owns
 collection-change debounce/queued sync, and `.DeviceAudio.cs` owns device-audio
 mode/gain projection while `MainWindow.CaptureSelectionBindings.cs` keeps the

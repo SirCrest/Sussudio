@@ -1,5 +1,3 @@
-using System;
-
 namespace Sussudio;
 
 // Recording and capture-option event bindings. Initial value projection and
@@ -8,37 +6,7 @@ public sealed partial class MainWindow
 {
     private void AttachRecordingOptionBindings()
     {
-        FormatComboBox.SelectionChanged += (s, e) =>
-        {
-            if (FormatComboBox.SelectedItem is string format)
-            {
-                ViewModel.SelectedRecordingFormat = format;
-            }
-        };
-
-        QualityComboBox.SelectionChanged += (s, e) =>
-        {
-            if (QualityComboBox.SelectedItem is string quality)
-            {
-                ViewModel.SelectedQuality = quality;
-            }
-        };
-
-        PresetComboBox.SelectionChanged += (s, e) =>
-        {
-            if (PresetComboBox.SelectedItem is string preset)
-            {
-                ViewModel.SelectedPreset = preset;
-            }
-        };
-
-        SplitEncodeComboBox.SelectionChanged += (s, e) =>
-        {
-            if (SplitEncodeComboBox.SelectedItem is string splitMode)
-            {
-                ViewModel.SelectedSplitEncodeMode = splitMode;
-            }
-        };
+        AttachRecordingStringSelectionBindings();
 
         VideoFormatComboBox.SelectionChanged += (s, e) =>
         {

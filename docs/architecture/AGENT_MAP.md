@@ -1459,8 +1459,9 @@ Primary current owners:
   label visibility and capture-settings narrow/wide grid placement.
   `MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/CaptureSelectionBindingController.cs` owns
-  capture/audio/microphone/encoder selection synchronization and pending-device
-  apply state. `Sussudio/Controllers/CaptureSelectionBindingController.Context.cs`
+  capture/audio/microphone/encoder selection synchronization, recording string
+  selection handlers, and pending-device apply state.
+  `Sussudio/Controllers/CaptureSelectionBindingController.Context.cs`
   owns the XAML control dependency bag,
   `Sussudio/Controllers/CaptureSelectionBindingController.SelectionSync.cs` owns
   collection-change debounce/queued sync, and
@@ -1485,8 +1486,9 @@ Primary current owners:
   binding, initial capture/recording selection projection, and resolution/frame-
   rate selection handlers during `SetupBindings()`.
 - `Sussudio/MainWindow.RecordingOptionBindings.cs` owns recording/capture
-  option event bindings: recording format, quality, preset, split encode,
-  video format, custom bitrate, HDR, and true-HDR preview toggles.
+  option event bindings for video format, custom bitrate, HDR, and true-HDR
+  preview toggles. Recording format, quality, preset, and split-encode string
+  selection handlers live with `CaptureSelectionBindingController`.
 - `Sussudio/Controllers/OutputPathDisplayController.cs` owns recording output-
   path textbox, tooltip, and resize-event updates.
   `Sussudio/Controllers/OutputPathDisplayTextFormatter.cs` owns pure output-

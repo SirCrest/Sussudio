@@ -38,6 +38,14 @@ internal sealed partial class CaptureSelectionBindingController
         AttachCollectionSync(_context.ViewModel.AvailableSplitEncodeModes, QueueSplitEncodeModeSelectionSync);
     }
 
+    public void AttachRecordingStringSelectionBindings()
+    {
+        AttachStringSelection(_context.FormatComboBox, value => _context.ViewModel.SelectedRecordingFormat = value);
+        AttachStringSelection(_context.QualityComboBox, value => _context.ViewModel.SelectedQuality = value);
+        AttachStringSelection(_context.PresetComboBox, value => _context.ViewModel.SelectedPreset = value);
+        AttachStringSelection(_context.SplitEncodeComboBox, value => _context.ViewModel.SelectedSplitEncodeMode = value);
+    }
+
     public void EnsureDeviceSelection()
     {
         if (_context.ViewModel.Devices.Count == 0)
@@ -303,6 +311,17 @@ internal sealed partial class CaptureSelectionBindingController
         {
             comboBox.SelectedItem = match;
         }
+    }
+
+    private static void AttachStringSelection(ComboBox comboBox, Action<string> setVmProp)
+    {
+        comboBox.SelectionChanged += (s, e) =>
+        {
+            if (comboBox.SelectedItem is string value)
+            {
+                setVmProp(value);
+            }
+        };
     }
 
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
