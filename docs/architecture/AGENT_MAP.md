@@ -2155,8 +2155,11 @@ Primary owners:
   baseline `GetSnapshot` capture, unknown-state warning, and initial-snapshot
   exception recording.
 - `tools/Common/DiagnosticSessionRunState.cs` owns diagnostic-session terminal
-  exception state, last-stage tracking, live-state breadcrumbs, and
-  best-effort artifact write failure recording.
+  exception state, last-stage tracking, and best-effort artifact write failure
+  recording.
+- `tools/Common/DiagnosticSessionLiveStateWriter.cs` owns the best-effort
+  `session-live.json` breadcrumb path, payload shape, health projection,
+  warning projection, terminal override mapping, and sampling write throttle.
 - `tools/Common/DiagnosticSessionRunBootstrap.cs` owns diagnostic-session
   scenario normalization, scenario-plan selection, duration/sample clamping,
   session identity, output-directory creation, and runner process metadata.

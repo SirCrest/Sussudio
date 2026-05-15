@@ -21,10 +21,7 @@ internal static partial class DiagnosticSessionRunExecution
         var scenarioPlan = runBootstrap.ScenarioPlan;
         var durationSeconds = runBootstrap.DurationSeconds;
         var sampleIntervalMs = runBootstrap.SampleIntervalMs;
-        var sessionId = runBootstrap.SessionId;
         var outputDirectory = runBootstrap.OutputDirectory;
-        var startedUtc = runBootstrap.StartedUtc;
-        var runnerProcessId = runBootstrap.RunnerProcessId;
 
         using var sessionLock = DiagnosticSessionOutputLock.Acquire(outputDirectory);
 
@@ -32,14 +29,10 @@ internal static partial class DiagnosticSessionRunExecution
         var warnings = new List<string>();
         var samples = new List<DiagnosticSessionSample>();
         var runState = new DiagnosticSessionRunState(
-            sessionId,
-            scenario,
-            outputDirectory,
-            startedUtc,
-            runnerProcessId,
             () => cancellationToken.IsCancellationRequested,
             warnings);
-        var livePath = runState.LivePath;
+        var liveStateWriter = new DiagnosticSessionLiveStateWriter(runBootstrap, runState, warnings);
+        var livePath = liveStateWriter.LivePath;
         JsonElement? verification = null;
         var stoppedRecordingForVerification = false;
         using var scenarioCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -170,7 +163,7 @@ internal static partial class DiagnosticSessionRunExecution
 
         async Task WriteLiveStateBestEffortAsync(DateTimeOffset? completedUtcOverride = null, string? terminalStateOverride = null)
         {
-            await runState.WriteLiveStateBestEffortAsync(
+            await liveStateWriter.WriteLiveStateBestEffortAsync(
                     samples,
                     initialSnapshot,
                     commandChannel.FailureCount,
@@ -181,7 +174,7 @@ internal static partial class DiagnosticSessionRunExecution
 
         async Task WriteSamplingLiveStateBestEffortAsync()
         {
-            await runState.WriteSamplingLiveStateBestEffortAsync(
+            await liveStateWriter.WriteSamplingLiveStateBestEffortAsync(
                     samples,
                     initialSnapshot,
                     commandChannel.FailureCount)

@@ -2012,9 +2012,13 @@ recording while the runner keeps phase ordering.
 
 Diagnostic-session run state now lives in
 `tools/Common/DiagnosticSessionRunState.cs`. It owns last-stage tracking,
-terminal exception classification, `session-live.json` breadcrumbs, and
-best-effort artifact write failure recording while the runner keeps the
-scenario flow readable.
+terminal exception classification, and best-effort artifact write failure
+recording while the runner keeps the scenario flow readable.
+
+Diagnostic-session live breadcrumbs now live in
+`tools/Common/DiagnosticSessionLiveStateWriter.cs`. It owns the
+`session-live.json` path, payload shape, health and warning projection,
+terminal override mapping, and sampling write throttle.
 
 Diagnostic-session run bootstrap now lives in
 `tools/Common/DiagnosticSessionRunBootstrap.cs`. It owns scenario
@@ -2343,6 +2347,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.Helpers.cs`
 - `DiagnosticSessionSummaryWriter.cs`
 - `DiagnosticSessionRunState.cs`
+- `DiagnosticSessionLiveStateWriter.cs`
 - `DiagnosticSessionRunBootstrap.cs`
 - `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionScenarioPlan.cs`

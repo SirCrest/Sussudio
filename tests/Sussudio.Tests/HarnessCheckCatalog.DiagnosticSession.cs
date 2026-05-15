@@ -46,7 +46,10 @@ static partial class Program
             DiagnosticSessionJsonArtifacts_OwnsArtifactsAndResponseExtraction);
         await AddCheckAsync(results,
             "Diagnostic session run state has a named owner",
-            DiagnosticSessionRunState_OwnsTerminalAndLiveState);
+            DiagnosticSessionRunState_OwnsTerminalState);
+        await AddCheckAsync(results,
+            "Diagnostic session live-state writer has a named owner",
+            DiagnosticSessionLiveStateWriter_OwnsBreadcrumbFile);
         await AddCheckAsync(results,
             "Diagnostic session run bootstrap has a named owner",
             DiagnosticSessionRunBootstrap_OwnsNormalizedSessionIdentity);

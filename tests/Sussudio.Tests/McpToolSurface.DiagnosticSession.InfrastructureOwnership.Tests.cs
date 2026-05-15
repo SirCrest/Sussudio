@@ -111,26 +111,48 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task DiagnosticSessionRunState_OwnsTerminalAndLiveState()
+    private static Task DiagnosticSessionRunState_OwnsTerminalState()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var stateText = ReadRepoFile("tools/Common/DiagnosticSessionRunState.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(stateText, "internal sealed class DiagnosticSessionRunState");
-        AssertContains(stateText, "internal string LivePath { get; }");
         AssertContains(stateText, "internal void SetStage(string stage)");
         AssertContains(stateText, "internal void RecordTerminalException(Exception ex, string stage)");
         AssertContains(stateText, "internal string GetTerminalState()");
         AssertContains(stateText, "internal async Task WriteArtifactBestEffortAsync<T>(");
-        AssertContains(stateText, "internal async Task WriteLiveStateBestEffortAsync(");
-        AssertContains(stateText, "internal async Task WriteSamplingLiveStateBestEffortAsync(");
-        AssertContains(stateText, "The live-state file is diagnostic breadcrumbs only.");
         AssertContains(runnerText, "var runState = new DiagnosticSessionRunState(");
-        AssertContains(runnerText, "var livePath = runState.LivePath;");
+        AssertDoesNotContain(stateText, "internal string LivePath { get; }");
+        AssertDoesNotContain(stateText, "internal async Task WriteLiveStateBestEffortAsync(");
+        AssertDoesNotContain(stateText, "internal async Task WriteSamplingLiveStateBestEffortAsync(");
         AssertDoesNotContain(runnerText, "var lastStage = \"initializing\";");
         AssertDoesNotContain(runnerText, "Exception? terminalException = null;");
         AssertDoesNotContain(runnerText, "DateTimeOffset.MinValue");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task DiagnosticSessionLiveStateWriter_OwnsBreadcrumbFile()
+    {
+        var runnerText = ReadDiagnosticSessionRunnerSource();
+        var liveStateWriterText = ReadRepoFile("tools/Common/DiagnosticSessionLiveStateWriter.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(liveStateWriterText, "internal sealed class DiagnosticSessionLiveStateWriter");
+        AssertContains(liveStateWriterText, "LivePath = Path.Combine(runBootstrap.OutputDirectory, \"session-live.json\");");
+        AssertContains(liveStateWriterText, "internal string LivePath { get; }");
+        AssertContains(liveStateWriterText, "internal async Task WriteLiveStateBestEffortAsync(");
+        AssertContains(liveStateWriterText, "internal async Task WriteSamplingLiveStateBestEffortAsync(");
+        AssertContains(liveStateWriterText, "TerminalState = terminalStateOverride ?? (_runState.TerminalException is null ? \"running\" : _runState.GetTerminalState())");
+        AssertContains(liveStateWriterText, "LastStage = terminalStateOverride is null ? _runState.LastStage : _runState.GetResultLastStage()");
+        AssertContains(liveStateWriterText, "TimeSpan.FromSeconds(5)");
+        AssertContains(liveStateWriterText, "The live-state file is diagnostic breadcrumbs only.");
+        AssertContains(runnerText, "var liveStateWriter = new DiagnosticSessionLiveStateWriter(runBootstrap, runState, warnings);");
+        AssertContains(runnerText, "var livePath = liveStateWriter.LivePath;");
+        AssertContains(runnerText, "liveStateWriter.WriteLiveStateBestEffortAsync(");
+        AssertContains(runnerText, "liveStateWriter.WriteSamplingLiveStateBestEffortAsync(");
+        AssertDoesNotContain(runnerText, "var livePath = runState.LivePath;");
 
         return Task.CompletedTask;
     }
