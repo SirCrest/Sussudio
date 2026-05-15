@@ -1832,6 +1832,16 @@ Primary owners:
   cell, byte, D3D bottleneck, cleanup, export, and optional-value formatting.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs` owns 1%-low
   target summaries, pressure summaries, counters, and budget predicates.
+- `tools/McpServer/Tools/FramePacingVerdictTools.cs` owns the public
+  `get_frame_pacing_verdict` MCP tool entry point, pipe command orchestration,
+  and response shaping. `FramePacingVerdictTools.Channels.cs` owns snapshot
+  cadence channel projection and recent-interval parsing.
+  `FramePacingVerdictTools.Timeline.cs` owns performance-timeline projection.
+  `FramePacingVerdictTools.Policy.cs` owns target-FPS inference, readiness,
+  half-rate, hidden-stutter, ratio, and verdict policy.
+  `FramePacingVerdictTools.Rendering.cs` owns the operator-facing verdict text.
+  `FramePacingVerdictTools.Models.cs` owns the private channel and timeline
+  records.
 - `tools/Common/DiagnosticSessionOptions.cs` owns diagnostic session run
   options.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic session summary and

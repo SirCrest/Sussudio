@@ -1711,6 +1711,11 @@ timeline table/trend text rendering in `PerformanceTimelineTools.Rendering.cs`,
 compact value/byte/export/D3D formatting helpers in
 `PerformanceTimelineTools.Formatting.cs`, and target/pressure summaries in
 `PerformanceTimelineTools.Summaries.cs`.
+The frame-pacing verdict MCP tool follows the same shape: keep MCP attributes,
+method signature, pipe command orchestration, and response shaping in
+`FramePacingVerdictTools.cs`; keep channel/timeline projection, readiness and
+verdict policy, operator-facing text, and private records in the named
+`FramePacingVerdictTools.*.cs` partials.
 
 Diagnostic-session pipe retry/error classification now lives in
 `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a

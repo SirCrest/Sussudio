@@ -35,6 +35,36 @@ static partial class Program
                     AssertContains(output, "PreviewPacingLikelySlowStage: VisualDuplicateOrLowMotion");
                     AssertContains(output, "PreviewPacingSlowStageConfidence: Medium");
                     AssertContains(output, "PreviewPacingSlowStageEvidence: synthetic duplicate cadence");
+                    var expected = """
+                                   Verdict: HalfRatePreviewAndPlaybackSuspected
+                                   SampleQuality: Ready
+                                   TargetFps: 120
+                                   TargetFrameMs: 8.333
+                                   MinSampleSeconds: 30
+                                   Capture: observed=120 5pct=120 1pct=119 samples=3600 durationMs=30000 ready=true
+                                   Preview: observed=60 5pct=60 1pct=58 samples=1800 durationMs=30000 ready=true
+                                   Playback: observed=60 5pct=60 1pct=58 samples=1800 durationMs=30000 ready=true
+                                   SourceToPreviewRatio: 0.5
+                                   SourceToPlaybackRatio: 0.5
+                                   HalfRatePreviewSuspected: true
+                                   HalfRatePlaybackSuspected: true
+                                   HiddenStutterSuspected: false
+                                   VisualChangeFps: 60
+                                   VisualRepeatPercent: 50
+                                   VisualMotionConfidence: High
+                                   MjpegInputFps: 120
+                                   MjpegUniqueFps: 60
+                                   MjpegDuplicatePercent: 50
+                                   PreviewPacingLikelySlowStage: VisualDuplicateOrLowMotion
+                                   PreviewPacingSlowStageConfidence: Medium
+                                   PreviewPacingSlowStageEvidence: synthetic duplicate cadence
+                                   TimelineSamples: 2
+                                   DxgiMissedRefreshRecentMax: 4
+                                   PreviewDropDelta: 4
+                                   PlaybackDropDelta: 2
+                                   Evidence: captureReady=true previewReady=true playbackReady=true previewHalfRate=true playbackHalfRate=true
+                                   """;
+                    AssertEqual(expected, NormalizeLineEndings(output), "frame pacing verdict text");
                 },
                 i => i == 0
                     ? """

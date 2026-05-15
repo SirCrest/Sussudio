@@ -64,6 +64,9 @@ static partial class Program
             "MCP frame pacing verdict flags insufficient sample duration",
             McpFramePacingVerdictTool_FlagsInsufficientSampleDuration);
         await AddCheckAsync(results,
+            "MCP frame pacing verdict ownership is split",
+            McpFramePacingVerdictTool_SourceOwnershipIsSplit);
+        await AddCheckAsync(results,
             "MCP wait tool routes condition waits",
             McpWaitTools_RouteConditionWaits);
         await AddCheckAsync(results,
