@@ -2039,8 +2039,12 @@ Remaining `tools/Common` ownership:
    device-audio state, and `MainViewModel.FlashbackState.cs` owns Flashback
    timeline/export state. Keep the root `MainViewModel.cs` focused on the
    compatibility facade, dependency assignment, event subscription, and small
-   bridge methods. Audio, microphone, and device-audio observable property
-   handlers now live in `MainViewModel.AudioPropertyChanges.cs`. Shared
+   bridge methods. Audio capture/preview property handlers now live in
+   `MainViewModel.AudioPropertyChanges.cs`, custom audio input handlers live in
+   `MainViewModel.AudioInputPropertyChanges.cs`, microphone monitor/device
+   selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`, and
+   device-native audio mode/gain handlers live in
+   `MainViewModel.DeviceAudioPropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
    timer/status/error handling now lives in `MainViewModel.Runtime.cs`, and
    live-signal label formatting now lives in

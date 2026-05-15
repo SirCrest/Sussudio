@@ -117,6 +117,9 @@ static partial class Program
 
         var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
         var mainViewModelAudioPropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPropertyChanges.cs"));
+        var mainViewModelAudioInputPropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputPropertyChanges.cs"));
+        var mainViewModelMicrophonePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.MicrophonePropertyChanges.cs"));
+        var mainViewModelDeviceAudioPropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioPropertyChanges.cs"));
         var mainViewModelDispatchingText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs"));
         var mainViewModelRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Runtime.cs"));
         AssertContains(mainViewModelDispatchingText, "private bool EnqueueUiOperation");
@@ -126,7 +129,17 @@ static partial class Program
         AssertContains(mainViewModelDispatchingText, "INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=async");
         AssertContains(mainViewModelDispatchingText, "INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=value");
         AssertDoesNotContain(mainViewModelText, "private bool EnqueueUiOperation");
-        AssertContains(mainViewModelAudioPropertyChangesText, "allowDuringDispose: true");
+        AssertContains(mainViewModelAudioPropertyChangesText, "OnIsAudioEnabledChanged");
+        AssertContains(mainViewModelAudioInputPropertyChangesText, "OnIsCustomAudioInputEnabledChanged");
+        AssertContains(mainViewModelAudioInputPropertyChangesText, "OnSelectedAudioInputDeviceChanged");
+        AssertContains(mainViewModelMicrophonePropertyChangesText, "OnIsMicrophoneEnabledChanged");
+        AssertContains(mainViewModelMicrophonePropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
+        AssertContains(mainViewModelDeviceAudioPropertyChangesText, "OnSelectedDeviceAudioModeChanged");
+        AssertContains(mainViewModelDeviceAudioPropertyChangesText, "OnAnalogAudioGainPercentChanged");
+        AssertContains(mainViewModelDeviceAudioPropertyChangesText, "allowDuringDispose: true");
+        AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedDeviceAudioModeChanged");
+        AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
+        AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedAudioInputDeviceChanged");
         AssertContains(mainViewModelRuntimeText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
         AssertContains(mainViewModelRuntimeText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
         AssertDoesNotContain(mainViewModelText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");

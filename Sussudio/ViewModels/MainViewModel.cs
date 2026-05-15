@@ -105,7 +105,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device-native audio controls: MainViewModel.AudioControls.cs
     // Device-native audio cancellation: MainViewModel.AudioControlCancellation.cs
     // Watcher-driven audio endpoint discovery: MainViewModel.AudioDeviceDiscovery.cs
-    // Audio property changes: MainViewModel.AudioPropertyChanges.cs
+    // Audio capture/preview property changes: MainViewModel.AudioPropertyChanges.cs
+    // Audio input/microphone/device-audio property changes: focused partials
     // Device management: MainViewModel.DeviceManagement.cs
     // Device format probes: MainViewModel.DeviceFormatProbes.cs
     // Frame-rate options: MainViewModel.FrameRateOptions.cs

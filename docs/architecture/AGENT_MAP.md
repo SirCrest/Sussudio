@@ -1561,8 +1561,12 @@ Primary current owners:
   byte analog gain curve used by device-native gain application.
   `MainViewModel.AudioControlCancellation.cs` owns cancellation cleanup for
   pending device-audio refresh, mode, XU gain, and flash-persist work.
-  `MainViewModel.AudioPropertyChanges.cs` owns audio, microphone, and
-  device-audio observable property handlers.
+  `MainViewModel.AudioPropertyChanges.cs` owns audio capture/preview property
+  handlers. `MainViewModel.AudioInputPropertyChanges.cs` owns custom audio
+  input property handlers. `MainViewModel.MicrophonePropertyChanges.cs` owns
+  microphone monitor and selected-microphone property handlers.
+  `MainViewModel.DeviceAudioPropertyChanges.cs` owns device-native audio mode
+  and analog gain property handlers.
   `MainViewModel.Dispatching.cs` owns shared
   dispatcher enqueue/invoke helpers and preview event fan-out for the partial
   family. `MainViewModel.Runtime.cs` owns timer refreshes, recording bitrate
