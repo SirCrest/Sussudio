@@ -2091,7 +2091,14 @@ Primary owners:
   automation snapshot console text flow.
   `tools/Common/AutomationSnapshotFormatter.Values.cs` owns tolerant JSON
   accessors plus byte/interval formatting helpers, while
-  `tools/Common/AutomationSnapshotFormatter.Flashback.cs`,
+  `tools/Common/AutomationSnapshotFormatter.Flashback.cs` owns the Flashback
+  gate, header, and subsection ordering.
+  `tools/Common/AutomationSnapshotFormatter.Flashback.Encoding.cs` owns
+  Flashback encoder, buffer, cache, queue, failure, backpressure, and GPU queue
+  text. `tools/Common/AutomationSnapshotFormatter.Flashback.Playback.cs` owns
+  Flashback playback status, command queue, cadence, decode, frame, stage, and
+  A/V drift text. `tools/Common/AutomationSnapshotFormatter.Flashback.Export.cs`
+  owns Flashback export progress/result text. The
   `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs`,
   `tools/Common/AutomationSnapshotFormatter.AvSync.cs`,
   `tools/Common/AutomationSnapshotFormatter.Preview.cs`,

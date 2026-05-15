@@ -319,9 +319,14 @@ projection in `Formatters.Timeline.Rows.cs`, table output in
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
 snapshot formatter facade for top-level text flow. Tolerant JSON accessors and
 byte/interval helpers live in `AutomationSnapshotFormatter.Values.cs`; the
-Flashback, MJPEG timing, AV sync, preview routing, D3D preview/slow-frame
-diagnostics, thread-health, and source sections live in focused formatter
-partials. Tests that reason about
+Flashback gate/header/order lives in `AutomationSnapshotFormatter.Flashback.cs`,
+with encoder/buffer/cache/queue/failure text in
+`AutomationSnapshotFormatter.Flashback.Encoding.cs`, playback status/commands
+and cadence/decode/frame/drift text in
+`AutomationSnapshotFormatter.Flashback.Playback.cs`, and export progress/result
+text in `AutomationSnapshotFormatter.Flashback.Export.cs`. MJPEG timing, AV
+sync, preview routing, D3D preview/slow-frame diagnostics, thread-health, and
+source sections live in the remaining focused formatter partials. Tests that reason about
 formatter source use `ReadAutomationSnapshotFormatterSource()` so ownership
 checks cover the full partial family.
 
