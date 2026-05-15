@@ -5,6 +5,9 @@ static partial class Program
 {
     private static async Task AddPresentationPreviewChecksAsync(List<CheckResult> results)
     {
+        await AddCheckAsync(results,
+            "Presentation preview harness registers UI ownership checks",
+            PresentationPreviewHarnessRegistration_CoversUiOwnershipChecks);
         await AddPresentationPreviewMainViewModelInitialChecksAsync(results);
         await AddPresentationPreviewMainWindowInitialChecksAsync(results);
         await AddPresentationPreviewCaptureChecksAsync(results);
