@@ -105,6 +105,9 @@ static partial class Program
             "CaptureService observed pixel format normalization is stable",
             CaptureService_NormalizeObservedPixelFormat_NormalizesCorrectly);
         await AddCheckAsync(results,
+            "CaptureService observed pixel telemetry lives in focused partial",
+            CaptureService_ObservedPixelTelemetry_LivesInFocusedPartial);
+        await AddCheckAsync(results,
             "CaptureService source telemetry backend maps origins",
             CaptureService_ResolveSourceTelemetryBackend_MapsOrigins);
         await AddCheckAsync(results,

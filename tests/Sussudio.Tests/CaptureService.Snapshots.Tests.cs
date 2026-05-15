@@ -170,6 +170,27 @@ static partial class Program
 
     // ── CaptureService: NormalizeObservedPixelFormat ──
 
+    private static Task CaptureService_ObservedPixelTelemetry_LivesInFocusedPartial()
+    {
+        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Telemetry.cs")
+            .Replace("\r\n", "\n");
+        var observedPixelText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.ObservedPixelTelemetry.cs")
+            .Replace("\r\n", "\n");
+
+        AssertDoesNotContain(telemetryText, "private void ResetObservedPixelTelemetry(");
+        AssertDoesNotContain(telemetryText, "private static string? NormalizeObservedPixelFormat(");
+        AssertDoesNotContain(telemetryText, "private void RecordObservedPixelFormat(");
+        AssertContains(observedPixelText, "private void ResetObservedPixelTelemetry()");
+        AssertContains(observedPixelText, "private static string? NormalizeObservedPixelFormat(string? pixelFormat)");
+        AssertContains(observedPixelText, "private void RecordObservedPixelFormat(string? pixelFormat, bool incrementAsFrame = true)");
+        AssertContains(observedPixelText, "Interlocked.Exchange(ref _observedP010FrameCount, 0);");
+        AssertContains(observedPixelText, "Interlocked.Increment(ref _observedP010FrameCount);");
+        AssertContains(observedPixelText, "Interlocked.Increment(ref _observedNv12FrameCount);");
+        AssertContains(observedPixelText, "Interlocked.Increment(ref _observedOtherFrameCount);");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_NormalizeObservedPixelFormat_NormalizesCorrectly()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
