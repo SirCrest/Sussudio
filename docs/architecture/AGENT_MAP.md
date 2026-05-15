@@ -721,8 +721,10 @@ Primary current owners:
 - `Sussudio/Controllers/AudioMeterController.cs` owns audio/microphone meter
   smoothing, timer lifetime, peak/range markers, and meter clip rendering.
   `Sussudio/MainWindow.AudioMeter.cs` is its XAML-facing adapter.
-  `Sussudio/MainWindow.AudioBindings.cs` owns audio/microphone initial control
-  projection and event hookup during `SetupBindings()`.
+  `Sussudio/Controllers/AudioControlBindingController.cs` owns
+  audio/microphone initial control projection and event hookup during
+  `SetupBindings()`. `Sussudio/MainWindow.AudioBindings.cs` is its
+  XAML-facing adapter.
 - `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility,
   frame-time overlay visibility, polling lifetime, and dock show/hide
   animations. `Sussudio/Controllers/StatsDockPresentationController.cs` owns
@@ -1513,10 +1515,12 @@ Primary current owners:
   `Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs` owns
   device-audio mode/gain control projection. `MainWindow.CaptureSelectionBindings.cs`
   is the XAML-facing adapter.
-- `Sussudio/MainWindow.AudioBindings.cs` owns audio/microphone initial control
-  projection and event hookup: record/preview toggles, preview volume priming,
-  custom audio/microphone selection, device-audio mode/gain, and meter resize
-  hooks.
+- `Sussudio/Controllers/AudioControlBindingController.cs` owns audio/microphone
+  initial control projection and event hookup: record/preview toggles, preview
+  volume priming, custom audio/microphone selection, device-audio mode/gain event
+  hookup, and meter resize hooks. Device-audio mode/gain control projection stays
+  in `Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs`.
+  `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
 - `Sussudio/Controllers/CaptureDeviceActionController.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
   path. `MainWindow.CaptureDeviceActions.cs` is the XAML-facing adapter.

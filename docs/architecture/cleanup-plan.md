@@ -456,7 +456,9 @@ now live in `Sussudio/Controllers/NativeWindowBootstrapController.cs`.
 
 Audio and microphone meter rendering now lives in
 `Sussudio/Controllers/AudioMeterController.cs`. Audio/microphone initial control
-projection and event hookup now live in `Sussudio/MainWindow.AudioBindings.cs`;
+projection and event hookup now live in
+`Sussudio/Controllers/AudioControlBindingController.cs`, with
+`Sussudio/MainWindow.AudioBindings.cs` left as the XAML-facing adapter;
 video-format collection setup, initial capture/recording option projection, and
 code-attached resolution/frame-rate handlers now live in
 `Sussudio/Controllers/CaptureOptionBindingController.cs`, with

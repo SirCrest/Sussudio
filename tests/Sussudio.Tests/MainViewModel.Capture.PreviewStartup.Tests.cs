@@ -211,6 +211,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs")
             .Replace("\r\n", "\n");
+        var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.cs")
+            .Replace("\r\n", "\n");
         var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs")
             .Replace("\r\n", "\n");
         var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
@@ -291,10 +293,13 @@ static partial class Program
         var setupBindings = ExtractMemberCode(bindingsText, "SetupBindings");
         AssertContains(setupBindings, "ApplyInitialAudioControlBindings();");
 
-        var initialAudioBindings = ExtractMemberCode(audioBindingsText, "ApplyInitialAudioControlBindings");
-        AssertContains(initialAudioBindings, "PrimePreviewAudioFadeIn();");
-        AssertContains(initialAudioBindings, "CancelPreviewAudioFadeInForUser();");
-        AssertOccursBefore(initialAudioBindings, "PrimePreviewAudioFadeIn();", "PreviewVolumeSlider.ValueChanged +=");
+        var initialAudioBindingsAdapter = ExtractMemberCode(audioBindingsText, "ApplyInitialAudioControlBindings");
+        AssertContains(initialAudioBindingsAdapter, "_audioControlBindingController.ApplyInitialAudioControlBindings();");
+
+        var initialAudioBindings = ExtractMemberCode(audioControlBindingControllerText, "ApplyInitialAudioControlBindings");
+        AssertContains(initialAudioBindings, "_context.PrimePreviewAudioFadeIn();");
+        AssertContains(initialAudioBindings, "_context.CancelPreviewAudioFadeInForUser();");
+        AssertOccursBefore(initialAudioBindings, "_context.PrimePreviewAudioFadeIn();", "_context.PreviewVolumeSlider.ValueChanged +=");
 
         var previewButtonClick = ExtractMemberCode(eventHandlersText, "PreviewButton_Click");
         AssertContains(previewButtonClick, "if (!ViewModel.IsPreviewing)\n                {\n                    RevealPreviewUnavailablePlaceholder();\n                }");
