@@ -11,6 +11,8 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs",
+            "tools/Common/DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs",
+            "tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Models.cs"
         };

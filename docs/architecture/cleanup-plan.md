@@ -1,6 +1,6 @@
 # Architecture Cleanup Plan
 
-Last reviewed: 2026-05-14.
+Last reviewed: 2026-05-15.
 
 ## Objective
 
@@ -1854,7 +1854,13 @@ Flashback playback command, cadence, decode, audio-master, and stage DTO
 projection values live in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` so result
 construction can consume one named playback projection while preserving the
-existing `summary.json` field shape.
+existing `summary.json` field shape. Flashback recording backend, growth, and
+integrity DTO projection values live in
+`DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`, and Flashback
+export status, force-rotate fallback, last-result, and progress DTO projection
+values live in `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`.
+Export force-rotate fallback counters now travel with
+`FlashbackExportSessionMetrics` instead of loose analysis record fields.
 
 Diagnostic-session summary writing now lives in
 `tools/Common/DiagnosticSessionSummaryWriter.cs`. It owns `summary.json` writes
@@ -2042,8 +2048,10 @@ playback queue assertions while startup only delegates to the lifecycle owner.
 Diagnostic-session Flashback metric projection now lives in a focused partial
 family rooted at `tools/Common/DiagnosticSessionFlashbackMetrics.cs`. The root
 is only a marker shell; DTOs, recording metrics, playback session aggregation,
-playback result copying, and export metrics each have named owner files. These
-helpers remain snapshot-only projections and must not send automation commands.
+playback result copying, and export metrics each have named owner files. Export
+metrics also own force-rotate fallback total, delta, and last fallback segment
+count, derived outside export-observed relevance gating. These helpers remain
+snapshot-only projections and must not send automation commands.
 
 Diagnostic-session Flashback preview-cycle scenarios now live in a focused
 partial family. `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
@@ -2225,6 +2233,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewResult.cs`
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`

@@ -139,6 +139,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackPlaybackResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")
             .Replace("\r\n", "\n");
+        var flashbackRecordingResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs")
+            .Replace("\r\n", "\n");
+        var flashbackExportResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs")
+            .Replace("\r\n", "\n");
         var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs")
             .Replace("\r\n", "\n");
         var builderText = ReadDiagnosticSessionResultBuilderSource();
@@ -166,6 +170,23 @@ static partial class Program
         AssertDoesNotContain(resultText, "FlashbackPlaybackMaxDecodePhaseAtEnd = playbackResultMetrics");
         AssertDoesNotContain(resultText, "FlashbackPlaybackAudioMasterFallbacksAtEnd = playbackResultMetrics");
         AssertDoesNotContain(resultText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = playbackResultMetrics");
+        AssertContains(resultText, "var flashbackRecordingResult = BuildFlashbackRecordingResultProjection(analysis);");
+        AssertContains(flashbackRecordingResultText, "private readonly record struct DiagnosticSessionFlashbackRecordingResultProjection(");
+        AssertContains(flashbackRecordingResultText, "private static DiagnosticSessionFlashbackRecordingResultProjection BuildFlashbackRecordingResultProjection(");
+        AssertContains(flashbackRecordingResultText, "FlashbackRecordingBackendObserved: recordingMetrics.BackendObserved");
+        AssertContains(flashbackRecordingResultText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta: recordingMetrics.IntegrityQueueDroppedFramesDelta");
+        AssertDoesNotContain(resultText, "FlashbackRecordingBackendObserved = recordingMetrics");
+        AssertDoesNotContain(resultText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta = recordingMetrics");
+        AssertContains(resultText, "var flashbackExportResult = BuildFlashbackExportResultProjection(analysis);");
+        AssertContains(flashbackExportResultText, "private readonly record struct DiagnosticSessionFlashbackExportResultProjection(");
+        AssertContains(flashbackExportResultText, "private static DiagnosticSessionFlashbackExportResultProjection BuildFlashbackExportResultProjection(");
+        AssertContains(flashbackExportResultText, "FlashbackExportObserved: exportMetrics.Observed");
+        AssertContains(flashbackExportResultText, "FlashbackExportForceRotateFallbacksDelta: exportMetrics.ForceRotateFallbacksDelta");
+        AssertContains(flashbackExportResultText, "LastExportSuccessAtEnd: exportMetrics.LastSuccessAtEnd");
+        AssertContains(flashbackExportResultText, "FlashbackExportMaxThroughputBytesPerSecObserved: exportMetrics.MaxThroughputBytesPerSecObserved");
+        AssertDoesNotContain(resultText, "FlashbackExportObserved = exportMetrics");
+        AssertDoesNotContain(resultText, "FlashbackExportForceRotateFallbacksAtEnd = flashbackExportForceRotateFallbacksAtEnd");
+        AssertDoesNotContain(resultText, "LastExportSuccessAtEnd = exportMetrics");
         AssertContains(resultText, "var previewResult = BuildPreviewResultProjection(analysis);");
         AssertContains(previewResultText, "private readonly record struct DiagnosticSessionPreviewResultProjection(");
         AssertContains(previewResultText, "private static DiagnosticSessionPreviewResultProjection BuildPreviewResultProjection(");
@@ -177,6 +198,11 @@ static partial class Program
         AssertDoesNotContain(resultText, "VisualCadenceOutputFpsAtEnd = visualCadenceMetrics");
         AssertContains(analysisText, "AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);");
         AssertContains(analysisText, "AddFlashbackExportAnalysisWarnings(");
+        AssertContains(analysisText, "exportMetrics.ForceRotateFallbacksAtEnd,");
+        AssertContains(analysisText, "exportMetrics.ForceRotateFallbacksDelta,");
+        AssertContains(analysisText, "exportMetrics.LastForceRotateFallbackSegmentsAtEnd,");
+        AssertDoesNotContain(analysisText, "var flashbackExportForceRotateFallbacksAtEnd =");
+        AssertDoesNotContain(analysisText, "FlashbackExportForceRotateFallbacksAtEnd,");
         AssertDoesNotContain(analysisText, "flashback playback seek forward-decode cap hit during session");
         AssertDoesNotContain(analysisText, "flashback export used force-rotate partial fallback");
         AssertContains(flashbackWarningsText, "private static void AddFlashbackPlaybackAnalysisWarnings(");

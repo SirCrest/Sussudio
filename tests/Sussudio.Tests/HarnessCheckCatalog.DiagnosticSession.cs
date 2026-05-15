@@ -84,6 +84,9 @@ static partial class Program
             "Diagnostic session Flashback metrics have a named owner",
             DiagnosticSessionFlashbackMetrics_OwnsFlashbackSessionMetricProjection);
         await AddCheckAsync(results,
+            "Diagnostic session Flashback export force-rotate counters ignore export relevance gate",
+            DiagnosticSessionFlashbackMetrics_ExportForceRotateCountersIgnoreRelevanceGate);
+        await AddCheckAsync(results,
             "Diagnostic session Flashback preview cycle scenarios have a named owner",
             DiagnosticSessionFlashbackPreviewCycleScenarios_OwnPreviewCycleFlows);
         await AddCheckAsync(results,

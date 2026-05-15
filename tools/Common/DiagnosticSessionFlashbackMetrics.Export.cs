@@ -1,5 +1,6 @@
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
+using static Sussudio.Tools.DiagnosticSessionMetrics;
 
 namespace Sussudio.Tools;
 
@@ -19,6 +20,13 @@ internal static partial class DiagnosticSessionFlashbackMetrics
         }
 
         ObserveExportSnapshot(metrics, lastSnapshot, baselineExportId, baselineExportActive);
+        metrics.ForceRotateFallbacksAtEnd = GetNullableLong(lastSnapshot, "FlashbackExportForceRotateFallbacks") ?? 0;
+        metrics.ForceRotateFallbacksDelta = GetCounterDelta(
+            lastSnapshot,
+            initialSnapshot,
+            "FlashbackExportForceRotateFallbacks");
+        metrics.LastForceRotateFallbackSegmentsAtEnd =
+            GetInt(lastSnapshot, "FlashbackExportLastForceRotateFallbackSegments");
         return metrics;
     }
 

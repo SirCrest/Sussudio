@@ -30,17 +30,14 @@ internal static partial class DiagnosticSessionResultBuilder
         var playbackResultMetrics = BuildFlashbackPlaybackResultMetrics(playbackSessionMetrics);
         AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);
 
-        var flashbackExportForceRotateFallbacksAtEnd = GetNullableLong(lastSnapshot, "FlashbackExportForceRotateFallbacks") ?? 0;
-        var flashbackExportForceRotateFallbacksDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "FlashbackExportForceRotateFallbacks");
-        var flashbackExportLastForceRotateFallbackSegmentsAtEnd = GetInt(lastSnapshot, "FlashbackExportLastForceRotateFallbackSegments");
+        var exportMetrics = BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot);
         AddFlashbackExportAnalysisWarnings(
-            flashbackExportForceRotateFallbacksAtEnd,
-            flashbackExportForceRotateFallbacksDelta,
-            flashbackExportLastForceRotateFallbackSegmentsAtEnd,
+            exportMetrics.ForceRotateFallbacksAtEnd,
+            exportMetrics.ForceRotateFallbacksDelta,
+            exportMetrics.LastForceRotateFallbackSegmentsAtEnd,
             warnings);
 
         var recordingMetrics = BuildFlashbackRecordingMetrics(initialSnapshot, samples);
-        var exportMetrics = BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot);
         var sourceCadenceMetrics = BuildSourceCadenceSessionMetrics(samples, lastSnapshot);
         var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
@@ -141,9 +138,6 @@ internal static partial class DiagnosticSessionResultBuilder
             evidence,
             playbackSessionMetrics,
             playbackResultMetrics,
-            flashbackExportForceRotateFallbacksAtEnd,
-            flashbackExportForceRotateFallbacksDelta,
-            flashbackExportLastForceRotateFallbackSegmentsAtEnd,
             recordingMetrics,
             exportMetrics,
             previewCadenceMetrics,

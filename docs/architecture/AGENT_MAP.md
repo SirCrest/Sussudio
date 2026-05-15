@@ -2042,6 +2042,12 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` owns
   Flashback playback command, cadence, decode, audio-master, and stage DTO
   projection values consumed by the final result initializer.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
+  owns Flashback recording backend, growth, and integrity DTO projection
+  values consumed by the final result initializer.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs` owns
+  Flashback export status, force-rotate fallback, last-result, and progress
+  DTO projection values consumed by the final result initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs` owns preview
   scheduler, D3D, cadence, and visual-cadence DTO projection values consumed
   by the final result initializer.
@@ -2155,7 +2161,9 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`, and
   `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` own read-only
-  recording, playback, result-copy, and export metric projections.
+  recording, playback, result-copy, and export metric projections. Export
+  metrics include force-rotate fallback total, delta, and last fallback segment
+  count; keep those counters derived outside export-observed relevance gating.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` is the
   Flashback preview-cycle marker shell and predicate owner.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
