@@ -44,8 +44,14 @@ static partial class Program
         var refreshDevices = ExtractMemberCode(deviceManagementText, "RefreshDevicesAsync");
         AssertContains(refreshDevices, "var audioDevicesTask = MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();");
         AssertContains(refreshDevices, "var devicesTask = _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);");
+        AssertContains(refreshDevices, "ApplyStartupAudioDeviceScan(");
         AssertOccursBefore(refreshDevices, "var audioDevicesTask = MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();", "await Task.WhenAll(audioDevicesTask, devicesTask).ConfigureAwait(true);");
         AssertOccursBefore(refreshDevices, "var devicesTask = _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);", "await Task.WhenAll(audioDevicesTask, devicesTask).ConfigureAwait(true);");
+        AssertOccursBefore(refreshDevices, "await Task.WhenAll(audioDevicesTask, devicesTask).ConfigureAwait(true);", "ApplyStartupAudioDeviceScan(");
+        AssertOccursBefore(refreshDevices, "ApplyStartupAudioDeviceScan(", "ReplaceCollection(Devices, devices.ToList());");
+        AssertOccursBefore(refreshDevices, "ReplaceCollection(Devices, devices.ToList());", "_deviceService.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);");
+        AssertOccursBefore(refreshDevices, "_deviceService.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);", "var savedDeviceId = _pendingSavedDeviceId;");
+        AssertOccursBefore(refreshDevices, "SelectedDevice = nextSelectedDevice;", "await StartPreviewAsync(userInitiated: false, cancellationToken);");
         AssertOccursBefore(refreshDevices, "await Task.WhenAll(audioDevicesTask, devicesTask).ConfigureAwait(true);", "await StartPreviewAsync(userInitiated: false, cancellationToken);");
 
         return Task.CompletedTask;

@@ -2079,7 +2079,9 @@ Remaining `tools/Common` ownership:
    `MainViewModel.FrameRateSourceFilterPolicy.cs`. Shared frame-rate timing family,
    rational parsing, source-rate fallback, and preferred-format ranking now live
    in `MainViewModel.FrameRateTiming.cs`; keep device enumeration and selected
-   device capability rebuilds in `MainViewModel.DeviceManagement.cs`. Pure
+   device capability rebuilds in `MainViewModel.DeviceManagement.cs`, while
+   startup audio-list selection and watcher-driven audio endpoint refresh live
+   in `MainViewModel.AudioDeviceDiscovery.cs`. Pure
    recording codec filtering and selected-codec fallback policy now live in
    `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs`, while
    `MainViewModel.FormatSelection.cs`

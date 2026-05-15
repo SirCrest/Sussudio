@@ -37,33 +37,12 @@ public partial class MainViewModel
             cancellationToken.ThrowIfCancellationRequested();
             discoveryStopwatch.Stop();
 
-            var captureCardAudioId = (devices.FirstOrDefault(d => d.Id == previousDeviceId) ?? devices.FirstOrDefault())?.AudioDeviceId;
-            var filteredAudio = string.IsNullOrWhiteSpace(captureCardAudioId)
-                ? audioDevices
-                : audioDevices.Where(d => !string.Equals(d.Id, captureCardAudioId, StringComparison.OrdinalIgnoreCase)).ToList();
-            ReplaceCollection(AudioInputDevices, filteredAudio);
-            ReplaceCollection(MicrophoneDevices, filteredAudio);
-            var savedAudioId = _pendingSavedAudioDeviceId;
-            _pendingSavedAudioDeviceId = null;
-            var savedMicrophoneId = _pendingSavedMicrophoneDeviceId;
-            _pendingSavedMicrophoneDeviceId = null;
-            SelectedAudioInputDevice =
-                AudioInputDevices.FirstOrDefault(d => d.Id == previousAudioId)
-                ?? (!string.IsNullOrWhiteSpace(savedAudioId) ? AudioInputDevices.FirstOrDefault(d => d.Id == savedAudioId) : null)
-                ?? AudioInputDevices.FirstOrDefault();
-            SelectedMicrophoneDevice =
-                MicrophoneDevices.FirstOrDefault(d => d.Id == previousMicrophoneId)
-                ?? (!string.IsNullOrWhiteSpace(savedMicrophoneId) ? MicrophoneDevices.FirstOrDefault(d => d.Id == savedMicrophoneId) : null)
-                ?? MicrophoneDevices.FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(savedAudioId) && SelectedAudioInputDevice?.Id != savedAudioId)
-            {
-                Logger.Log($"SETTINGS_RESTORE: saved audio device '{savedAudioId}' not found, using fallback.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(savedMicrophoneId) && SelectedMicrophoneDevice?.Id != savedMicrophoneId)
-            {
-                Logger.Log($"SETTINGS_RESTORE: saved microphone device '{savedMicrophoneId}' not found, using fallback.");
-            }
+            ApplyStartupAudioDeviceScan(
+                audioDevices,
+                devices,
+                previousDeviceId,
+                previousAudioId,
+                previousMicrophoneId);
 
             ReplaceCollection(Devices, devices.ToList());
             foreach (var discoveredDevice in Devices)
