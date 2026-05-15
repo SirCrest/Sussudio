@@ -133,7 +133,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
+        var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Result.cs")
+            .Replace("\r\n", "\n");
         var flashbackWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs")
+            .Replace("\r\n", "\n");
+        var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs")
             .Replace("\r\n", "\n");
         var builderText = ReadDiagnosticSessionResultBuilderSource();
 
@@ -146,6 +150,15 @@ static partial class Program
         AssertContains(builderText, "runState.SetStage(\"result-analysis\")");
         AssertContains(builderText, "var result = new DiagnosticSessionResult");
         AssertContains(builderText, "var previewScheduler = BuildPreviewSchedulerAnalysis(initialSnapshot, lastSnapshot, samples);");
+        AssertContains(resultText, "var previewResult = BuildPreviewResultProjection(analysis);");
+        AssertContains(previewResultText, "private readonly record struct DiagnosticSessionPreviewResultProjection(");
+        AssertContains(previewResultText, "private static DiagnosticSessionPreviewResultProjection BuildPreviewResultProjection(");
+        AssertContains(previewResultText, "PreviewSchedulerLastDropReasonAtEnd: GetString(lastSnapshot, \"MjpegPreviewJitterLastDropReason\") ?? string.Empty");
+        AssertContains(previewResultText, "PreviewD3DInputUploadCpuP99MsAtEnd: previewD3DMetrics.InputUploadCpuP99MsAtEnd");
+        AssertContains(previewResultText, "VisualCadenceOutputFpsAtEnd: visualCadenceMetrics.OutputFpsAtEnd");
+        AssertDoesNotContain(resultText, "GetString(lastSnapshot, \"MjpegPreviewJitterLastDropReason\")");
+        AssertDoesNotContain(resultText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewD3DMetrics");
+        AssertDoesNotContain(resultText, "VisualCadenceOutputFpsAtEnd = visualCadenceMetrics");
         AssertContains(analysisText, "AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);");
         AssertContains(analysisText, "AddFlashbackExportAnalysisWarnings(");
         AssertDoesNotContain(analysisText, "flashback playback seek forward-decode cap hit during session");

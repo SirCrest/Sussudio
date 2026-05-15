@@ -2027,7 +2027,7 @@ Primary owners:
   and final summary emission. Keep `summary.json` field shape stable in the
   builder family.
 - `tools/Common/DiagnosticSessionResultBuilder.Result.cs` owns
-  diagnostic-session result DTO projection and final success calculation.
+  diagnostic-session final DTO construction and final success calculation.
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
   diagnostic-session metric preparation before summary construction.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
@@ -2039,6 +2039,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
   diagnostic-session preview-scheduler counter/delta projection for summary
   construction.
+- `tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs` owns preview
+  scheduler, D3D, cadence, and visual-cadence DTO projection values consumed
+  by the final result initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.Models.cs` owns the builder
   request record and private analysis handoff record.
 - `tools/Common/DiagnosticSessionSummaryWriter.cs` owns diagnostic-session

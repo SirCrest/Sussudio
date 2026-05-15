@@ -1834,8 +1834,8 @@ Diagnostic-session result construction now lives in
 `tools/Common/DiagnosticSessionResultBuilder.cs`. The root owns result phase
 orchestration, artifact-write handoff, summary-write handoff, and final
 summary emission while the runner keeps the phase sequence.
-`DiagnosticSessionResultBuilder.Result.cs` owns the
-`DiagnosticSessionResult` DTO projection and success calculation. Diagnostic
+`DiagnosticSessionResultBuilder.Result.cs` owns final
+`DiagnosticSessionResult` construction and success calculation. Diagnostic
 metric gathering and result-build handoff models live beside it in
 `DiagnosticSessionResultBuilder.Analysis.cs` and
 `DiagnosticSessionResultBuilder.Models.cs`. Diagnostic health verdict
@@ -1846,7 +1846,10 @@ fallback observations lives in `DiagnosticSessionResultBuilder.FlashbackWarnings
 Preview-scheduler counter/delta
 projection for the summary result lives in
 `DiagnosticSessionResultBuilder.PreviewScheduler.cs` so the analysis phase can
-consume one named snapshot of the MJPEG jitter-buffer counters.
+consume one named snapshot of the MJPEG jitter-buffer counters. Preview
+scheduler, D3D, cadence, and visual-cadence DTO projection values now live in
+`DiagnosticSessionResultBuilder.PreviewResult.cs` so the final initializer can
+consume one named preview projection without recalculating those fields inline.
 
 Diagnostic-session summary writing now lives in
 `tools/Common/DiagnosticSessionSummaryWriter.cs`. It owns `summary.json` writes
@@ -2216,6 +2219,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
+- `DiagnosticSessionResultBuilder.PreviewResult.cs`
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionResultFormatter.Overview.cs`

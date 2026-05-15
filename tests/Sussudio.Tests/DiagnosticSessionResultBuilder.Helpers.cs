@@ -10,6 +10,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs",
+            "tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Models.cs"
         };
         var parts = new string[files.Length];
