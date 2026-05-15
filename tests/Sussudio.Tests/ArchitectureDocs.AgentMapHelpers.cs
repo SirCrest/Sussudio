@@ -206,6 +206,7 @@ static partial class Program
                  fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
                  string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
+                 string.Equals(fileName, "DeviceFormatProbeRetargetPolicy.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "DeviceAudioGainMapper.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "LiveSignalTextPresentationBuilder.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "RecordingFormatSelectionPolicy.cs", StringComparison.Ordinal) ||

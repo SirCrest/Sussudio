@@ -2500,8 +2500,10 @@ Remaining `tools/Common` ownership:
    `MainViewModel.FormatSelection.cs`
    keeps collection mutation, HDR side effects, and selected capture-format
    policy.
-   Late-arriving device format probe reconciliation and active-preview retarget
-   checks now live in `MainViewModel.DeviceFormatProbes.cs`.
+   Late-arriving device format probe reconciliation, collection mutation,
+   logging, and reinitialize dispatch live in
+   `MainViewModel.DeviceFormatProbes.cs`; pure late-probe retarget decisions now
+   live in `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
    Automatic resolution ranking, source-aware auto-selection, and auto-resolved
    dimension/frame-rate state now live in `MainViewModel.AutoResolutionOptions.cs`.
    Pure source-aware, HDR-aware, and SDR fallback resolution selection policy

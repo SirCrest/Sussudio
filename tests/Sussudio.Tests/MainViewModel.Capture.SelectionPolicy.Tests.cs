@@ -243,6 +243,187 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DeviceFormatProbeRetargetPolicy_LivesInFocusedHelper()
+    {
+        var deviceFormatProbesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceFormatProbes.cs").Replace("\r\n", "\n");
+        var retargetPolicyText = ReadRepoFile("Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs").Replace("\r\n", "\n");
+
+        AssertContains(deviceFormatProbesText, "private void OnDeviceFormatProbeCompleted");
+        AssertContains(deviceFormatProbesText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
+        AssertContains(deviceFormatProbesText, "RebuildSelectedDeviceCapabilities(SelectedDevice, resetTelemetryState: false);");
+        AssertContains(deviceFormatProbesText, "RebuildFrameRateOptions();");
+        AssertContains(deviceFormatProbesText, "EnqueueUiOperation(");
+        AssertContains(deviceFormatProbesText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
+        AssertDoesNotContain(deviceFormatProbesText, "var nv12Candidates = target.SupportedFormats");
+        AssertDoesNotContain(deviceFormatProbesText, "ShouldPreserveMjpegHighFrameRateMode(SelectedFormat)");
+        AssertContains(retargetPolicyText, "internal static class DeviceFormatProbeRetargetPolicy");
+        AssertContains(retargetPolicyText, "internal static DeviceFormatProbeRetargetDecision Decide(DeviceFormatProbeRetargetRequest request)");
+        AssertContains(retargetPolicyText, "internal sealed record DeviceFormatProbeRetargetRequest(");
+        AssertContains(retargetPolicyText, "internal sealed record DeviceFormatProbeRetargetDecision(");
+        AssertContains(retargetPolicyText, "CaptureSettings.IsMjpegHighFrameRateMode(");
+        AssertContains(retargetPolicyText, "\"format probe (HDR retarget)\"");
+        AssertContains(retargetPolicyText, "\"format probe (SDR nv12 retarget)\"");
+        AssertContains(retargetPolicyText, "\"format probe (session mismatch)\"");
+        AssertDoesNotContain(retargetPolicyText, "Logger.Log(");
+        AssertDoesNotContain(retargetPolicyText, "ReinitializeDeviceAsync(");
+        AssertDoesNotContain(retargetPolicyText, "SelectedResolution =");
+        AssertDoesNotContain(retargetPolicyText, "RebuildFrameRateOptions(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task DeviceFormatProbeRetargetPolicy_PreservesRetargetDecisionBehavior()
+    {
+        var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
+
+        var hdrDecision = InvokeDeviceFormatProbeRetargetDecision(
+            preserveActiveSelection: true,
+            allowProbeDrivenRetarget: true,
+            isHdrEnabled: true,
+            modeChanged: true,
+            previousResolution: "3840x2160",
+            previousFrameRate: 120,
+            selectedResolution: "1920x1080",
+            selectedFrameRate: 120,
+            selectedFormat: CreateTestMediaFormat(mediaFormatType, 1920, 1080, 120, "P010", isHdr: true),
+            supportedFormats: CreateMediaFormatList(mediaFormatType),
+            previousResolutionAvailable: true,
+            includeSessionMismatchCheck: false,
+            sessionActualWidth: null,
+            sessionActualHeight: null);
+        AssertEqual("HdrRetarget", GetEnumName(hdrDecision, "Kind"), "HDR retarget decision");
+        AssertEqual("format probe (HDR retarget)", GetStringProperty(hdrDecision, "ReinitializeReason"), "HDR retarget reason");
+        AssertEqual("format probe hdr retarget", GetStringProperty(hdrDecision, "UiOperationName"), "HDR retarget UI operation");
+
+        var mjpgHfrDecision = InvokeDeviceFormatProbeRetargetDecision(
+            preserveActiveSelection: true,
+            allowProbeDrivenRetarget: true,
+            isHdrEnabled: false,
+            modeChanged: false,
+            previousResolution: "3840x2160",
+            previousFrameRate: 120,
+            selectedResolution: "3840x2160",
+            selectedFrameRate: 120,
+            selectedFormat: CreateTestMediaFormat(mediaFormatType, 3840, 2160, 120, "MJPG", isHdr: false),
+            supportedFormats: CreateMediaFormatList(
+                mediaFormatType,
+                CreateTestMediaFormat(mediaFormatType, 1920, 1080, 120, "NV12", isHdr: false)),
+            previousResolutionAvailable: true,
+            includeSessionMismatchCheck: false,
+            sessionActualWidth: null,
+            sessionActualHeight: null);
+        AssertEqual("PreserveMjpegHighFrameRate", GetEnumName(mjpgHfrDecision, "Kind"), "MJPG HFR preserve decision");
+
+        var sdrNv12Decision = InvokeDeviceFormatProbeRetargetDecision(
+            preserveActiveSelection: true,
+            allowProbeDrivenRetarget: true,
+            isHdrEnabled: false,
+            modeChanged: false,
+            previousResolution: "1280x720",
+            previousFrameRate: 60,
+            selectedResolution: "1280x720",
+            selectedFrameRate: 60,
+            selectedFormat: CreateTestMediaFormat(mediaFormatType, 1280, 720, 60, "MJPG", isHdr: false),
+            supportedFormats: CreateMediaFormatList(
+                mediaFormatType,
+                CreateTestMediaFormat(mediaFormatType, 3840, 2160, 30, "NV12", isHdr: false),
+                CreateTestMediaFormat(mediaFormatType, 1920, 1080, 60, "NV12", isHdr: false),
+                CreateTestMediaFormat(mediaFormatType, 1280, 720, 60, "MJPG", isHdr: false)),
+            previousResolutionAvailable: true,
+            includeSessionMismatchCheck: false,
+            sessionActualWidth: null,
+            sessionActualHeight: null);
+        AssertEqual("SdrNv12Retarget", GetEnumName(sdrNv12Decision, "Kind"), "SDR NV12 retarget decision");
+        AssertEqual("1920x1080", GetStringProperty(sdrNv12Decision, "TargetResolution"), "SDR NV12 target resolution");
+        AssertEqual(60d, sdrNv12Decision.GetType().GetProperty("TargetFrameRate")!.GetValue(sdrNv12Decision), "SDR NV12 target frame rate");
+        AssertEqual("format probe (SDR nv12 retarget)", GetStringProperty(sdrNv12Decision, "ReinitializeReason"), "SDR NV12 reason");
+        AssertEqual("format probe sdr retarget", GetStringProperty(sdrNv12Decision, "UiOperationName"), "SDR NV12 UI operation");
+
+        var sessionMismatchDecision = InvokeDeviceFormatProbeRetargetDecision(
+            preserveActiveSelection: true,
+            allowProbeDrivenRetarget: true,
+            isHdrEnabled: false,
+            modeChanged: false,
+            previousResolution: "1920x1080",
+            previousFrameRate: 60,
+            selectedResolution: "1920x1080",
+            selectedFrameRate: 60,
+            selectedFormat: CreateTestMediaFormat(mediaFormatType, 1920, 1080, 60, "NV12", isHdr: false),
+            supportedFormats: CreateMediaFormatList(mediaFormatType),
+            previousResolutionAvailable: true,
+            includeSessionMismatchCheck: true,
+            sessionActualWidth: 1280,
+            sessionActualHeight: 720);
+        AssertEqual("SessionMismatch", GetEnumName(sessionMismatchDecision, "Kind"), "session mismatch decision");
+        AssertEqual("format probe (session mismatch)", GetStringProperty(sessionMismatchDecision, "ReinitializeReason"), "session mismatch reason");
+        AssertEqual("format probe session mismatch", GetStringProperty(sessionMismatchDecision, "UiOperationName"), "session mismatch UI operation");
+
+        var restoreDecision = InvokeDeviceFormatProbeRetargetDecision(
+            preserveActiveSelection: true,
+            allowProbeDrivenRetarget: false,
+            isHdrEnabled: false,
+            modeChanged: true,
+            previousResolution: "3840x2160",
+            previousFrameRate: 60,
+            selectedResolution: "1920x1080",
+            selectedFrameRate: 60,
+            selectedFormat: CreateTestMediaFormat(mediaFormatType, 1920, 1080, 60, "NV12", isHdr: false),
+            supportedFormats: CreateMediaFormatList(mediaFormatType),
+            previousResolutionAvailable: true,
+            includeSessionMismatchCheck: false,
+            sessionActualWidth: null,
+            sessionActualHeight: null);
+        AssertEqual("RestoreActiveSelection", GetEnumName(restoreDecision, "Kind"), "recording-time restore decision");
+
+        return Task.CompletedTask;
+    }
+
+    private static object InvokeDeviceFormatProbeRetargetDecision(
+        bool preserveActiveSelection,
+        bool allowProbeDrivenRetarget,
+        bool isHdrEnabled,
+        bool modeChanged,
+        string? previousResolution,
+        double previousFrameRate,
+        string? selectedResolution,
+        double selectedFrameRate,
+        object? selectedFormat,
+        object supportedFormats,
+        bool previousResolutionAvailable,
+        bool includeSessionMismatchCheck,
+        uint? sessionActualWidth,
+        uint? sessionActualHeight)
+    {
+        var requestType = RequireType("Sussudio.ViewModels.DeviceFormatProbeRetargetRequest");
+        var policyType = RequireType("Sussudio.ViewModels.DeviceFormatProbeRetargetPolicy");
+        var constructor = FindConstructor(requestType, parameterCount: 14);
+        var request = constructor.Invoke(new object?[]
+        {
+            preserveActiveSelection,
+            allowProbeDrivenRetarget,
+            isHdrEnabled,
+            modeChanged,
+            previousResolution,
+            previousFrameRate,
+            selectedResolution,
+            selectedFrameRate,
+            selectedFormat,
+            supportedFormats,
+            previousResolutionAvailable,
+            includeSessionMismatchCheck,
+            sessionActualWidth,
+            sessionActualHeight
+        });
+        var decide = policyType.GetMethod("Decide", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("DeviceFormatProbeRetargetPolicy.Decide missing.");
+        return decide.Invoke(null, new[] { request })
+            ?? throw new InvalidOperationException("DeviceFormatProbeRetargetPolicy.Decide returned null.");
+    }
+
+    private static string GetEnumName(object instance, string propertyName)
+        => instance.GetType().GetProperty(propertyName)!.GetValue(instance)?.ToString()
+           ?? throw new InvalidOperationException($"{propertyName} returned null.");
+
     private static object InvokeCaptureResolutionSelection(
         object options,
         object formatsByResolution,

@@ -1813,8 +1813,10 @@ Primary current owners:
   watcher-driven audio endpoint refresh, and capture-card endpoint filtering
   live in `MainViewModel.AudioDeviceDiscovery.cs`.
   `MainViewModel.DeviceFormatProbes.cs` owns late device-format probe
-  reconciliation, capability refresh after background probes, and active-preview
-  HDR/SDR/session-mismatch retarget checks.
+  reconciliation, capability refresh after background probes, UI-side
+  restoration, logging, and reinitialize dispatch. `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`
+  owns the pure late-probe decision policy for HDR retarget, SDR NV12 retarget,
+  MJPG HFR preservation, session mismatch, and active-capture restore.
   `MainViewModel.AutoResolutionOptions.cs` owns automatic resolution ranking,
   source-aware auto-selection, and auto-resolved dimension/frame-rate state.
   `Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs` owns pure

@@ -45,6 +45,12 @@ static partial class Program
             "Capture resolution selection policy preserves SDR auto bucket preference",
             CaptureResolutionSelectionPolicy_PreservesSdrAutoBucketPreference);
         await AddCheckAsync(results,
+            "Device format probe retarget policy lives in focused helper",
+            DeviceFormatProbeRetargetPolicy_LivesInFocusedHelper);
+        await AddCheckAsync(results,
+            "Device format probe retarget policy preserves retarget decision behavior",
+            DeviceFormatProbeRetargetPolicy_PreservesRetargetDecisionBehavior);
+        await AddCheckAsync(results,
             "Mode selection state lives in focused partial",
             ModeSelectionState_LivesInFocusedPartial);
         await AddCheckAsync(results,

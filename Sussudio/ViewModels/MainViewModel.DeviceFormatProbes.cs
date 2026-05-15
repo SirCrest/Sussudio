@@ -83,77 +83,71 @@ public partial class MainViewModel
             var modeChanged = !string.Equals(previousResolution, SelectedResolution, StringComparison.OrdinalIgnoreCase) ||
                               !IsFrameRateMatch(previousFrameRate, SelectedFrameRate);
 
-            if (allowProbeDrivenRetarget &&
-                IsHdrEnabled &&
-                modeChanged)
+            var retargetDecision = DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(
+                preserveActiveSelection,
+                allowProbeDrivenRetarget,
+                IsHdrEnabled,
+                modeChanged,
+                previousResolution,
+                previousFrameRate,
+                SelectedResolution,
+                SelectedFrameRate,
+                SelectedFormat,
+                target.SupportedFormats,
+                !string.IsNullOrWhiteSpace(previousResolution) &&
+                    AvailableResolutions.Any(option => string.Equals(option.Value, previousResolution, StringComparison.OrdinalIgnoreCase)),
+                IncludeSessionMismatchCheck: false,
+                SessionActualWidth: null,
+                SessionActualHeight: null));
+
+            if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.HdrRetarget)
             {
                 Logger.Log($"Format probe updated HDR mode set; applying new mode {SelectedResolution}@{SelectedFrameRate:0.###} via device renegotiation.");
-                EnqueueUiOperation(() => ReinitializeDeviceAsync("format probe (HDR retarget)"), "format probe hdr retarget");
+                EnqueueUiOperation(
+                    () => ReinitializeDeviceAsync(retargetDecision.ReinitializeReason!),
+                    retargetDecision.UiOperationName!);
                 return;
             }
 
-            if (allowProbeDrivenRetarget &&
-                !IsHdrEnabled &&
-                SelectedFormat?.PixelFormat.Equals("MJPG", StringComparison.OrdinalIgnoreCase) == true)
+            if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.PreserveMjpegHighFrameRate)
             {
-                if (ShouldPreserveMjpegHighFrameRateMode(SelectedFormat))
+                Logger.Log(
+                    $"Format probe preserved special MJPG HFR mode at {SelectedResolution}@{SelectedFrameRate:0.###}; " +
+                    "skipping SDR NV12 retarget.");
+                return;
+            }
+
+            if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.SdrNv12Retarget)
+            {
+                Logger.Log(
+                    $"Format probe detected MJPG-only mode at {SelectedResolution}@{SelectedFrameRate:0.###}; " +
+                    $"retargeting SDR to NV12-capable mode {retargetDecision.TargetResolution}@{retargetDecision.TargetFrameRate:0.###}.");
+
+                _isRebuildingModeOptions = true;
+                _isApplyingAutomaticResolutionSelection = true;
+                try
                 {
-                    Logger.Log(
-                        $"Format probe preserved special MJPG HFR mode at {SelectedResolution}@{SelectedFrameRate:0.###}; " +
-                        "skipping SDR NV12 retarget.");
-                    return;
+                    SelectedResolution = retargetDecision.TargetResolution;
+                }
+                finally
+                {
+                    _isApplyingAutomaticResolutionSelection = false;
+                    _isRebuildingModeOptions = false;
                 }
 
-                var preferredRate = previousFrameRate > 0 ? previousFrameRate : SelectedFrameRate;
-                var preferredBucket = GetFriendlyFrameRateBucket(preferredRate);
-                var nv12Candidates = target.SupportedFormats
-                    .Where(format => format.PixelFormat.Equals("NV12", StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
-                MediaFormat? selectedNv12 = nv12Candidates
-                    .Where(format => GetFriendlyFrameRateBucket(format.FrameRateExact) == preferredBucket)
-                    .OrderByDescending(format => (long)format.Width * format.Height)
-                    .FirstOrDefault();
-
-                selectedNv12 ??= nv12Candidates
-                    .OrderBy(format => Math.Abs(format.FrameRateExact - preferredRate))
-                    .ThenByDescending(format => (long)format.Width * format.Height)
-                    .FirstOrDefault();
-
-                if (selectedNv12 != null)
+                _suppressFormatChangeReinitialize = true;
+                try
                 {
-                    var targetResolution = GetResolutionKey(selectedNv12.Width, selectedNv12.Height);
-                    if (!string.Equals(targetResolution, SelectedResolution, StringComparison.OrdinalIgnoreCase))
-                    {
-                        Logger.Log(
-                            $"Format probe detected MJPG-only mode at {SelectedResolution}@{SelectedFrameRate:0.###}; " +
-                            $"retargeting SDR to NV12-capable mode {targetResolution}@{selectedNv12.FrameRateExact:0.###}.");
-
-                        _isRebuildingModeOptions = true;
-                        _isApplyingAutomaticResolutionSelection = true;
-                        try
-                        {
-                            SelectedResolution = targetResolution;
-                        }
-                        finally
-                        {
-                            _isApplyingAutomaticResolutionSelection = false;
-                            _isRebuildingModeOptions = false;
-                        }
-
-                        _suppressFormatChangeReinitialize = true;
-                        try
-                        {
-                            RebuildFrameRateOptions();
-                        }
-                        finally
-                        {
-                            _suppressFormatChangeReinitialize = false;
-                        }
-                        EnqueueUiOperation(() => ReinitializeDeviceAsync("format probe (SDR nv12 retarget)"), "format probe sdr retarget");
-                        return;
-                    }
+                    RebuildFrameRateOptions();
                 }
+                finally
+                {
+                    _suppressFormatChangeReinitialize = false;
+                }
+                EnqueueUiOperation(
+                    () => ReinitializeDeviceAsync(retargetDecision.ReinitializeReason!),
+                    retargetDecision.UiOperationName!);
+                return;
             }
 
             // After probes complete, compare the live session negotiated resolution against
@@ -164,28 +158,41 @@ public partial class MainViewModel
             {
                 var runtime = GetCaptureRuntimeSnapshot();
                 Logger.Log($"Format probe session check: actual={runtime.ActualWidth}x{runtime.ActualHeight} selected={SelectedFormat.Width}x{SelectedFormat.Height}");
-                if (runtime.ActualWidth == null || runtime.ActualHeight == null)
+                retargetDecision = DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(
+                    preserveActiveSelection,
+                    allowProbeDrivenRetarget,
+                    IsHdrEnabled,
+                    modeChanged,
+                    previousResolution,
+                    previousFrameRate,
+                    SelectedResolution,
+                    SelectedFrameRate,
+                    SelectedFormat,
+                    target.SupportedFormats,
+                    !string.IsNullOrWhiteSpace(previousResolution) &&
+                        AvailableResolutions.Any(option => string.Equals(option.Value, previousResolution, StringComparison.OrdinalIgnoreCase)),
+                    IncludeSessionMismatchCheck: true,
+                    SessionActualWidth: runtime.ActualWidth,
+                    SessionActualHeight: runtime.ActualHeight));
+
+                if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.SessionRuntimeUnavailable)
                 {
                     Logger.Log("Format probe session mismatch check skipped: runtime width/height not yet available.");
                 }
-                else if (runtime.ActualWidth != SelectedFormat.Width || runtime.ActualHeight != SelectedFormat.Height)
+                else if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.SessionMismatch)
                 {
                     Logger.Log(
                         $"Format probe detected session/format mismatch: " +
                         $"session={runtime.ActualWidth}x{runtime.ActualHeight} " +
                         $"selected={SelectedFormat.Width}x{SelectedFormat.Height}; reinitializing.");
                     EnqueueUiOperation(
-                        () => ReinitializeDeviceAsync("format probe (session mismatch)"),
-                        "format probe session mismatch");
+                        () => ReinitializeDeviceAsync(retargetDecision.ReinitializeReason!),
+                        retargetDecision.UiOperationName!);
                     return;
                 }
             }
 
-            if (preserveActiveSelection &&
-                !allowProbeDrivenRetarget &&
-                modeChanged &&
-                !string.IsNullOrWhiteSpace(previousResolution) &&
-                AvailableResolutions.Any(option => string.Equals(option.Value, previousResolution, StringComparison.OrdinalIgnoreCase)))
+            if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.RestoreActiveSelection)
             {
                 _isRebuildingModeOptions = true;
                 _isApplyingAutomaticResolutionSelection = true;
