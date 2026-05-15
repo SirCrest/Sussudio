@@ -12,8 +12,6 @@ internal sealed class StatsDiagnosticRowsControllerContext
     public required StackPanel DiagnosticsContent { get; init; }
 }
 
-internal readonly record struct StatsDiagnosticSimpleRow(string Label, string Value);
-
 internal sealed class StatsDiagnosticRowsController
 {
     private const int MaxExpectedDecodeRowCount = 14;
@@ -35,12 +33,12 @@ internal sealed class StatsDiagnosticRowsController
         CollapseDiagnosticRows(_decodeRowPool);
     }
 
-    public void UpdateDecodeRows(StackPanel container, IReadOnlyList<StatsDiagnosticSimpleRow> rows)
+    public void UpdateDecodeRows(StackPanel container, IReadOnlyList<StatsHardwareRowPresentation> rows)
     {
         UpdateSimpleRows(container, _decodeRowPool, rows, MaxExpectedDecodeRowCount);
     }
 
-    public void UpdateGpuRows(StackPanel container, IReadOnlyList<StatsDiagnosticSimpleRow> rows)
+    public void UpdateGpuRows(StackPanel container, IReadOnlyList<StatsHardwareRowPresentation> rows)
     {
         UpdateSimpleRows(container, _gpuRowPool, rows, FixedGpuRowCount);
     }
@@ -76,7 +74,7 @@ internal sealed class StatsDiagnosticRowsController
     private void UpdateSimpleRows(
         StackPanel container,
         List<DiagnosticRowSlot> pool,
-        IReadOnlyList<StatsDiagnosticSimpleRow> rows,
+        IReadOnlyList<StatsHardwareRowPresentation> rows,
         int minimumCapacity)
     {
         EnsureDiagnosticRowPool(container, pool, Math.Max(minimumCapacity, rows.Count));

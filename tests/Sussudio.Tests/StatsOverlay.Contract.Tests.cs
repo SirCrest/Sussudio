@@ -151,6 +151,8 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
         var hardwareRowsControllerText = ReadRepoFile("Sussudio/Controllers/StatsHardwareRowsController.cs").Replace("\r\n", "\n");
+        var hardwareRowsBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs").Replace("\r\n", "\n");
+        var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
         var refreshControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsOverlayText, "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
@@ -167,8 +169,18 @@ static partial class Program
         AssertContains(hardwareRowsControllerText, "internal sealed class StatsHardwareRowsController");
         AssertContains(hardwareRowsControllerText, "public void UpdateDecodeSection()");
         AssertContains(hardwareRowsControllerText, "public void UpdateGpuSection()");
-        AssertContains(hardwareRowsControllerText, "internal static IReadOnlyList<StatsDiagnosticSimpleRow> BuildDecodeRows(");
-        AssertContains(hardwareRowsControllerText, "internal static IReadOnlyList<StatsDiagnosticSimpleRow> BuildGpuRows(NvmlSnapshot? nvml)");
+        AssertContains(hardwareRowsControllerText, "StatsPresentationBuilder.BuildHardwareDecodeRows(");
+        AssertContains(hardwareRowsControllerText, "CreateDecodeRowsInput(mjpeg, _context.GetPendingPreviewFrameCount())");
+        AssertContains(hardwareRowsControllerText, "StatsPresentationBuilder.BuildHardwareGpuRows(CreateGpuRowsInput(_context.GetNvmlSnapshot()))");
+        AssertContains(hardwareRowsControllerText, "private static StatsHardwareDecodeRowsInput CreateDecodeRowsInput(");
+        AssertContains(hardwareRowsControllerText, "private static StatsHardwareGpuRowsInput? CreateGpuRowsInput(NvmlSnapshot? nvml)");
+        AssertContains(hardwareRowsBuilderText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareDecodeRows(");
+        AssertContains(hardwareRowsBuilderText, "StatsHardwareDecodeRowsInput mjpeg)");
+        AssertContains(hardwareRowsBuilderText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(StatsHardwareGpuRowsInput? nvml)");
+        AssertDoesNotContain(hardwareRowsBuilderText, "using Sussudio.Services.Gpu;");
+        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareRowPresentation(string Label, string Value);");
+        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareDecodeRowsInput(");
+        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareGpuRowsInput(");
         AssertContains(hardwareRowsControllerText, "_context.GetMjpegPipelineTimingDetails()");
         AssertContains(hardwareRowsControllerText, "_context.GetPendingPreviewFrameCount()");
         AssertContains(hardwareRowsControllerText, "_context.GetNvmlSnapshot()");
@@ -180,8 +192,12 @@ static partial class Program
         AssertContains(controllerText, "private const int FixedGpuRowCount = 10;");
         AssertContains(controllerText, "private readonly List<DiagnosticRowSlot> _decodeRowPool = new();");
         AssertContains(controllerText, "private TextBlock? _diagnosticsEmptyStateTextBlock;");
+        AssertContains(controllerText, "public void UpdateDecodeRows(StackPanel container, IReadOnlyList<StatsHardwareRowPresentation> rows)");
+        AssertContains(controllerText, "public void UpdateGpuRows(StackPanel container, IReadOnlyList<StatsHardwareRowPresentation> rows)");
         AssertContains(controllerText, "public void UpdateDiagnostics(StatsDiagnosticRowsPresentation presentation)");
         AssertContains(controllerText, "private Border CreateDiagnosticRow(string label, string value, bool alt)");
+        AssertDoesNotContain(hardwareRowsControllerText, "new List<StatsHardwareRowPresentation>");
+        AssertDoesNotContain(hardwareRowsControllerText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(");
         AssertDoesNotContain(mainWindowText, "_decodeRowPool");
         AssertDoesNotContain(mainWindowText, "_diagnosticsRowPool");
         AssertDoesNotContain(statsOverlayText, "private sealed record DiagnosticRowSlot(");
@@ -190,7 +206,7 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "private void UpdateDecodeSection()");
         AssertDoesNotContain(statsOverlayText, "private void UpdateGpuSection()");
         AssertDoesNotContain(statsOverlayText, "_statsDiagnosticRowsController.UpdateDiagnostics(presentation);");
-        AssertDoesNotContain(statsOverlayText, "new List<StatsDiagnosticSimpleRow>");
+        AssertDoesNotContain(statsOverlayText, "new List<StatsHardwareRowPresentation>");
 
         return Task.CompletedTask;
     }

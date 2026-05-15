@@ -117,6 +117,46 @@ internal sealed record StatsDiagnosticRowsPresentation(
     bool IsEmpty,
     IReadOnlyList<StatsDiagnosticRowPresentation> Rows);
 
+internal readonly record struct StatsHardwareRowPresentation(string Label, string Value);
+
+internal readonly record struct StatsHardwareDecodeRowsInput(
+    int DecoderCount,
+    double DecodeAvgMs,
+    double DecodeP95Ms,
+    double ReorderAvgMs,
+    double ReorderP95Ms,
+    double PipelineAvgMs,
+    double PipelineP95Ms,
+    long TotalEmitted,
+    long TotalDropped,
+    int CompressedQueueDepth,
+    long CompressedQueueBytes,
+    long CompressedQueueByteBudget,
+    int ReorderBufferDepth,
+    long ReorderSkips,
+    int? PendingPreviewFrameCount,
+    IReadOnlyList<StatsHardwareDecodeWorkerRowInput> PerDecoder);
+
+internal readonly record struct StatsHardwareDecodeWorkerRowInput(
+    int WorkerIndex,
+    double AvgMs,
+    double P95Ms);
+
+internal readonly record struct StatsHardwareGpuRowsInput(
+    string? GpuName,
+    uint? GpuUtilizationPercent,
+    uint? GpuMemoryUtilizationPercent,
+    uint? NvdecUtilizationPercent,
+    uint? NvencUtilizationPercent,
+    double? PcieTxMBps,
+    double? PcieRxMBps,
+    ulong? VramUsedMB,
+    ulong? VramTotalMB,
+    uint? GpuTemperatureC,
+    double? GpuPowerW,
+    uint? GpuClockMHz,
+    uint? GpuMemClockMHz);
+
 internal sealed record StatsDiagnosticRowPresentation(
     string? GroupHeader,
     string Label,

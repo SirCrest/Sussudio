@@ -788,6 +788,8 @@ Primary current owners:
   visibility, codec label, bitrate, and encoder drift text formatting.
   `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticRows.cs` owns
   diagnostic row construction and source-summary parsing.
+  `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs` owns decode
+  and GPU row text projection over presentation inputs.
   `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticSummary.cs` owns
   frame-lane diagnostic health summary classification.
   `Sussudio/ViewModels/StatsPresentationBuilder.Window.cs` owns detached
@@ -1412,7 +1414,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
   support/logging contract tests.
 - `Sussudio/Controllers/StatsHardwareRowsController.cs` owns MJPEG/NVML row
-  projection and delegates row element reuse to `StatsDiagnosticRowsController`;
+  refresh, availability, and row-pool delegation;
+  `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs` owns pure
+  decode/GPU row text projection over presentation inputs, and
   `StatsDockRefreshController` owns when decode/GPU rows refresh.
 - `Sussudio/Controllers/FlashbackTimelineController.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, and show/hide

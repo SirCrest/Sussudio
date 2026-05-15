@@ -1360,9 +1360,11 @@ Frame-time overlay graph drawing and compact text application now live in
 `Sussudio/MainWindow.FrameTimeOverlay.cs` is the XAML-facing visibility
 adapter, and `Sussudio/Controllers/StatsDockRefreshController.cs` keeps the
 stats dock projection refresh adapter.
-Decode and GPU hardware stats row projection now lives in
-`Sussudio/Controllers/StatsHardwareRowsController.cs`; row element pooling
-still belongs to `StatsDiagnosticRowsController`, and
+Decode and GPU hardware stats row refresh/application now lives in
+`Sussudio/Controllers/StatsHardwareRowsController.cs`; pure row text
+projection over presentation inputs lives in
+`Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs`;
+row element pooling still belongs to `StatsDiagnosticRowsController`, and
 `StatsDockRefreshController` owns when decode/GPU rows refresh.
 Stats presentation and frame-time overlay contract checks now live in
 `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` instead of expanding

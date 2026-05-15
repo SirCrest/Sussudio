@@ -14,6 +14,7 @@ static partial class Program
         var statsPresentationVisualText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs").Replace("\r\n", "\n");
         var statsPresentationEncoderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs").Replace("\r\n", "\n");
         var statsPresentationDiagnosticRowsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticRows.cs").Replace("\r\n", "\n");
+        var statsPresentationHardwareRowsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs").Replace("\r\n", "\n");
         var statsPresentationDiagnosticSummaryText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticSummary.cs").Replace("\r\n", "\n");
         var statsPresentationStatusText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Status.cs").Replace("\r\n", "\n");
         var statsPresentationWindowText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Window.cs").Replace("\r\n", "\n");
@@ -41,6 +42,11 @@ static partial class Program
         AssertContains(statsPresentationDiagnosticRowsText, "internal static partial class StatsPresentationBuilder");
         AssertContains(statsPresentationDiagnosticRowsText, "public static StatsDiagnosticRowsPresentation BuildDiagnosticRows(");
         AssertContains(statsPresentationDiagnosticRowsText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
+        AssertContains(statsPresentationHardwareRowsText, "internal static partial class StatsPresentationBuilder");
+        AssertContains(statsPresentationHardwareRowsText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareDecodeRows(");
+        AssertContains(statsPresentationHardwareRowsText, "StatsHardwareDecodeRowsInput mjpeg)");
+        AssertContains(statsPresentationHardwareRowsText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(StatsHardwareGpuRowsInput? nvml)");
+        AssertDoesNotContain(statsPresentationHardwareRowsText, "using Sussudio.Services.Gpu;");
         AssertDoesNotContain(statsPresentationDiagnosticRowsText, "public static StatsDiagnosticSummary BuildStatsDiagnosticSummary(");
         AssertDoesNotContain(statsPresentationDiagnosticRowsText, "DiagnosticThresholds.CalculatePercent(rendererDrops, rendererSubmitted)");
         AssertContains(statsPresentationDiagnosticSummaryText, "internal static partial class StatsPresentationBuilder");
@@ -63,6 +69,8 @@ static partial class Program
         AssertDoesNotContain(statsPresentationText, "snapshot.EncoderTargetBitRate / 1_000_000.0");
         AssertDoesNotContain(statsPresentationText, "public static StatsDiagnosticRowsPresentation BuildDiagnosticRows(");
         AssertDoesNotContain(statsPresentationText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
+        AssertDoesNotContain(statsPresentationText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareDecodeRows(");
+        AssertDoesNotContain(statsPresentationText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(");
         AssertDoesNotContain(statsPresentationText, "private static StatsMetricStatus ResolveFrameLaneStatus(");
         AssertDoesNotContain(statsPresentationText, "private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)");
         AssertDoesNotContain(statsPresentationText, "public static StatsWindowPresentation BuildStatsWindowPresentation(StatsSnapshot snapshot)");
@@ -73,6 +81,9 @@ static partial class Program
         AssertContains(statsPresentationModelsText, "internal sealed record StatsWindowPresentation(");
         AssertContains(statsPresentationModelsText, "internal sealed record StatsWindowTelemetryDetailsPresentation(");
         AssertContains(statsPresentationModelsText, "internal sealed record StatsFrameTimePresentation(");
+        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareRowPresentation(");
+        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareDecodeRowsInput(");
+        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareGpuRowsInput(");
         AssertContains(statsPresentationModelsText, "internal enum StatsMetricStatus");
         AssertDoesNotContain(statsPresentationText, "internal sealed record StatsDockPresentation(");
         AssertDoesNotContain(statsPresentationText, "internal sealed record StatsWindowPresentation(");
