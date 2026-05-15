@@ -65,43 +65,15 @@ internal static partial class DiagnosticSessionResultBuilder
             healthSnapshot,
             warnings);
         var toleratesSourceSignalHealthWarning = request.ScenarioPlan.ToleratesSourceSignalHealthWarning;
-        if (isFlashbackScenario)
-        {
-            var previewTargetFps = GetDouble(lastSnapshot, "ExpectedCaptureFrameRate");
-            if (previewTargetFps <= 0)
-            {
-                previewTargetFps = GetDouble(lastSnapshot, "SelectedExactFrameRate");
-            }
-
-            var visualCadenceHealthy = IsVisualCadenceSessionHealthy(visualCadenceMetrics, previewTargetFps);
-            var toleratesPreviewCycleSchedulerSettling =
-                request.ScenarioPlan.IsPreviewCycleScenario && visualCadenceHealthy;
-            var toleratesSparsePreviewSchedulerDeadlineDrops =
-                IsSparsePreviewSchedulerDeadlineDropRun(
-                    previewScheduler.DeadlineDropsDelta,
-                    previewScheduler.UnderflowsDelta,
-                    request.DurationSeconds,
-                    visualCadenceHealthy);
-            var toleratesSparseScrubSchedulerTransitions =
-                request.ScenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions &&
-                IsSparsePreviewSchedulerStressRun(
-                    previewScheduler.DeadlineDropsDelta,
-                    previewScheduler.UnderflowsDelta,
-                    request.DurationSeconds,
-                    visualCadenceHealthy);
-            ValidateFlashbackPreviewScheduler(
-                previewScheduler.DeadlineDropsDelta,
-                previewScheduler.UnderflowsDelta,
-                previewD3DMetrics.StatsFailureDelta,
-                previewCadenceMetrics,
-                visualCadenceMetrics,
-                previewD3DMetrics,
-                previewTargetFps,
-                toleratesPreviewCycleSchedulerSettling ||
-                    toleratesSparsePreviewSchedulerDeadlineDrops ||
-                    toleratesSparseScrubSchedulerTransitions,
-                warnings);
-        }
+        ValidateFlashbackPreviewSchedulerAnalysis(
+            request.ScenarioPlan,
+            lastSnapshot,
+            request.DurationSeconds,
+            previewScheduler,
+            previewCadenceMetrics,
+            visualCadenceMetrics,
+            previewD3DMetrics,
+            warnings);
 
         var toleratesFlashbackForceRotateDrainWarning = request.ScenarioPlan.ToleratesFlashbackForceRotateDrainWarning;
         var diagnosticHealthSucceeded = AnalyzeDiagnosticHealth(

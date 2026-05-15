@@ -1869,7 +1869,11 @@ max/schedule-late aggregation. `DiagnosticSessionResultAnalysis.PreviewScheduler
 is the single record property that carries those values into
 `DiagnosticSessionResultBuilder.PreviewResult.cs`; the preview result partial
 maps that handoff to `DiagnosticSessionResult` fields without rereading MJPEG
-jitter-buffer snapshot keys. Preview D3D frame-stats, slow-frame, and CPU-timing
+jitter-buffer snapshot keys. Flashback preview-scheduler validation orchestration
+now lives in `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`,
+including target-FPS fallback, visual-cadence tolerance checks, sparse
+deadline/drop tolerance selection, and the call into shared Flashback preview
+validation. Preview D3D frame-stats, slow-frame, and CPU-timing
 result projection values live in `DiagnosticSessionResultBuilder.PreviewD3DResult.cs`
 so D3D summary fields are kept out of the broader preview projection. Preview
 visual-cadence result projection values live in
@@ -2272,6 +2276,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
+- `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
 - `DiagnosticSessionResultBuilder.PreviewD3DResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewResult.cs`

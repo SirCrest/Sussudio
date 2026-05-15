@@ -2047,7 +2047,8 @@ Primary owners:
   diagnostic-session outcome policy plus overview DTO projection for process
   CPU, recording verification, and PresentMon fields.
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
-  diagnostic-session metric preparation before summary construction.
+  diagnostic-session metric preparation and named validation handoffs before
+  summary construction.
 - `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs` owns
   diagnostic-session health verdict composition, warning tolerance, and health
   warning text emitted during result construction.
@@ -2058,6 +2059,11 @@ Primary owners:
   diagnostic-session preview-scheduler analysis handoff values: MJPEG
   jitter-buffer counters, deltas, last drop/underflow reasons, underflow ages,
   and max schedule-late aggregation.
+- `tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
+  owns Flashback preview-scheduler validation orchestration during result
+  analysis: target-FPS fallback, visual-cadence tolerance checks, sparse
+  deadline/drop tolerance selection, and the call into shared Flashback
+  preview validation.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` owns
   Flashback playback result projection composition from focused playback
   projection owners.

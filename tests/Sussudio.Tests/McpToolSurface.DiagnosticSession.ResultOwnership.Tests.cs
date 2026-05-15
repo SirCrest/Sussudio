@@ -135,6 +135,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
             .Replace("\r\n", "\n");
+        var previewSchedulerValidationText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs")
+            .Replace("\r\n", "\n");
         var modelsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Models.cs")
             .Replace("\r\n", "\n");
         var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Result.cs")
@@ -188,6 +190,17 @@ static partial class Program
         AssertContains(previewSchedulerText, "LastUnderflowReasonAtEnd: GetString(lastSnapshot, \"MjpegPreviewJitterLastUnderflowReason\") ?? string.Empty");
         AssertContains(previewSchedulerText, "LastUnderflowInputAgeMsAtEnd: GetDouble(lastSnapshot, \"MjpegPreviewJitterLastUnderflowInputAgeMs\")");
         AssertContains(previewSchedulerText, "LastUnderflowOutputAgeMsAtEnd: GetDouble(lastSnapshot, \"MjpegPreviewJitterLastUnderflowOutputAgeMs\")");
+        AssertContains(previewSchedulerValidationText, "private static void ValidateFlashbackPreviewSchedulerAnalysis(");
+        AssertContains(previewSchedulerValidationText, "var previewTargetFps = GetDouble(lastSnapshot, \"ExpectedCaptureFrameRate\");");
+        AssertContains(previewSchedulerValidationText, "previewTargetFps = GetDouble(lastSnapshot, \"SelectedExactFrameRate\");");
+        AssertContains(previewSchedulerValidationText, "var toleratesPreviewCycleSchedulerSettling =");
+        AssertContains(previewSchedulerValidationText, "scenarioPlan.IsPreviewCycleScenario && visualCadenceHealthy");
+        AssertContains(previewSchedulerValidationText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
+        AssertContains(previewSchedulerValidationText, "IsSparsePreviewSchedulerDeadlineDropRun(");
+        AssertContains(previewSchedulerValidationText, "var toleratesSparseScrubSchedulerTransitions =");
+        AssertContains(previewSchedulerValidationText, "scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions &&");
+        AssertContains(previewSchedulerValidationText, "IsSparsePreviewSchedulerStressRun(");
+        AssertContains(previewSchedulerValidationText, "ValidateFlashbackPreviewScheduler(");
         AssertContains(modelsText, "DiagnosticSessionPreviewSchedulerAnalysis PreviewScheduler,");
         AssertContains(previewResultText, "var previewScheduler = analysis.PreviewScheduler;");
         AssertContains(previewResultText, "PreviewSchedulerDroppedAtEnd: previewScheduler.DroppedAtEnd");
@@ -331,9 +344,13 @@ static partial class Program
         AssertDoesNotContain(resultText, "VisualCadenceOutputFpsAtEnd = visualCadenceMetrics");
         AssertContains(analysisText, "AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);");
         AssertContains(analysisText, "AddFlashbackExportAnalysisWarnings(");
+        AssertContains(analysisText, "ValidateFlashbackPreviewSchedulerAnalysis(");
         AssertContains(analysisText, "exportMetrics.ForceRotateFallbacksAtEnd,");
         AssertContains(analysisText, "exportMetrics.ForceRotateFallbacksDelta,");
         AssertContains(analysisText, "exportMetrics.LastForceRotateFallbackSegmentsAtEnd,");
+        AssertDoesNotContain(analysisText, "var toleratesPreviewCycleSchedulerSettling =");
+        AssertDoesNotContain(analysisText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
+        AssertDoesNotContain(analysisText, "var toleratesSparseScrubSchedulerTransitions =");
         AssertDoesNotContain(analysisText, "var flashbackExportForceRotateFallbacksAtEnd =");
         AssertDoesNotContain(analysisText, "FlashbackExportForceRotateFallbacksAtEnd,");
         AssertDoesNotContain(analysisText, "flashback playback seek forward-decode cap hit during session");
