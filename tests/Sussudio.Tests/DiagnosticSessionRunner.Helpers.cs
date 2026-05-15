@@ -5,6 +5,7 @@ static partial class Program
         return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunExecution.cs")
             + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunExecution.Scenario.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.cs")
             + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunExecution.ResultRequest.cs");
     }
 
@@ -15,6 +16,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionRunExecutionScenarioSource()
     {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunExecution.Scenario.cs");
+        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunExecution.Scenario.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.cs");
     }
 }

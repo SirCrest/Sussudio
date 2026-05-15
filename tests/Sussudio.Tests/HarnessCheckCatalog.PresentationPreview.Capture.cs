@@ -39,6 +39,12 @@ static partial class Program
             "Resolution selection policy lives in focused partial",
             ResolutionSelectionPolicy_LivesInFocusedPartial);
         await AddCheckAsync(results,
+            "Capture resolution selection policy preserves HDR source retarget behavior",
+            CaptureResolutionSelectionPolicy_PreservesHdrSourceRetargetBehavior);
+        await AddCheckAsync(results,
+            "Capture resolution selection policy preserves SDR auto bucket preference",
+            CaptureResolutionSelectionPolicy_PreservesSdrAutoBucketPreference);
+        await AddCheckAsync(results,
             "Mode selection state lives in focused partial",
             ModeSelectionState_LivesInFocusedPartial);
         await AddCheckAsync(results,

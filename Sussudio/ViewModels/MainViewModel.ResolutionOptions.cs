@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
 
 namespace Sussudio.ViewModels;
 
@@ -89,63 +88,21 @@ public partial class MainViewModel
             return;
         }
 
-        string? hdrHint = null;
         var allowSourceAutoSelect = IsHdrEnabled && (_forceSourceAutoRetarget || !_hasUserOverriddenResolutionForCurrentMode);
-        var sourceSelected = allowSourceAutoSelect
-            ? TrySelectSourceResolutionOption(options, desiredSelection)
-            : null;
-        var sourceSelectedValue = sourceSelected?.Value;
-        if (IsHdrEnabled &&
-            sourceSelected is { IsEnabled: true } &&
-            previousRate > 0 &&
-            !ResolutionSupportsFrameRate(sourceSelected.Value, previousRate, hdrOnly: true))
+        var selection = CaptureResolutionSelectionPolicy.Select(new CaptureResolutionSelectionRequest(
+            options,
+            _resolutionToFormats,
+            _latestSourceTelemetry,
+            desiredSelection,
+            previousRate,
+            IsHdrEnabled,
+            allowSourceAutoSelect,
+            _pendingSdrAutoSelectionForDeviceChange));
+        var selected = selection.Selected;
+        var hdrHint = selection.HdrHint;
+        if (!IsHdrEnabled && selection.SdrAutoFriendlyFrameRateBucket.HasValue)
         {
-            var sourceMax = GetMaxFrameRateForResolution(sourceSelected.Value, hdrOnly: true);
-            if (sourceMax > 0)
-            {
-                hdrHint = $"HDR at {sourceSelected.Value} supported up to {FormatFriendlyFrameRate(sourceMax)} fps.";
-            }
-
-            sourceSelected = null;
-        }
-
-        var selected = sourceSelected;
-        if (!IsHdrEnabled &&
-            _pendingSdrAutoSelectionForDeviceChange &&
-            TrySelectSdrAutoResolutionOption(options, out var sdrAutoSelection, out var sdrAutoFriendlyBucket))
-        {
-            selected = sdrAutoSelection;
-            _pendingSdrAutoFriendlyFrameRateBucket = sdrAutoFriendlyBucket;
-        }
-
-        if (selected == null)
-        {
-            // The capture card (e.g. 4K X) cannot deliver HDR at every resolution+FPS
-            // combination due to USB bandwidth limits. When HDR is enabled, we pick the
-            // highest resolution that still supports the user's chosen frame rate in HDR
-            // mode, which may be lower than the source resolution. Fluidity wins over
-            // resolution here: drop resolution first, and only drop FPS if no HDR mode can
-            // keep the current frame-rate bucket.
-            selected = IsHdrEnabled
-                ? SelectHdrResolutionOption(options, desiredSelection, previousRate, out hdrHint)
-                : options.FirstOrDefault(option =>
-                    option.IsEnabled &&
-                    string.Equals(option.Value, desiredSelection, StringComparison.OrdinalIgnoreCase))
-                    ?? options.FirstOrDefault(option => option.IsEnabled)
-                    ?? options.FirstOrDefault();
-
-            if (IsHdrEnabled &&
-                !string.IsNullOrWhiteSpace(sourceSelectedValue) &&
-                selected != null &&
-                !string.Equals(sourceSelectedValue, selected.Value, StringComparison.OrdinalIgnoreCase) &&
-                previousRate > 0)
-            {
-                var sourceMax = GetMaxFrameRateForResolution(sourceSelectedValue, hdrOnly: true);
-                if (sourceMax > 0 && previousRate > sourceMax + 0.01)
-                {
-                    hdrHint = $"HDR at {sourceSelectedValue} supported up to {FormatFriendlyFrameRate(sourceMax)} fps; switched to {selected.Value} to keep {FormatFriendlyFrameRate(previousRate)} fps.";
-                }
-            }
+            _pendingSdrAutoFriendlyFrameRateBucket = selection.SdrAutoFriendlyFrameRateBucket.Value;
         }
 
         var selectAutoOption = autoOption != null && ShouldSelectAutoResolutionOption(previousSelection);

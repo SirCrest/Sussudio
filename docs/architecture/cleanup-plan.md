@@ -1860,8 +1860,10 @@ Diagnostic session DTOs now live in focused model files:
 public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
 mutable run phase plan around initial snapshot, cleanup, verification, post-run
 snapshots, and summary. `DiagnosticSessionRunExecution.Scenario.cs` owns the
+scenario phase handoff, while `DiagnosticSessionScenarioPhaseRunner.cs` owns the
 main scenario execution phase for setup/startup, sampling, background task
-awaits, rejected-export handling, PresentMon await, and fault drain.
+awaits, rejected-export handling, PresentMon await, fault drain, and explicit
+phase context/state records.
 `DiagnosticSessionRunExecution.ResultRequest.cs` owns the final result-build
 request handoff from computed runner state to the result builder.
 The public options/result/sample contracts are separated from runner behavior. The result
@@ -2354,6 +2356,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionRunExecution.cs`
 - `DiagnosticSessionRunExecution.Scenario.cs`
+- `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionRunExecution.ResultRequest.cs`
 - `AutomationResponseState.cs`
 - `JsonOptions.cs`
@@ -2369,7 +2372,8 @@ Remaining `tools/Common` ownership:
 
    `tools/Common/DiagnosticSessionRunner.cs` is now the small public wrapper,
    while `tools/Common/DiagnosticSessionRunExecution.cs` owns the mutable run
-   phase plan and `DiagnosticSessionRunExecution.Scenario.cs` owns the main
+   phase plan, `DiagnosticSessionRunExecution.Scenario.cs` owns the scenario
+   phase handoff, and `DiagnosticSessionScenarioPhaseRunner.cs` owns the main
    scenario execution phase. Scenario catalog, initial scenario setup, optional scenario
    startup, cleanup mutation ownership, post-cleanup recording checks,
    post-run snapshot fetches, command send/failure plumbing, and result
@@ -2500,9 +2504,12 @@ Remaining `tools/Common` ownership:
    checks now live in `MainViewModel.DeviceFormatProbes.cs`.
    Automatic resolution ranking, source-aware auto-selection, and auto-resolved
    dimension/frame-rate state now live in `MainViewModel.AutoResolutionOptions.cs`.
-   Source-aware, HDR-aware, and SDR fallback resolution selection policy now
-   lives in `MainViewModel.ResolutionSelectionPolicy.cs`; keep dropdown rebuild
-   and effective resolution display in `MainViewModel.ResolutionOptions.cs`.
+   Pure source-aware, HDR-aware, and SDR fallback resolution selection policy
+   now lives in `Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs`.
+   `MainViewModel.ResolutionSelectionPolicy.cs` only keeps state-backed
+   delegates for callers that still live across the partial family; keep
+   dropdown rebuild, collection mutation, property notifications, and effective
+   resolution display in `MainViewModel.ResolutionOptions.cs`.
    Source telemetry summary, telemetry age, and target-summary display text now
    live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`; keep
    snapshot application and source-aware auto-retargeting in

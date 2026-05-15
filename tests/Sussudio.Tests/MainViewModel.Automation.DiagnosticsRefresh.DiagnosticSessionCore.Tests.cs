@@ -63,9 +63,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "stoppedRecordingForVerification = shouldStopRecordingForVerification &&");
         AssertContains(diagnosticSessionText, "var diagnosticHealthSnapshot = request.StoppedRecordingForVerification");
         AssertContains(diagnosticSessionText, ".WaitAsync(cancellationToken)");
-        AssertContains(diagnosticSessionText, "scenarioCts.Cancel();");
+        AssertContains(diagnosticSessionText, "context.ScenarioCancellationSource.Cancel();");
         AssertContains(diagnosticSessionText, "WriteSamplingLiveStateBestEffortAsync");
-        AssertContains(diagnosticSessionText, "recordTerminalException(ex, getLastStage())");
+        AssertContains(diagnosticSessionText, "context.RecordTerminalException(ex, context.GetLastStage())");
         AssertContains(diagnosticSessionText, "RecordTerminalException(ex, \"final-snapshot\");");
         AssertContains(diagnosticSessionText, "WriteArtifactBestEffortAsync(\"write-samples\", paths.SamplesPath, samples)");
         AssertContains(diagnosticSessionText, "await WriteJsonAsync(result.SummaryPath, result, CancellationToken.None)");

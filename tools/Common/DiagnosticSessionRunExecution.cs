@@ -60,31 +60,34 @@ internal static partial class DiagnosticSessionRunExecution
         initialSnapshot = initialSnapshotResult.Snapshot;
         initialSnapshotKnown = initialSnapshotResult.Known;
 
+        var scenarioPhaseContext = new DiagnosticSessionScenarioPhaseContext
+        {
+            Options = options,
+            Scenario = scenario,
+            ScenarioPlan = scenarioPlan,
+            DurationSeconds = durationSeconds,
+            SampleIntervalMs = sampleIntervalMs,
+            OutputDirectory = outputDirectory,
+            InitialSnapshot = initialSnapshot,
+            InitialSnapshotKnown = initialSnapshotKnown,
+            Actions = actions,
+            Warnings = warnings,
+            Samples = samples,
+            CommandChannel = commandChannel,
+            ScenarioCancellationSource = scenarioCts,
+            ScenarioCancellationToken = scenarioCancellationToken,
+            RunCancellationToken = cancellationToken,
+            PhaseState = scenarioPhase,
+            SetStage = SetStage,
+            GetLastStage = () => runState.LastStage,
+            RecordTerminalException = RecordTerminalException,
+            WriteLiveStateBestEffortAsync = () => WriteLiveStateBestEffortAsync(),
+            WriteSamplingLiveStateBestEffortAsync = WriteSamplingLiveStateBestEffortAsync,
+        };
+
         try
         {
-            await RunScenarioPhaseAsync(
-                    options,
-                    scenario,
-                    scenarioPlan,
-                    durationSeconds,
-                    sampleIntervalMs,
-                    outputDirectory,
-                    initialSnapshot,
-                    initialSnapshotKnown,
-                    actions,
-                    warnings,
-                    samples,
-                    commandChannel,
-                    scenarioCts,
-                    scenarioCancellationToken,
-                    cancellationToken,
-                    scenarioPhase,
-                    SetStage,
-                    () => runState.LastStage,
-                    RecordTerminalException,
-                    () => WriteLiveStateBestEffortAsync(),
-                    WriteSamplingLiveStateBestEffortAsync)
-                .ConfigureAwait(false);
+            await RunScenarioPhaseAsync(scenarioPhaseContext).ConfigureAwait(false);
         }
         finally
         {

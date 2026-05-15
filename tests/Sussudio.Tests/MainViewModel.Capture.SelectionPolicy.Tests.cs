@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Reflection;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -100,17 +102,215 @@ static partial class Program
     {
         var resolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptions.cs").Replace("\r\n", "\n");
         var selectionPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
+        var helperText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(resolutionOptionsText, "private void RebuildResolutionOptions()");
         AssertContains(resolutionOptionsText, "private bool TryResolveResolutionKey(");
         AssertDoesNotContain(resolutionOptionsText, "private ResolutionOption? SelectHdrResolutionOption(");
-        AssertContains(selectionPolicyText, "private ResolutionOption? TrySelectSourceResolutionOption(");
-        AssertContains(selectionPolicyText, "private ResolutionOption? SelectHdrResolutionOption(");
-        AssertContains(selectionPolicyText, "private bool TrySelectSdrAutoResolutionOption(");
-        AssertContains(selectionPolicyText, "private static bool TryParseResolutionKey(");
-        AssertContains(selectionPolicyText, "private string BuildHdrSupportHintForResolution(");
+        AssertContains(resolutionOptionsText, "CaptureResolutionSelectionPolicy.Select(new CaptureResolutionSelectionRequest(");
+        AssertContains(selectionPolicyText, "CaptureResolutionSelectionPolicy.TryParseResolutionKey(");
+        AssertContains(selectionPolicyText, "CaptureResolutionSelectionPolicy.ResolutionSupportsFriendlyFrameRate(");
+        AssertContains(selectionPolicyText, "CaptureResolutionSelectionPolicy.BuildHdrSupportHint(");
+        AssertDoesNotContain(selectionPolicyText, "SelectNearestResolution(");
+        AssertDoesNotContain(selectionPolicyText, "sdrFriendlyBucketsByResolution");
+        AssertContains(helperText, "internal static class CaptureResolutionSelectionPolicy");
+        AssertContains(helperText, "internal static CaptureResolutionSelection Select(CaptureResolutionSelectionRequest request)");
+        AssertContains(helperText, "internal sealed record CaptureResolutionSelectionRequest(");
+        AssertContains(helperText, "internal sealed record CaptureResolutionSelection(");
+        AssertContains(helperText, "private static ResolutionOption? SelectSourceResolutionOption(");
+        AssertContains(helperText, "private static HdrResolutionSelection SelectHdrResolutionOption(");
+        AssertContains(helperText, "private static SdrAutoResolutionSelection? SelectSdrAutoResolutionOption(");
+        AssertContains(helperText, "SelectNearestResolution(sourceKey, enabled)");
+        AssertContains(helperText, "SelectNearestResolution(previousSelection, sameFpsCandidates)");
+        AssertContains(helperText, "sdrFriendlyBucketsByResolution");
+        AssertDoesNotContain(helperText, "AvailableResolutions.Clear();");
+        AssertDoesNotContain(helperText, "OnPropertyChanged(");
+        AssertDoesNotContain(helperText, "SelectedResolution =");
 
         return Task.CompletedTask;
+    }
+
+    private static Task CaptureResolutionSelectionPolicy_PreservesHdrSourceRetargetBehavior()
+    {
+        var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
+        var resolutionType = RequireType("Sussudio.Models.ResolutionOption");
+        var telemetryType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
+
+        var formatsByResolution = CreateResolutionFormatDictionary(mediaFormatType);
+        AddResolutionFormats(
+            formatsByResolution,
+            mediaFormatType,
+            "3840x2160",
+            CreateTestMediaFormat(mediaFormatType, 3840, 2160, 60, "P010", isHdr: true));
+        AddResolutionFormats(
+            formatsByResolution,
+            mediaFormatType,
+            "1920x1080",
+            CreateTestMediaFormat(mediaFormatType, 1920, 1080, 120, "P010", isHdr: true));
+        AddResolutionFormats(
+            formatsByResolution,
+            mediaFormatType,
+            "1280x720",
+            CreateTestMediaFormat(mediaFormatType, 1280, 720, 120, "P010", isHdr: true));
+
+        var options = CreateResolutionOptionList(
+            resolutionType,
+            CreateResolutionOption(resolutionType, "3840x2160", 3840, 2160, isEnabled: true),
+            CreateResolutionOption(resolutionType, "1920x1080", 1920, 1080, isEnabled: true),
+            CreateResolutionOption(resolutionType, "1280x720", 1280, 720, isEnabled: true));
+        var telemetry = CreateConfigInstance(telemetryType);
+        SetPropertyOrBackingField(telemetry, "Width", 3840);
+        SetPropertyOrBackingField(telemetry, "Height", 2160);
+
+        var selection = InvokeCaptureResolutionSelection(
+            options,
+            formatsByResolution,
+            telemetry,
+            preferredSelection: "3840x2160",
+            previousFrameRate: 120,
+            isHdrEnabled: true,
+            allowSourceAutoSelect: true,
+            pendingSdrAutoSelectionForDeviceChange: false);
+        var selected = selection.GetType().GetProperty("Selected")!.GetValue(selection)
+            ?? throw new InvalidOperationException("HDR source retarget returned no selection.");
+
+        AssertEqual("1920x1080", GetStringProperty(selected, "Value"), "HDR source retarget preserves frame-rate bucket before resolution");
+        AssertEqual(
+            "HDR at 3840x2160 supported up to 60 fps; switched to 1920x1080 to keep 120 fps.",
+            selection.GetType().GetProperty("HdrHint")!.GetValue(selection) as string,
+            "HDR source retarget hint");
+
+        var retained = InvokeCaptureResolutionSelection(
+            options,
+            formatsByResolution,
+            telemetry,
+            preferredSelection: "3840x2160",
+            previousFrameRate: 60,
+            isHdrEnabled: true,
+            allowSourceAutoSelect: true,
+            pendingSdrAutoSelectionForDeviceChange: false);
+        var retainedSelected = retained.GetType().GetProperty("Selected")!.GetValue(retained)
+            ?? throw new InvalidOperationException("HDR exact match retention returned no selection.");
+
+        AssertEqual("3840x2160", GetStringProperty(retainedSelected, "Value"), "HDR exact source match remains selected when it supports the current rate");
+        AssertEqual(null, retained.GetType().GetProperty("HdrHint")!.GetValue(retained) as string, "HDR retained exact match defers support hint fallback to ResolutionOptions");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureResolutionSelectionPolicy_PreservesSdrAutoBucketPreference()
+    {
+        var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
+        var resolutionType = RequireType("Sussudio.Models.ResolutionOption");
+        var telemetryType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
+
+        var formatsByResolution = CreateResolutionFormatDictionary(mediaFormatType);
+        AddResolutionFormats(
+            formatsByResolution,
+            mediaFormatType,
+            "3840x2160",
+            CreateTestMediaFormat(mediaFormatType, 3840, 2160, 120, "NV12", isHdr: false));
+        AddResolutionFormats(
+            formatsByResolution,
+            mediaFormatType,
+            "1920x1080",
+            CreateTestMediaFormat(mediaFormatType, 1920, 1080, 60, "NV12", isHdr: false));
+        AddResolutionFormats(
+            formatsByResolution,
+            mediaFormatType,
+            "1280x720",
+            CreateTestMediaFormat(mediaFormatType, 1280, 720, 30, "NV12", isHdr: false));
+
+        var selection = InvokeCaptureResolutionSelection(
+            CreateResolutionOptionList(
+                resolutionType,
+                CreateResolutionOption(resolutionType, "3840x2160", 3840, 2160, isEnabled: true),
+                CreateResolutionOption(resolutionType, "1920x1080", 1920, 1080, isEnabled: true),
+                CreateResolutionOption(resolutionType, "1280x720", 1280, 720, isEnabled: true)),
+            formatsByResolution,
+            CreateConfigInstance(telemetryType),
+            preferredSelection: "3840x2160",
+            previousFrameRate: 120,
+            isHdrEnabled: false,
+            allowSourceAutoSelect: false,
+            pendingSdrAutoSelectionForDeviceChange: true);
+        var selected = selection.GetType().GetProperty("Selected")!.GetValue(selection)
+            ?? throw new InvalidOperationException("SDR auto selection returned no selection.");
+
+        AssertEqual("1920x1080", GetStringProperty(selected, "Value"), "SDR auto prefers a 60 fps bucket before largest 120-only resolution");
+        AssertEqual(60, selection.GetType().GetProperty("SdrAutoFriendlyFrameRateBucket")!.GetValue(selection), "SDR auto selected friendly bucket");
+
+        return Task.CompletedTask;
+    }
+
+    private static object InvokeCaptureResolutionSelection(
+        object options,
+        object formatsByResolution,
+        object telemetry,
+        string? preferredSelection,
+        double previousFrameRate,
+        bool isHdrEnabled,
+        bool allowSourceAutoSelect,
+        bool pendingSdrAutoSelectionForDeviceChange)
+    {
+        var requestType = RequireType("Sussudio.ViewModels.CaptureResolutionSelectionRequest");
+        var policyType = RequireType("Sussudio.ViewModels.CaptureResolutionSelectionPolicy");
+        var constructor = FindConstructor(requestType, parameterCount: 8);
+        var request = constructor.Invoke(new object?[]
+        {
+            options,
+            formatsByResolution,
+            telemetry,
+            preferredSelection,
+            previousFrameRate,
+            isHdrEnabled,
+            allowSourceAutoSelect,
+            pendingSdrAutoSelectionForDeviceChange
+        });
+        var select = policyType.GetMethod("Select", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("CaptureResolutionSelectionPolicy.Select missing.");
+        return select.Invoke(null, new[] { request })
+            ?? throw new InvalidOperationException("CaptureResolutionSelectionPolicy.Select returned null.");
+    }
+
+    private static ConstructorInfo FindConstructor(Type type, int parameterCount)
+    {
+        foreach (var constructor in type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            if (constructor.GetParameters().Length == parameterCount)
+            {
+                return constructor;
+            }
+        }
+
+        throw new InvalidOperationException($"{type.Name} constructor with {parameterCount} parameters was not found.");
+    }
+
+    private static object CreateResolutionOptionList(Type resolutionType, params object[] options)
+    {
+        var list = (IList)(Activator.CreateInstance(typeof(System.Collections.Generic.List<>).MakeGenericType(resolutionType))
+                           ?? throw new InvalidOperationException("Failed to create resolution option list."));
+        foreach (var option in options)
+        {
+            list.Add(option);
+        }
+
+        return list;
+    }
+
+    private static object CreateResolutionOption(
+        Type resolutionType,
+        string value,
+        uint width,
+        uint height,
+        bool isEnabled)
+    {
+        var option = CreateConfigInstance(resolutionType);
+        SetPropertyOrBackingField(option, "Value", value);
+        SetPropertyOrBackingField(option, "Width", width);
+        SetPropertyOrBackingField(option, "Height", height);
+        SetPropertyOrBackingField(option, "IsEnabled", isEnabled);
+        return option;
     }
 
     private static Task FrameRateTimingPolicy_LivesInFocusedPartial()
