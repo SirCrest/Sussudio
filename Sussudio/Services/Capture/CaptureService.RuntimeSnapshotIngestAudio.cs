@@ -28,7 +28,6 @@ public partial class CaptureService
             IngestVideoFramesWrittenToSink = unifiedVideoCapture?.VideoFramesWrittenToSink ?? 0,
             IngestLastVideoFrameAgeMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),
             VideoIngestErrorCount = unifiedVideoCapture?.VideoFramesDropped ?? 0,
-            MemoryPreference = unifiedVideoCapture?.D3DManager != null ? "Gpu" : "Cpu",
             MfSourceReaderFramesDelivered = unifiedVideoCapture?.VideoFramesArrived ?? _lastMfSourceReaderFramesDelivered,
             MfSourceReaderFramesDropped = unifiedVideoCapture?.VideoFramesDropped ?? _lastMfSourceReaderFramesDropped,
             SourceReaderReadOutstanding = unifiedVideoCapture?.SourceReaderReadOutstanding ?? false,
@@ -74,7 +73,6 @@ public partial class CaptureService
         public long IngestVideoFramesWrittenToSink { get; init; }
         public long IngestLastVideoFrameAgeMs { get; init; }
         public long VideoIngestErrorCount { get; init; }
-        public string MemoryPreference { get; init; } = "Cpu";
         public long MfSourceReaderFramesDelivered { get; init; }
         public long MfSourceReaderFramesDropped { get; init; }
         public bool SourceReaderReadOutstanding { get; init; }

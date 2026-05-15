@@ -193,6 +193,41 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureService_RuntimeReaderTransportProjection_LivesInFocusedPartial()
+    {
+        var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var ingestAudioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs")
+            .Replace("\r\n", "\n");
+        var readerTransportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotReaderTransport.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(runtimeText, "var readerTransport = CaptureRuntimeReaderTransportSnapshotFields(");
+        AssertContains(runtimeText, "MemoryPreference = readerTransport.MemoryPreference,");
+        AssertContains(runtimeText, "VideoRequestedSubtype = readerTransport.VideoRequestedSubtype,");
+        AssertContains(runtimeText, "FrameLedgerRecentEvents = readerTransport.FrameLedgerRecentEvents,");
+        AssertContains(runtimeText, "MfSourceReaderNegotiatedFormat = readerTransport.MfSourceReaderNegotiatedFormat,");
+        AssertContains(runtimeText, "ReaderSourceSubtype = readerTransport.ReaderSourceSubtype,");
+
+        AssertContains(readerTransportText, "private static RuntimeReaderTransportSnapshotFields CaptureRuntimeReaderTransportSnapshotFields(");
+        AssertContains(readerTransportText, "requestedSettings!.RequestedPixelFormat");
+        AssertContains(readerTransportText, "mfSourceReaderNegotiatedFormat.Contains(\"P010\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(readerTransportText, "unifiedVideoCapture.IsHighFrameRateMjpegMode ? \"MJPG\"");
+        AssertContains(readerTransportText, "readerSourceStreamType = (recordingActive || videoPreviewActive) && unifiedVideoCapture != null");
+        AssertContains(readerTransportText, "FrameLedgerSummary.Empty");
+        AssertContains(readerTransportText, "MemoryPreference = unifiedVideoCapture?.D3DManager != null ? \"Gpu\" : \"Cpu\",");
+        AssertContains(readerTransportText, "(previewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? \"None\"");
+        AssertContains(readerTransportText, "ReaderSourceSubtype = actualPixelFormat");
+
+        AssertDoesNotContain(runtimeText, "var negotiatedSubtypeFromSourceReader");
+        AssertDoesNotContain(runtimeText, "unifiedVideoCapture.IsHighFrameRateMjpegMode ? \"MJPG\"");
+        AssertDoesNotContain(runtimeText, "GetFrameLedgerSummary() ?? FrameLedgerSummary.Empty");
+        AssertDoesNotContain(runtimeText, "(_previewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? \"None\"");
+        AssertDoesNotContain(ingestAudioText, "D3DManager != null ? \"Gpu\"");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_RuntimeHdrPipelineProjection_LivesInFocusedPartial()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")

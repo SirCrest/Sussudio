@@ -78,6 +78,9 @@ static partial class Program
             "CaptureService runtime ingest audio projection lives in focused partial",
             CaptureService_RuntimeIngestAudioProjection_LivesInFocusedPartial);
         await AddCheckAsync(results,
+            "CaptureService runtime reader transport projection lives in focused partial",
+            CaptureService_RuntimeReaderTransportProjection_LivesInFocusedPartial);
+        await AddCheckAsync(results,
             "CaptureService runtime HDR pipeline projection lives in focused partial",
             CaptureService_RuntimeHdrPipelineProjection_LivesInFocusedPartial);
         await AddCheckAsync(results,

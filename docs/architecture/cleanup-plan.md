@@ -1335,8 +1335,11 @@ Runtime capture snapshot projection now lives in
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
 automation, and verification; video ingest, source-reader health, WASAPI
 capture, and playback output counter projection now lives in
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs`, HDR
-pipeline parity/downgrade projection now lives in
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs`,
+requested/negotiated reader transport, memory preference, frame-ledger, and
+preview renderer-mode projection now lives in
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotReaderTransport.cs`,
+HDR pipeline parity/downgrade projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`,
 source telemetry detail/age/alignment projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`,

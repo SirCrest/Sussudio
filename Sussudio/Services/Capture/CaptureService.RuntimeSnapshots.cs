@@ -1,6 +1,5 @@
 using System;
 using Sussudio.Models;
-using Sussudio.Services.Preview;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
@@ -51,29 +50,15 @@ public partial class CaptureService
             hdrPipeline.HdrOutputActive,
             _isRecording,
             observedP010FrameCount);
-        var requestedReaderSubtype = !string.IsNullOrWhiteSpace(requestedSettings?.RequestedPixelFormat)
-            ? requestedSettings!.RequestedPixelFormat
-            : hdrRequested
-                ? "P010"
-                : "NV12";
-        var mfSourceReaderNegotiatedFormat = unifiedVideoCapture?.NegotiatedFormat ?? _lastMfSourceReaderNegotiatedFormat;
-        var negotiatedSubtypeFromSourceReader =
-            !string.IsNullOrWhiteSpace(mfSourceReaderNegotiatedFormat) &&
-            mfSourceReaderNegotiatedFormat.Contains("P010", StringComparison.OrdinalIgnoreCase)
-                ? "P010"
-                : !string.IsNullOrWhiteSpace(mfSourceReaderNegotiatedFormat) &&
-                  mfSourceReaderNegotiatedFormat.Contains("NV12", StringComparison.OrdinalIgnoreCase)
-                    ? "NV12"
-                    : "unknown";
-        var videoNegotiatedSubtype = unifiedVideoCapture != null
-            ? (unifiedVideoCapture.IsHighFrameRateMjpegMode ? "MJPG"
-                : unifiedVideoCapture.IsP010 ? "P010" : "NV12")
-            : negotiatedSubtypeFromSourceReader;
-        var readerSourceStreamType = (_isRecording || _isVideoPreviewActive) && unifiedVideoCapture != null
-            ? "MfSourceReader"
-            : null;
-        var previewColorMetadata = (_previewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? "None";
-        var frameLedger = unifiedVideoCapture?.GetFrameLedgerSummary() ?? FrameLedgerSummary.Empty;
+        var readerTransport = CaptureRuntimeReaderTransportSnapshotFields(
+            requestedSettings,
+            hdrRequested,
+            unifiedVideoCapture,
+            _isVideoPreviewActive,
+            _isRecording,
+            _previewFrameSink,
+            _actualPixelFormat,
+            _lastMfSourceReaderNegotiatedFormat);
         const bool muxAttempted = false;
         bool? muxSucceeded = null;
         var recordingIntegrity = CaptureRuntimeRecordingIntegritySnapshotFields(
@@ -95,17 +80,17 @@ public partial class CaptureService
             IngestVideoFramesWrittenToSink = ingestAudio.IngestVideoFramesWrittenToSink,
             IngestLastVideoFrameAgeMs = ingestAudio.IngestLastVideoFrameAgeMs,
             VideoIngestErrorCount = ingestAudio.VideoIngestErrorCount,
-            MemoryPreference = ingestAudio.MemoryPreference,
-            VideoRequestedSubtype = requestedReaderSubtype ?? "unknown",
-            VideoNegotiatedSubtype = videoNegotiatedSubtype,
-            FrameLedgerCapacity = frameLedger.Capacity,
-            FrameLedgerEventCount = frameLedger.TotalEventsRecorded,
-            FrameLedgerDroppedEventCount = frameLedger.EventsDroppedByRetention,
-            FrameLedgerRecentEvents = frameLedger.RecentEvents,
-            PreviewColorMetadata = previewColorMetadata,
+            MemoryPreference = readerTransport.MemoryPreference,
+            VideoRequestedSubtype = readerTransport.VideoRequestedSubtype,
+            VideoNegotiatedSubtype = readerTransport.VideoNegotiatedSubtype,
+            FrameLedgerCapacity = readerTransport.FrameLedgerCapacity,
+            FrameLedgerEventCount = readerTransport.FrameLedgerEventCount,
+            FrameLedgerDroppedEventCount = readerTransport.FrameLedgerDroppedEventCount,
+            FrameLedgerRecentEvents = readerTransport.FrameLedgerRecentEvents,
+            PreviewColorMetadata = readerTransport.PreviewColorMetadata,
             MfSourceReaderFramesDelivered = ingestAudio.MfSourceReaderFramesDelivered,
             MfSourceReaderFramesDropped = ingestAudio.MfSourceReaderFramesDropped,
-            MfSourceReaderNegotiatedFormat = mfSourceReaderNegotiatedFormat,
+            MfSourceReaderNegotiatedFormat = readerTransport.MfSourceReaderNegotiatedFormat,
             SessionState = _sessionState,
             SourceReaderReadOutstanding = ingestAudio.SourceReaderReadOutstanding,
             SourceReaderReadOutstandingMs = ingestAudio.SourceReaderReadOutstandingMs,
@@ -185,9 +170,9 @@ public partial class CaptureService
             NegotiatedFrameRateNumerator = _actualFrameRateNumerator,
             NegotiatedFrameRateDenominator = _actualFrameRateDenominator,
             NegotiatedPixelFormat = _actualPixelFormat,
-            RequestedReaderSubtype = requestedReaderSubtype,
-            ReaderSourceStreamType = readerSourceStreamType,
-            ReaderSourceSubtype = _actualPixelFormat,
+            RequestedReaderSubtype = readerTransport.RequestedReaderSubtype,
+            ReaderSourceStreamType = readerTransport.ReaderSourceStreamType,
+            ReaderSourceSubtype = readerTransport.ReaderSourceSubtype,
             FirstObservedFramePixelFormat = observedTelemetry.FirstObservedFramePixelFormat,
             LatestObservedFramePixelFormat = observedTelemetry.LatestObservedFramePixelFormat,
             LatestObservedSurfaceFormat = observedTelemetry.LatestObservedSurfaceFormat,

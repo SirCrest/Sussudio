@@ -457,6 +457,9 @@ Important entry points:
 - `CaptureService.RuntimeSnapshotIngestAudio.cs` owns runtime snapshot projection
   for video ingest, source-reader health, WASAPI capture, and playback output
   counters.
+- `CaptureService.RuntimeSnapshotReaderTransport.cs` owns runtime snapshot
+  projection for requested/negotiated reader subtypes, reader transport source,
+  memory preference, frame-ledger summary, and preview renderer mode.
 - `CaptureService.RuntimeSnapshotHdrPipeline.cs` owns runtime HDR/encoder
   pipeline parity, downgrade reason, and encoder format projection.
 - `CaptureService.RuntimeSnapshotSourceTelemetry.cs` owns runtime snapshot
@@ -1091,8 +1094,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.Tests.cs` owns
   CaptureService runtime snapshot behavior scenarios for observed formats,
   source-telemetry alignment, HDR pipeline parity, inactive thread probes, and
-  runtime projection ownership for ingest/audio, HDR pipeline, source
-  telemetry, and recording integrity.
+  runtime projection ownership for ingest/audio, reader transport, HDR pipeline,
+  source telemetry, and recording integrity.
 - `tests/Sussudio.Tests/CaptureService.PreviewLifecycle.Tests.cs` owns
   video-only preview fallback, missing audio endpoint, and preview backend log
   contracts.
