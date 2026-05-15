@@ -1381,6 +1381,10 @@ Primary current owners:
   shell/content fade and scale transitions, unavailable-placeholder fades, and
   startup/unavailable presentation prep. `MainWindow.PreviewTransitions.cs` is
   the XAML-facing adapter.
+- `Sussudio/Controllers/PreviewButtonPresentationController.cs` owns preview
+  button glyph and tooltip presentation for Start Preview and Stop Preview.
+  `MainWindow.PreviewButtonPresentation.cs` is the XAML-facing adapter; keep
+  `PreviewButton_Click` command behavior outside this controller.
 - `Sussudio/Controllers/RecordButtonAnimationController.cs` owns the recording
   button circle/pill width morph used by recording state changes.
   `MainWindow.RecordButtonAnimations.cs` is the XAML-facing adapter.

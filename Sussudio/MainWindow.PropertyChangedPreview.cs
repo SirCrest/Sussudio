@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Microsoft.UI.Xaml.Controls;
 using Sussudio.ViewModels;
 
 namespace Sussudio;
@@ -119,8 +118,7 @@ public sealed partial class MainWindow
                 StartPreviewStartupWatchdog();
             }
 
-            PreviewButtonIcon.Glyph = "\uE71A";
-            ToolTipService.SetToolTip(PreviewButton, "Stop Preview");
+            ShowStopPreviewButtonPresentation();
             ApplyHdrToggleEnabledState();
             return;
         }
@@ -142,13 +140,11 @@ public sealed partial class MainWindow
 
         if (ViewModel.IsPreviewReinitializing)
         {
-            PreviewButtonIcon.Glyph = "\uE71A";
-            ToolTipService.SetToolTip(PreviewButton, "Stop Preview");
+            ShowStopPreviewButtonPresentation();
         }
         else
         {
-            PreviewButtonIcon.Glyph = "\uE768";
-            ToolTipService.SetToolTip(PreviewButton, "Start Preview");
+            ShowStartPreviewButtonPresentation();
         }
 
         ApplyHdrToggleEnabledState();
@@ -177,8 +173,7 @@ public sealed partial class MainWindow
         }
         else if (!ViewModel.IsPreviewReinitializing && !ViewModel.IsPreviewing)
         {
-            PreviewButtonIcon.Glyph = "\uE768";
-            ToolTipService.SetToolTip(PreviewButton, "Start Preview");
+            ShowStartPreviewButtonPresentation();
         }
     }
 }

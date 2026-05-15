@@ -1422,6 +1422,11 @@ presentation now live in
 `MainWindow.PreviewTransitions.cs` is the XAML-facing adapter; composition
 shadow animation remains in `MainWindow.Animations.cs`.
 
+Preview button glyph/tooltip presentation for Start Preview and Stop Preview
+now lives in `Sussudio/Controllers/PreviewButtonPresentationController.cs`.
+`MainWindow.PreviewButtonPresentation.cs` is the XAML-facing adapter; the
+preview button click command path remains unchanged.
+
 Record-button circle/pill width animation now lives in
 `Sussudio/Controllers/RecordButtonAnimationController.cs`.
 `MainWindow.RecordButtonAnimations.cs` is the XAML-facing adapter.

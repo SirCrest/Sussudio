@@ -122,6 +122,39 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewButtonPresentation_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var propertyChangedPreviewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewButtonPresentation.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonPresentationController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private PreviewButtonPresentationController _previewButtonPresentationController = null!;");
+        AssertContains(adapterText, "private void InitializePreviewButtonPresentationController()");
+        AssertContains(adapterText, "PreviewButton = PreviewButton,");
+        AssertContains(adapterText, "PreviewButtonIcon = PreviewButtonIcon,");
+        AssertContains(adapterText, "private void ShowStopPreviewButtonPresentation()");
+        AssertContains(adapterText, "=> _previewButtonPresentationController.ShowStopPreview();");
+        AssertContains(adapterText, "private void ShowStartPreviewButtonPresentation()");
+        AssertContains(adapterText, "=> _previewButtonPresentationController.ShowStartPreview();");
+        AssertContains(mainWindowText, "InitializePreviewButtonPresentationController();");
+        AssertContains(propertyChangedPreviewText, "ShowStopPreviewButtonPresentation();");
+        AssertContains(propertyChangedPreviewText, "ShowStartPreviewButtonPresentation();");
+        AssertContains(controllerText, "internal sealed class PreviewButtonPresentationController");
+        AssertContains(controllerText, "private const string StopPreviewGlyph = \"\\uE71A\";");
+        AssertContains(controllerText, "private const string StartPreviewGlyph = \"\\uE768\";");
+        AssertContains(controllerText, "_context.PreviewButtonIcon.Glyph = StopPreviewGlyph;");
+        AssertContains(controllerText, "ToolTipService.SetToolTip(_context.PreviewButton, \"Stop Preview\");");
+        AssertContains(controllerText, "_context.PreviewButtonIcon.Glyph = StartPreviewGlyph;");
+        AssertContains(controllerText, "ToolTipService.SetToolTip(_context.PreviewButton, \"Start Preview\");");
+        AssertDoesNotContain(propertyChangedPreviewText, "PreviewButtonIcon.Glyph = \"\\uE71A\";");
+        AssertDoesNotContain(propertyChangedPreviewText, "PreviewButtonIcon.Glyph = \"\\uE768\";");
+        AssertDoesNotContain(propertyChangedPreviewText, "ToolTipService.SetToolTip(PreviewButton, \"Stop Preview\");");
+        AssertDoesNotContain(propertyChangedPreviewText, "ToolTipService.SetToolTip(PreviewButton, \"Start Preview\");");
+
+        return Task.CompletedTask;
+    }
+
     private static Task MicrophoneControls_LiveInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
