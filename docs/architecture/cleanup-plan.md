@@ -229,6 +229,9 @@ envelope: manifest revision checks, auth/readiness gates, trivial-handler
 dispatch, and error shaping. `AutomationCommandDispatcher.CustomCommands.cs`
 owns the custom command switch/router for commands that need multi-field
 payloads, special response shapes, diagnostics, or capture/Flashback routing.
+`AutomationCommandDispatcher.FlashbackCommands.cs` owns Flashback action,
+export, segment, restart, and enable command bodies behind the custom command
+router.
 `AutomationCommandDispatcher.VerificationCommands.cs` owns file and
 last-recording verification command bodies.
 `AutomationCommandDispatcher.TrivialHandlers.cs` owns the simple one-property
@@ -1802,7 +1805,20 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackExports.cs`
+- `DiagnosticSessionFlashbackExportScenarios.cs`
+- `DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
+- `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
+- `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
+- `DiagnosticSessionFlashbackExportScenarios.Range.cs`
+- `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
+- `DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
+- `DiagnosticSessionFlashbackMetrics.cs`
+- `DiagnosticSessionFlashbackMetrics.Export.cs`
+- `DiagnosticSessionFlashbackMetrics.Models.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
+- `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
+- `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`

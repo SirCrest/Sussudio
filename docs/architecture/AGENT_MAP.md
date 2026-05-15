@@ -761,7 +761,8 @@ Primary current owners:
   shell/startup/title/close/preview-runtime partial ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs` owns
   MainWindow controller-adapter ownership assertions for control bar, shell
-  elevation, preview-transition, and record-button width visual controllers.
+  elevation, preview-transition, preview startup overlay, preview fade-in, and
+  record-button width visual controllers.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` is the
   MainWindow controller-adapter ownership marker shell.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs`
@@ -1064,7 +1065,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Tests.cs` owns the live
   dispatcher source-family reader; `AutomationCommandDispatcher.*.Tests.cs`
   and `AutomationCommandDispatcher.Helpers.cs` own authorization, manifest,
-  Flashback failure response, command-kind handling, and helper coverage.
+  Flashback failure response, Flashback command placement, verification command
+  placement, command-kind handling, and helper coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Tests.cs` owns
   dispatcher JSON payload extraction helper coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Readiness.Tests.cs` owns
@@ -1087,7 +1089,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
   reliability-gates script contract test.
 - `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` owns AGENT_MAP file/folder
-  reference drift checks.
+  reference drift checks, automation consumer checklist coverage, dispatcher
+  partial-family coverage, UI presentation ownership code-span coverage, and
+  exact-path coverage for shared tool automation partial families.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter*.Tests.cs`
   owns the shared/ssctl snapshot formatter contract family: the core section
   formatting smoke test stays in `.Tests.cs`, response accessor checks live in
@@ -1755,17 +1759,26 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs` is the Flashback
   export diagnostic scenario marker shell. Concurrent export,
   disable-during-export, rotated export, export-during-playback, and
-  selection-range export flows live in focused `DiagnosticSessionFlashbackExportScenarios.*.cs`
-  files. `DiagnosticSessionFlashbackExportScenarios.Registrations.cs` owns the
-  export scenario task registration handoff from diagnostic-session startup.
+  selection-range export flows live in focused files:
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`,
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`,
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs`,
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs`, and
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs`.
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
+  owns the export scenario task registration handoff from diagnostic-session
+  startup.
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
   Flashback playback disable/re-enable lifecycle diagnostic task registration
   and flow.
 - `tools/Common/DiagnosticSessionFlashbackMetrics.cs` is the Flashback metric
-  projection marker shell. `DiagnosticSessionFlashbackMetrics.Models.cs` owns
-  session/result DTOs; `.Recording.cs`, `.PlaybackSession.cs`,
-  `.PlaybackResult.cs`, and `.Export.cs` own read-only recording, playback,
-  result-copy, and export metric projections.
+  projection marker shell.
+  `tools/Common/DiagnosticSessionFlashbackMetrics.Models.cs` owns session/result
+  DTOs. `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`, and
+  `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` own read-only
+  recording, playback, result-copy, and export metric projections.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` is the
   Flashback preview-cycle marker shell and predicate owner.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
@@ -1827,10 +1840,15 @@ Primary owners:
 - `tools/Common/DiagnosticSessionText.cs` owns shared diagnostic-session text
   helpers used by the runner, formatter, and validation policies.
 - `tools/Common/AutomationSnapshotFormatter.cs` owns the top-level shared
-  automation snapshot console text flow. `AutomationSnapshotFormatter.Values.cs`
-  owns tolerant JSON accessors plus byte/interval formatting helpers, while
-  `AutomationSnapshotFormatter.Flashback.cs`, `.MjpegTiming.cs`, `.AvSync.cs`,
-  `.Preview.cs`, and `.Source.cs` own the named snapshot sections.
+  automation snapshot console text flow.
+  `tools/Common/AutomationSnapshotFormatter.Values.cs` owns tolerant JSON
+  accessors plus byte/interval formatting helpers, while
+  `tools/Common/AutomationSnapshotFormatter.Flashback.cs`,
+  `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs`,
+  `tools/Common/AutomationSnapshotFormatter.AvSync.cs`,
+  `tools/Common/AutomationSnapshotFormatter.Preview.cs`, and
+  `tools/Common/AutomationSnapshotFormatter.Source.cs` own the named snapshot
+  sections.
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
   connect retry classification and local failure-response envelopes.
 - `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized

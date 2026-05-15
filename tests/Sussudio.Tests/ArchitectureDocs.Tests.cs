@@ -126,6 +126,24 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task ArchitectureAgentMap_CoversToolAutomationPartialFamiliesWithExactPaths()
+    {
+        var repoRoot = GetRepoRoot();
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
+        var missing = EnumerateToolAutomationPartialFamilyFiles(repoRoot)
+            .Where(file => !agentMapText.Contains($"`{file}`", StringComparison.Ordinal))
+            .ToArray();
+
+        if (missing.Length > 0)
+        {
+            throw new InvalidOperationException(
+                "AGENT_MAP.md is missing exact tool automation ownership file entries: " +
+                string.Join(", ", missing));
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static IEnumerable<string> ExtractReadmeAutomationConsumers(string readmeText)
     {
         const string marker = "Then keep these consumers in sync:";
@@ -260,6 +278,23 @@ static partial class Program
             .Select(file => NormalizeRepoRelativePath(repoRoot, file))
             .Where(IsUiPresentationOwnershipFile)
             .OrderBy(file => file, StringComparer.OrdinalIgnoreCase);
+
+    private static IEnumerable<string> EnumerateToolAutomationPartialFamilyFiles(string repoRoot)
+    {
+        var commonDirectory = Path.Combine(repoRoot, "tools", "Common");
+        var familyPrefixes = new[]
+        {
+            "AutomationSnapshotFormatter",
+            "DiagnosticSessionFlashbackExportScenarios",
+            "DiagnosticSessionFlashbackMetrics",
+        };
+
+        return EnumerateSourceFiles(commonDirectory, SearchOption.TopDirectoryOnly)
+            .Select(file => NormalizeRepoRelativePath(repoRoot, file))
+            .Where(file => familyPrefixes.Any(prefix =>
+                GetRepoFileName(file).StartsWith(prefix, StringComparison.Ordinal)))
+            .OrderBy(file => file, StringComparer.OrdinalIgnoreCase);
+    }
 
     private static bool AgentMapContainsExactCodeSpan(string agentMapText, string relativePath)
     {
