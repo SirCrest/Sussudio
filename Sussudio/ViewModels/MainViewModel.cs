@@ -88,7 +88,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // -- Recording lifecycle methods are in MainViewModel.RecordingLifecycle.cs -----
     // -- Recording observable state is in MainViewModel.RecordingState.cs -----
     // -- Capture settings projection is in MainViewModel.CaptureSettings.cs -----
-    // -- Automation methods are in MainViewModel.Automation.cs ---------
+    // -- Automation methods are split across MainViewModel.Automation*.cs ---------
 
     // -- Partial class references ----
     // Capture lifecycle: MainViewModel.Capture.cs
@@ -96,6 +96,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Recording state: MainViewModel.RecordingState.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs
     // Automation / flashback: MainViewModel.Automation.cs
+    // Device-selection automation: MainViewModel.AutomationDeviceSelection.cs
     // Capture-mode automation: MainViewModel.AutomationCaptureMode.cs
     // UI-only automation: MainViewModel.AutomationUi.cs
     // Recording settings automation: MainViewModel.AutomationRecordingSettings.cs

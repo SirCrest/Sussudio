@@ -1518,6 +1518,9 @@ Primary current owners:
   setting changes. `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
   for stats/settings visibility, frame-time overlay display, Flashback timeline
   visibility, show-all capture options, and preview volume persistence.
+  `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh,
+  capture-device selection, audio-input selection, and custom audio-input
+  enablement.
   `MainViewModel.AutomationCaptureMode.cs` owns automation mutators for
   resolution, frame rate, video format, MJPEG decoder count, and the shared
   reinitialization gate used after active capture-mode changes.

@@ -1965,6 +1965,9 @@ Remaining `tools/Common` ownership:
    mode/gain application, cancellation, debounce-to-flash, and persistence in
    `MainViewModel.AudioControls.cs`.
    UI-only automation mutators now live in `MainViewModel.AutomationUi.cs`.
+   Automation device refresh, capture-device selection, audio-input selection,
+   and custom audio-input enablement now live in
+   `MainViewModel.AutomationDeviceSelection.cs`.
    Recording format, encoder preset/quality/split-mode/custom-bitrate, and
    output-path automation mutators now live in
    `MainViewModel.AutomationRecordingSettings.cs`.
