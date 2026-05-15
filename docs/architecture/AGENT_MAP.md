@@ -2179,17 +2179,21 @@ Primary owners:
 - `tools/Common/PresentMonProbe.Format.cs` owns PresentMon result text rendering
   used by diagnostic-session output surfaces.
 - `tools/Common/PresentMonProbe.Csv.cs` owns PresentMon CSV parse overloads,
-  row projection, and summary assembly.
-- `tools/Common/PresentMonProbe.Csv.Fields.cs` owns header/field parsing and
-  CSV line tokenization.
+  selected-row filtering, summary assembly, and handoff to row/swap-chain/
+  warning/correlation helpers.
+- `tools/Common/PresentMonProbe.Csv.Rows.cs` owns PresentMon CSV row ingestion,
+  header index construction, schema-presence detection, blank-line skipping,
+  row index assignment, and row projection from header-indexed fields.
+- `tools/Common/PresentMonProbe.Csv.Fields.cs` owns header/field parsing,
+  scalar field/metric reads, and CSV line tokenization.
 - `tools/Common/PresentMonProbe.Csv.SwapChains.cs` owns swap-chain
   normalization, artifact filtering, and selected-chain summaries.
 - `tools/Common/PresentMonProbe.Csv.Correlation.cs` owns app-present
   correlation and displayed/not-displayed outcome classification.
 - `tools/Common/PresentMonProbe.Csv.Summary.cs` owns warnings, counted text
   fields, and percentile metric aggregation.
-- `tools/Common/PresentMonProbe.Csv.Models.cs` owns the private parsed-row
-  shape.
+- `tools/Common/PresentMonProbe.Csv.Models.cs` owns the private parsed CSV
+  handoff and row shapes.
 - `tools/Common/PresentMonProbe.cs` owns PresentMon public run orchestration.
 - `tools/Common/PresentMonProbe.Paths.cs` owns target process, PresentMon
   executable, and output-path resolution.

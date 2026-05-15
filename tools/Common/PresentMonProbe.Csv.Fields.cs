@@ -8,9 +8,6 @@ public static partial class PresentMonProbe
     private static string NormalizeHeader(string value)
         => value.Trim().TrimStart('\uFEFF');
 
-    private static bool HasAnyColumn(IReadOnlyDictionary<string, int> index, params string[] names)
-        => names.Any(index.ContainsKey);
-
     private static double? ReadMetric(
         IReadOnlyList<string> fields,
         IReadOnlyDictionary<string, int> index,

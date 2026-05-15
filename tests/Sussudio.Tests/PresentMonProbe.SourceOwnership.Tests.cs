@@ -9,6 +9,7 @@ static partial class Program
         var formatText = ReadRepoFile("tools/Common/PresentMonProbe.Format.cs").Replace("\r\n", "\n");
         var resultMessageText = ReadRepoFile("tools/Common/PresentMonProbe.ResultMessage.cs").Replace("\r\n", "\n");
         var csvText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.cs").Replace("\r\n", "\n");
+        var csvRowsText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.Rows.cs").Replace("\r\n", "\n");
         var fieldsText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.Fields.cs").Replace("\r\n", "\n");
         var swapChainsText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.SwapChains.cs").Replace("\r\n", "\n");
         var correlationText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.Correlation.cs").Replace("\r\n", "\n");
@@ -47,11 +48,18 @@ static partial class Program
         AssertContains(resultMessageText, "PresentMon capture did not produce frame rows.");
 
         AssertContains(csvText, "private static PresentMonCaptureSummary ParseCsv(");
+        AssertContains(csvText, "var csvRows = ReadCsvRows(path);");
+        AssertContains(csvText, "var rows = csvRows.Rows;");
+        AssertContains(csvText, "var selectedRows = selectedSwapChain == null");
         AssertContains(csvText, "var swapChains = BuildSwapChainSummaries(rows, selectedSwapChain);");
         AssertContains(csvText, "var warnings = BuildWarnings(");
         AssertContains(csvText, "var appCorrelation = BuildAppCorrelation(");
+        AssertContains(csvRowsText, "private static PresentMonCsvRows ReadCsvRows(string path)");
+        AssertContains(csvRowsText, "private static IReadOnlyDictionary<string, int> BuildCsvHeaderIndex(");
+        AssertContains(csvRowsText, "private static PresentMonRow ReadRow(");
+        AssertContains(csvRowsText, "rows.Add(ReadRow(rowIndex++, fields, index));");
+        AssertContains(csvRowsText, "private static bool HasAnyColumn(");
         AssertContains(fieldsText, "private static string NormalizeHeader(");
-        AssertContains(fieldsText, "private static bool HasAnyColumn(");
         AssertContains(fieldsText, "private static double? ReadMetric(");
         AssertContains(fieldsText, "private static List<string> SplitCsvLine(");
         AssertContains(swapChainsText, "private static IReadOnlyList<PresentMonSwapChainSummary> BuildSwapChainSummaries(");
@@ -61,7 +69,11 @@ static partial class Program
         AssertContains(summaryText, "private static IReadOnlyList<string> BuildWarnings(");
         AssertContains(summaryText, "private static PresentMonMetricSummary Summarize(");
         AssertContains(summaryText, "private static double Percentile(");
+        AssertContains(csvModelsText, "private sealed record PresentMonCsvRows(");
         AssertContains(csvModelsText, "private sealed record PresentMonRow(");
+        AssertDoesNotContain(csvText, "new StreamReader(path)");
+        AssertDoesNotContain(csvText, "new PresentMonRow(");
+        AssertDoesNotContain(fieldsText, "private static bool HasAnyColumn(");
 
         AssertContains(pathsText, "private static Process? ResolveTargetProcess(");
         AssertContains(pathsText, "private static string? ResolvePresentMonPath(");

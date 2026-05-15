@@ -146,6 +146,28 @@ static partial class Program
             AssertEqual(1, GetIntProperty(artifactOnlySummary, "RawSampleCount"), "artifact-only raw sample count");
             AssertEqual(1, GetIntProperty(artifactOnlySummary, "ExcludedSampleCount"), "artifact-only excluded sample count");
             AssertEqual(string.Empty, GetStringProperty(artifactOnlySummary, "SelectedSwapChainAddress"), "artifact-only selected swap chain");
+
+            File.WriteAllText(csvPath, "   \r\n");
+            var emptyHeaderSummary = parseCsv.Invoke(null, new object[] { csvPath })
+                ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv returned null for empty-header CSV.");
+            AssertEqual(0, GetIntProperty(emptyHeaderSummary, "SampleCount"), "empty-header selected sample count");
+            AssertEqual(0, GetIntProperty(emptyHeaderSummary, "RawSampleCount"), "empty-header raw sample count");
+            AssertEqual(0, GetIntProperty(emptyHeaderSummary, "ExcludedSampleCount"), "empty-header excluded sample count");
+            AssertEqual(false, GetBoolProperty(emptyHeaderSummary, "DisplayedTimeColumnPresent"), "empty-header displayed-time column presence");
+
+            File.WriteAllText(
+                csvPath,
+                """
+                Application,ProcessID,SwapChainAddress,PresentRuntime,SyncInterval,AllowsTearing,PresentMode,MsBetweenPresents,MsBetweenPresents,DisplayedTime,MsBetweenDisplayChange
+                Sussudio.exe,1234,0xDAD,DXGI,0,0,Composed: Flip,7.0000,99.0000,7.0000,7.0000
+                """);
+            var duplicateHeaderSummary = parseCsv.Invoke(null, new object[] { csvPath })
+                ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv returned null for duplicate-header CSV.");
+            var duplicateHeaderBetweenPresents = GetPropertyValue(duplicateHeaderSummary, "BetweenPresentsMs")
+                ?? throw new InvalidOperationException("duplicate-header BetweenPresentsMs was null.");
+            AssertEqual(1, GetIntProperty(duplicateHeaderSummary, "RawSampleCount"), "duplicate-header raw sample count");
+            AssertEqual("0xDAD", GetStringProperty(duplicateHeaderSummary, "SelectedSwapChainAddress"), "duplicate-header selected swap chain");
+            AssertNearlyEqual(7.0, GetDoubleProperty(duplicateHeaderBetweenPresents, "Average"), 0.0001, "duplicate header uses first metric occurrence");
         }
         finally
         {

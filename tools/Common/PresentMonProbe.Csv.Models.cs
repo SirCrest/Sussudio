@@ -2,6 +2,12 @@ namespace Sussudio.Tools;
 
 public static partial class PresentMonProbe
 {
+    private sealed record PresentMonCsvRows(
+        bool HasHeader,
+        IReadOnlyList<PresentMonRow> Rows,
+        bool DisplayedTimeColumnPresent,
+        bool DisplayChangeColumnPresent);
+
     private sealed record PresentMonRow(
         int RowIndex,
         string SwapChainAddress,

@@ -2016,14 +2016,19 @@ summary, swap-chain, correlation, and metric DTOs.
 `tools/Common/PresentMonProbe.ResultMessage.cs` owns success, expected-swap-chain
 mismatch, and no-frame result-message shaping.
 `tools/Common/PresentMonProbe.Format.cs` owns result text formatting while
-`tools/Common/PresentMonProbe.Csv.cs` owns CSV parse overloads, row projection,
-and summary assembly. `PresentMonProbe.Csv.Fields.cs` owns header/field parsing
-and CSV line tokenization. `PresentMonProbe.Csv.SwapChains.cs` owns swap-chain
-normalization, artifact filtering, and selected-chain summaries.
+`tools/Common/PresentMonProbe.Csv.cs` owns CSV parse overloads, selected-row
+filtering, summary assembly, and handoff to row/swap-chain/warning/correlation
+helpers. `PresentMonProbe.Csv.Rows.cs` owns row ingestion, header index
+construction, schema-presence detection, blank-line skipping, row index
+assignment, and row projection from header-indexed fields.
+`PresentMonProbe.Csv.Fields.cs` owns header/field parsing, scalar field/metric
+reads, and CSV line tokenization. `PresentMonProbe.Csv.SwapChains.cs` owns
+swap-chain normalization, artifact filtering, and selected-chain summaries.
 `PresentMonProbe.Csv.Correlation.cs` owns app-present correlation, while
 `PresentMonProbe.Csv.Summary.cs` owns warnings, counted text fields, and
 percentile metric aggregation. `PresentMonProbe.Csv.Models.cs` owns the private
-parsed-row shape. `PresentMonProbe.cs` keeps the public run orchestration.
+parsed CSV handoff and row shapes. `PresentMonProbe.cs` keeps the public run
+orchestration.
 `PresentMonProbe.Paths.cs` owns target process,
 PresentMon executable, and output-path resolution. `PresentMonProbe.Arguments.cs`
 owns command-line construction and argument quoting. `PresentMonProbe.Process.cs`
