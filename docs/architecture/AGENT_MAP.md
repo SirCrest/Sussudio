@@ -1354,12 +1354,13 @@ Primary current owners:
   adapter; scrub/playback commands remain in `MainWindow.Flashback.cs`.
 - `Sussudio/MainWindow.FlashbackScrub.cs` owns active Flashback pointer-scrub
   state, scrub throttling, release/cancel/capture-lost cleanup, and timeline
-  fraction/duration geometry helpers used by marker and playhead presentation.
+  fraction/duration geometry helpers used by scrub and playhead presentation.
 - `Sussudio/MainWindow.FlashbackPlayhead.cs` owns Flashback current-time-
   indicator compositor visuals, magnetic scrub movement, long-horizon linear
   playhead extrapolation, and CTI anchor timing.
-- `Sussudio/MainWindow.FlashbackMarkers.cs` owns Flashback marker placement,
-  selection-region layout, and compact duration text formatting.
+- `Sussudio/Controllers/FlashbackMarkerPresentationController.cs` owns
+  Flashback marker placement, selection-region layout, and compact duration
+  text formatting. `MainWindow.FlashbackMarkers.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/FlashbackPollingController.cs` owns Flashback status
   and playback-position polling timers. `MainWindow.FlashbackPolling.cs` is the
   XAML-facing adapter; CTI anchor timing stays with playhead motion.

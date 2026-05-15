@@ -36,7 +36,7 @@ static partial class Program
             "Flashback playhead motion lives in focused partial",
             FlashbackPlayheadMotion_LivesInFocusedPartial);
         await AddCheckAsync(results,
-            "Flashback marker presentation lives in focused partial",
-            FlashbackMarkerPresentation_LivesInFocusedPartial);
+            "Flashback marker presentation lives in controller",
+            FlashbackMarkerPresentation_LivesInController);
     }
 }

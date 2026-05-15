@@ -1287,7 +1287,7 @@ commands remain in `MainWindow.Flashback.cs`.
 Active Flashback pointer-scrub state now lives in
 `Sussudio/MainWindow.FlashbackScrub.cs`. It owns scrub throttling,
 release/cancel/capture-lost cleanup, and the timeline fraction/duration
-geometry helpers that marker and playhead presentation share.
+geometry helpers used by scrub and playhead presentation.
 
 Flashback CTI/playhead compositor state now lives in
 `Sussudio/MainWindow.FlashbackPlayhead.cs`. It owns magnetic scrub movement,
@@ -1295,8 +1295,9 @@ long-horizon linear playhead extrapolation, and CTI anchor timing; the broader
 Flashback partial keeps command handling and toggle/apply workflows.
 
 Flashback marker placement and compact duration text now live in
-`Sussudio/MainWindow.FlashbackMarkers.cs`, including in/out marker visibility,
-selection-region layout, and `m:ss` formatting.
+`Sussudio/Controllers/FlashbackMarkerPresentationController.cs`, including
+in/out marker visibility, selection-region layout, and `m:ss` formatting.
+`MainWindow.FlashbackMarkers.cs` is the XAML-facing adapter.
 
 Flashback playback in/out marker state and marker command handling now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs`. Keep
