@@ -169,7 +169,16 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
         var recordingOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.RecordingOptionBindings.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
+        var controllerRootText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
+        var controllerContextText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.Context.cs").Replace("\r\n", "\n");
+        var controllerInitializationText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.Initialization.cs").Replace("\r\n", "\n");
+        var controllerSelectionHandlersText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.SelectionHandlers.cs").Replace("\r\n", "\n");
+        var controllerText = string.Join(
+            "\n",
+            controllerRootText,
+            controllerContextText,
+            controllerInitializationText,
+            controllerSelectionHandlersText);
         var selectionBindingControllerText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
         var recordingOptionBindingsWithoutVideoFormat = recordingOptionBindingsText.Replace("VideoFormatComboBox.SelectionChanged +=", string.Empty);
 
@@ -193,8 +202,26 @@ static partial class Program
         AssertContains(recordingOptionBindingsText, "=> _captureOptionBindingController.AttachRecordingOptionBindings();");
         AssertContains(mainWindowText, "InitializeCaptureOptionBindingController();");
 
-        AssertContains(controllerText, "internal sealed class CaptureOptionBindingControllerContext");
-        AssertContains(controllerText, "internal sealed class CaptureOptionBindingController");
+        AssertContains(controllerRootText, "internal sealed partial class CaptureOptionBindingController");
+        AssertContains(controllerRootText, "private readonly CaptureOptionBindingControllerContext _context;");
+        AssertContains(controllerRootText, "public CaptureOptionBindingController(CaptureOptionBindingControllerContext context)");
+        AssertContains(controllerContextText, "internal sealed class CaptureOptionBindingControllerContext");
+        AssertContains(controllerInitializationText, "public void InitializeCollections()");
+        AssertContains(controllerInitializationText, "public void ApplyInitialSelections()");
+        AssertContains(controllerInitializationText, "public void EnsureInitialSelections()");
+        AssertContains(controllerSelectionHandlersText, "public void AttachCaptureModeSelectionBindings()");
+        AssertContains(controllerSelectionHandlersText, "public void AttachRecordingOptionBindings()");
+        AssertDoesNotContain(controllerSelectionHandlersText, "public void InitializeCollections()");
+        AssertDoesNotContain(controllerSelectionHandlersText, "public void ApplyInitialSelections()");
+        AssertDoesNotContain(controllerSelectionHandlersText, "public void EnsureInitialSelections()");
+        AssertDoesNotContain(controllerInitializationText, "public void AttachCaptureModeSelectionBindings()");
+        AssertDoesNotContain(controllerInitializationText, "public void AttachRecordingOptionBindings()");
+        AssertDoesNotContain(controllerRootText, "public void InitializeCollections()");
+        AssertDoesNotContain(controllerRootText, "public void ApplyInitialSelections()");
+        AssertDoesNotContain(controllerRootText, "public void EnsureInitialSelections()");
+        AssertDoesNotContain(controllerRootText, "public void AttachCaptureModeSelectionBindings()");
+        AssertDoesNotContain(controllerRootText, "public void AttachRecordingOptionBindings()");
+        AssertDoesNotContain(controllerRootText, "internal sealed class CaptureOptionBindingControllerContext");
         AssertContains(controllerText, "public void InitializeCollections()");
         AssertContains(controllerText, "_context.VideoFormatComboBox.ItemsSource = _context.ViewModel.AvailableVideoFormats;");
         AssertContains(controllerText, "for (var i = 1; i <= 8; i++)");

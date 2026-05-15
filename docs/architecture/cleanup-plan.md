@@ -467,8 +467,8 @@ projection and event hookup now live in
 `Sussudio/Controllers/AudioControlBindingController.cs`, with
 `Sussudio/MainWindow.AudioBindings.cs` left as the XAML-facing adapter;
 video-format collection setup, initial capture/recording option projection, and
-code-attached resolution/frame-rate handlers now live in
-`Sussudio/Controllers/CaptureOptionBindingController.cs`, with
+code-attached resolution/frame-rate handlers now live in the
+`Sussudio/Controllers/CaptureOptionBindingController*.cs` family, with
 `MainWindow.CaptureOptionBindings.cs` and
 `MainWindow.RecordingOptionBindings.cs` left as XAML-facing adapters.
 Flashback settings-control initialization, GPU decode binding/sync, and buffer
@@ -1604,13 +1604,17 @@ tooltip text policy now lives in
 the existing method names for binding setup, property-change projection, and
 the XAML decoder-count selection event.
 
-Capture option binding setup now lives in
-`Sussudio/Controllers/CaptureOptionBindingController.cs`: video-format
-collection setup, initial capture/recording option projection,
-resolution/frame-rate selection handlers, video-format/custom-bitrate event
-bindings, and click-based HDR/true-HDR toggle bindings. The controller delegates
-presentation affordances back through the capture-option presentation adapter
-and delegates recording format/quality/preset/split-encode string selection to
+Capture option binding setup now lives in the
+`Sussudio/Controllers/CaptureOptionBindingController*.cs` family:
+`CaptureOptionBindingController.cs` is the controller shell,
+`CaptureOptionBindingController.Context.cs` owns the XAML/view-model adapter
+context, `CaptureOptionBindingController.Initialization.cs` owns video-format
+collection setup and initial capture/recording option projection, and
+`CaptureOptionBindingController.SelectionHandlers.cs` owns resolution/frame-rate
+selection handlers, video-format/custom-bitrate event bindings, and click-based
+HDR/true-HDR toggle bindings. The controller delegates presentation affordances
+back through the capture-option presentation adapter and delegates recording
+format/quality/preset/split-encode string selection to
 `CaptureSelectionBindingController`. `MainWindow.CaptureOptionBindings.cs` and
 `MainWindow.RecordingOptionBindings.cs` keep only the old method names used by
 `SetupBindings()`.
