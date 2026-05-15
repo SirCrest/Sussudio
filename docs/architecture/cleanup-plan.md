@@ -1704,6 +1704,12 @@ Preview-specific ViewModel events and property-change projections now live in
 `MainWindow.PropertyChanged.cs` dispatcher still routes `PropertyChanged`
 notifications, but preview start/stop/reinit choreography has a named owner.
 
+Bottom status-strip projection now lives in
+`Sussudio/Controllers/StatusStripPresentationController.cs`, while
+`Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing adapter and
+owns the status-strip `PropertyChanged` router. Recording-time updates still
+refresh the window title only while recording.
+
 Recording-state UI projection now lives in
 `Sussudio/Controllers/RecordingStatePresentationController.cs`: record-button
 content, recording glow, recording pulse, FFmpeg/transition button enablement,

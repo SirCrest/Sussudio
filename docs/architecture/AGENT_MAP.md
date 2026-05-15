@@ -723,7 +723,9 @@ Primary current owners:
   status-strip projection: status text, recording time, disk warning,
   disk-space text, recording size, recording bitrate, and the Flashback bitrate
   fallback used while Flashback is enabled and recording is idle.
-  `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing adapter.
+  `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing adapter,
+  owns the status-strip `PropertyChanged` router, and preserves the
+  recording-only title refresh on recording-time updates.
 - `Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`,
   automation close completion, and recording-aware pre-close protection.
 - `Sussudio/MainWindow.ShutdownCleanup.cs` owns `Closed` shutdown cleanup:
@@ -746,8 +748,9 @@ Primary current owners:
   capture-device, recording, output-path, and preview-screenshot buttons live in
   their feature adapter partials beside the owning controllers.
 - `Sussudio/MainWindow.PropertyChanged.cs` owns the root ViewModel
-  PropertyChanged dispatcher; capture-selection routing now delegates to
-  `MainWindow.CaptureSelectionBindings.cs`, and other feature-specific property
+  PropertyChanged dispatcher; capture-selection routing delegates to
+  `MainWindow.CaptureSelectionBindings.cs`, status-strip routing delegates to
+  `MainWindow.StatusStripPresentation.cs`, and other feature-specific property
   projections stay in the `MainWindow.PropertyChanged*.cs` partials or named
   presentation controllers.
 - `Sussudio/Controllers/CompositionShadowFadeAnimator.cs` owns shared

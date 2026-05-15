@@ -22,6 +22,11 @@ public sealed partial class MainWindow
             return;
         }
 
+        if (TryHandleStatusStripPropertyChanged(e.PropertyName))
+        {
+            return;
+        }
+
         switch (e.PropertyName)
         {
             case nameof(MainViewModel.IsPreviewing):
@@ -34,26 +39,6 @@ public sealed partial class MainWindow
 
             case nameof(MainViewModel.IsRecording):
                 HandleRecordingChanged();
-                break;
-
-            case nameof(MainViewModel.StatusText):
-                UpdateStatusTextPresentation();
-                break;
-
-            case nameof(MainViewModel.RecordingTime):
-                UpdateRecordingTimePresentation();
-                if (ViewModel.IsRecording)
-                    ApplyWindowTitle();
-                break;
-
-            case nameof(MainViewModel.DiskSpaceInfo):
-                UpdateDiskSpacePresentation();
-                break;
-            case nameof(MainViewModel.RecordingSizeInfo):
-                UpdateRecordingSizePresentation();
-                break;
-            case nameof(MainViewModel.RecordingBitrateInfo):
-                UpdateRecordingBitratePresentation();
                 break;
 
             case nameof(MainViewModel.OutputPath):
@@ -214,10 +199,6 @@ public sealed partial class MainWindow
 
             case nameof(MainViewModel.IsFlashbackExporting):
                 HandleFlashbackExportingChanged();
-                break;
-
-            case nameof(MainViewModel.IsDiskWarningActive):
-                UpdateDiskWarningPresentation();
                 break;
 
             case nameof(MainViewModel.FlashbackGpuDecode):

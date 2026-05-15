@@ -1,4 +1,5 @@
 using Sussudio.Controllers;
+using Sussudio.ViewModels;
 
 namespace Sussudio;
 
@@ -29,6 +30,44 @@ public sealed partial class MainWindow
             ViewModel.RecordingSizeInfo,
             ViewModel.RecordingBitrateInfo,
             ViewModel.IsDiskWarningActive));
+
+    private bool TryHandleStatusStripPropertyChanged(string? propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.StatusText):
+                UpdateStatusTextPresentation();
+                return true;
+
+            case nameof(MainViewModel.RecordingTime):
+                UpdateRecordingTimePresentation();
+                if (ViewModel.IsRecording)
+                {
+                    ApplyWindowTitle();
+                }
+
+                return true;
+
+            case nameof(MainViewModel.DiskSpaceInfo):
+                UpdateDiskSpacePresentation();
+                return true;
+
+            case nameof(MainViewModel.RecordingSizeInfo):
+                UpdateRecordingSizePresentation();
+                return true;
+
+            case nameof(MainViewModel.RecordingBitrateInfo):
+                UpdateRecordingBitratePresentation();
+                return true;
+
+            case nameof(MainViewModel.IsDiskWarningActive):
+                UpdateDiskWarningPresentation();
+                return true;
+
+            default:
+                return false;
+        }
+    }
 
     private void UpdateStatusTextPresentation()
         => _statusStripPresentationController.UpdateStatusText(ViewModel.StatusText);
