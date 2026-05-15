@@ -522,8 +522,10 @@ now lives in `Sussudio/Controllers/PreviewResizeTelemetryController.cs`.
 surface sizing, GPU panel visibility, and video/control-bar composition shadows
 now live in `Sussudio/Controllers/PreviewSurfacePresentationController.cs`,
 while `Sussudio/MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
+`Sussudio/Controllers/PreviewRendererStartupPlanBuilder.cs` owns renderer
+startup dimension/fps/HDR/min-present-interval planning.
 `MainWindow.PreviewRenderer.cs` keeps preview renderer instances, frame
-counters, expected-present interval, and renderer cadence state.
+counters, and renderer cadence state.
 `Sussudio/MainWindow.PreviewRendererReinit.cs` owns preview renderer reinit
 safety telemetry, fresh SwapChainPanel replacement, and retired-renderer handoff
 during D3D renderer mode switches.

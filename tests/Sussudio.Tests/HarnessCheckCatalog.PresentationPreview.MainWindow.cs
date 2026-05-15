@@ -43,6 +43,9 @@ static partial class Program
             "Preview renderer runtime state lives in renderer partial",
             PreviewRendererRuntimeState_LivesInRendererPartial);
         await AddCheckAsync(results,
+            "Preview renderer startup plan builder preserves fallback policy",
+            PreviewRendererStartupPlanBuilder_PreservesFallbackPolicy);
+        await AddCheckAsync(results,
             "Preview runtime snapshot controller preserves null-D3D policy",
             PreviewRuntimeSnapshotController_PreservesNullD3dProjectionPolicy);
         await AddCheckAsync(results,

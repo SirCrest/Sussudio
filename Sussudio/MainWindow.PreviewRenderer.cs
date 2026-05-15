@@ -5,7 +5,6 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Hosting;
 using Sussudio.Controllers;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
 using Sussudio.Services.Preview;
 
 namespace Sussudio;
@@ -22,16 +21,12 @@ public sealed partial class MainWindow
     private long _previewLastPresentedTick;
     private double _previewMinPresentationIntervalMs;
 
-    private double ResolvePreviewExpectedIntervalMs()
-    {
-        var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;
-        if (sourceFps <= 0)
-        {
-            sourceFps = 60;
-        }
-
-        return Math.Max(1.0, 1000.0 / sourceFps);
-    }
+    private PreviewRendererStartupPlan BuildPreviewRendererStartupPlan()
+        => PreviewRendererStartupPlanBuilder.Build(
+            ViewModel.IsPreviewing,
+            ViewModel.SelectedFormat,
+            ViewModel.IsPreviewing ? ViewModel.BuildCurrentSettings() : null,
+            ViewModel.IsPreviewing ? ViewModel.ProbeVideoSource() : null);
 
     private void OnD3DRendererFirstFrameRendered()
     {
@@ -110,24 +105,15 @@ public sealed partial class MainWindow
         _previewFramesDropped = 0;
         ResetPreviewResizeTelemetry();
         _previewLastPresentedTick = 0;
-        _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
+        var startupPlan = BuildPreviewRendererStartupPlan();
+        _previewMinPresentationIntervalMs = startupPlan.PreviewMinPresentationIntervalMs;
 
-        var useD3dRenderer = ViewModel.IsPreviewing;
-        if (useD3dRenderer)
+        if (startupPlan.UseD3DRenderer)
         {
-            var settings = ViewModel.BuildCurrentSettings();
-            var sourceProbe = ViewModel.ProbeVideoSource();
-            var isHdr = settings != null && HdrOutputPolicy.IsEnabled(settings);
-            var width = (int)(settings?.Width ?? 1920);
-            var height = (int)(settings?.Height ?? 1080);
-            var fps = settings?.FrameRate ?? 60.0;
-            var negotiatedWidth = sourceProbe.SessionActive ? sourceProbe.CurrentWidth : 0;
-            var negotiatedHeight = sourceProbe.SessionActive ? sourceProbe.CurrentHeight : 0;
-            var negotiatedFps = sourceProbe.SessionActive ? sourceProbe.CurrentFrameRate : 0.0;
-            var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : width;
-            var rendererHeight = negotiatedHeight > 0 ? negotiatedHeight : height;
-            var rendererFps = negotiatedFps > 0 ? negotiatedFps : fps;
-            _previewMinPresentationIntervalMs = Math.Max(1.0, 1000.0 / rendererFps);
+            var rendererWidth = startupPlan.RendererWidth;
+            var rendererHeight = startupPlan.RendererHeight;
+            var rendererFps = startupPlan.RendererFps;
+            var isHdr = startupPlan.IsHdr;
 
             var replacingReinitSurface = _d3dRenderer != null && _isPreviewReinitAnimating;
             if (replacingReinitSurface)

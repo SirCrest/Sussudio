@@ -51,6 +51,7 @@ static partial class Program
         var previewRendererReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewRendererReinit.cs").Replace("\r\n", "\n");
         var previewSurfaceText = ReadRepoFile("Sussudio/MainWindow.PreviewSurface.cs").Replace("\r\n", "\n");
         var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/PreviewSurfacePresentationController.cs").Replace("\r\n", "\n");
+        var previewRendererStartupPlanBuilderText = ReadRepoFile("Sussudio/Controllers/PreviewRendererStartupPlanBuilder.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
         var statsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsSnapshot.cs").Replace("\r\n", "\n");
@@ -97,7 +98,20 @@ static partial class Program
         AssertContains(previewRendererReinitText, "PREVIEW_REINIT_SWAPCHAIN_PANEL_REPLACED");
         AssertContains(previewRendererText, "RecordPreviewRendererReinitUnsafeWindow(_d3dRenderer, _isPreviewReinitAnimating);");
         AssertContains(previewRendererText, "MarkPreviewRendererStopped();");
-        AssertContains(previewRendererText, "private double ResolvePreviewExpectedIntervalMs()");
+        AssertContains(previewRendererText, "private PreviewRendererStartupPlan BuildPreviewRendererStartupPlan()");
+        AssertContains(previewRendererText, "PreviewRendererStartupPlanBuilder.Build(");
+        AssertContains(previewRendererText, "var startupPlan = BuildPreviewRendererStartupPlan();");
+        AssertContains(previewRendererText, "_previewMinPresentationIntervalMs = startupPlan.PreviewMinPresentationIntervalMs;");
+        AssertContains(previewRendererStartupPlanBuilderText, "internal sealed record PreviewRendererStartupPlan(");
+        AssertContains(previewRendererStartupPlanBuilderText, "internal static class PreviewRendererStartupPlanBuilder");
+        AssertContains(previewRendererStartupPlanBuilderText, "private const int DefaultWidth = 1920;");
+        AssertContains(previewRendererStartupPlanBuilderText, "private const int DefaultHeight = 1080;");
+        AssertContains(previewRendererStartupPlanBuilderText, "private const double DefaultFps = 60.0;");
+        AssertContains(previewRendererStartupPlanBuilderText, "public static double ResolveExpectedIntervalMs(MediaFormat? selectedFormat)");
+        AssertContains(previewRendererStartupPlanBuilderText, "public static PreviewRendererStartupPlan Build(");
+        AssertContains(previewRendererStartupPlanBuilderText, "var negotiatedWidth = sourceProbe?.SessionActive == true ? sourceProbe.CurrentWidth : 0;");
+        AssertContains(previewRendererStartupPlanBuilderText, "var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : settingsWidth;");
+        AssertContains(previewRendererStartupPlanBuilderText, "var rendererFps = negotiatedFps > 0 ? negotiatedFps : settingsFps;");
         AssertContains(previewRuntimeSnapshotText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
         AssertContains(previewRuntimeSnapshotText, "return GetPreviewRuntimeSnapshot();");
         AssertContains(previewRuntimeSnapshotText, "completion.TrySetResult(GetPreviewRuntimeSnapshot());");
@@ -115,9 +129,9 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotControllerText, "return new PreviewRuntimeSnapshot");
         AssertContains(previewRuntimeSnapshotControllerText, "BlankSuspected = blankSuspected,");
         AssertContains(previewRuntimeSnapshotControllerText, "StallSuspected = stallSuspected,");
-        AssertContains(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
-        AssertContains(previewRendererText, "return Math.Max(1.0, 1000.0 / sourceFps);");
-        AssertContains(previewRendererText, "_previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();");
+        AssertDoesNotContain(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
+        AssertDoesNotContain(previewRendererText, "var negotiatedWidth = sourceProbe.SessionActive ? sourceProbe.CurrentWidth : 0;");
+        AssertDoesNotContain(previewRendererText, "var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : width;");
         AssertContains(statsSnapshotText, "GetPreviewMinPresentationIntervalMs = () => _previewMinPresentationIntervalMs");
         AssertContains(statsSnapshotProviderText, "BuildRenderMetrics(_context.GetRenderer(), _context.GetPreviewMinPresentationIntervalMs())");
         AssertContains(statsSnapshotProviderRenderMetricsText, "GetPresentCadenceMetrics(previewMinPresentationIntervalMs)");
@@ -152,6 +166,77 @@ static partial class Program
         AssertDoesNotContain(previewRendererText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
         AssertDoesNotContain(previewRendererText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
         AssertDoesNotContain(mainWindowText, "private static bool IsHdrSubtype");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewRendererStartupPlanBuilder_PreservesFallbackPolicy()
+    {
+        var builderType = RequireType("Sussudio.Controllers.PreviewRendererStartupPlanBuilder");
+        var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
+        var captureSettingsType = RequireType("Sussudio.Models.CaptureSettings");
+        var sourceProbeType = RequireType("Sussudio.Models.VideoSourceProbeResult");
+        var hdrOutputModeType = RequireType("Sussudio.Models.HdrOutputMode");
+        var build = builderType.GetMethod("Build")
+            ?? throw new InvalidOperationException("PreviewRendererStartupPlanBuilder.Build was not found.");
+        var resolveExpectedIntervalMs = builderType.GetMethod("ResolveExpectedIntervalMs")
+            ?? throw new InvalidOperationException("PreviewRendererStartupPlanBuilder.ResolveExpectedIntervalMs was not found.");
+
+        var fallbackInterval = (double)(resolveExpectedIntervalMs.Invoke(null, new object?[] { null }) ?? 0.0);
+        AssertNearlyEqual(1000.0 / 60.0, fallbackInterval, 0.0001, "default preview renderer interval");
+
+        var selectedFormat = Activator.CreateInstance(mediaFormatType)!;
+        SetPropertyOrBackingField(selectedFormat, "FrameRate", 30.0);
+
+        var inactivePlan = build.Invoke(null, new object?[] { false, selectedFormat, null, null })!;
+        AssertEqual(false, GetBoolProperty(inactivePlan, "UseD3DRenderer"), "inactive preview plan mode");
+        AssertEqual(1920, GetIntProperty(inactivePlan, "RendererWidth"), "inactive default width");
+        AssertEqual(1080, GetIntProperty(inactivePlan, "RendererHeight"), "inactive default height");
+        AssertNearlyEqual(60.0, GetDoubleProperty(inactivePlan, "RendererFps"), 0.0001, "inactive default renderer FPS");
+        AssertNearlyEqual(1000.0 / 30.0, GetDoubleProperty(inactivePlan, "PreviewMinPresentationIntervalMs"), 0.0001, "inactive selected-format interval");
+
+        var settings = Activator.CreateInstance(captureSettingsType)!;
+        SetPropertyOrBackingField(settings, "Width", (uint)2560);
+        SetPropertyOrBackingField(settings, "Height", (uint)1440);
+        SetPropertyOrBackingField(settings, "FrameRate", 144.0);
+        var inactiveSourceProbe = Activator.CreateInstance(sourceProbeType)!;
+        SetPropertyOrBackingField(inactiveSourceProbe, "SessionActive", false);
+
+        var settingsPlan = build.Invoke(null, new object?[] { true, selectedFormat, settings, inactiveSourceProbe })!;
+        AssertEqual(true, GetBoolProperty(settingsPlan, "UseD3DRenderer"), "active preview plan mode");
+        AssertEqual(2560, GetIntProperty(settingsPlan, "RendererWidth"), "settings fallback width");
+        AssertEqual(1440, GetIntProperty(settingsPlan, "RendererHeight"), "settings fallback height");
+        AssertNearlyEqual(144.0, GetDoubleProperty(settingsPlan, "RendererFps"), 0.0001, "settings fallback FPS");
+        AssertNearlyEqual(1000.0 / 144.0, GetDoubleProperty(settingsPlan, "PreviewMinPresentationIntervalMs"), 0.0001, "settings fallback interval");
+
+        var activeSourceProbe = Activator.CreateInstance(sourceProbeType)!;
+        SetPropertyOrBackingField(activeSourceProbe, "SessionActive", true);
+        SetPropertyOrBackingField(activeSourceProbe, "CurrentWidth", 3840);
+        SetPropertyOrBackingField(activeSourceProbe, "CurrentHeight", 2160);
+        SetPropertyOrBackingField(activeSourceProbe, "CurrentFrameRate", 119.88);
+        var sourcePlan = build.Invoke(null, new object?[] { true, selectedFormat, settings, activeSourceProbe })!;
+        AssertEqual(3840, GetIntProperty(sourcePlan, "RendererWidth"), "active source width");
+        AssertEqual(2160, GetIntProperty(sourcePlan, "RendererHeight"), "active source height");
+        AssertNearlyEqual(119.88, GetDoubleProperty(sourcePlan, "RendererFps"), 0.0001, "active source FPS");
+        AssertNearlyEqual(1000.0 / 119.88, GetDoubleProperty(sourcePlan, "PreviewMinPresentationIntervalMs"), 0.0001, "active source interval");
+
+        var previousForceOff = Environment.GetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF");
+        try
+        {
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", null);
+            SetPropertyOrBackingField(settings, "HdrEnabled", true);
+            SetPropertyOrBackingField(settings, "HdrOutputMode", Enum.Parse(hdrOutputModeType, "Hdr10Pq"));
+            var hdrPlan = build.Invoke(null, new object?[] { true, selectedFormat, settings, inactiveSourceProbe })!;
+            AssertEqual(true, GetBoolProperty(hdrPlan, "IsHdr"), "HDR plan follows HDR output policy");
+
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", "true");
+            var forceOffPlan = build.Invoke(null, new object?[] { true, selectedFormat, settings, inactiveSourceProbe })!;
+            AssertEqual(false, GetBoolProperty(forceOffPlan, "IsHdr"), "HDR plan honors force-off policy");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", previousForceOff);
+        }
 
         return Task.CompletedTask;
     }

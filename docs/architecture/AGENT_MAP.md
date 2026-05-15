@@ -718,8 +718,10 @@ Primary current owners:
 - `Sussudio/Controllers/PreviewResizeTelemetryController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
   transforms. `MainWindow.WindowSizing.cs` is the `SizeChanged` adapter.
+  `Sussudio/Controllers/PreviewRendererStartupPlanBuilder.cs` owns renderer
+  startup dimension/fps/HDR/min-present-interval planning.
   `MainWindow.PreviewRenderer.cs` owns preview renderer instances, frame
-  counters, expected-present interval, and renderer cadence state.
+  counters, and renderer cadence state.
   `MainWindow.PreviewRendererReinit.cs` owns preview renderer reinit safety
   telemetry, fresh SwapChainPanel replacement, and retired-renderer handoff.
   `Sussudio/Controllers/PreviewSurfacePresentationController.cs` owns preview
