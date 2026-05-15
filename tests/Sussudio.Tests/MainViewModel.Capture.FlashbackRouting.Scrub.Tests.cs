@@ -19,6 +19,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackPlayheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs")
             .Replace("\r\n", "\n");
+        var flashbackCtiMotionText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs")
+            .Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var fullScreenWindowText = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs")
@@ -74,7 +76,8 @@ static partial class Program
         AssertContains(flashbackGeometryText, "public static TimeSpan ComputePosition(double fraction, TimeSpan bufferDuration)");
         AssertContains(flashbackGeometryText, "public static bool IsUsableTrackDimension(double value)");
         AssertContains(flashbackGeometryText, "public static bool IsUsableDuration(TimeSpan value)");
-        AssertContains(flashbackPlayheadText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
+        AssertContains(flashbackCtiMotionText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
+        AssertDoesNotContain(flashbackPlayheadText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
         AssertDoesNotContain(flashbackScrubText, "private static bool TryComputeFlashbackTimelineFraction(double x, double width, out double fraction)");
         AssertDoesNotContain(flashbackScrubText, "private static bool IsUsableFlashbackTrackDimension(double value)");
         AssertDoesNotContain(flashbackScrubText, "private static bool IsUsableFlashbackDuration(TimeSpan value)");

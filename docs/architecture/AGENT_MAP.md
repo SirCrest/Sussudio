@@ -1427,8 +1427,9 @@ Primary current owners:
   `Sussudio/Controllers/FlashbackTimelineGeometry.cs` owns pure timeline
   fraction/duration math used by scrub and playhead presentation.
 - `Sussudio/MainWindow.FlashbackPlayhead.cs` owns Flashback current-time-
-  indicator compositor visuals, magnetic scrub movement, long-horizon linear
-  playhead extrapolation, and CTI anchor timing.
+  indicator compositor visual setup, snap placement, and magnetic pointer-scrub
+  movement. `Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs` owns
+  long-horizon linear playhead extrapolation and CTI anchor timing.
 - `Sussudio/Controllers/FlashbackMarkerPresentationController.cs` owns
   Flashback marker placement, selection-region layout, and compact duration
   text formatting. `MainWindow.FlashbackMarkers.cs` is the XAML-facing adapter.

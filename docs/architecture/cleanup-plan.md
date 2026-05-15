@@ -1416,10 +1416,12 @@ commands. Timeline fraction/duration math used by scrub and playhead
 presentation now lives in
 `Sussudio/Controllers/FlashbackTimelineGeometry.cs`.
 
-Flashback CTI/playhead compositor state now lives in
-`Sussudio/MainWindow.FlashbackPlayhead.cs`. It owns magnetic scrub movement,
-long-horizon linear playhead extrapolation, and CTI anchor timing; command
-handling and toggle/apply workflows now live in the command controller.
+Flashback CTI/playhead compositor visuals now live in
+`Sussudio/MainWindow.FlashbackPlayhead.cs`. It owns visual setup, snap
+placement, and magnetic scrub movement. Long-horizon linear playhead
+extrapolation and CTI anchor timing live in
+`Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs`; command handling and
+toggle/apply workflows now live in the command controller.
 
 Flashback marker placement and compact duration text now live in
 `Sussudio/Controllers/FlashbackMarkerPresentationController.cs`, including
