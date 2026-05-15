@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json;
 using static Sussudio.Tools.DiagnosticSessionSampler;
 
@@ -18,19 +17,17 @@ public static class DiagnosticSessionRunner
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(sendCommandAsync);
 
-        var scenario = DiagnosticSessionScenarios.Normalize(options.Scenario);
-        var durationSeconds = Math.Clamp(options.DurationSeconds, 0, 24 * 60 * 60);
-        var sampleIntervalMs = Math.Clamp(options.SampleIntervalMs, 100, 60_000);
-        var sessionId = DateTimeOffset.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
-        var outputDirectory = string.IsNullOrWhiteSpace(options.OutputDirectory)
-            ? Path.Combine(Environment.CurrentDirectory, "temp", "diagnostic-sessions", sessionId)
-            : Path.GetFullPath(options.OutputDirectory);
-        Directory.CreateDirectory(outputDirectory);
+        var runBootstrap = DiagnosticSessionRunBootstrap.Create(options);
+        var scenario = runBootstrap.Scenario;
+        var scenarioPlan = runBootstrap.ScenarioPlan;
+        var durationSeconds = runBootstrap.DurationSeconds;
+        var sampleIntervalMs = runBootstrap.SampleIntervalMs;
+        var sessionId = runBootstrap.SessionId;
+        var outputDirectory = runBootstrap.OutputDirectory;
+        var startedUtc = runBootstrap.StartedUtc;
+        var runnerProcessId = runBootstrap.RunnerProcessId;
 
         using var sessionLock = DiagnosticSessionOutputLock.Acquire(outputDirectory);
-
-        var startedUtc = DateTimeOffset.UtcNow;
-        var runnerProcessId = Environment.ProcessId;
 
         var actions = new List<string>();
         var warnings = new List<string>();
@@ -52,8 +49,6 @@ public static class DiagnosticSessionRunner
         var disabledFlashback = false;
         var startedFlashbackPlayback = false;
         var stoppedRecordingForVerification = false;
-        var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);
-        var runFlashbackPlayback = scenarioPlan.RunFlashbackPlayback;
         FlashbackRecordingSettingsDeferredPresetState flashbackRecordingSettingsDeferredPresetState = default;
         using var scenarioCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var scenarioCancellationToken = scenarioCts.Token;

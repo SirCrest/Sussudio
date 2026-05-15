@@ -116,6 +116,37 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task DiagnosticSessionRunBootstrap_OwnsNormalizedSessionIdentity()
+    {
+        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        var bootstrapText = ReadRepoFile("tools/Common/DiagnosticSessionRunBootstrap.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(bootstrapText, "internal readonly record struct DiagnosticSessionRunBootstrap(");
+        AssertContains(bootstrapText, "internal static DiagnosticSessionRunBootstrap Create(DiagnosticSessionOptions options)");
+        AssertContains(bootstrapText, "var scenario = DiagnosticSessionScenarios.Normalize(options.Scenario);");
+        AssertContains(bootstrapText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
+        AssertContains(bootstrapText, "Math.Clamp(options.DurationSeconds, 0, 24 * 60 * 60)");
+        AssertContains(bootstrapText, "Math.Clamp(options.SampleIntervalMs, 100, 60_000)");
+        AssertContains(bootstrapText, "DateTimeOffset.UtcNow.ToString(\"yyyyMMdd_HHmmss\", CultureInfo.InvariantCulture)");
+        AssertContains(bootstrapText, "Path.Combine(Environment.CurrentDirectory, \"temp\", \"diagnostic-sessions\", sessionId)");
+        AssertContains(bootstrapText, "Path.GetFullPath(options.OutputDirectory)");
+        AssertContains(bootstrapText, "Directory.CreateDirectory(outputDirectory);");
+        AssertContains(bootstrapText, "Environment.ProcessId");
+        AssertContains(runnerText, "var runBootstrap = DiagnosticSessionRunBootstrap.Create(options);");
+        AssertContains(runnerText, "var scenarioPlan = runBootstrap.ScenarioPlan;");
+        AssertContains(runnerText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(outputDirectory);");
+        AssertDoesNotContain(runnerText, "DiagnosticSessionScenarios.Normalize(options.Scenario)");
+        AssertDoesNotContain(runnerText, "Math.Clamp(options.DurationSeconds");
+        AssertDoesNotContain(runnerText, "Math.Clamp(options.SampleIntervalMs");
+        AssertDoesNotContain(runnerText, "DateTimeOffset.UtcNow.ToString(\"yyyyMMdd_HHmmss\"");
+        AssertDoesNotContain(runnerText, "Directory.CreateDirectory(outputDirectory);");
+        AssertDoesNotContain(runnerText, "var runFlashbackPlayback = scenarioPlan.RunFlashbackPlayback;");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticSessionOutputLock_OwnsExclusiveOutputDirectoryLock()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")

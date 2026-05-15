@@ -1888,6 +1888,12 @@ terminal exception classification, `session-live.json` breadcrumbs, and
 best-effort artifact write failure recording while the runner keeps the
 scenario flow readable.
 
+Diagnostic-session run bootstrap now lives in
+`tools/Common/DiagnosticSessionRunBootstrap.cs`. It owns scenario
+normalization, scenario-plan selection, duration/sample clamping, session
+identity, output-directory creation, and runner process metadata while the
+runner keeps command-channel lifetime and phase ordering.
+
 Diagnostic-session output locking now lives in
 `tools/Common/DiagnosticSessionOutputLock.cs`. It owns the
 `.sussudio-diag.lock` file, exclusive `FileShare.None` open, delete-on-close
@@ -2184,6 +2190,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.Helpers.cs`
 - `DiagnosticSessionSummaryWriter.cs`
 - `DiagnosticSessionRunState.cs`
+- `DiagnosticSessionRunBootstrap.cs`
 - `DiagnosticSessionSampler.cs`
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioSetup.cs`

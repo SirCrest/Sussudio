@@ -41,6 +41,8 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var bootstrapText = ReadRepoFile("tools/Common/DiagnosticSessionRunBootstrap.cs")
+            .Replace("\r\n", "\n");
         var planText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
             .Replace("\r\n", "\n");
 
@@ -52,7 +54,8 @@ static partial class Program
         AssertContains(planText, "internal bool ToleratesSourceSignalHealthWarning");
         AssertContains(planText, "internal bool ToleratesFlashbackForceRotateDrainWarning");
         AssertContains(planText, "internal bool IsPreviewCycleScenario");
-        AssertContains(runnerText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
+        AssertContains(bootstrapText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
+        AssertContains(runnerText, "var scenarioPlan = runBootstrap.ScenarioPlan;");
         AssertDoesNotContain(runnerText, "scenario == \"flashback-playback\"");
         AssertDoesNotContain(runnerText, "scenario == \"flashback-stress\"");
         AssertDoesNotContain(runnerText, "scenario == \"combined\"");

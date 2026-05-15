@@ -42,6 +42,9 @@ static partial class Program
             "Diagnostic session run state has a named owner",
             DiagnosticSessionRunState_OwnsTerminalAndLiveState);
         await AddCheckAsync(results,
+            "Diagnostic session run bootstrap has a named owner",
+            DiagnosticSessionRunBootstrap_OwnsNormalizedSessionIdentity);
+        await AddCheckAsync(results,
             "Diagnostic session output lock has a named owner",
             DiagnosticSessionOutputLock_OwnsExclusiveOutputDirectoryLock);
         await AddCheckAsync(results,
