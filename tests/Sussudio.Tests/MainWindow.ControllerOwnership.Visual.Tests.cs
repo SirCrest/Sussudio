@@ -4,7 +4,6 @@ static partial class Program
 {
     private static Task ControlBarHoverAnimations_LiveInController()
     {
-        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var launchEntranceControllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBarAnimations.cs").Replace("\r\n", "\n");
@@ -23,9 +22,7 @@ static partial class Program
         AssertContains(controllerText, "public IReadOnlyList<FrameworkElement> EntranceButtons");
         AssertContains(controllerText, "public void AttachHoverAnimations()");
         AssertContains(controllerText, "private static void AnimateScale(");
-        AssertDoesNotContain(animationsText, "private FrameworkElement[] GetControlBarButtons()");
-        AssertDoesNotContain(animationsText, "private void SetupButtonHoverAnimations()");
-        AssertDoesNotContain(animationsText, "private static void AnimateScale(");
+        AssertDoesNotContain(adapterText, "private FrameworkElement[] GetControlBarButtons()");
 
         return Task.CompletedTask;
     }
@@ -60,11 +57,11 @@ static partial class Program
 
     private static Task PreviewTransitionAnimations_LiveInController()
     {
-        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var launchEntranceControllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
+        var shadowAnimatorText = ReadRepoFile("Sussudio/Controllers/CompositionShadowFadeAnimator.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;");
         AssertContains(adapterText, "private void InitializePreviewTransitionAnimationController()");
@@ -73,7 +70,8 @@ static partial class Program
         AssertContains(adapterText, "StopPreviewFadeInTimer = StopPreviewFadeInTimer,");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.AddPreviewShellEntranceAnimations(storyboard, easing, beginMs, durationMs);");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.ResetPreviewContentTransform();");
-        AssertContains(adapterText, "FadeOutShadow(_videoShadowVisual, durationMs: 150);");
+        AssertContains(adapterText, "CompositionShadowFadeAnimator.FadeOut(_videoShadowVisual, durationMs: 150);");
+        AssertContains(adapterText, "CompositionShadowFadeAnimator.FadeIn(_videoShadowVisual, delayMs: 0, durationMs: 400);");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.PrepareStartupPresentation();");
         AssertContains(adapterText, "=> PreviewTransitionAnimationController.FadeInElement(element);");
         AssertContains(mainWindowText, "InitializePreviewTransitionAnimationController();");
@@ -87,11 +85,17 @@ static partial class Program
         AssertContains(controllerText, "public static void FadeOutElement(UIElement element)");
         AssertContains(controllerText, "private Task AnimatePreviewTransitionAsync(");
         AssertContains(controllerText, "private static Task BeginStoryboardAsync(");
-        AssertDoesNotContain(animationsText, "private Task AnimatePreviewTransitionAsync(");
-        AssertDoesNotContain(animationsText, "private static Task BeginStoryboardAsync(");
-        AssertDoesNotContain(animationsText, "private void ResetPreviewContentTransform()");
-        AssertDoesNotContain(animationsText, "private void PreparePreviewStartupPresentation()");
-        AssertDoesNotContain(animationsText, "private static void FadeOutElement(UIElement element)");
+        AssertContains(shadowAnimatorText, "internal static class CompositionShadowFadeAnimator");
+        AssertContains(shadowAnimatorText, "public static void FadeIn(SpriteVisual? visual, int delayMs, int durationMs)");
+        AssertContains(shadowAnimatorText, "public static void FadeOut(SpriteVisual? visual, int durationMs)");
+        AssertContains(shadowAnimatorText, "if (visual == null) return;");
+        AssertContains(shadowAnimatorText, "CreateScalarKeyFrameAnimation()");
+        AssertContains(shadowAnimatorText, "animation.InsertKeyFrame(0f, 0f);");
+        AssertContains(shadowAnimatorText, "animation.InsertKeyFrame(1f, 1f, compositor.CreateCubicBezierEasingFunction(new Vector2(0.25f, 0.1f), new Vector2(0.25f, 1f)));");
+        AssertContains(shadowAnimatorText, "animation.DelayTime = TimeSpan.FromMilliseconds(delayMs);");
+        AssertContains(shadowAnimatorText, "visual.StartAnimation(\"Opacity\", animation);");
+        AssertDoesNotContain(adapterText, "private Task AnimatePreviewTransitionAsync(");
+        AssertDoesNotContain(adapterText, "private static Task BeginStoryboardAsync(");
 
         return Task.CompletedTask;
     }
@@ -160,7 +164,6 @@ static partial class Program
 
     private static Task RecordButtonWidthAnimation_LivesInController()
     {
-        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var recordingPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
@@ -180,8 +183,7 @@ static partial class Program
         AssertContains(controllerText, "public void AnimateWidth(double from, double to, Action? onCompleted = null)");
         AssertContains(controllerText, "Storyboard.SetTarget(anim, _context.RecordButton);");
         AssertContains(controllerText, "_context.RecordButton.Width = to == 36 ? 36 : double.NaN;");
-        AssertDoesNotContain(animationsText, "private void AnimateRecordButtonWidth(");
-        AssertDoesNotContain(animationsText, "Storyboard.SetTarget(anim, RecordButton);");
+        AssertDoesNotContain(adapterText, "Storyboard.SetTarget(anim, RecordButton);");
 
         return Task.CompletedTask;
     }

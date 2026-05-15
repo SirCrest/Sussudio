@@ -1446,8 +1446,9 @@ button now live in `Sussudio/Controllers/ShellElevationController.cs`.
 Preview shell/content fade and scale transitions plus unavailable-placeholder
 presentation now live in
 `Sussudio/Controllers/PreviewTransitionAnimationController.cs`.
-`MainWindow.PreviewTransitions.cs` is the XAML-facing adapter; composition
-shadow animation remains in `MainWindow.Animations.cs`.
+`MainWindow.PreviewTransitions.cs` is the XAML-facing adapter; shared compositor
+shadow opacity fades live in
+`Sussudio/Controllers/CompositionShadowFadeAnimator.cs`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives in `Sussudio/Controllers/PreviewButtonPresentationController.cs`.

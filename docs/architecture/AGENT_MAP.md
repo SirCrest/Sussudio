@@ -711,8 +711,9 @@ Primary current owners:
   PropertyChanged dispatcher; feature-specific property projections stay in
   the `MainWindow.PropertyChanged*.cs` partials or named presentation
   controllers.
-- `Sussudio/MainWindow.Animations.cs` owns shared composition shadow helpers
-  that have not yet moved behind named controllers.
+- `Sussudio/Controllers/CompositionShadowFadeAnimator.cs` owns shared
+  compositor opacity fade helpers for shell shadow visuals. XAML-facing
+  adapters call it without adding state or dispatcher hops.
 - `Sussudio/Controllers/AudioMeterController.cs` owns audio/microphone meter
   smoothing, timer lifetime, peak/range markers, and meter clip rendering.
   `Sussudio/MainWindow.AudioMeter.cs` is its XAML-facing adapter.
@@ -1399,7 +1400,9 @@ Primary current owners:
   adapter.
 - `Sussudio/Controllers/LaunchEntranceAnimationController.cs` owns the splash-
   to-shell launch choreography, initial hidden/scaled shell state, and one-shot
-  entrance state. `MainWindow.LaunchEntrance.cs` is the XAML-facing adapter.
+  entrance state. `MainWindow.LaunchEntrance.cs` is the XAML-facing adapter;
+  the delayed control-bar shadow fade routes through
+  `CompositionShadowFadeAnimator`.
 - `Sussudio/Controllers/ControlBarAnimationController.cs` owns the control-bar
   button list used by launch entrance animation plus hover/press/release scale
   behavior. `MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter.
@@ -1409,7 +1412,8 @@ Primary current owners:
 - `Sussudio/Controllers/PreviewTransitionAnimationController.cs` owns preview
   shell/content fade and scale transitions, unavailable-placeholder fades, and
   startup/unavailable presentation prep. `MainWindow.PreviewTransitions.cs` is
-  the XAML-facing adapter.
+  the XAML-facing adapter; shared video-shadow fades route through
+  `CompositionShadowFadeAnimator`.
 - `Sussudio/Controllers/PreviewButtonPresentationController.cs` owns preview
   button glyph and tooltip presentation for Start Preview and Stop Preview.
   `MainWindow.PreviewButtonPresentation.cs` is the XAML-facing adapter; keep

@@ -5,7 +5,6 @@ static partial class Program
 {
     private static Task SettingsShelfLifecycle_LivesInController()
     {
-        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs").Replace("\r\n", "\n");
         var fullScreenText = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
@@ -28,7 +27,6 @@ static partial class Program
         AssertContains(controllerText, "EnableDependentAnimation = true");
         AssertContains(controllerText, "_context.SettingsOverlayPanel.Visibility = Visibility.Collapsed;");
         AssertDoesNotContain(mainWindowText, "private bool _isSettingsShelfAnimating;");
-        AssertDoesNotContain(animationsText, "private void AnimateSettingsShelf(");
         AssertDoesNotContain(eventHandlersText, "private void SettingsToggleButton_Click(");
 
         return Task.CompletedTask;
@@ -36,7 +34,6 @@ static partial class Program
 
     private static Task SplashLoadingPhrases_LiveInController()
     {
-        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var launchEntranceControllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var splashAdapterText = ReadRepoFile("Sussudio/MainWindow.SplashLoading.cs").Replace("\r\n", "\n");
@@ -68,9 +65,6 @@ static partial class Program
         AssertContains(catalogText, "line = line[2..].Trim();");
         AssertContains(catalogText, "while (line.EndsWith('.'))");
         AssertContains(catalogText, "_cachedSplashPhrases = DefaultSplashLoadingPhrases;");
-        AssertDoesNotContain(animationsText, "private DispatcherTimer? _splashPhraseTimer;");
-        AssertDoesNotContain(animationsText, "private static string[] LoadSplashPhrases()");
-        AssertDoesNotContain(animationsText, "private void CycleSplashPhrase()");
         AssertDoesNotContain(controllerText, "private static readonly string[] DefaultSplashLoadingPhrases");
         AssertDoesNotContain(controllerText, "Path.Combine(AppContext.BaseDirectory, \"SplashPhrases.md\")");
 
@@ -79,7 +73,6 @@ static partial class Program
 
     private static Task LaunchEntranceAnimation_LivesInController()
     {
-        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.LaunchEntrance.cs").Replace("\r\n", "\n");
@@ -92,7 +85,7 @@ static partial class Program
         AssertContains(adapterText, "PreviewBorderScale = PreviewBorderScale,");
         AssertContains(adapterText, "GetEntranceButtons = GetEntranceButtons,");
         AssertContains(adapterText, "IsPreviewFirstVisualConfirmed = () => _previewFirstVisualConfirmed,");
-        AssertContains(adapterText, "FadeInControlBarShadow = () => FadeInShadow(_controlBarShadowVisual, delayMs: 400, durationMs: 500),");
+        AssertContains(adapterText, "FadeInControlBarShadow = () => CompositionShadowFadeAnimator.FadeIn(_controlBarShadowVisual, delayMs: 400, durationMs: 500),");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PrepareInitialState();");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PlaySplashAndEntrance();");
         AssertContains(mainWindowText, "InitializeLaunchEntranceAnimationController();");
@@ -113,8 +106,6 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private Storyboard? _entranceStoryboard;");
         AssertDoesNotContain(mainWindowText, "ControlBarBorder.Opacity = 0;");
         AssertDoesNotContain(mainWindowText, "var entranceButtons = GetEntranceButtons();");
-        AssertDoesNotContain(animationsText, "private void PlaySplashAndEntrance()");
-        AssertDoesNotContain(animationsText, "private void PlayEntranceAnimation()");
 
         return Task.CompletedTask;
     }

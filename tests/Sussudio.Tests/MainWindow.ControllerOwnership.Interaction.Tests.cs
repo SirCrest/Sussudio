@@ -36,7 +36,6 @@ static partial class Program
 
     private static Task LiveSignalInfoPresentation_LivesInController()
     {
-        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var liveSignalAdapterText = ReadRepoFile("Sussudio/MainWindow.LiveSignalInfo.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
@@ -69,9 +68,6 @@ static partial class Program
         AssertDoesNotContain(propertyChangedText, "LivePixelFormatTextBlock.Text = ViewModel.LivePixelFormat;");
         AssertDoesNotContain(mainWindowText, "private bool _liveSignalInfoVisible;");
         AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _liveSignalDebounceTimer;");
-        AssertDoesNotContain(animationsText, "private void UpdateLiveSignalInfoVisibility()");
-        AssertDoesNotContain(animationsText, "private void AnimateLiveSignalInfoIn()");
-        AssertDoesNotContain(animationsText, "private void AnimateLiveSignalInfoOut()");
 
         return Task.CompletedTask;
     }
@@ -141,7 +137,6 @@ static partial class Program
 
     private static Task PreviewAudioFadeState_LivesInController()
     {
-        var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs").Replace("\r\n", "\n");
@@ -178,9 +173,6 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private bool _isVolumeFadingIn;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _previewVolumeFadeStoryboard;");
         AssertDoesNotContain(bindingsText, "PreviewVolumeSlider.ValueChanged +=");
-        AssertDoesNotContain(animationsText, "private void PrimePreviewAudioFadeIn()");
-        AssertDoesNotContain(animationsText, "private void CompletePreviewAudioFadeIn(");
-        AssertDoesNotContain(animationsText, "private async Task StartPreviewAudioFadeOutAsync(");
 
         return Task.CompletedTask;
     }
