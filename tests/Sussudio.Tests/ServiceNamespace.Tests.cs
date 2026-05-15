@@ -9,6 +9,7 @@ static partial class Program
         AssertServiceNamespaceFolderRules(repoRoot);
         AssertServiceNamespaceNativeXuProbeOwnership(repoRoot);
         AssertServiceNamespaceSourceOwnership(repoRoot);
+        AssertServiceContractsBoundaryOwnership(repoRoot);
 
         return Task.CompletedTask;
     }
