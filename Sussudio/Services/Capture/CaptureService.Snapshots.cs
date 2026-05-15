@@ -1,14 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using Sussudio.Models;
-using Sussudio.Services.Audio;
-using Sussudio.Services.Flashback;
-using Sussudio.Services.Gpu;
-using Sussudio.Services.Preview;
-using Sussudio.Services.Recording;
-using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
 
@@ -73,9 +66,6 @@ public partial class CaptureService
         return GetHealthSnapshot();
     }
 
-    private static string? ResolveEncoderCodecName(CaptureSettings? settings)
-        => settings == null ? null : MediaFormat.MapNvencCodecName(settings.Format);
-
     private static string ResolveFlashbackBackendSettingsStaleReason(
         CaptureSettings? backendSettings,
         CaptureSettings? requestedSettings)
@@ -136,35 +126,6 @@ public partial class CaptureService
         return reasons.Count == 0 ? string.Empty : string.Join(",", reasons);
     }
 
-    private static string? ResolveEncoderOutputPixelFormat(RecordingContext? context, CaptureSettings? settings)
-    {
-        if (context?.HdrPipelineActive == true)
-        {
-            return "yuv420p10le";
-        }
-
-        return settings == null ? null : "yuv420p";
-    }
-
-    private static string? ResolveEncoderVideoProfile(RecordingContext? context, CaptureSettings? settings)
-    {
-        if (settings == null)
-        {
-            return null;
-        }
-
-        if (context?.HdrPipelineActive == true)
-        {
-            return "main10";
-        }
-
-        return settings.Format switch
-        {
-            RecordingFormat.H264Mp4 => "high",
-            _ => "main"
-        };
-    }
-
     private static long ComputeFlashbackExportElapsedMs(
         bool active,
         long startedUtcUnixMs,
@@ -220,53 +181,6 @@ public partial class CaptureService
         {
             return 0;
         }
-    }
-
-    private (
-        string? FirstObservedFramePixelFormat,
-        string? LatestObservedFramePixelFormat,
-        string? LatestObservedSurfaceFormat,
-        long ObservedP010FrameCount,
-        long ObservedNv12FrameCount,
-        long ObservedOtherFrameCount,
-        long ObservedP010BitDepthSampleCount,
-        double ObservedP010Low2BitNonZeroPercent,
-        bool? ObservedP010Likely8BitUpscaled)
-        ResolveObservedFrameTelemetry()
-    {
-        var expectedFormat = _recordingContext?.HdrPipelineActive == true ? "P010" : _recordingContext != null ? "NV12" : null;
-        var firstObserved = _firstObservedFramePixelFormat ?? expectedFormat;
-        var latestObserved = _latestObservedFramePixelFormat ?? expectedFormat;
-        var latestSurface = _latestObservedSurfaceFormat ?? latestObserved;
-
-        return (
-            firstObserved,
-            latestObserved,
-            latestSurface,
-            Math.Max(0, Interlocked.Read(ref _observedP010FrameCount)),
-            Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount)),
-            Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount)),
-            0,
-            0,
-            null);
-    }
-
-    private static string? ResolveRequestedFrameRateArg(CaptureSettings? settings, string? fallbackArg)
-    {
-        if (!string.IsNullOrWhiteSpace(settings?.RequestedFrameRateArg))
-        {
-            return settings.RequestedFrameRateArg;
-        }
-
-        if (settings?.RequestedFrameRateNumerator is uint numerator &&
-            settings.RequestedFrameRateDenominator is uint denominator &&
-            numerator > 0 &&
-            denominator > 0)
-        {
-            return $"{numerator}/{denominator}";
-        }
-
-        return fallbackArg;
     }
 
     private static long ComputeTickAge(long tick)

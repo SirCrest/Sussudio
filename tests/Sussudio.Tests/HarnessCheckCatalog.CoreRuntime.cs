@@ -66,6 +66,9 @@ static partial class Program
             "Thread health probes default cleanly when inactive",
             GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive);
         await AddCheckAsync(results,
+            "CaptureService snapshot helper policy lives in focused partials",
+            CaptureService_SnapshotHelperPolicy_LivesInFocusedPartials);
+        await AddCheckAsync(results,
             "CaptureService encoder codec names map recording formats",
             CaptureService_ResolveEncoderCodecName_MapsFormats);
         await AddCheckAsync(results,

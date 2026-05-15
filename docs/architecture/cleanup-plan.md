@@ -1167,8 +1167,8 @@ polling and active snapshot assembly in `NativeXuAtCommandProvider.RollingPoll.c
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
-automation, and verification; the general snapshot partial still owns health
-snapshot projection and shared helper policy.
+automation, and verification; recording-format and observed-frame helper
+policy live in focused snapshot partials.
 
 Capture health snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file owns
@@ -1191,8 +1191,18 @@ Flashback export diagnostic and derived progress/throughput projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs`,
 and Flashback playback state/cadence/decode/command projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`.
-The general snapshot partial is now shared helper policy plus the
-diagnostics-snapshot compatibility entry point.
+The general snapshot partial is now the diagnostics-snapshot compatibility
+entry point plus shared Flashback/file/tick snapshot helpers.
+
+Recording-format snapshot policy now lives in
+`Sussudio/Services/Capture/CaptureService.SnapshotRecordingFormat.cs`. Keep
+encoder codec labels, output pixel-format/profile labels, and requested
+frame-rate argument projection there.
+
+Observed frame-format snapshot policy now lives in
+`Sussudio/Services/Capture/CaptureService.SnapshotObservedFrames.cs`. Keep the
+explicit `Interlocked.Read` counter projection there; do not infer fake P010 or
+NV12 frame counts from requested settings.
 
 Source telemetry snapshot policy now lives in
 `Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs`. Keep telemetry

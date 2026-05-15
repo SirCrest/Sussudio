@@ -4,6 +4,42 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static Task CaptureService_SnapshotHelperPolicy_LivesInFocusedPartials()
+    {
+        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+            .Replace("\r\n", "\n");
+        var formatText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotRecordingFormat.cs")
+            .Replace("\r\n", "\n");
+        var observedText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotObservedFrames.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(snapshotsText, "public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()");
+        AssertContains(snapshotsText, "return GetHealthSnapshot();");
+
+        AssertContains(formatText, "private static string? ResolveEncoderCodecName(");
+        AssertContains(formatText, "MediaFormat.MapNvencCodecName(settings.Format)");
+        AssertContains(formatText, "private static string? ResolveEncoderOutputPixelFormat(");
+        AssertContains(formatText, "return \"yuv420p10le\";");
+        AssertContains(formatText, "private static string? ResolveEncoderVideoProfile(");
+        AssertContains(formatText, "RecordingFormat.H264Mp4 => \"high\"");
+        AssertContains(formatText, "private static string? ResolveRequestedFrameRateArg(");
+        AssertContains(formatText, "RequestedFrameRateNumerator is uint numerator");
+        AssertContains(formatText, "RequestedFrameRateDenominator is uint denominator");
+
+        AssertContains(observedText, "ResolveObservedFrameTelemetry()");
+        AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedP010FrameCount))");
+        AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount))");
+        AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount))");
+
+        AssertDoesNotContain(snapshotsText, "private static string? ResolveEncoderCodecName(");
+        AssertDoesNotContain(snapshotsText, "private static string? ResolveEncoderOutputPixelFormat(");
+        AssertDoesNotContain(snapshotsText, "private static string? ResolveEncoderVideoProfile(");
+        AssertDoesNotContain(snapshotsText, "private static string? ResolveRequestedFrameRateArg(");
+        AssertDoesNotContain(snapshotsText, "ResolveObservedFrameTelemetry()");
+
+        return Task.CompletedTask;
+    }
+
     // ── CaptureService.Snapshots: ResolveEncoderCodecName ──
 
     private static Task CaptureService_ResolveEncoderCodecName_MapsFormats()
