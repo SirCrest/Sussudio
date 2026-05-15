@@ -1367,9 +1367,11 @@ Detached stats-window metric text and telemetry-detail row rendering now live
 in `Sussudio/Controllers/StatsWindowPresentationController.cs`, with
 `Sussudio/StatsWindow.xaml.cs` kept to lifecycle, sizing, polling, and
 always-on-top behavior.
-Stats overlay lifecycle, source-telemetry panel, and diagnostic row pooling
-contract checks now live in
-`tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs`.
+Stats overlay lifecycle, stats dock refresh, stats section chrome, and
+diagnostic row pooling contract checks now live in
+`tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs`. Source telemetry panel
+projection checks live with stats presentation coverage in
+`tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs`.
 Frame-time overlay graph drawing and compact text application now live in
 `Sussudio/Controllers/FrameTimeOverlayPresentationController.cs`;
 `Sussudio/MainWindow.FrameTimeOverlay.cs` is the XAML-facing compact overlay
@@ -1382,9 +1384,11 @@ projection over presentation inputs lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs`;
 row element pooling still belongs to `StatsDiagnosticRowsController`, and
 `StatsDockRefreshController` owns when decode/GPU rows refresh.
-Stats presentation and frame-time overlay contract checks now live in
-`tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` instead of expanding
-the legacy harness body in `tests/Sussudio.Tests/Program.cs`.
+Stats presentation contract checks now live in focused
+`tests/Sussudio.Tests/StatsPresentation.*.Tests.cs` owners for builder
+ownership, source telemetry, detached-window formatting, encoder formatting,
+and frame-time overlay policy instead of expanding the legacy harness body in
+`tests/Sussudio.Tests/Program.cs`.
 Stats diagnostic row construction and source-summary parsing now live in
 `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticRows.cs`; frame-lane
 diagnostic health summary classification now lives in

@@ -20,7 +20,7 @@ mentions the moved files.
 | Area | Current large files | Preferred next owner |
 |------|---------------------|----------------------|
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs` | scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
-| Offline regression harness | `tests/Sussudio.Tests/Program.cs`, `tests/Sussudio.Tests/HarnessCheckCatalog*.cs` | runner entry point, topic check catalogs, xUnit slices, and focused contract tests such as `StatsPresentation.Contract.Tests.cs` |
+| Offline regression harness | `tests/Sussudio.Tests/Program.cs`, `tests/Sussudio.Tests/HarnessCheckCatalog*.cs` | runner entry point, topic check catalogs, xUnit slices, and focused contract tests such as `StatsPresentation.*.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Audio.cs`, `CaptureService.MicrophoneMonitor.cs`, `CaptureService.WasapiPlayback.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackOrchestration.cs`, `CaptureService.FlashbackAudioInputs.cs`, `CaptureService.FlashbackPreviewBackend.cs`, `CaptureService.FlashbackPreviewBackendDisposal.cs`, `CaptureService.FlashbackBufferCycle.cs`, `CaptureService.FlashbackExportDiagnostics.cs`, `CaptureService.FlashbackExportFailureClassification.cs`, `CaptureService.FlashbackExportOperations.cs`, `CaptureService.FlashbackExportPlanning.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.HealthSnapshotCaptureCadence.cs`, `CaptureService.HealthSnapshotFlashbackBuffer.cs`, `CaptureService.HealthSnapshotFlashbackQueues.cs`, `CaptureService.HealthSnapshotMjpeg.cs`, `CaptureService.HealthSnapshotSourceTelemetry.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RecordingIntegrity.Models.cs`, `CaptureService.RecordingIntegrity.Summary.cs`, `CaptureService.RecordingIntegrity.Counters.cs`, `CaptureService.RecordingIntegrity.Audio.cs`, `CaptureService.RecordingIntegrity.Logging.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RecordingRollback.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.RuntimeSnapshotIngestAudio.cs`, `CaptureService.RuntimeSnapshotHdrPipeline.cs`, `CaptureService.RuntimeSnapshotSourceTelemetry.cs`, `CaptureService.RuntimeSnapshotRecordingIntegrity.cs`, `CaptureService.Snapshots.cs`, `CaptureService.SnapshotRecordingFormat.cs`, `CaptureService.SnapshotObservedFrames.cs`, `CaptureService.SnapshotAvSync.cs`, `CaptureService.SnapshotTelemetry.cs`, `CaptureService.Telemetry.cs` | service state and construction owner, audio preview/input switching owner, microphone monitoring owner, WASAPI playback routing owner, cleanup owner, transition/disposal owner, deferred cleanup owner, failure owner, Flashback control owner, Flashback restart orchestration owner, Flashback audio input restoration owner, Flashback preview backend startup owner, Flashback preview backend disposal owner, Flashback buffer cycle owner, Flashback export diagnostics/progress owner, Flashback export failure taxonomy, Flashback export entry/core owner, Flashback export planning/throttle owner, Flashback recording policy owner, health snapshot builder, capture cadence health projection, Flashback buffer/backend health projection, Flashback queue health projection, MJPEG health snapshot projection, source telemetry health projection, preview lifecycle owner, preview pipeline owner, probe owner, recording integrity active-backend resolver, integrity DTOs, integrity summary classification, integrity counter capture, audio integrity capture, integrity logging, recording start/stop transition owner, transient recording rollback owner, runtime snapshot builder, runtime ingest/audio projection, runtime HDR/encoder pipeline projection, runtime source-telemetry projection, runtime recording-integrity projection, diagnostics compatibility and shared snapshot utilities, recording format snapshot policy, observed frame snapshot telemetry, A/V sync snapshot policy, source telemetry snapshot policy, telemetry owner, resource managers |
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `DeviceService.FormatCache.cs`, `DeviceService.FormatProbe.cs`, `DeviceService.Scoring.cs`, `DeviceService.AudioAssociation.cs`, `DeviceService.NativeXu.cs`, `MfDeviceEnumerator.cs`, `MfDeviceEnumerator.VideoDevices.cs`, `MfDeviceEnumerator.AudioEndpoints.cs`, `MfDeviceEnumerator.FormatProbe.cs` | device enumeration orchestration, persisted format cache, inline/background format probing, priority/capability scoring, audio endpoint association, Native XU interface path resolution, shared MF constants/P/Invokes, MF video device enumeration, WASAPI capture endpoint enumeration, native MF format probing and source fallback |
 | Native XU KS bridge | `Sussudio/Services/Capture/KsExtensionUnitNative.cs`, `KsExtensionUnitNative.Interfaces.cs`, `KsExtensionUnitNative.Handles.cs`, `KsExtensionUnitNative.Topology.cs`, `KsExtensionUnitNative.Transfers.cs`, `KsExtensionUnitNative.Interop.cs` | KS category constants and DTOs, SetupAPI interface enumeration, file-handle open policy, topology node parsing, XU GET/SET transfer helpers, P/Invoke declarations and structs |
@@ -768,8 +768,7 @@ Primary current owners:
   visibility, polling, and refresh controllers.
 - `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
   contract checks for stats overlay lifecycle wiring, stats section chrome,
-  stats dock refresh orchestration, source-telemetry panel projection, and
-  diagnostic row pooling.
+  stats dock refresh orchestration, and diagnostic row pooling.
 - `Sussudio/Controllers/StatsDiagnosticRowsController.cs` owns dynamic
   decode/GPU/diagnostic row pools, empty-state rows, group headers, and
   diagnostic row style updates. `Sussudio/Controllers/StatsDockRefreshController.cs`
@@ -806,10 +805,14 @@ Primary current owners:
 - `Sussudio/ViewModels/CaptureModeOptionsBuilder.cs` owns pure resolution and
   video-format option construction, HDR mode enablement, and source aspect-ratio
   filtering. Shell files bind and display those options.
-- `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` owns legacy
-  harness contract checks for stats presentation and frame-time overlay policy.
-  Keep new stats presentation ownership assertions there instead of growing
-  `tests/Sussudio.Tests/Program.cs`.
+- `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` is the stats
+  presentation contract marker shell. `StatsPresentation.Ownership.Tests.cs`
+  owns builder/controller/DTO source-shape assertions,
+  `StatsPresentation.SourceTelemetry.Tests.cs` owns HDMI source telemetry panel
+  projection checks, `StatsPresentation.Window.Tests.cs` owns detached-window
+  formatting, `StatsPresentation.Encoder.Tests.cs` owns dock encoder formatting,
+  and `StatsPresentation.FrameTime.Tests.cs` owns compact preview summary and
+  frame-time range policy checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.AutomationIds.Tests.cs` owns
   MainWindow automation ID inventory checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.WindowAutomation.Tests.cs` owns

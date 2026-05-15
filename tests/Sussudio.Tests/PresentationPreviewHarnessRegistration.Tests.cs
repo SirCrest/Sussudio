@@ -33,6 +33,18 @@ static partial class Program
         "tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs"
     };
 
+    private static readonly string[] PresentationPreviewStatsContractTestFiles =
+    {
+        "tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs",
+        "tests/Sussudio.Tests/StatsHardwareRowsController.Tests.cs",
+        "tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs",
+        "tests/Sussudio.Tests/StatsPresentation.Encoder.Tests.cs",
+        "tests/Sussudio.Tests/StatsPresentation.FrameTime.Tests.cs",
+        "tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs",
+        "tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs",
+        "tests/Sussudio.Tests/StatsPresentation.Window.Tests.cs"
+    };
+
     private static readonly HashSet<string> PresentationPreviewUiOwnershipCatalogExclusions = new(StringComparer.Ordinal)
     {
         "MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate",
@@ -56,7 +68,7 @@ static partial class Program
         if (missingMethods.Length > 0)
         {
             throw new InvalidOperationException(
-                "PresentationPreview UI ownership checks are missing harness registrations: " +
+                "PresentationPreview ownership/contract checks are missing harness registrations: " +
                 string.Join(", ", missingMethods));
         }
 
@@ -65,7 +77,7 @@ static partial class Program
 
     private static IEnumerable<(string File, string Method)> EnumeratePresentationPreviewUiOwnershipCheckMethods()
     {
-        foreach (var file in PresentationPreviewUiOwnershipTestFiles)
+        foreach (var file in PresentationPreviewUiOwnershipTestFiles.Concat(PresentationPreviewStatsContractTestFiles))
         {
             var strippedSource = StripCSharpCommentsAndLiterals(ReadRepoFile(file));
             foreach (Match match in PresentationPreviewHarnessMethodRegex.Matches(strippedSource))
