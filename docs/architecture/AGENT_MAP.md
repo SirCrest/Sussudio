@@ -673,8 +673,10 @@ Primary current owners:
 - `Sussudio/MainWindow.ShutdownCleanup.cs` owns `Closed` shutdown cleanup:
   timer stops, event detaches, preview shutdown, automation diagnostics disposal,
   NVML disposal, and ViewModel disposal.
-- `Sussudio/MainWindow.NativeWindow.cs` owns native `AppWindow` lookup and DWM
-  cloak/dark-mode helpers used by shell startup and automation controllers.
+- `Sussudio/MainWindow.NativeWindow.cs` owns native window bootstrap:
+  `AppWindow` lookup, ViewModel window handle handoff, minimum-size subclassing,
+  DWM cloak/dark-mode setup, initial shell size, icon, and native helpers used
+  by shell startup and automation controllers.
 - `Sussudio/MainWindow.Dispatching.cs` owns UI-thread enqueue helpers and
   guarded async event-handler execution used by automation adapters and XAML
   event handlers.

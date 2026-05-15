@@ -9,7 +9,6 @@ using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
 using Sussudio.Tools;
 using Sussudio.ViewModels;
-using WinRT.Interop;
 
 namespace Sussudio;
 
@@ -26,10 +25,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly string _automationPipeName;
     private bool _suppressFlashbackEnabledToggle;
     private FullScreenController _fullScreenController = null!;
-    private const int MinWindowWidth = 900;
-    private const int MinWindowHeight = 500;
-    private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
-    private IntPtr _hwnd;
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;
 
@@ -74,62 +69,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
         InitializeStatsOverlayController();
 
-        // Set window handle for folder picker
-        _hwnd = WindowNative.GetWindowHandle(this);
-        ViewModel.SetWindowHandle(_hwnd);
-        InitializeWindowAutomationController();
-        InitializeWindowScreenshotController();
-        InitializeFlashbackPollingController();
-        InitializeFlashbackTimelineController();
-        InitializeSettingsShelfController();
-        InitializeSplashLoadingPhraseController();
-        InitializeControlBarAnimationController();
-        InitializeShellElevationController();
-        InitializePreviewTransitionAnimationController();
-        InitializeRecordButtonAnimationController();
-        InitializeRecordingButtonActionController();
-        InitializeLaunchEntranceAnimationController();
-        InitializeLiveSignalInfoController();
-        InitializePreviewAudioFadeController();
-        InitializeMicrophoneControlsController();
-        InitializeResponsiveShellLayoutController();
-        InitializeCaptureSelectionBindingController();
-        InitializeCaptureDeviceActionController();
-        InitializeOutputPathDisplayController();
-        InitializeOutputPathActionController();
-        InitializePreviewScreenshotController();
-
-        // Cloak the window to prevent white flash before XAML renders
-        int cloakTrue = 1;
-        DwmSetWindowAttribute(_hwnd, DWMWA_CLOAK, ref cloakTrue, sizeof(int));
-        int darkMode = 1;
-        DwmSetWindowAttribute(_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref darkMode, sizeof(int));
-
-        // Enforce minimum window size via WM_GETMINMAXINFO
-        _minSizeHandle = MinSizeWindowSubclass.Install(_hwnd, MinWindowWidth, MinWindowHeight);
-
-        // Set initial window size and constraints
-        var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(
-            Microsoft.UI.Win32Interop.GetWindowIdFromWindow(_hwnd));
-        appWindow.Closing += MainWindow_Closing;
-
-        // Ensure window is not maximized
-        if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
-        {
-            presenter.IsResizable = true;
-            presenter.IsMaximizable = true;
-            presenter.IsMinimizable = true;
-
-            // Force normal (non-maximized) state
-            presenter.Restore();
-        }
-
-        // Set window size to accommodate 1920x1080 preview + UI controls
-        // Height calculation: 1080px video + ~250px UI controls + ~120px padding/spacing/titlebar
-        appWindow.Resize(new Windows.Graphics.SizeInt32(1950, 1450));
-
-        // Set title bar icon
-        appWindow.SetIcon("Assets\\AppIcon.ico");
+        var appWindow = InitializeNativeShellWindow();
+        RegisterCloseLifecycle(appWindow);
+        InitializeShellControllers();
 
         // Subscribe to ViewModel changes
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -161,5 +103,30 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         mainContent.Loaded += MainWindow_Loaded;
         mainContent.SizeChanged += MainWindow_SizeChanged;
         Closed += MainWindow_Closed;
+    }
+
+    private void InitializeShellControllers()
+    {
+        InitializeWindowAutomationController();
+        InitializeWindowScreenshotController();
+        InitializeFlashbackPollingController();
+        InitializeFlashbackTimelineController();
+        InitializeSettingsShelfController();
+        InitializeSplashLoadingPhraseController();
+        InitializeControlBarAnimationController();
+        InitializeShellElevationController();
+        InitializePreviewTransitionAnimationController();
+        InitializeRecordButtonAnimationController();
+        InitializeRecordingButtonActionController();
+        InitializeLaunchEntranceAnimationController();
+        InitializeLiveSignalInfoController();
+        InitializePreviewAudioFadeController();
+        InitializeMicrophoneControlsController();
+        InitializeResponsiveShellLayoutController();
+        InitializeCaptureSelectionBindingController();
+        InitializeCaptureDeviceActionController();
+        InitializeOutputPathDisplayController();
+        InitializeOutputPathActionController();
+        InitializePreviewScreenshotController();
     }
 }

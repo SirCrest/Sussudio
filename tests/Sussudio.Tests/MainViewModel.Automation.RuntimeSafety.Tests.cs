@@ -91,7 +91,8 @@ static partial class Program
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(windowCtorText, "appWindow.Closing += MainWindow_Closing;");
+        AssertContains(windowCtorText, "RegisterCloseLifecycle(appWindow);");
+        AssertContains(closeLifecycleText, "appWindow.Closing += MainWindow_Closing;");
         AssertContains(closeLifecycleText, "args.Cancel = true;");
         AssertContains(closeLifecycleText, "TryStopRecordingBeforeCloseAsync");
         AssertContains(closeLifecycleText, "const int StopBudgetMs = 120_000;");

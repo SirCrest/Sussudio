@@ -18,6 +18,9 @@ public sealed partial class MainWindow
     private TaskCompletionSource<object?>? _windowCloseCompletion;
     private bool _isWindowClosing;
 
+    private void RegisterCloseLifecycle(Microsoft.UI.Windowing.AppWindow appWindow)
+        => appWindow.Closing += MainWindow_Closing;
+
     private async void MainWindow_Closing(
         Microsoft.UI.Windowing.AppWindow sender,
         Microsoft.UI.Windowing.AppWindowClosingEventArgs args)
