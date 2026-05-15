@@ -141,12 +141,20 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
+        var automationHostText = ReadRepoFile("Sussudio/MainWindow.AutomationHost.cs")
+            .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(mainWindowText, "var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);");
-        AssertContains(mainWindowText, "_automationTokenRequired = !string.IsNullOrWhiteSpace(automationToken);");
-        AssertContains(mainWindowText, "new NamedPipeAutomationServer(\n            automationDispatcher,\n            _automationPipeName,\n            _automationTokenRequired)");
+        AssertContains(mainWindowText, "var automationHost = CreateAutomationHost();");
+        AssertContains(mainWindowText, "_automationDiagnosticsHub = automationHost.DiagnosticsHub;");
+        AssertContains(mainWindowText, "_automationPipeServer = automationHost.PipeServer;");
+        AssertContains(automationHostText, "var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);");
+        AssertContains(automationHostText, "private AutomationHostComposition CreateAutomationHost()");
+        AssertContains(automationHostText, "TokenRequired,");
+        AssertContains(automationHostText, "new NamedPipeAutomationServer(\n            automationDispatcher,\n            automationPipeName,\n            !string.IsNullOrWhiteSpace(automationToken))");
+        AssertDoesNotContain(mainWindowText, "Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar)");
+        AssertDoesNotContain(mainWindowText, "new NamedPipeAutomationServer(");
         AssertContains(startupText, "if (_automationPipeServer.Start())\n        {\n            _automationDiagnosticsHub.Start();");
         AssertContains(startupText, "Automation control ready on pipe");
         AssertContains(startupText, "Automation control disabled on pipe");

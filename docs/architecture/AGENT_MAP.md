@@ -653,6 +653,9 @@ Primary current owners:
   automation plus the recordings-folder command. `MainWindow.WindowAutomation.cs`
   is the `IAutomationWindowControl` adapter; recording-aware close handling
   stays with `MainWindow.CloseLifecycle.cs`.
+- `Sussudio/MainWindow.AutomationHost.cs` owns shell automation composition:
+  automation token/pipe-name resolution, diagnostics hub construction,
+  command dispatcher construction, and named-pipe server construction.
 - `Sussudio/MainWindow.Startup.cs` owns first-load startup, first-frame
   uncloaking, initial ViewModel/device refresh, automation pipe hosting, and
   the launch entrance trigger. Close/finalize behavior stays in

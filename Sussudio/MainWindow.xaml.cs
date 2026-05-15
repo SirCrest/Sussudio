@@ -3,11 +3,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Sussudio.Controllers;
 using Sussudio.Models;
-using Sussudio.Services.Automation;
 using Sussudio.Services.Gpu;
-using Sussudio.Services.Recording;
-using Sussudio.Services.Runtime;
-using Sussudio.Tools;
 using Sussudio.ViewModels;
 
 namespace Sussudio;
@@ -19,10 +15,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     public MainViewModel ViewModel { get; }
     private readonly DispatcherQueue _dispatcherQueue;
     private NvmlMonitor? _nvmlMonitor;
-    private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
-    private readonly NamedPipeAutomationServer _automationPipeServer;
-    private readonly bool _automationTokenRequired;
-    private readonly string _automationPipeName;
     private bool _suppressFlashbackEnabledToggle;
     private FullScreenController _fullScreenController = null!;
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
@@ -41,31 +33,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         ViewModel.FrameTimeOverlayVisibilityHandler = SetFrameTimeOverlayVisible;
         _windowTitleBase = BuildWindowTitleBase();
         ApplyWindowTitle();
-        var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);
-        var automationPipeName = Environment.GetEnvironmentVariable("SUSSUDIO_AUTOMATION_PIPE");
-        if (string.IsNullOrWhiteSpace(automationPipeName))
-        {
-            automationPipeName = NamedPipeAutomationServer.DefaultPipeName;
-        }
-
-        _automationTokenRequired = !string.IsNullOrWhiteSpace(automationToken);
-        _automationPipeName = automationPipeName;
-
         _nvmlMonitor = new NvmlMonitor();
-
-        _automationDiagnosticsHub = new AutomationDiagnosticsHub(
-            ViewModel,
-            GetPreviewRuntimeSnapshotAsync,
-            new RecordingVerifier());
-        var automationDispatcher = new AutomationCommandDispatcher(
-            ViewModel,
-            _automationDiagnosticsHub,
-            this,
-            automationToken);
-        _automationPipeServer = new NamedPipeAutomationServer(
-            automationDispatcher,
-            _automationPipeName,
-            _automationTokenRequired);
+        var automationHost = CreateAutomationHost();
+        _automationDiagnosticsHub = automationHost.DiagnosticsHub;
+        _automationPipeServer = automationHost.PipeServer;
+        _automationTokenRequired = automationHost.TokenRequired;
+        _automationPipeName = automationHost.PipeName;
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
         InitializeStatsOverlayController();
 
