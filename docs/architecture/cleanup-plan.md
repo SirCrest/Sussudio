@@ -519,7 +519,8 @@ Top-level shell resize telemetry throttling for preview compositor transforms
 now lives in `Sussudio/Controllers/PreviewResizeTelemetryController.cs`.
 `Sussudio/MainWindow.WindowSizing.cs` is the `SizeChanged` adapter. Preview
 surface sizing, GPU panel visibility, and video/control-bar composition shadows
-now live in `Sussudio/MainWindow.PreviewSurface.cs`.
+now live in `Sussudio/Controllers/PreviewSurfacePresentationController.cs`,
+while `Sussudio/MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
 `MainWindow.PreviewRenderer.cs` keeps preview renderer instances, frame
 counters, expected-present interval, and renderer cadence state.
 `Sussudio/MainWindow.PreviewRendererReinit.cs` owns preview renderer reinit
@@ -1740,7 +1741,7 @@ timeout recovery stay in `Sussudio/MainWindow.PreviewStartupWatchdog.cs`.
 Top-level preview resize telemetry throttling now lives in
 `Sussudio/Controllers/PreviewResizeTelemetryController.cs`.
 `MainWindow.WindowSizing.cs` remains the `SizeChanged` adapter; preview surface
-sizing still lives with `MainWindow.PreviewSurface.cs`.
+presentation lives with `PreviewSurfacePresentationController`.
 
 Preview-specific ViewModel events and property-change projections now live in
 `Sussudio/MainWindow.PropertyChangedPreview.cs`. The broad

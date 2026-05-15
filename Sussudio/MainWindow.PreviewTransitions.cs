@@ -35,13 +35,13 @@ public sealed partial class MainWindow
 
     private Task AnimatePreviewOutAsync()
     {
-        CompositionShadowFadeAnimator.FadeOut(_videoShadowVisual, durationMs: 150);
+        FadeOutVideoFrameShadow(durationMs: 150);
         return _previewTransitionAnimationController.AnimatePreviewOutAsync();
     }
 
     private Task AnimatePreviewInAsync()
     {
-        CompositionShadowFadeAnimator.FadeIn(_videoShadowVisual, delayMs: 0, durationMs: 400);
+        FadeInVideoFrameShadow(delayMs: 0, durationMs: 400);
         return _previewTransitionAnimationController.AnimatePreviewInAsync();
     }
 

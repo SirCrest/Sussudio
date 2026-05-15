@@ -24,7 +24,7 @@ public sealed partial class MainWindow
             StartSplashLoadingPhrases = StartSplashLoadingPhrases,
             StopSplashLoadingPhrases = StopSplashLoadingPhrases,
             AddPreviewShellEntranceAnimations = AddPreviewShellEntranceAnimations,
-            FadeInControlBarShadow = () => CompositionShadowFadeAnimator.FadeIn(_controlBarShadowVisual, delayMs: 400, durationMs: 500),
+            FadeInControlBarShadow = () => FadeInControlBarShadow(delayMs: 400, durationMs: 500),
         });
     }
 

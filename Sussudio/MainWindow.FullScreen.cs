@@ -45,7 +45,7 @@ public sealed partial class MainWindow
             HideStatsDockPanelImmediate = () => HideStatsDockPanel(immediate: true),
             ShowStatsDockPanel = ShowStatsDockPanel,
             UpdateVideoContentOverlays = UpdateVideoContentOverlays,
-            FadeInVideoShadow = () => CompositionShadowFadeAnimator.FadeIn(_videoShadowVisual, delayMs: 0, durationMs: 400),
+            FadeInVideoShadow = () => FadeInVideoFrameShadow(delayMs: 0, durationMs: 400),
             IsWindowClosing = () => _isWindowClosing,
         });
     }

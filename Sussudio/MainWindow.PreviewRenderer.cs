@@ -67,8 +67,7 @@ public sealed partial class MainWindow
     private void CleanupPreviewResources()
     {
         // Clean up composition shadow
-        _videoShadowVisual = null;
-        ElementCompositionPreview.SetElementChildVisual(VideoShadowHost, null);
+        ClearVideoFrameShadow();
 
         // Clean up D3D11 preview
         PreviewContentGrid.SizeChanged -= OnPreviewContentGridSizeChanged;

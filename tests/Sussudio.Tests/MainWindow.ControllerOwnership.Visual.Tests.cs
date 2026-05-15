@@ -70,8 +70,8 @@ static partial class Program
         AssertContains(adapterText, "StopPreviewFadeInTimer = StopPreviewFadeInTimer,");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.AddPreviewShellEntranceAnimations(storyboard, easing, beginMs, durationMs);");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.ResetPreviewContentTransform();");
-        AssertContains(adapterText, "CompositionShadowFadeAnimator.FadeOut(_videoShadowVisual, durationMs: 150);");
-        AssertContains(adapterText, "CompositionShadowFadeAnimator.FadeIn(_videoShadowVisual, delayMs: 0, durationMs: 400);");
+        AssertContains(adapterText, "FadeOutVideoFrameShadow(durationMs: 150);");
+        AssertContains(adapterText, "FadeInVideoFrameShadow(delayMs: 0, durationMs: 400);");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.PrepareStartupPresentation();");
         AssertContains(adapterText, "=> PreviewTransitionAnimationController.FadeInElement(element);");
         AssertContains(mainWindowText, "InitializePreviewTransitionAnimationController();");

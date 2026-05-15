@@ -720,8 +720,9 @@ Primary current owners:
   counters, expected-present interval, and renderer cadence state.
   `MainWindow.PreviewRendererReinit.cs` owns preview renderer reinit safety
   telemetry, fresh SwapChainPanel replacement, and retired-renderer handoff.
-  `MainWindow.PreviewSurface.cs` owns preview surface sizing, GPU panel
-  visibility, and video/control-bar composition shadows.
+  `Sussudio/Controllers/PreviewSurfacePresentationController.cs` owns preview
+  surface sizing, GPU panel visibility, and video/control-bar composition
+  shadows. `MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
 - `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
   preview snapshot provider that dispatches to the renderer/startup snapshot
   adapter and gathers UI-thread-only state. `Sussudio/Controllers/PreviewRuntimeSnapshotController.cs`
@@ -1649,8 +1650,8 @@ Primary current owners:
   XAML-facing adapter.
 - `Sussudio/Controllers/PreviewResizeTelemetryController.cs` owns top-level
   preview resize log throttling and reset state. `MainWindow.WindowSizing.cs`
-  is the XAML-facing adapter for `SizeChanged`; preview surface sizing remains
-  with `MainWindow.PreviewSurface.cs`.
+  is the XAML-facing adapter for `SizeChanged`; preview surface presentation
+  lives in `PreviewSurfacePresentationController`.
 - `Sussudio/MainWindow.PropertyChangedRecording.cs` owns only the
   recording-specific property-change router and adapter surface, delegating
   record-button, glow, pulse, and recording-time lockout projection to
