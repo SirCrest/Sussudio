@@ -77,13 +77,11 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.AvailableResolutions):
-                ResolutionComboBox.ItemsSource = ViewModel.AvailableResolutions;
-                EnsureResolutionSelection();
+                HandleAvailableResolutionsPropertyChanged();
                 break;
 
             case nameof(MainViewModel.AvailableFrameRates):
-                FrameRateComboBox.ItemsSource = ViewModel.AvailableFrameRates;
-                EnsureFrameRateSelection();
+                HandleAvailableFrameRatesPropertyChanged();
                 break;
 
             case nameof(MainViewModel.IsHdrAvailable):
@@ -188,8 +186,7 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.AvailablePresets):
-                PresetComboBox.ItemsSource = ViewModel.AvailablePresets;
-                EnsurePresetSelection();
+                HandleAvailablePresetsPropertyChanged();
                 break;
 
             case nameof(MainViewModel.SelectedPreset):
@@ -197,8 +194,7 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.AvailableSplitEncodeModes):
-                SplitEncodeComboBox.ItemsSource = ViewModel.AvailableSplitEncodeModes;
-                EnsureSplitEncodeModeSelection();
+                HandleAvailableSplitEncodeModesPropertyChanged();
                 break;
 
             case nameof(MainViewModel.SelectedSplitEncodeMode):

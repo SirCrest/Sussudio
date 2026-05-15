@@ -1637,7 +1637,8 @@ Primary current owners:
   `Sussudio/Controllers/CaptureSelectionBindingController.Context.cs`
   owns the XAML control dependency bag,
   `Sussudio/Controllers/CaptureSelectionBindingController.SelectionSync.cs` owns
-  collection-change debounce/queued sync, and
+  collection-change debounce/queued sync plus available-option property-change
+  rebinding, and
   `Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs` owns
   device-audio mode/gain control projection. `MainWindow.CaptureSelectionBindings.cs`
   is the XAML-facing adapter.

@@ -60,4 +60,28 @@ internal sealed partial class CaptureSelectionBindingController
     private void QueueQualitySelectionSync() => QueueSelectionSync(SyncQuality, EnsureQualitySelection);
     private void QueuePresetSelectionSync() => QueueSelectionSync(SyncPreset, EnsurePresetSelection);
     private void QueueSplitEncodeModeSelectionSync() => QueueSelectionSync(SyncSplitEncode, EnsureSplitEncodeModeSelection);
+
+    public void HandleAvailableResolutionsPropertyChanged()
+    {
+        _context.ResolutionComboBox.ItemsSource = _context.ViewModel.AvailableResolutions;
+        EnsureResolutionSelection();
+    }
+
+    public void HandleAvailableFrameRatesPropertyChanged()
+    {
+        _context.FrameRateComboBox.ItemsSource = _context.ViewModel.AvailableFrameRates;
+        EnsureFrameRateSelection();
+    }
+
+    public void HandleAvailablePresetsPropertyChanged()
+    {
+        _context.PresetComboBox.ItemsSource = _context.ViewModel.AvailablePresets;
+        EnsurePresetSelection();
+    }
+
+    public void HandleAvailableSplitEncodeModesPropertyChanged()
+    {
+        _context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;
+        EnsureSplitEncodeModeSelection();
+    }
 }

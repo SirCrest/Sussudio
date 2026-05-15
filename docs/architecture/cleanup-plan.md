@@ -1736,9 +1736,10 @@ root controller owns selection reconciliation, selected-device property-change
 reconciliation, recording string-selection event handlers, and pending-device
 apply state,
 `.Context.cs` owns the XAML control dependency bag, `.SelectionSync.cs` owns
-collection-change debounce/queued sync, and `.DeviceAudio.cs` owns device-audio
-mode/gain projection while `MainWindow.CaptureSelectionBindings.cs` keeps the
-old method names for `PropertyChanged` and binding setup.
+collection-change debounce/queued sync plus available-option property-change
+rebinding, and `.DeviceAudio.cs` owns device-audio mode/gain projection while
+`MainWindow.CaptureSelectionBindings.cs` keeps the old method names for
+`PropertyChanged` and binding setup.
 
 Capture-device refresh/apply button workflows now live in
 `Sussudio/Controllers/CaptureDeviceActionController.cs`.

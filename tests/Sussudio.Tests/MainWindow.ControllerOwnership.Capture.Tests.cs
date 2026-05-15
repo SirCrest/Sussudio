@@ -22,6 +22,14 @@ static partial class Program
         AssertContains(adapterText, "=> _captureSelectionBindingController.EnsureDeviceSelection();");
         AssertContains(adapterText, "private void HandleSelectedDevicePropertyChanged()");
         AssertContains(adapterText, "=> _captureSelectionBindingController.HandleSelectedDevicePropertyChanged();");
+        AssertContains(adapterText, "private void HandleAvailableResolutionsPropertyChanged()");
+        AssertContains(adapterText, "=> _captureSelectionBindingController.HandleAvailableResolutionsPropertyChanged();");
+        AssertContains(adapterText, "private void HandleAvailableFrameRatesPropertyChanged()");
+        AssertContains(adapterText, "=> _captureSelectionBindingController.HandleAvailableFrameRatesPropertyChanged();");
+        AssertContains(adapterText, "private void HandleAvailablePresetsPropertyChanged()");
+        AssertContains(adapterText, "=> _captureSelectionBindingController.HandleAvailablePresetsPropertyChanged();");
+        AssertContains(adapterText, "private void HandleAvailableSplitEncodeModesPropertyChanged()");
+        AssertContains(adapterText, "=> _captureSelectionBindingController.HandleAvailableSplitEncodeModesPropertyChanged();");
         AssertContains(adapterText, "private void UpdateDeviceApplyButtonState()");
         AssertContains(adapterText, "private void AttachRecordingStringSelectionBindings()");
         AssertContains(adapterText, "=> _captureSelectionBindingController.AttachRecordingStringSelectionBindings();");
@@ -29,10 +37,30 @@ static partial class Program
         AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
         AssertContains(propertyChangedText, "EnsureResolutionSelection();");
         AssertContains(propertyChangedText, "HandleSelectedDevicePropertyChanged();");
+        AssertContains(propertyChangedText, "HandleAvailableResolutionsPropertyChanged();");
+        AssertContains(propertyChangedText, "HandleAvailableFrameRatesPropertyChanged();");
+        AssertContains(propertyChangedText, "HandleAvailablePresetsPropertyChanged();");
+        AssertContains(propertyChangedText, "HandleAvailableSplitEncodeModesPropertyChanged();");
         AssertContains(propertyChangedText, "ApplyDeviceAudioControlState();");
         AssertContains(controllerText, "internal sealed partial class CaptureSelectionBindingController");
         AssertContains(contextText, "internal sealed class CaptureSelectionBindingControllerContext");
         AssertContains(selectionSyncText, "private readonly int[] _selectionSyncQueued = new int[9];");
+        AssertContains(selectionSyncText, "public void HandleAvailableResolutionsPropertyChanged()");
+        AssertContains(selectionSyncText, "_context.ResolutionComboBox.ItemsSource = _context.ViewModel.AvailableResolutions;");
+        AssertContains(selectionSyncText, "EnsureResolutionSelection();");
+        AssertContains(selectionSyncText, "public void HandleAvailableFrameRatesPropertyChanged()");
+        AssertContains(selectionSyncText, "_context.FrameRateComboBox.ItemsSource = _context.ViewModel.AvailableFrameRates;");
+        AssertContains(selectionSyncText, "EnsureFrameRateSelection();");
+        AssertContains(selectionSyncText, "public void HandleAvailablePresetsPropertyChanged()");
+        AssertContains(selectionSyncText, "_context.PresetComboBox.ItemsSource = _context.ViewModel.AvailablePresets;");
+        AssertContains(selectionSyncText, "EnsurePresetSelection();");
+        AssertContains(selectionSyncText, "public void HandleAvailableSplitEncodeModesPropertyChanged()");
+        AssertContains(selectionSyncText, "_context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;");
+        AssertContains(selectionSyncText, "EnsureSplitEncodeModeSelection();");
+        AssertOccursBefore(selectionSyncText, "_context.ResolutionComboBox.ItemsSource = _context.ViewModel.AvailableResolutions;", "EnsureResolutionSelection();");
+        AssertOccursBefore(selectionSyncText, "_context.FrameRateComboBox.ItemsSource = _context.ViewModel.AvailableFrameRates;", "EnsureFrameRateSelection();");
+        AssertOccursBefore(selectionSyncText, "_context.PresetComboBox.ItemsSource = _context.ViewModel.AvailablePresets;", "EnsurePresetSelection();");
+        AssertOccursBefore(selectionSyncText, "_context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;", "EnsureSplitEncodeModeSelection();");
         AssertContains(controllerText, "public void AttachCollectionBindings()");
         AssertContains(controllerText, "public void AttachRecordingStringSelectionBindings()");
         AssertContains(controllerText, "_context.DeviceComboBox.ItemsSource = _context.ViewModel.Devices;");
@@ -61,6 +89,10 @@ static partial class Program
         AssertDoesNotContain(bindingsText, "private void EnsureDeviceSelection()");
         AssertDoesNotContain(propertyChangedText, "DEVICE_SELECTION_SYNC");
         AssertDoesNotContain(propertyChangedText, "DeviceComboBox.SelectedItem");
+        AssertDoesNotContain(propertyChangedText, "ResolutionComboBox.ItemsSource = ViewModel.AvailableResolutions;");
+        AssertDoesNotContain(propertyChangedText, "FrameRateComboBox.ItemsSource = ViewModel.AvailableFrameRates;");
+        AssertDoesNotContain(propertyChangedText, "PresetComboBox.ItemsSource = ViewModel.AvailablePresets;");
+        AssertDoesNotContain(propertyChangedText, "SplitEncodeComboBox.ItemsSource = ViewModel.AvailableSplitEncodeModes;");
 
         return Task.CompletedTask;
     }

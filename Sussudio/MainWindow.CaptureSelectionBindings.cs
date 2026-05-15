@@ -60,8 +60,14 @@ public sealed partial class MainWindow
     private void EnsureResolutionSelection()
         => _captureSelectionBindingController.EnsureResolutionSelection();
 
+    private void HandleAvailableResolutionsPropertyChanged()
+        => _captureSelectionBindingController.HandleAvailableResolutionsPropertyChanged();
+
     private void EnsureFrameRateSelection()
         => _captureSelectionBindingController.EnsureFrameRateSelection();
+
+    private void HandleAvailableFrameRatesPropertyChanged()
+        => _captureSelectionBindingController.HandleAvailableFrameRatesPropertyChanged();
 
     private void EnsureFormatSelection()
         => _captureSelectionBindingController.EnsureFormatSelection();
@@ -72,8 +78,14 @@ public sealed partial class MainWindow
     private void EnsurePresetSelection()
         => _captureSelectionBindingController.EnsurePresetSelection();
 
+    private void HandleAvailablePresetsPropertyChanged()
+        => _captureSelectionBindingController.HandleAvailablePresetsPropertyChanged();
+
     private void EnsureSplitEncodeModeSelection()
         => _captureSelectionBindingController.EnsureSplitEncodeModeSelection();
+
+    private void HandleAvailableSplitEncodeModesPropertyChanged()
+        => _captureSelectionBindingController.HandleAvailableSplitEncodeModesPropertyChanged();
 
     private bool HasPendingDeviceSelection()
         => _captureSelectionBindingController.HasPendingDeviceSelection();
