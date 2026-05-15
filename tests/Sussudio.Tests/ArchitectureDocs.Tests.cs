@@ -325,7 +325,8 @@ static partial class Program
             (fileName.StartsWith("StatsPresentationBuilder", StringComparison.Ordinal) ||
              fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
              string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
-             string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal));
+             string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
+             string.Equals(fileName, "SourceTelemetryPresentationBuilder.cs", StringComparison.Ordinal));
     }
 
     private static bool IsUiPresentationOwnershipFile(string relativePath)
@@ -343,7 +344,8 @@ static partial class Program
                  string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "DeviceAudioGainMapper.cs", StringComparison.Ordinal) ||
-                 string.Equals(fileName, "RecordingFormatSelectionPolicy.cs", StringComparison.Ordinal))) ||
+                 string.Equals(fileName, "RecordingFormatSelectionPolicy.cs", StringComparison.Ordinal) ||
+                 string.Equals(fileName, "SourceTelemetryPresentationBuilder.cs", StringComparison.Ordinal))) ||
             (string.Equals(directory, "Sussudio/Controllers", StringComparison.OrdinalIgnoreCase) &&
                 fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase));
     }

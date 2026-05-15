@@ -48,7 +48,7 @@ public partial class MainViewModel
             return;
         }
 
-        var refreshedSummary = BuildSourceTelemetrySummaryText(_latestSourceTelemetry, DateTimeOffset.UtcNow);
+        var refreshedSummary = SourceTelemetryPresentationBuilder.BuildSourceSummary(_latestSourceTelemetry, DateTimeOffset.UtcNow);
         if (!string.Equals(SourceTelemetrySummaryText, refreshedSummary, StringComparison.Ordinal))
         {
             SourceTelemetrySummaryText = refreshedSummary;
@@ -105,7 +105,7 @@ public partial class MainViewModel
         }
         _hasAppliedTelemetryEnums = true;
         _lastTelemetryAgeBucket = null;
-        SourceTelemetrySummaryText = BuildSourceTelemetrySummaryText(snapshot, DateTimeOffset.UtcNow);
+        SourceTelemetrySummaryText = SourceTelemetryPresentationBuilder.BuildSourceSummary(snapshot, DateTimeOffset.UtcNow);
 
         var modeKey = snapshot.GetModeKey();
         if (!string.IsNullOrWhiteSpace(modeKey) &&
@@ -153,49 +153,14 @@ public partial class MainViewModel
         }
     }
 
-    private static string BuildSourceTelemetrySummaryText(SourceSignalTelemetrySnapshot snapshot, DateTimeOffset nowUtc)
-    {
-        if (!snapshot.HasSignalData &&
-            snapshot.Availability is Models.SourceTelemetryAvailability.Unavailable or Models.SourceTelemetryAvailability.Unknown)
-        {
-            return "Source: waiting for signal telemetry";
-        }
-
-        var resolution = snapshot.HasDimensions
-            ? $"{snapshot.Width}x{snapshot.Height}"
-            : "?x?";
-        var fps = snapshot.FrameRateArg ??
-                  snapshot.FrameRateExact?.ToString("0.###") ??
-                  "?";
-        var hdr = snapshot.IsHdr.HasValue ? (snapshot.IsHdr.Value ? "HDR" : "SDR") : "HDR?";
-        var ageText = BuildTelemetryAgeText(snapshot.TimestampUtc, nowUtc);
-        return $"Source: {resolution} @ {fps} | {hdr} | {snapshot.Availability}/{snapshot.Confidence} | {ageText}";
-    }
-
-    private static string BuildTelemetryAgeText(DateTimeOffset timestampUtc, DateTimeOffset nowUtc)
-    {
-        var ageSeconds = TelemetryAgeHelper.ComputeAgeSeconds(timestampUtc, nowUtc);
-        if (!ageSeconds.HasValue)
-        {
-            return "updated ?";
-        }
-
-        return ageSeconds.Value <= 0
-            ? "updated now"
-            : $"updated {ageSeconds.Value}s ago";
-    }
-
     private void UpdateTargetSummary()
     {
-        var friendly = SelectedFriendlyFrameRate ?? Math.Round(SelectedFrameRate);
-        var exact = SelectedExactFrameRate ?? SelectedFrameRate;
-        var exactArg = SelectedExactFrameRateArg;
-        var exactText = !string.IsNullOrWhiteSpace(exactArg)
-            ? exactArg
-            : exact > 0
-                ? exact.ToString("0.###")
-                : "?";
-        var hdrStateText = string.IsNullOrWhiteSpace(HdrRuntimeState) ? "Unknown" : HdrRuntimeState;
-        SourceTargetSummaryText = $"Target: {GetSelectedResolutionDisplayText()} @ {friendly:0} (exact {exactText}) | HDR={hdrStateText}";
+        SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(
+            GetSelectedResolutionDisplayText(),
+            SelectedFrameRate,
+            SelectedFriendlyFrameRate,
+            SelectedExactFrameRate,
+            SelectedExactFrameRateArg,
+            HdrRuntimeState);
     }
 }

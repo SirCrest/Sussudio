@@ -1468,6 +1468,8 @@ and the small scale/fade animation now live in
 `Sussudio/Controllers/LiveSignalInfoController.cs`. `MainWindow.LiveSignalInfo.cs`
 is the XAML-facing adapter, while
 `Sussudio/ViewModels/MainViewModel.LiveSignalText.cs` owns label formatting.
+Source telemetry summary, telemetry age, and target-summary display text now
+live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`.
 
 Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
 and volume save suppression now live in
@@ -2027,6 +2029,10 @@ Remaining `tools/Common` ownership:
    Source-aware, HDR-aware, and SDR fallback resolution selection policy now
    lives in `MainViewModel.ResolutionSelectionPolicy.cs`; keep dropdown rebuild
    and effective resolution display in `MainViewModel.ResolutionOptions.cs`.
+   Source telemetry summary, telemetry age, and target-summary display text now
+   live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`; keep
+   snapshot application and source-aware auto-retargeting in
+   `MainViewModel.Telemetry.cs`.
    Settings persistence and load/save option restoration stay in
    `MainViewModel.Settings.cs`; active Flashback reactions to recording format,
    encoder quality/preset/split/bitrate, and buffer/GPU decode changes now live

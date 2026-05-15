@@ -1579,9 +1579,10 @@ Primary current owners:
   `MainViewModel.ResolutionSelectionPolicy.cs` owns source-aware, HDR-aware,
   and SDR fallback resolution selection helpers. `MainViewModel.ResolutionOptions.cs`
   owns the resolution dropdown rebuild and effective resolution display/query
-  helpers. `MainViewModel.Telemetry.cs` owns source telemetry projection, live
-  signal labels, source-aware auto-retargeting hints, and telemetry age
-  summaries. `MainViewModel.Settings.cs` owns settings load/save and simple
+  helpers. `MainViewModel.Telemetry.cs` owns source telemetry projection and
+  source-aware auto-retargeting hints. `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
+  owns source telemetry summary, telemetry age, and target-summary display text.
+  `MainViewModel.Settings.cs` owns settings load/save and simple
   persistence reactions. `MainViewModel.FlashbackSettings.cs` owns active
   Flashback reactions to recording-format, encoder, buffer, and GPU-decode
   setting changes. `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
