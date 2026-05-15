@@ -5,6 +5,10 @@ static partial class Program
     private static Task FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream()
     {
         var sourceText = ReadFlashbackExporterSource();
+        var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
+            .Replace("\r\n", "\n");
+        var streamTemplatesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs")
+            .Replace("\r\n", "\n");
 
         var templateSelectionBlock = ExtractTextBetween(
             sourceText,
@@ -27,14 +31,16 @@ static partial class Program
         AssertContains(incompleteVideoParamsBlock, "no segment had complete video parameters");
         AssertContains(sourceText, "var streamLayoutMismatch = FindSegmentStreamLayoutMismatch(");
         AssertContains(sourceText, "reason='stream_layout_mismatch' detail='{streamLayoutMismatch}'");
-        AssertContains(sourceText, "private static string? FindSegmentStreamLayoutMismatch(");
-        AssertContains(sourceText, "inputCodec->codec_type != templateCodec->codec_type");
-        AssertContains(sourceText, "inputCodec->codec_id != templateCodec->codec_id");
-        AssertContains(sourceText, "private static bool VideoDimensionsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)");
-        AssertContains(sourceText, "return !inputHasCompleteDimensions && templateHasCompleteDimensions;");
-        AssertContains(sourceText, "inputCodec->sample_rate != templateCodec->sample_rate");
-        AssertContains(sourceText, "inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels");
-        AssertContains(sourceText, "inputCodec->format != templateCodec->format");
+        AssertContains(streamTemplatesText, "private static string? FindSegmentStreamLayoutMismatch(");
+        AssertContains(streamTemplatesText, "inputCodec->codec_type != templateCodec->codec_type");
+        AssertContains(streamTemplatesText, "inputCodec->codec_id != templateCodec->codec_id");
+        AssertContains(streamTemplatesText, "private static bool VideoDimensionsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)");
+        AssertContains(streamTemplatesText, "return !inputHasCompleteDimensions && templateHasCompleteDimensions;");
+        AssertContains(streamTemplatesText, "inputCodec->sample_rate != templateCodec->sample_rate");
+        AssertContains(streamTemplatesText, "inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels");
+        AssertContains(streamTemplatesText, "inputCodec->format != templateCodec->format");
+        AssertDoesNotContain(streamsText, "private static string? FindSegmentStreamLayoutMismatch(");
+        AssertDoesNotContain(streamsText, "private static bool VideoDimensionsMatchOrCanUseTemplate(");
 
         return Task.CompletedTask;
     }

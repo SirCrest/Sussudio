@@ -77,6 +77,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Progress.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs").Replace("\r\n", "\n"),

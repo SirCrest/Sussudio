@@ -98,6 +98,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
             .Replace("\r\n", "\n");
+        var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
+            .Replace("\r\n", "\n");
+        var streamTemplatesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs")
+            .Replace("\r\n", "\n");
         var timeMathText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TimeMath.cs")
             .Replace("\r\n", "\n");
 
@@ -160,6 +164,14 @@ static partial class Program
         AssertContains(packetBuffersText, "private static void FreeBufferedPackets(");
         AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
         AssertContains(packetBuffersText, "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
+        AssertContains(streamsText, "private void OpenInput(string inputPath)");
+        AssertContains(streamsText, "private void CreateOutputContext(string tmpPath, bool fastStart)");
+        AssertContains(streamsText, "private static void OpenOutputIoAndWriteHeader(AVFormatContext* outputContext, string tmpPath, bool fastStart)");
+        AssertDoesNotContain(streamsText, "private static int[] CopyTemplateStreams(");
+        AssertDoesNotContain(streamsText, "private static string? FindSegmentStreamLayoutMismatch(");
+        AssertContains(streamTemplatesText, "private static int[] CopyTemplateStreams(");
+        AssertContains(streamTemplatesText, "private static string? FindSegmentStreamLayoutMismatch(");
+        AssertContains(streamTemplatesText, "private static bool VideoDimensionsMatchOrCanUseTemplate(");
         AssertContains(timeMathText, "private static long AddNonNegativeSaturated(long left, long right)");
         AssertContains(timeMathText, "private static long ToAvTimeBaseTimestampOrMax(TimeSpan value)");
         AssertContains(timeMathText, "private static long ToAvTimeBaseTimestamp(TimeSpan value)");

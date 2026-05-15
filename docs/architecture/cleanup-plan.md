@@ -1034,9 +1034,10 @@ normalization and segment boundary timestamp repair live in
 `Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`. Packet clone/free
 helpers and buffered packet flushes live in
 `Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs`. FFmpeg input and
-output context setup, stream count validation, stream-template copying, and segment
-stream-layout checks live in
-`Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`. Temp output
+output context setup, stream count validation, and output header writing live in
+`Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`. Stream-template copying
+and segment stream-layout compatibility checks live in
+`Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs`. Temp output
 validation, atomic replacement, overwrite policy, and invalid final-output cleanup live in
 `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
 Temp output cleanup, stale temp preparation, and orphan `.mp4.tmp` cleanup live
