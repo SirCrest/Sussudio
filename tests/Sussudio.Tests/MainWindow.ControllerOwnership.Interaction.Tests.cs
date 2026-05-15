@@ -81,6 +81,7 @@ static partial class Program
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
@@ -96,7 +97,10 @@ static partial class Program
         AssertContains(adapterText, "=> _previewAudioFadeController.StartFadeOutAsync(durationMs);");
         AssertContains(adapterText, "=> _previewAudioFadeController.CancelFadeInForUser();");
         AssertContains(mainWindowText, "InitializePreviewAudioFadeController();");
-        AssertContains(bindingsText, "IsPreviewAudioFadeInActive || IsPreviewAudioFadeAnimationActive");
+        AssertContains(bindingsText, "ApplyInitialAudioControlBindings();");
+        AssertContains(audioBindingsText, "IsPreviewAudioFadeInActive || IsPreviewAudioFadeAnimationActive");
+        AssertContains(audioBindingsText, "PreviewVolumeSlider.ValueChanged +=");
+        AssertContains(audioBindingsText, "CancelPreviewAudioFadeInForUser();");
         AssertContains(propertyChangedText, "await HandlePreviewingChangedAsync();");
         AssertContains(propertyChangedText, "HandlePreviewVolumeChanged();");
         AssertContains(audioPropertyChangedText, "if (IsPreviewAudioFadeInActive)");
@@ -110,6 +114,7 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private double _savedPreviewVolume;");
         AssertDoesNotContain(mainWindowText, "private bool _isVolumeFadingIn;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _previewVolumeFadeStoryboard;");
+        AssertDoesNotContain(bindingsText, "PreviewVolumeSlider.ValueChanged +=");
         AssertDoesNotContain(animationsText, "private void PrimePreviewAudioFadeIn()");
         AssertDoesNotContain(animationsText, "private void CompletePreviewAudioFadeIn(");
         AssertDoesNotContain(animationsText, "private async Task StartPreviewAudioFadeOutAsync(");
@@ -121,6 +126,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.MicrophoneControls.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
@@ -135,8 +141,9 @@ static partial class Program
         AssertContains(adapterText, "=> _microphoneControlsController.UpdateVisibility();");
         AssertContains(adapterText, "=> _microphoneControlsController.StopRowAnimation();");
         AssertContains(mainWindowText, "InitializeMicrophoneControlsController();");
-        AssertContains(bindingsText, "SetupMicrophoneVolumeBindings();");
-        AssertContains(bindingsText, "ApplyInitialMicrophoneControlsVisibility();");
+        AssertContains(bindingsText, "ApplyInitialAudioControlBindings();");
+        AssertContains(audioBindingsText, "SetupMicrophoneVolumeBindings();");
+        AssertContains(audioBindingsText, "ApplyInitialMicrophoneControlsVisibility();");
         AssertContains(propertyChangedText, "HandleMicrophoneEnabledChanged();");
         AssertContains(propertyChangedText, "HandleMicrophoneVolumeChanged();");
         AssertContains(audioPropertyChangedText, "UpdateMicrophoneControlsVisibility();");
@@ -155,6 +162,7 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private bool _syncingMicrophoneVolumeControls;");
         AssertDoesNotContain(mainWindowText, "private const double MicMeterRowHeight = 14;");
         AssertDoesNotContain(bindingsText, "MicVolumeSlider.ValueChanged +=");
+        AssertDoesNotContain(bindingsText, "SetupMicrophoneVolumeBindings();");
         AssertDoesNotContain(bindingsText, "private void SyncMicrophoneVolumeControls(double volumePercent)");
         AssertDoesNotContain(bindingsText, "private Storyboard CreateMicMeterRowStoryboard(bool showing)");
 

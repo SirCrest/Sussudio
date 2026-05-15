@@ -105,6 +105,8 @@ static partial class Program
     {
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs")
             .Replace("\r\n", "\n");
+        var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.AudioBindings.cs")
+            .Replace("\r\n", "\n");
         var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs")
             .Replace("\r\n", "\n");
         var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
@@ -180,8 +182,12 @@ static partial class Program
         AssertOccursBefore(schedulePreviewFadeIn, "_ = AnimatePreviewInAsync();", "StartPreviewAudioFadeIn();");
 
         var setupBindings = ExtractMemberCode(bindingsText, "SetupBindings");
-        AssertContains(setupBindings, "PrimePreviewAudioFadeIn();");
-        AssertContains(setupBindings, "CancelPreviewAudioFadeInForUser();");
+        AssertContains(setupBindings, "ApplyInitialAudioControlBindings();");
+
+        var initialAudioBindings = ExtractMemberCode(audioBindingsText, "ApplyInitialAudioControlBindings");
+        AssertContains(initialAudioBindings, "PrimePreviewAudioFadeIn();");
+        AssertContains(initialAudioBindings, "CancelPreviewAudioFadeInForUser();");
+        AssertOccursBefore(initialAudioBindings, "PrimePreviewAudioFadeIn();", "PreviewVolumeSlider.ValueChanged +=");
 
         var previewButtonClick = ExtractMemberCode(eventHandlersText, "PreviewButton_Click");
         AssertContains(previewButtonClick, "if (!ViewModel.IsPreviewing)\n                {\n                    RevealPreviewUnavailablePlaceholder();\n                }");

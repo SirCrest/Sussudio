@@ -38,9 +38,7 @@ public sealed partial class MainWindow
 {
     private void SetupBindings()
     {
-        InitializeAudioMeterBrushes();
-        ViewModel.AudioMeterActivated += EnsureAudioMeterTimerRunning;
-        ViewModel.MicrophoneMeterActivated += EnsureAudioMeterTimerRunning;
+        AttachAudioMeterActivationBindings();
 
         // Flashback defaults (set in code-behind to avoid XAML parse issues with Toggled handler)
         FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;
@@ -73,41 +71,9 @@ public sealed partial class MainWindow
         LiveResolutionTextBlock.Text = ViewModel.LiveResolution;
         LiveFrameRateTextBlock.Text = ViewModel.LiveFrameRate;
         LivePixelFormatTextBlock.Text = ViewModel.LivePixelFormat;
-        AudioRecordToggle.IsChecked = ViewModel.IsAudioEnabled;
-        AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
-        AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled;
-        SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);
-        // Save the user's preferred volume, start at 0 for hidden audio priming.
-        PrimePreviewAudioFadeIn();
-        PreviewVolumeSlider.ValueChanged += (s, e) =>
-        {
-            ViewModel.PreviewVolume = e.NewValue / 100.0;
-            PreviewVolumeLabel.Text = $"{(int)e.NewValue}%";
-        };
-        PreviewVolumeSlider.PointerCaptureLost += (s, e) =>
-        {
-            if (IsPreviewAudioFadeInActive || IsPreviewAudioFadeAnimationActive)
-            {
-                // User explicitly grabbed the slider during a preview volume fade.
-                // Pause the volume animation so it doesn't overwrite their choice
-                // (Stop() would snap properties back to base values).
-                CancelPreviewAudioFadeInForUser();
-            }
-            ViewModel.SavePreviewVolume();
-        };
-        SetupMicrophoneVolumeBindings();
-        CustomAudioToggle.IsChecked = ViewModel.IsCustomAudioInputEnabled;
-        CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
-        MicrophoneToggle.IsChecked = ViewModel.IsMicrophoneEnabled;
-        MicrophoneToggle.IsEnabled = !ViewModel.IsRecording;
+        ApplyInitialAudioControlBindings();
         ShowAllCaptureOptionsToggle.IsChecked = ViewModel.ShowAllCaptureOptions;
         StatsToggle.IsChecked = ViewModel.IsStatsVisible;
-        AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
-        AudioInputComboBox.SelectedItem = ViewModel.SelectedAudioInputDevice;
-        MicrophoneComboBox.IsEnabled = ViewModel.IsMicrophoneEnabled && !ViewModel.IsRecording;
-        MicrophoneComboBox.SelectedItem = ViewModel.SelectedMicrophoneDevice;
-        ApplyInitialMicrophoneControlsVisibility();
-        ApplyDeviceAudioControlState();
         FormatComboBox.SelectedItem = ViewModel.SelectedRecordingFormat;
         QualityComboBox.SelectedItem = ViewModel.SelectedQuality;
         PresetComboBox.SelectedItem = ViewModel.SelectedPreset;
@@ -120,16 +86,13 @@ public sealed partial class MainWindow
         HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
         TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
         ApplyHdrToggleEnabledState();
-        ResetAudioMeterVisuals();
-        SetAudioMeterTargetLevel(ViewModel.AudioMeterTarget);
+        ApplyInitialAudioMeterPresentation();
         ApplyAudioClipVisibility();
         RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing;
         RefreshHdrHintText();
         UpdateFpsTelemetryTooltip();
         EnsureDeviceSelection();
-        EnsureAudioInputSelection();
-        EnsureMicrophoneSelection();
-        EnsureDeviceAudioModeSelection();
+        EnsureAudioControlSelections();
         EnsureResolutionSelection();
         EnsureFrameRateSelection();
         EnsureFormatSelection();
@@ -144,32 +107,7 @@ public sealed partial class MainWindow
             UpdateDeviceApplyButtonState();
         };
 
-        AudioInputComboBox.SelectionChanged += (s, e) =>
-        {
-            if (AudioInputComboBox.SelectedItem is Sussudio.Models.AudioInputDevice device &&
-                device != ViewModel.SelectedAudioInputDevice)
-            {
-                ViewModel.SelectedAudioInputDevice = device;
-            }
-        };
-
-        MicrophoneComboBox.SelectionChanged += (s, e) =>
-        {
-            if (MicrophoneComboBox.SelectedItem is Sussudio.Models.AudioInputDevice device &&
-                device != ViewModel.SelectedMicrophoneDevice)
-            {
-                ViewModel.SelectedMicrophoneDevice = device;
-            }
-        };
-
-        DeviceAudioModeToggle.Toggled += (s, e) =>
-        {
-            var mode = DeviceAudioModeToggle.IsOn ? DeviceAudioMode.Analog : DeviceAudioMode.Hdmi;
-            if (!string.Equals(mode, ViewModel.SelectedDeviceAudioMode, StringComparison.OrdinalIgnoreCase))
-            {
-                ViewModel.SelectedDeviceAudioMode = mode;
-            }
-        };
+        AttachAudioSelectionBindings();
 
         ResolutionComboBox.SelectionChanged += (s, e) =>
         {
@@ -203,25 +141,15 @@ public sealed partial class MainWindow
         };
 
         AttachRecordingOptionBindings();
-        AudioRecordToggle.Checked += (s, e) => ViewModel.IsAudioEnabled = true;
-        AudioRecordToggle.Unchecked += (s, e) => ViewModel.IsAudioEnabled = false;
-        AudioPreviewToggle.Checked += (s, e) => ViewModel.IsAudioPreviewEnabled = true;
-        AudioPreviewToggle.Unchecked += (s, e) => ViewModel.IsAudioPreviewEnabled = false;
+        AttachAudioRecordPreviewToggleBindings();
         StatsToggle.Checked += StatsToggle_Checked;
         StatsToggle.Unchecked += StatsToggle_Unchecked;
         FrameTimeOverlayToggle.Checked += FrameTimeOverlayToggle_Checked;
         FrameTimeOverlayToggle.Unchecked += FrameTimeOverlayToggle_Unchecked;
-        CustomAudioToggle.Click += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsChecked == true;
-        MicrophoneToggle.Click += (s, e) => ViewModel.IsMicrophoneEnabled = MicrophoneToggle.IsChecked == true;
+        AttachAudioInputToggleBindings();
         ShowAllCaptureOptionsToggle.Click += (s, e) => ViewModel.ShowAllCaptureOptions = ShowAllCaptureOptionsToggle.IsChecked == true;
         FlashbackGpuDecodeToggle.Toggled += (s, e) => ViewModel.FlashbackGpuDecode = FlashbackGpuDecodeToggle.IsOn;
-        AnalogAudioGainSlider.ValueChanged += (s, e) =>
-        {
-            ViewModel.AnalogAudioGainPercent = e.NewValue;
-            AnalogAudioGainValueTextBlock.Text = $"{(int)Math.Round(e.NewValue)}%";
-        };
-        AudioMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
-        MicMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
+        AttachDeviceAudioGainAndMeterBindings();
         SetupResponsiveShellLayoutBindings();
         AttachOutputPathDisplay();
         ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);

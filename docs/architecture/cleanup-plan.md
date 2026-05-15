@@ -432,8 +432,9 @@ automation diagnostics disposal, NVML disposal, and ViewModel disposal.
 cloak/dark-mode helpers.
 
 Audio and microphone meter rendering now lives in
-`Sussudio/Controllers/AudioMeterController.cs`. The broader control-bar binding
-and microphone-row animation code remains in `MainWindow.Bindings.cs`.
+`Sussudio/Controllers/AudioMeterController.cs`. Audio/microphone initial control
+projection and event hookup now live in `Sussudio/MainWindow.AudioBindings.cs`;
+the broader non-audio control-bar binding code remains in `MainWindow.Bindings.cs`.
 
 Capture session transition legality now lives in
 `Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs`. `CaptureService`

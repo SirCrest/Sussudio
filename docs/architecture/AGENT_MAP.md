@@ -683,6 +683,9 @@ Primary current owners:
 - `Sussudio/MainWindow.Dispatching.cs` owns UI-thread enqueue helpers and
   guarded async event-handler execution used by automation adapters and XAML
   event handlers.
+- `Sussudio/MainWindow.Bindings.cs` owns the root `SetupBindings()`
+  orchestration and leaves feature-specific binding clusters in focused
+  partials or controllers.
 - `Sussudio/MainWindow.EventHandlers.cs` owns XAML user-input event handlers
   that bridge controls to view-model commands and shell animations.
 - `Sussudio/MainWindow.PropertyChanged.cs` owns the root ViewModel
@@ -692,9 +695,9 @@ Primary current owners:
   that have not yet moved behind named controllers.
 - `Sussudio/Controllers/AudioMeterController.cs` owns audio/microphone meter
   smoothing, timer lifetime, peak/range markers, and meter clip rendering.
-  `Sussudio/MainWindow.AudioMeter.cs` is its XAML-facing adapter. Keep
-  microphone row layout animation in `MainWindow.Bindings.cs` until that binding
-  surface is split separately.
+  `Sussudio/MainWindow.AudioMeter.cs` is its XAML-facing adapter.
+  `Sussudio/MainWindow.AudioBindings.cs` owns audio/microphone initial control
+  projection and event hookup during `SetupBindings()`.
 - `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility,
   frame-time overlay visibility, polling lifetime, and dock show/hide
   animations. `Sussudio/MainWindow.StatsSnapshot.cs` owns shell stats snapshot
@@ -1406,6 +1409,10 @@ Primary current owners:
   `Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs` owns
   device-audio mode/gain control projection. `MainWindow.CaptureSelectionBindings.cs`
   is the XAML-facing adapter.
+- `Sussudio/MainWindow.AudioBindings.cs` owns audio/microphone initial control
+  projection and event hookup: record/preview toggles, preview volume priming,
+  custom audio/microphone selection, device-audio mode/gain, and meter resize
+  hooks.
 - `Sussudio/Controllers/CaptureDeviceActionController.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
   path. `MainWindow.CaptureDeviceActions.cs` is the XAML-facing adapter.
