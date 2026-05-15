@@ -8,7 +8,8 @@ using Sussudio.Models;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Automation-facing option-list projection for CLI, MCP, and diagnostics clients.
+/// Automation-facing option and selected-control-state projection for CLI, MCP,
+/// and diagnostics clients.
 /// </summary>
 public partial class MainViewModel
 {

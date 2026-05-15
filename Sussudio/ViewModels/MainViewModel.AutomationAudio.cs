@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Automation mutators for audio, microphone, device-native audio, and preview
-/// volume routing.
+/// Automation command entry points for audio, microphone, device-native audio,
+/// and preview-volume routing.
 /// </summary>
 public partial class MainViewModel
 {

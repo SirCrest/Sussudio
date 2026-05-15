@@ -9,6 +9,9 @@ static partial class Program
             "Automation preview volume persists through the settings path",
             AutomationPreviewVolume_PersistsThroughSettingsPath);
         await AddCheckAsync(results,
+            "Automation audio commands preserve runtime guards",
+            AutomationAudioCommands_PreserveRuntimeGuards);
+        await AddCheckAsync(results,
             "Automation UI settings persist through the settings path",
             AutomationUiSettings_PersistThroughSettingsPath);
         await AddCheckAsync(results,

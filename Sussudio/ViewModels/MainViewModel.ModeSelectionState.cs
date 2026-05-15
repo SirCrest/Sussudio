@@ -4,7 +4,8 @@ using Sussudio.Models;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Shared frame-rate and capture-mode selection state resets.
+/// Shared frame-rate selection reset, automatic frame-rate application, and
+/// capture-mode selection state transitions.
 /// </summary>
 public partial class MainViewModel
 {

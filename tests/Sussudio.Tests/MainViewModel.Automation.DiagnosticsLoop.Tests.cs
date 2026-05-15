@@ -17,7 +17,12 @@ static partial class Program
         AssertContains(automationOptionsText, "BuildStringOptions(");
         AssertContains(automationOptionsText, "RecordingFormats = BuildStringOptions(AvailableRecordingFormats, SelectedRecordingFormat)");
         AssertContains(automationOptionsText, "MjpegDecoderCounts = Enumerable.Range(1, 8)");
+        AssertContains(automationOptionsText, "SelectedDeviceId = SelectedDevice?.Id");
+        AssertContains(automationOptionsText, "SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id");
+        AssertContains(automationOptionsText, "SelectedFrameRate = SelectedFrameRate");
+        AssertContains(automationOptionsText, "ShowAllCaptureOptions = ShowAllCaptureOptions");
         AssertContains(automationOptionsText, "PreviewVolumePercent = PreviewVolume * 100.0");
+        AssertContains(automationOptionsText, "IsStatsVisible = IsStatsVisible");
 
         return Task.CompletedTask;
     }

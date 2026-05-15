@@ -314,12 +314,13 @@ split into capacity/drop policy, scrub coalescing, and seek-slot barrier
 owners. Keep new Flashback tests in the closest owner file instead of
 regrowing the root helper shell.
 
-`tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` is now only the
-automation view-model surface and shared reflection-helper shell. Automation
-view-model regression coverage is split into diagnostics refresh, diagnostics
-projection ownership, runtime-safety behavior, and Flashback cleanup ownership
-partials. Keep new automation tests in the closest owner file instead of
-regrowing the root catch-all.
+`tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` still owns automation
+view-model surface, async interface contracts, recording-transition routing,
+and legacy broad routing assertions that have not yet moved to focused owners.
+Automation view-model regression coverage is split into diagnostics refresh,
+diagnostics projection ownership, runtime-safety behavior, audio command guards,
+and Flashback cleanup ownership partials. Keep new automation tests in the
+closest owner file instead of regrowing the root catch-all.
 
 `tests/Sussudio.Tests/MainViewModel.Capture.Tests.cs` is now only the
 capture-facing MainViewModel surface and shared source-inspection helper shell.
@@ -2059,10 +2060,13 @@ Remaining `tools/Common` ownership:
    `MainViewModel.DeviceAudioPropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
    timer/status/error handling now lives in `MainViewModel.Runtime.cs`, and
-   live-signal ViewModel property projection now lives in
-   `MainViewModel.LiveSignalPresentation.cs`; live-signal label formatting now lives in
-   `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`. Capture settings projection from UI/runtime state
-   now lives in `MainViewModel.CaptureSettings.cs`, leaving
+   live-capture info projection from runtime snapshots now lives in
+   `MainViewModel.LiveSignalPresentation.cs`, including audio-preview activity
+   and live resolution/frame-rate/pixel-format assignment; live-signal label
+   formatting now lives in
+   `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`. Capture
+   settings projection from UI/runtime state now lives in
+   `MainViewModel.CaptureSettings.cs`, leaving
    `MainViewModel.Capture.cs` focused on device/preview/reinitialize
    transitions. Recording toggle serialization, graceful stop, emergency stop,
    and start/stop recording transitions now live in
@@ -2070,15 +2074,18 @@ Remaining `tools/Common` ownership:
    path, counters, and transition flags now live in
    `MainViewModel.RecordingState.cs`. Bounded teardown and event unsubscription now live
    in `MainViewModel.Disposal.cs`. Automation-facing runtime/probe/view-model
-   snapshot projection now lives in `MainViewModel.AutomationSnapshots.cs`; automation
-   option-list projection now lives in `MainViewModel.AutomationOptionsSnapshot.cs`.
+   snapshot projection now lives in `MainViewModel.AutomationSnapshots.cs`;
+   automation options and selected-control-state projection now live in
+   `MainViewModel.AutomationOptionsSnapshot.cs`.
    Flashback playback commands, marker commands, and buffer/bitrate status projection now
    live in `MainViewModel.FlashbackPlayback.cs`. Flashback UI/automation export
    flow, progress/cancellation state, and segment projection now live in
    `MainViewModel.FlashbackExport.cs`. Frame-rate option rebuilding, observable
    collection mutation, and automatic frame-rate selection now live in
-   `MainViewModel.FrameRateOptions.cs`. Shared frame-rate/capture-mode selection
-   state resets live in `MainViewModel.ModeSelectionState.cs`. Source-rate filtering and
+   `MainViewModel.FrameRateOptions.cs`. Shared frame-rate selection reset,
+   resolved automatic frame-rate application, disabled frame-rate reason
+   projection, and capture-mode reset flags live in
+   `MainViewModel.ModeSelectionState.cs`. Source-rate filtering and
    `ShowAllCaptureOptions` unlock policy live in
    `MainViewModel.FrameRateSourceFilterPolicy.cs`, while `ShowAllCaptureOptions`
    change handling and deferred rebuild behavior live in
@@ -2113,8 +2120,9 @@ Remaining `tools/Common` ownership:
    mode/gain application, cancellation, debounce-to-flash, and persistence in
    `MainViewModel.AudioControls.cs`.
    UI-only automation mutators now live in `MainViewModel.AutomationUi.cs`.
-   Audio, audio-preview, preview-volume, device-native audio mode/gain, and
-   microphone automation mutators now live in
+   Automation command entry points for audio, audio-preview, preview-volume
+   clamp/persist, device-native audio mode/gain application, and microphone
+   enablement with recording-time refusal/idempotent handling now live in
    `MainViewModel.AutomationAudio.cs`.
    Automation device refresh, capture-device selection, audio-input selection,
    and custom audio-input enablement now live in

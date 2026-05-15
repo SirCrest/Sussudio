@@ -69,6 +69,9 @@ static partial class Program
         AssertDoesNotContain(resolutionOptionsText, "private void ResetFrameRateSelectionState()");
         AssertDoesNotContain(resolutionOptionsText, "private void ApplyResolvedFrameRateSelection(");
         AssertDoesNotContain(resolutionOptionsText, "private void ResetModeSelectionState()");
+        AssertDoesNotContain(frameRateOptionsText, "private void ResetFrameRateSelectionState()");
+        AssertDoesNotContain(frameRateOptionsText, "private void ApplyResolvedFrameRateSelection(");
+        AssertDoesNotContain(frameRateOptionsText, "private void ResetModeSelectionState()");
         AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selected, SelectedFrameRate > 0 ? SelectedFrameRate : 60);");
         AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selected, fallbackRate);");
         AssertContains(modeSelectionText, "private void ResetFrameRateSelectionState()");
@@ -264,6 +267,7 @@ static partial class Program
 
         AssertContains(runtimeText, "UpdateLiveCaptureInfo(runtimeSnapshot);");
         AssertContains(runtimeText, "ResetLiveCaptureInfo();");
+        AssertDoesNotContain(runtimeText, "IsAudioPreviewActive =");
         AssertDoesNotContain(runtimeText, "private void UpdateLiveCaptureInfo(");
         AssertDoesNotContain(runtimeText, "private void ResetLiveCaptureInfo()");
         AssertContains(liveSignalPresentationText, "private void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot? runtimeSnapshot = null)");

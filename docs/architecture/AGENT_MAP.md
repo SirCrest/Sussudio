@@ -809,8 +809,10 @@ Primary current owners:
   Flashback polling, playhead motion, and marker-presentation ownership
   assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` owns automation
-  view-model surface, async method contract, and recording-transition routing
-  assertions.
+  view-model surface, async method contract, recording-transition routing, and
+  legacy broad routing assertions that have not yet moved to focused owners.
+- `tests/Sussudio.Tests/MainViewModel.Automation.Audio.Tests.cs` owns
+  automation audio/microphone command entry-point and runtime-guard assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` owns
   automation UI-setting persistence and frame-time/stat visibility contracts.
 - `tests/Sussudio.Tests/MainViewModel.Automation.CaptureMode.Tests.cs` owns
@@ -1579,9 +1581,10 @@ Primary current owners:
   dispatcher enqueue/invoke helpers and preview event fan-out for the partial
   family. `MainViewModel.Runtime.cs` owns timer refreshes, recording bitrate
   display, capture status/error fan-out, and resume cleanup callbacks.
-  `MainViewModel.LiveSignalPresentation.cs` owns live-signal ViewModel property
-  projection and delegates label formatting to
-  `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`.
+  `MainViewModel.LiveSignalPresentation.cs` owns live-capture info projection
+  from `CaptureRuntimeSnapshot`, including audio-preview activity and
+  live-resolution/frame-rate/pixel-format assignment, and delegates label
+  formatting to `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`.
   `MainViewModel.CaptureSettings.cs` owns capture settings projection from UI
   selection and observed runtime/source state.
   `MainViewModel.Capture.cs` owns device initialization, preview start/stop,
@@ -1594,15 +1597,17 @@ Primary current owners:
   export-cancellation cleanup.
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing runtime,
   health, recording, view-model, and probe snapshot projection.
-  `MainViewModel.AutomationOptionsSnapshot.cs` owns automation-facing option-list
-  projection. `MainViewModel.FlashbackPlayback.cs` owns
+  `MainViewModel.AutomationOptionsSnapshot.cs` owns automation-facing options
+  and selected-control-state projection for CLI/MCP clients.
+  `MainViewModel.FlashbackPlayback.cs` owns
   Flashback playback commands, marker commands, and buffer/bitrate status
   projection. `MainViewModel.FlashbackExport.cs` owns Flashback UI/automation
   export flow, progress/cancellation state, and segment projection.
   `MainViewModel.FrameRateOptions.cs` owns frame-rate option rebuilding,
   observable collection mutation, and automatic frame-rate selection.
-  `MainViewModel.ModeSelectionState.cs` owns shared frame-rate and capture-mode
-  selection state resets.
+  `MainViewModel.ModeSelectionState.cs` owns shared frame-rate selection reset,
+  resolved automatic frame-rate application, disabled frame-rate reason
+  projection, and capture-mode reset flags.
   `MainViewModel.FrameRateSourceFilterPolicy.cs` owns source-rate filtering and
   `ShowAllCaptureOptions` unlock policy. `MainViewModel.CaptureOptionVisibility.cs`
   owns `ShowAllCaptureOptions` change handling and deferred rebuild behavior.
@@ -1635,8 +1640,10 @@ Primary current owners:
   setting changes. `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
   for stats/settings visibility, frame-time overlay display, Flashback timeline
   visibility, and show-all capture options. `MainViewModel.AutomationAudio.cs`
-  owns audio enablement, audio-preview enablement, preview volume persistence,
-  device-native audio mode/gain, and microphone automation mutators.
+  owns automation command entry points for audio enablement, audio-preview
+  enablement, preview-volume clamp/persist, device-native mode/gain
+  application, and microphone enablement with recording-time refusal and
+  idempotent handling.
   `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh,
   capture-device selection, audio-input selection, and custom audio-input
   enablement.
