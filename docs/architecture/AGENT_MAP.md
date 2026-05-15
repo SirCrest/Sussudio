@@ -2062,8 +2062,17 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback
   rejected-export diagnostic scenario dispatch and flows for inactive buffers
   and active Flashback recording backends.
-- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs` owns
-  Flashback recording-settings deferral checks and post-stop preset restore.
+- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs` is the
+  Flashback recording-settings diagnostic marker shell.
+- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
+  owns deferred preset state shared by startup, background task, and post-stop
+  recording checks.
+- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`
+  owns preset mutation and restart/disable rejection checks while Flashback is
+  recording.
+- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`
+  owns post-stop preset verification, encoder-frame check, and original-preset
+  restore.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs` owns the
   Flashback completed-segment playback scenario.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`

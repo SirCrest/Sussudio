@@ -1957,9 +1957,13 @@ scenario dispatch plus inactive-buffer and active-recording rejection flows,
 including failure-kind and post-rejection state assertions.
 
 Diagnostic-session Flashback recording-settings deferral now lives in
-`tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`. It owns
-preset mutation rejection during Flashback recording plus post-stop preset
-verification and restore.
+`tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs` as a
+marker shell. Deferred preset state lives in
+`DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`, active
+recording mutation/rejection checks live in
+`DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`, and
+post-stop preset verification, encoder-frame check, and original-preset restore
+live in `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`.
 
 Diagnostic-session Flashback segment playback now lives in
 `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`. It owns
@@ -2075,6 +2079,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
+- `DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
+- `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`
+- `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
 - `DiagnosticSessionFlashbackSegments.cs`
