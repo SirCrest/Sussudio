@@ -193,6 +193,30 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureService_RuntimeHdrPipelineProjection_LivesInFocusedPartial()
+    {
+        var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(runtimeText, "var hdrPipeline = CaptureRuntimeHdrPipelineSnapshotFields(");
+        AssertContains(runtimeText, "HdrRuntimeState = hdrPipeline.HdrRuntimeState,");
+        AssertContains(runtimeText, "EncoderOutputPixelFormat = hdrPipeline.EncoderOutputPixelFormat,");
+        AssertContains(runtimeText, "PipelineModeReason = hdrPipeline.PipelineModeReason,");
+
+        AssertContains(hdrPipelineText, "private static RuntimeHdrPipelineSnapshotFields CaptureRuntimeHdrPipelineSnapshotFields(");
+        AssertContains(hdrPipelineText, "ResolveEncoderOutputPixelFormat(recordingContext, requestedSettings)");
+        AssertContains(hdrPipelineText, "Requested pipeline '{requestedPipelineMode}'");
+        AssertContains(hdrPipelineText, "HdrDowngradeCode = hdrAutoDowngraded ? \"encoder-input-not-p010\" : string.Empty");
+        AssertContains(hdrPipelineText, "HdrRequestedButSourceNot10Bit = hdrRequested && sourceTelemetry.IsHdr == false");
+
+        AssertDoesNotContain(runtimeText, "Requested pipeline '{requestedPipelineMode}'");
+        AssertDoesNotContain(runtimeText, "hdrAutoDowngraded ? \"encoder-input-not-p010\"");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_RuntimeRecordingIntegrityProjection_LivesInFocusedPartial()
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")

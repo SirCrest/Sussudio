@@ -23,69 +23,14 @@ public partial class CaptureService
             _isVideoPreviewActive,
             _isRecording);
         var requestedSettings = _activeRecordingSettings ?? _currentSettings;
-        var hdrRequested = requestedSettings?.HdrEnabled == true &&
-                           requestedSettings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
-        var requestedPipelineMode = hdrRequested ? "HDR10-PQ" : "SDR";
-        var encoderInputPixelFormat = _activeVideoInputPixelFormat;
-        var encoderOutputPixelFormat = ResolveEncoderOutputPixelFormat(_recordingContext, requestedSettings);
-        var encoderVideoCodec = ResolveEncoderCodecName(requestedSettings);
-        var encoderVideoProfile = ResolveEncoderVideoProfile(_recordingContext, requestedSettings);
-        bool? encoderTenBitPipelineConfirmed = _isRecording
-            ? _recordingContext?.HdrPipelineActive == true
-            : null;
-        var mfConvertersDisabled = _mfConvertersDisabled;
-        var negotiatedMediaSubtypeToken = string.Equals(encoderInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase)
-            ? "P010|MFVideoFormat_P010"
-            : "NV12";
-        var activePipelineMode = _isRecording
-            ? (string.Equals(
-                encoderInputPixelFormat,
-                "p010le",
-                StringComparison.OrdinalIgnoreCase)
-                ? "HDR10-PQ"
-                : "SDR")
-            : requestedPipelineMode;
-        var pipelineModeMatched = string.Equals(
-            requestedPipelineMode,
-            activePipelineMode,
-            StringComparison.OrdinalIgnoreCase);
-        var pipelineModeStatus = _isRecording
-            ? (pipelineModeMatched ? "Active" : "Violation")
-            : "Ready";
-        var pipelineModeReason = pipelineModeMatched
-            ? string.Empty
-            : $"Requested pipeline '{requestedPipelineMode}', but active encoder ingress is '{activePipelineMode}' " +
-              $"(pixel-format={encoderInputPixelFormat ?? "unknown"}).";
-        var hdrOutputActive = _isRecording &&
-                              string.Equals(
-                                  activePipelineMode,
-                                  "HDR10-PQ",
-                                  StringComparison.OrdinalIgnoreCase);
-        var hdrRequestedButSourceNot10Bit = hdrRequested && _latestSourceTelemetry.IsHdr == false;
-        var hdrAutoDowngraded = hdrRequested && _isRecording && !pipelineModeMatched;
-        var hdrAutoDowngradeReason = hdrAutoDowngraded
-            ? pipelineModeReason
-            : string.Empty;
-        var hdrDowngradeCode = hdrAutoDowngraded ? "encoder-input-not-p010" : string.Empty;
-        var hdrRuntimeState = hdrOutputActive
-            ? "Active"
-            : hdrRequested
-                ? (_isRecording ? "Violation" : "Ready")
-                : "Inactive";
-        var hdrReadinessReason = hdrOutputActive
-            ? string.Empty
-            : hdrRequested
-                ? (_isRecording
-                    ? pipelineModeReason
-                    : "HDR requested and will activate when recording starts.")
-                : string.Empty;
-        var hdrActivationReason = hdrOutputActive
-            ? "P010 pipeline is active."
-            : hdrRequested
-                ? (_isRecording
-                    ? "HDR requested but the active recording pipeline is not in HDR mode."
-                    : "HDR requested and waiting for recording start.")
-                : "HDR not requested.";
+        var hdrPipeline = CaptureRuntimeHdrPipelineSnapshotFields(
+            requestedSettings,
+            _activeVideoInputPixelFormat,
+            _recordingContext,
+            _isRecording,
+            _latestSourceTelemetry,
+            _mfConvertersDisabled);
+        var hdrRequested = hdrPipeline.HdrRequested;
         var sourceTelemetryTimestampUtc = _latestSourceTelemetry.TimestampUtc;
         var sourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(sourceTelemetryTimestampUtc, DateTimeOffset.UtcNow);
         var sourceTelemetryBackend = ResolveSourceTelemetryBackend(_latestSourceTelemetry);
@@ -110,7 +55,7 @@ public partial class CaptureService
         var observedNonP010FrameCount = observedNv12FrameCount + observedOtherFrameCount;
         var hdrWarmupState = ResolveHdrWarmupState(
             hdrRequested,
-            hdrOutputActive,
+            hdrPipeline.HdrOutputActive,
             _isRecording,
             observedP010FrameCount);
         var requestedReaderSubtype = !string.IsNullOrWhiteSpace(requestedSettings?.RequestedPixelFormat)
@@ -217,24 +162,24 @@ public partial class CaptureService
             RequestedHdrMasteringMetadata =
                 !string.IsNullOrWhiteSpace(requestedSettings?.HdrMasterDisplayMetadata) ||
                 ((requestedSettings?.HdrMaxCll ?? 0) > 0 && (requestedSettings?.HdrMaxFall ?? 0) > 0),
-            HdrOutputActive = hdrOutputActive,
-            HdrActivationReason = hdrActivationReason,
-            HdrRuntimeState = hdrRuntimeState,
-            HdrReadinessReason = hdrReadinessReason,
+            HdrOutputActive = hdrPipeline.HdrOutputActive,
+            HdrActivationReason = hdrPipeline.HdrActivationReason,
+            HdrRuntimeState = hdrPipeline.HdrRuntimeState,
+            HdrReadinessReason = hdrPipeline.HdrReadinessReason,
             HdrWarmupState = hdrWarmupState,
             HdrWarmupRequiredP010Frames = hdrRequested ? 1 : 0,
             HdrWarmupAllowedNonP010Frames = hdrRequested ? 2 : 0,
             HdrWarmupObservedP010Frames = (int)Math.Min(int.MaxValue, observedP010FrameCount),
             HdrWarmupObservedNonP010Frames = (int)Math.Min(int.MaxValue, Math.Max(0L, observedNonP010FrameCount)),
-            HdrAutoDowngraded = hdrAutoDowngraded,
-            HdrAutoDowngradeReason = hdrAutoDowngradeReason,
-            HdrDowngradeCode = hdrDowngradeCode,
-            HdrRequestedButSourceNot10Bit = hdrRequestedButSourceNot10Bit,
-            RequestedPipelineMode = requestedPipelineMode,
-            ActivePipelineMode = activePipelineMode,
-            PipelineModeMatched = pipelineModeMatched,
-            PipelineModeStatus = pipelineModeStatus,
-            PipelineModeReason = pipelineModeReason,
+            HdrAutoDowngraded = hdrPipeline.HdrAutoDowngraded,
+            HdrAutoDowngradeReason = hdrPipeline.HdrAutoDowngradeReason,
+            HdrDowngradeCode = hdrPipeline.HdrDowngradeCode,
+            HdrRequestedButSourceNot10Bit = hdrPipeline.HdrRequestedButSourceNot10Bit,
+            RequestedPipelineMode = hdrPipeline.RequestedPipelineMode,
+            ActivePipelineMode = hdrPipeline.ActivePipelineMode,
+            PipelineModeMatched = hdrPipeline.PipelineModeMatched,
+            PipelineModeStatus = hdrPipeline.PipelineModeStatus,
+            PipelineModeReason = hdrPipeline.PipelineModeReason,
             RequestedOutputPath = requestedSettings?.OutputPath,
             ActualWidth = _actualWidth,
             ActualHeight = _actualHeight,
@@ -259,13 +204,13 @@ public partial class CaptureService
             ObservedP010BitDepthSampleCount = observedP010BitDepthSampleCount,
             ObservedP010Low2BitNonZeroPercent = observedP010Low2BitNonZeroPercent,
             ObservedP010Likely8BitUpscaled = observedP010Likely8BitUpscaled,
-            EncoderInputPixelFormat = encoderInputPixelFormat,
-            EncoderOutputPixelFormat = encoderOutputPixelFormat,
-            EncoderVideoCodec = encoderVideoCodec,
-            EncoderVideoProfile = encoderVideoProfile,
-            EncoderTenBitPipelineConfirmed = encoderTenBitPipelineConfirmed,
-            MfReadwriteDisableConverters = mfConvertersDisabled,
-            NegotiatedMediaSubtypeToken = negotiatedMediaSubtypeToken,
+            EncoderInputPixelFormat = hdrPipeline.EncoderInputPixelFormat,
+            EncoderOutputPixelFormat = hdrPipeline.EncoderOutputPixelFormat,
+            EncoderVideoCodec = hdrPipeline.EncoderVideoCodec,
+            EncoderVideoProfile = hdrPipeline.EncoderVideoProfile,
+            EncoderTenBitPipelineConfirmed = hdrPipeline.EncoderTenBitPipelineConfirmed,
+            MfReadwriteDisableConverters = hdrPipeline.MfConvertersDisabled,
+            NegotiatedMediaSubtypeToken = hdrPipeline.NegotiatedMediaSubtypeToken,
             DetectedSourceFrameRate = _latestSourceTelemetry.FrameRateExact,
             DetectedSourceFrameRateArg = _latestSourceTelemetry.FrameRateArg,
             SourceFrameRateOrigin = sourceFrameRateOrigin,

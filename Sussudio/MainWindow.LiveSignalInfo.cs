@@ -15,6 +15,9 @@ public sealed partial class MainWindow
             DispatcherQueue = DispatcherQueue,
             LiveSignalInfoPanel = LiveSignalInfoPanel,
             LiveSignalInfoScale = LiveSignalInfoScale,
+            LiveResolutionTextBlock = LiveResolutionTextBlock,
+            LiveFrameRateTextBlock = LiveFrameRateTextBlock,
+            LivePixelFormatTextBlock = LivePixelFormatTextBlock,
         });
     }
 

@@ -12,6 +12,9 @@ internal sealed class LiveSignalInfoControllerContext
     public required DispatcherQueue DispatcherQueue { get; init; }
     public required StackPanel LiveSignalInfoPanel { get; init; }
     public required ScaleTransform LiveSignalInfoScale { get; init; }
+    public required TextBlock LiveResolutionTextBlock { get; init; }
+    public required TextBlock LiveFrameRateTextBlock { get; init; }
+    public required TextBlock LivePixelFormatTextBlock { get; init; }
 }
 
 internal sealed class LiveSignalInfoController
@@ -38,6 +41,9 @@ internal sealed class LiveSignalInfoController
         _liveResolution = liveResolution;
         _liveFrameRate = liveFrameRate;
         _livePixelFormat = livePixelFormat;
+        _context.LiveResolutionTextBlock.Text = liveResolution;
+        _context.LiveFrameRateTextBlock.Text = liveFrameRate;
+        _context.LivePixelFormatTextBlock.Text = livePixelFormat;
 
         if (HasCompleteLiveSignal() && !_visible)
         {

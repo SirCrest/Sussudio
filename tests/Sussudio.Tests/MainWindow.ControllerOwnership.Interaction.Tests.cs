@@ -39,11 +39,15 @@ static partial class Program
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var liveSignalAdapterText = ReadRepoFile("Sussudio/MainWindow.LiveSignalInfo.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/LiveSignalInfoController.cs").Replace("\r\n", "\n");
 
         AssertContains(liveSignalAdapterText, "private LiveSignalInfoController _liveSignalInfoController = null!;");
         AssertContains(liveSignalAdapterText, "private void InitializeLiveSignalInfoController()");
+        AssertContains(liveSignalAdapterText, "LiveResolutionTextBlock = LiveResolutionTextBlock,");
+        AssertContains(liveSignalAdapterText, "LiveFrameRateTextBlock = LiveFrameRateTextBlock,");
+        AssertContains(liveSignalAdapterText, "LivePixelFormatTextBlock = LivePixelFormatTextBlock,");
         AssertContains(liveSignalAdapterText, "=> _liveSignalInfoController.Update(");
         AssertContains(liveSignalAdapterText, "ViewModel.LiveResolution,");
         AssertContains(liveSignalAdapterText, "private void StopLiveSignalInfoTimers()");
@@ -54,9 +58,15 @@ static partial class Program
         AssertContains(controllerText, "private DispatcherQueueTimer? _showDebounceTimer;");
         AssertContains(controllerText, "private DispatcherQueueTimer? _hideDebounceTimer;");
         AssertContains(controllerText, "public void Update(string liveResolution, string liveFrameRate, string livePixelFormat)");
+        AssertContains(controllerText, "_context.LiveResolutionTextBlock.Text = liveResolution;");
+        AssertContains(controllerText, "_context.LiveFrameRateTextBlock.Text = liveFrameRate;");
+        AssertContains(controllerText, "_context.LivePixelFormatTextBlock.Text = livePixelFormat;");
         AssertContains(controllerText, "private bool HasCompleteLiveSignal()");
         AssertContains(controllerText, "private void AnimateIn()");
         AssertContains(controllerText, "private void AnimateOut()");
+        AssertDoesNotContain(propertyChangedText, "LiveResolutionTextBlock.Text = ViewModel.LiveResolution;");
+        AssertDoesNotContain(propertyChangedText, "LiveFrameRateTextBlock.Text = ViewModel.LiveFrameRate;");
+        AssertDoesNotContain(propertyChangedText, "LivePixelFormatTextBlock.Text = ViewModel.LivePixelFormat;");
         AssertDoesNotContain(mainWindowText, "private bool _liveSignalInfoVisible;");
         AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _liveSignalDebounceTimer;");
         AssertDoesNotContain(animationsText, "private void UpdateLiveSignalInfoVisibility()");

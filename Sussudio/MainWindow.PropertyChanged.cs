@@ -214,17 +214,14 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.LiveResolution):
-                LiveResolutionTextBlock.Text = ViewModel.LiveResolution;
                 UpdateLiveSignalInfoVisibility();
                 break;
 
             case nameof(MainViewModel.LiveFrameRate):
-                LiveFrameRateTextBlock.Text = ViewModel.LiveFrameRate;
                 UpdateLiveSignalInfoVisibility();
                 break;
 
             case nameof(MainViewModel.LivePixelFormat):
-                LivePixelFormatTextBlock.Text = ViewModel.LivePixelFormat;
                 UpdateLiveSignalInfoVisibility();
                 break;
 
