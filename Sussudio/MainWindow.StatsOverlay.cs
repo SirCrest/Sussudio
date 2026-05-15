@@ -142,6 +142,13 @@ public sealed partial class MainWindow
         UpdateDecodeSection();
         UpdateGpuSection();
     }
+
+    private void RefreshDiagnosticsSection()
+    {
+        var snapshot = GetStatsSnapshot();
+        UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
+    }
+
     private void UpdateDiagnosticsSection(IReadOnlyList<SourceTelemetryDetailEntry> telemetryDetails, string? diagnosticSummary)
     {
         if (Diagnostics_Content.Visibility != Visibility.Visible)

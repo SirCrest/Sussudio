@@ -113,7 +113,7 @@ static partial class Program
         var repoRoot = GetRepoRoot();
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var missing = EnumerateUiPresentationOwnershipFiles(repoRoot)
-            .Where(file => !AgentMapContainsExactCodeSpan(agentMapText, file))
+            .Where(file => !AgentMapContainsRequiredUiPresentationCodeSpan(agentMapText, file))
             .ToArray();
 
         if (missing.Length > 0)
@@ -267,6 +267,29 @@ static partial class Program
             agentMapText.Contains($"`{fileName}`", StringComparison.Ordinal);
     }
 
+    private static bool AgentMapContainsRequiredUiPresentationCodeSpan(string agentMapText, string relativePath)
+    {
+        var normalizedPath = NormalizeProjectInclude(relativePath);
+        if (RequiresExactUiPresentationOwnershipPath(normalizedPath))
+        {
+            return agentMapText.Contains($"`{normalizedPath}`", StringComparison.Ordinal);
+        }
+
+        return AgentMapContainsExactCodeSpan(agentMapText, normalizedPath);
+    }
+
+    private static bool RequiresExactUiPresentationOwnershipPath(string normalizedPath)
+    {
+        var directory = GetRepoDirectory(normalizedPath);
+        var fileName = GetRepoFileName(normalizedPath);
+
+        return string.Equals(directory, "Sussudio/ViewModels", StringComparison.OrdinalIgnoreCase) &&
+            (fileName.StartsWith("StatsPresentationBuilder", StringComparison.Ordinal) ||
+             fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
+             string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
+             string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal));
+    }
+
     private static bool IsUiPresentationOwnershipFile(string relativePath)
     {
         var normalizedPath = NormalizeProjectInclude(relativePath);
@@ -277,10 +300,14 @@ static partial class Program
                 fileName.StartsWith("MainWindow", StringComparison.Ordinal)) ||
             (string.Equals(directory, "Sussudio/ViewModels", StringComparison.OrdinalIgnoreCase) &&
                 (fileName.StartsWith("MainViewModel", StringComparison.Ordinal) ||
+                 fileName.StartsWith("StatsPresentationBuilder", StringComparison.Ordinal) ||
+                 fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
+                 string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
+                 string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "DeviceAudioGainMapper.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "RecordingFormatSelectionPolicy.cs", StringComparison.Ordinal))) ||
             (string.Equals(directory, "Sussudio/Controllers", StringComparison.OrdinalIgnoreCase) &&
-                fileName.Contains("Controller", StringComparison.Ordinal));
+                fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase));
     }
 
     private static string GetRepoDirectory(string relativePath)

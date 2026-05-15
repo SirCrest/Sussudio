@@ -702,11 +702,12 @@ Primary current owners:
   projection and event hookup during `SetupBindings()`.
 - `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility,
   frame-time overlay visibility, polling lifetime, and dock show/hide
-  animations. `Sussudio/MainWindow.StatsSnapshot.cs` owns shell stats snapshot
-  assembly from renderer and capture-health state. `MainWindow.StatsOverlay.cs`
-  still owns metric text projection.
-- `Sussudio/MainWindow.StatsSections.cs` owns stats dock section expand/collapse
-  chrome and automation-visible section visibility application.
+  animations. `Sussudio/Controllers/StatsSectionChromeController.cs` owns
+  stats dock section expand/collapse chrome and automation-visible section
+  visibility application. `Sussudio/MainWindow.StatsSections.cs` is the
+  XAML/automation adapter for that controller. `Sussudio/MainWindow.StatsSnapshot.cs`
+  owns shell stats snapshot assembly from renderer and capture-health state.
+  `MainWindow.StatsOverlay.cs` still owns metric text projection.
 - `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
   contract checks for stats overlay lifecycle wiring, stats section chrome,
   source-telemetry panel projection, and diagnostic row pooling.
@@ -716,15 +717,23 @@ Primary current owners:
   text assignment.
 - `Sussudio/MainWindow.FrameTimeOverlay.cs` owns compact frame-time overlay
   text projection and graph line drawing. Keep frame-time canvas math there,
-  while `Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs` owns
-  compact preview-stat formatting, range/sample text policy, and frame-time
-  overlay presentation. `Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs`
-  owns visual-cadence FPS/repeat/motion text formatting.
-  `StatsPresentationBuilder.Diagnostics.cs` owns diagnostic summary/row parsing.
-  `StatsPresentationBuilder.Status.cs` owns stats lane status classification and
-  visual-repeat drift policy.
-  `StatsPresentationModels.cs` owns the internal DTO records/enums consumed by
-  the stats overlay controllers.
+  while `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns stats dock
+  summary construction and shared formatting.
+  `Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs` owns compact
+  preview-stat formatting, range/sample text policy, and frame-time overlay
+  presentation. `Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs` owns
+  visual-cadence FPS/repeat/motion text formatting.
+  `Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs` owns diagnostic
+  summary/row parsing. `Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`
+  owns stats lane status classification and visual-repeat drift policy.
+  `Sussudio/ViewModels/StatsPresentationModels.cs` owns the internal DTO
+  records/enums consumed by the stats overlay controllers.
+  `Sussudio/ViewModels/StatsSnapshot.cs` owns the UI stats snapshot DTO, and
+  `Sussudio/ViewModels/StatsSnapshotBuilder.cs` owns capture-health, renderer,
+  and shell view-state projection into that DTO.
+- `Sussudio/ViewModels/CaptureModeOptionsBuilder.cs` owns pure resolution and
+  video-format option construction, HDR mode enablement, and source aspect-ratio
+  filtering. Shell files bind and display those options.
 - `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` owns legacy
   harness contract checks for stats presentation and frame-time overlay policy.
   Keep new stats presentation ownership assertions there instead of growing

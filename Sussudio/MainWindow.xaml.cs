@@ -41,6 +41,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _automationPipeName = automationHost.PipeName;
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
         InitializeStatsOverlayController();
+        InitializeStatsSectionChromeController();
 
         var appWindow = InitializeNativeShellWindow();
         RegisterCloseLifecycle(appWindow);

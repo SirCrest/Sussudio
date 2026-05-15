@@ -1233,6 +1233,9 @@ Stats dock and frame-time overlay lifecycle now live in
 still renders metric values and assembles snapshots, but polling, visibility
 state, dynamic diagnostic row pools, and dock animations are out of the shell
 fields.
+Stats section expand/collapse chrome and automation-visible section application
+now live in `Sussudio/Controllers/StatsSectionChromeController.cs`.
+`Sussudio/MainWindow.StatsSections.cs` is the XAML/automation adapter.
 Stats overlay lifecycle, source-telemetry panel, and diagnostic row pooling
 contract checks now live in
 `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs`.
@@ -1250,12 +1253,18 @@ Stats diagnostic summary/row parsing now lives in
 overlay presentation/range/sample text policy now lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs`; visual-cadence
 FPS/repeat/motion text formatting now lives in
-`Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs`; keep the root
-`StatsPresentationBuilder.cs` focused on dock and shared formatting.
+`Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs`; keep
+`Sussudio/ViewModels/StatsPresentationBuilder.cs` focused on dock and shared
+formatting.
 Stats lane status classification and visual-repeat drift policy now live in
 `Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`.
 Stats presentation DTO records/enums now live in
 `Sussudio/ViewModels/StatsPresentationModels.cs`.
+The UI stats snapshot contract lives in `Sussudio/ViewModels/StatsSnapshot.cs`;
+projection from capture health, renderer metrics, and shell view state lives in
+`Sussudio/ViewModels/StatsSnapshotBuilder.cs`.
+Pure capture option construction lives in
+`Sussudio/ViewModels/CaptureModeOptionsBuilder.cs`.
 
 Dynamic stats diagnostic row pools now live in
 `Sussudio/Controllers/StatsDiagnosticRowsController.cs`. It owns decode/GPU

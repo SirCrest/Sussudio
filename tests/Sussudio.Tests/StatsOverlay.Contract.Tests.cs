@@ -59,14 +59,29 @@ static partial class Program
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsSectionsText = ReadRepoFile("Sussudio/MainWindow.StatsSections.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/StatsSectionChromeController.cs").Replace("\r\n", "\n");
 
+        AssertContains(statsSectionsText, "private StatsSectionChromeController _statsSectionChromeController = null!;");
+        AssertContains(statsSectionsText, "private void InitializeStatsSectionChromeController()");
         AssertContains(statsSectionsText, "private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)");
         AssertContains(statsSectionsText, "private void SetStatsSectionVisible(string section, bool visible)");
-        AssertContains(statsSectionsText, "content.Visibility = collapsing ? Visibility.Collapsed : Visibility.Visible;");
-        AssertContains(statsSectionsText, "rotate.Angle = collapsing ? -90 : 0;");
-        AssertContains(statsSectionsText, "rotate.Angle = visible ? 0 : -90;");
-        AssertContains(statsSectionsText, "UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);");
+        AssertContains(statsSectionsText, "=> _statsSectionChromeController.ToggleFromHeader(sender);");
+        AssertContains(statsSectionsText, "=> _statsSectionChromeController.SetVisible(section, visible);");
+        AssertContains(controllerText, "internal sealed class StatsSectionChromeControllerContext");
+        AssertContains(controllerText, "internal sealed class StatsSectionChromeController");
+        AssertContains(controllerText, "public void ToggleFromHeader(object sender)");
+        AssertContains(controllerText, "public void SetVisible(string section, bool visible)");
+        AssertContains(controllerText, "_context.StatsDockPanel.FindName(contentName) as StackPanel");
+        AssertContains(controllerText, "content.Visibility = collapsing ? Visibility.Collapsed : Visibility.Visible;");
+        AssertContains(controllerText, "content.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;");
+        AssertContains(controllerText, "rotate.Angle = expanded ? 0 : -90;");
+        AssertContains(controllerText, "_context.RefreshDiagnosticsSection();");
         AssertContains(mainWindowText, "ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;");
+        AssertContains(mainWindowText, "InitializeStatsSectionChromeController();");
+        AssertContains(statsOverlayText, "private void RefreshDiagnosticsSection()");
+        AssertDoesNotContain(statsSectionsText, "StatsDockPanel.FindName(contentName)");
+        AssertDoesNotContain(statsSectionsText, "rotate.Angle =");
+        AssertDoesNotContain(statsSectionsText, "UpdateDiagnosticsSection(snapshot");
         AssertDoesNotContain(statsOverlayText, "private void StatsSectionHeader_Tapped(");
         AssertDoesNotContain(statsOverlayText, "private void SetStatsSectionVisible(string section, bool visible)");
 
