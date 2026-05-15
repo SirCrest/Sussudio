@@ -138,7 +138,8 @@ public partial class CaptureService
         var frameLedger = unifiedVideoCapture?.GetFrameLedgerSummary() ?? FrameLedgerSummary.Empty;
         const bool muxAttempted = false;
         bool? muxSucceeded = null;
-        var recordingIntegrity = ResolveRecordingIntegritySummary(unifiedVideoCapture, sink, _flashbackSink);
+        var recordingIntegrity = CaptureRuntimeRecordingIntegritySnapshotFields(
+            ResolveRecordingIntegritySummary(unifiedVideoCapture, sink, _flashbackSink));
         var (runtimeAvSyncDriftMs, runtimeAvSyncDriftRate) = ComputeAvSyncDrift();
         var (runtimeAvSyncEncoderDriftMs, runtimeAvSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
 

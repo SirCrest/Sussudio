@@ -192,4 +192,27 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task CaptureService_RuntimeRecordingIntegrityProjection_LivesInFocusedPartial()
+    {
+        var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var recordingIntegrityText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotRecordingIntegrity.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(runtimeText, "var recordingIntegrity = CaptureRuntimeRecordingIntegritySnapshotFields(");
+        AssertContains(runtimeText, "RecordingIntegrityStatus = recordingIntegrity.Status,");
+        AssertContains(runtimeText, "RecordingIntegrityAudioFramesWrittenToSink = recordingIntegrity.AudioFramesWrittenToSink,");
+        AssertContains(runtimeText, "RecordingIntegrityEncoderAvSyncDriftMs = recordingIntegrity.EncoderAvSyncDriftMs,");
+
+        AssertContains(recordingIntegrityText, "private static RuntimeRecordingIntegritySnapshotFields CaptureRuntimeRecordingIntegritySnapshotFields(");
+        AssertContains(recordingIntegrityText, "Status = recordingIntegrity.Status,");
+        AssertContains(recordingIntegrityText, "AudioFramesWrittenToSink = recordingIntegrity.AudioFramesWrittenToSink,");
+        AssertContains(recordingIntegrityText, "EncoderAvSyncDriftMs = recordingIntegrity.EncoderAvSyncDriftMs,");
+        AssertContains(recordingIntegrityText, "Reason = recordingIntegrity.Reason");
+
+        AssertDoesNotContain(runtimeText, "var recordingIntegrity = ResolveRecordingIntegritySummary(");
+
+        return Task.CompletedTask;
+    }
 }

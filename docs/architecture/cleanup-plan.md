@@ -1169,7 +1169,9 @@ Runtime capture snapshot projection now lives in
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
 automation, and verification; video ingest, source-reader health, WASAPI
 capture, and playback output counter projection now lives in
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs`.
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs`, and
+recording-integrity summary projection now lives in
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotRecordingIntegrity.cs`.
 Recording-format and observed-frame helper policy live in focused snapshot
 partials.
 

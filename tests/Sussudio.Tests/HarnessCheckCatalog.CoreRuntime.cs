@@ -69,6 +69,9 @@ static partial class Program
             "CaptureService runtime ingest audio projection lives in focused partial",
             CaptureService_RuntimeIngestAudioProjection_LivesInFocusedPartial);
         await AddCheckAsync(results,
+            "CaptureService runtime recording integrity projection lives in focused partial",
+            CaptureService_RuntimeRecordingIntegrityProjection_LivesInFocusedPartial);
+        await AddCheckAsync(results,
             "CaptureService snapshot helper policy lives in focused partials",
             CaptureService_SnapshotHelperPolicy_LivesInFocusedPartials);
         await AddCheckAsync(results,
