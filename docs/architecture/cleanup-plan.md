@@ -2109,6 +2109,9 @@ Remaining `tools/Common` ownership:
    mode/gain application, cancellation, debounce-to-flash, and persistence in
    `MainViewModel.AudioControls.cs`.
    UI-only automation mutators now live in `MainViewModel.AutomationUi.cs`.
+   Audio, audio-preview, preview-volume, device-native audio mode/gain, and
+   microphone automation mutators now live in
+   `MainViewModel.AutomationAudio.cs`.
    Automation device refresh, capture-device selection, audio-input selection,
    and custom audio-input enablement now live in
    `MainViewModel.AutomationDeviceSelection.cs`.
@@ -2120,7 +2123,8 @@ Remaining `tools/Common` ownership:
    `MainViewModel.AutomationCaptureMode.cs`.
    Startup FFmpeg capability probes for recording formats and split-encode modes
    now live in `MainViewModel.RecordingCapabilityRefresh.cs`.
-   Keep the remaining command mutation code in `MainViewModel.Automation.cs`.
+   Keep the remaining Flashback/HDR/preview/recording command mutation code in
+   `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.
 

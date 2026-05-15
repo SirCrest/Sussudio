@@ -18,16 +18,6 @@ public partial class MainViewModel
         }, cancellationToken);
     }
 
-    public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)
-    {
-        return InvokeOnUiThreadAsync(() =>
-        {
-            PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);
-            SavePreviewVolume();
-            return Task.CompletedTask;
-        }, cancellationToken);
-    }
-
     public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }
     public Action<bool>? FrameTimeOverlayVisibilityHandler { get; set; }
 

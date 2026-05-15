@@ -39,6 +39,8 @@ static partial class Program
     {
         var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
             .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
@@ -112,8 +114,14 @@ static partial class Program
         var interfaceText = ReadRepoFile("Sussudio/Services/Automation/IAutomationViewModel.cs")
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
-        var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
-            .Replace("\r\n", "\n")
+        var automationRootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
+            .Replace("\r\n", "\n");
+        var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
+            .Replace("\r\n", "\n");
+        var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationUi.cs")
+            .Replace("\r\n", "\n");
+        var automationText = automationRootText
+            + "\n" + automationAudioText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
@@ -224,6 +232,20 @@ static partial class Program
         AssertContains(automationText, "InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken)");
         AssertContains(automationText, "await _sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken).ConfigureAwait(false)");
         AssertContains(automationText, "_flashbackBitrateSamples.Clear();\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
+        AssertContains(automationAudioText, "public Task SetAudioEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(automationAudioText, "public Task SetAudioPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
+        AssertContains(automationAudioText, "public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)");
+        AssertContains(automationAudioText, "public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)");
+        AssertContains(automationAudioText, "public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(automationAudioText, "private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)");
+        AssertDoesNotContain(automationRootText, "public Task SetAudioEnabledAsync");
+        AssertDoesNotContain(automationRootText, "public Task SetAudioPreviewEnabledAsync");
+        AssertDoesNotContain(automationRootText, "public Task SetDeviceAudioModeAsync");
+        AssertDoesNotContain(automationRootText, "public Task SetAnalogAudioGainAsync");
+        AssertDoesNotContain(automationRootText, "public Task SetMicrophoneEnabledAsync");
+        AssertDoesNotContain(automationRootText, "public Task SetPreviewVolumeAsync");
+        AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
         AssertContains(automationText, "=> InvokeOnUiThreadAsync(() => RefreshDevicesAsync(cancellationToken), cancellationToken);");
         AssertContains(automationText, "await StartPreviewAsync(userInitiated: true, cancellationToken);");
         AssertContains(automationText, "await StopPreviewAsync(userInitiated: true, teardownPipeline: false, cancellationToken);");

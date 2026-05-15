@@ -1629,7 +1629,9 @@ Primary current owners:
   Flashback reactions to recording-format, encoder, buffer, and GPU-decode
   setting changes. `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
   for stats/settings visibility, frame-time overlay display, Flashback timeline
-  visibility, show-all capture options, and preview volume persistence.
+  visibility, and show-all capture options. `MainViewModel.AutomationAudio.cs`
+  owns audio enablement, audio-preview enablement, preview volume persistence,
+  device-native audio mode/gain, and microphone automation mutators.
   `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh,
   capture-device selection, audio-input selection, and custom audio-input
   enablement.
@@ -1640,7 +1642,8 @@ Primary current owners:
   encoder preset/quality/split-mode/custom-bitrate, and output-path automation
   mutators. `MainViewModel.RecordingCapabilityRefresh.cs` owns startup FFmpeg
   capability probes for recording formats and split-encode modes.
-  Remaining automation command mutation code stays in `MainViewModel.Automation.cs`.
+  Remaining automation command mutation code for Flashback enable/restart, HDR,
+  preview, and recording desired state stays in `MainViewModel.Automation.cs`.
 
 Refactor direction:
 
