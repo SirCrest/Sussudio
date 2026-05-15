@@ -1696,9 +1696,9 @@ Flashback, playback, and recording-backed diagnostics while the runner only
 starts the scenario tasks.
 
 Diagnostic-session Flashback rejected-export scenarios now live in
-`tools/Common/DiagnosticSessionFlashbackRejectedExports.cs`. They own inactive
-buffer and active-recording rejection flows, including failure-kind and
-post-rejection state assertions.
+`tools/Common/DiagnosticSessionFlashbackRejectedExports.cs`. It owns rejected-export
+scenario dispatch plus inactive-buffer and active-recording rejection flows,
+including failure-kind and post-rejection state assertions.
 
 Diagnostic-session Flashback recording-settings deferral now lives in
 `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`. It owns

@@ -65,6 +65,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(rejectedText, "internal static class DiagnosticSessionFlashbackRejectedExports");
+        AssertContains(rejectedText, "internal static async Task RunSelectedRejectedExportScenariosAsync(");
         AssertContains(rejectedText, "internal static async Task RunFlashbackExportRejectedAsync(");
         AssertContains(rejectedText, "\"flashback-rejected-export.mp4\"");
         AssertContains(rejectedText, "BufferInactive");
@@ -73,7 +74,14 @@ static partial class Program
         AssertContains(rejectedText, "\"flashback-recording-rejected-export.mp4\"");
         AssertContains(rejectedText, "UnavailableDuringRecording");
         AssertContains(rejectedText, "recording backend changed after rejected export");
-        AssertContains(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackRejectedExports;");
+        var dispatchText = ExtractMemberCode(rejectedText, "RunSelectedRejectedExportScenariosAsync");
+        AssertContains(dispatchText, "scenarioPlan.RunFlashbackExportRejected");
+        AssertContains(dispatchText, "scenarioPlan.RunFlashbackRecordingExportRejected");
+        AssertOccursBefore(dispatchText, "RunFlashbackExportRejectedAsync(", "RunFlashbackRecordingExportRejectedAsync(");
+        AssertContains(runnerText, "DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(");
+        AssertDoesNotContain(runnerText, "using static Sussudio.Tools.DiagnosticSessionFlashbackRejectedExports;");
+        AssertDoesNotContain(runnerText, "RunFlashbackExportRejectedAsync(");
+        AssertDoesNotContain(runnerText, "RunFlashbackRecordingExportRejectedAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackExportRejectedAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRecordingExportRejectedAsync(");
 

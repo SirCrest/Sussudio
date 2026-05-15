@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-using static Sussudio.Tools.DiagnosticSessionFlashbackRejectedExports;
 using static Sussudio.Tools.DiagnosticSessionSampler;
 
 namespace Sussudio.Tools;
@@ -55,8 +54,6 @@ public static class DiagnosticSessionRunner
         var stoppedRecordingForVerification = false;
         var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);
         var runFlashbackPlayback = scenarioPlan.RunFlashbackPlayback;
-        var runFlashbackRecordingExportRejected = scenarioPlan.RunFlashbackRecordingExportRejected;
-        var runFlashbackExportRejected = scenarioPlan.RunFlashbackExportRejected;
         FlashbackRecordingSettingsDeferredPresetState flashbackRecordingSettingsDeferredPresetState = default;
         using var scenarioCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var scenarioCancellationToken = scenarioCts.Token;
@@ -131,27 +128,14 @@ public static class DiagnosticSessionRunner
                 .AwaitRecordingSettingsDeferredAsync(flashbackRecordingSettingsDeferredPresetState)
                 .ConfigureAwait(false);
 
-            if (runFlashbackExportRejected)
-            {
-                await RunFlashbackExportRejectedAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        commandChannel.SendAsync,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-            }
-
-            if (runFlashbackRecordingExportRejected)
-            {
-                await RunFlashbackRecordingExportRejectedAsync(
-                        outputDirectory,
-                        actions,
-                        warnings,
-                        commandChannel.SendAsync,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-            }
+            await DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(
+                    scenarioPlan,
+                    outputDirectory,
+                    actions,
+                    warnings,
+                    commandChannel.SendAsync,
+                    cancellationToken)
+                .ConfigureAwait(false);
 
             presentMon = await backgroundTasks.AwaitPresentMonAsync(presentMon, warnings).ConfigureAwait(false);
             }
