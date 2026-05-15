@@ -21,6 +21,9 @@ static partial class Program
         var jsonWithEncoder = json.Replace(
             "\"FlashbackActive\":true,",
             "\"FlashbackActive\":true,\"EncoderCodecName\":\"hevc_nvenc\",\"EncoderWidth\":3840,\"EncoderHeight\":2160,\"EncoderFrameRate\":120,\"EncoderFrameRateNumerator\":120,\"EncoderFrameRateDenominator\":1,\"EncoderTargetBitRate\":12345678,",
+            StringComparison.Ordinal).Replace(
+            "\"DetectedSourceFrameRate\":120,",
+            "\"AvSyncCaptureDriftMs\":1.5,\"AvSyncCaptureDriftRateMsPerSec\":0.1,\"AvSyncEncoderDriftMs\":-0.5,\"AvSyncEncoderCorrectionSamples\":2,\"DetectedSourceFrameRate\":120,",
             StringComparison.Ordinal);
         using var document = JsonDocument.Parse(jsonWithEncoder);
         var previousCulture = CultureInfo.CurrentCulture;
@@ -53,6 +56,9 @@ static partial class Program
         AssertContains(output, "== MJPEG Pipeline Timing ==");
         AssertContains(output, "== Preview ==");
         AssertContains(output, "== Source ==");
+        AssertContains(output, "== AV Sync ==");
+        AssertContains(output, "Capture Drift: 1.5ms | Rate: 0.1ms/s");
+        AssertContains(output, "Encoder Drift: -0.5ms | Correction Samples: 2");
         AssertContains(output, "Encoder: hevc_nvenc 3840x2160 @ 120 fps (120/1) | Target: 12.3 Mbps");
         AssertContains(output, "Buffer: 45.0s | Disk: 100.0 MB | Written: 150 MB");
         AssertContains(output, "Written: 150 MB");
@@ -61,19 +67,28 @@ static partial class Program
         var ssctlFormatterRoot = ReadRepoFile("tools/ssctl/Formatters.cs");
         var ssctlFormatterSource = ReadSsctlSnapshotFormatterSource();
         var ssctlSnapshotRootSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
+        var ssctlSnapshotAvSyncSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.AvSync.cs");
         var ssctlSnapshotFlashbackSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Flashback.cs");
         var ssctlSnapshotMemorySource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Memory.cs");
         var ssctlSnapshotMjpegSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Mjpeg.cs");
         var ssctlSnapshotPreviewSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Preview.cs");
+        var ssctlSnapshotSourceSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Source.cs");
         AssertDoesNotContain(ssctlFormatterRoot, "public static string FormatSnapshot");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotFlashbackSection(builder, snapshot);");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotMemorySection(builder, snapshot);");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotMjpegTimingSection(builder, snapshot);");
+        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotAvSyncSection(builder, snapshot);");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotPreviewSection(builder, snapshot);");
+        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotSourceSection(builder, snapshot);");
         AssertDoesNotContain(ssctlSnapshotRootSource, "var flashbackActive = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackActive\", \"false\");");
         AssertDoesNotContain(ssctlSnapshotRootSource, "builder.AppendLine(\"== Memory & GC ==\");");
         AssertDoesNotContain(ssctlSnapshotRootSource, "var mjpegDecodeSamples = AutomationSnapshotFormatter.Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
+        AssertDoesNotContain(ssctlSnapshotRootSource, "var avSyncDrift = AutomationSnapshotFormatter.Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
         AssertDoesNotContain(ssctlSnapshotRootSource, "var rendererMode = AutomationSnapshotFormatter.Get(snapshot, \"PreviewRendererMode\");");
+        AssertDoesNotContain(ssctlSnapshotRootSource, "builder.AppendLine(\"== Source ==\");");
+        AssertContains(ssctlSnapshotAvSyncSource, "private static void AppendSnapshotAvSyncSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotAvSyncSource, "var avSyncDrift = AutomationSnapshotFormatter.Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
+        AssertContains(ssctlSnapshotAvSyncSource, "builder.AppendLine(\"== AV Sync ==\");");
         AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotFlashbackSource, "var flashbackActive = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackActive\", \"false\");");
         AssertContains(ssctlSnapshotMemorySource, "private static void AppendSnapshotMemorySection(StringBuilder builder, JsonElement snapshot)");
@@ -82,6 +97,9 @@ static partial class Program
         AssertContains(ssctlSnapshotMjpegSource, "var mjpegDecodeSamples = AutomationSnapshotFormatter.Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
         AssertContains(ssctlSnapshotPreviewSource, "private static void AppendSnapshotPreviewSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotPreviewSource, "var rendererMode = AutomationSnapshotFormatter.Get(snapshot, \"PreviewRendererMode\");");
+        AssertContains(ssctlSnapshotSourceSource, "private static void AppendSnapshotSourceSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotSourceSource, "builder.AppendLine(\"== Source ==\");");
+        AssertContains(ssctlSnapshotSourceSource, "var sourceFrameRate = AutomationSnapshotFormatter.Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
         AssertContains(ReadRepoFile("tools/ssctl/Formatters.Diagnostics.cs"), "public static string FormatDiagnostics");
         AssertContains(ReadRepoFile("tools/ssctl/Formatters.Options.cs"), "public static string FormatOptions");
         var ssctlTimelineRootSource = ReadRepoFile("tools/ssctl/Formatters.Timeline.cs");

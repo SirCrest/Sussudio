@@ -1742,11 +1742,15 @@ Primary owners:
 - `tools/ssctl/Formatters.cs` is the console projection facade only.
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration and
   remaining root text sections.
+- `tools/ssctl/Formatters.Snapshot.AvSync.cs` owns embedded snapshot AV-sync
+  drift text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Memory.cs` owns embedded snapshot Memory/GC
   text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer snapshot
+  text.
+- `tools/ssctl/Formatters.Snapshot.Source.cs` owns source telemetry snapshot
   text.
 - `tools/ssctl/Formatters.Diagnostics.cs` owns recent diagnostic-event output.
 - `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
