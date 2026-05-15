@@ -250,25 +250,37 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainWindowTitlePresentation_LivesInTitlePartial()
+    private static Task MainWindowTitlePresentation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var titleText = ReadRepoFile("Sussudio/MainWindow.WindowTitle.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/WindowTitleController.cs").Replace("\r\n", "\n");
 
-        AssertContains(titleText, "private readonly string _windowTitleBase;");
-        AssertContains(titleText, "private static string BuildWindowTitleBase()");
-        AssertContains(titleText, "Environment.ProcessPath");
-        AssertContains(titleText, "File.GetLastWriteTime(exePath)");
-        AssertContains(titleText, "CultureInfo.InvariantCulture");
+        AssertContains(titleText, "private WindowTitleController _windowTitleController = null!;");
+        AssertContains(titleText, "private void InitializeWindowTitleController()");
         AssertContains(titleText, "private void ApplyWindowTitle()");
-        AssertContains(titleText, "Title = $\"{_windowTitleBase} - REC {ViewModel.RecordingTime}\";");
-        AssertContains(mainWindowText, "_windowTitleBase = BuildWindowTitleBase();");
+        AssertContains(titleText, "=> _windowTitleController = new WindowTitleController();");
+        AssertContains(titleText, "=> Title = _windowTitleController.BuildTitle(ViewModel.IsRecording, ViewModel.RecordingTime);");
+        AssertContains(controllerText, "internal sealed class WindowTitleController");
+        AssertContains(controllerText, "private const string DefaultTitle = \"Simple Sussudio\";");
+        AssertContains(controllerText, "public string BuildTitle(bool isRecording, string recordingTime)");
+        AssertContains(controllerText, "internal static string BuildWindowTitleBase()");
+        AssertContains(controllerText, "Environment.ProcessPath");
+        AssertContains(controllerText, "File.GetLastWriteTime(exePath)");
+        AssertContains(controllerText, "internal static string FormatBuildTitle(DateTime buildTime)");
+        AssertContains(controllerText, "CultureInfo.InvariantCulture");
+        AssertContains(controllerText, "internal static string FormatTitle(string baseTitle, bool isRecording, string recordingTime)");
+        AssertContains(controllerText, "=> isRecording ? $\"{baseTitle} - REC {recordingTime}\" : baseTitle;");
+        AssertContains(mainWindowText, "InitializeWindowTitleController();");
         AssertContains(mainWindowText, "ApplyWindowTitle();");
         AssertContains(propertyChangedText, "ApplyWindowTitle();");
         AssertDoesNotContain(mainWindowText, "private static string BuildWindowTitleBase()");
         AssertDoesNotContain(mainWindowText, "private void ApplyWindowTitle()");
         AssertDoesNotContain(mainWindowText, "CultureInfo.InvariantCulture");
+        AssertDoesNotContain(titleText, "Environment.ProcessPath");
+        AssertDoesNotContain(titleText, "File.GetLastWriteTime(");
+        AssertDoesNotContain(titleText, "CultureInfo.InvariantCulture");
 
         return Task.CompletedTask;
     }

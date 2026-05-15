@@ -31,7 +31,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         ViewModel = new MainViewModel();
         ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;
         ViewModel.FrameTimeOverlayVisibilityHandler = SetFrameTimeOverlayVisible;
-        _windowTitleBase = BuildWindowTitleBase();
+        InitializeWindowTitleController();
         ApplyWindowTitle();
         _nvmlMonitor = new NvmlMonitor();
         var automationHost = CreateAutomationHost();

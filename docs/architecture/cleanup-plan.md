@@ -439,7 +439,8 @@ Close/finalize handling remains in
 `MainWindow.CloseLifecycle.cs`.
 
 Window title base/build-stamp formatting and the recording-time suffix now live
-in `Sussudio/MainWindow.WindowTitle.cs`.
+in `Sussudio/Controllers/WindowTitleController.cs`; `MainWindow.WindowTitle.cs`
+keeps only the XAML-facing initialization and title assignment hook.
 
 Window close lifecycle and native window helpers are now explicit:
 `Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`, automation

@@ -679,8 +679,10 @@ Primary current owners:
   owns the read-only preview runtime snapshot construction, including renderer
   metrics, blank/stall suspicion, cadence projection, and D3D diagnostic fields.
   Close/finalize behavior stays with `MainWindow.CloseLifecycle.cs`.
-- `Sussudio/MainWindow.WindowTitle.cs` owns window title base/build-stamp
-  formatting and the recording-time suffix used by property changes.
+- `Sussudio/MainWindow.WindowTitle.cs` keeps the XAML-facing title update hook;
+  `Sussudio/Controllers/WindowTitleController.cs` owns window title
+  base/build-stamp formatting and the recording-time suffix used by property
+  changes.
 - `Sussudio/Controllers/StatusStripPresentationController.cs` owns bottom
   status-strip projection: status text, recording time, disk warning,
   disk-space text, recording size, recording bitrate, and the Flashback bitrate

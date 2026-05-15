@@ -43,8 +43,11 @@ static partial class Program
             "Preview runtime snapshot controller preserves null-D3D policy",
             PreviewRuntimeSnapshotController_PreservesNullD3dProjectionPolicy);
         await AddCheckAsync(results,
-            "MainWindow title presentation lives in title partial",
-            MainWindowTitlePresentation_LivesInTitlePartial);
+            "MainWindow title presentation lives in controller",
+            MainWindowTitlePresentation_LivesInController);
+        await AddCheckAsync(results,
+            "Window title controller formats build stamp and recording suffix",
+            WindowTitleController_FormatsBuildStampAndRecordingSuffix);
         await AddCheckAsync(results,
             "MainWindow close lifecycle and native helpers are split",
             MainWindowCloseLifecycleAndNativeHelpers_AreSplit);
