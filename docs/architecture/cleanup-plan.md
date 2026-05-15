@@ -1863,7 +1863,7 @@ snapshots, and summary. `DiagnosticSessionRunExecution.Scenario.cs` owns the
 scenario phase handoff, while `DiagnosticSessionScenarioPhaseRunner.cs` owns the
 main scenario execution phase for setup/startup, sampling, background task
 awaits, rejected-export handling, PresentMon await, fault drain, and explicit
-phase context/state records.
+phase context/state/result records.
 `DiagnosticSessionRunExecution.ResultRequest.cs` owns the final result-build
 request handoff from computed runner state to the result builder.
 The public options/result/sample contracts are separated from runner behavior. The result
@@ -2374,7 +2374,7 @@ Remaining `tools/Common` ownership:
    while `tools/Common/DiagnosticSessionRunExecution.cs` owns the mutable run
    phase plan, `DiagnosticSessionRunExecution.Scenario.cs` owns the scenario
    phase handoff, and `DiagnosticSessionScenarioPhaseRunner.cs` owns the main
-   scenario execution phase. Scenario catalog, initial scenario setup, optional scenario
+   scenario execution phase and explicit scenario result handoff. Scenario catalog, initial scenario setup, optional scenario
    startup, cleanup mutation ownership, post-cleanup recording checks,
    post-run snapshot fetches, command send/failure plumbing, and result
    construction are extracted; next, split remaining production runner

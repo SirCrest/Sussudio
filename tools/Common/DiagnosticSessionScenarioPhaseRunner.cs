@@ -5,10 +5,10 @@ namespace Sussudio.Tools;
 
 internal static class DiagnosticSessionScenarioPhaseRunner
 {
-    internal static async Task RunAsync(DiagnosticSessionScenarioPhaseContext context)
+    internal static async Task<DiagnosticSessionScenarioPhaseResult> RunAsync(DiagnosticSessionScenarioPhaseContext context)
     {
         var backgroundTasks = new DiagnosticSessionBackgroundTasks();
-        var scenarioPhase = context.PhaseState;
+        var scenarioPhase = new DiagnosticSessionScenarioPhaseState();
 
         try
         {
@@ -93,6 +93,8 @@ internal static class DiagnosticSessionScenarioPhaseRunner
             scenarioPhase.FlashbackRecordingSettingsDeferredPresetState = backgroundTaskDrain.RecordingSettingsDeferredPresetState;
             await context.WriteLiveStateBestEffortAsync().ConfigureAwait(false);
         }
+
+        return scenarioPhase.ToResult();
     }
 }
 
@@ -128,8 +130,6 @@ internal sealed class DiagnosticSessionScenarioPhaseContext
 
     internal required CancellationToken RunCancellationToken { get; init; }
 
-    internal required DiagnosticSessionScenarioPhaseState PhaseState { get; init; }
-
     internal required Action<string> SetStage { get; init; }
 
     internal required Func<string> GetLastStage { get; init; }
@@ -139,6 +139,25 @@ internal sealed class DiagnosticSessionScenarioPhaseContext
     internal required Func<Task> WriteLiveStateBestEffortAsync { get; init; }
 
     internal required Func<Task> WriteSamplingLiveStateBestEffortAsync { get; init; }
+}
+
+internal sealed record DiagnosticSessionScenarioPhaseResult(
+    bool StartedPreview,
+    bool StartedRecording,
+    bool EnabledFlashback,
+    bool DisabledFlashback,
+    bool StartedFlashbackPlayback,
+    PresentMonProbeResult? PresentMon,
+    FlashbackRecordingSettingsDeferredPresetState FlashbackRecordingSettingsDeferredPresetState)
+{
+    internal static readonly DiagnosticSessionScenarioPhaseResult Empty = new(
+        StartedPreview: false,
+        StartedRecording: false,
+        EnabledFlashback: false,
+        DisabledFlashback: false,
+        StartedFlashbackPlayback: false,
+        PresentMon: null,
+        FlashbackRecordingSettingsDeferredPresetState: default);
 }
 
 internal sealed class DiagnosticSessionScenarioPhaseState
@@ -156,4 +175,14 @@ internal sealed class DiagnosticSessionScenarioPhaseState
     internal PresentMonProbeResult? PresentMon { get; set; }
 
     internal FlashbackRecordingSettingsDeferredPresetState FlashbackRecordingSettingsDeferredPresetState { get; set; }
+
+    internal DiagnosticSessionScenarioPhaseResult ToResult()
+        => new(
+            StartedPreview,
+            StartedRecording,
+            EnabledFlashback,
+            DisabledFlashback,
+            StartedFlashbackPlayback,
+            PresentMon,
+            FlashbackRecordingSettingsDeferredPresetState);
 }

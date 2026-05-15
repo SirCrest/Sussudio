@@ -45,7 +45,7 @@ internal static partial class DiagnosticSessionRunExecution
         using var scenarioCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var scenarioCancellationToken = scenarioCts.Token;
         using var commandChannel = new DiagnosticSessionCommandChannel(sendCommandAsync, scenarioCancellationToken, warnings);
-        var scenarioPhase = new DiagnosticSessionScenarioPhaseState();
+        var scenarioPhase = DiagnosticSessionScenarioPhaseResult.Empty;
 
         var initialSnapshotResult = DiagnosticSessionInitialSnapshot.CreateUnknown();
         var initialSnapshot = initialSnapshotResult.Snapshot;
@@ -77,7 +77,6 @@ internal static partial class DiagnosticSessionRunExecution
             ScenarioCancellationSource = scenarioCts,
             ScenarioCancellationToken = scenarioCancellationToken,
             RunCancellationToken = cancellationToken,
-            PhaseState = scenarioPhase,
             SetStage = SetStage,
             GetLastStage = () => runState.LastStage,
             RecordTerminalException = RecordTerminalException,
@@ -87,7 +86,7 @@ internal static partial class DiagnosticSessionRunExecution
 
         try
         {
-            await RunScenarioPhaseAsync(scenarioPhaseContext).ConfigureAwait(false);
+            scenarioPhase = await RunScenarioPhaseAsync(scenarioPhaseContext).ConfigureAwait(false);
         }
         finally
         {

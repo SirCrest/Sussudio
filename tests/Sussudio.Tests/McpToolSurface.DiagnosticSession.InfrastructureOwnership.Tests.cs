@@ -191,11 +191,13 @@ static partial class Program
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var scenarioText = ReadDiagnosticSessionRunExecutionScenarioSource();
 
-        AssertContains(scenarioText, "private static Task RunScenarioPhaseAsync(DiagnosticSessionScenarioPhaseContext context)");
+        AssertContains(scenarioText, "private static Task<DiagnosticSessionScenarioPhaseResult> RunScenarioPhaseAsync(DiagnosticSessionScenarioPhaseContext context)");
         AssertContains(scenarioText, "DiagnosticSessionScenarioPhaseRunner.RunAsync(context)");
         AssertContains(scenarioText, "internal static class DiagnosticSessionScenarioPhaseRunner");
         AssertContains(scenarioText, "internal sealed class DiagnosticSessionScenarioPhaseContext");
+        AssertContains(scenarioText, "internal sealed record DiagnosticSessionScenarioPhaseResult(");
         AssertContains(scenarioText, "internal sealed class DiagnosticSessionScenarioPhaseState");
+        AssertContains(scenarioText, "return scenarioPhase.ToResult();");
         AssertContains(scenarioText, "DiagnosticSessionScenarioSetup.RunAsync(");
         AssertContains(scenarioText, "DiagnosticSessionScenarioStartup.StartAsync(");
         AssertContains(scenarioText, "context.SetStage(\"sampling\")");
@@ -208,8 +210,8 @@ static partial class Program
         AssertContains(scenarioText, "context.ScenarioCancellationSource.Cancel();");
         AssertContains(scenarioText, "backgroundTasks.ObserveAfterFaultAsync(");
         AssertContains(executionText, "var scenarioPhaseContext = new DiagnosticSessionScenarioPhaseContext");
-        AssertContains(executionText, "var scenarioPhase = new DiagnosticSessionScenarioPhaseState();");
-        AssertContains(executionText, "await RunScenarioPhaseAsync(scenarioPhaseContext)");
+        AssertContains(executionText, "var scenarioPhase = DiagnosticSessionScenarioPhaseResult.Empty;");
+        AssertContains(executionText, "scenarioPhase = await RunScenarioPhaseAsync(scenarioPhaseContext)");
         AssertContains(executionText, "scenarioPhase.StartedRecording");
         AssertContains(executionText, "scenarioPhase.StartedPreview");
         AssertContains(executionText, "scenarioPhase.EnabledFlashback");
@@ -217,6 +219,8 @@ static partial class Program
         AssertContains(executionText, "scenarioPhase.StartedFlashbackPlayback");
         AssertContains(executionText, "scenarioPhase.PresentMon");
         AssertContains(executionText, "scenarioPhase.FlashbackRecordingSettingsDeferredPresetState");
+        AssertDoesNotContain(executionText, "new DiagnosticSessionScenarioPhaseState()");
+        AssertDoesNotContain(scenarioText, "internal required DiagnosticSessionScenarioPhaseState PhaseState");
         AssertDoesNotContain(executionText, "DiagnosticSessionScenarioSetup.RunAsync(");
         AssertDoesNotContain(executionText, "DiagnosticSessionScenarioStartup.StartAsync(");
         AssertDoesNotContain(executionText, "SampleLoopAsync(");
