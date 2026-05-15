@@ -67,21 +67,38 @@ static partial class Program
         AssertCommandRequest(applyRequests[0], "RestartFlashback");
         AssertEqual("[OK] RestartFlashback: Flashback restarted.", result, "flashback_apply formatted success");
 
-        var flashbackToolsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs")
+        var flashbackToolsRootText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs")
             .Replace("\r\n", "\n");
-        AssertContains(flashbackToolsText, "if (string.IsNullOrWhiteSpace(action))");
-        AssertContains(flashbackToolsText, "Flashback action is required. Expected play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points.");
-        AssertContains(flashbackToolsText, "normalizedAction is not (\"play\" or \"pause\" or \"go-live\" or \"seek\" or \"begin-scrub\" or \"update-scrub\" or \"end-scrub\" or \"set-in-point\" or \"set-out-point\" or \"clear-in-out-points\")");
-        AssertContains(flashbackToolsText, "Flashback action must be one of: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points.");
-        AssertContains(flashbackToolsText, "normalizedAction == \"begin-scrub\"");
-        AssertContains(flashbackToolsText, "normalizedAction == \"update-scrub\"");
-        AssertContains(flashbackToolsText, "Flashback seek, begin_scrub, and update_scrub require positionMs.");
-        AssertContains(flashbackToolsText, "if (!double.IsFinite(positionMs.Value) ||\n                positionMs.Value < 0 ||\n                positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds)");
-        AssertContains(flashbackToolsText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
-        AssertContains(flashbackToolsText, "if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)");
-        AssertContains(flashbackToolsText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
-        AssertContains(flashbackToolsText, "AutomationSnapshotFormatter.Get(data, \"FailureKind\", string.Empty)");
-        AssertContains(flashbackToolsText, "FailureKind: {failureKind}");
+        var flashbackToolsActionText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Actions.cs")
+            .Replace("\r\n", "\n");
+        var flashbackToolsExportText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Export.cs")
+            .Replace("\r\n", "\n");
+        var flashbackToolsSegmentsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.Segments.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(flashbackToolsRootText, "[McpServerToolType]");
+        AssertContains(flashbackToolsRootText, "public static partial class FlashbackTools");
+        AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_enabled");
+        AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_apply");
+        AssertDoesNotContain(flashbackToolsRootText, "flashback_action");
+        AssertDoesNotContain(flashbackToolsRootText, "flashback_export");
+        AssertDoesNotContain(flashbackToolsRootText, "flashback_segments");
+        AssertContains(flashbackToolsActionText, "public static async Task<CallToolResult> flashback_action");
+        AssertContains(flashbackToolsActionText, "if (string.IsNullOrWhiteSpace(action))");
+        AssertContains(flashbackToolsActionText, "Flashback action is required. Expected play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points.");
+        AssertContains(flashbackToolsActionText, "normalizedAction is not (\"play\" or \"pause\" or \"go-live\" or \"seek\" or \"begin-scrub\" or \"update-scrub\" or \"end-scrub\" or \"set-in-point\" or \"set-out-point\" or \"clear-in-out-points\")");
+        AssertContains(flashbackToolsActionText, "Flashback action must be one of: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points.");
+        AssertContains(flashbackToolsActionText, "normalizedAction == \"begin-scrub\"");
+        AssertContains(flashbackToolsActionText, "normalizedAction == \"update-scrub\"");
+        AssertContains(flashbackToolsActionText, "Flashback seek, begin_scrub, and update_scrub require positionMs.");
+        AssertContains(flashbackToolsActionText, "if (!double.IsFinite(positionMs.Value) ||\n                positionMs.Value < 0 ||\n                positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds)");
+        AssertContains(flashbackToolsActionText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
+        AssertContains(flashbackToolsExportText, "public static async Task<CallToolResult> flashback_export");
+        AssertContains(flashbackToolsExportText, "if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)");
+        AssertContains(flashbackToolsExportText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
+        AssertContains(flashbackToolsExportText, "AutomationSnapshotFormatter.Get(data, \"FailureKind\", string.Empty)");
+        AssertContains(flashbackToolsExportText, "FailureKind: {failureKind}");
+        AssertContains(flashbackToolsSegmentsText, "public static async Task<CallToolResult> flashback_segments");
+        AssertContains(flashbackToolsSegmentsText, "FlashbackGetSegments");
 
         var exportPipeName = NewMcpToolPipeName("flashback-export-failure-kind");
         var exportPipeClient = CreateMcpPipeClient(exportPipeName);

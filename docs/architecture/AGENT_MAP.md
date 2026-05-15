@@ -1845,6 +1845,14 @@ Primary owners:
   `FramePacingVerdictTools.Rendering.cs` owns the operator-facing verdict text.
   `FramePacingVerdictTools.Models.cs` owns the private channel and timeline
   records.
+- `tools/McpServer/Tools/FlashbackTools.cs` owns Flashback enable/apply MCP
+  commands and the Flashback MCP tool type.
+  `tools/McpServer/Tools/FlashbackTools.Actions.cs` owns playback/scrub action
+  normalization, validation, and payload shaping.
+  `tools/McpServer/Tools/FlashbackTools.Export.cs` owns export duration/path
+  validation, default path selection, export payload shaping, and export result
+  text. `tools/McpServer/Tools/FlashbackTools.Segments.cs` owns segment-list
+  command routing and segment result text.
 - `tools/Common/DiagnosticSessionOptions.cs` owns diagnostic session run
   options.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic session summary and

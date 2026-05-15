@@ -1719,6 +1719,11 @@ method signature, pipe command orchestration, and response shaping in
 `FramePacingVerdictTools.cs`; keep channel/timeline projection, readiness and
 verdict policy, operator-facing text, and private records in the named
 `FramePacingVerdictTools.*.cs` partials.
+The Flashback MCP tool type is split by command responsibility: keep
+enable/apply commands and the tool type in `FlashbackTools.cs`, playback/scrub
+action validation in `FlashbackTools.Actions.cs`, export validation/payload/text
+in `FlashbackTools.Export.cs`, and segment-list formatting in
+`FlashbackTools.Segments.cs`.
 
 Diagnostic-session pipe retry/error classification now lives in
 `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a
