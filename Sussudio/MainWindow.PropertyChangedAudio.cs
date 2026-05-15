@@ -1,77 +1,52 @@
+using Sussudio.Controllers;
+
 namespace Sussudio;
 
-// Audio and microphone UI projections for ViewModel.PropertyChanged. Runtime
-// audio state changes still live in MainViewModel and CaptureService.
+// XAML-facing adapter for audio and microphone property-change projection.
+// AudioControlPresentationController owns the concrete control updates.
 public sealed partial class MainWindow
 {
-    private void HandleCustomAudioInputEnabledChanged()
-    {
-        if ((CustomAudioToggle.IsChecked == true) != ViewModel.IsCustomAudioInputEnabled)
-        {
-            CustomAudioToggle.IsChecked = ViewModel.IsCustomAudioInputEnabled;
-        }
+    private AudioControlPresentationController _audioControlPresentationController = null!;
 
-        AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
+    private void InitializeAudioControlPresentationController()
+    {
+        _audioControlPresentationController = new AudioControlPresentationController(new AudioControlPresentationControllerContext
+        {
+            ViewModel = ViewModel,
+            CustomAudioToggle = CustomAudioToggle,
+            AudioInputComboBox = AudioInputComboBox,
+            MicrophoneToggle = MicrophoneToggle,
+            MicrophoneComboBox = MicrophoneComboBox,
+            AudioRecordToggle = AudioRecordToggle,
+            AudioPreviewToggle = AudioPreviewToggle,
+            PreviewVolumeSlider = PreviewVolumeSlider,
+            PreviewVolumeLabel = PreviewVolumeLabel,
+            IsPreviewAudioFadeInActive = () => IsPreviewAudioFadeInActive,
+            SetAudioMeterMonitoringState = SetAudioMeterMonitoringState,
+            AnimateAudioMeterDisabled = AnimateAudioMeterDisabled,
+            UpdateMicrophoneControlsVisibility = UpdateMicrophoneControlsVisibility,
+            SyncMicrophoneVolumeControls = SyncMicrophoneVolumeControls
+        });
     }
+
+    private void HandleCustomAudioInputEnabledChanged()
+        => _audioControlPresentationController.HandleCustomAudioInputEnabledChanged();
 
     private void HandleMicrophoneEnabledChanged()
-    {
-        if ((MicrophoneToggle.IsChecked == true) != ViewModel.IsMicrophoneEnabled)
-        {
-            MicrophoneToggle.IsChecked = ViewModel.IsMicrophoneEnabled;
-        }
-
-        MicrophoneComboBox.IsEnabled = ViewModel.IsMicrophoneEnabled && !ViewModel.IsRecording;
-        UpdateMicrophoneControlsVisibility();
-    }
+        => _audioControlPresentationController.HandleMicrophoneEnabledChanged();
 
     private void HandleAudioEnabledChanged()
-    {
-        if (AudioRecordToggle.IsChecked != ViewModel.IsAudioEnabled)
-        {
-            AudioRecordToggle.IsChecked = ViewModel.IsAudioEnabled;
-        }
-
-        AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled;
-        if (!ViewModel.IsAudioEnabled && AudioPreviewToggle.IsChecked == true)
-        {
-            AudioPreviewToggle.IsChecked = false;
-        }
-
-        AnimateAudioMeterDisabled(!ViewModel.IsAudioEnabled);
-    }
+        => _audioControlPresentationController.HandleAudioEnabledChanged();
 
     private void HandleAudioPreviewEnabledChanged()
-    {
-        if (AudioPreviewToggle.IsChecked != ViewModel.IsAudioPreviewEnabled)
-        {
-            AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
-        }
-    }
+        => _audioControlPresentationController.HandleAudioPreviewEnabledChanged();
 
     private void HandleAudioPreviewActiveChanged()
-    {
-        SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);
-    }
+        => _audioControlPresentationController.HandleAudioPreviewActiveChanged();
 
     private void HandlePreviewVolumeChanged()
-    {
-        if (IsPreviewAudioFadeInActive)
-        {
-            return;
-        }
-
-        var volumePct = ViewModel.PreviewVolume * 100;
-        if (PreviewVolumeSlider.Value != volumePct)
-        {
-            PreviewVolumeSlider.Value = volumePct;
-        }
-
-        PreviewVolumeLabel.Text = $"{(int)volumePct}%";
-    }
+        => _audioControlPresentationController.HandlePreviewVolumeChanged();
 
     private void HandleMicrophoneVolumeChanged()
-    {
-        SyncMicrophoneVolumeControls(ViewModel.MicrophoneVolume);
-    }
+        => _audioControlPresentationController.HandleMicrophoneVolumeChanged();
 }

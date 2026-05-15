@@ -103,6 +103,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeStatusStripPresentationController();
         InitializePreviewAudioFadeController();
         InitializeMicrophoneControlsController();
+        InitializeAudioControlPresentationController();
         InitializeResponsiveShellLayoutController();
         InitializeCaptureSelectionBindingController();
         InitializeCaptureDeviceActionController();

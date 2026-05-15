@@ -7,6 +7,7 @@ static partial class Program
         var mainViewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
+        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlPresentationController.cs").Replace("\r\n", "\n");
         var audioMeterText = ReadRepoFile("Sussudio/MainWindow.AudioMeter.cs").Replace("\r\n", "\n");
         var audioMeterControllerText = ReadRepoFile("Sussudio/Controllers/AudioMeterController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
@@ -14,7 +15,8 @@ static partial class Program
         AssertContains(mainViewModelStateText, "IsAudioPreviewActive");
         AssertContains(propertyChangedText, "case nameof(MainViewModel.IsAudioPreviewActive):");
         AssertContains(propertyChangedText, "HandleAudioPreviewActiveChanged();");
-        AssertContains(audioPropertyChangedText, "SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);");
+        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandleAudioPreviewActiveChanged();");
+        AssertContains(audioControlPresentationControllerText, "_context.SetAudioMeterMonitoringState(_context.ViewModel.IsAudioPreviewActive);");
         AssertContains(audioMeterText, "private AudioMeterController _audioMeterController = null!;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _audioMeterMonitoringStoryboard;");
         AssertContains(audioMeterControllerText, "private Storyboard? _audioMeterMonitoringStoryboard;");

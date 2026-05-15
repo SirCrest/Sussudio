@@ -146,6 +146,7 @@ static partial class Program
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewAudioFade.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewAudioFadeController.cs").Replace("\r\n", "\n");
+        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewAudioFadeController _previewAudioFadeController = null!;");
         AssertContains(adapterText, "private bool IsPreviewAudioFadeInActive => _previewAudioFadeController.IsFadingIn;");
@@ -162,7 +163,8 @@ static partial class Program
         AssertContains(audioBindingsText, "CancelPreviewAudioFadeInForUser();");
         AssertContains(propertyChangedText, "await HandlePreviewingChangedAsync();");
         AssertContains(propertyChangedText, "HandlePreviewVolumeChanged();");
-        AssertContains(audioPropertyChangedText, "if (IsPreviewAudioFadeInActive)");
+        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandlePreviewVolumeChanged();");
+        AssertContains(audioControlPresentationControllerText, "if (_context.IsPreviewAudioFadeInActive())");
         AssertContains(previewPropertyChangedText, "PrimePreviewAudioFadeIn();");
         AssertContains(controllerText, "internal sealed class PreviewAudioFadeController");
         AssertContains(controllerText, "private double _savedPreviewVolume;");
@@ -174,6 +176,55 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private bool _isVolumeFadingIn;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _previewVolumeFadeStoryboard;");
         AssertDoesNotContain(bindingsText, "PreviewVolumeSlider.ValueChanged +=");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AudioControlPresentation_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/AudioControlPresentationController.cs").Replace("\r\n", "\n");
+
+        AssertContains(audioPropertyChangedText, "private AudioControlPresentationController _audioControlPresentationController = null!;");
+        AssertContains(audioPropertyChangedText, "private void InitializeAudioControlPresentationController()");
+        AssertContains(audioPropertyChangedText, "CustomAudioToggle = CustomAudioToggle,");
+        AssertContains(audioPropertyChangedText, "AudioInputComboBox = AudioInputComboBox,");
+        AssertContains(audioPropertyChangedText, "MicrophoneToggle = MicrophoneToggle,");
+        AssertContains(audioPropertyChangedText, "MicrophoneComboBox = MicrophoneComboBox,");
+        AssertContains(audioPropertyChangedText, "AudioRecordToggle = AudioRecordToggle,");
+        AssertContains(audioPropertyChangedText, "AudioPreviewToggle = AudioPreviewToggle,");
+        AssertContains(audioPropertyChangedText, "PreviewVolumeSlider = PreviewVolumeSlider,");
+        AssertContains(audioPropertyChangedText, "PreviewVolumeLabel = PreviewVolumeLabel,");
+        AssertContains(audioPropertyChangedText, "IsPreviewAudioFadeInActive = () => IsPreviewAudioFadeInActive,");
+        AssertContains(audioPropertyChangedText, "SetAudioMeterMonitoringState = SetAudioMeterMonitoringState,");
+        AssertContains(audioPropertyChangedText, "AnimateAudioMeterDisabled = AnimateAudioMeterDisabled,");
+        AssertContains(audioPropertyChangedText, "UpdateMicrophoneControlsVisibility = UpdateMicrophoneControlsVisibility,");
+        AssertContains(audioPropertyChangedText, "SyncMicrophoneVolumeControls = SyncMicrophoneVolumeControls");
+        AssertContains(mainWindowText, "InitializeAudioControlPresentationController();");
+
+        AssertContains(controllerText, "internal sealed class AudioControlPresentationControllerContext");
+        AssertContains(controllerText, "internal sealed class AudioControlPresentationController");
+        AssertContains(controllerText, "public void HandleCustomAudioInputEnabledChanged()");
+        AssertContains(controllerText, "_context.AudioInputComboBox.IsEnabled = _context.ViewModel.IsCustomAudioInputEnabled && !_context.ViewModel.IsRecording;");
+        AssertContains(controllerText, "public void HandleMicrophoneEnabledChanged()");
+        AssertContains(controllerText, "_context.MicrophoneComboBox.IsEnabled = _context.ViewModel.IsMicrophoneEnabled && !_context.ViewModel.IsRecording;");
+        AssertContains(controllerText, "_context.UpdateMicrophoneControlsVisibility();");
+        AssertContains(controllerText, "public void HandleAudioEnabledChanged()");
+        AssertContains(controllerText, "_context.AudioPreviewToggle.IsEnabled = _context.ViewModel.IsAudioEnabled;");
+        AssertContains(controllerText, "_context.AudioPreviewToggle.IsChecked = false;");
+        AssertContains(controllerText, "_context.AnimateAudioMeterDisabled(!_context.ViewModel.IsAudioEnabled);");
+        AssertContains(controllerText, "public void HandleAudioPreviewActiveChanged()");
+        AssertContains(controllerText, "_context.SetAudioMeterMonitoringState(_context.ViewModel.IsAudioPreviewActive);");
+        AssertContains(controllerText, "public void HandlePreviewVolumeChanged()");
+        AssertContains(controllerText, "if (_context.IsPreviewAudioFadeInActive())");
+        AssertContains(controllerText, "_context.PreviewVolumeLabel.Text = $\"{(int)volumePct}%\";");
+        AssertContains(controllerText, "public void HandleMicrophoneVolumeChanged()");
+        AssertContains(controllerText, "_context.SyncMicrophoneVolumeControls(_context.ViewModel.MicrophoneVolume);");
+
+        AssertDoesNotContain(audioPropertyChangedText, "AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled");
+        AssertDoesNotContain(audioPropertyChangedText, "AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled");
+        AssertDoesNotContain(audioPropertyChangedText, "PreviewVolumeLabel.Text = $\"{(int)volumePct}%\";");
 
         return Task.CompletedTask;
     }
@@ -221,6 +272,7 @@ static partial class Program
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/MicrophoneControlsController.cs").Replace("\r\n", "\n");
+        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private MicrophoneControlsController _microphoneControlsController = null!;");
         AssertContains(adapterText, "private void InitializeMicrophoneControlsController()");
@@ -235,8 +287,10 @@ static partial class Program
         AssertContains(audioBindingsText, "ApplyInitialMicrophoneControlsVisibility();");
         AssertContains(propertyChangedText, "HandleMicrophoneEnabledChanged();");
         AssertContains(propertyChangedText, "HandleMicrophoneVolumeChanged();");
-        AssertContains(audioPropertyChangedText, "UpdateMicrophoneControlsVisibility();");
-        AssertContains(audioPropertyChangedText, "SyncMicrophoneVolumeControls(ViewModel.MicrophoneVolume);");
+        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandleMicrophoneEnabledChanged();");
+        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandleMicrophoneVolumeChanged();");
+        AssertContains(audioControlPresentationControllerText, "_context.UpdateMicrophoneControlsVisibility();");
+        AssertContains(audioControlPresentationControllerText, "_context.SyncMicrophoneVolumeControls(_context.ViewModel.MicrophoneVolume);");
         AssertContains(shutdownCleanupText, "StopMicMeterRowAnimation();");
         AssertContains(controllerText, "internal sealed class MicrophoneControlsController");
         AssertContains(controllerText, "private bool _syncingVolumeControls;");

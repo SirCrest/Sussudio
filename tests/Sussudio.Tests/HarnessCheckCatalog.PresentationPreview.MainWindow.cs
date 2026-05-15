@@ -85,6 +85,9 @@ static partial class Program
             "Preview audio fade state lives in controller",
             PreviewAudioFadeState_LivesInController);
         await AddCheckAsync(results,
+            "Audio control presentation lives in controller",
+            AudioControlPresentation_LivesInController);
+        await AddCheckAsync(results,
             "Preview button presentation lives in controller",
             PreviewButtonPresentation_LivesInController);
         await AddCheckAsync(results,

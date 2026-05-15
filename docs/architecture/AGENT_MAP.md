@@ -1469,9 +1469,11 @@ Primary current owners:
 - `Sussudio/MainWindow.PropertyChangedFlashback.cs` owns Flashback-specific
   property-change projections for timeline lockout, markers, playhead updates,
   export progress adapter dispatch, and settings-control synchronization.
-- `Sussudio/MainWindow.PropertyChangedAudio.cs` owns audio and microphone
-  property-change projections: audio toggles, monitoring meter state, preview
-  volume slider sync, microphone enablement, and microphone volume sync.
+- `Sussudio/Controllers/AudioControlPresentationController.cs` owns audio and
+  microphone property-change projections: audio toggles, monitoring meter
+  state, preview volume slider sync, microphone enablement, and microphone
+  volume sync. `Sussudio/MainWindow.PropertyChangedAudio.cs` is the
+  XAML-facing adapter.
 - `Sussudio/Controllers/MicrophoneControlsController.cs` owns microphone volume
   slider synchronization, save triggers, shelf enablement, and mic-meter row
   animation state. `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.
