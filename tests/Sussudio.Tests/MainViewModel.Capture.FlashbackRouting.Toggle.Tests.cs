@@ -11,6 +11,10 @@ static partial class Program
     {
         var flashbackWindowText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
+        var flashbackCommandAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackCommands.cs")
+            .Replace("\r\n", "\n");
+        var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackCommandController.cs")
+            .Replace("\r\n", "\n");
         var flashbackTimelineText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs")
             .Replace("\r\n", "\n");
         var flashbackSettingsText = ReadRepoFile("Sussudio/MainWindow.FlashbackSettingsBindings.cs")
@@ -30,7 +34,7 @@ static partial class Program
         var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(mainWindowText, "private bool _suppressFlashbackEnabledToggle;");
+        AssertContains(mainWindowText, "InitializeFlashbackCommandController();");
         AssertContains(mainWindowText, "InitializeFlashbackTimelineController();");
         AssertContains(mainWindowText, "InitializeFlashbackSettingsBindingController();");
         AssertContains(viewModelText, "partial void OnIsFlashbackEnabledChanged(bool value)");
@@ -65,16 +69,23 @@ static partial class Program
         AssertContains(flashbackTimelineControllerText, "_context.ClearScrubInteraction();");
         AssertContains(flashbackTimelineControllerText, "CollapseImmediately();");
         AssertContains(flashbackTimelineControllerText, "_timelineStoryboard?.Stop();");
-        AssertContains(flashbackWindowText, "if (_suppressFlashbackEnabledToggle)");
-        AssertContains(flashbackWindowText, "var requestedEnabled = FlashbackEnabledToggle.IsOn;");
-        AssertContains(flashbackWindowText, "ApplyFlashbackEnabledToggleAsync(requestedEnabled)");
-        AssertContains(flashbackWindowText, "private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)");
-        AssertContains(flashbackWindowText, "var previousEnabled = ViewModel.IsFlashbackEnabled;");
-        AssertContains(flashbackWindowText, "ViewModel.IsFlashbackEnabled = requestedEnabled;");
-        AssertContains(flashbackWindowText, "ViewModel.IsFlashbackEnabled = previousEnabled;");
-        AssertContains(flashbackWindowText, "_suppressFlashbackEnabledToggle = true;");
-        AssertContains(flashbackWindowText, "FlashbackEnabledToggle.IsOn = previousEnabled;");
-        AssertContains(flashbackWindowText, "_suppressFlashbackEnabledToggle = false;");
+        AssertContains(flashbackCommandAdapterText, "private FlashbackCommandController _flashbackCommandController = null!;");
+        AssertContains(flashbackCommandAdapterText, "private void InitializeFlashbackCommandController()");
+        AssertContains(flashbackCommandAdapterText, "FlashbackEnabledToggle = FlashbackEnabledToggle,");
+        AssertContains(flashbackCommandAdapterText, "RunUiEventHandlerAsync = RunUiEventHandlerAsync");
+        AssertContains(flashbackCommandAdapterText, "=> _flashbackCommandController.ToggleEnabled(nameof(FlashbackEnabledToggle_Toggled));");
+        AssertContains(flashbackCommandControllerText, "if (_suppressFlashbackEnabledToggle)");
+        AssertContains(flashbackCommandControllerText, "var requestedEnabled = _context.FlashbackEnabledToggle.IsOn;");
+        AssertContains(flashbackCommandControllerText, "ApplyFlashbackEnabledToggleAsync(requestedEnabled)");
+        AssertContains(flashbackCommandControllerText, "private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)");
+        AssertContains(flashbackCommandControllerText, "var previousEnabled = _context.ViewModel.IsFlashbackEnabled;");
+        AssertContains(flashbackCommandControllerText, "_context.ViewModel.IsFlashbackEnabled = requestedEnabled;");
+        AssertContains(flashbackCommandControllerText, "_context.ViewModel.IsFlashbackEnabled = previousEnabled;");
+        AssertContains(flashbackCommandControllerText, "_suppressFlashbackEnabledToggle = true;");
+        AssertContains(flashbackCommandControllerText, "_context.FlashbackEnabledToggle.IsOn = previousEnabled;");
+        AssertContains(flashbackCommandControllerText, "_suppressFlashbackEnabledToggle = false;");
+        AssertDoesNotContain(mainWindowText, "private bool _suppressFlashbackEnabledToggle;");
+        AssertDoesNotContain(flashbackWindowText, "ApplyFlashbackEnabledToggleAsync(requestedEnabled)");
 
         return Task.CompletedTask;
     }

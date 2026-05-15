@@ -217,6 +217,8 @@ static partial class Program
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackSettingsBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/FlashbackSettingsBindingController.cs").Replace("\r\n", "\n");
+        var commandAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackCommands.cs").Replace("\r\n", "\n");
+        var commandControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackCommandController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private FlashbackSettingsBindingController _flashbackSettingsBindingController = null!;");
         AssertContains(adapterText, "private void InitializeFlashbackSettingsBindingController()");
@@ -263,9 +265,17 @@ static partial class Program
         AssertContains(flashbackPropertyChangedText, "=> SyncFlashbackGpuDecodeSetting();");
         AssertContains(flashbackPropertyChangedText, "=> SyncFlashbackBufferDurationSetting();");
 
-        AssertContains(flashbackText, "private void FlashbackEnabledToggle_Toggled(object sender, RoutedEventArgs e)");
-        AssertContains(flashbackText, "private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)");
-        AssertContains(flashbackText, "private void FlashbackApplyButton_Click(object sender, RoutedEventArgs e)");
+        AssertContains(commandAdapterText, "private FlashbackCommandController _flashbackCommandController = null!;");
+        AssertContains(commandAdapterText, "private void InitializeFlashbackCommandController()");
+        AssertContains(commandAdapterText, "private void FlashbackEnabledToggle_Toggled(object sender, RoutedEventArgs e)");
+        AssertContains(commandAdapterText, "=> _flashbackCommandController.ToggleEnabled(nameof(FlashbackEnabledToggle_Toggled));");
+        AssertContains(commandAdapterText, "private void FlashbackApplyButton_Click(object sender, RoutedEventArgs e)");
+        AssertContains(commandAdapterText, "=> _flashbackCommandController.ApplySettings(nameof(FlashbackApplyButton_Click));");
+        AssertContains(commandControllerText, "private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)");
+        AssertContains(commandControllerText, "=> _ = _context.RunUiEventHandlerAsync(() => _context.ViewModel.RestartFlashbackAsync(), operationName);");
+        AssertContains(mainWindowText, "InitializeFlashbackCommandController();");
+        AssertDoesNotContain(flashbackText, "private void FlashbackEnabledToggle_Toggled(object sender, RoutedEventArgs e)");
+        AssertDoesNotContain(flashbackText, "private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)");
         AssertDoesNotContain(bindingsText, "FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;");
         AssertDoesNotContain(bindingsText, "FlashbackGpuDecodeToggle.IsOn = ViewModel.FlashbackGpuDecode;");
         AssertDoesNotContain(bindingsText, "FlashbackGpuDecodeToggle.Toggled +=");

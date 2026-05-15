@@ -13,7 +13,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     public MainViewModel ViewModel { get; }
     private readonly DispatcherQueue _dispatcherQueue;
     private NvmlMonitor? _nvmlMonitor;
-    private bool _suppressFlashbackEnabledToggle;
     private FullScreenController _fullScreenController = null!;
 
     public MainWindow()
@@ -80,6 +79,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeFlashbackPollingController();
         InitializeFlashbackTimelineController();
         InitializeFlashbackSettingsBindingController();
+        InitializeFlashbackCommandController();
         InitializeFlashbackMarkerPresentationController();
         InitializeFlashbackPlaybackPresentationController();
         InitializeFlashbackExportProgressPresentationController();
