@@ -1846,13 +1846,14 @@ composition, warning tolerance, and health warning text now live in
 `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`. Flashback-specific
 analysis warning text for playback forward-decode caps and export force-rotate
 fallback observations lives in `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`.
-Preview-scheduler counter/delta
-projection for the summary result lives in
-`DiagnosticSessionResultBuilder.PreviewScheduler.cs` so the analysis phase can
-consume one named snapshot of the MJPEG jitter-buffer counters. Preview
-scheduler, D3D, cadence, and visual-cadence DTO projection values now live in
-`DiagnosticSessionResultBuilder.PreviewResult.cs` so the final initializer can
-consume one named preview projection without recalculating those fields inline.
+Preview-scheduler analysis handoff values live in
+`DiagnosticSessionResultBuilder.PreviewScheduler.cs`: MJPEG jitter-buffer
+counter/delta reads, last drop/underflow reason and age reads, and
+max/schedule-late aggregation. `DiagnosticSessionResultAnalysis.PreviewScheduler`
+is the single record property that carries those values into
+`DiagnosticSessionResultBuilder.PreviewResult.cs`; the preview result partial
+maps that handoff to `DiagnosticSessionResult` fields without rereading MJPEG
+jitter-buffer snapshot keys.
 Flashback playback result composition lives in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`, while command
 queue, cadence/1% low, decode timing, audio-master/A/V drift, and stage/seek
@@ -2249,6 +2250,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`
+- `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
 - `DiagnosticSessionResultBuilder.PreviewResult.cs`
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`

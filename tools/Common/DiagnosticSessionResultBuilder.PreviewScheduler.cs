@@ -20,7 +20,11 @@ internal static partial class DiagnosticSessionResultBuilder
         long UnderflowsDelta,
         long ResumeReprimesDelta,
         long ScheduleLateDelta,
-        double MaxScheduleLateMsObserved);
+        double MaxScheduleLateMsObserved,
+        string LastDropReasonAtEnd,
+        string LastUnderflowReasonAtEnd,
+        double LastUnderflowInputAgeMsAtEnd,
+        double LastUnderflowOutputAgeMsAtEnd);
 
     private static DiagnosticSessionPreviewSchedulerAnalysis BuildPreviewSchedulerAnalysis(
         JsonElement initialSnapshot,
@@ -43,6 +47,10 @@ internal static partial class DiagnosticSessionResultBuilder
                 .Select(sample => GetDouble(sample.Snapshot, "MjpegPreviewJitterMaxScheduleLateMs"))
                 .Append(GetDouble(lastSnapshot, "MjpegPreviewJitterMaxScheduleLateMs"))
                 .DefaultIfEmpty(0)
-                .Max());
+                .Max(),
+            LastDropReasonAtEnd: GetString(lastSnapshot, "MjpegPreviewJitterLastDropReason") ?? string.Empty,
+            LastUnderflowReasonAtEnd: GetString(lastSnapshot, "MjpegPreviewJitterLastUnderflowReason") ?? string.Empty,
+            LastUnderflowInputAgeMsAtEnd: GetDouble(lastSnapshot, "MjpegPreviewJitterLastUnderflowInputAgeMs"),
+            LastUnderflowOutputAgeMsAtEnd: GetDouble(lastSnapshot, "MjpegPreviewJitterLastUnderflowOutputAgeMs"));
     }
 }

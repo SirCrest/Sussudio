@@ -2040,8 +2040,9 @@ Primary owners:
   Flashback-specific analysis warning text for playback forward-decode caps and
   export force-rotate fallback observations.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
-  diagnostic-session preview-scheduler counter/delta projection for summary
-  construction.
+  diagnostic-session preview-scheduler analysis handoff values: MJPEG
+  jitter-buffer counters, deltas, last drop/underflow reasons, underflow ages,
+  and max schedule-late aggregation.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` owns
   Flashback playback result projection composition from focused playback
   projection owners.
@@ -2069,9 +2070,11 @@ Primary owners:
   initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs` owns preview
   scheduler, D3D, cadence, and visual-cadence DTO projection values consumed
-  by the final result initializer.
+  by the final result initializer. It maps `analysis.PreviewScheduler` and
+  should not reread MJPEG jitter-buffer snapshot keys directly.
 - `tools/Common/DiagnosticSessionResultBuilder.Models.cs` owns the builder
-  request record and private analysis handoff record.
+  request record and private analysis handoff record, including the single
+  `PreviewScheduler` record property used by preview result projection.
 - `tools/Common/DiagnosticSessionSummaryWriter.cs` owns diagnostic-session
   `summary.json` writes and summary-write failure repair of the returned
   result object.

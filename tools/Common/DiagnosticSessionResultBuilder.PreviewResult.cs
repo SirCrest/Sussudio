@@ -1,5 +1,3 @@
-using static Sussudio.Tools.AutomationSnapshotFormatter;
-
 namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionResultBuilder
@@ -51,30 +49,30 @@ internal static partial class DiagnosticSessionResultBuilder
     private static DiagnosticSessionPreviewResultProjection BuildPreviewResultProjection(
         DiagnosticSessionResultAnalysis analysis)
     {
-        var lastSnapshot = analysis.LastSnapshot;
         var previewCadenceMetrics = analysis.PreviewCadenceMetrics;
+        var previewScheduler = analysis.PreviewScheduler;
         var previewD3DMetrics = analysis.PreviewD3DMetrics;
         var visualCadenceMetrics = analysis.VisualCadenceMetrics;
 
         return new DiagnosticSessionPreviewResultProjection(
             PreviewCadenceOnePercentLowFpsAtEnd: previewCadenceMetrics.OnePercentLowFpsAtEnd,
             PreviewCadenceMinOnePercentLowFpsObserved: previewCadenceMetrics.MinOnePercentLowFpsObserved,
-            PreviewSchedulerDroppedAtEnd: analysis.PreviewSchedulerDroppedAtEnd,
-            PreviewSchedulerDeadlineDropsAtEnd: analysis.PreviewSchedulerDeadlineDropsAtEnd,
-            PreviewSchedulerClearedDropsAtEnd: analysis.PreviewSchedulerClearedDropsAtEnd,
-            PreviewSchedulerUnderflowsAtEnd: analysis.PreviewSchedulerUnderflowsAtEnd,
-            PreviewSchedulerResumeReprimesAtEnd: analysis.PreviewSchedulerResumeReprimesAtEnd,
-            PreviewSchedulerDroppedDelta: analysis.PreviewSchedulerDroppedDelta,
-            PreviewSchedulerDeadlineDropsDelta: analysis.PreviewSchedulerDeadlineDropsDelta,
-            PreviewSchedulerClearedDropsDelta: analysis.PreviewSchedulerClearedDropsDelta,
-            PreviewSchedulerUnderflowsDelta: analysis.PreviewSchedulerUnderflowsDelta,
-            PreviewSchedulerResumeReprimesDelta: analysis.PreviewSchedulerResumeReprimesDelta,
-            PreviewSchedulerLastDropReasonAtEnd: GetString(lastSnapshot, "MjpegPreviewJitterLastDropReason") ?? string.Empty,
-            PreviewSchedulerLastUnderflowReasonAtEnd: GetString(lastSnapshot, "MjpegPreviewJitterLastUnderflowReason") ?? string.Empty,
-            PreviewSchedulerLastUnderflowInputAgeMsAtEnd: GetDouble(lastSnapshot, "MjpegPreviewJitterLastUnderflowInputAgeMs"),
-            PreviewSchedulerLastUnderflowOutputAgeMsAtEnd: GetDouble(lastSnapshot, "MjpegPreviewJitterLastUnderflowOutputAgeMs"),
-            PreviewSchedulerMaxScheduleLateMsObserved: analysis.PreviewSchedulerMaxScheduleLateMsObserved,
-            PreviewSchedulerScheduleLateDelta: analysis.PreviewSchedulerScheduleLateDelta,
+            PreviewSchedulerDroppedAtEnd: previewScheduler.DroppedAtEnd,
+            PreviewSchedulerDeadlineDropsAtEnd: previewScheduler.DeadlineDropsAtEnd,
+            PreviewSchedulerClearedDropsAtEnd: previewScheduler.ClearedDropsAtEnd,
+            PreviewSchedulerUnderflowsAtEnd: previewScheduler.UnderflowsAtEnd,
+            PreviewSchedulerResumeReprimesAtEnd: previewScheduler.ResumeReprimesAtEnd,
+            PreviewSchedulerDroppedDelta: previewScheduler.DroppedDelta,
+            PreviewSchedulerDeadlineDropsDelta: previewScheduler.DeadlineDropsDelta,
+            PreviewSchedulerClearedDropsDelta: previewScheduler.ClearedDropsDelta,
+            PreviewSchedulerUnderflowsDelta: previewScheduler.UnderflowsDelta,
+            PreviewSchedulerResumeReprimesDelta: previewScheduler.ResumeReprimesDelta,
+            PreviewSchedulerLastDropReasonAtEnd: previewScheduler.LastDropReasonAtEnd,
+            PreviewSchedulerLastUnderflowReasonAtEnd: previewScheduler.LastUnderflowReasonAtEnd,
+            PreviewSchedulerLastUnderflowInputAgeMsAtEnd: previewScheduler.LastUnderflowInputAgeMsAtEnd,
+            PreviewSchedulerLastUnderflowOutputAgeMsAtEnd: previewScheduler.LastUnderflowOutputAgeMsAtEnd,
+            PreviewSchedulerMaxScheduleLateMsObserved: previewScheduler.MaxScheduleLateMsObserved,
+            PreviewSchedulerScheduleLateDelta: previewScheduler.ScheduleLateDelta,
             PreviewD3DFrameStatsMissedRefreshDelta: previewD3DMetrics.MissedRefreshDelta,
             PreviewD3DFrameStatsFailureDelta: previewD3DMetrics.StatsFailureDelta,
             PreviewD3DMaxRecentSlowFramesObserved: previewD3DMetrics.MaxRecentSlowFramesObserved,
