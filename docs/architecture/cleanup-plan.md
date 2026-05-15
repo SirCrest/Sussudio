@@ -1675,7 +1675,8 @@ Responsive shell layout is split between
 control-bar label breakpoint and capture-settings narrow/wide grid-slot policy,
 and `Sussudio/Controllers/ResponsiveShellLayoutController.cs`, which applies
 that policy to XAML elements. `MainWindow.ResponsiveShellLayout.cs` is the
-XAML-facing adapter.
+XAML-facing adapter. Responsive layout ownership checks live in
+`tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs`.
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
 the `Sussudio/Controllers/CaptureSelectionBindingController*.cs` family. The

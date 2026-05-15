@@ -15,6 +15,7 @@ static partial class Program
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs",
+        "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.Tests.cs",
