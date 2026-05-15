@@ -969,10 +969,24 @@ there. Output-template selection and template-skip diagnostics live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs`. The root
 exporter keeps shared native state, constants, and fields only.
 
-Flashback exporter infrastructure now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs`. Keep export
-lock/disposal helpers, native cleanup, cancellation-source handling, FFmpeg
-error strings, timestamp math, and saturated arithmetic there so
+Flashback exporter lock policy now lives in
+`Sussudio/Services/Flashback/FlashbackExporter.ExportLock.cs`. Shared
+cancelled/disposed result creation lives in
+`Sussudio/Services/Flashback/FlashbackExporter.Results.cs`. Completed-output
+length validation lives in
+`Sussudio/Services/Flashback/FlashbackExporter.OutputValidation.cs`, normalized
+path comparison and output path validation live in
+`Sussudio/Services/Flashback/FlashbackExporter.PathValidation.cs`, and
+segment/export-range overlap classification lives in
+`Sussudio/Services/Flashback/FlashbackExporter.SegmentSelection.cs`. Native
+input/output cleanup lives in
+`Sussudio/Services/Flashback/FlashbackExporter.NativeState.cs`, linked export
+cancellation-source helpers live in
+`Sussudio/Services/Flashback/FlashbackExporter.Cancellation.cs`, FFmpeg error
+string formatting/throwing lives in
+`Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs`, and timestamp
+math/saturated arithmetic lives in
+`Sussudio/Services/Flashback/FlashbackExporter.TimeMath.cs` so
 `FlashbackExporter.cs` stays focused on export native state and shared policy.
 Progress normalization/reporting, heartbeat cadence, and export writer
 throttle/yield policy live in

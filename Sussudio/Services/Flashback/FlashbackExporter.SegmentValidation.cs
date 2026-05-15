@@ -117,4 +117,33 @@ internal sealed unsafe partial class FlashbackExporter
         failure = FinalizeResult.Failure(outputPath, message);
         return false;
     }
+
+    private static int FindInvalidSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)
+    {
+        for (var i = 0; i < segments.Count; i++)
+        {
+            if (segments[i] == null || string.IsNullOrWhiteSpace(segments[i].Path))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static int FindDuplicateSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)
+    {
+        for (var i = 1; i < segments.Count; i++)
+        {
+            for (var previous = 0; previous < i; previous++)
+            {
+                if (IsSamePath(segments[previous].Path, segments[i].Path))
+                {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
+    }
 }

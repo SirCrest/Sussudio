@@ -76,7 +76,23 @@ static partial class Program
             .Replace("\r\n", "\n");
         var tempFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs")
             .Replace("\r\n", "\n");
-        var infrastructureText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Infrastructure.cs")
+        var exportLockText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.ExportLock.cs")
+            .Replace("\r\n", "\n");
+        var resultsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Results.cs")
+            .Replace("\r\n", "\n");
+        var outputValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputValidation.cs")
+            .Replace("\r\n", "\n");
+        var pathValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PathValidation.cs")
+            .Replace("\r\n", "\n");
+        var segmentSelectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentSelection.cs")
+            .Replace("\r\n", "\n");
+        var nativeStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.NativeState.cs")
+            .Replace("\r\n", "\n");
+        var cancellationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Cancellation.cs")
+            .Replace("\r\n", "\n");
+        var libAvErrorsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs")
+            .Replace("\r\n", "\n");
+        var timeMathText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TimeMath.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
@@ -94,17 +110,41 @@ static partial class Program
         AssertDoesNotContain(segmentsText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
         AssertContains(segmentValidationText, "private static bool TryValidateSegmentExportInputs(");
         AssertContains(segmentValidationText, "private static bool TryEstimateSegmentExportReadableBytes(");
+        AssertContains(segmentValidationText, "private static int FindInvalidSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
+        AssertContains(segmentValidationText, "private static int FindDuplicateSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
         AssertDoesNotContain(segmentsText, "FindDuplicateSegmentPathIndex(segments)");
         AssertDoesNotContain(segmentsText, "FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN");
         AssertContains(progressText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)");
         AssertContains(progressText, "private static bool ShouldReportProgressHeartbeat(ref long lastHeartbeatTick)");
         AssertContains(progressText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
-        AssertDoesNotContain(infrastructureText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)");
-        AssertDoesNotContain(infrastructureText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
         AssertContains(tempFilesText, "private static void DeleteTempFileIfPresent(string tmpPath)");
         AssertContains(tempFilesText, "private static bool TryPrepareTempOutputFile(string tmpPath, string outputPath, out string failureMessage)");
         AssertContains(tempFilesText, "internal static void CleanupOrphanedTempFiles(string directory)");
-        AssertDoesNotContain(infrastructureText, "internal static void CleanupOrphanedTempFiles(string directory)");
+        AssertContains(exportLockText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)");
+        AssertContains(exportLockText, "private void ReleaseExportLockBestEffort(string operation)");
+        AssertContains(exportLockText, "private void DisposeExportLockBestEffort()");
+        AssertContains(resultsText, "private static FinalizeResult CreateCancelledExportResult(string outputPath)");
+        AssertContains(resultsText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
+        AssertContains(outputValidationText, "private static long GetFileLengthBestEffort(string path)");
+        AssertContains(outputValidationText, "private static bool TryValidateCompletedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
+        AssertContains(pathValidationText, "private static bool IsSamePath(string? left, string? right)");
+        AssertContains(pathValidationText, "private static bool TryValidateOutputPath(string outputPath, out string fullOutputPath, out string failureMessage)");
+        AssertContains(pathValidationText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
+        AssertContains(segmentSelectionText, "private static bool SegmentOverlapsExportRange(");
+        AssertContains(nativeStateText, "private void CloseActiveInput()");
+        AssertContains(nativeStateText, "private void CloseOutputIo()");
+        AssertContains(nativeStateText, "private void CleanupNativeState()");
+        AssertContains(cancellationText, "private CancellationTokenSource CreateExportCancellationSource(CancellationToken ct)");
+        AssertContains(cancellationText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
+        AssertContains(cancellationText, "private void ClearDisposeCtsReference(CancellationTokenSource? disposeCts)");
+        AssertContains(cancellationText, "private void EnsureNotDisposed()");
+        AssertContains(libAvErrorsText, "private static void ThrowIfError(int errorCode, string operation)");
+        AssertContains(libAvErrorsText, "private static string GetErrorString(int errorCode)");
+        AssertContains(timeMathText, "private static long AddNonNegativeSaturated(long left, long right)");
+        AssertContains(timeMathText, "private static long ToAvTimeBaseTimestampOrMax(TimeSpan value)");
+        AssertContains(timeMathText, "private static long ToAvTimeBaseTimestamp(TimeSpan value)");
+        AssertContains(timeMathText, "private static long ToMicrosecondsSaturated(TimeSpan value)");
+        AssertContains(timeMathText, "private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)");
         AssertDoesNotContain(rootText, "public Task<FinalizeResult> ExportAsync(");
         AssertDoesNotContain(rootText, "public void Dispose()");
         AssertDoesNotContain(rootText, "private FinalizeResult ExportCore(");
