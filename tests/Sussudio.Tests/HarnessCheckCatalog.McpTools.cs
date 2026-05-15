@@ -73,6 +73,9 @@ static partial class Program
             "MCP window screenshot tool formats screenshot responses",
             McpWindowScreenshotTool_FormatsScreenshotResponses);
         await AddCheckAsync(results,
+            "MCP preview frame capture tool formats frame reports",
+            McpPreviewFrameCaptureTool_FormatsCaptureResponses);
+        await AddCheckAsync(results,
             "MCP window tool routes window actions",
             McpWindowTools_RouteWindowActions);
         await AddCheckAsync(results,

@@ -1861,6 +1861,16 @@ Primary owners:
   file, assertion, mismatch, and failure result text.
   `tools/McpServer/Tools/VerificationTools.Parsing.cs` owns verification lookup
   from `Data.Verification` and `Snapshot.LastVerification`.
+- `tools/McpServer/Tools/PreviewFrameCaptureTools.cs` owns the public preview
+  frame-capture MCP entry point, default output path, payload shaping, command
+  routing, and failure/missing-data response handling.
+  `tools/McpServer/Tools/PreviewFrameCaptureTools.Rendering.cs` owns the
+  operator-facing report layout and section ordering.
+  `tools/McpServer/Tools/PreviewFrameCaptureTools.Histogram.cs` owns 16-bin
+  histogram projection, padding, scaling, and bar rendering.
+  `tools/McpServer/Tools/PreviewFrameCaptureTools.Diagnosis.cs` owns blank,
+  dark, bright, letterbox, pillarbox, low-contrast, and aspect-ratio diagnosis
+  policy.
 - `tools/Common/DiagnosticSessionOptions.cs` owns diagnostic session run
   options.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic session summary and

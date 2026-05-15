@@ -1731,6 +1731,13 @@ assertion JSON parsing and clone lifetime safety in
 `VerificationTools.Assertions.cs`; keep recording/file/assertion text in
 `VerificationTools.Formatting.cs`; and keep `Data.Verification` /
 `Snapshot.LastVerification` lookup in `VerificationTools.Parsing.cs`.
+Preview frame capture MCP reporting is split without changing visible text:
+keep the public `capture_preview_frame` entry point, default output path,
+payload, and `CapturePreviewFrame` routing in `PreviewFrameCaptureTools.cs`;
+keep report section layout in `PreviewFrameCaptureTools.Rendering.cs`; keep
+16-bin histogram math/rendering in `PreviewFrameCaptureTools.Histogram.cs`; and
+keep anomaly diagnosis policy and aspect checks in
+`PreviewFrameCaptureTools.Diagnosis.cs`.
 
 Diagnostic-session pipe retry/error classification now lives in
 `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a
