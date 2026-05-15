@@ -1467,7 +1467,7 @@ Live-signal pill text application, visibility state, show/hide debounce timers,
 and the small scale/fade animation now live in
 `Sussudio/Controllers/LiveSignalInfoController.cs`. `MainWindow.LiveSignalInfo.cs`
 is the XAML-facing adapter, while
-`Sussudio/ViewModels/MainViewModel.LiveSignalText.cs` owns label formatting.
+`Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs` owns label formatting.
 Source telemetry summary, telemetry age, and target-summary display text now
 live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`.
 
@@ -1996,7 +1996,7 @@ Remaining `tools/Common` ownership:
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
    timer/status/error handling now lives in `MainViewModel.Runtime.cs`, and
    live-signal label formatting now lives in
-   `Sussudio/ViewModels/MainViewModel.LiveSignalText.cs`. Capture settings projection from UI/runtime state
+   `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`. Capture settings projection from UI/runtime state
    now lives in `MainViewModel.CaptureSettings.cs`, leaving
    `MainViewModel.Capture.cs` focused on device/preview/reinitialize
    transitions. Recording toggle serialization, graceful stop, emergency stop,

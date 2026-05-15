@@ -1436,7 +1436,7 @@ Primary current owners:
 - `Sussudio/Controllers/LiveSignalInfoController.cs` owns live-signal pill
   text application, visibility state, show/hide debounce timers, and the small
   scale/fade animation. `MainWindow.LiveSignalInfo.cs` is the XAML-facing
-  adapter. `Sussudio/ViewModels/MainViewModel.LiveSignalText.cs` owns the
+  adapter. `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs` owns the
   view-model live-signal label formatting and pixel-format/codec suffix policy.
 - `Sussudio/Controllers/PreviewAudioFadeController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
@@ -1540,7 +1540,7 @@ Primary current owners:
   family. `MainViewModel.Runtime.cs` owns timer refreshes, recording bitrate
   display, capture status/error fan-out, and resume cleanup callbacks, while
   delegating live-signal label projection to
-  `Sussudio/ViewModels/MainViewModel.LiveSignalText.cs`.
+  `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`.
   `MainViewModel.CaptureSettings.cs` owns capture settings projection from UI
   selection and observed runtime/source state.
   `MainViewModel.Capture.cs` owns device initialization, preview start/stop,

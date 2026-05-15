@@ -326,6 +326,7 @@ static partial class Program
              fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
              string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
              string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
+             string.Equals(fileName, "LiveSignalTextPresentationBuilder.cs", StringComparison.Ordinal) ||
              string.Equals(fileName, "SourceTelemetryPresentationBuilder.cs", StringComparison.Ordinal));
     }
 
@@ -344,6 +345,7 @@ static partial class Program
                  string.Equals(fileName, "StatsPresentationModels.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "CaptureModeOptionsBuilder.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "DeviceAudioGainMapper.cs", StringComparison.Ordinal) ||
+                 string.Equals(fileName, "LiveSignalTextPresentationBuilder.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "RecordingFormatSelectionPolicy.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "SourceTelemetryPresentationBuilder.cs", StringComparison.Ordinal))) ||
             (string.Equals(directory, "Sussudio/Controllers", StringComparison.OrdinalIgnoreCase) &&

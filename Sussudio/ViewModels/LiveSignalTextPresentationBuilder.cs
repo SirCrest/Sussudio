@@ -2,20 +2,23 @@ using Sussudio.Models;
 
 namespace Sussudio.ViewModels;
 
-public partial class MainViewModel
+internal static class LiveSignalTextPresentationBuilder
 {
-    private static LiveSignalText BuildLiveSignalText(CaptureRuntimeSnapshot runtime, string? encoderCodecName)
+    internal static LiveSignalTextPresentation Build(
+        CaptureRuntimeSnapshot runtime,
+        string? encoderCodecName,
+        string unavailableText)
     {
         var width = runtime.ActualWidth ?? runtime.NegotiatedWidth ?? runtime.RequestedWidth;
         var height = runtime.ActualHeight ?? runtime.NegotiatedHeight ?? runtime.RequestedHeight;
         var resolution = width.HasValue && height.HasValue
             ? $"{width.Value}x{height.Value}"
-            : LiveInfoUnavailable;
+            : unavailableText;
 
         var frameRateValue = runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate ?? runtime.RequestedFrameRate;
         var frameRate = frameRateValue.HasValue && frameRateValue.Value > 0
             ? frameRateValue.Value.ToString("0.00")
-            : LiveInfoUnavailable;
+            : unavailableText;
 
         var pixelFormat =
             runtime.ReaderSourceSubtype ??
@@ -32,14 +35,14 @@ public partial class MainViewModel
             _ => ""
         };
         var pixelFormatText = string.IsNullOrWhiteSpace(pixelFormat)
-            ? LiveInfoUnavailable
+            ? unavailableText
             : pixelFormat + codecSuffix;
 
-        return new LiveSignalText(resolution, frameRate, pixelFormatText);
+        return new LiveSignalTextPresentation(resolution, frameRate, pixelFormatText);
     }
-
-    private readonly record struct LiveSignalText(
-        string Resolution,
-        string FrameRate,
-        string PixelFormat);
 }
+
+internal readonly record struct LiveSignalTextPresentation(
+    string Resolution,
+    string FrameRate,
+    string PixelFormat);

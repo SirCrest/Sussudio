@@ -56,7 +56,10 @@ public partial class MainViewModel
         var runtime = runtimeSnapshot ?? _captureService.GetRuntimeSnapshot();
         IsAudioPreviewActive = runtime.IsAudioPreviewActive;
 
-        var liveSignalText = BuildLiveSignalText(runtime, _captureService.EncoderCodecName);
+        var liveSignalText = LiveSignalTextPresentationBuilder.Build(
+            runtime,
+            _captureService.EncoderCodecName,
+            LiveInfoUnavailable);
         LiveResolution = liveSignalText.Resolution;
         LiveFrameRate = liveSignalText.FrameRate;
         LivePixelFormat = liveSignalText.PixelFormat;
