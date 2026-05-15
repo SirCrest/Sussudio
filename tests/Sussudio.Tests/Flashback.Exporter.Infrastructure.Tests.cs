@@ -5,6 +5,8 @@ static partial class Program
     private static Task FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation()
     {
         var sourceText = ReadFlashbackExporterSource();
+        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private readonly object _lifetimeSync = new();");
         AssertContains(sourceText, "return Task.FromResult(CreateDisposedExportResult(request.OutputPath));");
@@ -45,6 +47,13 @@ static partial class Program
         AssertContains(sourceText, "ThrottleExportWriterIfNeeded(written);");
         AssertContains(sourceText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LINKED_CTS_DISPOSE_WARN");
+        AssertContains(packetBuffersText, "private long FlushBufferedPackets(");
+        AssertContains(packetBuffersText, "NormalizePacketTimestampsBeforeWrite(buffPkt);");
+        AssertContains(packetBuffersText, "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
+        AssertContains(packetBuffersText, "private static void FreeBufferedPackets(List<IntPtr> bufferedPackets, List<int>? bufferedStreamIndices = null)");
+        AssertContains(packetBuffersText, "ffmpeg.av_packet_free(&p);");
+        AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
+        AssertContains(packetBuffersText, "var clone = ffmpeg.av_packet_clone(packet);");
         AssertContains(sourceText, "ReleaseExportLockBestEffort(\"single_export\");");
         AssertContains(sourceText, "ReleaseExportLockBestEffort(\"segment_export\");");
         AssertContains(sourceText, "private void ReleaseExportLockBestEffort(string operation)");

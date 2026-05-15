@@ -131,6 +131,11 @@ static partial class Program
         AssertContains(formatted, "elapsed=2500ms progressAge=150ms bytes=1 MB throughput=409.6 KB/s");
         AssertContains(formatted, "forceRotateFallbacks=1 lastForceRotateFallbackSegments=2 lastForceRotateFallbackUtc=12345");
 
+        var omittedFlashbackFormatted = (string)formatSnapshot.Invoke(null, new object[] { snapshotDoc.RootElement, false })!;
+        AssertDoesNotContain(omittedFlashbackFormatted, "== Flashback ==");
+        AssertDoesNotContain(omittedFlashbackFormatted, "Playback Commands:");
+        AssertDoesNotContain(omittedFlashbackFormatted, "Flashback Failure:");
+
         using var failedFlashbackDoc = JsonDocument.Parse(
             """
             {
