@@ -1067,8 +1067,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCheckCatalog.RecordingModels.cs` owns LibAv sink,
   capture settings, recording/finalize model, Flashback buffer, and core model
   check registration.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.cs` owns Flashback model,
-  playback, decoder, encoder sink, and exporter check registration.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.cs` coordinates Flashback
+  check registration; `HarnessCheckCatalog.Flashback.*.cs` partials own model,
+  playback, decoder, encoder sink, and exporter registration groups.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.ToolContracts.cs` owns recording
   pipeline, NVML, capture-session/process, automation protocol, tool formatter,
   and RTK probe check registration.
