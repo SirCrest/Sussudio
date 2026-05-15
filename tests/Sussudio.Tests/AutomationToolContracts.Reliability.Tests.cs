@@ -10,8 +10,7 @@ static partial class Program
     {
         var scriptText = ReadRepoFile("tools/reliability-gates.ps1")
             .Replace("\r\n", "\n");
-        var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var diagnosticSessionText = ReadDiagnosticSessionRunnerSource();
         var diagnosticSessionCleanupActionsText = ReadDiagnosticSessionCleanupActionsSource();
 
         AssertContains(scriptText, "$testProjectPath = Join-Path $repoRoot \"tests\\Sussudio.Tests\\Sussudio.Tests.csproj\"");

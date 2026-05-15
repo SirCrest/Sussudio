@@ -9,6 +9,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var streamTemplatesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs")
             .Replace("\r\n", "\n");
+        var segmentInputPreflightText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentInputPreflight.cs")
+            .Replace("\r\n", "\n");
 
         var templateSelectionBlock = ExtractTextBetween(
             sourceText,
@@ -29,8 +31,8 @@ static partial class Program
         AssertContains(incompleteVideoParamsBlock, "var videoStream = _activeInputContext->streams[candidateVideoStreamIndex];");
         AssertContains(incompleteVideoParamsBlock, "var videoHasValidParams = videoWidth > 0 && videoHeight > 0;");
         AssertContains(incompleteVideoParamsBlock, "no segment had complete video parameters");
-        AssertContains(sourceText, "var streamLayoutMismatch = FindSegmentStreamLayoutMismatch(");
-        AssertContains(sourceText, "reason='stream_layout_mismatch' detail='{streamLayoutMismatch}'");
+        AssertContains(segmentInputPreflightText, "var streamLayoutMismatch = FindSegmentStreamLayoutMismatch(");
+        AssertContains(segmentInputPreflightText, "reason='stream_layout_mismatch' detail='{streamLayoutMismatch}'");
         AssertContains(streamTemplatesText, "private static string? FindSegmentStreamLayoutMismatch(");
         AssertContains(streamTemplatesText, "inputCodec->codec_type != templateCodec->codec_type");
         AssertContains(streamTemplatesText, "inputCodec->codec_id != templateCodec->codec_id");
@@ -54,6 +56,8 @@ static partial class Program
             "    private static long ResolveFrameDurationUs");
         var skipTrackingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentSkipTracking.cs")
             .Replace("\r\n", "\n");
+        var segmentInputPreflightText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentInputPreflight.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(segmentExportCore, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
         AssertDoesNotContain(segmentExportCore, "void TrackSkippedRequestedSegment(FlashbackExportSegment segment, string reason)");
@@ -61,10 +65,11 @@ static partial class Program
         AssertContains(skipTrackingText, "public void Track(FlashbackExportSegment segment, string reason)");
         AssertContains(skipTrackingText, "SegmentOverlapsExportRange(segment, _inPoint, _outPoint)");
         AssertContains(skipTrackingText, "public bool TryCreateFailureMessage(out string message)");
-        AssertContains(segmentExportCore, "requestedSegmentSkips.Track(segment, \"not_found\");");
-        AssertContains(segmentExportCore, "requestedSegmentSkips.Track(segment, \"invalid_stream_count\");");
-        AssertContains(segmentExportCore, "requestedSegmentSkips.Track(segment, \"stream_count_mismatch\");");
-        AssertContains(segmentExportCore, "requestedSegmentSkips.Track(segment, \"stream_layout_mismatch\");");
+        AssertContains(segmentExportCore, "ref requestedSegmentSkips,");
+        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"not_found\");");
+        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"invalid_stream_count\");");
+        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"stream_count_mismatch\");");
+        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"stream_layout_mismatch\");");
         AssertDoesNotContain(segmentExportCore, "requestedSegmentSkips.Track(segment, \"video_stream_missing\");");
         AssertDoesNotContain(segmentExportCore, "requestedSegmentSkips.Track(segment, \"video_params_incomplete\");");
         AssertContains(segmentExportCore, "if (!TryInitializeSegmentOutputTemplate(segments, tmpPath, fastStart, ct, out streamCount, out videoStreamIndex, out streamMap, out var templateFailure))");

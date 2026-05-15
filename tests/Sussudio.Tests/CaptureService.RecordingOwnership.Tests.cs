@@ -8,15 +8,19 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
+        var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs")
+            .Replace("\r\n", "\n");
 
         AssertDoesNotContain(rootText, "public Task StartRecordingAsync(");
         AssertDoesNotContain(rootText, "public Task StopRecordingAsync(");
         AssertContains(lifecycleText, "public Task StartRecordingAsync(");
-        AssertContains(lifecycleText, "public Task StopRecordingAsync(");
-        AssertContains(lifecycleText, "internal Task StopRecordingAsync(bool emergency");
         AssertContains(lifecycleText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertContains(lifecycleText, "await recordingSink.StartAsync(recordingContext, transitionToken)");
-        AssertContains(lifecycleText, "await StopAndDisposeRecordingBackendAsync(\"Stopped\", emergency, transitionToken)");
+        AssertDoesNotContain(lifecycleText, "public Task StopRecordingAsync(");
+        AssertDoesNotContain(lifecycleText, "internal Task StopRecordingAsync(bool emergency");
+        AssertContains(stopLifecycleText, "public Task StopRecordingAsync(");
+        AssertContains(stopLifecycleText, "internal Task StopRecordingAsync(bool emergency");
+        AssertContains(stopLifecycleText, "await StopAndDisposeRecordingBackendAsync(\"Stopped\", emergency, transitionToken)");
 
         return Task.CompletedTask;
     }

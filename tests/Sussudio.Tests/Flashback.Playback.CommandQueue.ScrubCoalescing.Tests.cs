@@ -7,7 +7,7 @@ static partial class Program
 {
     private static Task FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         var seekBlock = ExtractTextBetween(
             sourceText,

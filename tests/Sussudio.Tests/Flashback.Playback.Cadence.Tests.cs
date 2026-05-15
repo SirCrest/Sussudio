@@ -7,7 +7,7 @@ static partial class Program
 {
     private static Task FlashbackPlaybackController_FrameDuration_GuardsInvalidDecoderFps()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0))");
         AssertContains(sourceText, "frameDuration = ResolveFrameDuration(decoder);");
@@ -91,7 +91,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_SubmitFailuresReleaseDecodedFrames()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         AssertContains(sourceText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
         AssertContains(sourceText, "if (!TryValidatePreviewFrame(frame, out var skipReason))");
@@ -196,7 +196,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_Fmp4ReopenRetriesAreGuarded()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeek(");
         AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeekKeyframe(");
@@ -307,7 +307,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_ResetClearsDecodeMetrics()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         var resetMetricsBlock = ExtractTextBetween(
             sourceText,

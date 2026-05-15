@@ -122,46 +122,14 @@ internal sealed unsafe partial class FlashbackExporter
                         continue;
                     }
 
-                    if (!File.Exists(segPath))
+                    if (!TryOpenSegmentInputForExport(
+                            segment,
+                            segPath,
+                            streamCount,
+                            streamMap,
+                            ref requestedSegmentSkips,
+                            out var currentStreamCount))
                     {
-                        Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='not_found'");
-                        requestedSegmentSkips.Track(segment, "not_found");
-                        continue;
-                    }
-
-                    // Open this segment
-                    OpenInput(segPath);
-                    ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
-                    if (!TryGetInputStreamCount(_activeInputContext, "segment_export", out var currentStreamCount, out var streamCountFailure))
-                    {
-                        Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='invalid_stream_count' detail='{streamCountFailure}'");
-                        requestedSegmentSkips.Track(segment, "invalid_stream_count");
-                        CloseActiveInput();
-                        continue;
-                    }
-
-                    // Validate that this segment's stream layout matches the selected template.
-                    // Mismatched layouts (e.g. microphone toggled mid-capture) would cause
-                    // packet->stream_index to map incorrectly, producing corrupt output.
-                    var segNbStreams = currentStreamCount;
-                    if (segNbStreams != streamCount)
-                    {
-                        Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_count_mismatch' expected={streamCount} actual={segNbStreams}");
-                        requestedSegmentSkips.Track(segment, "stream_count_mismatch");
-                        CloseActiveInput();
-                        continue;
-                    }
-
-                    var streamLayoutMismatch = FindSegmentStreamLayoutMismatch(
-                        _activeInputContext,
-                        _activeOutputContext,
-                        streamMap,
-                        segNbStreams);
-                    if (streamLayoutMismatch != null)
-                    {
-                        Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_layout_mismatch' detail='{streamLayoutMismatch}'");
-                        requestedSegmentSkips.Track(segment, "stream_layout_mismatch");
-                        CloseActiveInput();
                         continue;
                     }
 

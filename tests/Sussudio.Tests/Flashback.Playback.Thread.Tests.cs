@@ -5,10 +5,24 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static string ReadFlashbackPlaybackControllerPlaybackSource()
+        => string.Join(
+            "\n",
+            ReadFlashbackPlaybackControllerSource(),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs").Replace("\r\n", "\n"));
+
     private static Task FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
+        var threadShellText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Thread.cs")
+            .Replace("\r\n", "\n");
+        var threadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs")
+            .Replace("\r\n", "\n");
 
+        AssertContains(threadShellText, "PlaybackThreadEntry lives in FlashbackPlaybackController.ThreadLoop.cs.");
+        AssertDoesNotContain(threadShellText, "private void PlaybackThreadEntry(");
+        AssertContains(threadLoopText, "private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)");
+        AssertContains(threadLoopText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_ENTER\");");
         AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n            {\n                SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n            }");
         AssertContains(sourceText, "case CommandKind.Stop:\n                            isPlaying = false;\n                            isScrubbing = false;\n                            pendingExactResumeTarget = null;\n                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"thread_stop\");");
         AssertContains(sourceText, "private void RestoreLiveForPlaybackThreadExit(");
@@ -137,7 +151,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_PlaybackTransitions_UseBestEffortAudioPreviewGuards()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var wasapiPlaybackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
         var wasapiPlaybackQueueText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs")

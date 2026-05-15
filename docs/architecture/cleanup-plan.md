@@ -690,11 +690,13 @@ Flashback backend ownership checks, audio attach, session-context construction,
 frame-rate rational inference, codec/HDR guardrails, encoded-frame forwarding,
 and recording topology validation.
 
-Recording start/stop lifecycle now lives in
+Recording start lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`. That file owns
-the public recording transition surface, Flashback recording fast-path reuse,
-standard LibAv recording startup, start-rollback ordering, and the emergency
-stop overload that feeds finalization.
+the public recording start transition surface, Flashback recording fast-path
+reuse, standard LibAv recording startup, and start-rollback ordering. Recording
+stop lifecycle now lives in
+`Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs`, including
+normal stop routing and the emergency stop overload that feeds finalization.
 
 Transient recording-start rollback cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingRollback.cs`. That file owns
@@ -1031,8 +1033,11 @@ and segment-export lock release there. Skipped-requested-segment classification
 and failure-message policy live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentSkipTracking.cs`.
 Output-template selection and template-skip diagnostics live in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs`. The root
-exporter keeps shared native state, constants, and fields only.
+`Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs`. Per-segment
+input open, stream-info lookup, stream-count checks, and layout-mismatch skip
+tracking live in
+`Sussudio/Services/Flashback/FlashbackExporter.SegmentInputPreflight.cs`. The
+root exporter keeps shared native state, constants, and fields only.
 
 Flashback exporter lock policy now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.ExportLock.cs`. Shared
@@ -1568,6 +1573,10 @@ Playback thread start/stop, command-channel recreation, abandoned-command
 draining, and join/cancel diagnostics now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLifecycle.cs`.
 Keep queue write/coalescing/drop policy in the command queue partial.
+The playback worker loop now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs`; keep
+`PlaybackThreadEntry` command dispatch there and leave
+`FlashbackPlaybackController.Thread.cs` as the shell marker.
 Playback thread exit cleanup now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs`.
 Keep repeated live-restore cleanup and playback CTS disposal warnings there
@@ -1824,9 +1833,10 @@ Diagnostic session DTOs now live in focused model files:
 `tools/Common/DiagnosticSessionResult.FlashbackExport.cs`,
 `tools/Common/DiagnosticSessionResult.Preview.cs`,
 `tools/Common/DiagnosticSessionResult.Overview.cs`, and
-`tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionRunner.cs` still
-owns orchestration and scenario execution, but the public
-options/result/sample contracts are separated from runner behavior. The result
+`tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionRunner.cs` owns the
+public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
+mutable run phase plan for setup, sampling, cleanup, verification, and summary.
+The public options/result/sample contracts are separated from runner behavior. The result
 DTO root owns core session metadata, terminal state, artifacts, actions, and
 warnings; the result partials own capture/source, Flashback playback,
 Flashback recording, Flashback export, preview, process, recording
@@ -2314,6 +2324,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionPresentMonStartup.cs`
 - `DiagnosticSessionText.cs`
 - `DiagnosticSessionRunner.cs`
+- `DiagnosticSessionRunExecution.cs`
 - `AutomationResponseState.cs`
 - `JsonOptions.cs`
 - `PresentMonProbe.cs`
@@ -2326,11 +2337,13 @@ Remaining `tools/Common` ownership:
 
 1. Continue decomposing diagnostic-session runner internals by owner.
 
-   `tools/Common/DiagnosticSessionRunner.cs` is still large. Scenario catalog
-   initial scenario setup, optional scenario startup, cleanup mutation
-   ownership, post-cleanup recording checks, post-run snapshot fetches, command
-   send/failure plumbing, and result construction are extracted; next, split
-   remaining production runner families or pivot to the next large owner. The
+   `tools/Common/DiagnosticSessionRunner.cs` is now the small public wrapper,
+   while `tools/Common/DiagnosticSessionRunExecution.cs` owns the mutable run
+   phase plan. Scenario catalog initial scenario setup, optional scenario
+   startup, cleanup mutation ownership, post-cleanup recording checks,
+   post-run snapshot fetches, command send/failure plumbing, and result
+   construction are extracted; next, split remaining production runner
+   families or pivot to the next large owner. The
    reflective runner behavior tests are already split by scenario, so keep new
    runner coverage in the focused owner file that matches the behavior. Keep
    JSON summary shape unchanged.

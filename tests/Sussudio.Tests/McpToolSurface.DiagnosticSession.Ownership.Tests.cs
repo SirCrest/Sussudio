@@ -4,8 +4,7 @@ static partial class Program
 {
     private static Task DiagnosticSessionHealthPolicy_OwnsHealthTolerances()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var policyText = ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
             .Replace("\r\n", "\n");
@@ -39,8 +38,7 @@ static partial class Program
 
     private static Task DiagnosticSessionScenarioPlan_OwnsScenarioFlags()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var bootstrapText = ReadRepoFile("tools/Common/DiagnosticSessionRunBootstrap.cs")
             .Replace("\r\n", "\n");
         var planText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
@@ -65,8 +63,7 @@ static partial class Program
 
     private static Task DiagnosticSessionScenarioSetup_OwnsInitialMutations()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var setupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs")
             .Replace("\r\n", "\n");
 
@@ -99,8 +96,7 @@ static partial class Program
 
     private static Task DiagnosticSessionBackgroundTasks_OwnTaskDraining()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var startupRegistrationText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs")
             .Replace("\r\n", "\n");
@@ -186,8 +182,7 @@ static partial class Program
 
     private static Task DiagnosticSessionCleanupPolicy_OwnsRestoreWarnings()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var cleanupActionsText = ReadDiagnosticSessionCleanupActionsSource();
         var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
@@ -221,8 +216,7 @@ static partial class Program
 
     private static Task DiagnosticSessionRecordingChecks_OwnPostRunRecordingVerification()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
             .Replace("\r\n", "\n");
 
@@ -251,8 +245,7 @@ static partial class Program
 
     private static Task DiagnosticSessionPostRunSnapshots_OwnTimelineAndFinalSnapshot()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var postRunText = ReadRepoFile("tools/Common/DiagnosticSessionPostRunSnapshots.cs")
             .Replace("\r\n", "\n");
 
@@ -280,8 +273,7 @@ static partial class Program
 
     private static Task DiagnosticSessionSampler_OwnsSampleLoopOrdering()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var samplerText = ReadRepoFile("tools/Common/DiagnosticSessionSampler.cs")
             .Replace("\r\n", "\n");
 
@@ -299,8 +291,7 @@ static partial class Program
 
     private static Task DiagnosticSessionMetrics_OwnsSessionMetricProjection()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var metricsText = ReadDiagnosticSessionMetricsSource();
 

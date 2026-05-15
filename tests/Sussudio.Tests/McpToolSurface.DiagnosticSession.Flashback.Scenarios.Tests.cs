@@ -4,8 +4,7 @@ static partial class Program
 {
     private static Task DiagnosticSessionFlashbackCycleScenarios_OwnCycleFlows()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var cyclesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs")
             .Replace("\r\n", "\n");
@@ -30,8 +29,7 @@ static partial class Program
 
     private static Task DiagnosticSessionFlashbackPreviewCycleScenarios_OwnPreviewCycleFlows()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var cyclesText = ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource();
 
@@ -59,8 +57,7 @@ static partial class Program
 
     private static Task DiagnosticSessionFlashbackRejectedExports_OwnRejectionFlows()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var rejectedText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackRejectedExports.cs")
             .Replace("\r\n", "\n");
 
@@ -90,8 +87,7 @@ static partial class Program
 
     private static Task DiagnosticSessionFlashbackSegmentPlaybackScenarios_OwnSegmentPlaybackFlow()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var segmentPlaybackText = ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource();
 
@@ -115,8 +111,7 @@ static partial class Program
 
     private static Task DiagnosticSessionFlashbackRecordingSettingsScenarios_OwnDeferredSettingsFlow()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
             .Replace("\r\n", "\n");
@@ -155,8 +150,7 @@ static partial class Program
 
     private static Task DiagnosticSessionFlashbackLifecycleScenarios_OwnLifecycleFlow()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var lifecycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs")
             .Replace("\r\n", "\n");

@@ -52,7 +52,7 @@ static partial class Program
         AssertNotNull(clearMethod, "FlashbackPlaybackController.ClearInOutPoints");
         clearMethod!.Invoke(controller, null);
 
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         AssertContains(
             sourceText,
             "var pending = Interlocked.Increment(ref _pendingCommands);\n        var droppedOldest = false;\n        var droppedCommand = default(PlaybackCommand);\n        if (!_commandChannel.Writer.TryWrite(queuedCommand) &&\n            (!IsCommandChannelOpenForDropRetry() ||\n             !TryDropOldestQueuedCommandForNewCommand(out droppedCommand) ||\n             !(droppedOldest = _commandChannel.Writer.TryWrite(queuedCommand))))\n        {\n            DecrementPendingCommands();");
@@ -67,7 +67,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         AssertContains(sourceText, "var outTicks = Interlocked.Read(ref _outPointTicks);\n        if (outTicks != long.MinValue && outTicks <= pos.Ticks)\n        {\n            OutPoint = null;\n            Logger.Log(\"FLASHBACK_PLAYBACK_CLEAR_OUT invalid_range\");\n        }");
         AssertContains(sourceText, "var inTicks = Interlocked.Read(ref _inPointTicks);\n        if (inTicks != long.MinValue && inTicks >= pos.Ticks)\n        {\n            InPoint = null;\n            Logger.Log(\"FLASHBACK_PLAYBACK_CLEAR_IN invalid_range\");\n        }");
@@ -94,7 +94,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_InOutPointSettersNormalizeMarkers()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         AssertContains(sourceText, "private long _inPointFilePtsTicks = long.MinValue;");
         AssertContains(sourceText, "private long _outPointFilePtsTicks = long.MinValue;");
@@ -133,7 +133,7 @@ static partial class Program
         AssertEqual(TimeSpan.Zero, (TimeSpan?)GetPropertyValue(controller, "InPoint"), "Disposed clear should preserve existing in point");
         AssertEqual(null, GetPropertyValue(controller, "OutPoint"), "Disposed set out should not create a marker");
 
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SET_IN_SKIP reason=disposed");
         AssertContains(sourceText, "SetLastCommandFailure(\"disposed:SetInPoint\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SET_OUT_SKIP reason=disposed");
@@ -146,7 +146,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         AssertContains(sourceText, "var bufferDuration = _bufferManager.BufferedDuration;\n        var inTicks = Interlocked.Read(ref _inPointTicks);");
         AssertContains(sourceText, "var max = outTicks == long.MinValue ? bufferDuration : TimeSpan.FromTicks(outTicks);\n        if (max > bufferDuration) max = bufferDuration;");

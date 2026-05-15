@@ -5,8 +5,7 @@ static partial class Program
 {
     private static Task DiagnosticSessionFlashbackStressScenario_OwnsStressFlow()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
         var stressRootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.Stress.cs")

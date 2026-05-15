@@ -18,6 +18,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs")
             .Replace("\r\n", "\n");
+        var segmentInputPreflightText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentInputPreflight.cs")
+            .Replace("\r\n", "\n");
         var segmentValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentValidation.cs")
             .Replace("\r\n", "\n");
         var progressText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Progress.cs")
@@ -61,10 +63,18 @@ static partial class Program
         AssertContains(segmentsText, "TryValidateSegmentExportInputs(");
         AssertContains(segmentsText, "TryEstimateSegmentExportReadableBytes(");
         AssertContains(segmentsText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
+        AssertContains(segmentsText, "TryOpenSegmentInputForExport(");
+        AssertDoesNotContain(segmentsText, "avformat_find_stream_info(_activeInputContext, null)");
         AssertContains(segmentSkipTrackingText, "private struct RequestedSegmentSkipTracker");
         AssertContains(segmentSkipTrackingText, "public void Track(FlashbackExportSegment segment, string reason)");
         AssertContains(segmentSkipTrackingText, "public bool TryCreateFailureMessage(out string message)");
         AssertContains(segmentsText, "ReleaseExportLockBestEffort(\"segment_export\");");
+        AssertContains(segmentInputPreflightText, "private bool TryOpenSegmentInputForExport(");
+        AssertContains(segmentInputPreflightText, "ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), \"avformat_find_stream_info\");");
+        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"not_found\");");
+        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"invalid_stream_count\");");
+        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"stream_count_mismatch\");");
+        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"stream_layout_mismatch\");");
         AssertContains(segmentTemplateText, "private bool TryInitializeSegmentOutputTemplate(");
         AssertContains(segmentTemplateText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
         AssertDoesNotContain(segmentsText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");

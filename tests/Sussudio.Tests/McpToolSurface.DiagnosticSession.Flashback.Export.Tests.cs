@@ -4,8 +4,7 @@ static partial class Program
 {
     private static Task DiagnosticSessionFlashbackExportScenarios_OwnExportFlows()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var scenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var scenariosTextWithoutSpaces = scenariosText.Replace(" ", string.Empty);
@@ -51,8 +50,7 @@ static partial class Program
 
     private static Task DiagnosticSessionFlashbackExports_OwnsExportHelpers()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
         var exportsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
@@ -81,8 +79,7 @@ static partial class Program
 
     private static Task DiagnosticSessionFlashbackSegments_OwnsSegmentWaitsAndParsing()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var segmentPlaybackText = ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource();
         var segmentsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")

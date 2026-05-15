@@ -129,7 +129,7 @@ static partial class Program
         var startRecordingFailure = ExtractSourceBlock(
             captureServiceSource,
             "Logger.Log($\"CAPTURE_RECORDING_START_FAIL",
-            "public Task StopRecordingAsync");
+            "}, cancellationToken);");
         AssertContains(startRecordingFailure, "RecordLastRecordingFailure(ex);");
         AssertContains(startRecordingFailure, "Recording start rollback cleanup failed");
         AssertContains(startRecordingFailure, "Transient recording backend cleanup failed during start rollback");

@@ -64,7 +64,7 @@ static partial class Program
     private static DiagnosticSessionSourceFamily ReadDiagnosticSessionSourceFamily()
     {
         return new DiagnosticSessionSourceFamily(
-            ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            ReadDiagnosticSessionRunnerSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioSetup.cs")
                 + "\n" + ReadDiagnosticSessionScenarioStartupSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")

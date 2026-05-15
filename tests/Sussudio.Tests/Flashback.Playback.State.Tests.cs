@@ -148,7 +148,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_ClampsCommandPositionsBeforeFileLookup()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         // All three scrub-related command paths must clamp via the eviction-aware
         // overload so a long-held scrub doesn't resolve to evicted file PTS.
         const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);";
@@ -170,7 +170,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_TimestampArithmeticIsSaturating()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         AssertContains(sourceText, "private static TimeSpan SaturatingAdd(TimeSpan left, TimeSpan right)");
         AssertContains(sourceText, "private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)");
@@ -194,7 +194,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_EndOfSegmentOpenFailuresSnapLive()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         AssertContains(sourceText, "return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);");
         AssertContains(sourceText, "TimeSpan frozenValidStart,\n        ref bool fileOpen,\n        CancellationToken cancellationToken)");
@@ -219,7 +219,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_NormalPlaybackUsesTightNearLiveSnap()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         AssertContains(sourceText, "private const double ContinuousPlaybackNearLiveSnapFrames = 3.0;");
         AssertContains(sourceText, "private static readonly TimeSpan ContinuousPlaybackNearLiveSnapMinimum = TimeSpan.FromMilliseconds(100);");
@@ -237,7 +237,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_SnapLiveClearsOpenFileIdentity()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         var nearLiveBlock = ExtractTextBetween(
             sourceText,
@@ -277,7 +277,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_PauseFromLive_DisplaysBufferedFrameBeforePaused()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var publicPauseBlock = ExtractTextBetween(
             sourceText,
             "public bool Pause()",
@@ -314,7 +314,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_NudgeCreatesDecoderWhenPaused()
     {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
+        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
 
         var nudgeBlock = ExtractTextBetween(
             sourceText,

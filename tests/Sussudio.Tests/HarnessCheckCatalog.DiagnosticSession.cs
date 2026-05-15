@@ -15,6 +15,9 @@ static partial class Program
             "Diagnostic session initial snapshot has a named owner",
             DiagnosticSessionInitialSnapshot_OwnsBaselineCapture);
         await AddCheckAsync(results,
+            "Diagnostic session runner has a compatibility wrapper owner",
+            DiagnosticSessionRunner_OwnsCompatibilitySurface);
+        await AddCheckAsync(results,
             "Diagnostic session result formatting has a named owner",
             DiagnosticSessionResultFormatter_OwnsFormattedSummaryText);
         await AddCheckAsync(results,

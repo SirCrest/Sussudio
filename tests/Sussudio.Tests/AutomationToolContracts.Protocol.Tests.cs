@@ -225,8 +225,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var mcpPipeText = ReadRepoFile("tools/McpServer/PipeClient.cs")
             .Replace("\r\n", "\n");
-        var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var diagnosticSessionText = ReadDiagnosticSessionRunnerSource();
         var diagnosticSessionCommandChannelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
             .Replace("\r\n", "\n");
         var diagnosticSessionPipeRetryText = ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")

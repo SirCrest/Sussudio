@@ -2,10 +2,31 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionInitialSnapshot_OwnsBaselineCapture()
+    private static Task DiagnosticSessionRunner_OwnsCompatibilitySurface()
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var executionText = ReadRepoFile("tools/Common/DiagnosticSessionRunExecution.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(runnerText, "public static class DiagnosticSessionRunner");
+        AssertContains(runnerText, "public static Task<DiagnosticSessionResult> RunAsync(");
+        AssertContains(runnerText, "return DiagnosticSessionRunExecution.RunAsync(options, sendCommandAsync, cancellationToken);");
+        AssertContains(runnerText, "return DiagnosticSessionResultFormatter.Format(result);");
+        AssertDoesNotContain(runnerText, "DiagnosticSessionScenarioSetup.RunAsync(");
+        AssertDoesNotContain(runnerText, "SampleLoopAsync(");
+        AssertDoesNotContain(runnerText, "DiagnosticSessionCleanupActions.RunAsync(");
+        AssertContains(executionText, "internal static class DiagnosticSessionRunExecution");
+        AssertContains(executionText, "DiagnosticSessionScenarioSetup.RunAsync(");
+        AssertContains(executionText, "SampleLoopAsync(");
+        AssertContains(executionText, "DiagnosticSessionCleanupActions.RunAsync(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task DiagnosticSessionInitialSnapshot_OwnsBaselineCapture()
+    {
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var initialSnapshotText = ReadRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
             .Replace("\r\n", "\n");
 
@@ -38,8 +59,7 @@ static partial class Program
 
     private static Task DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var channelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
             .Replace("\r\n", "\n");
         var retryText = ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
@@ -62,8 +82,7 @@ static partial class Program
 
     private static Task DiagnosticSessionCommandChannel_OwnsSerializedCommandSending()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var channelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
             .Replace("\r\n", "\n");
 
@@ -93,8 +112,7 @@ static partial class Program
 
     private static Task DiagnosticSessionRunState_OwnsTerminalAndLiveState()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var stateText = ReadRepoFile("tools/Common/DiagnosticSessionRunState.cs")
             .Replace("\r\n", "\n");
 
@@ -118,8 +136,7 @@ static partial class Program
 
     private static Task DiagnosticSessionRunBootstrap_OwnsNormalizedSessionIdentity()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var bootstrapText = ReadRepoFile("tools/Common/DiagnosticSessionRunBootstrap.cs")
             .Replace("\r\n", "\n");
 
@@ -149,8 +166,7 @@ static partial class Program
 
     private static Task DiagnosticSessionOutputLock_OwnsExclusiveOutputDirectoryLock()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var lockText = ReadRepoFile("tools/Common/DiagnosticSessionOutputLock.cs")
             .Replace("\r\n", "\n");
 

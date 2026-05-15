@@ -6,8 +6,7 @@ static partial class Program
 {
     private static Task DiagnosticSessionFlashbackMetrics_OwnsFlashbackSessionMetricProjection()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var metricsText = ReadDiagnosticSessionFlashbackMetricsSource();
 

@@ -4,8 +4,7 @@ static partial class Program
 {
     private static Task DiagnosticSessionModels_AreSplitFromRunnerBehavior()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var modelText = ReadDiagnosticSessionModelsSource();
 
         AssertContains(modelText, "public sealed class DiagnosticSessionOptions");
@@ -29,7 +28,8 @@ static partial class Program
         AssertContains(modelText, "public string TerminalState { get; set; }");
         AssertContains(modelText, "public JsonElement Snapshot { get; init; }");
         AssertContains(runnerText, "public static class DiagnosticSessionRunner");
-        AssertContains(runnerText, "public static async Task<DiagnosticSessionResult> RunAsync(");
+        AssertContains(runnerText, "public static Task<DiagnosticSessionResult> RunAsync(");
+        AssertContains(runnerText, "internal static async Task<DiagnosticSessionResult> RunAsync(");
         AssertDoesNotContain(runnerText, "public sealed class DiagnosticSessionResult");
         AssertDoesNotContain(runnerText, "public sealed class DiagnosticSessionOptions");
         AssertDoesNotContain(runnerText, "public sealed class DiagnosticSessionSample");
@@ -39,8 +39,7 @@ static partial class Program
 
     private static Task DiagnosticSessionResultFormatter_OwnsFormattedSummaryText()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
         var flashbackRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Flashback.cs")
@@ -129,8 +128,7 @@ static partial class Program
 
     private static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
@@ -451,8 +449,7 @@ static partial class Program
 
     private static Task DiagnosticSessionText_OwnsSharedFormattingHelpers()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
         var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
@@ -475,8 +472,7 @@ static partial class Program
 
     private static Task DiagnosticSessionJsonArtifacts_OwnsArtifactsAndResponseExtraction()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
-            .Replace("\r\n", "\n");
+        var runnerText = ReadDiagnosticSessionRunnerSource();
         var initialSnapshotText = ReadRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
             .Replace("\r\n", "\n");
         var artifactsText = ReadRepoFile("tools/Common/DiagnosticSessionJsonArtifacts.cs")
