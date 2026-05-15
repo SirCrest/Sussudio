@@ -107,6 +107,9 @@ static partial class Program
             "ssctl Formatters emit core snapshot sections",
             SsctlFormatters_EmitCoreSnapshotSections);
         await AddCheckAsync(results,
+            "ssctl Formatters timeline output preserves table and summary",
+            SsctlFormatters_TimelineOutputPreservesTableAndSummary);
+        await AddCheckAsync(results,
             "ssctl PipeTransport exposes advanced automation command ids",
             SsctlPipeTransport_ExposesAdvancedAutomationCommandIds);
         await AddCheckAsync(results,
