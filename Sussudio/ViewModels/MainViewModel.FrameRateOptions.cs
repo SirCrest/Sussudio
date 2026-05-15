@@ -151,89 +151,15 @@ public partial class MainViewModel
         }
 
         var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);
-        var sourceTimingFamilyKnown = TryInferFrameRateTimingFamily(sourceRate.Arg, sourceRate.Rate, out var sourceTimingFamily);
-        var sourceFriendlyRate = sourceRate.Rate.HasValue
-            ? Math.Round(sourceRate.Rate.Value, MidpointRounding.AwayFromZero)
-            : (double?)null;
-        var cappedOptions = options
-            .Select(option =>
-            {
-                var enabled = option.IsEnabled;
-                var disableReason = option.DisableReason;
-
-                if (enabled && sourceFriendlyRate.HasValue)
-                {
-                    if (option.FriendlyValue > sourceFriendlyRate.Value + 0.01)
-                    {
-                        enabled = false;
-                        disableReason = $"Source signal is {sourceFriendlyRate.Value:0} fps; higher capture fps duplicates frames.";
-                    }
-                    else if (sourceTimingFamilyKnown &&
-                             sourceRate.Rate.HasValue &&
-                             TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily) &&
-                             optionFamily != FrameRateTimingFamily.Unknown &&
-                             sourceTimingFamily != FrameRateTimingFamily.Unknown &&
-                             optionFamily != sourceTimingFamily &&
-                             ResolutionHasTimingFamilyVariant(selectedResolutionKey, option.FriendlyValue, sourceTimingFamily) &&
-                             IsFriendlyFrameRateMatch(option.FriendlyValue, sourceFriendlyRate.Value) &&
-                             option.Value > sourceRate.Rate.Value + 0.03)
-                    {
-                        enabled = false;
-                        disableReason = $"Source timing is {sourceRate.Arg ?? sourceRate.Rate.Value.ToString("0.###")} so this duplicate variant is hidden.";
-                    }
-                    else
-                    {
-                        var roundedSourceFriendlyRate = (int)Math.Round(sourceFriendlyRate.Value, MidpointRounding.AwayFromZero);
-                        var roundedOptionFriendlyRate = (int)Math.Round(option.FriendlyValue, MidpointRounding.AwayFromZero);
-                        if (roundedOptionFriendlyRate > 0 &&
-                            roundedOptionFriendlyRate <= roundedSourceFriendlyRate &&
-                            roundedSourceFriendlyRate % roundedOptionFriendlyRate != 0)
-                        {
-                            enabled = false;
-                            disableReason = $"{roundedOptionFriendlyRate:0} fps is not a clean divisor of source {roundedSourceFriendlyRate:0} fps.";
-                        }
-                    }
-                }
-
-                return new FrameRateOption
-                {
-                    FriendlyValue = option.FriendlyValue,
-                    Value = option.Value,
-                    Rational = option.Rational,
-                    Numerator = option.Numerator,
-                    Denominator = option.Denominator,
-                    IsEnabled = enabled,
-                    DisableReason = enabled ? string.Empty : disableReason,
-                    DisplayTextOverride = option.DisplayTextOverride
-                };
-            })
-            .ToList();
-
-        options = ShowAllCaptureOptions
-            ? cappedOptions
-                .Select(option =>
-                {
-                    if (option.IsEnabled || !IsSourceFilteredFrameRateDisableReason(option.DisableReason))
-                    {
-                        return option;
-                    }
-
-                    return new FrameRateOption
-                    {
-                        FriendlyValue = option.FriendlyValue,
-                        Value = option.Value,
-                        Rational = option.Rational,
-                        Numerator = option.Numerator,
-                        Denominator = option.Denominator,
-                        IsEnabled = true,
-                        DisableReason = string.Empty,
-                        DisplayTextOverride = option.DisplayTextOverride
-                    };
-                })
-                .ToList()
-            : cappedOptions
-                .Where(option => option.IsEnabled || !IsSourceFilteredFrameRateDisableReason(option.DisableReason))
-                .ToList();
+        var sourceFilter = FrameRateSourceFilterPolicy.Apply(
+            options,
+            sourceRate.Rate,
+            sourceRate.Arg,
+            BuildFrameRateTimingVariants(selectedResolutionKey),
+            ShowAllCaptureOptions);
+        var sourceTimingFamilyKnown = sourceFilter.SourceTimingFamilyKnown;
+        var sourceTimingFamily = sourceFilter.SourceTimingFamily;
+        options = sourceFilter.Options.ToList();
         var autoFrameRateOption = options.Count > 0
             ? new FrameRateOption
             {
@@ -334,11 +260,5 @@ public partial class MainViewModel
         UpdateTargetSummary();
         _forceSourceAutoRetarget = false;
     }
-
-    private static bool IsSourceFilteredFrameRateDisableReason(string? disableReason)
-        => !string.IsNullOrWhiteSpace(disableReason) &&
-           (disableReason.IndexOf("higher capture fps", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            disableReason.IndexOf("duplicate variant", StringComparison.OrdinalIgnoreCase) >= 0 ||
-            disableReason.IndexOf("not a clean divisor", StringComparison.OrdinalIgnoreCase) >= 0);
 
 }

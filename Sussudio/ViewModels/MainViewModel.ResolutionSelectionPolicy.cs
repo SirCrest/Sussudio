@@ -271,36 +271,6 @@ public partial class MainViewModel
         return buckets[0];
     }
 
-    private bool ResolutionHasTimingFamilyVariant(
-        string? resolutionKey,
-        double friendlyFrameRate,
-        FrameRateTimingFamily family)
-    {
-        if (family == FrameRateTimingFamily.Unknown ||
-            string.IsNullOrWhiteSpace(resolutionKey) ||
-            !_resolutionToFormats.TryGetValue(resolutionKey, out var formats))
-        {
-            return false;
-        }
-
-        var bucket = (int)Math.Round(friendlyFrameRate, MidpointRounding.AwayFromZero);
-        foreach (var format in formats)
-        {
-            if (GetFriendlyFrameRateBucket(format.FrameRateExact) != bucket)
-            {
-                continue;
-            }
-
-            if (TryInferFrameRateTimingFamily(format.FrameRateRational, format.FrameRateExact, out var formatFamily) &&
-                formatFamily == family)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private double GetMaxFrameRateForResolution(string? resolutionKey, bool hdrOnly)
     {
         if (string.IsNullOrWhiteSpace(resolutionKey) ||

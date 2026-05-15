@@ -33,6 +33,9 @@ static partial class Program
             "Show all capture options unlocks source-filtered frame rates",
             ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates);
         await AddCheckAsync(results,
+            "Frame-rate source filter policy lives in focused helper",
+            FrameRateSourceFilterPolicy_LivesInFocusedHelper);
+        await AddCheckAsync(results,
             "Resolution selection policy lives in focused partial",
             ResolutionSelectionPolicy_LivesInFocusedPartial);
         await AddCheckAsync(results,

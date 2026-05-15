@@ -6,11 +6,39 @@ static partial class Program
     private static Task ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates()
     {
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
+        var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateSourceFilterPolicy.cs").Replace("\r\n", "\n");
 
-        AssertContains(mainViewModelText, "options = ShowAllCaptureOptions");
-        AssertContains(mainViewModelText, "!IsSourceFilteredFrameRateDisableReason(option.DisableReason)");
-        AssertContains(mainViewModelText, "IsEnabled = true");
-        AssertContains(mainViewModelText, "DisableReason = string.Empty");
+        AssertContains(mainViewModelText, "FrameRateSourceFilterPolicy.Apply(");
+        AssertContains(mainViewModelText, "ShowAllCaptureOptions);");
+        AssertContains(sourceFilterPolicyText, "showAllCaptureOptions");
+        AssertContains(sourceFilterPolicyText, "!IsSourceFilteredFrameRateDisableReason(option.DisableReason)");
+        AssertContains(sourceFilterPolicyText, "CloneOption(option, isEnabled: true, disableReason: string.Empty)");
+        AssertDoesNotContain(mainViewModelText, "private static bool IsSourceFilteredFrameRateDisableReason(");
+        AssertDoesNotContain(mainViewModelText, "higher capture fps duplicates frames");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FrameRateSourceFilterPolicy_LivesInFocusedHelper()
+    {
+        var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
+        var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateSourceFilterPolicy.cs").Replace("\r\n", "\n");
+
+        AssertContains(frameRateOptionsText, "var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
+        AssertContains(frameRateOptionsText, "AvailableFrameRates.Clear();");
+        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selected, fallbackRate);");
+        AssertContains(sourceFilterPolicyText, "private static class FrameRateSourceFilterPolicy");
+        AssertContains(sourceFilterPolicyText, "internal static FrameRateSourceFilterResult Apply(");
+        AssertContains(sourceFilterPolicyText, "IReadOnlyCollection<FrameRateTimingVariant> resolutionTimingVariants");
+        AssertContains(sourceFilterPolicyText, "option.FriendlyValue > sourceFriendlyRate.Value + 0.01");
+        AssertContains(sourceFilterPolicyText, "option.Value > sourceRate.Value + 0.03");
+        AssertContains(sourceFilterPolicyText, "higher capture fps duplicates frames");
+        AssertContains(sourceFilterPolicyText, "duplicate variant is hidden");
+        AssertContains(sourceFilterPolicyText, "not a clean divisor");
+        AssertContains(sourceFilterPolicyText, "private IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
+        AssertDoesNotContain(sourceFilterPolicyText, "AvailableFrameRates.Clear();");
+        AssertDoesNotContain(sourceFilterPolicyText, "ApplyResolvedFrameRateSelection(");
+        AssertDoesNotContain(sourceFilterPolicyText, "DetectedSourceFrameRate =");
 
         return Task.CompletedTask;
     }

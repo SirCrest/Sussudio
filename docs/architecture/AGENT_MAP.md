@@ -1553,7 +1553,9 @@ Primary current owners:
   projection. `MainViewModel.FlashbackExport.cs` owns Flashback UI/automation
   export flow, progress/cancellation state, and segment projection.
   `MainViewModel.FrameRateOptions.cs` owns frame-rate option rebuilding,
-  source-rate filtering, and automatic frame-rate selection.
+  observable collection mutation, and automatic frame-rate selection.
+  `MainViewModel.FrameRateSourceFilterPolicy.cs` owns source-rate filtering and
+  `ShowAllCaptureOptions` unlock policy.
   `MainViewModel.FrameRateTiming.cs` owns shared frame-rate timing family,
   rational parsing, source-rate fallback, and preferred-format ranking helpers
   used by frame-rate, resolution, capture-settings, and automation projections.

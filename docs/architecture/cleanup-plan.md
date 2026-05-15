@@ -2007,9 +2007,11 @@ Remaining `tools/Common` ownership:
    playback commands, marker commands, and buffer/bitrate status projection now
    live in `MainViewModel.FlashbackPlayback.cs`. Flashback UI/automation export
    flow, progress/cancellation state, and segment projection now live in
-   `MainViewModel.FlashbackExport.cs`. Frame-rate option rebuilding, source-rate
-   filtering, and automatic frame-rate selection now live in
-   `MainViewModel.FrameRateOptions.cs`. Shared frame-rate timing family,
+   `MainViewModel.FlashbackExport.cs`. Frame-rate option rebuilding, observable
+   collection mutation, and automatic frame-rate selection now live in
+   `MainViewModel.FrameRateOptions.cs`. Source-rate filtering and
+   `ShowAllCaptureOptions` unlock policy live in
+   `MainViewModel.FrameRateSourceFilterPolicy.cs`. Shared frame-rate timing family,
    rational parsing, source-rate fallback, and preferred-format ranking now live
    in `MainViewModel.FrameRateTiming.cs`; keep device enumeration and selected
    device capability rebuilds in `MainViewModel.DeviceManagement.cs`. Pure
