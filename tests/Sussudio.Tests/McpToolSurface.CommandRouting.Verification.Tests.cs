@@ -129,7 +129,7 @@ static partial class Program
 
         AssertCommandRequest(requests[0], "VerifyLastRecording");
         AssertCommandRequest(requests[1], "VerifyFile", ("filePath", @"C:\captures\clip.mp4"), ("verificationProfile", "flashback-export"));
-        AssertEqual(GetExpectedAutomationCommandValue("AssertSnapshot"), requests[2].GetProperty("command").GetInt32(), "AssertSnapshot command id");
+        AssertAutomationCommandId(requests[2], "AssertSnapshot");
         AssertCommandRequest(requests[3], "VerifyLastRecording");
         AssertCommandRequest(requests[4], "VerifyFile", ("filePath", @"C:\captures\missing.mp4"));
         var assertPayload = requests[2].GetProperty("payload");
@@ -223,5 +223,7 @@ static partial class Program
         AssertContains(verificationParsingText, "data.TryGetProperty(\"Verification\", out verification)");
         AssertContains(verificationParsingText, "response.TryGetProperty(\"Snapshot\", out var snapshot)");
         AssertContains(verificationParsingText, "snapshot.TryGetProperty(\"LastVerification\", out verification)");
+
+        AssertMcpCommandRoutingTestsUseCommandIdHelper();
     }
 }

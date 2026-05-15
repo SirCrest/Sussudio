@@ -53,6 +53,10 @@ Entry points:
   command resolution, and request envelope shape.
 - `AutomationPipeSecurityPolicy.cs` owns the fallback-security predicate shared
   by app and tests.
+- `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns the
+  golden numeric command-ID table. Routing tests should assert captured
+  `request.command` values through `AssertAutomationCommandId`, not raw numbers
+  or direct golden-table lookups.
 
 Do not reintroduce linked source for these files from `tools/Common`. Consumers
 should reference `Sussudio.Automation.Contracts`.
@@ -1371,7 +1375,9 @@ Primary current owners:
   in the focused `CommandRouting.Capture`, `CommandRouting.Host`,
   `CommandRouting.Recording`, `CommandRouting.Formatting`,
   `CommandRouting.Device`, `CommandRouting.Pipeline`, `CommandRouting.Ui`, and
-  `CommandRouting.Verification` owner files.
+  `CommandRouting.Verification` owner files. Captured command-ID assertions use
+  the shared `AssertAutomationCommandId` helper so the golden command table is
+  the only test-owned numeric ID list.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the
   diagnostic-session MCP surface index shell.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Tests.cs` owns

@@ -499,7 +499,9 @@ recording-aware close handling remain in `MainWindow.CloseLifecycle.cs`.
 `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` is now only the
 MCP command-routing test family marker shell. MCP command-routing coverage is
 split into capture, host/pipe, recording, formatter batching, device, pipeline,
-UI, and verification owner files.
+UI, and verification owner files. Captured `request.command` ID assertions now
+flow through `AssertAutomationCommandId`, which reads the golden command table
+instead of duplicating numeric IDs in routing tests.
 
 First-load startup, first-frame uncloak scheduling, initial ViewModel/device
 refresh, automation pipe hosting, and the launch entrance trigger now live in
