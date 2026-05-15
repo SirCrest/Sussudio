@@ -1853,7 +1853,9 @@ max/schedule-late aggregation. `DiagnosticSessionResultAnalysis.PreviewScheduler
 is the single record property that carries those values into
 `DiagnosticSessionResultBuilder.PreviewResult.cs`; the preview result partial
 maps that handoff to `DiagnosticSessionResult` fields without rereading MJPEG
-jitter-buffer snapshot keys.
+jitter-buffer snapshot keys. Preview D3D frame-stats, slow-frame, and CPU-timing
+result projection values live in `DiagnosticSessionResultBuilder.PreviewD3DResult.cs`
+so D3D summary fields are kept out of the broader preview projection.
 Flashback playback result composition lives in
 `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`, while command
 queue, cadence/1% low, decode timing, audio-master/A/V drift, and stage/seek
@@ -2251,6 +2253,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
+- `DiagnosticSessionResultBuilder.PreviewD3DResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewResult.cs`
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`
