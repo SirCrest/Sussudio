@@ -1853,11 +1853,12 @@ consume one named snapshot of the MJPEG jitter-buffer counters. Preview
 scheduler, D3D, cadence, and visual-cadence DTO projection values now live in
 `DiagnosticSessionResultBuilder.PreviewResult.cs` so the final initializer can
 consume one named preview projection without recalculating those fields inline.
-Flashback playback command, cadence, decode, audio-master, and stage DTO
-projection values live in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` so result
-construction can consume one named playback projection while preserving the
-existing `summary.json` field shape. Flashback recording backend, growth, and
+Flashback playback result composition lives in
+`DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`, while command
+queue, cadence/1% low, decode timing, audio-master/A/V drift, and stage/seek
+DTO projection values live in focused `FlashbackPlayback*Result.cs` partials
+so result construction can consume one named playback projection while
+preserving the existing `summary.json` field shape. Flashback recording backend, growth, and
 integrity DTO projection values live in
 `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`, and Flashback
 export status, force-rotate fallback, last-result, and progress DTO projection
@@ -2240,6 +2241,11 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`

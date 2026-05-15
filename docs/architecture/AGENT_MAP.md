@@ -2043,8 +2043,20 @@ Primary owners:
   diagnostic-session preview-scheduler counter/delta projection for summary
   construction.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` owns
-  Flashback playback command, cadence, decode, audio-master, and stage DTO
-  projection values consumed by the final result initializer.
+  Flashback playback result projection composition from focused playback
+  projection owners.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`
+  owns Flashback playback command queue DTO projection values.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`
+  owns Flashback playback cadence, 1% low, slow-frame, and dropped-frame DTO
+  projection values.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`
+  owns Flashback playback decode timing DTO projection values.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`
+  owns Flashback playback audio-master and A/V drift DTO projection values.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackStagesResult.cs`
+  owns Flashback playback submit, segment, write-head, near-live, and seek-cap
+  DTO projection values.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
   owns Flashback recording backend, growth, and integrity DTO projection
   values consumed by the final result initializer.
