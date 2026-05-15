@@ -1816,7 +1816,10 @@ Diagnostic-session result text now lives in a focused partial family rooted at
 `tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
 `Format(...)` flow, `.Overview.cs` owns header/capture/verification/PresentMon
 and process sections, `.Flashback.cs` owns Flashback section ordering,
-`.FlashbackPlayback.cs` owns playback command/performance/decode/stage text,
+`.FlashbackPlayback.Commands.cs` owns playback command text,
+`.FlashbackPlayback.Performance.cs` owns playback cadence/audio-master
+performance text, `.FlashbackPlayback.Decode.cs` owns playback decode text,
+`.FlashbackPlayback.Stages.cs` owns playback stage/seek-cap text,
 `.FlashbackRecording.cs` owns recording text, `.FlashbackExport.cs` owns export
 text, `.Preview.cs` owns preview scheduler/D3D/visual cadence sections,
 `.Artifacts.cs` owns artifact/action/warning sections, and `.Helpers.cs` owns
@@ -2213,7 +2216,10 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionResultFormatter.Overview.cs`
 - `DiagnosticSessionResultFormatter.Flashback.cs`
-- `DiagnosticSessionResultFormatter.FlashbackPlayback.cs`
+- `DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs`
+- `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs`
+- `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs`
+- `DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs`
 - `DiagnosticSessionResultFormatter.FlashbackRecording.cs`
 - `DiagnosticSessionResultFormatter.FlashbackExport.cs`
 - `DiagnosticSessionResultFormatter.Preview.cs`

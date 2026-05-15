@@ -2215,8 +2215,14 @@ Primary owners:
   capture-mode, recording-verification, PresentMon, and process sections.
 - `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs` owns Flashback
   diagnostic-session text section ordering.
-  `DiagnosticSessionResultFormatter.FlashbackPlayback.cs` owns playback
-  command/performance/decode/stage lines,
+  `DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs` owns
+  playback command lines,
+  `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs` owns
+  playback cadence/audio-master performance lines,
+  `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs` owns playback
+  decode timing lines,
+  `DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs` owns playback
+  stage/seek-cap lines,
   `DiagnosticSessionResultFormatter.FlashbackRecording.cs` owns recording
   lines, and `DiagnosticSessionResultFormatter.FlashbackExport.cs` owns export
   lines.

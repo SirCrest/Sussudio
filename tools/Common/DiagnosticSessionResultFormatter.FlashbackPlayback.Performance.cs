@@ -5,22 +5,6 @@ namespace Sussudio.Tools;
 
 public static partial class DiagnosticSessionResultFormatter
 {
-    private static void AppendFlashbackPlaybackCommands(StringBuilder builder, DiagnosticSessionResult result)
-    {
-        builder.AppendLine(
-            "Flashback Playback Commands: " +
-            $"pendingEnd={result.FlashbackPlaybackPendingCommandsAtEnd} " +
-            $"maxPending={result.FlashbackPlaybackMaxPendingCommandsObserved} " +
-            $"maxLatencyMs={result.FlashbackPlaybackMaxCommandQueueLatencyMsObserved} " +
-            $"maxLatencyCommand={FormatOptional(result.FlashbackPlaybackMaxCommandQueueLatencyCommandObserved)} " +
-            $"droppedEnd={result.FlashbackPlaybackCommandsDroppedAtEnd} " +
-            $"skippedEnd={result.FlashbackPlaybackCommandsSkippedNotReadyAtEnd} " +
-            $"coalescedScrubEnd={result.FlashbackPlaybackScrubUpdatesCoalescedAtEnd} " +
-            $"coalescedSeekEnd={result.FlashbackPlaybackSeekCommandsCoalescedAtEnd} " +
-            $"failureEnd={FormatOptional(result.FlashbackPlaybackLastCommandFailureAtEnd)} " +
-            $"failureUtcEnd={result.FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd}");
-    }
-
     private static void AppendFlashbackPlaybackPerformance(StringBuilder builder, DiagnosticSessionResult result)
     {
         builder.AppendLine(
@@ -68,48 +52,5 @@ public static partial class DiagnosticSessionResultFormatter
             $"absAvDriftMsMax={result.FlashbackPlaybackMaxAbsAvDriftMsObserved:0.##} " +
             $"submitFailuresEnd={result.FlashbackPlaybackSubmitFailuresAtEnd} " +
             $"submitFailuresDelta={result.FlashbackPlaybackSubmitFailuresDelta}");
-    }
-
-    private static void AppendFlashbackPlaybackDecode(StringBuilder builder, DiagnosticSessionResult result)
-    {
-        builder.AppendLine(
-            "Flashback Playback Decode: " +
-            $"avgMsEnd={result.FlashbackPlaybackDecodeAvgMsAtEnd:0.##} " +
-            $"p95MsEnd={result.FlashbackPlaybackDecodeP95MsAtEnd:0.##} " +
-            $"p99MsEnd={result.FlashbackPlaybackDecodeP99MsAtEnd:0.##} " +
-            $"maxMsEnd={result.FlashbackPlaybackDecodeMaxMsAtEnd:0.##} " +
-            $"phaseEnd={result.FlashbackPlaybackMaxDecodePhaseAtEnd} " +
-            $"receiveMsEnd={result.FlashbackPlaybackMaxDecodeReceiveMsAtEnd:0.##} " +
-            $"feedMsEnd={result.FlashbackPlaybackMaxDecodeFeedMsAtEnd:0.##} " +
-            $"readMsEnd={result.FlashbackPlaybackMaxDecodeReadMsAtEnd:0.##} " +
-            $"sendMsEnd={result.FlashbackPlaybackMaxDecodeSendMsAtEnd:0.##} " +
-            $"audioMsEnd={result.FlashbackPlaybackMaxDecodeAudioMsAtEnd:0.##} " +
-            $"convertMsEnd={result.FlashbackPlaybackMaxDecodeConvertMsAtEnd:0.##} " +
-            $"maxPosEnd={result.FlashbackPlaybackMaxDecodePositionMsAtEnd}ms " +
-            $"p99MsMax={result.FlashbackPlaybackMaxDecodeP99MsObserved:0.##} " +
-            $"maxMsObserved={result.FlashbackPlaybackMaxDecodeMsObserved:0.##} " +
-            $"phaseObserved={result.FlashbackPlaybackMaxDecodePhaseObserved} " +
-            $"receiveMsObserved={result.FlashbackPlaybackMaxDecodeReceiveMsObserved:0.##} " +
-            $"feedMsObserved={result.FlashbackPlaybackMaxDecodeFeedMsObserved:0.##} " +
-            $"readMsObserved={result.FlashbackPlaybackMaxDecodeReadMsObserved:0.##} " +
-            $"sendMsObserved={result.FlashbackPlaybackMaxDecodeSendMsObserved:0.##} " +
-            $"audioMsObserved={result.FlashbackPlaybackMaxDecodeAudioMsObserved:0.##} " +
-            $"convertMsObserved={result.FlashbackPlaybackMaxDecodeConvertMsObserved:0.##} " +
-            $"maxPosObserved={result.FlashbackPlaybackMaxDecodePositionMsObserved}ms");
-    }
-
-    private static void AppendFlashbackPlaybackStages(StringBuilder builder, DiagnosticSessionResult result)
-    {
-        builder.AppendLine(
-            "Flashback Playback Stages: " +
-            $"switchesEnd={result.FlashbackPlaybackSegmentSwitchesAtEnd} " +
-            $"fmp4ReopensEnd={result.FlashbackPlaybackFmp4ReopensAtEnd} " +
-            $"writeHeadWaitsEnd={result.FlashbackPlaybackWriteHeadWaitsAtEnd} " +
-            $"nearLiveSnapsEnd={result.FlashbackPlaybackNearLiveSnapsAtEnd} " +
-            $"decodeErrorSnapsEnd={result.FlashbackPlaybackDecodeErrorSnapsAtEnd} " +
-            $"seekCapHitsEnd={result.FlashbackPlaybackSeekForwardDecodeCapHitsAtEnd} " +
-            $"seekCapHitsDelta={result.FlashbackPlaybackSeekForwardDecodeCapHitsDelta} " +
-            $"lastSeekCapEnd={result.FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd} " +
-            $"lastWriteHeadGapMsEnd={result.FlashbackPlaybackLastWriteHeadWaitGapMsAtEnd}");
     }
 }
