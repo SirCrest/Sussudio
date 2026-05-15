@@ -1,8 +1,6 @@
-using System;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Sussudio.Controllers;
-using Sussudio.Models;
 using Sussudio.Services.Gpu;
 using Sussudio.ViewModels;
 
@@ -17,11 +15,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private NvmlMonitor? _nvmlMonitor;
     private bool _suppressFlashbackEnabledToggle;
     private FullScreenController _fullScreenController = null!;
-    private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
-        => Math.Abs(a - b) < tolerance;
-
-    private static bool IsAutoFrameRateOption(FrameRateOption option)
-        => option.Value <= 0 || option.FriendlyValue <= 0;
 
     public MainWindow()
     {
@@ -110,6 +103,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeCaptureSelectionBindingController();
         InitializeCaptureDeviceActionController();
         InitializeCaptureOptionPresentationController();
+        InitializeCaptureOptionBindingController();
         InitializeOutputPathDisplayController();
         InitializeOutputPathActionController();
         InitializePreviewScreenshotController();

@@ -1,80 +1,51 @@
-using System;
-using Sussudio.Models;
+using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// Capture option binding setup and initial capture/recording selection projection.
-// Recording option event handlers stay in MainWindow.RecordingOptionBindings.cs;
-// presentation-only option affordance rules stay in CaptureOptionPresentationController.
+// XAML-facing adapter for capture option setup and event binding.
 public sealed partial class MainWindow
 {
-    private void InitializeCaptureOptionCollections()
+    private CaptureOptionBindingController _captureOptionBindingController = null!;
+
+    private void InitializeCaptureOptionBindingController()
     {
-        VideoFormatComboBox.ItemsSource = ViewModel.AvailableVideoFormats;
-        DecoderCountComboBox.Items.Clear();
-        for (var i = 1; i <= 8; i++)
+        _captureOptionBindingController = new CaptureOptionBindingController(new CaptureOptionBindingControllerContext
         {
-            DecoderCountComboBox.Items.Add(i);
-        }
+            ViewModel = ViewModel,
+            ResolutionComboBox = ResolutionComboBox,
+            FrameRateComboBox = FrameRateComboBox,
+            FormatComboBox = FormatComboBox,
+            QualityComboBox = QualityComboBox,
+            PresetComboBox = PresetComboBox,
+            SplitEncodeComboBox = SplitEncodeComboBox,
+            VideoFormatComboBox = VideoFormatComboBox,
+            DecoderCountComboBox = DecoderCountComboBox,
+            CustomBitrateNumberBox = CustomBitrateNumberBox,
+            HdrToggle = HdrToggle,
+            TrueHdrPreviewToggle = TrueHdrPreviewToggle,
+            ApplyInitialDecoderCountSelection = ApplyInitialDecoderCountSelection,
+            ApplyBitrateVisibility = ApplyBitrateVisibility,
+            ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
+            UpdateDecoderCountVisibility = UpdateDecoderCountVisibility,
+            EnsureResolutionSelection = EnsureResolutionSelection,
+            EnsureFrameRateSelection = EnsureFrameRateSelection,
+            EnsureFormatSelection = EnsureFormatSelection,
+            EnsureQualitySelection = EnsureQualitySelection,
+            EnsurePresetSelection = EnsurePresetSelection,
+            EnsureSplitEncodeModeSelection = EnsureSplitEncodeModeSelection,
+            AttachRecordingStringSelectionBindings = AttachRecordingStringSelectionBindings
+        });
     }
+
+    private void InitializeCaptureOptionCollections()
+        => _captureOptionBindingController.InitializeCollections();
 
     private void ApplyInitialCaptureOptionSelections()
-    {
-        FormatComboBox.SelectedItem = ViewModel.SelectedRecordingFormat;
-        QualityComboBox.SelectedItem = ViewModel.SelectedQuality;
-        PresetComboBox.SelectedItem = ViewModel.SelectedPreset;
-        SplitEncodeComboBox.SelectedItem = ViewModel.SelectedSplitEncodeMode;
-        VideoFormatComboBox.SelectedItem = ViewModel.SelectedVideoFormat;
-        ApplyInitialDecoderCountSelection();
-        CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
-        ApplyBitrateVisibility();
-        HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
-        TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
-        ApplyHdrToggleEnabledState();
-    }
+        => _captureOptionBindingController.ApplyInitialSelections();
 
     private void EnsureInitialCaptureOptionSelections()
-    {
-        EnsureResolutionSelection();
-        EnsureFrameRateSelection();
-        EnsureFormatSelection();
-        EnsureQualitySelection();
-        EnsurePresetSelection();
-        EnsureSplitEncodeModeSelection();
-        UpdateDecoderCountVisibility();
-    }
+        => _captureOptionBindingController.EnsureInitialSelections();
 
     private void AttachCaptureModeSelectionBindings()
-    {
-        ResolutionComboBox.SelectionChanged += (s, e) =>
-        {
-            if (ResolutionComboBox.SelectedItem is ResolutionOption resolution &&
-                resolution.IsEnabled &&
-                !string.Equals(resolution.Value, ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase))
-            {
-                ViewModel.SelectedResolution = resolution.Value;
-            }
-        };
-
-        FrameRateComboBox.SelectionChanged += (s, e) =>
-        {
-            if (FrameRateComboBox.SelectedItem is FrameRateOption frameRate &&
-                frameRate.IsEnabled)
-            {
-                if (IsAutoFrameRateOption(frameRate))
-                {
-                    if (!ViewModel.IsAutoFrameRateSelected)
-                    {
-                        ViewModel.SelectedFrameRate = frameRate.Value;
-                    }
-                }
-                else if (!IsFrameRateMatch(frameRate.Value, ViewModel.SelectedFrameRate))
-                {
-                    ViewModel.SelectedFrameRate = frameRate.Value;
-                }
-            }
-
-            UpdateDecoderCountVisibility();
-        };
-    }
+        => _captureOptionBindingController.AttachCaptureModeSelectionBindings();
 }

@@ -1513,13 +1513,14 @@ Primary current owners:
   `Sussudio/Controllers/CaptureOptionTooltipFormatter.cs` owns pure HDR hint
   and FPS telemetry tooltip text policy.
   `MainWindow.CaptureOptionPresentation.cs` is the XAML-facing adapter.
-- `Sussudio/MainWindow.CaptureOptionBindings.cs` owns video-format collection
-  binding, initial capture/recording selection projection, and resolution/frame-
-  rate selection handlers during `SetupBindings()`.
-- `Sussudio/MainWindow.RecordingOptionBindings.cs` owns recording/capture
-  option event bindings for video format, custom bitrate, HDR, and true-HDR
-  preview toggles. Recording format, quality, preset, and split-encode string
-  selection handlers live with `CaptureSelectionBindingController`.
+- `Sussudio/Controllers/CaptureOptionBindingController.cs` owns video-format
+  collection binding, initial capture/recording selection projection,
+  resolution/frame-rate selection handlers, and recording/capture option event
+  bindings for video format, custom bitrate, HDR, and true-HDR preview toggles
+  during `SetupBindings()`. Recording format, quality, preset, and split-encode
+  string selection handlers live with `CaptureSelectionBindingController`.
+  `MainWindow.CaptureOptionBindings.cs` and
+  `MainWindow.RecordingOptionBindings.cs` are XAML-facing adapters.
 - `Sussudio/Controllers/OutputPathDisplayController.cs` owns recording output-
   path textbox, tooltip, and resize-event updates.
   `Sussudio/Controllers/OutputPathDisplayTextFormatter.cs` owns pure output-

@@ -455,7 +455,9 @@ Audio and microphone meter rendering now lives in
 projection and event hookup now live in `Sussudio/MainWindow.AudioBindings.cs`;
 video-format collection setup, initial capture/recording option projection, and
 code-attached resolution/frame-rate handlers now live in
-`Sussudio/MainWindow.CaptureOptionBindings.cs`.
+`Sussudio/Controllers/CaptureOptionBindingController.cs`, with
+`MainWindow.CaptureOptionBindings.cs` and
+`MainWindow.RecordingOptionBindings.cs` left as XAML-facing adapters.
 The remaining non-audio control-bar binding code stays in `MainWindow.Bindings.cs`.
 
 Capture session transition legality now lives in
@@ -1564,6 +1566,17 @@ tooltip text policy now lives in
 `MainWindow.CaptureOptionPresentation.cs` is the XAML-facing adapter and keeps
 the existing method names for binding setup, property-change projection, and
 the XAML decoder-count selection event.
+
+Capture option binding setup now lives in
+`Sussudio/Controllers/CaptureOptionBindingController.cs`: video-format
+collection setup, initial capture/recording option projection,
+resolution/frame-rate selection handlers, video-format/custom-bitrate event
+bindings, and click-based HDR/true-HDR toggle bindings. The controller delegates
+presentation affordances back through the capture-option presentation adapter
+and delegates recording format/quality/preset/split-encode string selection to
+`CaptureSelectionBindingController`. `MainWindow.CaptureOptionBindings.cs` and
+`MainWindow.RecordingOptionBindings.cs` keep only the old method names used by
+`SetupBindings()`.
 
 Recording output-path textbox, tooltip, and resize-event updates now live in
 `Sussudio/Controllers/OutputPathDisplayController.cs`; pure truncation text
