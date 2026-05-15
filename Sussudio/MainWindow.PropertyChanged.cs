@@ -34,23 +34,23 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.StatusText):
-                StatusTextBlock.Text = ViewModel.StatusText;
+                UpdateStatusTextPresentation();
                 break;
 
             case nameof(MainViewModel.RecordingTime):
-                RecordingTimeTextBlock.Text = ViewModel.RecordingTime;
+                UpdateRecordingTimePresentation();
                 if (ViewModel.IsRecording)
                     ApplyWindowTitle();
                 break;
 
             case nameof(MainViewModel.DiskSpaceInfo):
-                DiskSpaceTextBlock.Text = ViewModel.DiskSpaceInfo;
+                UpdateDiskSpacePresentation();
                 break;
             case nameof(MainViewModel.RecordingSizeInfo):
-                RecordingSizeTextBlock.Text = ViewModel.RecordingSizeInfo;
+                UpdateRecordingSizePresentation();
                 break;
             case nameof(MainViewModel.RecordingBitrateInfo):
-                RecordingBitrateTextBlock.Text = ViewModel.RecordingBitrateInfo;
+                UpdateRecordingBitratePresentation();
                 break;
 
             case nameof(MainViewModel.OutputPath):
@@ -292,7 +292,7 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.IsDiskWarningActive):
-                DiskWarningInfoBar.IsOpen = ViewModel.IsDiskWarningActive;
+                UpdateDiskWarningPresentation();
                 break;
 
             case nameof(MainViewModel.FlashbackGpuDecode):

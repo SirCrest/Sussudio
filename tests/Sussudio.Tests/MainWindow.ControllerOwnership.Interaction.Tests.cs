@@ -76,6 +76,69 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task StatusStripPresentation_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.StatusStripPresentation.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/StatusStripPresentationController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private StatusStripPresentationController _statusStripPresentationController = null!;");
+        AssertContains(adapterText, "private void InitializeStatusStripPresentationController()");
+        AssertContains(adapterText, "DiskWarningInfoBar = DiskWarningInfoBar,");
+        AssertContains(adapterText, "StatusTextBlock = StatusTextBlock,");
+        AssertContains(adapterText, "RecordingTimeTextBlock = RecordingTimeTextBlock,");
+        AssertContains(adapterText, "DiskSpaceTextBlock = DiskSpaceTextBlock,");
+        AssertContains(adapterText, "RecordingSizeTextBlock = RecordingSizeTextBlock,");
+        AssertContains(adapterText, "RecordingBitrateTextBlock = RecordingBitrateTextBlock,");
+        AssertContains(adapterText, "private void ApplyInitialStatusStripPresentation()");
+        AssertContains(adapterText, "private void UpdateStatusTextPresentation()");
+        AssertContains(adapterText, "private void UpdateRecordingTimePresentation()");
+        AssertContains(adapterText, "private void UpdateDiskSpacePresentation()");
+        AssertContains(adapterText, "private void UpdateRecordingSizePresentation()");
+        AssertContains(adapterText, "private void UpdateRecordingBitratePresentation()");
+        AssertContains(adapterText, "private void UpdateFlashbackBitratePresentation()");
+        AssertContains(adapterText, "private void UpdateDiskWarningPresentation()");
+        AssertContains(mainWindowText, "InitializeStatusStripPresentationController();");
+        AssertContains(bindingsText, "ApplyInitialStatusStripPresentation();");
+        AssertContains(bindingsText, "UpdateLiveSignalInfoVisibility();");
+        AssertContains(propertyChangedText, "UpdateStatusTextPresentation();");
+        AssertContains(propertyChangedText, "UpdateRecordingTimePresentation();");
+        AssertContains(propertyChangedText, "UpdateDiskSpacePresentation();");
+        AssertContains(propertyChangedText, "UpdateRecordingSizePresentation();");
+        AssertContains(propertyChangedText, "UpdateRecordingBitratePresentation();");
+        AssertContains(propertyChangedText, "UpdateDiskWarningPresentation();");
+        AssertContains(flashbackPropertyChangedText, "UpdateFlashbackBitratePresentation();");
+        AssertContains(controllerText, "internal readonly record struct StatusStripPresentationSnapshot");
+        AssertContains(controllerText, "internal sealed class StatusStripPresentationController");
+        AssertContains(controllerText, "public void ApplyInitial(StatusStripPresentationSnapshot snapshot)");
+        AssertContains(controllerText, "_context.StatusTextBlock.Text = statusText;");
+        AssertContains(controllerText, "_context.RecordingTimeTextBlock.Text = recordingTime;");
+        AssertContains(controllerText, "_context.DiskSpaceTextBlock.Text = diskSpaceInfo;");
+        AssertContains(controllerText, "_context.RecordingSizeTextBlock.Text = recordingSizeInfo;");
+        AssertContains(controllerText, "_context.RecordingBitrateTextBlock.Text = recordingBitrateInfo;");
+        AssertContains(controllerText, "if (!isRecording && isFlashbackEnabled)");
+        AssertContains(controllerText, "_context.RecordingBitrateTextBlock.Text = flashbackBitrateInfo;");
+        AssertContains(controllerText, "_context.DiskWarningInfoBar.IsOpen = isDiskWarningActive;");
+        AssertDoesNotContain(bindingsText, "DiskSpaceTextBlock.Text = ViewModel.DiskSpaceInfo;");
+        AssertDoesNotContain(bindingsText, "RecordingSizeTextBlock.Text = ViewModel.RecordingSizeInfo;");
+        AssertDoesNotContain(bindingsText, "RecordingBitrateTextBlock.Text = ViewModel.RecordingBitrateInfo;");
+        AssertDoesNotContain(bindingsText, "LiveResolutionTextBlock.Text = ViewModel.LiveResolution;");
+        AssertDoesNotContain(bindingsText, "LiveFrameRateTextBlock.Text = ViewModel.LiveFrameRate;");
+        AssertDoesNotContain(bindingsText, "LivePixelFormatTextBlock.Text = ViewModel.LivePixelFormat;");
+        AssertDoesNotContain(propertyChangedText, "StatusTextBlock.Text = ViewModel.StatusText;");
+        AssertDoesNotContain(propertyChangedText, "RecordingTimeTextBlock.Text = ViewModel.RecordingTime;");
+        AssertDoesNotContain(propertyChangedText, "DiskSpaceTextBlock.Text = ViewModel.DiskSpaceInfo;");
+        AssertDoesNotContain(propertyChangedText, "RecordingSizeTextBlock.Text = ViewModel.RecordingSizeInfo;");
+        AssertDoesNotContain(propertyChangedText, "RecordingBitrateTextBlock.Text = ViewModel.RecordingBitrateInfo;");
+        AssertDoesNotContain(propertyChangedText, "DiskWarningInfoBar.IsOpen = ViewModel.IsDiskWarningActive;");
+        AssertDoesNotContain(flashbackPropertyChangedText, "RecordingBitrateTextBlock.Text = ViewModel.FlashbackBitrateInfo;");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewAudioFadeState_LivesInController()
     {
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");

@@ -60,12 +60,8 @@ public sealed partial class MainWindow
 
         // Set initial values
         UpdateOutputPathDisplay();
-        DiskSpaceTextBlock.Text = ViewModel.DiskSpaceInfo;
-        RecordingSizeTextBlock.Text = ViewModel.RecordingSizeInfo;
-        RecordingBitrateTextBlock.Text = ViewModel.RecordingBitrateInfo;
-        LiveResolutionTextBlock.Text = ViewModel.LiveResolution;
-        LiveFrameRateTextBlock.Text = ViewModel.LiveFrameRate;
-        LivePixelFormatTextBlock.Text = ViewModel.LivePixelFormat;
+        ApplyInitialStatusStripPresentation();
+        UpdateLiveSignalInfoVisibility();
         ApplyInitialAudioControlBindings();
         ShowAllCaptureOptionsToggle.IsChecked = ViewModel.ShowAllCaptureOptions;
         StatsToggle.IsChecked = ViewModel.IsStatsVisible;

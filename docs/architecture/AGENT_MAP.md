@@ -679,6 +679,11 @@ Primary current owners:
   Close/finalize behavior stays with `MainWindow.CloseLifecycle.cs`.
 - `Sussudio/MainWindow.WindowTitle.cs` owns window title base/build-stamp
   formatting and the recording-time suffix used by property changes.
+- `Sussudio/Controllers/StatusStripPresentationController.cs` owns bottom
+  status-strip projection: status text, recording time, disk warning,
+  disk-space text, recording size, recording bitrate, and the Flashback bitrate
+  fallback used while Flashback is enabled and recording is idle.
+  `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing adapter.
 - `Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`,
   automation close completion, and recording-aware pre-close protection.
 - `Sussudio/MainWindow.ShutdownCleanup.cs` owns `Closed` shutdown cleanup:
@@ -693,12 +698,13 @@ Primary current owners:
   event handlers.
 - `Sussudio/MainWindow.Bindings.cs` owns the root `SetupBindings()`
   orchestration and leaves feature-specific binding clusters in focused
-  partials or controllers.
+  partials or controllers, including initial status-strip projection.
 - `Sussudio/MainWindow.EventHandlers.cs` owns XAML user-input event handlers
   that bridge controls to view-model commands and shell animations.
 - `Sussudio/MainWindow.PropertyChanged.cs` owns the root ViewModel
   PropertyChanged dispatcher; feature-specific property projections stay in
-  the `MainWindow.PropertyChanged*.cs` partials.
+  the `MainWindow.PropertyChanged*.cs` partials or named presentation
+  controllers.
 - `Sussudio/MainWindow.Animations.cs` owns shared composition shadow helpers
   that have not yet moved behind named controllers.
 - `Sussudio/Controllers/AudioMeterController.cs` owns audio/microphone meter
@@ -775,8 +781,8 @@ Primary current owners:
   MainWindow controller-adapter ownership marker shell.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs`
   owns MainWindow controller-adapter ownership assertions for recording action,
-  live signal info, preview audio fade, microphone controls, and responsive
-  shell layout.
+  live signal info, status-strip presentation, preview audio fade, microphone
+  controls, and responsive shell layout.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs` owns
   MainWindow capture selection, capture device action, and capture option
   presentation ownership assertions.

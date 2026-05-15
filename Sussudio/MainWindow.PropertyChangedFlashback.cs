@@ -32,10 +32,7 @@ public sealed partial class MainWindow
 
     private void HandleFlashbackBitrateChanged()
     {
-        if (!ViewModel.IsRecording && ViewModel.IsFlashbackEnabled)
-        {
-            RecordingBitrateTextBlock.Text = ViewModel.FlashbackBitrateInfo;
-        }
+        UpdateFlashbackBitratePresentation();
     }
 
     private void HandleFlashbackPlaybackPositionChanged()

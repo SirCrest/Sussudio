@@ -70,6 +70,9 @@ static partial class Program
             "Live signal info presentation lives in controller",
             LiveSignalInfoPresentation_LivesInController);
         await AddCheckAsync(results,
+            "Status strip presentation lives in controller",
+            StatusStripPresentation_LivesInController);
+        await AddCheckAsync(results,
             "Preview audio fade state lives in controller",
             PreviewAudioFadeState_LivesInController);
         await AddCheckAsync(results,
