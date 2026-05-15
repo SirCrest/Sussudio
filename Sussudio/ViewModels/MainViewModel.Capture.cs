@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Windows.Storage.Pickers;
 
 namespace Sussudio.ViewModels;
 
@@ -185,29 +184,6 @@ public partial class MainViewModel
         if (!IsPreviewReinitializing)
         {
             StatusText = "Preview stopped";
-        }
-    }
-
-    public async Task BrowseOutputPathAsync()
-    {
-        try
-        {
-            var picker = new FolderPicker();
-            picker.SuggestedStartLocation = PickerLocationId.VideosLibrary;
-            picker.FileTypeFilter.Add("*");
-
-            // Initialize the picker with the window handle for WinUI 3
-            WinRT.Interop.InitializeWithWindow.Initialize(picker, _windowHandle);
-
-            var folder = await picker.PickSingleFolderAsync();
-            if (folder != null)
-            {
-                OutputPath = folder.Path;
-            }
-        }
-        catch (Exception ex)
-        {
-            StatusText = $"Error selecting folder: {ex.Message}";
         }
     }
 

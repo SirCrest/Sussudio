@@ -367,7 +367,7 @@ static partial class Program
         var stopPreview = ExtractTextBetween(
             captureText,
             "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
-            "\n\n    public async Task BrowseOutputPathAsync()");
+            "\n\n    private async Task ReinitializeDeviceAsync(string reason)");
         AssertContains(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);");
         AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "PreviewStopRequested?.Invoke(this, EventArgs.Empty);");
         AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _sessionCoordinator.StopAudioPreviewAsync(cancellationToken);");

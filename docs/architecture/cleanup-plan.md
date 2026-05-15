@@ -2440,7 +2440,8 @@ Remaining `tools/Common` ownership:
    settings projection from UI/runtime state now lives in
    `MainViewModel.CaptureSettings.cs`, leaving
    `MainViewModel.Capture.cs` focused on device/preview/reinitialize
-   transitions. Recording toggle serialization, graceful stop, emergency stop,
+   transitions. Output folder selection now lives in
+   `MainViewModel.OutputPathSelection.cs`. Recording toggle serialization, graceful stop, emergency stop,
    and start/stop recording transitions now live in
    `MainViewModel.RecordingLifecycle.cs`. Recording option selections, output
    path, counters, and transition flags now live in
