@@ -124,7 +124,7 @@ public partial class MainViewModel
         Logger.Log($"  Mode: {mode}");
 
         var isAnalog = string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase);
-        var gainByte = MapPercentToGainByte(AnalogAudioGainPercent);
+        var gainByte = DeviceAudioGainMapper.PercentToGainByte(AnalogAudioGainPercent);
         var applied = await NativeXuAtCommandProvider.SwitchAudioInputAsync(device, isAnalog, gainByte, cancellationToken).ConfigureAwait(false);
 
         if (!applied)
@@ -210,7 +210,7 @@ public partial class MainViewModel
         }
 
         var gainPercent = Math.Clamp(explicitPercent ?? AnalogAudioGainPercent, 0.0, 100.0);
-        var gainByte = MapPercentToGainByte(gainPercent);
+        var gainByte = DeviceAudioGainMapper.PercentToGainByte(gainPercent);
         Logger.Log($"=== Updating analog audio gain ({reason}) ===");
         Logger.Log($"  GainPercent: {gainPercent:0} GainByte: 0x{gainByte:X2}");
 
@@ -358,19 +358,4 @@ public partial class MainViewModel
         return inputApplied;
     }
 
-    private const double GainCurveK = 4.0;
-
-    private static byte MapPercentToGainByte(double percent)
-    {
-        var x = Math.Clamp(percent / 100.0, 0.0, 1.0);
-        var curved = Math.Log(1.0 + x * (Math.Exp(GainCurveK) - 1.0)) / GainCurveK;
-        return (byte)Math.Clamp(Math.Round(curved * 255.0), 0, 255);
-    }
-
-    private static double MapGainByteToPercent(byte gainByte)
-    {
-        var y = gainByte / 255.0;
-        var x = (Math.Exp(GainCurveK * y) - 1.0) / (Math.Exp(GainCurveK) - 1.0);
-        return Math.Clamp(x * 100.0, 0.0, 100.0);
-    }
 }

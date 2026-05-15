@@ -6,25 +6,37 @@ static partial class Program
 {
     private static Task MainViewModelAudioControls_MapsAnalogGainCurveAndClamps()
     {
-        var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
-        var mapPercent = viewModelType.GetMethod("MapPercentToGainByte", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("MainViewModel.MapPercentToGainByte was not found.");
-        var mapByte = viewModelType.GetMethod("MapGainByteToPercent", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("MainViewModel.MapGainByteToPercent was not found.");
+        var mapperType = RequireType("Sussudio.ViewModels.DeviceAudioGainMapper");
+        var mapPercent = mapperType.GetMethod("PercentToGainByte", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("DeviceAudioGainMapper.PercentToGainByte was not found.");
+        var mapByte = mapperType.GetMethod("GainByteToPercent", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("DeviceAudioGainMapper.GainByteToPercent was not found.");
+        var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs")
+            .Replace("\r\n", "\n");
+        var gainMapperText = ReadRepoFile("Sussudio/ViewModels/DeviceAudioGainMapper.cs")
+            .Replace("\r\n", "\n");
 
-        AssertEqual((byte)0, (byte)mapPercent.Invoke(null, new object[] { -25d })!, "MapPercentToGainByte clamps below zero");
-        AssertEqual((byte)0, (byte)mapPercent.Invoke(null, new object[] { 0d })!, "MapPercentToGainByte zero");
-        AssertEqual((byte)255, (byte)mapPercent.Invoke(null, new object[] { 100d })!, "MapPercentToGainByte one hundred");
-        AssertEqual((byte)255, (byte)mapPercent.Invoke(null, new object[] { 150d })!, "MapPercentToGainByte clamps above one hundred");
+        AssertContains(audioControlsText, "DeviceAudioGainMapper.PercentToGainByte(AnalogAudioGainPercent)");
+        AssertContains(audioControlsText, "DeviceAudioGainMapper.PercentToGainByte(gainPercent)");
+        AssertDoesNotContain(audioControlsText, "private static byte MapPercentToGainByte");
+        AssertDoesNotContain(audioControlsText, "private static double MapGainByteToPercent");
+        AssertContains(gainMapperText, "private const double GainCurveK = 4.0;");
+        AssertContains(gainMapperText, "internal static byte PercentToGainByte");
+        AssertContains(gainMapperText, "internal static double GainByteToPercent");
+
+        AssertEqual((byte)0, (byte)mapPercent.Invoke(null, new object[] { -25d })!, "PercentToGainByte clamps below zero");
+        AssertEqual((byte)0, (byte)mapPercent.Invoke(null, new object[] { 0d })!, "PercentToGainByte zero");
+        AssertEqual((byte)255, (byte)mapPercent.Invoke(null, new object[] { 100d })!, "PercentToGainByte one hundred");
+        AssertEqual((byte)255, (byte)mapPercent.Invoke(null, new object[] { 150d })!, "PercentToGainByte clamps above one hundred");
 
         var gain25 = (byte)mapPercent.Invoke(null, new object[] { 25d })!;
         var gain50 = (byte)mapPercent.Invoke(null, new object[] { 50d })!;
         var gain75 = (byte)mapPercent.Invoke(null, new object[] { 75d })!;
-        AssertEqual(true, gain25 > 0 && gain25 < gain50 && gain50 < gain75 && gain75 < 255, "MapPercentToGainByte monotonic curve");
+        AssertEqual(true, gain25 > 0 && gain25 < gain50 && gain50 < gain75 && gain75 < 255, "PercentToGainByte monotonic curve");
 
-        AssertNear(0d, (double)mapByte.Invoke(null, new object[] { (byte)0 })!, 0.0001d, "MapGainByteToPercent zero");
-        AssertNear(100d, (double)mapByte.Invoke(null, new object[] { (byte)255 })!, 0.0001d, "MapGainByteToPercent max");
-        AssertNear(50d, (double)mapByte.Invoke(null, new object[] { gain50 })!, 1.0d, "MapGainByteToPercent round-trip midpoint");
+        AssertNear(0d, (double)mapByte.Invoke(null, new object[] { (byte)0 })!, 0.0001d, "GainByteToPercent zero");
+        AssertNear(100d, (double)mapByte.Invoke(null, new object[] { (byte)255 })!, 0.0001d, "GainByteToPercent max");
+        AssertNear(50d, (double)mapByte.Invoke(null, new object[] { gain50 })!, 1.0d, "GainByteToPercent round-trip midpoint");
 
         return Task.CompletedTask;
     }
@@ -147,7 +159,7 @@ static partial class Program
         AssertContains(applyDeviceAudioMode, "if (device == null || !IsDeviceAudioControlSupported)");
         AssertContains(applyDeviceAudioMode, "if (!IsCurrentSelectedDevice(device))");
         AssertContains(applyDeviceAudioMode, "var mode = NormalizeDeviceAudioMode(explicitMode ?? SelectedDeviceAudioMode);");
-        AssertContains(applyDeviceAudioMode, "var gainByte = MapPercentToGainByte(AnalogAudioGainPercent);");
+        AssertContains(applyDeviceAudioMode, "var gainByte = DeviceAudioGainMapper.PercentToGainByte(AnalogAudioGainPercent);");
         AssertContains(applyDeviceAudioMode, "NativeXuAtCommandProvider.SwitchAudioInputAsync(device, isAnalog, gainByte, cancellationToken)");
         AssertContains(applyDeviceAudioMode, "var failureState = await _deviceAudioControlService.ReadStateAsync(device, cancellationToken).ConfigureAwait(false);");
         AssertContains(applyDeviceAudioMode, "StatusText =");
@@ -162,6 +174,7 @@ static partial class Program
         AssertOccursBefore(applyDeviceAudioMode, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = mode);", "if (persistSettings)");
 
         AssertContains(applyAnalogAudioGain, "var gainPercent = Math.Clamp(explicitPercent ?? AnalogAudioGainPercent, 0.0, 100.0);");
+        AssertContains(applyAnalogAudioGain, "var gainByte = DeviceAudioGainMapper.PercentToGainByte(gainPercent);");
         AssertContains(applyAnalogAudioGain, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken)");
         AssertContains(applyAnalogAudioGain, "StatusText =");
         AssertContains(applyAnalogAudioGain, "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = gainPercent);");

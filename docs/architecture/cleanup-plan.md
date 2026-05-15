@@ -1943,6 +1943,10 @@ Remaining `tools/Common` ownership:
    `MainViewModel.Settings.cs`; active Flashback reactions to recording format,
    encoder quality/preset/split/bitrate, and buffer/GPU decode changes now live
    in `MainViewModel.FlashbackSettings.cs`.
+   Pure analog audio gain percent/XU-byte curve mapping now lives in
+   `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; keep async native-XU device
+   mode/gain application, cancellation, debounce-to-flash, and persistence in
+   `MainViewModel.AudioControls.cs`.
    UI-only automation mutators now live in `MainViewModel.AutomationUi.cs`.
    Recording format, encoder preset/quality/split-mode/custom-bitrate, and
    output-path automation mutators now live in

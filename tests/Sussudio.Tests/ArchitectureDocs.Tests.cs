@@ -277,6 +277,7 @@ static partial class Program
                 fileName.StartsWith("MainWindow", StringComparison.Ordinal)) ||
             (string.Equals(directory, "Sussudio/ViewModels", StringComparison.OrdinalIgnoreCase) &&
                 (fileName.StartsWith("MainViewModel", StringComparison.Ordinal) ||
+                 string.Equals(fileName, "DeviceAudioGainMapper.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "RecordingFormatSelectionPolicy.cs", StringComparison.Ordinal))) ||
             (string.Equals(directory, "Sussudio/Controllers", StringComparison.OrdinalIgnoreCase) &&
                 fileName.Contains("Controller", StringComparison.Ordinal));
