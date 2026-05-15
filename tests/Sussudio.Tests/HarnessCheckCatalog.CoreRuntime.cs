@@ -282,9 +282,6 @@ static partial class Program
             "FFmpeg runtime locator prefers app-local ffmpeg folder",
             FfmpegRuntimeLocator_PrefersAppLocalRuntimeFolder);
         await AddCheckAsync(results,
-            "Shared automation formatter renders MJPEG timing section when fields exist",
-            SharedFormatter_RendersMjpegTimingSection_WhenFieldsExist);
-        await AddCheckAsync(results,
             "Automation command maps stay aligned for advanced MCP controls",
             AutomationCommandMaps_StayAligned_ForAdvancedMcpControls);
         await AddCheckAsync(results,

@@ -399,7 +399,12 @@ frame-flow/shared-device assertions.
 reflection helpers. Automation tool contract coverage is split into protocol
 and pipe-failure contracts, catalog/manifest/path-policy contracts,
 reliability-gates script checks, shared/ssctl snapshot formatter contracts, and
-PresentMon parser contracts.
+PresentMon parser contracts. Shared formatter tests now mirror the formatter
+partials: the root snapshot-formatter test owns accessors, invalid-response
+handling, section ordering, and the Flashback opt-in gate; Flashback output,
+Preview D3D output, MJPEG timing, response accessors, and shared-vs-ssctl field
+parity live in focused `AutomationToolContracts.SnapshotFormatter.*.Tests.cs`
+owners registered with the offline harness.
 Shared tool assembly loading and stale-build detection now live in
 `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` so the legacy harness body
 no longer owns tool DLL resolution or freshness policy.

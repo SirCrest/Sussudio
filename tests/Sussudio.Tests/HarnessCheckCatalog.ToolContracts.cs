@@ -71,6 +71,15 @@ static partial class Program
             "Automation snapshot formatter formats core sections and typed accessors",
             AutomationSnapshotFormatter_FormatsCoreSectionsAndTypedAccessors);
         await AddCheckAsync(results,
+            "Automation snapshot formatter renders Flashback sections when included",
+            AutomationSnapshotFormatter_RendersFlashbackSections_WhenIncluded);
+        await AddCheckAsync(results,
+            "Automation snapshot formatter renders Preview D3D sections",
+            AutomationSnapshotFormatter_RendersPreviewD3DSections);
+        await AddCheckAsync(results,
+            "Shared automation formatter renders MJPEG timing section when fields exist",
+            SharedFormatter_RendersMjpegTimingSection_WhenFieldsExist);
+        await AddCheckAsync(results,
             "Shared AutomationPipeProtocol CommandMap covers every AutomationCommandKind enum value",
             SharedProtocol_CommandMap_CoversEveryAutomationCommandKind);
         await AddCheckAsync(results,

@@ -1159,11 +1159,13 @@ Primary current owners:
   partial-family coverage, UI presentation ownership code-span coverage, and
   exact-path coverage for shared tool automation partial families.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter*.Tests.cs`
-  owns the shared/ssctl snapshot formatter contract family: the core section
-  formatting smoke test stays in `.Tests.cs`, response accessor checks live in
-  `.ResponseAccessors.Tests.cs`, shared-vs-ssctl field parity lives in
-  `.Parity.Tests.cs`, and MJPEG timing rendering lives in
-  `.MjpegTiming.Tests.cs`.
+  owns the shared/ssctl snapshot formatter contract family: typed accessors,
+  core section formatting, section-order, and Flashback opt-in smoke checks
+  stay in `.Tests.cs`, response accessor checks live in
+  `.ResponseAccessors.Tests.cs`, Flashback output rendering lives in
+  `.Flashback.Tests.cs`, Preview D3D output rendering lives in
+  `.PreviewD3D.Tests.cs`, shared-vs-ssctl field parity lives in
+  `.Parity.Tests.cs`, and MJPEG timing rendering lives in `.MjpegTiming.Tests.cs`.
 - `tests/Sussudio.Tests/CommandHandlers.Tests.cs` is the ssctl command-handler
   test family marker shell. `CommandHandlers.Helpers.cs` owns source-family
   reader helpers, `CommandHandlers.Routing.Tests.cs` owns pipe-captured routing
