@@ -12,7 +12,10 @@ static partial class Program
         var statsPresentationEncoderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs").Replace("\r\n", "\n");
         var statsPresentationDiagnosticsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs").Replace("\r\n", "\n");
         var statsPresentationStatusText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Status.cs").Replace("\r\n", "\n");
+        var statsPresentationWindowText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Window.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
+        var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
+        var statsWindowPresentationControllerText = ReadRepoFile("Sussudio/Controllers/StatsWindowPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsPresentationText, "internal static partial class StatsPresentationBuilder");
         AssertContains(statsPresentationText, "public static StatsDockPresentation BuildDockPresentation(StatsSnapshot snapshot)");
@@ -36,6 +39,9 @@ static partial class Program
         AssertContains(statsPresentationStatusText, "private static StatsMetricStatus ResolveFrameLaneStatus(");
         AssertContains(statsPresentationStatusText, "private static StatsMetricStatus ResolveDecodedVisualStatus(StatsSnapshot snapshot)");
         AssertContains(statsPresentationStatusText, "private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationWindowText, "internal static partial class StatsPresentationBuilder");
+        AssertContains(statsPresentationWindowText, "public static StatsWindowPresentation BuildStatsWindowPresentation(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationWindowText, "private static StatsWindowTelemetryDetailsPresentation BuildStatsWindowTelemetryDetails(");
         AssertDoesNotContain(statsPresentationText, "public static StatsFrameTimePresentation BuildFrameTimePresentation(StatsSnapshot snapshot)");
         AssertDoesNotContain(statsPresentationText, "private static string FormatVisualRepeatSummary(");
         AssertDoesNotContain(statsPresentationText, "private static string FormatVisualCadenceSummary(");
@@ -46,18 +52,100 @@ static partial class Program
         AssertDoesNotContain(statsPresentationText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
         AssertDoesNotContain(statsPresentationText, "private static StatsMetricStatus ResolveFrameLaneStatus(");
         AssertDoesNotContain(statsPresentationText, "private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)");
+        AssertDoesNotContain(statsPresentationText, "public static StatsWindowPresentation BuildStatsWindowPresentation(StatsSnapshot snapshot)");
         AssertContains(statsPresentationModelsText, "internal sealed record StatsDockPresentation(");
+        AssertContains(statsPresentationModelsText, "internal sealed record StatsWindowPresentation(");
+        AssertContains(statsPresentationModelsText, "internal sealed record StatsWindowTelemetryDetailsPresentation(");
         AssertContains(statsPresentationModelsText, "internal sealed record StatsFrameTimePresentation(");
         AssertContains(statsPresentationModelsText, "internal enum StatsMetricStatus");
         AssertDoesNotContain(statsPresentationText, "internal sealed record StatsDockPresentation(");
+        AssertDoesNotContain(statsPresentationText, "internal sealed record StatsWindowPresentation(");
         AssertDoesNotContain(statsPresentationText, "internal enum StatsMetricStatus");
         AssertContains(statsOverlayText, "var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);");
         AssertContains(frameTimeOverlayText, "var presentation = StatsPresentationBuilder.BuildFrameTimePresentation(snapshot);");
         AssertContains(statsOverlayText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
+        AssertContains(statsWindowText, "var presentation = StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot);");
+        AssertContains(statsWindowText, "_presentationController.Apply(presentation);");
+        AssertContains(statsWindowPresentationControllerText, "internal sealed class StatsWindowPresentationController");
+        AssertContains(statsWindowPresentationControllerText, "public void Apply(StatsWindowPresentation presentation)");
+        AssertContains(statsWindowPresentationControllerText, "private void UpdateTelemetryDetails(StatsWindowTelemetryDetailsPresentation presentation)");
+        AssertDoesNotContain(statsWindowText, "private static string FormatFps(");
+        AssertDoesNotContain(statsWindowText, "private static string FormatMs(");
+        AssertDoesNotContain(statsWindowText, "private static string FormatPercent(");
+        AssertDoesNotContain(statsWindowText, "private static string FormatSourceHdr(");
+        AssertDoesNotContain(statsWindowText, "private Grid CreateTelemetryDetailRow(");
         AssertDoesNotContain(statsOverlayText, "BuildFrameTimePresentation(snapshot)");
         AssertDoesNotContain(statsOverlayText, "private enum MetricStatus");
         AssertDoesNotContain(statsOverlayText, "private static string ResolveCaptureSummaryText");
         AssertDoesNotContain(statsOverlayText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task StatsWindowPresentation_FormatsDetachedWindowText()
+    {
+        var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
+        var snapshotType = RequireType("Sussudio.StatsSnapshot");
+        var buildWindowPresentation = builderType.GetMethod("BuildStatsWindowPresentation", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("BuildStatsWindowPresentation was not found.");
+
+        var snapshot = CreateUninitializedObject(snapshotType);
+        SetPropertyBackingField(snapshot, "Previewing", true);
+        SetPropertyBackingField(snapshot, "Recording", false);
+        SetPropertyBackingField(snapshot, "DiagnosticHealthStatus", "Healthy");
+        SetPropertyBackingField(snapshot, "DiagnosticLikelyStage", "none");
+        SetPropertyBackingField(snapshot, "DiagnosticEvidence", string.Empty);
+        SetPropertyBackingField(snapshot, "DiagnosticSummary", "All monitored frame lanes are within current thresholds.");
+        SetPropertyBackingField(snapshot, "SourceWidth", (int?)3840);
+        SetPropertyBackingField(snapshot, "SourceHeight", (int?)2160);
+        SetPropertyBackingField(snapshot, "SourceFrameRateExact", (double?)119.88d);
+        SetPropertyBackingField(snapshot, "SourceIsHdr", (bool?)true);
+        SetPropertyBackingField(snapshot, "SourceColorimetry", "BT.2020");
+        SetPropertyBackingField(snapshot, "SourceVideoFormat", "YCbCr422");
+        SetPropertyBackingField(snapshot, "TelemetryOrigin", "NativeXu");
+        SetPropertyBackingField(snapshot, "TelemetryConfidence", "High");
+        SetPropertyBackingField(snapshot, "SourceObservedFps", 119.8d);
+        SetPropertyBackingField(snapshot, "SourceExpectedFps", 120d);
+        SetPropertyBackingField(snapshot, "SourceAvgIntervalMs", 8.333d);
+        SetPropertyBackingField(snapshot, "SourceP95IntervalMs", 8.75d);
+        SetPropertyBackingField(snapshot, "SourceJitterMs", 0.125d);
+        SetPropertyBackingField(snapshot, "SourceSevereGaps", 2L);
+        SetPropertyBackingField(snapshot, "SourceEstDrops", 3L);
+        SetPropertyBackingField(snapshot, "SourceEstDropPct", 0.25d);
+        SetPropertyBackingField(snapshot, "PreviewObservedFps", 118.2d);
+        SetPropertyBackingField(snapshot, "PreviewAvgIntervalMs", 8.44d);
+        SetPropertyBackingField(snapshot, "PreviewP95IntervalMs", 9.1d);
+        SetPropertyBackingField(snapshot, "PreviewSlowFrames", 4L);
+        SetPropertyBackingField(snapshot, "PreviewSlowPct", 1.5d);
+        SetPropertyBackingField(snapshot, "PipelineLatencyMs", 3.4d);
+        SetPropertyBackingField(snapshot, "SourceFramesDelivered", 500L);
+        SetPropertyBackingField(snapshot, "SourceFramesDropped", 5L);
+        SetPropertyBackingField(snapshot, "RendererFramesRendered", 490L);
+        SetPropertyBackingField(snapshot, "RendererFramesDropped", 6L);
+        SetPropertyBackingField(snapshot, "PerformanceScore", 98.75d);
+
+        var presentation = buildWindowPresentation.Invoke(null, new[] { snapshot })
+            ?? throw new InvalidOperationException("BuildStatsWindowPresentation returned null.");
+
+        AssertEqual("Previewing", GetStringProperty(presentation, "SessionState"), "Stats window session state");
+        AssertEqual("Healthy", GetStringProperty(presentation, "DiagnosticStatus"), "Stats window diagnostic status");
+        AssertEqual("All monitored frame lanes are within current thresholds.", GetStringProperty(presentation, "DiagnosticEvidence"), "Stats window diagnostic fallback");
+        AssertEqual("3840 x 2160", GetStringProperty(presentation, "SourceResolution"), "Stats window source resolution");
+        AssertEqual("119.88 fps", GetStringProperty(presentation, "SourceFrameRate"), "Stats window source frame rate");
+        AssertEqual("On (BT.2020)", GetStringProperty(presentation, "SourceHdr"), "Stats window HDR text");
+        AssertEqual("YCbCr422", GetStringProperty(presentation, "SourceFormat"), "Stats window source format");
+        AssertEqual("NativeXu (High)", GetStringProperty(presentation, "TelemetryOrigin"), "Stats window telemetry origin");
+        AssertEqual("119.80", GetStringProperty(presentation, "SourceFps"), "Stats window source FPS");
+        AssertEqual("8.33ms avg", GetStringProperty(presentation, "SourceAvg"), "Stats window source average");
+        AssertEqual("3 drops (0.3%)", GetStringProperty(presentation, "SourceDrops"), "Stats window source drops");
+        AssertEqual("4 frames (1.5%)", GetStringProperty(presentation, "PreviewSlow"), "Stats window preview slow frames");
+        AssertEqual("3.40ms avg", GetStringProperty(presentation, "PipelineLatency"), "Stats window latency");
+        AssertEqual("98.8 / 100", GetStringProperty(presentation, "PerformanceScore"), "Stats window score");
+
+        var telemetryDetails = GetPropertyValue(presentation, "TelemetryDetails")
+            ?? throw new InvalidOperationException("StatsWindowPresentation.TelemetryDetails was null.");
+        AssertEqual(true, GetBoolProperty(telemetryDetails, "IsEmpty"), "Stats window telemetry fallback state");
+        AssertEqual("All monitored frame lanes are within current thresholds.", GetStringProperty(telemetryDetails, "EmptyText"), "Stats window telemetry fallback text");
 
         return Task.CompletedTask;
     }

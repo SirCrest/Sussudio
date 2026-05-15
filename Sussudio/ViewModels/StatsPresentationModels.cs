@@ -51,6 +51,45 @@ internal sealed record StatsDockPresentation(
     string EncoderFrameRate,
     string EncoderBitrate);
 
+internal sealed record StatsWindowPresentation(
+    string SessionState,
+    string DiagnosticStatus,
+    string DiagnosticStage,
+    string DiagnosticEvidence,
+    string SourceResolution,
+    string SourceFrameRate,
+    string SourceHdr,
+    string SourceFormat,
+    string TelemetryOrigin,
+    string SourceFps,
+    string SourceExpectedFps,
+    string SourceAvg,
+    string SourceP95,
+    string SourceJitter,
+    string SourceGaps,
+    string SourceDrops,
+    string PreviewFps,
+    string PreviewAvg,
+    string PreviewP95,
+    string PreviewSlow,
+    string PipelineLatency,
+    string SourceDelivered,
+    string SourceDropped,
+    string RendererRendered,
+    string RendererDropped,
+    string PerformanceScore,
+    StatsWindowTelemetryDetailsPresentation TelemetryDetails);
+
+internal sealed record StatsWindowTelemetryDetailsPresentation(
+    bool IsEmpty,
+    string EmptyText,
+    IReadOnlyList<StatsWindowTelemetryDetailRowPresentation> Rows);
+
+internal sealed record StatsWindowTelemetryDetailRowPresentation(
+    string? GroupHeader,
+    string Label,
+    string Value);
+
 internal sealed record StatsFrameTimePresentation(
     string SourceText,
     string VisualText,

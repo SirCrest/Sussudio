@@ -710,8 +710,10 @@ Primary current owners:
   stats dock metric text, visibility, and status brush application after the
   presentation model is built. `Sussudio/Controllers/StatsSectionChromeController.cs`
   owns stats dock section expand/collapse chrome and automation-visible section
-  visibility application. `Sussudio/MainWindow.StatsSections.cs` is the
-  XAML/automation adapter for that controller. `Sussudio/MainWindow.StatsSnapshot.cs`
+  visibility application, and `Sussudio/MainWindow.StatsSections.cs` is its
+  XAML/automation adapter. `Sussudio/Controllers/StatsWindowPresentationController.cs`
+  owns detached stats-window metric text and telemetry-detail row rendering.
+  `Sussudio/MainWindow.StatsSnapshot.cs`
   owns shell stats snapshot assembly from renderer and capture-health state.
   `MainWindow.StatsOverlay.cs` adapts snapshots/polling to presentation
   builders and delegates dock value application.
@@ -720,8 +722,8 @@ Primary current owners:
   source-telemetry panel projection, and diagnostic row pooling.
 - `Sussudio/Controllers/StatsDiagnosticRowsController.cs` owns dynamic
   decode/GPU/diagnostic row pools, empty-state rows, group headers, and
-  diagnostic row style updates. `MainWindow.StatsOverlay.cs` still owns metric
-  text assignment.
+  diagnostic row style updates. `MainWindow.StatsOverlay.cs` delegates metric
+  text assignment to presentation controllers.
 - `Sussudio/MainWindow.FrameTimeOverlay.cs` owns compact frame-time overlay
   text projection and graph line drawing. Keep frame-time canvas math there,
   while `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns stats dock
@@ -733,10 +735,12 @@ Primary current owners:
   `Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs` owns encoder dock
   visibility, codec label, bitrate, and encoder drift text formatting.
   `Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs` owns diagnostic
-  summary/row parsing. `Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`
+  summary/row parsing. `Sussudio/ViewModels/StatsPresentationBuilder.Window.cs`
+  owns detached stats-window text and telemetry-detail presentation.
+  `Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`
   owns stats lane status classification and visual-repeat drift policy.
   `Sussudio/ViewModels/StatsPresentationModels.cs` owns the internal DTO
-  records/enums consumed by the stats overlay controllers.
+  records/enums consumed by the stats overlay and stats-window controllers.
   `Sussudio/ViewModels/StatsSnapshot.cs` owns the UI stats snapshot DTO, and
   `Sussudio/ViewModels/StatsSnapshotBuilder.cs` owns capture-health, renderer,
   and shell view-state projection into that DTO.

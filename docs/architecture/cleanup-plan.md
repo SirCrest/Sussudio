@@ -1248,6 +1248,10 @@ Stats dock metric value, visibility, and status brush application now live in
 Stats section expand/collapse chrome and automation-visible section application
 now live in `Sussudio/Controllers/StatsSectionChromeController.cs`.
 `Sussudio/MainWindow.StatsSections.cs` is the XAML/automation adapter.
+Detached stats-window metric text and telemetry-detail row rendering now live
+in `Sussudio/Controllers/StatsWindowPresentationController.cs`, with
+`Sussudio/StatsWindow.xaml.cs` kept to lifecycle, sizing, polling, and
+always-on-top behavior.
 Stats overlay lifecycle, source-telemetry panel, and diagnostic row pooling
 contract checks now live in
 `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs`.
@@ -1267,7 +1271,9 @@ overlay presentation/range/sample text policy now lives in
 FPS/repeat/motion text formatting now lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs`; encoder dock
 visibility, codec label, bitrate, and encoder drift text formatting now lives
-in `Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs`; keep
+in `Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs`; detached
+stats-window text and telemetry-detail presentation now lives in
+`Sussudio/ViewModels/StatsPresentationBuilder.Window.cs`; keep
 `Sussudio/ViewModels/StatsPresentationBuilder.cs` focused on dock and shared
 formatting.
 Stats lane status classification and visual-repeat drift policy now live in

@@ -4,6 +4,7 @@ static partial class Program
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
+        var statsPresentationWindowText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Window.cs").Replace("\r\n", "\n");
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
         var statsWindowXaml = ReadRepoFile("Sussudio/StatsWindow.xaml").Replace("\r\n", "\n");
@@ -14,8 +15,9 @@ static partial class Program
         AssertContains(statsPresentationText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
         AssertDoesNotContain(statsPresentationText, "var sourceFormat =\n            snapshot.ReaderSourceSubtype ??");
         AssertContains(statsOverlayText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
-        AssertContains(statsWindowText, "SourceHdrValue.Text = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
-        AssertContains(statsWindowText, "SourceFormatValue.Text = snapshot.SourceVideoFormat ?? \"\\u2014\";");
+        AssertContains(statsWindowText, "StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot)");
+        AssertContains(statsPresentationWindowText, "SourceHdr: FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry),");
+        AssertContains(statsPresentationWindowText, "SourceFormat: snapshot.SourceVideoFormat ?? \"\\u2014\",");
         AssertContains(mainWindowXaml, "Text=\"Video Format\"");
         AssertContains(mainWindowXaml, "Text=\"Telemetry Details\"");
         AssertContains(statsWindowXaml, "Text=\"Video Format\"");
