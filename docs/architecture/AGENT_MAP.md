@@ -2039,6 +2039,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
   diagnostic-session preview-scheduler counter/delta projection for summary
   construction.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` owns
+  Flashback playback command, cadence, decode, audio-master, and stage DTO
+  projection values consumed by the final result initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs` owns preview
   scheduler, D3D, cadence, and visual-cadence DTO projection values consumed
   by the final result initializer.

@@ -1850,6 +1850,11 @@ consume one named snapshot of the MJPEG jitter-buffer counters. Preview
 scheduler, D3D, cadence, and visual-cadence DTO projection values now live in
 `DiagnosticSessionResultBuilder.PreviewResult.cs` so the final initializer can
 consume one named preview projection without recalculating those fields inline.
+Flashback playback command, cadence, decode, audio-master, and stage DTO
+projection values live in
+`DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` so result
+construction can consume one named playback projection while preserving the
+existing `summary.json` field shape.
 
 Diagnostic-session summary writing now lives in
 `tools/Common/DiagnosticSessionSummaryWriter.cs`. It owns `summary.json` writes
@@ -2219,6 +2224,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
+- `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewResult.cs`
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`
