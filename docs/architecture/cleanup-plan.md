@@ -1477,10 +1477,12 @@ and volume save suppression now live in
 Preview startup state, watchdog/telemetry timers, first-visual confirmation,
 and timeout recovery now live in `Sussudio/MainWindow.PreviewStartup.cs`
 instead of the composition-root constructor partial. Readiness-signal collection,
-missing-signal formatting, and playback-progress diagnostics live in
-`Sussudio/MainWindow.PreviewStartupSignals.cs`. This keeps the root shell
-focused on wiring while leaving the existing startup state machine behavior
-unchanged.
+and playback-progress diagnostics live in
+`Sussudio/MainWindow.PreviewStartupSignals.cs`; missing-signal and signal-list
+string formatting lives in
+`Sussudio/Controllers/PreviewStartupSignalFormatter.cs`. This keeps the root
+shell focused on wiring while leaving the existing startup state machine
+behavior unchanged.
 Delayed preview reveal after first visual now lives in
 `Sussudio/Controllers/PreviewFadeInController.cs`; the adapter remains
 `Sussudio/MainWindow.PreviewFadeIn.cs`. Watchdog/timeout recovery remains in

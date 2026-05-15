@@ -48,6 +48,9 @@ static partial class Program
             "Preview startup state lives in preview startup partial",
             PreviewStartup_StateLivesInPreviewStartupPartial);
         await AddCheckAsync(results,
+            "Preview startup signal formatter preserves string contracts",
+            PreviewStartupSignalFormatter_PreservesSignalStrings);
+        await AddCheckAsync(results,
             "Preview startup tolerates missing audio capture devices",
             PreviewStartup_ToleratesMissingAudioCaptureDevices);
         await AddCheckAsync(results,

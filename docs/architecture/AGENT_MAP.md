@@ -1440,7 +1440,9 @@ Primary current owners:
 - `Sussudio/MainWindow.PreviewStartup.cs` owns preview startup state,
   watchdog/telemetry timers, first-visual confirmation, and timeout recovery.
   `MainWindow.PreviewStartupSignals.cs` owns readiness-signal
-  collection, missing-signal formatting, and playback-progress diagnostics.
+  collection and playback-progress diagnostics.
+  `Sussudio/Controllers/PreviewStartupSignalFormatter.cs` owns missing-signal
+  and signal-list string formatting.
   `MainWindow.PropertyChangedPreview.cs` owns preview-specific ViewModel events
   and property-change projections for preview start/stop/reinit state. Keep
   preview startup fields out of the composition root.

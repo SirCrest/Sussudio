@@ -1,13 +1,13 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Sussudio.Models;
+using Sussudio.Controllers;
 
 namespace Sussudio;
 
 // Preview startup readiness-signal tracking. The watchdog and fade-in timers
-// stay in MainWindow.PreviewStartup.cs; this partial owns signal collection,
-// missing-signal formatting, and playback-progress diagnostics.
+// stay in MainWindow.PreviewStartup.cs; this partial owns signal collection
+// and playback-progress diagnostics.
 public sealed partial class MainWindow
 {
     private static readonly TimeSpan PreviewStartupPlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);
@@ -54,52 +54,14 @@ public sealed partial class MainWindow
 
         Logger.Log(
             $"PREVIEW_START_STRATEGY attempt={_previewStartupAttemptId ?? "none"} " +
-            $"strategy={_previewStartupStrategy} required={BuildPreviewStartupSignalList(_previewStartupRequiredSignals)}");
+            $"strategy={_previewStartupStrategy} required={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)}");
     }
 
     private string BuildPreviewStartupMissingSignals()
-    {
-        if (_previewStartupRequiredSignals == PreviewStartupSignalFlags.None)
-        {
-            return _previewFirstVisualConfirmed ? string.Empty : "FirstVisual";
-        }
-
-        var missing = _previewStartupRequiredSignals & ~_previewStartupReceivedSignals;
-        return missing == PreviewStartupSignalFlags.None
-            ? string.Empty
-            : BuildPreviewStartupSignalList(missing);
-    }
-
-    private static string BuildPreviewStartupSignalList(PreviewStartupSignalFlags signals)
-    {
-        if (signals == PreviewStartupSignalFlags.None)
-        {
-            return "None";
-        }
-
-        var labels = new List<string>(4);
-        if (signals.HasFlag(PreviewStartupSignalFlags.MediaOpened))
-        {
-            labels.Add("MediaOpened");
-        }
-
-        if (signals.HasFlag(PreviewStartupSignalFlags.FirstCaptureFrame))
-        {
-            labels.Add("FirstCaptureFrame");
-        }
-
-        if (signals.HasFlag(PreviewStartupSignalFlags.PlaybackAdvancing))
-        {
-            labels.Add("PlaybackAdvancing");
-        }
-
-        if (signals.HasFlag(PreviewStartupSignalFlags.FirstVisual))
-        {
-            labels.Add("FirstVisual");
-        }
-
-        return labels.Count == 0 ? "None" : string.Join("+", labels);
-    }
+        => PreviewStartupSignalFormatter.FormatMissingSignals(
+            _previewStartupRequiredSignals,
+            _previewStartupReceivedSignals,
+            _previewFirstVisualConfirmed);
 
     private void MarkGpuStartupSignal(PreviewStartupSignalFlags signal, string signalName)
     {
@@ -201,13 +163,13 @@ public sealed partial class MainWindow
         {
             Logger.Log(
                 $"PREVIEW_START_WAITING attempt={_previewStartupAttemptId ?? "none"} " +
-                $"required={BuildPreviewStartupSignalList(_previewStartupRequiredSignals)} " +
-                $"received={BuildPreviewStartupSignalList(_previewStartupReceivedSignals)} " +
-                $"missing={BuildPreviewStartupSignalList(missing)}");
+                $"required={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)} " +
+                $"received={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupReceivedSignals)} " +
+                $"missing={PreviewStartupSignalFormatter.FormatSignalList(missing)}");
             return;
         }
 
-        ConfirmPreviewFirstVisual($"GpuStartupSignals({BuildPreviewStartupSignalList(_previewStartupRequiredSignals)})");
+        ConfirmPreviewFirstVisual($"GpuStartupSignals({PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)})");
     }
 
     private void LogPreviewStartupPlaybackSnapshot(string reason)
@@ -226,8 +188,8 @@ public sealed partial class MainWindow
             $"reason={reason} state={(renderer.IsRendering ? "Rendering" : "Idle")} " +
             $"positionMs=0 " +
             $"gpuVisible={PreviewSwapChainPanel.Visibility} " +
-            $"required={BuildPreviewStartupSignalList(_previewStartupRequiredSignals)} " +
-            $"received={BuildPreviewStartupSignalList(_previewStartupReceivedSignals)} " +
+            $"required={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)} " +
+            $"received={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupReceivedSignals)} " +
             $"missing={BuildPreviewStartupMissingSignals()}");
     }
 }

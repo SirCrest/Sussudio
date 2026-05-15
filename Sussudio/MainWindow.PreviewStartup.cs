@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Sussudio.Controllers;
 using Sussudio.Models;
 using Sussudio.ViewModels;
 using Microsoft.UI.Dispatching;
@@ -229,8 +230,8 @@ public sealed partial class MainWindow
             $"PREVIEW_START_TIMEOUT attempt={_previewStartupAttemptId ?? "none"} " +
             $"elapsedMs={elapsedMs:0} placeholder={NoDevicePlaceholder.Visibility} " +
             $"gpuVisible={PreviewSwapChainPanel.Visibility} cpuVisible={PreviewImage.Visibility} " +
-            $"strategy={_previewStartupStrategy} required={BuildPreviewStartupSignalList(_previewStartupRequiredSignals)} " +
-            $"received={BuildPreviewStartupSignalList(_previewStartupReceivedSignals)} " +
+            $"strategy={_previewStartupStrategy} required={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)} " +
+            $"received={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupReceivedSignals)} " +
             $"missing={_previewStartupMissingSignals ?? "-"}");
         LogPreviewStartupPlaybackSnapshot("timeout");
 

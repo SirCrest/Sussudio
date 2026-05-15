@@ -91,6 +91,8 @@ static partial class Program
         AssertContains(previewStartupSignalsText, "private void ResetPreviewSignalState()");
         AssertContains(previewStartupSignalsText, "private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
         AssertContains(previewStartupSignalsText, "private void LogPreviewStartupPlaybackSnapshot(string reason)");
+        AssertContains(previewStartupSignalsText, "PreviewStartupSignalFormatter.FormatMissingSignals(");
+        AssertContains(previewStartupSignalsText, "PreviewStartupSignalFormatter.FormatSignalList(");
         AssertContains(previewRuntimeSnapshotText, "_previewStartupState.ToString()");
         AssertDoesNotContain(previewRendererText, "_previewStartupState.ToString()");
         AssertContains(propertyChangedText, "await HandlePreviewingChangedAsync();");
@@ -103,6 +105,44 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "ResetPreviewSignalState()");
         AssertDoesNotContain(previewStartupText, "private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
         AssertDoesNotContain(previewStartupText, "private void SchedulePreviewFadeIn()");
+        AssertDoesNotContain(previewStartupSignalsText, "private static string BuildPreviewStartupSignalList");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewStartupSignalFormatter_PreservesSignalStrings()
+    {
+        var formatterType = RequireType("Sussudio.Controllers.PreviewStartupSignalFormatter");
+        var signalType = RequireType("Sussudio.Models.PreviewStartupSignalFlags");
+        var formatSignalList = formatterType.GetMethod("FormatSignalList", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupSignalFormatter.FormatSignalList was not found.");
+        var formatMissingSignals = formatterType.GetMethod("FormatMissingSignals", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupSignalFormatter.FormatMissingSignals was not found.");
+
+        object Signals(int value) => Enum.ToObject(signalType, value);
+
+        AssertEqual("None", formatSignalList.Invoke(null, new[] { Signals(0) })?.ToString(), "no startup signals");
+        AssertEqual("None", formatSignalList.Invoke(null, new[] { Signals(16) })?.ToString(), "unknown startup signals");
+        AssertEqual(
+            "MediaOpened+FirstCaptureFrame+PlaybackAdvancing+FirstVisual",
+            formatSignalList.Invoke(null, new[] { Signals(1 | 2 | 4 | 8) })?.ToString(),
+            "startup signal order");
+        AssertEqual(
+            "FirstCaptureFrame+FirstVisual",
+            formatMissingSignals.Invoke(null, new object[] { Signals(1 | 2 | 4 | 8), Signals(1 | 4), false })?.ToString(),
+            "missing startup signals");
+        AssertEqual(
+            string.Empty,
+            formatMissingSignals.Invoke(null, new object[] { Signals(1 | 2), Signals(1 | 2), false })?.ToString(),
+            "no missing required startup signals");
+        AssertEqual(
+            "FirstVisual",
+            formatMissingSignals.Invoke(null, new object[] { Signals(0), Signals(0), false })?.ToString(),
+            "first visual required when no explicit startup signals exist");
+        AssertEqual(
+            string.Empty,
+            formatMissingSignals.Invoke(null, new object[] { Signals(0), Signals(0), true })?.ToString(),
+            "first visual confirmed with no explicit startup signals");
 
         return Task.CompletedTask;
     }
