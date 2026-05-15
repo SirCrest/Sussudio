@@ -3,8 +3,9 @@ using Sussudio.Models;
 
 namespace Sussudio;
 
-// Capture and recording option binding setup. Presentation-only option affordance
-// rules stay in MainWindow.CaptureOptionPresentation.cs.
+// Capture option binding setup and initial capture/recording selection projection.
+// Recording option event handlers stay in MainWindow.RecordingOptionBindings.cs;
+// presentation-only option affordance rules stay in MainWindow.CaptureOptionPresentation.cs.
 public sealed partial class MainWindow
 {
     private void InitializeCaptureOptionCollections()

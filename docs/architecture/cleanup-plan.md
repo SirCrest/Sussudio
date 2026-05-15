@@ -434,8 +434,9 @@ cloak/dark-mode helpers.
 Audio and microphone meter rendering now lives in
 `Sussudio/Controllers/AudioMeterController.cs`. Audio/microphone initial control
 projection and event hookup now live in `Sussudio/MainWindow.AudioBindings.cs`;
-capture/recording option collection setup, initial projection, and code-attached
-resolution/frame-rate handlers now live in `Sussudio/MainWindow.CaptureOptionBindings.cs`.
+video-format collection setup, decoder-count seeding, initial capture/recording
+option projection, and code-attached resolution/frame-rate handlers now live in
+`Sussudio/MainWindow.CaptureOptionBindings.cs`.
 The remaining non-audio control-bar binding code stays in `MainWindow.Bindings.cs`.
 
 Capture session transition legality now lives in
@@ -1925,7 +1926,8 @@ Remaining `tools/Common` ownership:
    in `MainViewModel.FrameRateTiming.cs`; keep device enumeration and selected
    device capability rebuilds in `MainViewModel.DeviceManagement.cs`. Pure
    recording codec filtering and selected-codec fallback policy now live in
-   `RecordingFormatSelectionPolicy.cs`, while `MainViewModel.FormatSelection.cs`
+   `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs`, while
+   `MainViewModel.FormatSelection.cs`
    keeps collection mutation, HDR side effects, and selected capture-format
    policy.
    Late-arriving device format probe reconciliation and active-preview retarget

@@ -1420,9 +1420,9 @@ Primary current owners:
   rules for capture option affordances: HDR readiness hints, FPS telemetry
   tooltips, MJPEG decoder count selection/visibility, bitrate mode visibility,
   and audio clipping visibility.
-- `Sussudio/MainWindow.CaptureOptionBindings.cs` owns capture/recording option
-  collection binding, initial selection projection, resolution/frame-rate
-  selection handlers, and decoder-count seeding during `SetupBindings()`.
+- `Sussudio/MainWindow.CaptureOptionBindings.cs` owns video-format collection
+  binding, decoder-count seeding, initial capture/recording selection projection,
+  and resolution/frame-rate selection handlers during `SetupBindings()`.
 - `Sussudio/MainWindow.RecordingOptionBindings.cs` owns recording/capture
   option event bindings: recording format, quality, preset, split encode,
   video format, custom bitrate, HDR, and true-HDR preview toggles.
@@ -1475,10 +1475,10 @@ Primary current owners:
   rational parsing, source-rate fallback, and preferred-format ranking helpers
   used by frame-rate, resolution, capture-settings, and automation projections.
   `MainViewModel.FormatSelection.cs` owns pixel-format option building,
-  recording-format policy application, HDR toggle side effects, and
-  selected-format selection policy. `RecordingFormatSelectionPolicy.cs` owns
-  pure recording codec filtering and selected-codec fallback policy shared by
-  UI and automation.
+  recording-format policy application to observable state, HDR toggle side
+  effects, and selected capture-format selection policy.
+  `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs` owns pure recording
+  codec filtering and selected-codec fallback policy shared by UI and automation.
   Video device enumeration and selected-device capability rebuilds stay in
   `MainViewModel.DeviceManagement.cs`; watcher-driven audio endpoint refresh
   and capture-card endpoint filtering live in `MainViewModel.AudioDeviceDiscovery.cs`.
