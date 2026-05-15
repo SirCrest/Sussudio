@@ -105,7 +105,7 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotText, "return PreviewRuntimeSnapshotController.Build(new PreviewRuntimeSnapshotInput");
         AssertContains(previewRuntimeSnapshotText, "D3DRenderer = _d3dRenderer,");
         AssertContains(previewRuntimeSnapshotText, "GpuElementVisible = PreviewSwapChainPanel.Visibility == Visibility.Visible,");
-        AssertContains(previewRuntimeSnapshotText, "StartupState = _previewStartupState.ToString(),");
+        AssertContains(previewRuntimeSnapshotText, "StartupState = CurrentPreviewStartupState.ToString(),");
         AssertContains(previewRuntimeSnapshotText, "GpuPositionEventCount = Interlocked.Read(ref _previewStartupPositionEventCount)");
         AssertContains(previewRuntimeSnapshotControllerText, "internal sealed class PreviewRuntimeSnapshotInput");
         AssertContains(previewRuntimeSnapshotControllerText, "internal static class PreviewRuntimeSnapshotController");

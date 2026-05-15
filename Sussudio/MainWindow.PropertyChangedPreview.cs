@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Sussudio.Controllers;
 using Sussudio.ViewModels;
 
 namespace Sussudio;
@@ -28,9 +29,7 @@ public sealed partial class MainWindow
     private void ViewModel_PreviewStartRequested(object? sender, EventArgs e)
     {
         _previewStopRequestedByUser = false;
-        if (string.IsNullOrWhiteSpace(_previewStartupAttemptId) ||
-            IsPreviewStartupFailedState(_previewStartupState) ||
-            _previewStartupState == PreviewStartupState.Idle)
+        if (ShouldBeginPreviewStartupAttempt)
         {
             BeginPreviewStartupAttempt();
         }
@@ -99,15 +98,13 @@ public sealed partial class MainWindow
         if (ViewModel.IsPreviewing)
         {
             _previewStopRequestedByUser = false;
-            if (string.IsNullOrWhiteSpace(_previewStartupAttemptId) ||
-                IsPreviewStartupFailedState(_previewStartupState) ||
-                _previewStartupState == PreviewStartupState.Idle)
+            if (ShouldBeginPreviewStartupAttempt)
             {
                 BeginPreviewStartupAttempt();
             }
 
             SetPreviewStartupState(PreviewStartupState.StartingSession);
-            Logger.Log($"PREVIEW_SESSION_STARTED attempt={_previewStartupAttemptId ?? "none"}");
+            Logger.Log($"PREVIEW_SESSION_STARTED attempt={PreviewStartupAttemptLabel}");
             if (!ViewModel.IsPreviewReinitializing && !_isPreviewReinitAnimating)
             {
                 PreparePreviewStartupPresentation();
@@ -124,12 +121,12 @@ public sealed partial class MainWindow
                 SetPreviewStartupState(PreviewStartupState.Failed, attachFailureReason);
                 StopPreviewStartupWatchdog();
                 RevealPreviewUnavailablePlaceholder();
-                Logger.Log($"PREVIEW_RENDERER_ATTACH_FAILED attempt={_previewStartupAttemptId ?? "none"} reason={attachFailureReason}");
+                Logger.Log($"PREVIEW_RENDERER_ATTACH_FAILED attempt={PreviewStartupAttemptLabel} reason={attachFailureReason}");
                 SchedulePreviewStartupFailureStop(attachFailureReason);
                 throw;
             }
 
-            if (!_previewFirstVisualConfirmed)
+            if (!IsPreviewFirstVisualConfirmed)
             {
                 SetPreviewStartupState(PreviewStartupState.WaitingForFirstVisual);
                 StartPreviewStartupWatchdog();
@@ -179,9 +176,9 @@ public sealed partial class MainWindow
                 Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(HandleViewModelPropertyChangedAsync)}");
                 RevealPreviewUnavailablePlaceholder();
             }
-            else if (_previewFirstVisualConfirmed)
+            else if (IsPreviewFirstVisualConfirmed)
             {
-                Logger.Log($"PREVIEW_REINIT_ANIMATE_RESET attempt={_previewStartupAttemptId ?? "none"} reason=reinit-stop-failed");
+                Logger.Log($"PREVIEW_REINIT_ANIMATE_RESET attempt={PreviewStartupAttemptLabel} reason=reinit-stop-failed");
                 _isPreviewReinitAnimating = false;
                 Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(HandleViewModelPropertyChangedAsync)}");
                 StopPreviewStartupOverlay();

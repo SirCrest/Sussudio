@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Hosting;
+using Sussudio.Controllers;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Preview;
@@ -34,13 +35,13 @@ public sealed partial class MainWindow
 
     private void OnD3DRendererFirstFrameRendered()
     {
-        Logger.Log($"PREVIEW_D3D11_FIRST_FRAME attempt={_previewStartupAttemptId ?? "none"}");
+        Logger.Log($"PREVIEW_D3D11_FIRST_FRAME attempt={PreviewStartupAttemptLabel}");
         ConfirmPreviewFirstVisual("D3D11FirstFrame");
     }
     private void OnD3DRendererRenderThreadFailed(string reason)
     {
-        Logger.Log($"PREVIEW_D3D11_RENDER_THREAD_FAILED attempt={_previewStartupAttemptId ?? "none"} reason={reason}");
-        if (!ViewModel.IsPreviewing || _previewFirstVisualConfirmed)
+        Logger.Log($"PREVIEW_D3D11_RENDER_THREAD_FAILED attempt={PreviewStartupAttemptLabel} reason={reason}");
+        if (!ViewModel.IsPreviewing || IsPreviewFirstVisualConfirmed)
         {
             return;
         }
@@ -178,10 +179,10 @@ public sealed partial class MainWindow
             ConfigurePreviewStartupSignals(
                 PreviewStartupStrategy.D3D11VideoProcessor,
                 PreviewStartupSignalFlags.FirstVisual);
-            _previewRendererAttachedUtc = DateTimeOffset.UtcNow;
+            MarkPreviewRendererAttached();
 
             Logger.Log("Preview renderer started (mode=D3D11VideoProcessor).");
-            Logger.Log($"PREVIEW_RENDERER_ATTACHED mode=D3D11VideoProcessor attempt={_previewStartupAttemptId ?? "none"}");
+            Logger.Log($"PREVIEW_RENDERER_ATTACHED mode=D3D11VideoProcessor attempt={PreviewStartupAttemptLabel}");
         }
         else
         {
@@ -192,12 +193,12 @@ public sealed partial class MainWindow
             _previewStartupExpectGpuDualSignals = false;
             ConfigurePreviewStartupSignals(PreviewStartupStrategy.CpuSoftwareBitmap, PreviewStartupSignalFlags.FirstVisual);
             _previewSource = new SoftwareBitmapSource();
-            _previewRendererAttachedUtc = DateTimeOffset.UtcNow;
+            MarkPreviewRendererAttached();
             PreviewImage.Source = _previewSource;
             PreviewImage.Visibility = Visibility.Visible;
             SetGpuPreviewVisibility(Visibility.Collapsed);
             Logger.Log($"Preview renderer started (mode=CpuSoftwareBitmap, expectedIntervalMs={_previewMinPresentationIntervalMs:0.###}).");
-            Logger.Log($"PREVIEW_RENDERER_ATTACHED mode=CpuSoftwareBitmap attempt={_previewStartupAttemptId ?? "none"}");
+            Logger.Log($"PREVIEW_RENDERER_ATTACHED mode=CpuSoftwareBitmap attempt={PreviewStartupAttemptLabel}");
         }
 
         return Task.CompletedTask;

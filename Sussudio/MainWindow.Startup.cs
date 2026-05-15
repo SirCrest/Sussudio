@@ -36,7 +36,7 @@ public sealed partial class MainWindow
                 // so WASAPI playback starts silent and fades in only after live frames render.
                 PrimePreviewAudioFadeIn();
                 await ViewModel.RefreshDevicesAsync();
-                if (!ViewModel.IsPreviewing && !_previewFirstVisualConfirmed)
+                if (!ViewModel.IsPreviewing && !IsPreviewFirstVisualConfirmed)
                 {
                     RevealPreviewUnavailablePlaceholder();
                 }

@@ -54,7 +54,7 @@ static partial class Program
         AssertContains(adapterText, "PreviewBorder = PreviewBorder,");
         AssertContains(adapterText, "PreviewBorderScale = PreviewBorderScale,");
         AssertContains(adapterText, "GetEntranceButtons = GetEntranceButtons,");
-        AssertContains(adapterText, "IsPreviewFirstVisualConfirmed = () => _previewFirstVisualConfirmed,");
+        AssertContains(adapterText, "IsPreviewFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,");
         AssertContains(adapterText, "FadeInControlBarShadow = () => FadeInControlBarShadow(delayMs: 400, durationMs: 500),");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PrepareInitialState();");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PlaySplashAndEntrance();");

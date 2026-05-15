@@ -1,6 +1,6 @@
 using System;
 using System.Threading;
-using Sussudio.Models;
+using Sussudio.Controllers;
 
 namespace Sussudio;
 
@@ -11,72 +11,84 @@ namespace Sussudio;
 // MainWindow.PreviewStartupWatchdog.cs.
 public sealed partial class MainWindow
 {
-    private enum PreviewStartupState
-    {
-        Idle,
-        StartingSession,
-        RendererAttaching,
-        WaitingForFirstVisual,
-        Rendering,
-        Failed
-    }
-
-    private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;
-    private string? _previewStartupAttemptId;
-    private DateTimeOffset? _previewStartupRequestedUtc;
-    private DateTimeOffset? _previewRendererAttachedUtc;
-    private DateTimeOffset? _previewFirstVisualUtc;
-    private string? _previewLastFailureReason;
-    private string? _previewStartupMissingSignals;
-    private int _previewRecoveryAttemptCount;
-    private bool _previewFirstVisualConfirmed;
+    private PreviewStartupSessionController _previewStartupSessionController = null!;
     private bool _previewStopRequestedByUser;
     private bool _isPreviewReinitAnimating;
 
-    private static bool IsPreviewStartupFailedState(PreviewStartupState state)
-        => state == PreviewStartupState.Failed;
+    private void InitializePreviewStartupSessionController()
+        => _previewStartupSessionController = new PreviewStartupSessionController();
 
-    private static bool IsPreviewStartupTerminalState(PreviewStartupState state)
-        => state is PreviewStartupState.Idle or PreviewStartupState.Rendering or PreviewStartupState.Failed;
+    private PreviewStartupState CurrentPreviewStartupState
+        => _previewStartupSessionController.State;
+
+    private string PreviewStartupAttemptLabel
+        => _previewStartupSessionController.AttemptId ?? "none";
+
+    private string? PreviewStartupAttemptId
+        => _previewStartupSessionController.AttemptId;
+
+    private DateTimeOffset? PreviewStartupRequestedUtc
+        => _previewStartupSessionController.RequestedUtc;
+
+    private string? PreviewStartupMissingSignals
+    {
+        get => _previewStartupSessionController.MissingSignals;
+        set => _previewStartupSessionController.SetMissingSignals(value);
+    }
+
+    private int PreviewStartupRecoveryAttemptCount
+        => _previewStartupSessionController.RecoveryAttemptCount;
+
+    private string? PreviewStartupLastFailureReason
+        => _previewStartupSessionController.LastFailureReason;
+
+    private bool IsPreviewFirstVisualConfirmed
+        => _previewStartupSessionController.FirstVisualConfirmed;
+
+    private bool ShouldBeginPreviewStartupAttempt
+        => _previewStartupSessionController.ShouldBeginAttempt;
 
     private void SetPreviewStartupState(PreviewStartupState state, string? reason = null)
     {
-        if (!string.IsNullOrWhiteSpace(reason))
-        {
-            _previewLastFailureReason = reason;
-        }
-
-        if (_previewStartupState == state && string.IsNullOrWhiteSpace(reason))
+        if (!_previewStartupSessionController.SetState(state, reason))
         {
             return;
         }
 
-        _previewStartupState = state;
-        Logger.Log(
-            $"PREVIEW_START_STATE state={state} attempt={_previewStartupAttemptId ?? "none"} " +
-            $"recovery={_previewRecoveryAttemptCount} reason={reason ?? "-"}");
+        LogPreviewStartupStateChange(state, reason);
     }
+
+    private void LogPreviewStartupStateChange(PreviewStartupState state, string? reason = null)
+    {
+        Logger.Log(
+            $"PREVIEW_START_STATE state={state} attempt={PreviewStartupAttemptLabel} " +
+            $"recovery={PreviewStartupRecoveryAttemptCount} reason={reason ?? "-"}");
+    }
+
+    private void MarkPreviewRendererAttached()
+        => _previewStartupSessionController.MarkRendererAttached(DateTimeOffset.UtcNow);
+
     private void BeginPreviewStartupAttempt()
     {
-        _previewRecoveryAttemptCount = 0;
-        _previewStartupAttemptId = Guid.NewGuid().ToString("N");
-        _previewStartupRequestedUtc = DateTimeOffset.UtcNow;
-        _previewRendererAttachedUtc = null;
-        _previewFirstVisualUtc = null;
-        _previewLastFailureReason = null;
-        _previewStartupMissingSignals = null;
-        _previewFirstVisualConfirmed = false;
+        var stateChanged = _previewStartupSessionController.BeginAttempt(
+            Guid.NewGuid().ToString("N"),
+            DateTimeOffset.UtcNow);
         ResetPreviewSignalState();
         Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
 
-        SetPreviewStartupState(PreviewStartupState.StartingSession);
+        if (stateChanged)
+        {
+            LogPreviewStartupStateChange(PreviewStartupState.StartingSession);
+        }
+
         Logger.Log(
-            $"PREVIEW_START_REQUESTED attempt={_previewStartupAttemptId} " +
+            $"PREVIEW_START_REQUESTED attempt={PreviewStartupAttemptId} " +
             $"device={ViewModel.SelectedDevice?.Name ?? "none"}");
     }
+
     private void ConfirmPreviewFirstVisual(string source)
     {
-        if (_previewFirstVisualConfirmed || !ViewModel.IsPreviewing)
+        if (IsPreviewFirstVisualConfirmed || !ViewModel.IsPreviewing)
         {
             return;
         }
@@ -84,14 +96,13 @@ public sealed partial class MainWindow
         if (_previewStopRequestedByUser)
         {
             Logger.Log(
-                $"PREVIEW_FIRST_VISUAL_IGNORED attempt={_previewStartupAttemptId ?? "none"} " +
+                $"PREVIEW_FIRST_VISUAL_IGNORED attempt={PreviewStartupAttemptLabel} " +
                 $"source={source} reason=stop-requested");
             return;
         }
 
-        _previewFirstVisualConfirmed = true;
+        _previewStartupSessionController.MarkFirstVisualConfirmed(DateTimeOffset.UtcNow);
         MarkPreviewStartupFirstVisualConfirmed();
-        _previewFirstVisualUtc = DateTimeOffset.UtcNow;
         SetPreviewStartupState(PreviewStartupState.Rendering);
         StopPreviewStartupWatchdog();
         StopPreviewStartupOverlay();
@@ -100,18 +111,17 @@ public sealed partial class MainWindow
         SchedulePreviewFadeIn();
         if (_isPreviewReinitAnimating)
         {
-            Logger.Log($"PREVIEW_REINIT_ANIMATE_IN attempt={_previewStartupAttemptId ?? "none"}");
+            Logger.Log($"PREVIEW_REINIT_ANIMATE_IN attempt={PreviewStartupAttemptLabel}");
             _isPreviewReinitAnimating = false;
             Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(ConfirmPreviewFirstVisual)}");
         }
-        _previewStartupMissingSignals = string.Empty;
-        var elapsedMs = _previewStartupRequestedUtc.HasValue
-            ? (DateTimeOffset.UtcNow - _previewStartupRequestedUtc.Value).TotalMilliseconds
-            : 0;
+        PreviewStartupMissingSignals = string.Empty;
+        var elapsedMs = _previewStartupSessionController.GetElapsedMilliseconds(DateTimeOffset.UtcNow);
         Logger.Log(
-            $"PREVIEW_FIRST_VISUAL_CONFIRMED attempt={_previewStartupAttemptId ?? "none"} " +
-            $"source={source} elapsedMs={elapsedMs:0} recovery={_previewRecoveryAttemptCount}");
+            $"PREVIEW_FIRST_VISUAL_CONFIRMED attempt={PreviewStartupAttemptLabel} " +
+            $"source={source} elapsedMs={elapsedMs:0} recovery={PreviewStartupRecoveryAttemptCount}");
     }
+
     private void ResetPreviewStartupTracking(bool keepRecoveryCount = false, bool preserveReinitAnimation = false)
     {
         StopPreviewStartupWatchdog();
@@ -122,28 +132,12 @@ public sealed partial class MainWindow
             _isPreviewReinitAnimating = false;
             Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(ResetPreviewStartupTracking)}");
         }
-        _previewStartupAttemptId = null;
-        _previewStartupRequestedUtc = null;
-        _previewRendererAttachedUtc = null;
-        _previewFirstVisualUtc = null;
-        _previewLastFailureReason = null;
-        _previewStartupMissingSignals = null;
-        _previewFirstVisualConfirmed = false;
         ResetPreviewSignalState();
         Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
 
-        if (!keepRecoveryCount)
+        if (_previewStartupSessionController.Reset(keepRecoveryCount))
         {
-            _previewRecoveryAttemptCount = 0;
-        }
-
-        if (!IsPreviewStartupTerminalState(_previewStartupState))
-        {
-            SetPreviewStartupState(PreviewStartupState.Idle);
-        }
-        else
-        {
-            _previewStartupState = PreviewStartupState.Idle;
+            LogPreviewStartupStateChange(PreviewStartupState.Idle);
         }
     }
 }

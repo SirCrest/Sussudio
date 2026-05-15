@@ -20,7 +20,7 @@ public sealed partial class MainWindow
             PreviewBorder = PreviewBorder,
             PreviewBorderScale = PreviewBorderScale,
             GetEntranceButtons = GetEntranceButtons,
-            IsPreviewFirstVisualConfirmed = () => _previewFirstVisualConfirmed,
+            IsPreviewFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,
             StartSplashLoadingPhrases = StartSplashLoadingPhrases,
             StopSplashLoadingPhrases = StopSplashLoadingPhrases,
             AddPreviewShellEntranceAnimations = AddPreviewShellEntranceAnimations,

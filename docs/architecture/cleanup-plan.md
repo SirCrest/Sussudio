@@ -1717,10 +1717,12 @@ restore behavior, and property-to-session volume forwarding. Monitoring
 enable/disable orchestration, audio input retargeting, and coordinator
 sequencing remain in `Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs`.
 
-Preview startup state and first-visual confirmation now live in
-`Sussudio/MainWindow.PreviewStartup.cs` instead of the composition-root
-constructor partial. Watchdog/telemetry timers, timeout configuration, timeout
-recovery, and failure-stop scheduling live in
+Preview startup attempt/state bookkeeping, timestamps, cached failure/
+missing-signal details, and first-visual confirmation state now live in
+`Sussudio/Controllers/PreviewStartupSessionController.cs` instead of a
+MainWindow field bundle. `Sussudio/MainWindow.PreviewStartup.cs` is the
+XAML/MainWindow-facing adapter that preserves logging and UI side effects.
+Watchdog/telemetry timers, timeout configuration, timeout recovery, and failure-stop scheduling live in
 `Sussudio/MainWindow.PreviewStartupWatchdog.cs`. Readiness-signal collection
 and playback-progress diagnostics live in
 `Sussudio/MainWindow.PreviewStartupSignals.cs`; readiness-signal required/

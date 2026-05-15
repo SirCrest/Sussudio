@@ -79,9 +79,9 @@ public sealed partial class MainWindow
 
     private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()
     {
-        var startupMissingSignals = _previewStartupMissingSignals;
+        var startupMissingSignals = PreviewStartupMissingSignals;
         if (string.IsNullOrWhiteSpace(startupMissingSignals) &&
-            _previewStartupState is PreviewStartupState.WaitingForFirstVisual or PreviewStartupState.Failed)
+            CurrentPreviewStartupState is PreviewStartupState.WaitingForFirstVisual or PreviewStartupState.Failed)
         {
             startupMissingSignals = BuildPreviewStartupMissingSignals();
         }
@@ -99,10 +99,10 @@ public sealed partial class MainWindow
             FramesDropped = Interlocked.Read(ref _previewFramesDropped),
             LastPresentedTick = Interlocked.Read(ref _previewLastPresentedTick),
             PreviewMinPresentationIntervalMs = _previewMinPresentationIntervalMs,
-            StartupState = _previewStartupState.ToString(),
-            IsStartupWaitingForFirstVisual = _previewStartupState == PreviewStartupState.WaitingForFirstVisual,
-            StartupAttemptId = _previewStartupAttemptId,
-            StartupRequestedUtc = _previewStartupRequestedUtc,
+            StartupState = CurrentPreviewStartupState.ToString(),
+            IsStartupWaitingForFirstVisual = CurrentPreviewStartupState == PreviewStartupState.WaitingForFirstVisual,
+            StartupAttemptId = PreviewStartupAttemptId,
+            StartupRequestedUtc = PreviewStartupRequestedUtc,
             StartupTimeoutMs = PreviewStartupVisualTimeoutMs,
             StartupGpuSignalMediaOpened = _previewGpuSignalMediaOpened,
             StartupGpuSignalFirstFrame = _previewGpuSignalFirstFrame,
@@ -111,9 +111,9 @@ public sealed partial class MainWindow
             StartupReceivedSignals = _previewStartupReceivedSignals,
             StartupStrategy = _previewStartupStrategy,
             StartupMissingSignals = startupMissingSignals,
-            StartupRecoveryAttemptCount = _previewRecoveryAttemptCount,
-            StartupLastFailureReason = _previewLastFailureReason,
-            FirstVisualConfirmed = _previewFirstVisualConfirmed,
+            StartupRecoveryAttemptCount = PreviewStartupRecoveryAttemptCount,
+            StartupLastFailureReason = PreviewStartupLastFailureReason,
+            FirstVisualConfirmed = IsPreviewFirstVisualConfirmed,
             GpuPositionEventCount = Interlocked.Read(ref _previewStartupPositionEventCount)
         });
     }

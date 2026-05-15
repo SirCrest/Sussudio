@@ -63,8 +63,11 @@ static partial class Program
             "Diagnostics loop does not rebuild automation options each poll",
             DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll);
         await AddCheckAsync(results,
-            "Preview startup state lives in preview startup partial",
-            PreviewStartup_StateLivesInPreviewStartupPartial);
+            "Preview startup session state lives in controller",
+            PreviewStartupSession_LivesInController);
+        await AddCheckAsync(results,
+            "Preview startup session controller preserves attempt state contracts",
+            PreviewStartupSessionController_PreservesAttemptStateContracts);
         await AddCheckAsync(results,
             "Preview startup signal formatter preserves string contracts",
             PreviewStartupSignalFormatter_PreservesSignalStrings);

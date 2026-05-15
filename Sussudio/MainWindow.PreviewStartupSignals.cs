@@ -22,8 +22,8 @@ public sealed partial class MainWindow
 
     private bool IsPreviewStartupSignalWindowActive()
         => ViewModel.IsPreviewing &&
-           !_previewFirstVisualConfirmed &&
-           _previewStartupState is PreviewStartupState.StartingSession or PreviewStartupState.RendererAttaching or PreviewStartupState.WaitingForFirstVisual;
+           !IsPreviewFirstVisualConfirmed &&
+           CurrentPreviewStartupState is PreviewStartupState.StartingSession or PreviewStartupState.RendererAttaching or PreviewStartupState.WaitingForFirstVisual;
 
     private void ResetPreviewSignalState()
     {
@@ -36,19 +36,19 @@ public sealed partial class MainWindow
     {
         _previewStartupExpectGpuDualSignals = false;
         _previewStartupPositionEventCount = 0;
-        _previewStartupMissingSignals = _previewStartupReadinessSignals.Configure(
+        PreviewStartupMissingSignals = _previewStartupReadinessSignals.Configure(
             strategy,
             requiredSignals,
             _previewStartupExpectGpuDualSignals,
-            _previewFirstVisualConfirmed);
+            IsPreviewFirstVisualConfirmed);
 
         Logger.Log(
-            $"PREVIEW_START_STRATEGY attempt={_previewStartupAttemptId ?? "none"} " +
+            $"PREVIEW_START_STRATEGY attempt={PreviewStartupAttemptLabel} " +
             $"strategy={_previewStartupStrategy} required={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)}");
     }
 
     private string BuildPreviewStartupMissingSignals()
-        => _previewStartupReadinessSignals.BuildMissingSignals(_previewFirstVisualConfirmed);
+        => _previewStartupReadinessSignals.BuildMissingSignals(IsPreviewFirstVisualConfirmed);
 
     private void MarkPreviewStartupFirstVisualConfirmed()
     {
@@ -60,14 +60,14 @@ public sealed partial class MainWindow
         var result = _previewStartupReadinessSignals.MarkSignal(
             signal,
             IsPreviewStartupSignalWindowActive(),
-            _previewFirstVisualConfirmed);
+            IsPreviewFirstVisualConfirmed);
         if (result.Status is PreviewStartupReadinessSignalStatus.IgnoredInactiveOrNotGpu or PreviewStartupReadinessSignalStatus.Duplicate)
         {
             return;
         }
 
-        _previewStartupMissingSignals = result.MissingSignals;
-        Logger.Log($"PREVIEW_START_SIGNAL signal={signalName} attempt={_previewStartupAttemptId ?? "none"}");
+        PreviewStartupMissingSignals = result.MissingSignals;
+        Logger.Log($"PREVIEW_START_SIGNAL signal={signalName} attempt={PreviewStartupAttemptLabel}");
         LogPreviewStartupPlaybackSnapshot($"signal:{signalName}");
         TryConfirmPreviewFirstVisualFromGpuSignals(result);
     }
@@ -92,11 +92,11 @@ public sealed partial class MainWindow
         var result = _previewStartupReadinessSignals.TrackPlaybackPosition(
             position,
             IsPreviewStartupSignalWindowActive(),
-            _previewFirstVisualConfirmed);
+            IsPreviewFirstVisualConfirmed);
         if (result.Status == PreviewStartupPlaybackPositionStatus.IgnoredInactiveOrNotGpu)
         {
             Logger.Log(
-                $"PREVIEW_START_POSITION_IGNORED attempt={_previewStartupAttemptId ?? "none"} " +
+                $"PREVIEW_START_POSITION_IGNORED attempt={PreviewStartupAttemptLabel} " +
                 $"reason=inactive-or-not-gpu positionMs={position.TotalMilliseconds:0.###}");
             return;
         }
@@ -104,14 +104,14 @@ public sealed partial class MainWindow
         if (result.Status == PreviewStartupPlaybackPositionStatus.BaselineCaptured)
         {
             Logger.Log(
-                $"PREVIEW_START_POSITION_BASELINE attempt={_previewStartupAttemptId ?? "none"} " +
+                $"PREVIEW_START_POSITION_BASELINE attempt={PreviewStartupAttemptLabel} " +
                 $"positionMs={result.Position.TotalMilliseconds:0.###} thresholdMs={result.Threshold.TotalMilliseconds:0.###}");
             HandleGpuStartupSignalResult(result.SignalResult, "PlaybackAdvancing");
             return;
         }
 
         Logger.Log(
-            $"PREVIEW_START_POSITION_CHECK attempt={_previewStartupAttemptId ?? "none"} " +
+            $"PREVIEW_START_POSITION_CHECK attempt={PreviewStartupAttemptLabel} " +
             $"positionMs={result.Position.TotalMilliseconds:0.###} deltaMs={result.Delta.TotalMilliseconds:0.###} " +
             $"thresholdMs={result.Threshold.TotalMilliseconds:0.###}");
         HandleGpuStartupSignalResult(result.SignalResult, "PlaybackAdvancing");
@@ -124,8 +124,8 @@ public sealed partial class MainWindow
             return;
         }
 
-        _previewStartupMissingSignals = result.MissingSignals;
-        Logger.Log($"PREVIEW_START_SIGNAL signal={signalName} attempt={_previewStartupAttemptId ?? "none"}");
+        PreviewStartupMissingSignals = result.MissingSignals;
+        Logger.Log($"PREVIEW_START_SIGNAL signal={signalName} attempt={PreviewStartupAttemptLabel}");
         LogPreviewStartupPlaybackSnapshot($"signal:{signalName}");
         TryConfirmPreviewFirstVisualFromGpuSignals(result);
     }
@@ -141,7 +141,7 @@ public sealed partial class MainWindow
         {
             var missing = result.Snapshot.RequiredSignals & ~result.Snapshot.ReceivedSignals;
             Logger.Log(
-                $"PREVIEW_START_WAITING attempt={_previewStartupAttemptId ?? "none"} " +
+                $"PREVIEW_START_WAITING attempt={PreviewStartupAttemptLabel} " +
                 $"required={PreviewStartupSignalFormatter.FormatSignalList(result.Snapshot.RequiredSignals)} " +
                 $"received={PreviewStartupSignalFormatter.FormatSignalList(result.Snapshot.ReceivedSignals)} " +
                 $"missing={PreviewStartupSignalFormatter.FormatSignalList(missing)}");
@@ -157,13 +157,13 @@ public sealed partial class MainWindow
         if (renderer == null)
         {
             Logger.Log(
-                $"PREVIEW_START_PLAYBACK_SNAPSHOT attempt={_previewStartupAttemptId ?? "none"} " +
+                $"PREVIEW_START_PLAYBACK_SNAPSHOT attempt={PreviewStartupAttemptLabel} " +
                 $"reason={reason} renderer=null");
             return;
         }
 
         Logger.Log(
-            $"PREVIEW_START_PLAYBACK_SNAPSHOT attempt={_previewStartupAttemptId ?? "none"} " +
+            $"PREVIEW_START_PLAYBACK_SNAPSHOT attempt={PreviewStartupAttemptLabel} " +
             $"reason={reason} state={(renderer.IsRendering ? "Rendering" : "Idle")} " +
             $"positionMs=0 " +
             $"gpuVisible={PreviewSwapChainPanel.Visibility} " +

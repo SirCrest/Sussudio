@@ -15,7 +15,7 @@ public sealed partial class MainWindow
         {
             ViewModel = ViewModel,
             SetPreviewStopRequestedByUser = value => _previewStopRequestedByUser = value,
-            GetPreviewStartupAttemptId = () => _previewStartupAttemptId,
+            GetPreviewStartupAttemptId = () => PreviewStartupAttemptId,
             StopPreviewFadeInTimer = StopPreviewFadeInTimer,
             StartPreviewAudioFadeOutAsync = () => StartPreviewAudioFadeOutAsync(),
             AnimatePreviewOutAsync = AnimatePreviewOutAsync,

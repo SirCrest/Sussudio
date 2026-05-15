@@ -35,7 +35,7 @@ public sealed partial class MainWindow
     private void StartPreviewStartupWatchdog()
     {
         StopPreviewStartupWatchdog();
-        if (_previewStartupState != PreviewStartupState.WaitingForFirstVisual)
+        if (CurrentPreviewStartupState != PreviewStartupState.WaitingForFirstVisual)
         {
             return;
         }
@@ -48,7 +48,7 @@ public sealed partial class MainWindow
         _previewStartupWatchdogTimer.Start();
         StartPreviewStartupTelemetry();
         Logger.Log(
-            $"PREVIEW_START_WATCHDOG_STARTED attempt={_previewStartupAttemptId ?? "none"} " +
+            $"PREVIEW_START_WATCHDOG_STARTED attempt={PreviewStartupAttemptLabel} " +
             $"timeoutMs={PreviewStartupVisualTimeoutMs}");
     }
 
@@ -104,11 +104,11 @@ public sealed partial class MainWindow
                     return;
                 }
 
-                Logger.Log($"PREVIEW_START_FAILURE_STOP begin reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
+                Logger.Log($"PREVIEW_START_FAILURE_STOP begin reason={reason} attempt={PreviewStartupAttemptLabel}");
                 // Preview startup failed; pipeline state is unclean, so force full teardown.
                 await ViewModel.StopPreviewAsync(userInitiated: true, teardownPipeline: true);
                 ViewModel.StatusText = PreviewStartupFailureTextFormatter.FormatFailureStopStatusText(reason);
-                Logger.Log($"PREVIEW_START_FAILURE_STOP completed reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
+                Logger.Log($"PREVIEW_START_FAILURE_STOP completed reason={reason} attempt={PreviewStartupAttemptLabel}");
             }
             finally
             {
@@ -131,30 +131,28 @@ public sealed partial class MainWindow
             return Task.CompletedTask;
         }
 
-        if (!ViewModel.IsPreviewing || _previewStartupState != PreviewStartupState.WaitingForFirstVisual)
+        if (!ViewModel.IsPreviewing || CurrentPreviewStartupState != PreviewStartupState.WaitingForFirstVisual)
         {
             return Task.CompletedTask;
         }
 
-        var elapsedMs = _previewStartupRequestedUtc.HasValue
-            ? (DateTimeOffset.UtcNow - _previewStartupRequestedUtc.Value).TotalMilliseconds
-            : 0;
-        _previewStartupMissingSignals = BuildPreviewStartupMissingSignals();
+        var elapsedMs = _previewStartupSessionController.GetElapsedMilliseconds(DateTimeOffset.UtcNow);
+        PreviewStartupMissingSignals = BuildPreviewStartupMissingSignals();
         var timeoutReason = PreviewStartupFailureTextFormatter.FormatTimeoutReason(
             PreviewStartupVisualTimeoutMs,
-            _previewStartupMissingSignals);
+            PreviewStartupMissingSignals);
         SetPreviewStartupState(PreviewStartupState.Failed, timeoutReason);
         Logger.Log(
-            $"PREVIEW_START_TIMEOUT attempt={_previewStartupAttemptId ?? "none"} " +
+            $"PREVIEW_START_TIMEOUT attempt={PreviewStartupAttemptLabel} " +
             $"elapsedMs={elapsedMs:0} placeholder={NoDevicePlaceholder.Visibility} " +
             $"gpuVisible={PreviewSwapChainPanel.Visibility} cpuVisible={PreviewImage.Visibility} " +
             $"strategy={_previewStartupStrategy} required={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)} " +
             $"received={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupReceivedSignals)} " +
-            $"missing={_previewStartupMissingSignals ?? "-"}");
+            $"missing={PreviewStartupMissingSignals ?? "-"}");
         LogPreviewStartupPlaybackSnapshot("timeout");
 
         StopPreviewStartupOverlay();
-        ViewModel.StatusText = PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(_previewStartupMissingSignals);
+        ViewModel.StatusText = PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(PreviewStartupMissingSignals);
         SchedulePreviewStartupFailureStop(timeoutReason);
         return Task.CompletedTask;
     }
