@@ -12,9 +12,14 @@ static partial class Program
             .Replace("\r\n", "\n");
         var observedText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotObservedFrames.cs")
             .Replace("\r\n", "\n");
+        var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs")
+            .Replace("\r\n", "\n");
+        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(snapshotsText, "public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()");
         AssertContains(snapshotsText, "return GetHealthSnapshot();");
+        AssertContains(snapshotsText, "private static long ComputeTickAge(long tick)");
 
         AssertContains(formatText, "private static string? ResolveEncoderCodecName(");
         AssertContains(formatText, "MediaFormat.MapNvencCodecName(settings.Format)");
@@ -30,12 +35,20 @@ static partial class Program
         AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedP010FrameCount))");
         AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount))");
         AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount))");
+        AssertContains(flashbackBufferText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
+        AssertContains(flashbackExportText, "private static long ComputeFlashbackExportElapsedMs(");
+        AssertContains(flashbackExportText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
+        AssertContains(flashbackExportText, "private static long GetFileLengthOrZero(string? path)");
 
         AssertDoesNotContain(snapshotsText, "private static string? ResolveEncoderCodecName(");
         AssertDoesNotContain(snapshotsText, "private static string? ResolveEncoderOutputPixelFormat(");
         AssertDoesNotContain(snapshotsText, "private static string? ResolveEncoderVideoProfile(");
         AssertDoesNotContain(snapshotsText, "private static string? ResolveRequestedFrameRateArg(");
         AssertDoesNotContain(snapshotsText, "ResolveObservedFrameTelemetry()");
+        AssertDoesNotContain(snapshotsText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
+        AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportElapsedMs(");
+        AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
+        AssertDoesNotContain(snapshotsText, "private static long GetFileLengthOrZero(string? path)");
 
         return Task.CompletedTask;
     }

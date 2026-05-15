@@ -21,8 +21,12 @@ static partial class Program
 
         AssertContains(flashbackExportText, "private FlashbackExportHealthSnapshotFields CaptureFlashbackExportHealthSnapshotFields(");
         AssertContains(flashbackExportText, "lock (_flashbackExportDiagnosticsLock)");
-        AssertContains(flashbackExportText, "ComputeFlashbackExportElapsedMs(");
-        AssertContains(flashbackExportText, "GetFileLengthOrZero(");
+        AssertContains(flashbackExportText, "private static long ComputeFlashbackExportElapsedMs(");
+        AssertContains(flashbackExportText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
+        AssertContains(flashbackExportText, "private static long GetFileLengthOrZero(string? path)");
+        AssertContains(flashbackExportText, "var elapsedMs = ComputeFlashbackExportElapsedMs(");
+        AssertContains(flashbackExportText, "var lastProgressAgeMs = ComputeFlashbackExportLastProgressAgeMs(");
+        AssertContains(flashbackExportText, "var outputBytes = GetFileLengthOrZero(");
         AssertContains(flashbackExportText, "ThroughputBytesPerSec = throughputBytesPerSec");
         AssertContains(flashbackExportText, "FinalizeResult? LastResult");
 
@@ -45,6 +49,7 @@ static partial class Program
 
         AssertContains(flashbackBufferText, "private FlashbackBufferHealthSnapshotFields CaptureFlashbackBufferHealthSnapshotFields(");
         AssertContains(flashbackBufferText, "ResolveFlashbackBackendSettingsStaleReason(flashbackBackendSettings, currentSettings)");
+        AssertContains(flashbackBufferText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
         AssertContains(flashbackBufferText, "bufMgr?.StartupCacheOverBudget ?? false");
         AssertContains(flashbackBufferText, "fbSink?.EncoderFrameRateDenominator");
         AssertContains(flashbackBufferText, "private readonly record struct FlashbackBufferHealthSnapshotFields");

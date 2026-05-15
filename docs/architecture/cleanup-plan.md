@@ -1223,8 +1223,8 @@ source telemetry, backend, suppression, and circuit-state projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs`;
 capture cadence projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotCaptureCadence.cs`;
-Flashback buffer, startup-cache, backend-staleness, and encoder summary
-projection lives in
+Flashback buffer, startup-cache, backend-staleness reason policy, and encoder
+summary projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs`;
 Flashback live queue, force-rotate, backpressure, and GPU queue projection lives
 in `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackQueues.cs`;
@@ -1235,7 +1235,10 @@ Flashback export diagnostic and derived progress/throughput projection lives in
 and Flashback playback state/cadence/decode/command projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`.
 The general snapshot partial is now the diagnostics-snapshot compatibility
-entry point plus shared Flashback/file/tick snapshot helpers.
+entry point plus shared tick-age snapshot helper policy. Flashback
+backend-staleness reason policy now stays with the buffer health partial, while
+export elapsed/progress-age/file-length helpers stay with the export health
+partial.
 
 Recording-format snapshot policy now lives in
 `Sussudio/Services/Capture/CaptureService.SnapshotRecordingFormat.cs`. Keep

@@ -402,8 +402,8 @@ Important entry points:
 - `CaptureService.HealthSnapshotCaptureCadence.cs` owns source-reader capture
   cadence field projection for health snapshots.
 - `CaptureService.HealthSnapshotFlashbackBuffer.cs` owns Flashback buffer,
-  startup-cache, backend-staleness, and encoder summary field projection for
-  health snapshots.
+  startup-cache, backend-staleness reason policy, and encoder summary field
+  projection for health snapshots.
 - `CaptureService.HealthSnapshotFlashbackQueues.cs` owns Flashback live queue,
   force-rotate, backpressure, and GPU queue field projection for health
   snapshots.
@@ -414,8 +414,8 @@ Important entry points:
   backend, suppression, and circuit-state field projection for health
   snapshots.
 - `CaptureService.HealthSnapshotFlashbackExport.cs` owns the locked Flashback
-  export diagnostic field copy and derived progress/throughput projection used
-  by health snapshots.
+  export diagnostic field copy, elapsed/progress-age/file-length helpers, and
+  derived progress/throughput projection used by health snapshots.
 - `CaptureService.HealthSnapshotFlashbackPlayback.cs` owns Flashback playback
   state, cadence, decode, audio-master, and command-queue field projection for
   health snapshots.
@@ -459,7 +459,7 @@ Important entry points:
 - `CaptureService.RuntimeSnapshotRecordingIntegrity.cs` owns runtime snapshot
   projection for recording-integrity summary fields.
 - `CaptureService.Snapshots.cs` owns the diagnostics-snapshot compatibility
-  entry point plus shared Flashback/file/tick snapshot helpers.
+  entry point plus shared tick-age snapshot helper policy.
 - `CaptureService.SnapshotRecordingFormat.cs` owns encoder codec, output pixel
   format, video profile, and requested frame-rate argument projection.
 - `CaptureService.SnapshotObservedFrames.cs` owns observed frame-format
