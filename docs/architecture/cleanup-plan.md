@@ -1265,8 +1265,9 @@ Frame-time overlay graph drawing now lives in
 `Sussudio/MainWindow.FrameTimeOverlay.cs`; `MainWindow.StatsOverlay.cs` keeps
 the stats dock projection and snapshot adapter.
 Decode and GPU hardware stats row projection now lives in
-`Sussudio/MainWindow.StatsHardwareSections.cs`; row element pooling still
-belongs to `StatsDiagnosticRowsController`.
+`Sussudio/Controllers/StatsHardwareRowsController.cs`;
+`Sussudio/MainWindow.StatsHardwareSections.cs` keeps only the XAML-facing update
+hooks, and row element pooling still belongs to `StatsDiagnosticRowsController`.
 Stats presentation and frame-time overlay contract checks now live in
 `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` instead of expanding
 the legacy harness body in `tests/Sussudio.Tests/Program.cs`.

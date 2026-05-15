@@ -1365,9 +1365,10 @@ Primary current owners:
   audio, timestamp, stream-bound, validation, lifetime, and callback tests.
 - `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
   support/logging contract tests.
-- `Sussudio/MainWindow.StatsHardwareSections.cs` owns decode and GPU stats
-  row projection. It should gather current MJPEG/NVML values and delegate row
-  element reuse to `StatsDiagnosticRowsController`.
+- `Sussudio/MainWindow.StatsHardwareSections.cs` keeps the XAML-facing decode
+  and GPU stats update hooks; `Sussudio/Controllers/StatsHardwareRowsController.cs`
+  owns MJPEG/NVML row projection and delegates row element reuse to
+  `StatsDiagnosticRowsController`.
 - `Sussudio/Controllers/FlashbackTimelineController.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, and show/hide
   animation state. `MainWindow.FlashbackTimeline.cs` is the XAML-facing

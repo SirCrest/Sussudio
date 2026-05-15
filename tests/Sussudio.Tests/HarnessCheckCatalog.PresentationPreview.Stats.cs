@@ -17,6 +17,9 @@ static partial class Program
         await AddCheckAsync(results,
             "Stats diagnostic row pooling lives in controller",
             StatsDiagnosticRowPooling_LivesInController);
+        await AddCheckAsync(results,
+            "Stats hardware rows controller formats decode and GPU rows",
+            StatsHardwareRowsController_FormatsDecodeAndGpuRows);
     }
 
     private static async Task AddPresentationPreviewStatsChecksAsync(List<CheckResult> results)

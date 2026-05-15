@@ -16,6 +16,7 @@ public sealed partial class MainWindow
     private StatsOverlayController _statsOverlayController = null!;
     private StatsDockPresentationController _statsDockPresentationController = null!;
     private StatsDiagnosticRowsController _statsDiagnosticRowsController = null!;
+    private StatsHardwareRowsController _statsHardwareRowsController = null!;
 
     private void InitializeStatsOverlayController()
     {
@@ -78,6 +79,16 @@ public sealed partial class MainWindow
         {
             ResourceOwner = StatsDockPanel,
             DiagnosticsContent = Diagnostics_Content
+        });
+        _statsHardwareRowsController = new StatsHardwareRowsController(new StatsHardwareRowsControllerContext
+        {
+            DecodeSection = DecodeSection,
+            DecodeContent = Decode_Content,
+            GpuContent = GPU_Content,
+            DiagnosticRowsController = _statsDiagnosticRowsController,
+            GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,
+            GetPendingPreviewFrameCount = () => _d3dRenderer?.PendingFrameCount,
+            GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot()
         });
     }
 
