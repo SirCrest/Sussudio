@@ -78,8 +78,40 @@ static partial class Program
         AssertContains(payloadDecodingText, "private static string? InferFrameRateRational(double? frameRate)");
         AssertContains(payloadDecodingText, "private static SourceTelemetryConfidence ResolveConfidence(");
         AssertContains(payloadDecodingText, "private static string? TryDecodePrintableAscii(byte[] buffer)");
+        AssertContains(payloadDecodingText, "private static string? DecodeCString(byte[] buffer)");
         AssertContains(payloadDecodingText, "private static string BoolToToken(bool? value)");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.PayloadDecoding.cs");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task NativeXuAtCommandProvider_TelemetryDetailsLiveInFocusedPartials()
+    {
+        var buildText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.Build.cs")
+            .Replace("\r\n", "\n");
+        var audioInputText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs")
+            .Replace("\r\n", "\n");
+        var formattersText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs")
+            .Replace("\r\n", "\n");
+        var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
+
+        AssertContains(buildText, "public sealed partial class NativeXuAtCommandProvider");
+        AssertContains(buildText, "private static IReadOnlyList<SourceTelemetryDetailEntry> BuildDetailEntries(");
+        AssertContains(buildText, "private static void AddAtDetail(");
+        AssertContains(buildText, "private static string? TryFormatAtDetailValue(");
+        AssertDoesNotContain(buildText, "private static bool IsValidFlashAudioData(");
+        AssertDoesNotContain(buildText, "private static (string Value, string? RawValue) FormatUsbHostProtocolDetail(");
+        AssertContains(audioInputText, "private static bool IsValidFlashAudioData(AtCommandResult flashResult)");
+        AssertContains(audioInputText, "private static string? ResolveAudioInputSource(");
+        AssertContains(audioInputText, "private static SourceAudioInputMode? ResolveAudioInputMode(");
+        AssertContains(audioInputText, "private static (string Value, string? RawValue) FormatInputSourceDetail(byte[] data)");
+        AssertContains(formattersText, "private static (string Value, string? RawValue) FormatUsbHostProtocolDetail(byte[] data)");
+        AssertContains(formattersText, "private static (string Value, string? RawValue) FormatAsciiOrHexDetail(byte[] data)");
+        AssertDoesNotContain(formattersText, "private static string? DecodeCString(byte[] buffer)");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Build.cs");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.cs");
 
         return Task.CompletedTask;
     }

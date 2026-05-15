@@ -36,6 +36,9 @@ static partial class Program
             "NativeXu payload decoding lives in focused partial",
             NativeXuAtCommandProvider_PayloadDecodingLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "NativeXu telemetry details live in focused partials",
+            NativeXuAtCommandProvider_TelemetryDetailsLiveInFocusedPartials);
+        await AddCheckAsync(results,
             "Health snapshot propagates structured source telemetry details",
             CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails);
         await AddCheckAsync(results,

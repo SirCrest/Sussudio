@@ -791,11 +791,15 @@ verification invocation helpers. Recording verifier integration scenarios are
 split into ffprobe failure, process-priority, codec, Flashback verification
 format, mismatch, HDR, and cadence owner files.
 
-Native XU source telemetry detail presentation now lives in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs`.
-Keep telemetry detail rows, display formatting, HDR transfer labels, and
-flash-audio source interpretation there so the root provider stays focused on
-transport gating, rolling command polling, and snapshot construction.
+Native XU source telemetry detail row assembly now lives in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.Build.cs`.
+Flash-audio input interpretation and input-source display text live in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs`.
+AT detail byte/number/hex/ascii display formatters live in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs`.
+Keep all three linked from `tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj`
+whenever this partial family changes, since that tool links shared provider
+files explicitly instead of project-referencing the app.
 
 Native XU diagnostic summary strings now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DiagnosticSummary.cs`.

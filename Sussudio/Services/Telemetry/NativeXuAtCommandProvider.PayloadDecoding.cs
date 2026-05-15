@@ -199,6 +199,23 @@ public sealed partial class NativeXuAtCommandProvider
         return string.IsNullOrWhiteSpace(decoded) ? null : decoded;
     }
 
+    private static string? DecodeCString(byte[] buffer)
+    {
+        if (!HasNonZeroData(buffer))
+        {
+            return null;
+        }
+
+        var terminatorIndex = Array.IndexOf(buffer, (byte)0);
+        if (terminatorIndex < 0)
+        {
+            terminatorIndex = buffer.Length;
+        }
+
+        var decoded = Encoding.ASCII.GetString(buffer, 0, terminatorIndex).Trim();
+        return string.IsNullOrWhiteSpace(decoded) ? null : decoded;
+    }
+
     private static string BoolToToken(bool? value)
         => value switch
         {
