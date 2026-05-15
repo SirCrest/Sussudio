@@ -675,7 +675,9 @@ Primary current owners:
   sizing, GPU panel visibility, and video/control-bar composition shadows.
 - `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
   preview snapshot provider that dispatches to the renderer/startup snapshot
-  projection, plus the read-only preview runtime snapshot construction.
+  adapter and gathers UI-thread-only state. `Sussudio/Controllers/PreviewRuntimeSnapshotController.cs`
+  owns the read-only preview runtime snapshot construction, including renderer
+  metrics, blank/stall suspicion, cadence projection, and D3D diagnostic fields.
   Close/finalize behavior stays with `MainWindow.CloseLifecycle.cs`.
 - `Sussudio/MainWindow.WindowTitle.cs` owns window title base/build-stamp
   formatting and the recording-time suffix used by property changes.

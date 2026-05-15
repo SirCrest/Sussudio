@@ -431,7 +431,10 @@ visibility, and video/control-bar composition shadows now live in
 preview renderer instances, frame counters, expected-present interval, and
 renderer cadence state.
 `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
-preview snapshot provider and read-only preview runtime snapshot construction.
+preview snapshot provider and gathers UI-thread-only state. Read-only preview
+runtime snapshot construction now lives in
+`Sussudio/Controllers/PreviewRuntimeSnapshotController.cs`, which owns renderer
+metrics, blank/stall suspicion, cadence projection, and D3D diagnostic fields.
 Close/finalize handling remains in
 `MainWindow.CloseLifecycle.cs`.
 
