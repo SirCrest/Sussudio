@@ -414,13 +414,23 @@ device, capture controls, recordings, Flashback, window, manifest,
 observability, automation-flow, UI visibility, and verification checks live in
 focused `CommandHandlers.Routing.*.Tests.cs` files, with source ownership kept
 separate in `CommandHandlers.SourceOwnership.Tests.cs`.
+`tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` is now only the
+architecture-doc test family marker shell. AGENT_MAP reference resolution,
+test-owner code-span coverage, automation consumer checklist coverage,
+UI/presentation ownership coverage, shared tool automation path coverage, and
+AGENT_MAP token/consumer helper logic live in focused
+`ArchitectureDocs.AgentMap*.cs` owners.
 Shared tool assembly loading and stale-build detection now live in
 `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` so the legacy harness body
 no longer owns tool DLL resolution or freshness policy.
-Shared repo-file reads, reflection/property access, assertion helpers, wait
-helpers, and synthetic capture/recording object factories now live in
-`tests/Sussudio.Tests/HarnessCore.Helpers.cs` instead of the legacy harness
-body.
+Shared harness helpers now live in focused owners instead of the legacy harness
+body: repo-file/source text helpers live in
+`tests/Sussudio.Tests/HarnessCore.SourceText.cs`, reflection/property access
+lives in `tests/Sussudio.Tests/HarnessCore.Reflection.cs`, assertions live in
+`tests/Sussudio.Tests/HarnessCore.Assertions.cs`, wait helpers live in
+`tests/Sussudio.Tests/HarnessCore.AsyncLifecycle.cs`, and synthetic
+capture/recording object factories live in
+`tests/Sussudio.Tests/HarnessCore.ObjectFactories.cs`.
 Synthetic MJPEG timing metric factories and the closed-pipeline emit delegate
 now live in `tests/Sussudio.Tests/MjpegTimingMetrics.Helpers.cs`.
 

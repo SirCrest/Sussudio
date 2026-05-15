@@ -1176,10 +1176,17 @@ Primary current owners:
   serialization contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
   reliability-gates script contract test.
-- `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` owns AGENT_MAP file/folder
-  reference drift checks, automation consumer checklist coverage, dispatcher
-  partial-family coverage, UI presentation ownership code-span coverage, and
-  exact-path coverage for shared tool automation partial families.
+- `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` is the architecture-doc test
+  family marker shell. `ArchitectureDocs.AgentMapReferences.Tests.cs` owns
+  AGENT_MAP file/folder reference drift checks;
+  `ArchitectureDocs.AgentMapOwnershipPaths.Tests.cs` owns test-owner code-span
+  coverage; `ArchitectureDocs.AgentMapAutomation.Tests.cs` owns README
+  automation consumer checklist coverage; `ArchitectureDocs.AgentMapPresentation.Tests.cs`
+  owns UI presentation ownership code-span coverage;
+  `ArchitectureDocs.AgentMapToolAutomation.Tests.cs` owns exact-path coverage
+  for shared tool automation partial families; and
+  `ArchitectureDocs.AgentMapHelpers.cs` owns the shared AGENT_MAP token,
+  consumer, and ownership-file discovery helpers.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter*.Tests.cs`
   owns the shared/ssctl snapshot formatter contract family: typed accessors,
   core section formatting, section-order, and Flashback opt-in smoke checks
