@@ -15,11 +15,7 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(0, fullscreenExitCode, "window fullscreen exit code");
-        AssertEqual(52, fullscreenRequest.GetProperty("command").GetInt32(), "window fullscreen command id");
-        AssertEqual(
-            true,
-            fullscreenRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(),
-            "window fullscreen payload enabled");
+        AssertSsctlCommandRequest(fullscreenRequest, "SetFullScreenEnabled", ("enabled", true));
 
         var windowClosePipeName = $"ssctl-window-close-{Guid.NewGuid():N}";
         var windowCloseArguments = new List<string> { "window", "close" };
@@ -31,16 +27,8 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(0, windowCloseExitCode, "window close exit code");
-        AssertEqual(18, windowCloseRequests[0].GetProperty("command").GetInt32(), "window close arm command id");
-        AssertEqual(
-            true,
-            windowCloseRequests[0].GetProperty("payload").GetProperty("armed").GetBoolean(),
-            "window close arm payload");
-        AssertEqual(19, windowCloseRequests[1].GetProperty("command").GetInt32(), "window close action command id");
-        AssertEqual(
-            "Close",
-            windowCloseRequests[1].GetProperty("payload").GetProperty("action").GetString(),
-            "window close action payload");
+        AssertSsctlCommandRequest(windowCloseRequests[0], "ArmClose", ("armed", true));
+        AssertSsctlCommandRequest(windowCloseRequests[1], "WindowAction", ("action", "Close"));
 
         var windowCloseDeniedPipeName = $"ssctl-window-close-denied-{Guid.NewGuid():N}";
         var windowCloseDeniedArguments = new List<string> { "window", "close" };
@@ -53,6 +41,6 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(3, windowCloseDeniedExitCode, "window close denied exit code");
-        AssertEqual(18, windowCloseDeniedRequests[0].GetProperty("command").GetInt32(), "window close denied arm command id");
+        AssertSsctlCommandRequest(windowCloseDeniedRequests[0], "ArmClose", ("armed", true));
     }
 }

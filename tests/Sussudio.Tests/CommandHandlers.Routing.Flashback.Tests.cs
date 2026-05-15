@@ -15,11 +15,7 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(0, flashbackExitCode, "flashback off exit code");
-        AssertEqual(47, flashbackRequest.GetProperty("command").GetInt32(), "flashback off command id");
-        AssertEqual(
-            false,
-            flashbackRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(),
-            "flashback off payload enabled");
+        AssertSsctlCommandRequest(flashbackRequest, "SetFlashbackEnabled", ("enabled", false));
 
         var flashbackExportPipeName = $"ssctl-flashback-export-{Guid.NewGuid():N}";
         var flashbackExportOutputPath = Path.Combine("temp", "ssctl flashback export", "export with spaces.mp4");
@@ -39,18 +35,13 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(0, flashbackExportExitCode, "flashback export exit code");
-        AssertEqual(42, flashbackExportRequest.GetProperty("command").GetInt32(), "flashback export command id");
-        var flashbackExportPayload = flashbackExportRequest.GetProperty("payload");
-        AssertEqual(2.5d, flashbackExportPayload.GetProperty("seconds").GetDouble(), "flashback export payload seconds");
-        AssertEqual(
-            flashbackExportOutputPath,
-            flashbackExportPayload.GetProperty("outputPath").GetString(),
-            "flashback export payload path");
-        AssertEqual(
-            true,
-            flashbackExportPayload.GetProperty("useSelectionRange").GetBoolean(),
-            "flashback export payload range");
-        AssertEqual(true, flashbackExportPayload.GetProperty("force").GetBoolean(), "flashback export payload force");
+        AssertSsctlCommandRequest(
+            flashbackExportRequest,
+            "FlashbackExport",
+            ("seconds", 2.5d),
+            ("outputPath", flashbackExportOutputPath),
+            ("useSelectionRange", true),
+            ("force", true));
         AssertEqual(
             true,
             Directory.Exists(Path.GetDirectoryName(flashbackExportOutputPath) ?? "."),

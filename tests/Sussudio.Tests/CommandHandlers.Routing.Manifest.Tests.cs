@@ -15,6 +15,6 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(0, manifestExitCode, "manifest exit code");
-        AssertEqual(51, manifestRequest.GetProperty("command").GetInt32(), "manifest command id");
+        AssertSsctlCommandRequestHasEmptyPayload(manifestRequest, "GetAutomationManifest");
     }
 }

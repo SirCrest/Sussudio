@@ -68,6 +68,62 @@ static partial class Program
         return (exitCode, requests);
     }
 
+    private static JsonElement AssertSsctlCommandRequest(
+        JsonElement request,
+        string commandName,
+        params (string Key, object? Value)[] expectedPayload)
+    {
+        AssertAutomationCommandId(request, commandName);
+        var payload = request.GetProperty("payload");
+        if (expectedPayload.Length == 0)
+        {
+            return payload;
+        }
+
+        AssertJsonObjectPropertyNames(payload, expectedPayload.Select(item => item.Key).ToArray());
+        foreach (var (key, value) in expectedPayload)
+        {
+            AssertJsonPropertyEquals(payload, key, value, $"{commandName}.{key}");
+        }
+
+        return payload;
+    }
+
+    private static void AssertSsctlCommandRequestHasEmptyPayload(JsonElement request, string commandName)
+    {
+        var payload = AssertSsctlCommandRequest(request, commandName);
+        if (payload.ValueKind == JsonValueKind.Object && payload.EnumerateObject().Any())
+        {
+            throw new InvalidOperationException($"{commandName} payload contained unexpected properties.");
+        }
+
+        if (payload.ValueKind is not JsonValueKind.Null and not JsonValueKind.Object)
+        {
+            throw new InvalidOperationException($"{commandName} payload had unexpected kind {payload.ValueKind}.");
+        }
+    }
+
+    private static void AssertSsctlCommandRoutingTestsUseCommandIdHelper()
+    {
+        var repoRoot = GetRepoRoot();
+        var testRoot = System.IO.Path.Combine(repoRoot, "tests", "Sussudio.Tests");
+        foreach (var file in System.IO.Directory.GetFiles(testRoot, "CommandHandlers.Routing*.Tests.cs"))
+        {
+            var relativePath = System.IO.Path.GetRelativePath(repoRoot, file).Replace('\\', '/');
+            var text = System.IO.File.ReadAllText(file).Replace("\r\n", "\n");
+            if (text.Contains("GetProperty(\"command\").GetInt32()", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"{relativePath} must use AssertSsctlCommandRequest for captured request.command checks.");
+            }
+
+            if (text.Contains("GetExpectedAutomationCommandValue(", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"{relativePath} must not bypass AssertSsctlCommandRequest.");
+            }
+        }
+    }
+
     private static string ReadSsctlCommandHandlersFamilyText()
     {
         var files = new[]

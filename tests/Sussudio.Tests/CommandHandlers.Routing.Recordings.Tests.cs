@@ -15,6 +15,6 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(0, recordingsExitCode, "recordings open exit code");
-        AssertEqual(53, recordingsRequest.GetProperty("command").GetInt32(), "recordings open command id");
+        AssertSsctlCommandRequestHasEmptyPayload(recordingsRequest, "OpenRecordingsFolder");
     }
 }

@@ -1249,7 +1249,9 @@ Primary current owners:
   summary output checks.
 - `tests/Sussudio.Tests/CommandHandlers.Tests.cs` is the ssctl command-handler
   test family marker shell. `CommandHandlers.Helpers.cs` owns source-family
-  reader and routing-capture helpers. Pipe-captured routing coverage is split by
+  reader, routing-capture helpers, and `AssertSsctlCommandRequest`, which routes
+  captured ssctl `request.command` checks through the shared golden command table
+  instead of per-test numeric IDs. Pipe-captured routing coverage is split by
   command group across `CommandHandlers.Routing.Device.Tests.cs`,
   `CommandHandlers.Routing.CaptureControls.Tests.cs`,
   `CommandHandlers.Routing.Recordings.Tests.cs`,

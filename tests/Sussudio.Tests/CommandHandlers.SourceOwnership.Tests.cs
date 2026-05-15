@@ -4,6 +4,7 @@ static partial class Program
 {
     private static Task SsctlCommandHandlers_SourceOwnership_IsSplit()
     {
+        AssertSsctlCommandRoutingTestsUseCommandIdHelper();
         var commandHandlersSource = ReadSsctlCommandHandlersFamilyText();
         var commandHandlersRootSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs");
         AssertDoesNotContain(commandHandlersRootSource, "private static Task<int> HandleFlashbackAsync");

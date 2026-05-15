@@ -15,12 +15,7 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(0, deviceExitCode, "device audio-select exit code");
-        AssertEqual(5, deviceRequest.GetProperty("command").GetInt32(), "device audio-select command id");
-        // Auth token is null when not configured via env var.
-        AssertEqual(
-            "Synthetic Mic",
-            deviceRequest.GetProperty("payload").GetProperty("deviceName").GetString(),
-            "device audio-select payload key");
+        AssertSsctlCommandRequest(deviceRequest, "SelectAudioInputDevice", ("deviceName", "Synthetic Mic"));
 
         var deviceRefreshPipeName = $"ssctl-device-refresh-{Guid.NewGuid():N}";
         var deviceRefreshArguments = new List<string> { "device", "refresh" };
@@ -31,7 +26,7 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(0, deviceRefreshExitCode, "device refresh exit code");
-        AssertEqual(3, deviceRefreshRequest.GetProperty("command").GetInt32(), "device refresh command id");
+        AssertSsctlCommandRequestHasEmptyPayload(deviceRefreshRequest, "RefreshDevices");
 
         var deviceListPipeName = $"ssctl-device-list-{Guid.NewGuid():N}";
         var deviceListArguments = new List<string> { "device", "list" };
@@ -46,7 +41,7 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(0, deviceListExitCode, "device list exit code");
-        AssertEqual(3, deviceListRequests[0].GetProperty("command").GetInt32(), "device list refresh command id");
-        AssertEqual(29, deviceListRequests[1].GetProperty("command").GetInt32(), "device list options command id");
+        AssertSsctlCommandRequestHasEmptyPayload(deviceListRequests[0], "RefreshDevices");
+        AssertSsctlCommandRequestHasEmptyPayload(deviceListRequests[1], "GetCaptureOptions");
     }
 }

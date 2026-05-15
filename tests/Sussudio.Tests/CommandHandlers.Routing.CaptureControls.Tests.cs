@@ -15,10 +15,6 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(0, previewExitCode, "preview start exit code");
-        AssertEqual(16, previewRequest.GetProperty("command").GetInt32(), "preview start command id");
-        AssertEqual(
-            true,
-            previewRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(),
-            "preview start payload enabled");
+        AssertSsctlCommandRequest(previewRequest, "SetPreviewEnabled", ("enabled", true));
     }
 }

@@ -418,7 +418,10 @@ ssctl command-handler routing coverage now mirrors command-group ownership:
 device, capture controls, recordings, Flashback, window, manifest,
 observability, automation-flow, UI visibility, and verification checks live in
 focused `CommandHandlers.Routing.*.Tests.cs` files, with source ownership kept
-separate in `CommandHandlers.SourceOwnership.Tests.cs`.
+separate in `CommandHandlers.SourceOwnership.Tests.cs`. Captured ssctl
+`request.command` ID assertions now flow through `AssertSsctlCommandRequest`,
+which delegates to the shared golden-table-backed `AssertAutomationCommandId`
+helper instead of duplicating numeric IDs in routing tests.
 `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` is now only the
 architecture-doc test family marker shell. AGENT_MAP reference resolution,
 test-owner code-span coverage, automation consumer checklist coverage,

@@ -15,6 +15,6 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertEqual(0, audioRampExitCode, "audio-ramp-trace exit code");
-        AssertEqual(48, audioRampRequest.GetProperty("command").GetInt32(), "audio-ramp-trace command id");
+        AssertSsctlCommandRequestHasEmptyPayload(audioRampRequest, "GetAudioRampTrace");
     }
 }
