@@ -2227,7 +2227,15 @@ Primary owners:
   lines, and `DiagnosticSessionResultFormatter.FlashbackExport.cs` owns export
   lines.
 - `tools/Common/DiagnosticSessionResultFormatter.Preview.cs` owns preview
-  scheduler, D3D performance/CPU timing, and visual cadence sections.
+  diagnostic-session text section ordering.
+  `DiagnosticSessionResultFormatter.Preview.Scheduler.cs` owns preview
+  scheduler lines,
+  `DiagnosticSessionResultFormatter.Preview.D3DPerformance.cs` owns preview
+  D3D performance/slow-frame lines,
+  `DiagnosticSessionResultFormatter.Preview.D3DCpuTiming.cs` owns preview D3D
+  CPU timing lines, and
+  `DiagnosticSessionResultFormatter.Preview.VisualCadence.cs` owns preview
+  visual-cadence lines.
 - `tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs` owns artifact,
   action, and warning sections.
 - `tools/Common/DiagnosticSessionResultFormatter.Helpers.cs` owns small text
