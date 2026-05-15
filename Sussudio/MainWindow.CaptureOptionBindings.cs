@@ -48,4 +48,7 @@ public sealed partial class MainWindow
 
     private void AttachCaptureModeSelectionBindings()
         => _captureOptionBindingController.AttachCaptureModeSelectionBindings();
+
+    private void HandleCustomBitratePropertyChanged()
+        => _captureOptionBindingController.HandleCustomBitratePropertyChanged();
 }

@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using Sussudio.ViewModels;
 
@@ -128,11 +127,7 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.CustomBitrateMbps):
-                if (double.IsNaN(CustomBitrateNumberBox.Value) ||
-                    Math.Abs(CustomBitrateNumberBox.Value - ViewModel.CustomBitrateMbps) > 0.01)
-                {
-                    CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
-                }
+                HandleCustomBitratePropertyChanged();
                 break;
 
             case nameof(MainViewModel.IsCustomAudioInputEnabled):

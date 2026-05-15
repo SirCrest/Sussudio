@@ -65,6 +65,15 @@ internal sealed partial class CaptureOptionBindingController
             _context.ViewModel.IsTrueHdrPreviewEnabled = _context.TrueHdrPreviewToggle.IsChecked == true;
     }
 
+    public void HandleCustomBitratePropertyChanged()
+    {
+        if (double.IsNaN(_context.CustomBitrateNumberBox.Value) ||
+            Math.Abs(_context.CustomBitrateNumberBox.Value - _context.ViewModel.CustomBitrateMbps) > 0.01)
+        {
+            _context.CustomBitrateNumberBox.Value = _context.ViewModel.CustomBitrateMbps;
+        }
+    }
+
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;
 

@@ -214,6 +214,7 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
         var recordingOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.RecordingOptionBindings.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var controllerRootText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
         var controllerContextText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.Context.cs").Replace("\r\n", "\n");
         var controllerInitializationText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.Initialization.cs").Replace("\r\n", "\n");
@@ -243,6 +244,8 @@ static partial class Program
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.EnsureInitialSelections();");
         AssertContains(captureOptionBindingsText, "private void AttachCaptureModeSelectionBindings()");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.AttachCaptureModeSelectionBindings();");
+        AssertContains(captureOptionBindingsText, "private void HandleCustomBitratePropertyChanged()");
+        AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.HandleCustomBitratePropertyChanged();");
         AssertContains(recordingOptionBindingsText, "private void AttachRecordingOptionBindings()");
         AssertContains(recordingOptionBindingsText, "=> _captureOptionBindingController.AttachRecordingOptionBindings();");
         AssertContains(mainWindowText, "InitializeCaptureOptionBindingController();");
@@ -299,6 +302,9 @@ static partial class Program
         AssertContains(controllerText, "if (!double.IsNaN(_context.CustomBitrateNumberBox.Value))");
         AssertContains(controllerText, "_context.HdrToggle.Click +=");
         AssertContains(controllerText, "_context.TrueHdrPreviewToggle.Click +=");
+        AssertContains(controllerText, "public void HandleCustomBitratePropertyChanged()");
+        AssertContains(controllerText, "Math.Abs(_context.CustomBitrateNumberBox.Value - _context.ViewModel.CustomBitrateMbps) > 0.01");
+        AssertContains(controllerText, "_context.CustomBitrateNumberBox.Value = _context.ViewModel.CustomBitrateMbps;");
 
         AssertContains(bindingsText, "InitializeCaptureOptionCollections();");
         AssertContains(bindingsText, "ApplyInitialCaptureOptionSelections();");
@@ -329,6 +335,9 @@ static partial class Program
         AssertDoesNotContain(recordingOptionBindingsText, "QualityComboBox.SelectionChanged +=");
         AssertDoesNotContain(recordingOptionBindingsText, "PresetComboBox.SelectionChanged +=");
         AssertDoesNotContain(recordingOptionBindingsText, "SplitEncodeComboBox.SelectionChanged +=");
+        AssertDoesNotContain(propertyChangedText, "CustomBitrateNumberBox.Value");
+        AssertDoesNotContain(propertyChangedText, "Math.Abs(CustomBitrateNumberBox.Value - ViewModel.CustomBitrateMbps) > 0.01");
+        AssertContains(propertyChangedText, "HandleCustomBitratePropertyChanged();");
         AssertDoesNotContain(bindingsText, "ResolutionComboBox.SelectionChanged +=");
         AssertDoesNotContain(bindingsText, "FrameRateComboBox.SelectionChanged +=");
         AssertDoesNotContain(bindingsText, "FormatComboBox.SelectionChanged +=");

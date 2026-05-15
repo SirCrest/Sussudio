@@ -1766,8 +1766,9 @@ context, `CaptureOptionBindingController.Initialization.cs` owns video-format
 collection setup and initial capture/recording option projection, and
 `CaptureOptionBindingController.SelectionHandlers.cs` owns resolution/frame-rate
 selection handlers, video-format/custom-bitrate event bindings, and click-based
-HDR/true-HDR toggle bindings. The controller delegates presentation affordances
-back through the capture-option presentation adapter and delegates recording
+HDR/true-HDR toggle bindings plus custom-bitrate property-change value
+projection. The controller delegates presentation affordances back through the
+capture-option presentation adapter and delegates recording
 format/quality/preset/split-encode string selection to
 `CaptureSelectionBindingController`. `MainWindow.CaptureOptionBindings.cs` and
 `MainWindow.RecordingOptionBindings.cs` keep only the old method names used by

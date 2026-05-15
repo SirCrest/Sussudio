@@ -868,8 +868,8 @@ Primary current owners:
   MainWindow responsive shell layout controller-adapter and breakpoint/placement
   policy assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs` owns
-  MainWindow capture selection, capture device action, and capture option
-  presentation ownership assertions.
+  MainWindow capture selection, capture device action, capture option
+  presentation, and capture option binding setup ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs` owns
   MainWindow output path display/actions and preview screenshot workflow
   ownership assertions.
@@ -1667,8 +1667,9 @@ Primary current owners:
   owns video-format collection binding plus initial capture/recording selection
   projection, and `CaptureOptionBindingController.SelectionHandlers.cs` owns
   resolution/frame-rate selection handlers plus video-format/custom-bitrate/HDR
-  event bindings during `SetupBindings()`. Recording format, quality, preset,
-  and split-encode string selection handlers live with
+  event bindings during `SetupBindings()` and custom-bitrate property-change
+  value projection. Recording format, quality, preset, and split-encode string
+  selection handlers live with
   `CaptureSelectionBindingController`.
   `MainWindow.CaptureOptionBindings.cs` and
   `MainWindow.RecordingOptionBindings.cs` are XAML-facing adapters.
