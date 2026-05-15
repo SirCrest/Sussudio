@@ -2,8 +2,8 @@ using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// XAML-facing responsive-layout adapter. ResponsiveShellLayoutController owns
-// control-bar label visibility and capture-settings narrow/wide placement.
+// XAML-facing responsive-layout adapter. ResponsiveShellLayoutController applies
+// ResponsiveShellLayoutPolicy decisions to the WinUI elements.
 public sealed partial class MainWindow
 {
     private ResponsiveShellLayoutController _responsiveShellLayoutController = null!;

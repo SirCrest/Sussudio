@@ -97,6 +97,9 @@ static partial class Program
             "Responsive shell layout lives in controller",
             ResponsiveShellLayout_LivesInController);
         await AddCheckAsync(results,
+            "Responsive shell layout policy preserves breakpoints and placements",
+            ResponsiveShellLayoutPolicy_PreservesBreakpointsAndPlacements);
+        await AddCheckAsync(results,
             "Capture selection binding sync lives in controller",
             CaptureSelectionBindingSync_LivesInController);
         await AddCheckAsync(results,

@@ -25,9 +25,6 @@ internal sealed class ResponsiveShellLayoutControllerContext
 
 internal sealed class ResponsiveShellLayoutController
 {
-    private const double ControlBarLabelThreshold = 900.0;
-    private const double CaptureSettingsNarrowWidth = 700.0;
-
     private readonly ResponsiveShellLayoutControllerContext _context;
     private bool _toggleLabelsVisible;
     private bool _captureSettingsNarrow;
@@ -45,7 +42,7 @@ internal sealed class ResponsiveShellLayoutController
 
     private void ApplyControlBarWidth(double controlBarWidth)
     {
-        var showLabels = controlBarWidth >= ControlBarLabelThreshold;
+        var showLabels = ResponsiveShellLayoutPolicy.ShouldShowControlBarLabels(controlBarWidth);
         if (showLabels == _toggleLabelsVisible)
         {
             return;
@@ -64,50 +61,34 @@ internal sealed class ResponsiveShellLayoutController
 
     private void ApplyCaptureSettingsWidth(double width)
     {
-        var narrow = width < CaptureSettingsNarrowWidth;
+        var layoutKind = ResponsiveShellLayoutPolicy.GetCaptureSettingsLayoutKind(width);
+        var narrow = layoutKind == ResponsiveCaptureSettingsLayoutKind.Narrow;
         if (narrow == _captureSettingsNarrow)
         {
             return;
         }
 
         _captureSettingsNarrow = narrow;
-        if (narrow)
-        {
-            ApplyNarrowCaptureSettingsLayout();
-        }
-        else
-        {
-            ApplyWideCaptureSettingsLayout();
-        }
+        ApplyCaptureSettingsLayout(ResponsiveShellLayoutPolicy.GetCaptureSettingsPlacement(layoutKind));
     }
 
-    private void ApplyNarrowCaptureSettingsLayout()
+    private void ApplyCaptureSettingsLayout(ResponsiveCaptureSettingsPlacement placement)
     {
-        _context.VideoFormatColumn.Width = new GridLength(0);
-        _context.PresetColumn.Width = new GridLength(0);
-        _context.SplitColumn.Width = new GridLength(0);
-        Grid.SetRow(_context.VideoFormatPanel, 1);
-        Grid.SetColumn(_context.VideoFormatPanel, 1);
-        Grid.SetRow(_context.PresetPanel, 1);
-        Grid.SetColumn(_context.PresetPanel, 2);
-        Grid.SetRow(_context.SplitPanel, 1);
-        Grid.SetColumn(_context.SplitPanel, 3);
-        Grid.SetRow(_context.CustomBitratePanel, 1);
-        Grid.SetColumn(_context.CustomBitratePanel, 2);
+        var responsiveColumnWidth = placement.CollapseCaptureOptionColumns
+            ? new GridLength(0)
+            : new GridLength(1, GridUnitType.Star);
+        _context.VideoFormatColumn.Width = responsiveColumnWidth;
+        _context.PresetColumn.Width = responsiveColumnWidth;
+        _context.SplitColumn.Width = responsiveColumnWidth;
+        ApplyGridSlot(_context.VideoFormatPanel, placement.VideoFormat);
+        ApplyGridSlot(_context.PresetPanel, placement.Preset);
+        ApplyGridSlot(_context.SplitPanel, placement.Split);
+        ApplyGridSlot(_context.CustomBitratePanel, placement.CustomBitrate);
     }
 
-    private void ApplyWideCaptureSettingsLayout()
+    private static void ApplyGridSlot(FrameworkElement element, ResponsiveGridSlot slot)
     {
-        _context.VideoFormatColumn.Width = new GridLength(1, GridUnitType.Star);
-        _context.PresetColumn.Width = new GridLength(1, GridUnitType.Star);
-        _context.SplitColumn.Width = new GridLength(1, GridUnitType.Star);
-        Grid.SetRow(_context.VideoFormatPanel, 0);
-        Grid.SetColumn(_context.VideoFormatPanel, 0);
-        Grid.SetRow(_context.PresetPanel, 0);
-        Grid.SetColumn(_context.PresetPanel, 5);
-        Grid.SetRow(_context.SplitPanel, 0);
-        Grid.SetColumn(_context.SplitPanel, 6);
-        Grid.SetRow(_context.CustomBitratePanel, 0);
-        Grid.SetColumn(_context.CustomBitratePanel, 5);
+        Grid.SetRow(element, slot.Row);
+        Grid.SetColumn(element, slot.Column);
     }
 }

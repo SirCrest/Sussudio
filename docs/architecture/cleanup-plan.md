@@ -1581,9 +1581,12 @@ mic-meter row animation state now live in
 `Sussudio/Controllers/MicrophoneControlsController.cs`.
 `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.
 
-Control-bar label visibility and capture-settings narrow/wide grid placement
-now live in `Sussudio/Controllers/ResponsiveShellLayoutController.cs`.
-`MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
+Responsive shell layout is split between
+`Sussudio/Controllers/ResponsiveShellLayoutPolicy.cs`, which owns the
+control-bar label breakpoint and capture-settings narrow/wide grid-slot policy,
+and `Sussudio/Controllers/ResponsiveShellLayoutController.cs`, which applies
+that policy to XAML elements. `MainWindow.ResponsiveShellLayout.cs` is the
+XAML-facing adapter.
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
 the `Sussudio/Controllers/CaptureSelectionBindingController*.cs` family. The
