@@ -402,9 +402,12 @@ reliability-gates script checks, shared/ssctl snapshot formatter contracts, and
 PresentMon parser contracts. Shared formatter tests now mirror the formatter
 partials: the root snapshot-formatter test owns accessors, invalid-response
 handling, section ordering, and the Flashback opt-in gate; Flashback output,
-Preview D3D output, MJPEG timing, response accessors, and shared-vs-ssctl field
-parity live in focused `AutomationToolContracts.SnapshotFormatter.*.Tests.cs`
-owners registered with the offline harness.
+Preview D3D output, MJPEG timing, response accessors, source ownership, and
+shared-vs-ssctl field parity live in focused
+`AutomationToolContracts.SnapshotFormatter.*.Tests.cs` owners registered with
+the offline harness. ssctl formatter output smoke checks stay in
+`Formatters.Tests.cs`, while `Formatters.SnapshotOwnership.Tests.cs` owns ssctl
+formatter source ownership assertions.
 ssctl command-handler routing coverage now mirrors command-group ownership:
 device, capture controls, recordings, Flashback, window, manifest,
 observability, automation-flow, UI visibility, and verification checks live in
@@ -2219,11 +2222,11 @@ Remaining `tools/Common` ownership:
 
 3. Continue converting MainWindow partial concerns into controllers.
 
-   `FullScreen`, automation `Screenshot`, and audio meter rendering are
-   extracted. `StatsOverlay` lifecycle, frame-time overlay presentation, and
-   hardware stats sections are extracted; next UI candidates are preview
-   startup, Flashback playback/export UI adapters, and the remaining stats
-   row/snapshot projection. Keep XAML bindings stable.
+   `FullScreen`, automation `Screenshot`, audio meter rendering, preview
+   startup, Flashback playback/export presentation, and stats overlay/row/
+   snapshot projection are extracted behind named controllers or builders.
+   Start the next UI cleanup from remaining broad adapters not already covered
+   by controller ownership tests. Keep XAML bindings stable.
 
 4. Move MainViewModel feature state behind a facade.
 

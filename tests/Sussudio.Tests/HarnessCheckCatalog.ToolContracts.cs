@@ -95,6 +95,9 @@ static partial class Program
             "ssctl Formatters snapshot fields align with MCP ResponseFormatter",
             SsctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter);
         await AddCheckAsync(results,
+            "Automation snapshot formatter source ownership is split",
+            AutomationSnapshotFormatter_SourceOwnership_IsSplit);
+        await AddCheckAsync(results,
             "AutomationClient delegates to shared protocol for command resolution",
             AutomationClient_UsesSharedProtocol_ForCommandResolution);
         await AddCheckAsync(results,
@@ -145,6 +148,9 @@ static partial class Program
         await AddCheckAsync(results,
             "ssctl Formatters emit core snapshot sections",
             SsctlFormatters_EmitCoreSnapshotSections);
+        await AddCheckAsync(results,
+            "ssctl Formatters snapshot source ownership is split",
+            SsctlFormatters_SnapshotSourceOwnership_IsSplit);
         await AddCheckAsync(results,
             "ssctl Formatters timeline output preserves table and summary",
             SsctlFormatters_TimelineOutputPreservesTableAndSummary);
