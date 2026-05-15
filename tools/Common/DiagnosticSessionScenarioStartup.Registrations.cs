@@ -1,6 +1,5 @@
 using System.Text.Json;
 using static Sussudio.Tools.DiagnosticSessionFlashbackCycleScenarios;
-using static Sussudio.Tools.DiagnosticSessionFlashbackLifecycleScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackStressScenario;
@@ -97,18 +96,13 @@ internal static partial class DiagnosticSessionScenarioStartup
             sendRawWithConnectRetryAsync,
             cancellationToken);
 
-        if (scenarioPlan.RunFlashbackLifecycle)
-        {
-            backgroundTasks.AddScenario(
-                2,
-                "flashback-lifecycle-task",
-                RunFlashbackLifecycleAsync(
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
-            actions.Add("flashback lifecycle started");
-        }
+        DiagnosticSessionFlashbackLifecycleScenarios.RegisterSelectedFlashbackLifecycleScenarioTask(
+            scenarioPlan,
+            backgroundTasks,
+            actions,
+            warnings,
+            sendAsync,
+            cancellationToken);
 
         if (scenarioPlan.RunFlashbackPreviewCycle)
         {

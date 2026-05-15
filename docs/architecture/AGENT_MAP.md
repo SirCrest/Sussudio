@@ -1750,7 +1750,8 @@ Primary owners:
   files. `DiagnosticSessionFlashbackExportScenarios.Registrations.cs` owns the
   export scenario task registration handoff from diagnostic-session startup.
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
-  Flashback playback disable/re-enable lifecycle diagnostic flow.
+  Flashback playback disable/re-enable lifecycle diagnostic task registration
+  and flow.
 - `tools/Common/DiagnosticSessionFlashbackMetrics.cs` is the Flashback metric
   projection marker shell. `DiagnosticSessionFlashbackMetrics.Models.cs` owns
   session/result DTOs; `.Recording.cs`, `.PlaybackSession.cs`,

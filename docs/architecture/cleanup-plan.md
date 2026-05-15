@@ -1688,8 +1688,8 @@ single qualified call into that owner.
 
 Diagnostic-session Flashback lifecycle checks now live in
 `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`. They own the
-pause/seek/play disable-and-re-enable flow and post-disable playback queue
-assertions while the runner only starts the lifecycle task.
+pause/seek/play disable-and-re-enable task registration, flow, and post-disable
+playback queue assertions while startup only delegates to the lifecycle owner.
 
 Diagnostic-session Flashback metric projection now lives in a focused partial
 family rooted at `tools/Common/DiagnosticSessionFlashbackMetrics.cs`. The root
