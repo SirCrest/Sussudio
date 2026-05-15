@@ -1448,8 +1448,8 @@ Primary current owners:
   mode visibility, and audio clipping visibility.
   `MainWindow.CaptureOptionPresentation.cs` is the XAML-facing adapter.
 - `Sussudio/MainWindow.CaptureOptionBindings.cs` owns video-format collection
-  binding, decoder-count seeding, initial capture/recording selection projection,
-  and resolution/frame-rate selection handlers during `SetupBindings()`.
+  binding, initial capture/recording selection projection, and resolution/frame-
+  rate selection handlers during `SetupBindings()`.
 - `Sussudio/MainWindow.RecordingOptionBindings.cs` owns recording/capture
   option event bindings: recording format, quality, preset, split encode,
   video format, custom bitrate, HDR, and true-HDR preview toggles.
