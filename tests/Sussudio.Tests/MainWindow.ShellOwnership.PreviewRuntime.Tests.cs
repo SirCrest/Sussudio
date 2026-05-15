@@ -48,6 +48,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
+        var previewRendererReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewRendererReinit.cs").Replace("\r\n", "\n");
         var previewSurfaceText = ReadRepoFile("Sussudio/MainWindow.PreviewSurface.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
@@ -67,10 +68,19 @@ static partial class Program
         AssertContains(previewRendererText, "private long _previewFramesDisplayed;");
         AssertContains(previewRendererText, "private long _previewFramesDropped;");
         AssertContains(previewRendererText, "private long _previewLastPresentedTick;");
-        AssertContains(previewRendererText, "private long _lastRendererStopTick;");
-        AssertContains(previewRendererText, "private long _rendererReinitUnsafeWindows;");
         AssertContains(previewRendererText, "private double _previewMinPresentationIntervalMs;");
-        AssertContains(previewRendererText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
+        AssertContains(previewRendererReinitText, "private long _lastRendererStopTick;");
+        AssertContains(previewRendererReinitText, "private long _rendererReinitUnsafeWindows;");
+        AssertContains(previewRendererReinitText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
+        AssertContains(previewRendererReinitText, "private void RecordPreviewRendererReinitUnsafeWindow(D3D11PreviewRenderer? previousRenderer, bool reinitAnimating)");
+        AssertContains(previewRendererReinitText, "private void MarkPreviewRendererStopped()");
+        AssertContains(previewRendererReinitText, "private void DisposeD3DPreviewRendererForReinit()");
+        AssertContains(previewRendererReinitText, "renderer.RetireSharedDeviceReferenceForReinit();");
+        AssertContains(previewRendererReinitText, "private void ReplacePreviewSwapChainPanelSurface()");
+        AssertContains(previewRendererReinitText, "D3D11_RENDERER_REINIT_UNSAFE_WINDOW");
+        AssertContains(previewRendererReinitText, "PREVIEW_REINIT_SWAPCHAIN_PANEL_REPLACED");
+        AssertContains(previewRendererText, "RecordPreviewRendererReinitUnsafeWindow(_d3dRenderer, _isPreviewReinitAnimating);");
+        AssertContains(previewRendererText, "MarkPreviewRendererStopped();");
         AssertContains(previewRendererText, "private double ResolvePreviewExpectedIntervalMs()");
         AssertContains(previewRuntimeSnapshotText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
         AssertContains(previewRuntimeSnapshotText, "return GetPreviewRuntimeSnapshot();");
@@ -116,6 +126,10 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private double _previewMinPresentationIntervalMs;");
         AssertDoesNotContain(mainWindowText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
         AssertDoesNotContain(mainWindowText, "private double ResolvePreviewExpectedIntervalMs()");
+        AssertDoesNotContain(previewRendererText, "private long _lastRendererStopTick;");
+        AssertDoesNotContain(previewRendererText, "private long _rendererReinitUnsafeWindows;");
+        AssertDoesNotContain(previewRendererText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
+        AssertDoesNotContain(previewRendererText, "private void ReplacePreviewSwapChainPanelSurface()");
         AssertDoesNotContain(mainWindowText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
         AssertDoesNotContain(previewRendererText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
         AssertDoesNotContain(previewRendererText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");

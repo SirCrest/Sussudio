@@ -696,6 +696,8 @@ Primary current owners:
   transforms. `MainWindow.WindowSizing.cs` is the `SizeChanged` adapter.
   `MainWindow.PreviewRenderer.cs` owns preview renderer instances, frame
   counters, expected-present interval, and renderer cadence state.
+  `MainWindow.PreviewRendererReinit.cs` owns preview renderer reinit safety
+  telemetry, fresh SwapChainPanel replacement, and retired-renderer handoff.
   `MainWindow.PreviewSurface.cs` owns preview surface sizing, GPU panel
   visibility, and video/control-bar composition shadows.
 - `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
