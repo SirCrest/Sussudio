@@ -77,6 +77,19 @@ internal sealed partial class CaptureSelectionBindingController
         UpdateDeviceApplyButtonState();
     }
 
+    public void HandleSelectedDevicePropertyChanged()
+    {
+        var selectedDevice = (CaptureDevice?)_context.DeviceComboBox.SelectedItem;
+        if (!string.Equals(selectedDevice?.Id, _context.ViewModel.SelectedDevice?.Id, StringComparison.Ordinal))
+        {
+            Sussudio.Logger.Log(
+                $"DEVICE_SELECTION_SYNC viewModel='{_context.ViewModel.SelectedDevice?.Name ?? "NULL"}' combo='{selectedDevice?.Name ?? "NULL"}' devices={_context.ViewModel.Devices.Count} comboItems={_context.DeviceComboBox.Items.Count}");
+        }
+
+        EnsureDeviceSelection();
+        UpdateDeviceApplyButtonState();
+    }
+
     public void EnsureAudioInputSelection()
     {
         if (_context.ViewModel.AudioInputDevices.Count == 0)

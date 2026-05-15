@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using Sussudio.Models;
 using Sussudio.ViewModels;
 
 namespace Sussudio;
@@ -62,14 +61,7 @@ public sealed partial class MainWindow
                 break;
 
             case nameof(MainViewModel.SelectedDevice):
-                var selectedDevice = (CaptureDevice?)DeviceComboBox.SelectedItem;
-                if (!string.Equals(selectedDevice?.Id, ViewModel.SelectedDevice?.Id, StringComparison.Ordinal))
-                {
-                    Logger.Log(
-                        $"DEVICE_SELECTION_SYNC viewModel='{ViewModel.SelectedDevice?.Name ?? "NULL"}' combo='{selectedDevice?.Name ?? "NULL"}' devices={ViewModel.Devices.Count} comboItems={DeviceComboBox.Items.Count}");
-                }
-                EnsureDeviceSelection();
-                UpdateDeviceApplyButtonState();
+                HandleSelectedDevicePropertyChanged();
                 break;
 
             case nameof(MainViewModel.SelectedResolution):

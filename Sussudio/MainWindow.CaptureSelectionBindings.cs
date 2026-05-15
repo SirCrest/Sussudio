@@ -42,6 +42,9 @@ public sealed partial class MainWindow
     private void EnsureDeviceSelection()
         => _captureSelectionBindingController.EnsureDeviceSelection();
 
+    private void HandleSelectedDevicePropertyChanged()
+        => _captureSelectionBindingController.HandleSelectedDevicePropertyChanged();
+
     private void EnsureAudioInputSelection()
         => _captureSelectionBindingController.EnsureAudioInputSelection();
 
