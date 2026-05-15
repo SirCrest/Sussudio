@@ -759,8 +759,10 @@ Primary current owners:
   XAML/automation adapter. `Sussudio/Controllers/StatsWindowPresentationController.cs`
   owns detached stats-window metric text and telemetry-detail row rendering.
   `Sussudio/Controllers/StatsSnapshotProvider.cs` owns shell stats snapshot
-  acquisition from renderer and capture-health state; `Sussudio/MainWindow.StatsSnapshot.cs`
-  is the XAML-facing adapter.
+  orchestration from capture-health, renderer metrics, and view state.
+  `Sussudio/Controllers/StatsSnapshotProvider.RenderMetrics.cs` owns renderer
+  cadence/recent-sample acquisition and null fallback policy.
+  `Sussudio/MainWindow.StatsSnapshot.cs` is the XAML-facing adapter.
   `MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats controllers.
 - `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
   contract checks for stats overlay lifecycle wiring, stats section chrome,

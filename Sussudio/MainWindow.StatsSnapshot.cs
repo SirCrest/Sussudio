@@ -2,7 +2,8 @@ using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// XAML-facing stats snapshot adapter. StatsSnapshotProvider owns renderer metric
+// XAML-facing stats snapshot adapter. StatsSnapshotProvider owns snapshot
+// orchestration; StatsSnapshotProvider.RenderMetrics owns renderer metric
 // acquisition and null fallback policy.
 public sealed partial class MainWindow
 {
