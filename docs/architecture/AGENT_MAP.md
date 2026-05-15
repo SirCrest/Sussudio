@@ -1763,7 +1763,23 @@ Primary owners:
   response exit-code shaping.
 - `tools/ssctl/Formatters.cs` is the console projection facade only.
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration and
-  remaining root text sections.
+  section ordering only.
+- `tools/ssctl/Formatters.Snapshot.State.cs` owns the Sussudio state and
+  capture-command summary.
+- `tools/ssctl/Formatters.Snapshot.CaptureSettings.cs` owns capture settings
+  text and friendly/exact frame-rate summary formatting.
+- `tools/ssctl/Formatters.Snapshot.Audio.cs` owns audio snapshot text.
+- `tools/ssctl/Formatters.Snapshot.VideoPipeline.cs` owns video ingest,
+  recording queue, encoder failure, GPU/CUDA queue, freshness, and video
+  diagnostic snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Recording.cs` owns recording/output,
+  backend, integrity, audio-integrity, and last-output snapshot text.
+- `tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs` owns diagnostic health,
+  summary, evidence, and frame-lane snapshot text.
+- `tools/ssctl/Formatters.Snapshot.Performance.cs` owns legacy performance
+  score, summary, and pipeline-latency snapshot text.
+- `tools/ssctl/Formatters.Snapshot.CaptureCadence.cs` owns capture cadence,
+  packet fingerprint, and visual-cadence snapshot text.
 - `tools/ssctl/Formatters.Snapshot.AvSync.cs` owns embedded snapshot AV-sync
   drift text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot text.

@@ -275,9 +275,17 @@ owns primitive/domain value parsing, and `CommandHandlers.Transport.cs` owns
 shared command sending plus response exit-code shaping.
 
 `tools/ssctl/Formatters.cs` is only the projection facade for console output.
-Keep app snapshot orchestration in `Formatters.Snapshot.cs`, Flashback snapshot
-text in `Formatters.Snapshot.Flashback.cs`, embedded snapshot AV-sync drift text
-in `Formatters.Snapshot.AvSync.cs`, embedded snapshot Memory/GC text in
+Keep app snapshot orchestration and section ordering in `Formatters.Snapshot.cs`,
+state/capture-command text in `Formatters.Snapshot.State.cs`, capture settings
+and friendly/exact frame-rate text in `Formatters.Snapshot.CaptureSettings.cs`,
+audio text in `Formatters.Snapshot.Audio.cs`, video-pipeline text in
+`Formatters.Snapshot.VideoPipeline.cs`, recording text in
+`Formatters.Snapshot.Recording.cs`, diagnostic health/frame-lane text in
+`Formatters.Snapshot.DiagnosticLanes.cs`, legacy performance text in
+`Formatters.Snapshot.Performance.cs`, capture cadence text in
+`Formatters.Snapshot.CaptureCadence.cs`, Flashback snapshot text in
+`Formatters.Snapshot.Flashback.cs`, embedded snapshot AV-sync drift text in
+`Formatters.Snapshot.AvSync.cs`, embedded snapshot Memory/GC text in
 `Formatters.Snapshot.Memory.cs`, MJPEG timing text in
 `Formatters.Snapshot.Mjpeg.cs`, preview renderer text in
 `Formatters.Snapshot.Preview.cs`, thread-health text in
