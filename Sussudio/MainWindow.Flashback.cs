@@ -203,8 +203,7 @@ public sealed partial class MainWindow
     private void UpdateFlashbackStateUI()
     {
         var state = ViewModel.FlashbackState;
-        FlashbackPlayPauseIcon.Glyph = state == FlashbackPlaybackState.Playing || state == FlashbackPlaybackState.Live ? "\uE769" : "\uE768";
-        FlashbackGoLiveButton.IsEnabled = state != FlashbackPlaybackState.Live && state != FlashbackPlaybackState.Disabled;
+        _flashbackPlaybackPresentationController.UpdateState(state);
 
         // Keep the 30Hz playback timer running during Playing \u2014 its writes to
         // FlashbackPlaybackPosition still feed the floating-label text and any
@@ -221,7 +220,7 @@ public sealed partial class MainWindow
     private void UpdateFlashbackBufferFill()
     {
         var duration = ViewModel.FlashbackBufferFilledDuration;
-        FlashbackBufferDurationText.Text = FormatFlashbackDuration(duration);
+        _flashbackPlaybackPresentationController.UpdateBufferFill(duration);
     }
     private static string FormatDiskSize(long bytes)
     {
@@ -247,18 +246,10 @@ public sealed partial class MainWindow
     {
         var state = ViewModel.FlashbackState;
         var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
-        var isLive = state == FlashbackPlaybackState.Live;
-
-        if (isLive)
-        {
-            FlashbackPlayheadTimeText.Text = "LIVE";
-        }
-        else
-        {
-            var gapFromLive = ViewModel.FlashbackGapFromLive;
-            var totalStr = FormatFlashbackDuration(bufferDuration);
-            FlashbackPlayheadTimeText.Text = $"-{FormatFlashbackDuration(gapFromLive)} / {totalStr}";
-        }
+        _flashbackPlaybackPresentationController.UpdatePosition(
+            state,
+            bufferDuration,
+            ViewModel.FlashbackGapFromLive);
 
         if (!_isFlashbackScrubbing
             && state != FlashbackPlaybackState.Playing

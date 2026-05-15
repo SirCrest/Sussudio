@@ -39,6 +39,9 @@ static partial class Program
             "Flashback marker presentation lives in controller",
             FlashbackMarkerPresentation_LivesInController);
         await AddCheckAsync(results,
+            "Flashback playback presentation lives in controller",
+            FlashbackPlaybackPresentation_LivesInController);
+        await AddCheckAsync(results,
             "Flashback export progress presentation lives in controller",
             FlashbackExportProgressPresentation_LivesInController);
     }

@@ -1,3 +1,5 @@
+using System;
+using System.Reflection;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -83,7 +85,6 @@ static partial class Program
         AssertContains(adapterText, "InPointMarker = FlashbackInPointMarker,");
         AssertContains(adapterText, "OutPointMarker = FlashbackOutPointMarker,");
         AssertContains(adapterText, "SelectionRegion = FlashbackSelectionRegion,");
-        AssertContains(adapterText, "=> FlashbackMarkerPresentationController.FormatDuration(ts);");
         AssertContains(adapterText, "=> _flashbackMarkerPresentationController.UpdateMarkers(");
         AssertContains(adapterText, "ViewModel.FlashbackBufferFilledDuration,");
         AssertContains(adapterText, "ViewModel.FlashbackInPoint,");
@@ -97,15 +98,79 @@ static partial class Program
         AssertContains(controllerText, "_context.SelectionRegion.Visibility = Visibility.Visible;");
         AssertContains(controllerText, "Canvas.SetLeft(_context.SelectionRegion, selLeft);");
         AssertContains(flashbackText, "UpdateFlashbackMarkers();");
-        AssertContains(flashbackText, "FormatFlashbackDuration(bufferDuration)");
         AssertContains(propertyChangedText, "HandleFlashbackRangeChanged();");
         AssertContains(flashbackPropertyChangedText, "Flashback-specific ViewModel property projections");
         AssertContains(flashbackPropertyChangedText, "UpdateFlashbackMarkers();");
         AssertDoesNotContain(flashbackText, "private void UpdateFlashbackMarkers()");
         AssertDoesNotContain(flashbackText, "private static string FormatFlashbackDuration(TimeSpan ts)");
+        AssertDoesNotContain(adapterText, "private static string FormatFlashbackDuration(TimeSpan ts)");
         AssertDoesNotContain(adapterText, "Canvas.SetLeft(");
         AssertDoesNotContain(adapterText, "FlashbackInPointMarker.Visibility = Visibility.Visible;");
         AssertDoesNotContain(adapterText, "FlashbackSelectionRegion.Visibility = Visibility.Visible;");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackPlaybackPresentation_LivesInController()
+    {
+        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlaybackPresentation.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/FlashbackPlaybackPresentationController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private FlashbackPlaybackPresentationController _flashbackPlaybackPresentationController = null!;");
+        AssertContains(adapterText, "private void InitializeFlashbackPlaybackPresentationController()");
+        AssertContains(adapterText, "PlayPauseIcon = FlashbackPlayPauseIcon,");
+        AssertContains(adapterText, "GoLiveButton = FlashbackGoLiveButton,");
+        AssertContains(adapterText, "BufferDurationText = FlashbackBufferDurationText,");
+        AssertContains(adapterText, "PlayheadTimeText = FlashbackPlayheadTimeText,");
+        AssertContains(mainWindowText, "InitializeFlashbackPlaybackPresentationController();");
+        AssertContains(controllerText, "internal sealed class FlashbackPlaybackPresentationController");
+        AssertContains(controllerText, "public static string GetPlayPauseGlyph(FlashbackPlaybackState state)");
+        AssertContains(controllerText, "public static bool IsGoLiveEnabled(FlashbackPlaybackState state)");
+        AssertContains(controllerText, "public static string FormatPositionLabel(");
+        AssertContains(controllerText, "\"\\uE769\"");
+        AssertContains(controllerText, "\"\\uE768\"");
+        AssertContains(controllerText, "return \"LIVE\";");
+        AssertContains(controllerText, "return $\"-{FlashbackMarkerPresentationController.FormatDuration(gapFromLive)} / {totalText}\";");
+        AssertContains(flashbackText, "_flashbackPlaybackPresentationController.UpdateState(state);");
+        AssertContains(flashbackText, "StartFlashbackPlaybackPolling();");
+        AssertContains(flashbackText, "StopFlashbackPlaybackPolling();");
+        AssertContains(flashbackText, "RefreshFlashbackCtiMotion(\"state_change\");");
+        AssertContains(flashbackText, "_flashbackPlaybackPresentationController.UpdateBufferFill(duration);");
+        AssertContains(flashbackText, "_flashbackPlaybackPresentationController.UpdatePosition(");
+        AssertContains(flashbackText, "RefreshFlashbackCtiMotion(\"position_change\");");
+        AssertDoesNotContain(flashbackText, "FlashbackPlayPauseIcon.Glyph =");
+        AssertDoesNotContain(flashbackText, "FlashbackGoLiveButton.IsEnabled =");
+        AssertDoesNotContain(flashbackText, "FlashbackBufferDurationText.Text =");
+        AssertDoesNotContain(flashbackText, "FlashbackPlayheadTimeText.Text =");
+
+        var controllerType = RequireType("Sussudio.Controllers.FlashbackPlaybackPresentationController");
+        var stateType = RequireType("Sussudio.Models.FlashbackPlaybackState");
+        var getPlayPauseGlyph = controllerType.GetMethod("GetPlayPauseGlyph", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("FlashbackPlaybackPresentationController.GetPlayPauseGlyph was not found.");
+        var isGoLiveEnabled = controllerType.GetMethod("IsGoLiveEnabled", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("FlashbackPlaybackPresentationController.IsGoLiveEnabled was not found.");
+        var formatPositionLabel = controllerType.GetMethod("FormatPositionLabel", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("FlashbackPlaybackPresentationController.FormatPositionLabel was not found.");
+
+        object State(string name) => Enum.Parse(stateType, name);
+
+        AssertEqual("\uE769", getPlayPauseGlyph.Invoke(null, new[] { State("Playing") })?.ToString(), "playing glyph");
+        AssertEqual("\uE769", getPlayPauseGlyph.Invoke(null, new[] { State("Live") })?.ToString(), "live glyph");
+        AssertEqual("\uE768", getPlayPauseGlyph.Invoke(null, new[] { State("Paused") })?.ToString(), "paused glyph");
+        AssertEqual("\uE768", getPlayPauseGlyph.Invoke(null, new[] { State("Scrubbing") })?.ToString(), "scrubbing glyph");
+        AssertEqual(false, (bool)isGoLiveEnabled.Invoke(null, new[] { State("Live") })!, "live disables go-live button");
+        AssertEqual(false, (bool)isGoLiveEnabled.Invoke(null, new[] { State("Disabled") })!, "disabled disables go-live button");
+        AssertEqual(true, (bool)isGoLiveEnabled.Invoke(null, new[] { State("Paused") })!, "paused enables go-live button");
+        AssertEqual(
+            "LIVE",
+            formatPositionLabel.Invoke(null, new object[] { State("Live"), TimeSpan.FromSeconds(125), TimeSpan.FromSeconds(5) })?.ToString(),
+            "live position label");
+        AssertEqual(
+            "-0:05 / 2:05",
+            formatPositionLabel.Invoke(null, new object[] { State("Paused"), TimeSpan.FromSeconds(125), TimeSpan.FromSeconds(5) })?.ToString(),
+            "buffered position label");
 
         return Task.CompletedTask;
     }

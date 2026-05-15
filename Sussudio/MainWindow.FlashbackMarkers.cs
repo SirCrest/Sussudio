@@ -1,4 +1,3 @@
-using System;
 using Sussudio.Controllers;
 
 namespace Sussudio;
@@ -18,9 +17,6 @@ public sealed partial class MainWindow
             SelectionRegion = FlashbackSelectionRegion,
         });
     }
-
-    private static string FormatFlashbackDuration(TimeSpan ts)
-        => FlashbackMarkerPresentationController.FormatDuration(ts);
 
     private void UpdateFlashbackMarkers()
         => _flashbackMarkerPresentationController.UpdateMarkers(
