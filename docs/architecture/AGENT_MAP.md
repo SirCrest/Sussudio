@@ -1115,10 +1115,15 @@ Primary current owners:
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.SourceReaders.cs`
   owns source-loading setup for the preview-renderer diagnostics contract
   assertion.
-- `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.Tests.cs` owns
-  renderer partial ownership assertions for frame types, submission, ownership,
-  DXGI stats, panel binding, upload, shader source/compile boundaries, frame
-  latency, and viewport helpers.
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.Tests.cs` is the
+  renderer source-ownership marker shell. `D3D11PreviewRenderer.SourceOwnership.FrameFlow.Tests.cs`
+  owns frame type, submission, frame ownership, and DXGI frame-stat assertions.
+  `D3D11PreviewRenderer.SourceOwnership.Rendering.Tests.cs` owns upload,
+  shader-rendering/source, and viewport assertions.
+  `D3D11PreviewRenderer.SourceOwnership.Diagnostics.Tests.cs` owns slow-frame,
+  metric-tracking, and frame-latency assertions.
+  `D3D11PreviewRenderer.SourceOwnership.Resources.Tests.cs` owns panel binding,
+  input-resource, lifecycle, device-initialization, and screenshot assertions.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DeviceLost.Tests.cs` owns device
   lost classification and recovery ownership assertions.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.FrameFlow.Tests.cs` owns pending

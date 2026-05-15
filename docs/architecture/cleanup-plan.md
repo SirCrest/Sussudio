@@ -392,8 +392,9 @@ owner files.
 `tests/Sussudio.Tests/D3D11PreviewRenderer.Tests.cs` is now only the
 preview-renderer test family marker shell. D3D preview renderer coverage is
 split into geometry/screenshot helper contracts, cadence contracts, the large
-diagnostics contract, source ownership assertions, device-lost behavior, and
-frame-flow/shared-device assertions.
+diagnostics contract, device-lost behavior, and frame-flow/shared-device
+assertions. Source ownership coverage has its own marker shell plus focused
+FrameFlow, Rendering, Diagnostics, and Resources owner files.
 
 `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` now keeps only shared
 reflection helpers. Automation tool contract coverage is split into protocol
@@ -2208,8 +2209,9 @@ Remaining `tools/Common` ownership:
    CaptureDiagnostics, CaptureHealth, and source-signal telemetry model owner.
    Recording queue tests are split into overload policy, LibAv sink, WASAPI,
    and capture fan-out/backend owners. D3D preview renderer tests are split
-   into geometry, cadence, diagnostics-contract, source-ownership, device-lost,
-   and frame-flow owners. Automation tool contract tests are split into
+   into geometry, cadence, diagnostics-contract, source-ownership marker plus
+   FrameFlow/Rendering/Diagnostics/Resources owners, device-lost, and
+   frame-flow owners. Automation tool contract tests are split into
    protocol, catalog/manifest, reliability-gates, and snapshot formatter
    owners. Capture configuration model tests are split into option, settings,
    encoder support, Flashback DTO, and recording pipeline owners. Pooled-frame
