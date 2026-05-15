@@ -1669,10 +1669,20 @@ Recording output-path browse/open-recordings button workflows now live in
 
 Diagnostic session DTOs now live in focused model files:
 `tools/Common/DiagnosticSessionOptions.cs`,
-`tools/Common/DiagnosticSessionResult.cs`, and
+`tools/Common/DiagnosticSessionResult.cs`,
+`tools/Common/DiagnosticSessionResult.Capture.cs`,
+`tools/Common/DiagnosticSessionResult.FlashbackPlayback.cs`,
+`tools/Common/DiagnosticSessionResult.FlashbackRecording.cs`,
+`tools/Common/DiagnosticSessionResult.FlashbackExport.cs`,
+`tools/Common/DiagnosticSessionResult.Preview.cs`,
+`tools/Common/DiagnosticSessionResult.Overview.cs`, and
 `tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionRunner.cs` still
 owns orchestration and scenario execution, but the public
-options/result/sample contracts are separated from runner behavior.
+options/result/sample contracts are separated from runner behavior. The result
+DTO root owns core session metadata, terminal state, artifacts, actions, and
+warnings; the result partials own capture/source, Flashback playback,
+Flashback recording, Flashback export, preview, process, recording
+verification, and PresentMon fields.
 
 Diagnostic-session result text now lives in a focused partial family rooted at
 `tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
@@ -2024,6 +2034,12 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionMetrics.Counters.cs`
 - `DiagnosticSessionOptions.cs`
 - `DiagnosticSessionResult.cs`
+- `DiagnosticSessionResult.Capture.cs`
+- `DiagnosticSessionResult.FlashbackPlayback.cs`
+- `DiagnosticSessionResult.FlashbackRecording.cs`
+- `DiagnosticSessionResult.FlashbackExport.cs`
+- `DiagnosticSessionResult.Preview.cs`
+- `DiagnosticSessionResult.Overview.cs`
 - `DiagnosticSessionSample.cs`
 - `DiagnosticSessionPipeRetryPolicy.cs`
 - `DiagnosticSessionCommandChannel.cs`

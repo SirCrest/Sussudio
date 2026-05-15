@@ -1887,8 +1887,17 @@ Primary owners:
   snapshot/pipe-failure fallback behavior.
 - `tools/Common/DiagnosticSessionOptions.cs` owns diagnostic session run
   options.
-- `tools/Common/DiagnosticSessionResult.cs` owns diagnostic session summary and
-  live JSON result shape.
+- `tools/Common/DiagnosticSessionResult.cs` owns diagnostic-session core
+  summary metadata, artifact paths, terminal state, actions, and warnings.
+  `DiagnosticSessionResult.Capture.cs` owns capture/source summary fields.
+  `DiagnosticSessionResult.FlashbackPlayback.cs` owns Flashback playback
+  command, cadence, decode, audio-master, and stage fields.
+  `DiagnosticSessionResult.FlashbackRecording.cs` owns Flashback recording
+  backend/growth/integrity fields. `DiagnosticSessionResult.FlashbackExport.cs`
+  owns Flashback export status/progress fields.
+  `DiagnosticSessionResult.Preview.cs` owns preview cadence, scheduler, D3D,
+  and visual-cadence fields. `DiagnosticSessionResult.Overview.cs` owns
+  process CPU, recording verification, and PresentMon fields.
 - `tools/Common/DiagnosticSessionSample.cs` owns sampled snapshot DTOs.
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,

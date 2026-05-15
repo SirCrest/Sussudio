@@ -46,7 +46,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "catch (AutomationPipeException ex) when (ex is not AutomationPipeConnectException)");
         AssertContains(diagnosticSessionText, "return BuildLocalFailureResponse(command, ex.Message);");
         AssertContains(diagnosticSessionText, "catch (JsonException ex)");
-        AssertContains(diagnosticSessionModelsText, "public sealed class DiagnosticSessionResult");
+        AssertContains(diagnosticSessionModelsText, "public sealed partial class DiagnosticSessionResult");
         AssertContains(diagnosticSessionModelsText, "public string TerminalState { get; set; }");
         AssertContains(diagnosticSessionText, "var livePath = runState.LivePath;");
         AssertContains(diagnosticSessionText, "DiagnosticSessionInitialSnapshot.CreateUnknown()");
