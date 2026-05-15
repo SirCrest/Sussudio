@@ -169,6 +169,7 @@ static partial class Program
         var recordingPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.RecordButtonAnimations.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/RecordButtonAnimationController.cs").Replace("\r\n", "\n");
+        var recordingPresentationText = ReadRepoFile("Sussudio/Controllers/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private RecordButtonAnimationController _recordButtonAnimationController = null!;");
         AssertContains(adapterText, "private void InitializeRecordButtonAnimationController()");
@@ -176,14 +177,58 @@ static partial class Program
         AssertContains(adapterText, "=> _recordButtonAnimationController.AnimateWidth(from, to, onCompleted);");
         AssertContains(mainWindowText, "InitializeRecordButtonAnimationController();");
         AssertContains(propertyChangedText, "HandleRecordingChanged();");
-        AssertContains(recordingPropertyChangedText, "Recording-specific ViewModel property projections");
-        AssertContains(recordingPropertyChangedText, "AnimateRecordButtonWidth(36, targetWidth);");
-        AssertContains(recordingPropertyChangedText, "AnimateRecordButtonWidth(currentWidth, 36, () =>");
+        AssertContains(recordingPropertyChangedText, "_recordingStatePresentationController.HandleRecordingChanged();");
+        AssertContains(recordingPresentationText, "public required Action<double, double, Action?> AnimateRecordButtonWidth { get; init; }");
+        AssertContains(recordingPresentationText, "_context.AnimateRecordButtonWidth(36, targetWidth, null);");
+        AssertContains(recordingPresentationText, "_context.AnimateRecordButtonWidth(currentWidth, 36, () =>");
         AssertContains(controllerText, "internal sealed class RecordButtonAnimationController");
         AssertContains(controllerText, "public void AnimateWidth(double from, double to, Action? onCompleted = null)");
         AssertContains(controllerText, "Storyboard.SetTarget(anim, _context.RecordButton);");
         AssertContains(controllerText, "_context.RecordButton.Width = to == 36 ? 36 : double.NaN;");
         AssertDoesNotContain(adapterText, "Storyboard.SetTarget(anim, RecordButton);");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task RecordingStatePresentation_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private RecordingStatePresentationController _recordingStatePresentationController = null!;");
+        AssertContains(adapterText, "private void InitializeRecordingStatePresentationController()");
+        AssertContains(adapterText, "RecordingGlowBorder = RecordingGlowBorder,");
+        AssertContains(adapterText, "RecordButtonStartingContent = RecordButtonStartingContent,");
+        AssertContains(adapterText, "AudioRecordToggle = AudioRecordToggle,");
+        AssertContains(adapterText, "AnalogAudioGainSlider = AnalogAudioGainSlider,");
+        AssertContains(adapterText, "AnimateRecordButtonWidth = AnimateRecordButtonWidth,");
+        AssertContains(adapterText, "ApplyWindowTitle = ApplyWindowTitle,");
+        AssertContains(adapterText, "=> _recordingStatePresentationController.HandleRecordingChanged();");
+        AssertContains(adapterText, "=> _recordingStatePresentationController.HandleRecordingTransitioningChanged();");
+        AssertContains(adapterText, "=> _recordingStatePresentationController.HandleFfmpegMissingChanged();");
+        AssertContains(mainWindowText, "InitializeRecordingStatePresentationController();");
+        AssertContains(controllerText, "internal sealed class RecordingStatePresentationController");
+        AssertContains(controllerText, "public void HandleRecordingChanged()");
+        AssertContains(controllerText, "_context.RecordingGlowBorder.Opacity = 1.0;");
+        AssertContains(controllerText, "_context.RecordingGlowPulseStoryboard.Begin();");
+        AssertContains(controllerText, "_context.ResetAudioMeterVisuals();");
+        AssertContains(controllerText, "_context.RecordButtonStartingContent.IsActive = false;");
+        AssertContains(controllerText, "_context.RecordButton.Padding = new Thickness(12, 0, 12, 0);");
+        AssertContains(controllerText, "_context.RecordButton.Width = 36;");
+        AssertContains(controllerText, "_context.AudioInputComboBox.IsEnabled = viewModel.IsCustomAudioInputEnabled && !isRecording;");
+        AssertContains(controllerText, "string.Equals(viewModel.SelectedDeviceAudioMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase)");
+        AssertContains(controllerText, "_context.RecPulseStoryboard.Begin();");
+        AssertContains(controllerText, "_context.ApplyWindowTitle();");
+        AssertContains(controllerText, "public void HandleRecordingTransitioningChanged()");
+        AssertContains(controllerText, "_context.RecordButton.IsEnabled = !viewModel.IsRecordingTransitioning;");
+        AssertContains(controllerText, "_context.RecordButtonRecordingContent.Visibility = Visibility.Collapsed;");
+        AssertContains(controllerText, "public void HandleFfmpegMissingChanged()");
+        AssertContains(controllerText, "!_context.ViewModel.IsFfmpegMissing &&");
+        AssertDoesNotContain(adapterText, "RecordingGlowPulseStoryboard.Begin();");
+        AssertDoesNotContain(adapterText, "RecordButtonStartingContent.IsActive = false;");
+        AssertDoesNotContain(adapterText, "AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled");
+        AssertDoesNotContain(adapterText, "RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing");
 
         return Task.CompletedTask;
     }

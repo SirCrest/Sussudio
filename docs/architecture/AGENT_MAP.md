@@ -1421,6 +1421,11 @@ Primary current owners:
 - `Sussudio/Controllers/RecordButtonAnimationController.cs` owns the recording
   button circle/pill width morph used by recording state changes.
   `MainWindow.RecordButtonAnimations.cs` is the XAML-facing adapter.
+- `Sussudio/Controllers/RecordingStatePresentationController.cs` owns
+  recording-state UI projection: record-button content, recording glow,
+  recording pulse, FFmpeg/transition button enablement, and recording-time
+  control lockouts. `MainWindow.PropertyChangedRecording.cs` is the
+  XAML-facing adapter.
 - `Sussudio/Controllers/RecordingButtonActionController.cs` owns the recording
   button command workflow and preview-state logging after a start.
   `MainWindow.RecordingActions.cs` is the XAML-facing adapter.
@@ -1449,9 +1454,10 @@ Primary current owners:
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
   reinit-collapse opacity reset. `MainWindow.PreviewStartupOverlay.cs` is the
   XAML-facing adapter.
-- `Sussudio/MainWindow.PropertyChangedRecording.cs` owns recording-specific
-  property-change projections for the record button, recording glow, and
-  recording-time control lockouts.
+- `Sussudio/MainWindow.PropertyChangedRecording.cs` owns only the
+  recording-specific property-change adapter surface and delegates record-button,
+  glow, pulse, and recording-time lockout projection to
+  `RecordingStatePresentationController`.
 - `Sussudio/MainWindow.PropertyChangedFlashback.cs` owns Flashback-specific
   property-change projections for timeline lockout, markers, playhead updates,
   export progress, and settings-control synchronization.

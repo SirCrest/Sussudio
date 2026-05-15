@@ -70,6 +70,9 @@ static partial class Program
             "Record button width animation lives in controller",
             RecordButtonWidthAnimation_LivesInController);
         await AddCheckAsync(results,
+            "Recording state presentation lives in controller",
+            RecordingStatePresentation_LivesInController);
+        await AddCheckAsync(results,
             "Recording button action lives in controller",
             RecordingButtonAction_LivesInController);
         await AddCheckAsync(results,

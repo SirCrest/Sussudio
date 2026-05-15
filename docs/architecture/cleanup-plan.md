@@ -1495,9 +1495,13 @@ Preview-specific ViewModel events and property-change projections now live in
 `MainWindow.PropertyChanged.cs` dispatcher still routes `PropertyChanged`
 notifications, but preview start/stop/reinit choreography has a named owner.
 
-Recording-specific ViewModel property projections now live in
-`Sussudio/MainWindow.PropertyChangedRecording.cs`: record-button morphing,
-recording glow, and the recording-time lockout state for capture/audio controls.
+Recording-state UI projection now lives in
+`Sussudio/Controllers/RecordingStatePresentationController.cs`: record-button
+content, recording glow, recording pulse, FFmpeg/transition button enablement,
+and the recording-time lockout state for capture/audio controls.
+`MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter, while
+`Sussudio/Controllers/RecordButtonAnimationController.cs` still owns only the
+circle/pill width morph.
 
 Flashback-specific ViewModel property projections now live in
 `Sussudio/MainWindow.PropertyChangedFlashback.cs`: timeline lockout, marker and
