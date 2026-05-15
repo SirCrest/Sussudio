@@ -71,13 +71,13 @@ internal static partial class AutomationSnapshotFormatter
     internal static string FormatFrameBudgetMs(JsonElement element, string fpsPropertyName, string fallback = "N/A")
     {
         var fps = GetDouble(element, fpsPropertyName);
-        return fps > 0 ? $"{1000.0 / fps:0.00}ms" : fallback;
+        return fps > 0 ? $"{FormatNumber(1000.0 / fps, "0.00")}ms" : fallback;
     }
 
     internal static string FormatIntervalMs(JsonElement element, string propertyName, string fallback = "N/A")
     {
         var intervalMs = GetDouble(element, propertyName);
-        return intervalMs > 0 ? $"{intervalMs:0.##}ms" : fallback;
+        return intervalMs > 0 ? $"{FormatNumber(intervalMs, "0.##")}ms" : fallback;
     }
 
     internal static string FormatBytes(long bytes)
@@ -89,30 +89,43 @@ internal static partial class AutomationSnapshotFormatter
 
         if (bytes >= 1024L * 1024L * 1024L)
         {
-            return $"{bytes / (1024.0 * 1024.0 * 1024.0):0.##} GB";
+            return $"{FormatNumber(bytes / (1024.0 * 1024.0 * 1024.0), "0.##")} GB";
         }
 
         if (bytes >= 1024L * 1024L)
         {
-            return $"{bytes / (1024.0 * 1024.0):0.##} MB";
+            return $"{FormatNumber(bytes / (1024.0 * 1024.0), "0.##")} MB";
         }
 
         if (bytes >= 1024L)
         {
-            return $"{bytes / 1024.0:0.##} KB";
+            return $"{FormatNumber(bytes / 1024.0, "0.##")} KB";
         }
 
         return $"{bytes} B";
     }
 
+    internal static string FormatNumber(double value, string format)
+        => value.ToString(format, CultureInfo.InvariantCulture);
+
     internal static long GetLong(JsonElement element, string propertyName, long fallback = 0)
     {
-        return element.ValueKind == JsonValueKind.Object &&
-               element.TryGetProperty(propertyName, out var value) &&
-               value.ValueKind == JsonValueKind.Number &&
-               value.TryGetInt64(out var result)
-            ? result
-            : fallback;
+        if (element.ValueKind == JsonValueKind.Object &&
+            element.TryGetProperty(propertyName, out var value))
+        {
+            if (value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var numeric))
+            {
+                return numeric;
+            }
+
+            if (value.ValueKind == JsonValueKind.String &&
+                long.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+            {
+                return parsed;
+            }
+        }
+
+        return fallback;
     }
 
     internal static long? GetNullableLong(JsonElement element, string propertyName)

@@ -3,14 +3,35 @@ static partial class Program
     private static HashSet<string> ExtractSnapshotFields(string sourceText)
     {
         var fields = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var callPrefix in new[]
+        {
+            "Get(snapshot,",
+            "GetInt(snapshot,",
+            "GetDouble(snapshot,",
+            "GetLong(snapshot,",
+            "GetNullableLong(snapshot,",
+            "GetBool(snapshot,",
+            "GetString(snapshot,",
+            "FormatFrameBudgetMs(snapshot,",
+            "FormatIntervalMs(snapshot,"
+        })
+        {
+            ExtractSnapshotFieldsFromCalls(sourceText, callPrefix, fields);
+        }
+
+        return fields;
+    }
+
+    private static void ExtractSnapshotFieldsFromCalls(string sourceText, string callPrefix, HashSet<string> fields)
+    {
         var index = 0;
         while (index < sourceText.Length)
         {
-            var getIdx = sourceText.IndexOf("Get(snapshot,", index, StringComparison.Ordinal);
-            if (getIdx < 0)
+            var callIdx = sourceText.IndexOf(callPrefix, index, StringComparison.Ordinal);
+            if (callIdx < 0)
                 break;
 
-            var afterComma = getIdx + "Get(snapshot,".Length;
+            var afterComma = callIdx + callPrefix.Length;
             var quoteIdx = sourceText.IndexOf('"', afterComma);
             if (quoteIdx < 0 || quoteIdx - afterComma > 10)
             {
@@ -31,8 +52,6 @@ static partial class Program
 
             index = endQuoteIdx + 1;
         }
-
-        return fields;
     }
 
     private static string GetRepoRoot()

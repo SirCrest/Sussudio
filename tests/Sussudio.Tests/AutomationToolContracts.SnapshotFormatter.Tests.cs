@@ -1,4 +1,5 @@
 using System.IO;
+using System.Globalization;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -64,6 +65,7 @@ static partial class Program
                 "EncoderFrameRate": 120,
                 "EncoderFrameRateNumerator": 120,
                 "EncoderFrameRateDenominator": 1,
+                "EncoderTargetBitRate": 12345678,
                 "FlashbackBufferedDurationMs": 120000,
                 "FlashbackDiskBytes": 1048576,
                 "FlashbackTotalBytesWritten": 2097152,
@@ -214,13 +216,26 @@ static partial class Program
               }
             }
             """);
-        var formatted = (string)formatSnapshot.Invoke(null, new object[] { snapshotDoc.RootElement, true })!;
+        var previousCulture = CultureInfo.CurrentCulture;
+        var previousUiCulture = CultureInfo.CurrentUICulture;
+        string formatted;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
+            formatted = (string)formatSnapshot.Invoke(null, new object[] { snapshotDoc.RootElement, true })!;
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+            CultureInfo.CurrentUICulture = previousUiCulture;
+        }
         AssertContains(formatted, "== Sussudio State ==");
         AssertContains(formatted, "Device: Synthetic (dev-1)");
         AssertContains(formatted, "Frame Rate: 59.94 fps (59.940 fps, 60000/1001)");
         AssertContains(formatted, "== Flashback ==");
-        AssertContains(formatted, "Encoder: hevc_nvenc 0x0 @ 120 fps (120/1)");
-        AssertContains(formatted, "Written: 2 MB");
+        AssertContains(formatted, "Encoder: hevc_nvenc 0x0 @ 120 fps (120/1) | Target: 12.3 Mbps");
+        AssertContains(formatted, "Buffer: 120.0s | Disk: 1.0 MB | Written: 2 MB");
         AssertContains(formatted, "Temp Cache: cache=50 MB budget=100 MB free=2 GB sessions=2 deleted=1 freed=25 MB overBudget=false");
         AssertContains(formatted, "backendStale=true staleReason=preset:P1->P5 active=HevcMp4/P1 requested=HevcMp4/P5");
         AssertContains(formatted, "submitFailures=3");

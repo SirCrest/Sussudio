@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Globalization;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -91,8 +92,21 @@ static partial class Program
                             """;
 
         using var document = JsonDocument.Parse(json);
-        var output = formatTimeline.Invoke(null, new object[] { document.RootElement })?.ToString()
-            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters.FormatTimeline returned null.");
+        var previousCulture = CultureInfo.CurrentCulture;
+        var previousUiCulture = CultureInfo.CurrentUICulture;
+        string output;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("de-DE");
+            output = formatTimeline.Invoke(null, new object[] { document.RootElement })?.ToString()
+                ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters.FormatTimeline returned null.");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+            CultureInfo.CurrentUICulture = previousUiCulture;
+        }
 
         AssertContains(output, "Performance Timeline (2 samples)");
         AssertContains(output, "Timestamp                | CapAvg | CapP95");

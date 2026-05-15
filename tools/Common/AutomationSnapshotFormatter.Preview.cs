@@ -87,6 +87,6 @@ internal static partial class AutomationSnapshotFormatter
     private static string FormatDiagnosticMs(JsonElement element, string propertyName)
     {
         var value = GetDouble(element, propertyName, double.NaN);
-        return double.IsFinite(value) ? $"{value:0.00}ms" : "N/A";
+        return double.IsFinite(value) ? $"{FormatNumber(value, "0.00")}ms" : "N/A";
     }
 }
