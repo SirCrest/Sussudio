@@ -28,6 +28,9 @@ static partial class Program
             "Stats presentation logic lives in focused builder",
             StatsPresentationLogic_LivesInFocusedBuilder);
         await AddCheckAsync(results,
+            "Stats dock encoder presentation formats codec and bitrate",
+            StatsDockEncoderPresentation_FormatsCodecAndBitrate);
+        await AddCheckAsync(results,
             "Stats snapshot construction lives in focused builder",
             StatsSnapshotConstruction_LivesInFocusedBuilder);
         await AddCheckAsync(results,

@@ -63,27 +63,9 @@ internal static partial class StatsPresentationBuilder
                     adcGain = detail.DisplayValue;
                 }
             }
-}
-        var encoderVisible = snapshot.Recording && snapshot.AvSyncEncoderDriftMs.HasValue;
-        var encoderActive = !string.IsNullOrEmpty(snapshot.EncoderCodecName);
-        var encoderCodec = string.Empty;
-        var encoderResolution = string.Empty;
-        var encoderFrameRate = string.Empty;
-        var encoderBitrate = string.Empty;
-        if (encoderActive)
-        {
-            encoderCodec = snapshot.EncoderCodecName switch
-            {
-                "hevc_nvenc" => "HEVC (NVENC)",
-                "h264_nvenc" => "H.264 (NVENC)",
-                "av1_nvenc" => "AV1 (NVENC)",
-                _ => snapshot.EncoderCodecName!
-            };
-            var mbps = snapshot.EncoderTargetBitRate / 1_000_000.0;
-            encoderResolution = $"{snapshot.EncoderWidth} x {snapshot.EncoderHeight}";
-            encoderFrameRate = $"{snapshot.EncoderFrameRate:0.##} fps";
-            encoderBitrate = $"{mbps:0.#} Mbps";
         }
+
+        var encoder = BuildEncoderPresentation(snapshot);
 
         return new StatsDockPresentation(
             SessionState: snapshot.Recording ? "Recording" : snapshot.Previewing ? "Previewing" : "Idle",
@@ -125,15 +107,13 @@ internal static partial class StatsPresentationBuilder
             PerformanceScore: perfScore,
             AvSyncDrift: FormatSignedMs(snapshot.AvSyncCaptureDriftMs),
             AvSyncDriftRate: FormatSignedMsPerSec(snapshot.AvSyncCaptureDriftRateMsPerSec),
-            EncoderDriftVisible: encoderVisible,
-            EncoderDrift: encoderVisible
-                ? $"{FormatSignedMs(snapshot.AvSyncEncoderDriftMs)} ({snapshot.AvSyncEncoderCorrectionSamples ?? 0} corr)"
-                : string.Empty,
-            EncoderActive: encoderActive,
-            EncoderCodec: encoderCodec,
-            EncoderResolution: encoderResolution,
-            EncoderFrameRate: encoderFrameRate,
-            EncoderBitrate: encoderBitrate);
+            EncoderDriftVisible: encoder.DriftVisible,
+            EncoderDrift: encoder.Drift,
+            EncoderActive: encoder.Active,
+            EncoderCodec: encoder.Codec,
+            EncoderResolution: encoder.Resolution,
+            EncoderFrameRate: encoder.FrameRate,
+            EncoderBitrate: encoder.Bitrate);
     }
 
     public static string FormatMs(double value)

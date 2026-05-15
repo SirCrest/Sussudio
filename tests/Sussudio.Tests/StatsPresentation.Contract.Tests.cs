@@ -9,6 +9,7 @@ static partial class Program
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationFrameTimeText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs").Replace("\r\n", "\n");
         var statsPresentationVisualText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs").Replace("\r\n", "\n");
+        var statsPresentationEncoderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs").Replace("\r\n", "\n");
         var statsPresentationDiagnosticsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs").Replace("\r\n", "\n");
         var statsPresentationStatusText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Status.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
@@ -22,6 +23,11 @@ static partial class Program
         AssertContains(statsPresentationVisualText, "private static string FormatVisualCadenceSummary(StatsSnapshot snapshot)");
         AssertContains(statsPresentationVisualText, "private static string FormatVisualMotionSummary(StatsSnapshot snapshot)");
         AssertContains(statsPresentationVisualText, "private static string FormatHz(double value)");
+        AssertContains(statsPresentationEncoderText, "internal static partial class StatsPresentationBuilder");
+        AssertContains(statsPresentationEncoderText, "private static StatsEncoderPresentation BuildEncoderPresentation(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationEncoderText, "private static string FormatEncoderCodecName(string codecName)");
+        AssertContains(statsPresentationEncoderText, "private static string FormatEncoderBitrate(uint targetBitRate)");
+        AssertContains(statsPresentationEncoderText, "private static string FormatEncoderDrift(StatsSnapshot snapshot)");
         AssertContains(statsPresentationDiagnosticsText, "internal static partial class StatsPresentationBuilder");
         AssertContains(statsPresentationDiagnosticsText, "public static StatsDiagnosticRowsPresentation BuildDiagnosticRows(");
         AssertContains(statsPresentationDiagnosticsText, "public static StatsDiagnosticSummary BuildStatsDiagnosticSummary(");
@@ -34,6 +40,8 @@ static partial class Program
         AssertDoesNotContain(statsPresentationText, "private static string FormatVisualRepeatSummary(");
         AssertDoesNotContain(statsPresentationText, "private static string FormatVisualCadenceSummary(");
         AssertDoesNotContain(statsPresentationText, "private static string FormatVisualMotionSummary(");
+        AssertDoesNotContain(statsPresentationText, "snapshot.EncoderCodecName switch");
+        AssertDoesNotContain(statsPresentationText, "snapshot.EncoderTargetBitRate / 1_000_000.0");
         AssertDoesNotContain(statsPresentationText, "public static StatsDiagnosticRowsPresentation BuildDiagnosticRows(");
         AssertDoesNotContain(statsPresentationText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
         AssertDoesNotContain(statsPresentationText, "private static StatsMetricStatus ResolveFrameLaneStatus(");
@@ -50,6 +58,56 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "private enum MetricStatus");
         AssertDoesNotContain(statsOverlayText, "private static string ResolveCaptureSummaryText");
         AssertDoesNotContain(statsOverlayText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task StatsDockEncoderPresentation_FormatsCodecAndBitrate()
+    {
+        var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
+        var snapshotType = RequireType("Sussudio.StatsSnapshot");
+        var buildDockPresentation = builderType.GetMethod("BuildDockPresentation", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("BuildDockPresentation was not found.");
+
+        object Build(string? codecName, bool recording = true)
+        {
+            var snapshot = CreateUninitializedObject(snapshotType);
+            SetPropertyBackingField(snapshot, "Recording", recording);
+            SetPropertyBackingField(snapshot, "EncoderCodecName", codecName);
+            SetPropertyBackingField(snapshot, "EncoderWidth", 3840);
+            SetPropertyBackingField(snapshot, "EncoderHeight", 2160);
+            SetPropertyBackingField(snapshot, "EncoderFrameRate", 59.94);
+            SetPropertyBackingField(snapshot, "EncoderTargetBitRate", 50_000_000u);
+            SetPropertyBackingField(snapshot, "AvSyncEncoderDriftMs", (double?)2.25d);
+            SetPropertyBackingField(snapshot, "AvSyncEncoderCorrectionSamples", (long?)7L);
+            SetPropertyBackingField(snapshot, "VisualCadenceMotionConfidence", string.Empty);
+
+            return buildDockPresentation.Invoke(null, new[] { snapshot })
+                ?? throw new InvalidOperationException("BuildDockPresentation returned null.");
+        }
+
+        var hevc = Build("hevc_nvenc");
+        AssertEqual(true, GetBoolProperty(hevc, "EncoderActive"), "HEVC encoder active");
+        AssertEqual("HEVC (NVENC)", GetStringProperty(hevc, "EncoderCodec"), "HEVC encoder label");
+        AssertEqual("3840 x 2160", GetStringProperty(hevc, "EncoderResolution"), "HEVC encoder resolution");
+        AssertEqual("59.94 fps", GetStringProperty(hevc, "EncoderFrameRate"), "HEVC encoder frame rate");
+        AssertEqual("50 Mbps", GetStringProperty(hevc, "EncoderBitrate"), "HEVC encoder bitrate");
+        AssertEqual(true, GetBoolProperty(hevc, "EncoderDriftVisible"), "encoder drift visible while recording");
+        AssertEqual("+2.2ms (7 corr)", GetStringProperty(hevc, "EncoderDrift"), "encoder drift text");
+
+        var av1 = Build("av1_nvenc");
+        AssertEqual("AV1 (NVENC)", GetStringProperty(av1, "EncoderCodec"), "AV1 encoder label");
+
+        var passthrough = Build("software_custom");
+        AssertEqual("software_custom", GetStringProperty(passthrough, "EncoderCodec"), "unknown encoder label passthrough");
+
+        var inactive = Build(null);
+        AssertEqual(false, GetBoolProperty(inactive, "EncoderActive"), "inactive encoder hidden");
+        AssertEqual(string.Empty, GetStringProperty(inactive, "EncoderCodec"), "inactive encoder codec");
+
+        var idleDrift = Build("h264_nvenc", recording: false);
+        AssertEqual(false, GetBoolProperty(idleDrift, "EncoderDriftVisible"), "encoder drift hidden while idle");
+        AssertEqual(string.Empty, GetStringProperty(idleDrift, "EncoderDrift"), "idle encoder drift text");
 
         return Task.CompletedTask;
     }

@@ -1255,7 +1255,9 @@ Stats diagnostic summary/row parsing now lives in
 overlay presentation/range/sample text policy now lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs`; visual-cadence
 FPS/repeat/motion text formatting now lives in
-`Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs`; keep
+`Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs`; encoder dock
+visibility, codec label, bitrate, and encoder drift text formatting now lives
+in `Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs`; keep
 `Sussudio/ViewModels/StatsPresentationBuilder.cs` focused on dock and shared
 formatting.
 Stats lane status classification and visual-repeat drift policy now live in

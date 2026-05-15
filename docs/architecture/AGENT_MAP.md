@@ -726,6 +726,8 @@ Primary current owners:
   preview-stat formatting, range/sample text policy, and frame-time overlay
   presentation. `Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs` owns
   visual-cadence FPS/repeat/motion text formatting.
+  `Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs` owns encoder dock
+  visibility, codec label, bitrate, and encoder drift text formatting.
   `Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs` owns diagnostic
   summary/row parsing. `Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`
   owns stats lane status classification and visual-repeat drift policy.
