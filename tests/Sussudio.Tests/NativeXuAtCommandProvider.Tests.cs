@@ -11,6 +11,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rollingPollText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs")
             .Replace("\r\n", "\n");
+        var rollingCommandGroupsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingCommandGroups.cs")
+            .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
         AssertContains(rootText, "public async Task<SourceSignalTelemetrySnapshot> ReadAsync(");
@@ -26,7 +28,19 @@ static partial class Program
         AssertContains(rollingPollText, "private NodeReadAttempt BuildSnapshotFromCachedResults(");
         AssertContains(rollingPollText, "BuildDetailEntries(");
         AssertContains(rollingPollText, "new SourceSignalTelemetrySnapshot");
+        AssertContains(rollingPollText, "PopulateInitialRollingCache(handle, nodeId, cancellationToken);");
+        AssertContains(rollingPollText, "RefreshRollingGroup(handle, nodeId, _rollingGroup, cancellationToken);");
+        AssertDoesNotContain(rollingPollText, "private AtCommandResult SendRollingCommand(");
+        AssertDoesNotContain(rollingPollText, "private void PopulateInitialRollingCache(");
+        AssertDoesNotContain(rollingPollText, "private void RefreshRollingGroup(");
+        AssertContains(rollingCommandGroupsText, "public sealed partial class NativeXuAtCommandProvider");
+        AssertContains(rollingCommandGroupsText, "private AtCommandResult SendRollingCommand(");
+        AssertContains(rollingCommandGroupsText, "cancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(rollingCommandGroupsText, "private void PopulateInitialRollingCache(");
+        AssertContains(rollingCommandGroupsText, "private void RefreshRollingGroup(");
+        AssertContains(rollingCommandGroupsText, "case 5: // Diagnostics");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingCommandGroups.cs");
 
         return Task.CompletedTask;
     }

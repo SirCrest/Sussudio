@@ -823,9 +823,11 @@ runtime resets, and native cleanup/freeing there; keep generic error helpers in
 LibAv recording sink queue ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`. Keep public
 video/GPU/CUDA enqueue entry points, video/GPU/CUDA queue-depth accounting,
-failure signaling, video packet records, and pooled video buffer return helpers
-there. Hot audio/microphone WASAPI write adapters, audio queue eviction,
-audio remaining-buffer cleanup, and `AudioSamplePacket` now live in
+failure signaling, and video packet records there. Video/GPU/CUDA queue cleanup,
+pooled video buffer leasing, and pooled packet return helpers now live in
+`LibAvRecordingSink.QueueCleanup.cs`. Hot audio/microphone WASAPI write
+adapters, audio queue eviction, audio remaining-buffer cleanup, and
+`AudioSamplePacket` now live in
 `LibAvRecordingSink.AudioQueues.cs`. Keep start/stop lifecycle in
 `LibAvRecordingSink.cs`, read-only telemetry and encoder drift accessors in
 `LibAvRecordingSink.Diagnostics.cs`, dispose/deferred cleanup in
@@ -885,8 +887,10 @@ selected-interface validation and dispatch into the active rolling poll path.
 
 Native XU active rolling polling now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs`. Keep
-rolling command groups, cached AT-command fields, VIC/frame-rate lookup, and
-active snapshot assembly there.
+poll cadence gates, cached AT-command fields, VIC/frame-rate lookup, active
+snapshot assembly, and group advancement there. Rolling command batch
+construction/refresh and per-command cancellation checks now live in
+`NativeXuAtCommandProvider.RollingCommandGroups.cs`.
 
 Native XU payload decoding now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.PayloadDecoding.cs`.
@@ -988,9 +992,10 @@ allocation now live in
 
 Flashback buffer retention now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs`. Keep segment
-purge, eviction, guarded file deletion, disk-warning state, and recording
-start/end retention boundaries there. The root buffer manager keeps session
-live counters, byte/PTS accounting helpers, and PTS/disk updates.
+purge, eviction selection, and guarded file deletion there. Eviction pause
+state, recording PTS range capture, and pause-driven disk-warning state now live
+in `FlashbackBufferManager.EvictionPause.cs`. The root buffer manager keeps
+session live counters, byte/PTS accounting helpers, and PTS/disk updates.
 Flashback buffer segment mutation now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentMutation.cs`. Keep
 active segment path generation, active segment start/abandonment, completion
@@ -1347,8 +1352,9 @@ Native XU AT-command transport and payload parsing now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs`. Keep raw
 AT read/write frames, LRC/envelope handling, device-ID parsing, and command
 failure formatting there; keep payload decoders in
-`NativeXuAtCommandProvider.PayloadDecoding.cs`, and keep rolling telemetry
-polling and active snapshot assembly in `NativeXuAtCommandProvider.RollingPoll.cs`.
+`NativeXuAtCommandProvider.PayloadDecoding.cs`, keep rolling telemetry polling
+and active snapshot assembly in `NativeXuAtCommandProvider.RollingPoll.cs`, and
+keep rolling command batch dispatch in `NativeXuAtCommandProvider.RollingCommandGroups.cs`.
 
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns

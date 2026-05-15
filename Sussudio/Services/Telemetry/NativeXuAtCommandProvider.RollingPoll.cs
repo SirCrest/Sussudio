@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using Sussudio.Models;
@@ -95,13 +94,7 @@ public sealed partial class NativeXuAtCommandProvider
             _rollingGroup = 0;
         }
 
-        AtCommandResult Send(string name, int commandCode)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            return SendAtCommand(handle, nodeId, name, commandCode);
-        }
-
-        var cable = Send("CableConnect", CmdCableConnect);
+        var cable = SendRollingCommand(handle, nodeId, "CableConnect", CmdCableConnect, cancellationToken);
         if (!cable.Success)
             return HandleFailedCommand("nativexu-read-failed", interfacePath, cable);
 
@@ -112,7 +105,7 @@ public sealed partial class NativeXuAtCommandProvider
             return CreateUnavailableNodeResult(interfacePath, "nativexu-no-cable");
         }
 
-        var videoStable = Send("VideoStable", CmdVideoStable);
+        var videoStable = SendRollingCommand(handle, nodeId, "VideoStable", CmdVideoStable, cancellationToken);
         if (!videoStable.Success)
             return HandleFailedCommand("nativexu-read-failed", interfacePath, videoStable);
 
@@ -126,101 +119,14 @@ public sealed partial class NativeXuAtCommandProvider
         // ── First call: fire everything to populate cache ──
         if (!_hasCompletedFullCycle)
         {
-            _cVic = Send("VIC", CmdVic);
-            _cVfreq = Send("Vfreq", CmdVfreq);
-            _cAviInfo = Send("AviInfoFrame", CmdAviInfoFrame);
-            _cHdrMetadata = Send("HdrMetadata", CmdHdrMetadata);
-            _cSystemInfo = Send("SystemInfo", CmdSystemInfo);
-            _cHdr2Sdr = Send("Hdr2Sdr", CmdHdr2Sdr);
-            _cAudioFormat = Send("AudioFormat", CmdAudioFormat);
-            _cAudioSamplingRate = Send("AudioSamplingRate", CmdAudioSamplingRate);
-            _cInputSource = Send("InputSource", CmdInputSource);
-            _cFlashAudio = Send("FlashAudioInput", CmdFlashGetCustomerProprietary);
-            _cAdcOnOff = Send("AdcOnOff", CmdAdcOnOff);
-            _cAdcVolumeGain = Send("AdcVolumeGain", CmdAdcVolumeGain);
-            _cUacVolumeGain = Send("UacVolumeGain", CmdUacVolumeGain);
-            _cUacOut1Mute = Send("UacOut1Mute", CmdUacOut1Mute);
-            _cUacOut2Mute = Send("UacOut2Mute", CmdUacOut2Mute);
-            _cUacOut2MixerSource = Send("UacOut2MixerSource", CmdUacOut2MixerSource);
-            _cUsbHostProtocol = Send("UsbHostProtocol", CmdUsbHostProtocol);
-            _cUsbCdc = Send("UsbCdc", CmdUsbCdcOnOff);
-            _cUsbLinkState = Send("UsbLinkState", CmdUsbLinkState);
-            _cUsbForceSpeed = Send("UsbForceSpeed", CmdUsbForceSpeed);
-            _cTxHpd = Send("TxHpd", CmdTxHpdStatus);
-            _cTxVrr = Send("TxVrr", CmdTxVrr);
-            _cTxEdidValid = Send("TxEdidValid", CmdTxEdidValid);
-            _cUvcOutputTiming = Send("UvcOutputTiming", CmdUvcOutputTiming);
-            _cUvcVideoFormat = Send("UvcVideoFormat", CmdUvcVideoFormat);
-            _cUvcErrStatus = Send("UvcErrStatus", CmdUvcErrStatus);
-            _cHdcpMode = Send("HdcpMode", CmdHdcpMode);
-            _cHdcpVersion = Send("HdcpVersion", CmdHdcpVersion);
-            _cRxTxHdcpVersion = Send("RxTxHdcpVersion", CmdRxTxHdcpVersion);
-            _cHdr2SdrExtended = Send("Hdr2SdrExtended", CmdHdr2SdrExtended);
-            _cCustomerVersion = Send("CustomerVersion", CmdCustomerVersion);
-            _cRescueVersion = Send("RescueVersion", CmdRescueVersion);
-            _cHdr2SdrColorParam = Send("Hdr2SdrColorParam", CmdHdr2SdrColorParam);
-            _cColorRangeSetting = Send("ColorRangeSetting", CmdColorRangeSetting);
-            _cVtem = Send("Vtem", CmdVtem);
-            _cBitError = Send("BitError", CmdBitError);
-            _cRawTiming = Send("RawTiming", CmdRawTiming);
+            PopulateInitialRollingCache(handle, nodeId, cancellationToken);
             _hasCompletedFullCycle = true;
             _rollingGroup = 0;
         }
         else
         {
             // ── Subsequent calls: fire only current group ──
-            switch (_rollingGroup)
-            {
-                case 0: // Signal (most important — cycles every pass)
-                    _cVic = Send("VIC", CmdVic);
-                    _cVfreq = Send("Vfreq", CmdVfreq);
-                    _cAviInfo = Send("AviInfoFrame", CmdAviInfoFrame);
-                    _cHdrMetadata = Send("HdrMetadata", CmdHdrMetadata);
-                    break;
-                case 1: // Audio
-                    _cAudioFormat = Send("AudioFormat", CmdAudioFormat);
-                    _cAudioSamplingRate = Send("AudioSamplingRate", CmdAudioSamplingRate);
-                    _cInputSource = Send("InputSource", CmdInputSource);
-                    _cFlashAudio = Send("FlashAudioInput", CmdFlashGetCustomerProprietary);
-                    break;
-                case 2: // Audio routing
-                    _cAdcOnOff = Send("AdcOnOff", CmdAdcOnOff);
-                    _cAdcVolumeGain = Send("AdcVolumeGain", CmdAdcVolumeGain);
-                    _cUacVolumeGain = Send("UacVolumeGain", CmdUacVolumeGain);
-                    _cUacOut1Mute = Send("UacOut1Mute", CmdUacOut1Mute);
-                    _cUacOut2Mute = Send("UacOut2Mute", CmdUacOut2Mute);
-                    _cUacOut2MixerSource = Send("UacOut2MixerSource", CmdUacOut2MixerSource);
-                    break;
-                case 3: // HDR/color
-                    _cSystemInfo = Send("SystemInfo", CmdSystemInfo);
-                    _cHdr2Sdr = Send("Hdr2Sdr", CmdHdr2Sdr);
-                    _cHdr2SdrExtended = Send("Hdr2SdrExtended", CmdHdr2SdrExtended);
-                    _cHdr2SdrColorParam = Send("Hdr2SdrColorParam", CmdHdr2SdrColorParam);
-                    _cColorRangeSetting = Send("ColorRangeSetting", CmdColorRangeSetting);
-                    break;
-                case 4: // USB/HDMI status
-                    _cUsbHostProtocol = Send("UsbHostProtocol", CmdUsbHostProtocol);
-                    _cUsbCdc = Send("UsbCdc", CmdUsbCdcOnOff);
-                    _cUsbLinkState = Send("UsbLinkState", CmdUsbLinkState);
-                    _cUsbForceSpeed = Send("UsbForceSpeed", CmdUsbForceSpeed);
-                    _cTxHpd = Send("TxHpd", CmdTxHpdStatus);
-                    _cTxVrr = Send("TxVrr", CmdTxVrr);
-                    _cTxEdidValid = Send("TxEdidValid", CmdTxEdidValid);
-                    break;
-                case 5: // Diagnostics (least critical)
-                    _cUvcOutputTiming = Send("UvcOutputTiming", CmdUvcOutputTiming);
-                    _cUvcVideoFormat = Send("UvcVideoFormat", CmdUvcVideoFormat);
-                    _cUvcErrStatus = Send("UvcErrStatus", CmdUvcErrStatus);
-                    _cHdcpMode = Send("HdcpMode", CmdHdcpMode);
-                    _cHdcpVersion = Send("HdcpVersion", CmdHdcpVersion);
-                    _cRxTxHdcpVersion = Send("RxTxHdcpVersion", CmdRxTxHdcpVersion);
-                    _cCustomerVersion = Send("CustomerVersion", CmdCustomerVersion);
-                    _cRescueVersion = Send("RescueVersion", CmdRescueVersion);
-                    _cVtem = Send("Vtem", CmdVtem);
-                    _cBitError = Send("BitError", CmdBitError);
-                    _cRawTiming = Send("RawTiming", CmdRawTiming);
-                    break;
-            }
+            RefreshRollingGroup(handle, nodeId, _rollingGroup, cancellationToken);
             _rollingGroup = (_rollingGroup + 1) % RollingGroupCount;
         }
 

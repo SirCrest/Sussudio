@@ -163,7 +163,10 @@ static partial class Program
         resumeMethod.Invoke(manager, null);
         AssertEqual(false, GetBoolProperty(manager, "EvictionPaused"), "After unbalanced resume");
 
-        var source = ReadFlashbackBufferManagerSource();
+        var source = string.Join(
+            "\n",
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.EvictionPause.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Math.cs").Replace("\r\n", "\n"));
         AssertContains(source, "FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED");
         AssertContains(source, "var unbalancedEndPts = ClampEndPtsToStart(_recordingStartPts, _recordingEndPts);");
         AssertContains(source, "_recordingEndPts = ClampEndPtsToStart(\n                    _recordingStartPts,\n                    TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks)));");
