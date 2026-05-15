@@ -271,8 +271,11 @@ owns catalog-backed help lines.
 `set` capture/audio/output mutations. `CommandHandlers.DeviceWindow.cs` owns
 device, window, and recordings commands. `CommandHandlers.AutomationFlow.cs`
 owns wait/assert/probe/stats/settings/frame-time and verification commands.
-`CommandHandlers.Flashback.cs` owns Flashback CLI commands. Support partials
-remain: `CommandHandlers.Context.cs` owns per-invocation command context,
+`CommandHandlers.Flashback.cs` owns Flashback enablement/playback/scrub/marker/
+segment/restart CLI commands. `CommandHandlers.Flashback.Export.cs` owns
+Flashback export flags, output path defaulting, directory creation, and payload
+shape. Support partials remain: `CommandHandlers.Context.cs` owns
+per-invocation command context,
 `CommandHandlers.Flags.cs` owns flag consumption and optional flag values,
 `CommandHandlers.Arguments.cs` owns usage validation and argument joining,
 `CommandHandlers.Json.cs` owns JSON detection/pretty-printing, `CommandHandlers.Values.cs`

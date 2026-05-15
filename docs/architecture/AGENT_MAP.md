@@ -1731,7 +1731,10 @@ Primary owners:
 - `tools/ssctl/CommandHandlers.AutomationFlow.cs` owns wait/assert/probe,
   stats/settings/frame-time, and verification commands.
 - `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enablement,
-  playback, scrub, marker, export, segment, and restart commands.
+  playback, scrub, marker, segment, and restart commands.
+  `tools/ssctl/CommandHandlers.Flashback.Export.cs` owns Flashback export CLI
+  flag parsing, output-path defaulting, parent-directory creation, and
+  `FlashbackExport` payload shaping.
 - `tools/NativeXuAudioProbe/Program.cs` owns probe command routing and command
   workflows; `Program.Models.cs` owns probe experiment/readback DTOs and
   result-diff records; `Program.Commands.cs` owns Native XU command IDs;

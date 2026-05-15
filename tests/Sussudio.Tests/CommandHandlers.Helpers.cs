@@ -12,6 +12,7 @@ static partial class Program
             "tools/ssctl/CommandHandlers.DeviceWindow.cs",
             "tools/ssctl/CommandHandlers.DiagnosticSession.cs",
             "tools/ssctl/CommandHandlers.Flashback.cs",
+            "tools/ssctl/CommandHandlers.Flashback.Export.cs",
             "tools/ssctl/CommandHandlers.Flags.cs",
             "tools/ssctl/CommandHandlers.Json.cs",
             "tools/ssctl/CommandHandlers.Observability.cs",

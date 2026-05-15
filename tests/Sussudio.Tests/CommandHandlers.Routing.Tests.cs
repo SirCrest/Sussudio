@@ -70,6 +70,33 @@ static partial class Program
         AssertEqual(47, flashbackRequest.GetProperty("command").GetInt32(), "flashback off command id");
         AssertEqual(false, flashbackRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(), "flashback off payload enabled");
 
+        var flashbackExportPipeName = $"ssctl-flashback-export-{Guid.NewGuid():N}";
+        var flashbackExportTransport = Activator.CreateInstance(transportType, flashbackExportPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for flashback export command test.");
+        var flashbackExportOutputPath = Path.Combine("temp", "ssctl flashback export", "export with spaces.mp4");
+        var flashbackExportArguments = new List<string> { "flashback", "export", "--range", "--force", "2.5", flashbackExportOutputPath };
+        var flashbackExportExitCode = -1;
+        JsonElement flashbackExportRequest = await CapturePipeRequestAsync(
+            flashbackExportPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { flashbackExportTransport, flashbackExportArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                flashbackExportExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, flashbackExportExitCode, "flashback export exit code");
+        AssertEqual(42, flashbackExportRequest.GetProperty("command").GetInt32(), "flashback export command id");
+        var flashbackExportPayload = flashbackExportRequest.GetProperty("payload");
+        AssertEqual(2.5d, flashbackExportPayload.GetProperty("seconds").GetDouble(), "flashback export payload seconds");
+        AssertEqual(flashbackExportOutputPath, flashbackExportPayload.GetProperty("outputPath").GetString(), "flashback export payload path");
+        AssertEqual(true, flashbackExportPayload.GetProperty("useSelectionRange").GetBoolean(), "flashback export payload range");
+        AssertEqual(true, flashbackExportPayload.GetProperty("force").GetBoolean(), "flashback export payload force");
+        AssertEqual(
+            true,
+            Directory.Exists(Path.GetDirectoryName(flashbackExportOutputPath) ?? "."),
+            "flashback export parent directory created");
+
         var deviceRefreshPipeName = $"ssctl-device-refresh-{Guid.NewGuid():N}";
         var deviceRefreshTransport = Activator.CreateInstance(transportType, deviceRefreshPipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for device refresh command test.");
@@ -209,6 +236,13 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.DeviceWindow.cs"), "HandleWindowAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleAssertAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "HandleFlashbackAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "return HandleFlashbackExportAsync(context);");
+        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "ParseFlashbackExportSeconds(context.Rest[1])");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "private static Task<int> HandleFlashbackExportAsync(CommandContext context)");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "ConsumeFlag(context.Rest, \"--range\")");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "ConsumeFlag(context.Rest, \"--force\")");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "? ParseFlashbackExportSeconds(context.Rest[1])");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? \".\")");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flags.cs"), "private static bool ConsumeFlag(List<string> args, string flag)");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Arguments.cs"), "private static string JoinRemaining(IReadOnlyList<string> args, int startIndex)");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Json.cs"), "private static bool LooksLikeJson(string value)");
