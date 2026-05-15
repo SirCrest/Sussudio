@@ -683,10 +683,18 @@ Primary current owners:
 - `Sussudio/MainWindow.Dispatching.cs` owns UI-thread enqueue helpers and
   guarded async event-handler execution used by automation adapters and XAML
   event handlers.
+- `Sussudio/MainWindow.EventHandlers.cs` owns XAML user-input event handlers
+  that bridge controls to view-model commands and shell animations.
+- `Sussudio/MainWindow.PropertyChanged.cs` owns the root ViewModel
+  PropertyChanged dispatcher; feature-specific property projections stay in
+  the `MainWindow.PropertyChanged*.cs` partials.
+- `Sussudio/MainWindow.Animations.cs` owns shared composition shadow helpers
+  that have not yet moved behind named controllers.
 - `Sussudio/Controllers/AudioMeterController.cs` owns audio/microphone meter
   smoothing, timer lifetime, peak/range markers, and meter clip rendering.
-  Keep microphone row layout animation in `MainWindow.Bindings.cs` until that
-  binding surface is split separately.
+  `Sussudio/MainWindow.AudioMeter.cs` is its XAML-facing adapter. Keep
+  microphone row layout animation in `MainWindow.Bindings.cs` until that binding
+  surface is split separately.
 - `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility,
   frame-time overlay visibility, polling lifetime, and dock show/hide
   animations. `MainWindow.StatsOverlay.cs` still owns metric text projection
@@ -1388,11 +1396,13 @@ Primary current owners:
 - `Sussudio/Controllers/ResponsiveShellLayoutController.cs` owns control-bar
   label visibility and capture-settings narrow/wide grid placement.
   `MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/CaptureSelectionBindingController*.cs` owns
-  capture/audio/microphone/encoder selection synchronization. The root
-  controller owns selection reconciliation and pending-device apply state,
-  `.Context.cs` owns the XAML control dependency bag, `.SelectionSync.cs` owns
-  collection-change debounce/queued sync, and `.DeviceAudio.cs` owns
+- `Sussudio/Controllers/CaptureSelectionBindingController.cs` owns
+  capture/audio/microphone/encoder selection synchronization and pending-device
+  apply state. `Sussudio/Controllers/CaptureSelectionBindingController.Context.cs`
+  owns the XAML control dependency bag,
+  `Sussudio/Controllers/CaptureSelectionBindingController.SelectionSync.cs` owns
+  collection-change debounce/queued sync, and
+  `Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs` owns
   device-audio mode/gain control projection. `MainWindow.CaptureSelectionBindings.cs`
   is the XAML-facing adapter.
 - `Sussudio/Controllers/CaptureDeviceActionController.cs` owns the capture-
@@ -1448,6 +1458,9 @@ Primary current owners:
   `MainViewModel.FrameRateTiming.cs` owns shared frame-rate timing family,
   rational parsing, source-rate fallback, and preferred-format ranking helpers
   used by frame-rate, resolution, capture-settings, and automation projections.
+  `MainViewModel.FormatSelection.cs` owns pixel-format option building,
+  recording-format filtering, HDR toggle side effects, and selected-format
+  selection policy.
   Video device enumeration and selected-device capability rebuilds stay in
   `MainViewModel.DeviceManagement.cs`; watcher-driven audio endpoint refresh
   and capture-card endpoint filtering live in `MainViewModel.AudioDeviceDiscovery.cs`.
@@ -1459,7 +1472,9 @@ Primary current owners:
   `MainViewModel.ResolutionSelectionPolicy.cs` owns source-aware, HDR-aware,
   and SDR fallback resolution selection helpers. `MainViewModel.ResolutionOptions.cs`
   owns the resolution dropdown rebuild and effective resolution display/query
-  helpers. `MainViewModel.Settings.cs` owns settings load/save and simple
+  helpers. `MainViewModel.Telemetry.cs` owns source telemetry projection, live
+  signal labels, source-aware auto-retargeting hints, and telemetry age
+  summaries. `MainViewModel.Settings.cs` owns settings load/save and simple
   persistence reactions. `MainViewModel.FlashbackSettings.cs` owns active
   Flashback reactions to recording-format, encoder, buffer, and GPU-decode
   setting changes. `MainViewModel.AutomationUi.cs` owns UI-only automation mutators

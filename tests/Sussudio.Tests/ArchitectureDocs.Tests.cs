@@ -108,6 +108,24 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task ArchitectureAgentMap_CoversUiPresentationOwnershipFiles()
+    {
+        var repoRoot = GetRepoRoot();
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
+        var missing = EnumerateUiPresentationOwnershipFiles(repoRoot)
+            .Where(file => !AgentMapContainsExactCodeSpan(agentMapText, file))
+            .ToArray();
+
+        if (missing.Length > 0)
+        {
+            throw new InvalidOperationException(
+                "AGENT_MAP.md is missing UI/presentation ownership file entries: " +
+                string.Join(", ", missing));
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static IEnumerable<string> ExtractReadmeAutomationConsumers(string readmeText)
     {
         const string marker = "Then keep these consumers in sync:";
@@ -233,4 +251,47 @@ static partial class Program
 
     private static string NormalizeRepoRelativePath(string root, string path)
         => Path.GetRelativePath(root, path).Replace('\\', '/');
+
+    private static IEnumerable<string> EnumerateUiPresentationOwnershipFiles(string repoRoot)
+        => EnumerateSourceFiles(Path.Combine(repoRoot, "Sussudio"), SearchOption.AllDirectories)
+            .Select(file => NormalizeRepoRelativePath(repoRoot, file))
+            .Where(IsUiPresentationOwnershipFile)
+            .OrderBy(file => file, StringComparer.OrdinalIgnoreCase);
+
+    private static bool AgentMapContainsExactCodeSpan(string agentMapText, string relativePath)
+    {
+        var normalizedPath = NormalizeProjectInclude(relativePath);
+        var fileName = GetRepoFileName(normalizedPath);
+
+        return agentMapText.Contains($"`{normalizedPath}`", StringComparison.Ordinal) ||
+            agentMapText.Contains($"`{fileName}`", StringComparison.Ordinal);
+    }
+
+    private static bool IsUiPresentationOwnershipFile(string relativePath)
+    {
+        var normalizedPath = NormalizeProjectInclude(relativePath);
+        var directory = GetRepoDirectory(normalizedPath);
+        var fileName = GetRepoFileName(normalizedPath);
+
+        return (string.Equals(directory, "Sussudio", StringComparison.OrdinalIgnoreCase) &&
+                fileName.StartsWith("MainWindow", StringComparison.Ordinal)) ||
+            (string.Equals(directory, "Sussudio/ViewModels", StringComparison.OrdinalIgnoreCase) &&
+                fileName.StartsWith("MainViewModel", StringComparison.Ordinal)) ||
+            (string.Equals(directory, "Sussudio/Controllers", StringComparison.OrdinalIgnoreCase) &&
+                fileName.Contains("Controller", StringComparison.Ordinal));
+    }
+
+    private static string GetRepoDirectory(string relativePath)
+    {
+        var normalizedPath = NormalizeProjectInclude(relativePath);
+        var slashIndex = normalizedPath.LastIndexOf('/');
+        return slashIndex < 0 ? string.Empty : normalizedPath.Substring(0, slashIndex);
+    }
+
+    private static string GetRepoFileName(string relativePath)
+    {
+        var normalizedPath = NormalizeProjectInclude(relativePath);
+        var slashIndex = normalizedPath.LastIndexOf('/');
+        return slashIndex < 0 ? normalizedPath : normalizedPath.Substring(slashIndex + 1);
+    }
 }

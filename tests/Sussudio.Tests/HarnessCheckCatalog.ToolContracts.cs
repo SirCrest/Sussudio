@@ -50,6 +50,9 @@ static partial class Program
             "Architecture agent map covers automation consumer checklist",
             ArchitectureAgentMap_CoversAutomationConsumerChecklist);
         await AddCheckAsync(results,
+            "Architecture agent map covers UI presentation ownership files",
+            ArchitectureAgentMap_CoversUiPresentationOwnershipFiles);
+        await AddCheckAsync(results,
             "Automation manifest covers catalog metadata",
             AutomationManifest_CoversCatalogMetadata);
         await AddCheckAsync(results,
