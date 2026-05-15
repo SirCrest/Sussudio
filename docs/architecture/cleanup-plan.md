@@ -2050,7 +2050,7 @@ Diagnostic-session scenario startup now lives in a focused partial family.
 `tools/Common/DiagnosticSessionScenarioStartup.cs` owns the public startup
 orchestration call. `DiagnosticSessionScenarioStartup.Registrations.cs` owns
 remaining startup-side Flashback scenario task registration and delegates export,
-lifecycle, and preview-cycle registrations to their focused scenario owners,
+lifecycle, cycle, and preview-cycle registrations to their focused scenario owners,
 `DiagnosticSessionScenarioStartup.DeferredSettings.cs` owns deferred Flashback
 recording-settings task registration, and
 `DiagnosticSessionScenarioStartup.Playback.cs` owns the direct Flashback
@@ -2102,7 +2102,9 @@ cleanup.
 Diagnostic-session Flashback cycle scenarios now live in
 `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs`. They own the
 restart-cycle and encoder-cycle command flows, export verification, and preset
-restoration while the runner only starts the scenario tasks.
+restoration. `.Registrations.cs` owns task registration, priority, task-label,
+and started-action wiring while startup only delegates selected cycle scenario
+registration.
 
 Diagnostic-session sampling now lives in
 `tools/Common/DiagnosticSessionSampler.cs`. Keep the sample append before the
@@ -2261,6 +2263,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionRecordingVerification.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
+- `DiagnosticSessionFlashbackCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`

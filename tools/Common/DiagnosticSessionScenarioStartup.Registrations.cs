@@ -1,5 +1,4 @@
 using System.Text.Json;
-using static Sussudio.Tools.DiagnosticSessionFlashbackCycleScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;
 using static Sussudio.Tools.DiagnosticSessionFlashbackStressScenario;
 
@@ -44,33 +43,14 @@ internal static partial class DiagnosticSessionScenarioStartup
             actions.Add("flashback scrub stress started");
         }
 
-        if (scenarioPlan.RunFlashbackRestartCycle)
-        {
-            backgroundTasks.AddScenario(
-                4,
-                "flashback-restart-cycle-task",
-                RunFlashbackRestartCycleAsync(
-                    outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
-            actions.Add("flashback restart cycle started");
-        }
-
-        if (scenarioPlan.RunFlashbackEncoderCycle)
-        {
-            backgroundTasks.AddScenario(
-                5,
-                "flashback-encoder-cycle-task",
-                RunFlashbackEncoderCycleAsync(
-                    outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
-            actions.Add("flashback encoder cycle started");
-        }
+        DiagnosticSessionFlashbackCycleScenarios.RegisterSelectedFlashbackCycleScenarioTasks(
+            scenarioPlan,
+            outputDirectory,
+            backgroundTasks,
+            actions,
+            warnings,
+            sendAsync,
+            cancellationToken);
 
         if (scenarioPlan.RunFlashbackSegmentPlayback)
         {

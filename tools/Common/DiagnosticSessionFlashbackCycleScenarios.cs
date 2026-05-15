@@ -6,7 +6,7 @@ using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 
 namespace Sussudio.Tools;
 
-internal static class DiagnosticSessionFlashbackCycleScenarios
+internal static partial class DiagnosticSessionFlashbackCycleScenarios
 {
     internal static async Task RunFlashbackRestartCycleAsync(
         string outputDirectory,

@@ -6,10 +6,9 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
-        var cyclesText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs")
-            .Replace("\r\n", "\n");
+        var cyclesText = ReadDiagnosticSessionFlashbackCycleScenariosSource();
 
-        AssertContains(cyclesText, "internal static class DiagnosticSessionFlashbackCycleScenarios");
+        AssertContains(cyclesText, "internal static partial class DiagnosticSessionFlashbackCycleScenarios");
         AssertContains(cyclesText, "internal static async Task RunFlashbackRestartCycleAsync(");
         AssertContains(cyclesText, "\"RestartFlashback\"");
         AssertContains(cyclesText, "\"flashback-restart-cycle-export.mp4\"");
@@ -18,9 +17,13 @@ static partial class Program
         AssertContains(cyclesText, "var cycledPreset = string.Equals(originalPreset, \"P1\", StringComparison.OrdinalIgnoreCase) ? \"P2\" : \"P1\";");
         AssertContains(cyclesText, "\"flashback-encoder-cycle-export.mp4\"");
         AssertContains(cyclesText, "flashback encoder preset restored to");
-        AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackCycleScenarios;");
-        AssertContains(startupText, "RunFlashbackRestartCycleAsync(");
-        AssertContains(startupText, "RunFlashbackEncoderCycleAsync(");
+        AssertContains(cyclesText, "internal static void RegisterSelectedFlashbackCycleScenarioTasks(");
+        AssertContains(cyclesText, "4,\n                \"flashback-restart-cycle-task\",");
+        AssertContains(cyclesText, "5,\n                \"flashback-encoder-cycle-task\",");
+        AssertContains(startupText, "DiagnosticSessionFlashbackCycleScenarios.RegisterSelectedFlashbackCycleScenarioTasks(");
+        AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackCycleScenarios;");
+        AssertDoesNotContain(startupText, "RunFlashbackRestartCycleAsync(");
+        AssertDoesNotContain(startupText, "RunFlashbackEncoderCycleAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackRestartCycleAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackEncoderCycleAsync(");
 

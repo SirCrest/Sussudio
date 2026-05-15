@@ -80,7 +80,7 @@ static partial class Program
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionLiveStateWriter.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunBootstrap.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs")
+                + "\n" + ReadDiagnosticSessionFlashbackCycleScenariosSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
                 + "\n" + ReadDiagnosticSessionFlashbackExportScenariosSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs")
