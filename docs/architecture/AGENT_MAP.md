@@ -659,8 +659,9 @@ Primary current owners:
   enter/exit orchestration, `FullScreenController.Animation.cs` owns rect
   animation and size waits, `FullScreenController.Chrome.cs` owns chrome/material
   state, and `FullScreenController.Controls.cs` owns overlay pointer/auto-hide
-  behavior. Keep `MainWindow.FullScreen.cs` as the XAML-facing adapter and
-  Flashback shortcut bridge.
+  behavior. Keep `MainWindow.FullScreen.cs` as the XAML-facing adapter.
+  `MainWindow.FullScreenFlashbackBridge.cs` owns Flashback fullscreen keyboard
+  shortcuts, timeline visibility, and scrub-end bridging.
 - `Sussudio/Controllers/WindowScreenshotController.cs` owns automation whole-
   window screenshot dispatch, UI-thread enqueue/cancellation, and failure
   wrapping. `Sussudio/Controllers/WindowScreenshotNativeCapture.cs` owns native
@@ -937,8 +938,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`
   owns MainViewModel Flashback coordinator-routing assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Scrub.Tests.cs`
-  owns Flashback scrub, release/cancel/capture-lost, and fullscreen scrub-end
-  assertions.
+  owns Flashback scrub, release/cancel/capture-lost, and fullscreen Flashback
+  bridge assertions: shortcut gating, timeline visibility, and scrub-end
+  handoff.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Toggle.Tests.cs`
   owns Flashback timeline toggle rollback and lockout assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.Tests.cs` is the
