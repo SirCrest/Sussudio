@@ -1791,8 +1791,10 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.Memory.cs` owns embedded snapshot Memory/GC
   text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer snapshot
-  text.
+- `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer-mode
+  routing, GPU-media-source text, and non-D3D preview fallback text.
+  `tools/ssctl/Formatters.Snapshot.PreviewD3D.cs` owns D3D preview renderer
+  snapshot text.
 - `tools/ssctl/Formatters.Snapshot.ThreadHealth.cs` owns source-reader and
   WASAPI thread-health snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Source.cs` owns source telemetry snapshot
@@ -2012,6 +2014,7 @@ Primary owners:
   `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs`,
   `tools/Common/AutomationSnapshotFormatter.AvSync.cs`,
   `tools/Common/AutomationSnapshotFormatter.Preview.cs`,
+  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs`,
   `tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs`, and
   `tools/Common/AutomationSnapshotFormatter.Source.cs` own the named snapshot
   sections.

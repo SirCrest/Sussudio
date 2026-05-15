@@ -92,6 +92,7 @@ static partial class Program
         var ssctlSnapshotMjpegSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Mjpeg.cs");
         var ssctlSnapshotPerformanceSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Performance.cs");
         var ssctlSnapshotPreviewSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Preview.cs");
+        var ssctlSnapshotPreviewD3DSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.PreviewD3D.cs");
         var ssctlSnapshotRecordingSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Recording.cs");
         var ssctlSnapshotStateSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.State.cs");
         var ssctlSnapshotThreadHealthSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.ThreadHealth.cs");
@@ -155,6 +156,12 @@ static partial class Program
         AssertContains(ssctlSnapshotMjpegSource, "var mjpegDecodeSamples = AutomationSnapshotFormatter.Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
         AssertContains(ssctlSnapshotPreviewSource, "private static void AppendSnapshotPreviewSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotPreviewSource, "var rendererMode = AutomationSnapshotFormatter.Get(snapshot, \"PreviewRendererMode\");");
+        AssertContains(ssctlSnapshotPreviewSource, "AppendSnapshotPreviewD3DSection(builder, snapshot);");
+        AssertDoesNotContain(ssctlSnapshotPreviewSource, "D3D CPU timing:");
+        AssertContains(ssctlSnapshotPreviewD3DSource, "private static void AppendSnapshotPreviewD3DSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(ssctlSnapshotPreviewD3DSource, "private static bool IsSnapshotPreviewD3DRendererMode(string rendererMode)");
+        AssertContains(ssctlSnapshotPreviewD3DSource, "D3D CPU timing:");
+        AssertContains(ssctlSnapshotPreviewD3DSource, "AutomationSnapshotFormatter.AppendPreviewSlowFrameDiagnostics(builder, snapshot);");
         AssertContains(ssctlSnapshotThreadHealthSource, "private static void AppendSnapshotThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotThreadHealthSource, "builder.AppendLine(\"== Thread Health ==\");");
         AssertContains(ssctlSnapshotThreadHealthSource, "WasapiPlaybackQueueDropCount");
@@ -192,6 +199,8 @@ static partial class Program
         AssertContains(ssctlFormatterSource, "ProcessCpuPercent");
         var sharedFormatterSource = ReadAutomationSnapshotFormatterSource();
         var sharedFormatterRootSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
+        var sharedFormatterPreviewSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Preview.cs");
+        var sharedFormatterPreviewD3DSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs");
         var sharedFormatterThreadHealthSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs");
         AssertContains(sharedFormatterRootSource, "AppendThreadHealthSection(builder, snapshot);");
         AssertDoesNotContain(sharedFormatterRootSource, "builder.AppendLine(\"== Thread Health ==\");");
@@ -199,6 +208,14 @@ static partial class Program
         AssertContains(sharedFormatterThreadHealthSource, "private static void AppendThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterThreadHealthSource, "builder.AppendLine(\"== Thread Health ==\");");
         AssertContains(sharedFormatterThreadHealthSource, "WasapiPlaybackQueueDurationMs");
+        AssertContains(sharedFormatterPreviewSource, "private static void AppendPreviewSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterPreviewSource, "AppendPreviewD3DSection(builder, snapshot);");
+        AssertDoesNotContain(sharedFormatterPreviewSource, "AppendPreviewSlowFrameDiagnostics(builder, snapshot);");
+        AssertDoesNotContain(sharedFormatterPreviewSource, "D3D CPU timing:");
+        AssertContains(sharedFormatterPreviewD3DSource, "private static void AppendPreviewD3DSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterPreviewD3DSource, "internal static void AppendPreviewSlowFrameDiagnostics(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterPreviewD3DSource, "private static string FormatDiagnosticMs(JsonElement element, string propertyName)");
+        AssertContains(sharedFormatterPreviewD3DSource, "D3D CPU timing:");
         AssertContains(sharedFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
         AssertContains(sharedFormatterSource, "CaptureCommandMaxQueueLatencyMs");
         AssertContains(sharedFormatterSource, "CaptureCommandCommandsCoalesced");

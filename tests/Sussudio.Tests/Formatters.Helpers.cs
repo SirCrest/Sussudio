@@ -15,6 +15,7 @@ static partial class Program
             "tools/ssctl/Formatters.Snapshot.Mjpeg.cs",
             "tools/ssctl/Formatters.Snapshot.Performance.cs",
             "tools/ssctl/Formatters.Snapshot.Preview.cs",
+            "tools/ssctl/Formatters.Snapshot.PreviewD3D.cs",
             "tools/ssctl/Formatters.Snapshot.Recording.cs",
             "tools/ssctl/Formatters.Snapshot.State.cs",
             "tools/ssctl/Formatters.Snapshot.ThreadHealth.cs",

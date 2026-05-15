@@ -289,8 +289,9 @@ audio text in `Formatters.Snapshot.Audio.cs`, video-pipeline text in
 `Formatters.Snapshot.Flashback.cs`, embedded snapshot AV-sync drift text in
 `Formatters.Snapshot.AvSync.cs`, embedded snapshot Memory/GC text in
 `Formatters.Snapshot.Memory.cs`, MJPEG timing text in
-`Formatters.Snapshot.Mjpeg.cs`, preview renderer text in
-`Formatters.Snapshot.Preview.cs`, thread-health text in
+`Formatters.Snapshot.Mjpeg.cs`, preview renderer-mode routing and non-D3D
+fallback text in `Formatters.Snapshot.Preview.cs`, D3D preview renderer text in
+`Formatters.Snapshot.PreviewD3D.cs`, thread-health text in
 `Formatters.Snapshot.ThreadHealth.cs`, source telemetry snapshot text in
 `Formatters.Snapshot.Source.cs`, diagnostic-event text in
 `Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
@@ -304,8 +305,9 @@ projection in `Formatters.Timeline.Rows.cs`, table output in
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
 snapshot formatter facade for top-level text flow. Tolerant JSON accessors and
 byte/interval helpers live in `AutomationSnapshotFormatter.Values.cs`; the
-Flashback, MJPEG timing, AV sync, preview/slow-frame diagnostics, thread-health,
-and source sections live in focused formatter partials. Tests that reason about
+Flashback, MJPEG timing, AV sync, preview routing, D3D preview/slow-frame
+diagnostics, thread-health, and source sections live in focused formatter
+partials. Tests that reason about
 formatter source use `ReadAutomationSnapshotFormatterSource()` so ownership
 checks cover the full partial family.
 
