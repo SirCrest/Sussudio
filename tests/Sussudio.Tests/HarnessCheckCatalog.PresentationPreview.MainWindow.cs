@@ -11,6 +11,9 @@ static partial class Program
         await AddCheckAsync(results,
             "Window screenshot capture completes on dispatcher failure and cancellation",
             MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation);
+        await AddCheckAsync(results,
+            "Window screenshot image encoding lives in focused helper",
+            WindowScreenshotImageEncoding_LivesInFocusedHelper);
     }
 
     private static async Task AddPresentationPreviewMainWindowChecksAsync(List<CheckResult> results)

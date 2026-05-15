@@ -375,7 +375,9 @@ enter/exit orchestration, `FullScreenController.Animation.cs` to rect animation,
 keyboard/scrub bridge.
 
 Automation whole-window screenshot capture now lives in
-`Sussudio/Controllers/WindowScreenshotController.cs`. `MainWindow.Screenshot.cs`
+`Sussudio/Controllers/WindowScreenshotController.cs`, while pure PNG/BMP
+byte-stream encoding lives in
+`Sussudio/Controllers/WindowScreenshotImageEncoder.cs`. `MainWindow.Screenshot.cs`
 is only the automation adapter.
 
 Preview-frame screenshot button behavior now lives in

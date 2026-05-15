@@ -166,6 +166,49 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task WindowScreenshotImageEncoding_LivesInFocusedHelper()
+    {
+        var controllerText = ReadRepoFile("Sussudio/Controllers/WindowScreenshotController.cs")
+            .Replace("\r\n", "\n");
+        var encoderText = ReadRepoFile("Sussudio/Controllers/WindowScreenshotImageEncoder.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(controllerText, "WindowScreenshotImageEncoder.WriteToStream(");
+        AssertDoesNotContain(controllerText, "private static void WritePngToStream");
+        AssertDoesNotContain(controllerText, "private static void WriteBmpToStream");
+        AssertContains(encoderText, "internal static class WindowScreenshotImageEncoder");
+        AssertContains(encoderText, "internal static void WritePngToStream");
+        AssertContains(encoderText, "internal static void WriteBmpToStream");
+        AssertContains(encoderText, "internal static uint[] InitCrc32Table()");
+
+        var encoderType = RequireType("Sussudio.Controllers.WindowScreenshotImageEncoder");
+        var writePng = encoderType.GetMethod("WritePngToStream", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("WindowScreenshotImageEncoder.WritePngToStream missing.");
+        var writeBmp = encoderType.GetMethod("WriteBmpToStream", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("WindowScreenshotImageEncoder.WriteBmpToStream missing.");
+        var bgra = new byte[] { 0, 0, 255, 255 };
+
+        using var pngStream = new MemoryStream();
+        writePng.Invoke(null, new object[] { pngStream, 1, 1, bgra });
+        var pngBytes = pngStream.ToArray();
+        AssertSequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, pngBytes.Take(8).ToArray(), "PNG signature");
+        AssertEqual((byte)73, pngBytes[12], "PNG IHDR I");
+        AssertEqual((byte)72, pngBytes[13], "PNG IHDR H");
+        AssertEqual((byte)68, pngBytes[14], "PNG IHDR D");
+        AssertEqual((byte)82, pngBytes[15], "PNG IHDR R");
+
+        using var bmpStream = new MemoryStream();
+        writeBmp.Invoke(null, new object[] { bmpStream, 1, 1, bgra });
+        var bmpBytes = bmpStream.ToArray();
+        AssertEqual((byte)0x42, bmpBytes[0], "BMP signature B");
+        AssertEqual((byte)0x4D, bmpBytes[1], "BMP signature M");
+        AssertEqual(58, bmpBytes.Length, "BMP byte length");
+        AssertEqual(1, BitConverter.ToInt32(bmpBytes, 18), "BMP width");
+        AssertEqual(-1, BitConverter.ToInt32(bmpBytes, 22), "BMP top-down height");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewStopCompatibilityOverloads_ArePreserved()
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
