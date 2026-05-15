@@ -2487,7 +2487,8 @@ Remaining `tools/Common` ownership:
    Pure analog audio gain percent/XU-byte curve mapping now lives in
    `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; keep async native-XU device
    mode/gain application, cancellation, debounce-to-flash, and persistence in
-   `MainViewModel.AudioControls.cs`.
+   `MainViewModel.AudioControls.cs`, using the supported native-XU switch/gain
+   command surface rather than the legacy AT input-source fallback path.
    UI-only automation mutators now live in `MainViewModel.AutomationUi.cs`.
    Automation command entry points for audio, audio-preview, preview-volume
    clamp/persist, device-native audio mode/gain application, and microphone

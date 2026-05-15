@@ -1734,7 +1734,9 @@ Primary current owners:
   coordinator sequencing in `MainViewModel.AudioMonitoring.cs`.
   `MainViewModel.MicrophoneVolume.cs` owns microphone endpoint volume
   synchronization and persistence.
-  `MainViewModel.AudioControls.cs` owns device-native audio mode/gain management.
+  `MainViewModel.AudioControls.cs` owns device-native audio mode/gain management
+  through the supported native-XU switch/gain command surface, not the legacy
+  AT input-source fallback path.
   `Sussudio/ViewModels/DeviceAudioGainMapper.cs` owns the pure percent-to-XU-
   byte analog gain curve used by device-native gain application.
   `MainViewModel.AudioControlCancellation.cs` owns cancellation cleanup for

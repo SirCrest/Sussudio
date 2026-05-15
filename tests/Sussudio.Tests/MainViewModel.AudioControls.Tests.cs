@@ -144,6 +144,8 @@ static partial class Program
         AssertContains(microphoneVolumeCode, "partial void OnMicrophoneVolumeChanged(double value)");
         AssertDoesNotContain(audioControlsCode, "SetMicrophoneEndpointVolume");
         AssertDoesNotContain(audioControlsCode, "GetMicrophoneEndpointVolume");
+        AssertDoesNotContain(audioControlsCode, "TryApplyAtDeviceAudioModeAsync");
+        AssertDoesNotContain(audioControlsCode, "SetInputSourceAsync");
 
         AssertContains(setMicrophoneEndpointVolume, "string.IsNullOrWhiteSpace(deviceId)");
         AssertContains(setMicrophoneEndpointVolume, "WasapiComInterop.SetEndpointVolume(deviceId, (float)(Math.Clamp(volumePercent, 0.0, 100.0) / 100.0));");

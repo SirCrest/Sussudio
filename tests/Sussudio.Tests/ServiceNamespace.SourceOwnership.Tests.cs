@@ -114,6 +114,8 @@ static partial class Program
         AssertContains(audioControlsText, "CaptureDevice? targetDevice = null");
         AssertContains(audioControlsText, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertContains(audioControlsText, "IsCurrentSelectedDevice(device)");
+        AssertDoesNotContain(audioControlsText, "TryApplyAtDeviceAudioModeAsync");
+        AssertDoesNotContain(audioControlsText, "SetInputSourceAsync");
 
         var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
         var mainViewModelAudioPropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPropertyChanges.cs"));
