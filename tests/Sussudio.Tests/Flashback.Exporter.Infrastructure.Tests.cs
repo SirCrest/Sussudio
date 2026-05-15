@@ -94,6 +94,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var libAvErrorsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs")
             .Replace("\r\n", "\n");
+        var packetTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
+            .Replace("\r\n", "\n");
+        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
+            .Replace("\r\n", "\n");
         var timeMathText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TimeMath.cs")
             .Replace("\r\n", "\n");
 
@@ -146,6 +150,16 @@ static partial class Program
         AssertContains(cancellationText, "private void EnsureNotDisposed()");
         AssertContains(libAvErrorsText, "private static void ThrowIfError(int errorCode, string operation)");
         AssertContains(libAvErrorsText, "private static string GetErrorString(int errorCode)");
+        AssertContains(packetTimingText, "private static long ResolveFrameDurationUs(AVStream* videoStream)");
+        AssertContains(packetTimingText, "private static long ResolveSegmentBoundaryTimestampRepairUs(");
+        AssertContains(packetTimingText, "private static void NormalizePacketTimestampsBeforeWrite(AVPacket* packet)");
+        AssertDoesNotContain(packetTimingText, "private long FlushBufferedPackets(");
+        AssertDoesNotContain(packetTimingText, "private static void FreeBufferedPackets(");
+        AssertDoesNotContain(packetTimingText, "private static AVPacket* ClonePacketOrThrow(");
+        AssertContains(packetBuffersText, "private long FlushBufferedPackets(");
+        AssertContains(packetBuffersText, "private static void FreeBufferedPackets(");
+        AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
+        AssertContains(packetBuffersText, "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
         AssertContains(timeMathText, "private static long AddNonNegativeSaturated(long left, long right)");
         AssertContains(timeMathText, "private static long ToAvTimeBaseTimestampOrMax(TimeSpan value)");
         AssertContains(timeMathText, "private static long ToAvTimeBaseTimestamp(TimeSpan value)");

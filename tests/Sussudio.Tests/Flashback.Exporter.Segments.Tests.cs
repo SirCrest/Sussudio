@@ -105,15 +105,21 @@ static partial class Program
     private static Task FlashbackExporter_ReleasesBufferedSegmentPacketsOnFailures()
     {
         var sourceText = ReadFlashbackExporterSource();
+        var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs")
+            .Replace("\r\n", "\n");
+        var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
+            .Replace("\r\n", "\n");
+        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
+            .Replace("\r\n", "\n");
 
-        AssertContains(sourceText, "private static void FreeBufferedPackets(List<IntPtr> bufferedPackets, List<int>? bufferedStreamIndices = null)");
+        AssertContains(packetBuffersText, "private static void FreeBufferedPackets(List<IntPtr> bufferedPackets, List<int>? bufferedStreamIndices = null)");
         AssertContains(sourceText, "FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);");
         AssertContains(sourceText, "FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);");
-        AssertContains(sourceText, "bufferedStreamIndices?.Clear();");
-        AssertContains(sourceText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
-        AssertContains(sourceText, "FLASHBACK_EXPORT_PACKET_CLONE_FAIL operation={operation}");
-        AssertContains(sourceText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
-        AssertContains(sourceText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
+        AssertContains(packetBuffersText, "bufferedStreamIndices?.Clear();");
+        AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
+        AssertContains(packetBuffersText, "FLASHBACK_EXPORT_PACKET_CLONE_FAIL operation={operation}");
+        AssertContains(singleFileText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
+        AssertContains(segmentsText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
 
         var segmentLoopBlock = ExtractTextBetween(
             sourceText,
@@ -140,7 +146,7 @@ static partial class Program
         AssertContains(segmentLoopBlock, "FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);");
 
         var sharedFlushBlock = ExtractTextBetween(
-            sourceText,
+            packetBuffersText,
             "private long FlushBufferedPackets(",
             "private static void FreeBufferedPackets(");
         AssertContains(sharedFlushBlock, "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
