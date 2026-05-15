@@ -716,8 +716,9 @@ Primary current owners:
   text assignment.
 - `Sussudio/MainWindow.FrameTimeOverlay.cs` owns compact frame-time overlay
   text projection and graph line drawing. Keep frame-time canvas math there,
-  while `StatsPresentationBuilder` owns compact preview-stat formatting,
-  range/sample text policy, and `StatsPresentationBuilder.Diagnostics.cs` owns
+  while `Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs` owns
+  compact preview-stat formatting, range/sample text policy, and frame-time
+  overlay presentation. `StatsPresentationBuilder.Diagnostics.cs` owns
   diagnostic summary/row parsing.
   `StatsPresentationBuilder.Status.cs` owns stats lane status classification and
   visual-repeat drift policy.
