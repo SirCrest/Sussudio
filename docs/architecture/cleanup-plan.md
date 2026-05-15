@@ -1273,9 +1273,11 @@ FPS/repeat/motion text formatting now lives in
 visibility, codec label, bitrate, and encoder drift text formatting now lives
 in `Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs`; detached
 stats-window text and telemetry-detail presentation now lives in
-`Sussudio/ViewModels/StatsPresentationBuilder.Window.cs`; keep
-`Sussudio/ViewModels/StatsPresentationBuilder.cs` focused on dock and shared
-formatting.
+`Sussudio/ViewModels/StatsPresentationBuilder.Window.cs`; stats dock summary
+construction and HDMI/capture/preview resolution text now lives in
+`Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs`; keep
+`Sussudio/ViewModels/StatsPresentationBuilder.cs` focused on shared
+formatting helpers.
 Stats lane status classification and visual-repeat drift policy now live in
 `Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`.
 Stats presentation DTO records/enums now live in

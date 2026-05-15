@@ -4,6 +4,7 @@ static partial class Program
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
+        var statsPresentationDockText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs").Replace("\r\n", "\n");
         var statsPresentationWindowText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Window.cs").Replace("\r\n", "\n");
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
@@ -11,8 +12,8 @@ static partial class Program
         var nativeXuText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs").Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsPresentationText, "var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
-        AssertContains(statsPresentationText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
+        AssertContains(statsPresentationDockText, "var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
+        AssertContains(statsPresentationDockText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
         AssertDoesNotContain(statsPresentationText, "var sourceFormat =\n            snapshot.ReaderSourceSubtype ??");
         AssertContains(statsOverlayText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
         AssertContains(statsWindowText, "StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot)");

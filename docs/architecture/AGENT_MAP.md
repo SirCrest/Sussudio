@@ -726,8 +726,10 @@ Primary current owners:
   text assignment to presentation controllers.
 - `Sussudio/MainWindow.FrameTimeOverlay.cs` owns compact frame-time overlay
   text projection and graph line drawing. Keep frame-time canvas math there,
-  while `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns stats dock
-  summary construction and shared formatting.
+  while `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns shared stats
+  formatting helpers.
+  `Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs` owns stats dock
+  summary construction and HDMI/capture/preview resolution text.
   `Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs` owns compact
   preview-stat formatting, range/sample text policy, and frame-time overlay
   presentation. `Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs` owns
