@@ -268,8 +268,11 @@ the help facade, `tools/ssctl/SsctlHelpWriter.Sections.cs` owns
 operator-facing help section text, and `tools/ssctl/SsctlHelpWriter.Catalog.cs`
 owns catalog-backed help lines.
 `CommandHandlers.CaptureControls.cs` owns preview/record/screenshot/frame and
-`set` capture/audio/output mutations. `CommandHandlers.DeviceWindow.cs` owns
-device, window, and recordings commands. `CommandHandlers.AutomationFlow.cs`
+`set` capture/audio/output mutations. `CommandHandlers.Device.cs` owns device
+refresh/list/select, audio-input selection, and custom-audio enablement.
+`CommandHandlers.Window.cs` owns window close arming, state/geometry actions,
+fullscreen toggles, and snap commands. `CommandHandlers.Recordings.cs` owns the
+recordings-folder CLI command. `CommandHandlers.AutomationFlow.cs`
 owns wait/assert/probe/stats/settings/frame-time and verification commands.
 `CommandHandlers.Flashback.cs` owns Flashback enablement/playback/scrub/marker/
 segment/restart CLI commands. `CommandHandlers.Flashback.Export.cs` owns

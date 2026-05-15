@@ -1727,8 +1727,12 @@ Primary owners:
   `diagnostic-session` command parsing and runner invocation.
 - `tools/ssctl/CommandHandlers.CaptureControls.cs` owns preview/record,
   screenshot/frame capture, and `set` capture/audio/output mutations.
-- `tools/ssctl/CommandHandlers.DeviceWindow.cs` owns device, window, and
-  recordings commands.
+- `tools/ssctl/CommandHandlers.Device.cs` owns device refresh/list/select,
+  audio-input selection, and custom-audio enablement.
+- `tools/ssctl/CommandHandlers.Window.cs` owns window close arming, window
+  state/geometry actions, fullscreen toggles, and snap commands.
+- `tools/ssctl/CommandHandlers.Recordings.cs` owns the recordings-folder CLI
+  command.
 - `tools/ssctl/CommandHandlers.AutomationFlow.cs` owns wait/assert/probe,
   stats/settings/frame-time, and verification commands.
 - `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enablement,

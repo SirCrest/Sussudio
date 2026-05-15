@@ -114,6 +114,29 @@ static partial class Program
         AssertEqual(0, deviceRefreshExitCode, "device refresh exit code");
         AssertEqual(3, deviceRefreshRequest.GetProperty("command").GetInt32(), "device refresh command id");
 
+        var deviceListPipeName = $"ssctl-device-list-{Guid.NewGuid():N}";
+        var deviceListTransport = Activator.CreateInstance(transportType, deviceListPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for device list command test.");
+        var deviceListArguments = new List<string> { "device", "list" };
+        var deviceListExitCode = -1;
+        JsonElement[] deviceListRequests = await CapturePipeRequestsAsync(
+            deviceListPipeName,
+            expectedCount: 2,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { deviceListTransport, deviceListArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                deviceListExitCode = await task.ConfigureAwait(false);
+            },
+            i => i == 0
+                ? "{\"Success\":true,\"Message\":\"refresh ok\"}"
+                : "{\"Success\":true,\"Message\":\"options ok\",\"Data\":{\"Devices\":[],\"AudioInputDevices\":[]}}")
+            .ConfigureAwait(false);
+
+        AssertEqual(0, deviceListExitCode, "device list exit code");
+        AssertEqual(3, deviceListRequests[0].GetProperty("command").GetInt32(), "device list refresh command id");
+        AssertEqual(29, deviceListRequests[1].GetProperty("command").GetInt32(), "device list options command id");
+
         var fullscreenPipeName = $"ssctl-fullscreen-{Guid.NewGuid():N}";
         var fullscreenTransport = Activator.CreateInstance(transportType, fullscreenPipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for fullscreen command test.");
@@ -131,6 +154,47 @@ static partial class Program
         AssertEqual(0, fullscreenExitCode, "window fullscreen exit code");
         AssertEqual(52, fullscreenRequest.GetProperty("command").GetInt32(), "window fullscreen command id");
         AssertEqual(true, fullscreenRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(), "window fullscreen payload enabled");
+
+        var windowClosePipeName = $"ssctl-window-close-{Guid.NewGuid():N}";
+        var windowCloseTransport = Activator.CreateInstance(transportType, windowClosePipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for window close command test.");
+        var windowCloseArguments = new List<string> { "window", "close" };
+        var windowCloseExitCode = -1;
+        JsonElement[] windowCloseRequests = await CapturePipeRequestsAsync(
+            windowClosePipeName,
+            expectedCount: 2,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { windowCloseTransport, windowCloseArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                windowCloseExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, windowCloseExitCode, "window close exit code");
+        AssertEqual(18, windowCloseRequests[0].GetProperty("command").GetInt32(), "window close arm command id");
+        AssertEqual(true, windowCloseRequests[0].GetProperty("payload").GetProperty("armed").GetBoolean(), "window close arm payload");
+        AssertEqual(19, windowCloseRequests[1].GetProperty("command").GetInt32(), "window close action command id");
+        AssertEqual("Close", windowCloseRequests[1].GetProperty("payload").GetProperty("action").GetString(), "window close action payload");
+
+        var windowCloseDeniedPipeName = $"ssctl-window-close-denied-{Guid.NewGuid():N}";
+        var windowCloseDeniedTransport = Activator.CreateInstance(transportType, windowCloseDeniedPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for window close denied command test.");
+        var windowCloseDeniedArguments = new List<string> { "window", "close" };
+        var windowCloseDeniedExitCode = -1;
+        JsonElement[] windowCloseDeniedRequests = await CapturePipeRequestsAsync(
+            windowCloseDeniedPipeName,
+            expectedCount: 1,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { windowCloseDeniedTransport, windowCloseDeniedArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                windowCloseDeniedExitCode = await task.ConfigureAwait(false);
+            },
+            _ => "{\"Success\":false,\"Message\":\"arm denied\"}")
+            .ConfigureAwait(false);
+
+        AssertEqual(3, windowCloseDeniedExitCode, "window close denied exit code");
+        AssertEqual(18, windowCloseDeniedRequests[0].GetProperty("command").GetInt32(), "window close denied arm command id");
 
         var recordingsPipeName = $"ssctl-recordings-open-{Guid.NewGuid():N}";
         var recordingsTransport = Activator.CreateInstance(transportType, recordingsPipeName, (int?)null)
@@ -233,7 +297,20 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.PresentMon.cs"), "HandlePresentMonAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.PresentMon.cs"), "TryResolvePreviewSwapChainAddressAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.CaptureControls.cs"), "HandleSetAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.DeviceWindow.cs"), "HandleWindowAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "HandleDeviceAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"RefreshDevices\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"GetCaptureOptions\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"SelectDevice\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"SelectAudioInputDevice\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"SetCustomAudioInput\"");
+        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "HandleWindowAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleWindowAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "\"ArmClose\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "\"WindowAction\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "\"SetFullScreenEnabled\"");
+        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleDeviceAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Recordings.cs"), "HandleRecordingsAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Recordings.cs"), "\"OpenRecordingsFolder\"");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleAssertAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "HandleFlashbackAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "return HandleFlashbackExportAsync(context);");
@@ -277,5 +354,9 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers" + ".Parsing" + ".cs")),
             "old ssctl parsing grab-bag removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "CommandHandlers.DeviceWindow.cs")),
+            "old ssctl device/window grab-bag removed");
     }
 }

@@ -9,7 +9,7 @@ static partial class Program
             "tools/ssctl/CommandHandlers.AutomationFlow.cs",
             "tools/ssctl/CommandHandlers.CaptureControls.cs",
             "tools/ssctl/CommandHandlers.Context.cs",
-            "tools/ssctl/CommandHandlers.DeviceWindow.cs",
+            "tools/ssctl/CommandHandlers.Device.cs",
             "tools/ssctl/CommandHandlers.DiagnosticSession.cs",
             "tools/ssctl/CommandHandlers.Flashback.cs",
             "tools/ssctl/CommandHandlers.Flashback.Export.cs",
@@ -17,8 +17,10 @@ static partial class Program
             "tools/ssctl/CommandHandlers.Json.cs",
             "tools/ssctl/CommandHandlers.Observability.cs",
             "tools/ssctl/CommandHandlers.PresentMon.cs",
+            "tools/ssctl/CommandHandlers.Recordings.cs",
             "tools/ssctl/CommandHandlers.Transport.cs",
             "tools/ssctl/CommandHandlers.Values.cs",
+            "tools/ssctl/CommandHandlers.Window.cs",
         };
 
         return string.Join(
