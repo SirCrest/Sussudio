@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using System.Reflection;
 
 static partial class Program
 {
@@ -9,6 +10,7 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.OutputPathDisplay.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/OutputPathDisplayController.cs").Replace("\r\n", "\n");
+        var formatterText = ReadRepoFile("Sussudio/Controllers/OutputPathDisplayTextFormatter.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private OutputPathDisplayController _outputPathDisplayController = null!;");
         AssertContains(adapterText, "private void InitializeOutputPathDisplayController()");
@@ -25,12 +27,58 @@ static partial class Program
         AssertContains(controllerText, "public void Attach()");
         AssertContains(controllerText, "public void Update()");
         AssertContains(controllerText, "ToolTipService.SetToolTip(_context.OutputPathTextBox, path);");
-        AssertContains(controllerText, "var maxChars = (int)((availableWidth - 20) / 7);");
-        AssertContains(controllerText, "var parts = path.Split('\\\\', '/');");
-        AssertContains(controllerText, "var candidate = $\"{root}\\\\...\\\\{tail}\";");
+        AssertContains(controllerText, "OutputPathDisplayTextFormatter.Format(path, availableWidth);");
+        AssertContains(formatterText, "internal static class OutputPathDisplayTextFormatter");
+        AssertContains(formatterText, "public static string Format(string path, double availableWidth)");
+        AssertContains(formatterText, "var maxChars = (int)((availableWidth - 20) / 7);");
+        AssertContains(formatterText, "var parts = path.Split('\\\\', '/');");
+        AssertContains(formatterText, "var candidate = $\"{root}\\\\...\\\\{tail}\";");
+        AssertDoesNotContain(controllerText, "var maxChars = (int)((availableWidth - 20) / 7);");
+        AssertDoesNotContain(controllerText, "var parts = path.Split('\\\\', '/');");
+        AssertDoesNotContain(controllerText, "var candidate = $\"{root}\\\\...\\\\{tail}\";");
         AssertDoesNotContain(bindingsText, "OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();");
         AssertDoesNotContain(bindingsText, "private void UpdateOutputPathDisplay()");
         AssertDoesNotContain(bindingsText, "ToolTipService.SetToolTip(OutputPathTextBox, path);");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task OutputPathDisplayTextFormatter_PreservesTruncationPolicy()
+    {
+        var formatterType = RequireType("Sussudio.Controllers.OutputPathDisplayTextFormatter");
+        var format = formatterType.GetMethod("Format", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("OutputPathDisplayTextFormatter.Format was not found.");
+
+        string Format(string path, double availableWidth)
+        {
+            return format.Invoke(null, new object[] { path, availableWidth })?.ToString()
+                ?? throw new InvalidOperationException("OutputPathDisplayTextFormatter.Format returned null.");
+        }
+
+        AssertEqual(
+            "C:\\captures\\clip.mp4",
+            Format("C:\\captures\\clip.mp4", 240),
+            "Full output path fits when width has enough characters");
+        AssertEqual(
+            "C:\\captures\\clip.mp4",
+            Format("C:\\captures\\clip.mp4", 0),
+            "Zero output path width preserves full path");
+        AssertEqual(
+            "C:\\captures\\clip.mp4",
+            Format("C:\\captures\\clip.mp4", -10),
+            "Negative output path width preserves full path");
+        AssertEqual(
+            "clip-with-a-very-long-name.mp4",
+            Format("clip-with-a-very-long-name.mp4", 40),
+            "Simple path without folder segments stays unchanged");
+        AssertEqual(
+            "C:\\...\\session\\captures\\clip.mp4",
+            Format("C:\\users\\crest\\videos\\session\\captures\\clip.mp4", 250),
+            "Deep output path keeps root and fitting tail segments");
+        AssertEqual(
+            "C:\\...\\clip.mp4",
+            Format("C:\\users\\crest\\videos\\session\\captures\\clip.mp4", 80),
+            "Deep output path falls back to root and filename");
 
         return Task.CompletedTask;
     }

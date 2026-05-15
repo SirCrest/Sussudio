@@ -1470,7 +1470,9 @@ Primary current owners:
   option event bindings: recording format, quality, preset, split encode,
   video format, custom bitrate, HDR, and true-HDR preview toggles.
 - `Sussudio/Controllers/OutputPathDisplayController.cs` owns recording output-
-  path truncation and tooltip updates. `MainWindow.OutputPathDisplay.cs` is the
+  path textbox, tooltip, and resize-event updates.
+  `Sussudio/Controllers/OutputPathDisplayTextFormatter.cs` owns pure output-
+  path truncation text policy. `MainWindow.OutputPathDisplay.cs` is the
   XAML-facing adapter used by binding setup and property changes.
 - `Sussudio/Controllers/OutputPathActionController.cs` owns recording output-
   path browse/open-recordings button workflows. `MainWindow.OutputPathActions.cs`

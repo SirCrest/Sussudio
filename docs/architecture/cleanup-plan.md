@@ -1526,8 +1526,9 @@ bitrate mode visibility, and audio clipping visibility.
 the existing method names for binding setup, property-change projection, and
 the XAML decoder-count selection event.
 
-Recording output-path truncation and tooltip updates now live in
-`Sussudio/Controllers/OutputPathDisplayController.cs`.
+Recording output-path textbox, tooltip, and resize-event updates now live in
+`Sussudio/Controllers/OutputPathDisplayController.cs`; pure truncation text
+policy now lives in `Sussudio/Controllers/OutputPathDisplayTextFormatter.cs`.
 `MainWindow.OutputPathDisplay.cs` is the XAML-facing adapter used by binding
 setup and property changes.
 
