@@ -739,9 +739,11 @@ Primary current owners:
   decode/GPU/diagnostic row pools, empty-state rows, group headers, and
   diagnostic row style updates. `MainWindow.StatsOverlay.cs` delegates metric
   text assignment to presentation controllers.
-- `Sussudio/MainWindow.FrameTimeOverlay.cs` owns compact frame-time overlay
-  text projection and graph line drawing. Keep frame-time canvas math there,
-  while `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns shared stats
+- `Sussudio/Controllers/FrameTimeOverlayPresentationController.cs` owns compact
+  frame-time overlay text projection and graph line drawing. Keep frame-time
+  canvas math there, while `Sussudio/MainWindow.FrameTimeOverlay.cs` remains
+  the XAML-facing visibility adapter and
+  `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns shared stats
   formatting helpers.
   `Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs` owns stats dock
   summary construction and HDMI/capture/preview resolution text.
@@ -1604,8 +1606,8 @@ Refactor direction:
 
 - Keep `MainWindow.xaml.cs` as a shell/composition root over time.
 - Prefer named controllers for preview startup, remaining stats projection
-  pieces, timeline UI, and other shell behavior that currently lives in
-  partials.
+  pieces, Flashback playback/export UI adapters, and other shell behavior that
+  currently lives in partials.
 - Keep `MainViewModel` as a compatibility facade while moving feature state to
   capture, recording, audio, Flashback, diagnostics, and automation adapters.
 - `MainViewModelDependencies.cs` owns the default service graph for the root

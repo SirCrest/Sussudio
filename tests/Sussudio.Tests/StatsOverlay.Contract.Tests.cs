@@ -34,13 +34,19 @@ static partial class Program
     private static Task StatsOverlayLifecycle_LivesInController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/StatsOverlayController.cs").Replace("\r\n", "\n");
+        var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsOverlayText, "private StatsOverlayController _statsOverlayController = null!;");
+        AssertContains(statsOverlayText, "private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;");
         AssertContains(statsOverlayText, "private void InitializeStatsOverlayController()");
+        AssertContains(statsOverlayText, "_frameTimeOverlayPresentationController = new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext");
+        AssertContains(statsOverlayText, "ExpectedLine = FrameTime_ExpectedLine");
         AssertContains(statsOverlayText, "=> _statsOverlayController.ApplyStatsVisibility(visible, immediate);");
         AssertContains(statsOverlayText, "=> _statsOverlayController.SetFrameTimeOverlayVisible(visible);");
+        AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
         AssertContains(mainWindowText, "InitializeStatsOverlayController();");
         AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _statsPollTimer;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _statsDockStoryboard;");
@@ -51,8 +57,12 @@ static partial class Program
         AssertContains(controllerText, "public void SetFrameTimeOverlayVisible(bool visible)");
         AssertContains(controllerText, "private Storyboard CreateStatsDockStoryboard(bool showing)");
         AssertContains(controllerText, "STATS_POLL_TIMER_FAIL");
+        AssertContains(frameTimeControllerText, "internal sealed class FrameTimeOverlayPresentationController");
+        AssertContains(frameTimeControllerText, "public void Apply(StatsSnapshot snapshot)");
         AssertDoesNotContain(statsOverlayText, "private void StatsPollTimer_Tick(");
         AssertDoesNotContain(statsOverlayText, "private Storyboard CreateStatsDockStoryboard(");
+        AssertDoesNotContain(statsOverlayText, "line.Points.Clear();");
+        AssertDoesNotContain(frameTimeOverlayText, "line.Points.Clear();");
 
         return Task.CompletedTask;
     }

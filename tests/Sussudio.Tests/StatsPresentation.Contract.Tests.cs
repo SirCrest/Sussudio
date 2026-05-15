@@ -6,6 +6,7 @@ static partial class Program
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
+        var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationDockText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs").Replace("\r\n", "\n");
         var statsPresentationFrameTimeText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs").Replace("\r\n", "\n");
@@ -69,7 +70,13 @@ static partial class Program
         AssertDoesNotContain(statsPresentationText, "internal sealed record StatsWindowPresentation(");
         AssertDoesNotContain(statsPresentationText, "internal enum StatsMetricStatus");
         AssertContains(statsOverlayText, "var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);");
-        AssertContains(frameTimeOverlayText, "var presentation = StatsPresentationBuilder.BuildFrameTimePresentation(snapshot);");
+        AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
+        AssertContains(frameTimeOverlayControllerText, "internal sealed class FrameTimeOverlayPresentationController");
+        AssertContains(frameTimeOverlayControllerText, "public void Apply(StatsSnapshot snapshot)");
+        AssertContains(frameTimeOverlayControllerText, "var presentation = StatsPresentationBuilder.BuildFrameTimePresentation(snapshot);");
+        AssertContains(frameTimeOverlayControllerText, "UpdateExpectedLine(presentation.Range);");
+        AssertContains(frameTimeOverlayControllerText, "UpdateLine(_context.VisualLine, presentation.VisualSamples, presentation.Range);");
+        AssertContains(frameTimeOverlayControllerText, "SetTextIfChanged(_context.SourceValue, presentation.SourceText);");
         AssertContains(statsOverlayText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
         AssertContains(statsWindowText, "var presentation = StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot);");
         AssertContains(statsWindowText, "_presentationController.Apply(presentation);");
@@ -213,6 +220,7 @@ static partial class Program
         var dockPresentationControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockPresentationController.cs").Replace("\r\n", "\n");
         var mainWindowStatsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsSnapshot.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
+        var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationFrameTimeText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs").Replace("\r\n", "\n");
         var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs").Replace("\r\n", "\n");
@@ -222,7 +230,7 @@ static partial class Program
 
         AssertContains(mainWindowStatsSnapshotText, "PreviewOnePercentLowFps: presentCadence?.OnePercentLowFps ?? 0");
         AssertContains(statsSnapshotBuilderText, "PreviewOnePercentLowFps: StatsPresentationBuilder.Sanitize(renderer.PreviewOnePercentLowFps)");
-        AssertStatsPresentationPreviewFormattingLivesInBuilder(statsPresentationFrameTimeText, statsPresentationText, statsOverlayText, frameTimeOverlayText);
+        AssertStatsPresentationPreviewFormattingLivesInBuilder(statsPresentationFrameTimeText, statsPresentationText, statsOverlayText, frameTimeOverlayText, frameTimeOverlayControllerText);
         AssertContains(dockPresentationControllerText, "SetMetricBrush(_context.SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);");
         AssertContains(dockPresentationControllerText, "SetTextIfChanged(_context.PreviewFpsValue, presentation.PreviewFps);");
         AssertDoesNotContain(statsOverlayText, "SetMetricBrush(Stats_SummaryRendererFpsValue");
@@ -239,7 +247,8 @@ static partial class Program
         string statsPresentationFrameTimeText,
         string statsPresentationText,
         string statsOverlayText,
-        string frameTimeOverlayText)
+        string frameTimeOverlayText,
+        string frameTimeOverlayControllerText)
     {
         AssertContains(statsPresentationFrameTimeText, "private static string FormatPreviewCadenceSummary(StatsSnapshot snapshot)");
         AssertContains(statsPresentationFrameTimeText, "private static double ResolveCurrentPreviewFrameTimeMs(StatsSnapshot snapshot)");
@@ -252,11 +261,14 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "private static double ResolveCurrentPreviewFrameTimeMs(");
         AssertDoesNotContain(frameTimeOverlayText, "private static string FormatPreviewCadenceSummary(");
         AssertDoesNotContain(frameTimeOverlayText, "private static double ResolveCurrentPreviewFrameTimeMs(");
+        AssertDoesNotContain(frameTimeOverlayControllerText, "private static string FormatPreviewCadenceSummary(");
+        AssertDoesNotContain(frameTimeOverlayControllerText, "private static double ResolveCurrentPreviewFrameTimeMs(");
     }
 
     private static Task FrameTimeOverlay_UsesDetectedFpsBoundedRange()
     {
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
+        var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationFrameTimeText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs").Replace("\r\n", "\n");
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
@@ -269,8 +281,11 @@ static partial class Program
         AssertDoesNotContain(statsPresentationText, "public static StatsFrameTimePresentation BuildFrameTimePresentation(StatsSnapshot snapshot)");
         AssertDoesNotContain(frameTimeOverlayText, "LowerFpsLabel");
         AssertDoesNotContain(frameTimeOverlayText, "UpperFpsLabel");
-        AssertContains(frameTimeOverlayText, "(samples[i] - range.MinMs) / range.SpanMs");
-        AssertContains(frameTimeOverlayText, "UpdateFrameTimeExpectedLine");
+        AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
+        AssertContains(frameTimeOverlayControllerText, "(samples[i] - range.MinMs) / range.SpanMs");
+        AssertContains(frameTimeOverlayControllerText, "UpdateExpectedLine");
+        AssertContains(frameTimeOverlayControllerText, "var width = _context.Canvas.ActualWidth > 1 ? _context.Canvas.ActualWidth : 500;");
+        AssertContains(frameTimeOverlayControllerText, "var height = _context.Canvas.ActualHeight > 1 ? _context.Canvas.ActualHeight : 92;");
         AssertContains(mainWindowXaml, "x:Name=\"FrameTime_ExpectedLine\"");
 
         var presentationType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");

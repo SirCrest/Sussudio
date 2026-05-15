@@ -17,9 +17,22 @@ public sealed partial class MainWindow
     private StatsDockPresentationController _statsDockPresentationController = null!;
     private StatsDiagnosticRowsController _statsDiagnosticRowsController = null!;
     private StatsHardwareRowsController _statsHardwareRowsController = null!;
+    private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;
 
     private void InitializeStatsOverlayController()
     {
+        _frameTimeOverlayPresentationController = new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext
+        {
+            SourceValue = FrameTime_SourceValue,
+            VisualValue = FrameTime_VisualValue,
+            PreviewValue = FrameTime_PreviewValue,
+            LatencyValue = FrameTime_LatencyValue,
+            StatusValue = FrameTime_StatusValue,
+            Canvas = FrameTime_Canvas,
+            VisualLine = FrameTime_VisualLine,
+            PreviewLine = FrameTime_PreviewLine,
+            ExpectedLine = FrameTime_ExpectedLine
+        });
         _statsOverlayController = new StatsOverlayController(new StatsOverlayControllerContext
         {
             DispatcherQueue = _dispatcherQueue,
@@ -161,13 +174,5 @@ public sealed partial class MainWindow
 
         var presentation = StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary);
         _statsDiagnosticRowsController.UpdateDiagnostics(presentation);
-    }
-
-    private static void SetTextIfChanged(TextBlock target, string value)
-    {
-        if (!string.Equals(target.Text, value, StringComparison.Ordinal))
-        {
-            target.Text = value;
-        }
     }
 }
