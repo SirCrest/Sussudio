@@ -1185,10 +1185,12 @@ Primary current owners:
   owns shared reflective runner setup for diagnostic-session runner behavior
   tests: loading `ssctl`, creating `DiagnosticSessionOptions`, invoking
   `DiagnosticSessionRunner.RunAsync`, and parsing synthetic JSON responses.
-- `tests/Sussudio.Tests/McpToolSurface.Performance.Tests.cs` owns MCP
-  performance timeline and frame-pacing verdict tests.
-- `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` owns MCP wait,
-  window, preview, Flashback, and screenshot tests.
+- `tests/Sussudio.Tests/McpToolSurface.Performance.*.Tests.cs` owns MCP
+  performance timeline contract, Flashback timeline formatting, and
+  frame-pacing verdict tests.
+- `tests/Sussudio.Tests/McpToolSurface.WindowPreview.*.Tests.cs` owns MCP
+  wait, window action, preview toggle, Flashback toggle, screenshot, and probe
+  tests.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Probes.Tests.cs` owns MCP
   preview color probe and video source probe formatting tests.
 - `tests/Sussudio.Tests/McpToolSurface.Helpers.Process.cs`,
