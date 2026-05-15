@@ -1433,7 +1433,9 @@ Primary current owners:
   exporter request-surface smoke tests, export throttle, and failure
   classifier tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Infrastructure.Tests.cs` owns
-  Flashback exporter task-wrapper infrastructure and source-ownership tests.
+  Flashback exporter task-wrapper infrastructure tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.Ownership.Tests.cs` owns
+  Flashback exporter source-ownership tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Cleanup.Tests.cs` owns Flashback
   exporter orphan temp-file cleanup and output-directory scan guard tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Cancellation.Tests.cs` owns
