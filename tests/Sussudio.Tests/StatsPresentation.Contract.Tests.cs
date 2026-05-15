@@ -8,6 +8,7 @@ static partial class Program
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationFrameTimeText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs").Replace("\r\n", "\n");
+        var statsPresentationVisualText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs").Replace("\r\n", "\n");
         var statsPresentationDiagnosticsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs").Replace("\r\n", "\n");
         var statsPresentationStatusText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Status.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
@@ -16,6 +17,11 @@ static partial class Program
         AssertContains(statsPresentationText, "public static StatsDockPresentation BuildDockPresentation(StatsSnapshot snapshot)");
         AssertContains(statsPresentationFrameTimeText, "internal static partial class StatsPresentationBuilder");
         AssertContains(statsPresentationFrameTimeText, "public static StatsFrameTimePresentation BuildFrameTimePresentation(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationVisualText, "internal static partial class StatsPresentationBuilder");
+        AssertContains(statsPresentationVisualText, "private static string FormatVisualRepeatSummary(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationVisualText, "private static string FormatVisualCadenceSummary(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationVisualText, "private static string FormatVisualMotionSummary(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationVisualText, "private static string FormatHz(double value)");
         AssertContains(statsPresentationDiagnosticsText, "internal static partial class StatsPresentationBuilder");
         AssertContains(statsPresentationDiagnosticsText, "public static StatsDiagnosticRowsPresentation BuildDiagnosticRows(");
         AssertContains(statsPresentationDiagnosticsText, "public static StatsDiagnosticSummary BuildStatsDiagnosticSummary(");
@@ -25,6 +31,9 @@ static partial class Program
         AssertContains(statsPresentationStatusText, "private static StatsMetricStatus ResolveDecodedVisualStatus(StatsSnapshot snapshot)");
         AssertContains(statsPresentationStatusText, "private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)");
         AssertDoesNotContain(statsPresentationText, "public static StatsFrameTimePresentation BuildFrameTimePresentation(StatsSnapshot snapshot)");
+        AssertDoesNotContain(statsPresentationText, "private static string FormatVisualRepeatSummary(");
+        AssertDoesNotContain(statsPresentationText, "private static string FormatVisualCadenceSummary(");
+        AssertDoesNotContain(statsPresentationText, "private static string FormatVisualMotionSummary(");
         AssertDoesNotContain(statsPresentationText, "public static StatsDiagnosticRowsPresentation BuildDiagnosticRows(");
         AssertDoesNotContain(statsPresentationText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
         AssertDoesNotContain(statsPresentationText, "private static StatsMetricStatus ResolveFrameLaneStatus(");

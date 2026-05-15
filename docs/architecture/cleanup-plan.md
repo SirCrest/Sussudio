@@ -1248,7 +1248,9 @@ the legacy harness body in `tests/Sussudio.Tests/Program.cs`.
 Stats diagnostic summary/row parsing now lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs`; frame-time
 overlay presentation/range/sample text policy now lives in
-`Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs`; keep the root
+`Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs`; visual-cadence
+FPS/repeat/motion text formatting now lives in
+`Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs`; keep the root
 `StatsPresentationBuilder.cs` focused on dock and shared formatting.
 Stats lane status classification and visual-repeat drift policy now live in
 `Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`.

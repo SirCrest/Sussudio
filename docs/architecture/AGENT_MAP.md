@@ -718,8 +718,9 @@ Primary current owners:
   text projection and graph line drawing. Keep frame-time canvas math there,
   while `Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs` owns
   compact preview-stat formatting, range/sample text policy, and frame-time
-  overlay presentation. `StatsPresentationBuilder.Diagnostics.cs` owns
-  diagnostic summary/row parsing.
+  overlay presentation. `Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs`
+  owns visual-cadence FPS/repeat/motion text formatting.
+  `StatsPresentationBuilder.Diagnostics.cs` owns diagnostic summary/row parsing.
   `StatsPresentationBuilder.Status.cs` owns stats lane status classification and
   visual-repeat drift policy.
   `StatsPresentationModels.cs` owns the internal DTO records/enums consumed by
