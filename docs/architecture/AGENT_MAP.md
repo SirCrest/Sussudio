@@ -1765,8 +1765,9 @@ Primary current owners:
   path, counters, and transition flags.
   `MainViewModel.Disposal.cs` owns bounded teardown, event unsubscription, and
   export-cancellation cleanup.
-  `MainViewModel.AutomationSnapshots.cs` owns automation-facing runtime,
-  health, recording, view-model, and probe snapshot projection.
+  `MainViewModel.AutomationSnapshots.cs` owns automation-facing capture runtime,
+  health, recording, and probe snapshot projection.
+  `MainViewModel.ViewModelRuntimeSnapshot.cs` owns automation-facing view-model runtime snapshot projection.
   `MainViewModel.AutomationOptionsSnapshot.cs` owns automation-facing options
   and selected-control-state projection for CLI/MCP clients.
   `MainViewModel.FlashbackPlayback.cs` owns

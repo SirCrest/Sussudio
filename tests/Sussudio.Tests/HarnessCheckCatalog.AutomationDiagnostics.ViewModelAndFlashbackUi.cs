@@ -27,6 +27,9 @@ static partial class Program
             "Automation flashback and probe commands use async view-model surface",
             MainViewModelAutomation_UsesAsyncFlashbackAndProbeSurface);
         await AddCheckAsync(results,
+            "Automation view-model runtime snapshot lives in focused partial",
+            MainViewModelAutomation_ViewModelRuntimeSnapshotLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "Main window flashback scrub ends on release cancel and capture lost",
             MainWindowFlashbackScrub_EndsOnReleaseCancelAndCaptureLost);
         await AddCheckAsync(results,
