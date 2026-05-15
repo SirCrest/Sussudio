@@ -83,6 +83,7 @@ static partial class Program
     {
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var captureOptionText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionPresentation.cs").Replace("\r\n", "\n");
+        var recordingOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.RecordingOptionBindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
 
         AssertContains(captureOptionText, "private void UpdateDecoderCountVisibility()");
@@ -103,6 +104,22 @@ static partial class Program
         AssertContains(bindingsText, "UpdateFpsTelemetryTooltip();");
         AssertContains(bindingsText, "ApplyBitrateVisibility();");
         AssertContains(bindingsText, "ApplyAudioClipVisibility();");
+        AssertContains(bindingsText, "AttachRecordingOptionBindings();");
+        AssertOccursBefore(bindingsText, "FormatComboBox.SelectedItem = ViewModel.SelectedRecordingFormat;", "AttachRecordingOptionBindings();");
+        AssertOccursBefore(bindingsText, "CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;", "AttachRecordingOptionBindings();");
+        AssertOccursBefore(bindingsText, "TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;", "AttachRecordingOptionBindings();");
+        AssertOccursBefore(bindingsText, "EnsureSplitEncodeModeSelection();", "AttachRecordingOptionBindings();");
+        AssertContains(recordingOptionBindingsText, "private void AttachRecordingOptionBindings()");
+        AssertContains(recordingOptionBindingsText, "FormatComboBox.SelectionChanged +=");
+        AssertContains(recordingOptionBindingsText, "ViewModel.SelectedRecordingFormat = format;");
+        AssertContains(recordingOptionBindingsText, "QualityComboBox.SelectionChanged +=");
+        AssertContains(recordingOptionBindingsText, "PresetComboBox.SelectionChanged +=");
+        AssertContains(recordingOptionBindingsText, "SplitEncodeComboBox.SelectionChanged +=");
+        AssertContains(recordingOptionBindingsText, "VideoFormatComboBox.SelectionChanged +=");
+        AssertContains(recordingOptionBindingsText, "UpdateDecoderCountVisibility();");
+        AssertContains(recordingOptionBindingsText, "CustomBitrateNumberBox.ValueChanged +=");
+        AssertContains(recordingOptionBindingsText, "HdrToggle.Click +=");
+        AssertContains(recordingOptionBindingsText, "TrueHdrPreviewToggle.Click +=");
         AssertContains(propertyChangedText, "UpdateOutputPathDisplay();");
         AssertContains(propertyChangedText, "ApplyAudioClipVisibility();");
         AssertContains(propertyChangedText, "ApplyHdrToggleEnabledState();");
@@ -113,6 +130,9 @@ static partial class Program
         AssertDoesNotContain(bindingsText, "private void DecoderCountComboBox_SelectionChanged(");
         AssertDoesNotContain(bindingsText, "private void RefreshHdrHintText()");
         AssertDoesNotContain(bindingsText, "private void ApplyBitrateVisibility()");
+        AssertDoesNotContain(bindingsText, "FormatComboBox.SelectionChanged +=");
+        AssertDoesNotContain(bindingsText, "CustomBitrateNumberBox.ValueChanged +=");
+        AssertDoesNotContain(bindingsText, "HdrToggle.Click +=");
         AssertDoesNotContain(ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n"), "private int _selectedDecoderCount = 4;");
 
         return Task.CompletedTask;

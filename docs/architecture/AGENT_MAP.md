@@ -1413,6 +1413,9 @@ Primary current owners:
   rules for capture option affordances: HDR readiness hints, FPS telemetry
   tooltips, MJPEG decoder count selection/visibility, bitrate mode visibility,
   and audio clipping visibility.
+- `Sussudio/MainWindow.RecordingOptionBindings.cs` owns recording/capture
+  option event bindings: recording format, quality, preset, split encode,
+  video format, custom bitrate, HDR, and true-HDR preview toggles.
 - `Sussudio/Controllers/OutputPathDisplayController.cs` owns recording output-
   path truncation and tooltip updates. `MainWindow.OutputPathDisplay.cs` is the
   XAML-facing adapter used by binding setup and property changes.

@@ -202,58 +202,7 @@ public sealed partial class MainWindow
             UpdateDecoderCountVisibility();
         };
 
-        FormatComboBox.SelectionChanged += (s, e) =>
-        {
-            if (FormatComboBox.SelectedItem is string format)
-            {
-                ViewModel.SelectedRecordingFormat = format;
-            }
-        };
-
-        QualityComboBox.SelectionChanged += (s, e) =>
-        {
-            if (QualityComboBox.SelectedItem is string quality)
-            {
-                ViewModel.SelectedQuality = quality;
-            }
-        };
-
-        PresetComboBox.SelectionChanged += (s, e) =>
-        {
-            if (PresetComboBox.SelectedItem is string preset)
-            {
-                ViewModel.SelectedPreset = preset;
-            }
-        };
-
-        SplitEncodeComboBox.SelectionChanged += (s, e) =>
-        {
-            if (SplitEncodeComboBox.SelectedItem is string splitMode)
-            {
-                ViewModel.SelectedSplitEncodeMode = splitMode;
-            }
-        };
-
-        VideoFormatComboBox.SelectionChanged += (s, e) =>
-        {
-            if (VideoFormatComboBox.SelectedItem is string videoFormat)
-            {
-                ViewModel.SelectedVideoFormat = videoFormat;
-            }
-
-            UpdateDecoderCountVisibility();
-        };
-
-        CustomBitrateNumberBox.ValueChanged += (s, e) =>
-        {
-            if (!double.IsNaN(CustomBitrateNumberBox.Value))
-            {
-                ViewModel.CustomBitrateMbps = CustomBitrateNumberBox.Value;
-            }
-        };
-        HdrToggle.Click += (s, e) => ViewModel.IsHdrEnabled = HdrToggle.IsChecked == true;
-        TrueHdrPreviewToggle.Click += (s, e) =>
-            ViewModel.IsTrueHdrPreviewEnabled = TrueHdrPreviewToggle.IsChecked == true;
+        AttachRecordingOptionBindings();
         AudioRecordToggle.Checked += (s, e) => ViewModel.IsAudioEnabled = true;
         AudioRecordToggle.Unchecked += (s, e) => ViewModel.IsAudioEnabled = false;
         AudioPreviewToggle.Checked += (s, e) => ViewModel.IsAudioPreviewEnabled = true;
