@@ -1167,8 +1167,11 @@ polling and active snapshot assembly in `NativeXuAtCommandProvider.RollingPoll.c
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
 the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
-automation, and verification; recording-format and observed-frame helper
-policy live in focused snapshot partials.
+automation, and verification; video ingest, source-reader health, WASAPI
+capture, and playback output counter projection now lives in
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs`.
+Recording-format and observed-frame helper policy live in focused snapshot
+partials.
 
 Capture health snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file owns

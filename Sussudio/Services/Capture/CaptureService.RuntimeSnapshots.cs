@@ -15,6 +15,13 @@ public partial class CaptureService
         var unifiedVideoCapture = _unifiedVideoCapture;
         var wasapiCapture = _wasapiAudioCapture;
         var wasapiPlayback = _wasapiAudioPlayback;
+        var ingestAudio = CaptureRuntimeIngestAudioSnapshotFields(
+            unifiedVideoCapture,
+            sink,
+            wasapiCapture,
+            wasapiPlayback,
+            _isVideoPreviewActive,
+            _isRecording);
         var requestedSettings = _activeRecordingSettings ?? _currentSettings;
         var hdrRequested = requestedSettings?.HdrEnabled == true &&
                            requestedSettings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
@@ -111,8 +118,6 @@ public partial class CaptureService
             : hdrRequested
                 ? "P010"
                 : "NV12";
-        var mfSourceReaderFramesDelivered = unifiedVideoCapture?.VideoFramesArrived ?? _lastMfSourceReaderFramesDelivered;
-        var mfSourceReaderFramesDropped = unifiedVideoCapture?.VideoFramesDropped ?? _lastMfSourceReaderFramesDropped;
         var mfSourceReaderNegotiatedFormat = unifiedVideoCapture?.NegotiatedFormat ?? _lastMfSourceReaderNegotiatedFormat;
         var negotiatedSubtypeFromSourceReader =
             !string.IsNullOrWhiteSpace(mfSourceReaderNegotiatedFormat) &&
@@ -126,8 +131,6 @@ public partial class CaptureService
             ? (unifiedVideoCapture.IsHighFrameRateMjpegMode ? "MJPG"
                 : unifiedVideoCapture.IsP010 ? "P010" : "NV12")
             : negotiatedSubtypeFromSourceReader;
-        var hasD3DManager = unifiedVideoCapture?.D3DManager != null;
-        var memoryPreference = hasD3DManager ? "Gpu" : "Cpu";
         var readerSourceStreamType = (_isRecording || _isVideoPreviewActive) && unifiedVideoCapture != null
             ? "MfSourceReader"
             : null;
@@ -138,8 +141,6 @@ public partial class CaptureService
         var recordingIntegrity = ResolveRecordingIntegritySummary(unifiedVideoCapture, sink, _flashbackSink);
         var (runtimeAvSyncDriftMs, runtimeAvSyncDriftRate) = ComputeAvSyncDrift();
         var (runtimeAvSyncEncoderDriftMs, runtimeAvSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
-        var (wasapiCaptureCallbackAvgMs, wasapiCaptureCallbackMaxMs) =
-            wasapiCapture?.GetCaptureCallbackIntervalSnapshot() ?? (0d, 0d);
 
         return new CaptureRuntimeSnapshot
         {
@@ -147,15 +148,15 @@ public partial class CaptureService
             IsInitialized = _isInitialized,
             IsRecording = _isRecording,
             IsAudioPreviewActive = _isAudioPreviewActive,
-            AudioReaderActive = wasapiCapture?.IsCapturing ?? false,
-            AudioFramesArrived = wasapiCapture?.AudioFramesArrived ?? 0,
-            AudioFramesWrittenToSink = wasapiCapture?.AudioFramesWrittenToSink ?? 0,
-            VideoReaderActive = unifiedVideoCapture != null && (_isVideoPreviewActive || _isRecording),
-            IngestVideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? 0,
-            IngestVideoFramesWrittenToSink = unifiedVideoCapture?.VideoFramesWrittenToSink ?? 0,
-            IngestLastVideoFrameAgeMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),
-            VideoIngestErrorCount = unifiedVideoCapture?.VideoFramesDropped ?? 0,
-            MemoryPreference = memoryPreference,
+            AudioReaderActive = ingestAudio.AudioReaderActive,
+            AudioFramesArrived = ingestAudio.AudioFramesArrived,
+            AudioFramesWrittenToSink = ingestAudio.AudioFramesWrittenToSink,
+            VideoReaderActive = ingestAudio.VideoReaderActive,
+            IngestVideoFramesArrived = ingestAudio.IngestVideoFramesArrived,
+            IngestVideoFramesWrittenToSink = ingestAudio.IngestVideoFramesWrittenToSink,
+            IngestLastVideoFrameAgeMs = ingestAudio.IngestLastVideoFrameAgeMs,
+            VideoIngestErrorCount = ingestAudio.VideoIngestErrorCount,
+            MemoryPreference = ingestAudio.MemoryPreference,
             VideoRequestedSubtype = requestedReaderSubtype ?? "unknown",
             VideoNegotiatedSubtype = videoNegotiatedSubtype,
             FrameLedgerCapacity = frameLedger.Capacity,
@@ -163,40 +164,40 @@ public partial class CaptureService
             FrameLedgerDroppedEventCount = frameLedger.EventsDroppedByRetention,
             FrameLedgerRecentEvents = frameLedger.RecentEvents,
             PreviewColorMetadata = previewColorMetadata,
-            MfSourceReaderFramesDelivered = mfSourceReaderFramesDelivered,
-            MfSourceReaderFramesDropped = mfSourceReaderFramesDropped,
+            MfSourceReaderFramesDelivered = ingestAudio.MfSourceReaderFramesDelivered,
+            MfSourceReaderFramesDropped = ingestAudio.MfSourceReaderFramesDropped,
             MfSourceReaderNegotiatedFormat = mfSourceReaderNegotiatedFormat,
             SessionState = _sessionState,
-            SourceReaderReadOutstanding = unifiedVideoCapture?.SourceReaderReadOutstanding ?? false,
-            SourceReaderReadOutstandingMs = unifiedVideoCapture?.SourceReaderReadOutstandingMs ?? 0,
-            SourceReaderLastFrameTickMs = unifiedVideoCapture?.SourceReaderLastFrameTickMs ?? 0,
-            SourceReaderFrameChannelDepth = sink?.VideoQueueCount ?? 0,
-            WasapiCaptureCallbackCount = wasapiCapture?.CaptureCallbackCount ?? 0,
-            WasapiCaptureCallbackAvgIntervalMs = wasapiCaptureCallbackAvgMs,
-            WasapiCaptureCallbackMaxIntervalMs = wasapiCaptureCallbackMaxMs,
-            WasapiCaptureCallbackSevereGapCount = wasapiCapture?.CaptureCallbackSevereGapCount ?? 0,
-            WasapiCaptureAudioDiscontinuityCount = wasapiCapture?.AudioDataDiscontinuityCount ?? 0,
-            WasapiCaptureAudioTimestampErrorCount = wasapiCapture?.AudioTimestampErrorCount ?? 0,
-            WasapiCaptureAudioGlitchCount = wasapiCapture?.AudioGlitchCount ?? 0,
-            WasapiCaptureCallbackSilenceCount = wasapiCapture?.CaptureCallbackSilenceCount ?? 0,
-            WasapiCaptureLastCallbackTickMs = wasapiCapture?.LastCaptureCallbackTickMs ?? 0,
-            WasapiCaptureAudioLevelEventsFired = wasapiCapture?.AudioLevelEventsFired ?? 0,
-            WasapiCaptureAudioLevelLastFireTickMs = wasapiCapture?.AudioLevelEventsLastFireTickMs ?? 0,
-            WasapiPlaybackRenderCallbackCount = wasapiPlayback?.RenderCallbackCount ?? 0,
-            WasapiPlaybackRenderSilenceCount = wasapiPlayback?.RenderSilenceCount ?? 0,
-            WasapiPlaybackQueueDepth = wasapiPlayback?.PlaybackQueueDepth ?? 0,
-            WasapiPlaybackQueueDropCount = wasapiPlayback?.PlaybackQueueDropCount ?? 0,
-            WasapiPlaybackQueueDurationMs = wasapiPlayback?.PlaybackQueueDurationMs ?? 0,
-            WasapiPlaybackActiveChunkDurationMs = wasapiPlayback?.PlaybackActiveChunkDurationMs ?? 0,
-            WasapiPlaybackEndpointQueuedDurationMs = wasapiPlayback?.PlaybackEndpointQueuedDurationMs ?? 0,
-            WasapiPlaybackBufferedDurationMs = wasapiPlayback?.PlaybackBufferedDurationMs ?? 0,
-            WasapiPlaybackStreamLatencyMs = wasapiPlayback?.PlaybackStreamLatencyMs ?? 0,
-            WasapiPlaybackLastRenderTickMs = wasapiPlayback?.LastRenderCallbackTickMs ?? 0,
-            WasapiPlaybackTargetVolumePercent = (wasapiPlayback?.TargetVolume ?? 0) * 100.0,
-            WasapiPlaybackCurrentVolumePercent = (wasapiPlayback?.CurrentVolume ?? 0) * 100.0,
-            WasapiPlaybackOutputPeak = wasapiPlayback?.LastOutputPeak ?? 0,
-            WasapiPlaybackOutputRms = wasapiPlayback?.LastOutputRms ?? 0,
-            WasapiPlaybackOutputLevelLastTickMs = wasapiPlayback?.LastOutputLevelTickMs ?? 0,
+            SourceReaderReadOutstanding = ingestAudio.SourceReaderReadOutstanding,
+            SourceReaderReadOutstandingMs = ingestAudio.SourceReaderReadOutstandingMs,
+            SourceReaderLastFrameTickMs = ingestAudio.SourceReaderLastFrameTickMs,
+            SourceReaderFrameChannelDepth = ingestAudio.SourceReaderFrameChannelDepth,
+            WasapiCaptureCallbackCount = ingestAudio.WasapiCaptureCallbackCount,
+            WasapiCaptureCallbackAvgIntervalMs = ingestAudio.WasapiCaptureCallbackAvgIntervalMs,
+            WasapiCaptureCallbackMaxIntervalMs = ingestAudio.WasapiCaptureCallbackMaxIntervalMs,
+            WasapiCaptureCallbackSevereGapCount = ingestAudio.WasapiCaptureCallbackSevereGapCount,
+            WasapiCaptureAudioDiscontinuityCount = ingestAudio.WasapiCaptureAudioDiscontinuityCount,
+            WasapiCaptureAudioTimestampErrorCount = ingestAudio.WasapiCaptureAudioTimestampErrorCount,
+            WasapiCaptureAudioGlitchCount = ingestAudio.WasapiCaptureAudioGlitchCount,
+            WasapiCaptureCallbackSilenceCount = ingestAudio.WasapiCaptureCallbackSilenceCount,
+            WasapiCaptureLastCallbackTickMs = ingestAudio.WasapiCaptureLastCallbackTickMs,
+            WasapiCaptureAudioLevelEventsFired = ingestAudio.WasapiCaptureAudioLevelEventsFired,
+            WasapiCaptureAudioLevelLastFireTickMs = ingestAudio.WasapiCaptureAudioLevelLastFireTickMs,
+            WasapiPlaybackRenderCallbackCount = ingestAudio.WasapiPlaybackRenderCallbackCount,
+            WasapiPlaybackRenderSilenceCount = ingestAudio.WasapiPlaybackRenderSilenceCount,
+            WasapiPlaybackQueueDepth = ingestAudio.WasapiPlaybackQueueDepth,
+            WasapiPlaybackQueueDropCount = ingestAudio.WasapiPlaybackQueueDropCount,
+            WasapiPlaybackQueueDurationMs = ingestAudio.WasapiPlaybackQueueDurationMs,
+            WasapiPlaybackActiveChunkDurationMs = ingestAudio.WasapiPlaybackActiveChunkDurationMs,
+            WasapiPlaybackEndpointQueuedDurationMs = ingestAudio.WasapiPlaybackEndpointQueuedDurationMs,
+            WasapiPlaybackBufferedDurationMs = ingestAudio.WasapiPlaybackBufferedDurationMs,
+            WasapiPlaybackStreamLatencyMs = ingestAudio.WasapiPlaybackStreamLatencyMs,
+            WasapiPlaybackLastRenderTickMs = ingestAudio.WasapiPlaybackLastRenderTickMs,
+            WasapiPlaybackTargetVolumePercent = ingestAudio.WasapiPlaybackTargetVolumePercent,
+            WasapiPlaybackCurrentVolumePercent = ingestAudio.WasapiPlaybackCurrentVolumePercent,
+            WasapiPlaybackOutputPeak = ingestAudio.WasapiPlaybackOutputPeak,
+            WasapiPlaybackOutputRms = ingestAudio.WasapiPlaybackOutputRms,
+            WasapiPlaybackOutputLevelLastTickMs = ingestAudio.WasapiPlaybackOutputLevelLastTickMs,
             CurrentDeviceId = _currentDevice?.Id,
             CurrentDeviceName = _currentDevice?.Name,
             ActiveAudioDeviceId = _audioDeviceId,
