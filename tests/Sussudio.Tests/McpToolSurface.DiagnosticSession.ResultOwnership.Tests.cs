@@ -91,6 +91,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
+        var flashbackWarningsText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs")
+            .Replace("\r\n", "\n");
         var builderText = ReadDiagnosticSessionResultBuilderSource();
 
         AssertContains(builderText, "internal static partial class DiagnosticSessionResultBuilder");
@@ -102,6 +104,14 @@ static partial class Program
         AssertContains(builderText, "runState.SetStage(\"result-analysis\")");
         AssertContains(builderText, "var result = new DiagnosticSessionResult");
         AssertContains(builderText, "var previewScheduler = BuildPreviewSchedulerAnalysis(initialSnapshot, lastSnapshot, samples);");
+        AssertContains(analysisText, "AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);");
+        AssertContains(analysisText, "AddFlashbackExportAnalysisWarnings(");
+        AssertDoesNotContain(analysisText, "flashback playback seek forward-decode cap hit during session");
+        AssertDoesNotContain(analysisText, "flashback export used force-rotate partial fallback");
+        AssertContains(flashbackWarningsText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
+        AssertContains(flashbackWarningsText, "private static void AddFlashbackExportAnalysisWarnings(");
+        AssertContains(flashbackWarningsText, "flashback playback seek forward-decode cap hit during session");
+        AssertContains(flashbackWarningsText, "flashback export used force-rotate partial fallback");
         AssertContains(builderText, "var artifactPaths = await WritePreSummaryAsync(");
         AssertContains(builderText, "SummaryPath = artifactPaths.SummaryPath");
         AssertContains(builderText, "SamplesPath = artifactPaths.SamplesPath");

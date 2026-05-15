@@ -1908,6 +1908,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
   diagnostic-session health analysis, warning tolerance, and metric preparation
   before summary construction.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs` owns
+  Flashback-specific analysis warning text for playback forward-decode caps and
+  export force-rotate fallback observations.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
   diagnostic-session preview-scheduler counter/delta projection for summary
   construction.

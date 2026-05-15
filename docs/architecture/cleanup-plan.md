@@ -1711,7 +1711,10 @@ summary emission while the runner keeps the phase sequence.
 health analysis, Flashback warning tolerance, metric gathering, and
 result-build handoff models live beside it in
 `DiagnosticSessionResultBuilder.Analysis.cs` and
-`DiagnosticSessionResultBuilder.Models.cs`. Preview-scheduler counter/delta
+`DiagnosticSessionResultBuilder.Models.cs`. Flashback-specific analysis warning
+text for playback forward-decode caps and export force-rotate fallback
+observations lives in `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`.
+Preview-scheduler counter/delta
 projection for the summary result lives in
 `DiagnosticSessionResultBuilder.PreviewScheduler.cs` so the analysis phase can
 consume one named snapshot of the MJPEG jitter-buffer counters.
@@ -2064,6 +2067,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultBuilder.Result.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
+- `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionResultFormatter.Overview.cs`

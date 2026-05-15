@@ -30,24 +30,16 @@ internal static partial class DiagnosticSessionResultBuilder
         var evidence = GetString(diagnosticHealthSnapshot, "DiagnosticEvidence") ?? string.Empty;
         var playbackSessionMetrics = BuildFlashbackPlaybackSessionMetrics(initialSnapshot, samples, lastSnapshot);
         var playbackResultMetrics = BuildFlashbackPlaybackResultMetrics(playbackSessionMetrics);
-        if (playbackResultMetrics.SeekForwardDecodeCapHitsDelta > 0)
-        {
-            warnings.Add(
-                "flashback playback seek forward-decode cap hit during session " +
-                $"delta={playbackResultMetrics.SeekForwardDecodeCapHitsDelta} " +
-                $"total={playbackResultMetrics.SeekForwardDecodeCapHitsAtEnd}");
-        }
+        AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);
 
         var flashbackExportForceRotateFallbacksAtEnd = GetNullableLong(lastSnapshot, "FlashbackExportForceRotateFallbacks") ?? 0;
         var flashbackExportForceRotateFallbacksDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "FlashbackExportForceRotateFallbacks");
         var flashbackExportLastForceRotateFallbackSegmentsAtEnd = GetInt(lastSnapshot, "FlashbackExportLastForceRotateFallbackSegments");
-        if (flashbackExportForceRotateFallbacksDelta > 0)
-        {
-            warnings.Add(
-                "flashback export used force-rotate partial fallback " +
-                $"delta={flashbackExportForceRotateFallbacksDelta} total={flashbackExportForceRotateFallbacksAtEnd} " +
-                $"segments={flashbackExportLastForceRotateFallbackSegmentsAtEnd}");
-        }
+        AddFlashbackExportAnalysisWarnings(
+            flashbackExportForceRotateFallbacksAtEnd,
+            flashbackExportForceRotateFallbacksDelta,
+            flashbackExportLastForceRotateFallbackSegmentsAtEnd,
+            warnings);
 
         var recordingMetrics = BuildFlashbackRecordingMetrics(initialSnapshot, samples);
         var exportMetrics = BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot);
