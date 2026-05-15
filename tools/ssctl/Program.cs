@@ -1,5 +1,4 @@
 using System.Globalization;
-using Sussudio.Models;
 using Sussudio.Tools;
 
 namespace Sussudio.Tools.Ssctl;
@@ -54,7 +53,7 @@ internal static class Program
             var options = CliOptions.Parse(args);
             if (options.ShowHelp)
             {
-                WriteHelp();
+                SsctlHelpWriter.Write(Console.Out);
                 return 0;
             }
 
@@ -72,7 +71,7 @@ internal static class Program
         catch (UsageException ex)
         {
             Console.Error.WriteLine(ex.Message);
-            WriteHelp();
+            SsctlHelpWriter.Write(Console.Out);
             return 2;
         }
         catch (Exception ex)
@@ -103,106 +102,6 @@ internal static class Program
             current = current.InnerException;
         }
         return sb.ToString();
-    }
-
-    private static void WriteHelp()
-    {
-        Console.WriteLine("ssctl");
-        Console.WriteLine("Usage:");
-        Console.WriteLine("  ssctl [--json] [--pipe NAME] [--timeout MS] <command>");
-        Console.WriteLine();
-        Console.WriteLine("Query:");
-        WriteCatalogHelpLine(AutomationCommandKind.GetSnapshot, "[--json]");
-        WriteCatalogHelpLine(AutomationCommandKind.GetDiagnostics, "[--json]");
-        WriteCatalogHelpLine(AutomationCommandKind.GetCaptureOptions, "[--json]");
-        WriteCatalogHelpLine(AutomationCommandKind.GetAutomationManifest, "[--json]");
-        WriteCatalogHelpLine(AutomationCommandKind.GetPerformanceTimeline, "[--json]");
-        Console.WriteLine("  memory [--json]");
-        WriteCatalogHelpLine(AutomationCommandKind.GetAudioRampTrace, "[--json]");
-        Console.WriteLine("  presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--app-present-id N] [--app-source-seq N] [--app-present-utc-ms N] [--capture-start-utc-ms N] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
-        Console.WriteLine($"  diagnostic-session [--scenario {DiagnosticSessionScenarios.HelpList}] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
-        Console.WriteLine();
-        Console.WriteLine("Control:");
-        WriteCatalogHelpLine(AutomationCommandKind.SetPreviewEnabled);
-        WriteCatalogHelpLine(AutomationCommandKind.SetRecordingEnabled);
-        WriteCatalogHelpLine(AutomationCommandKind.CaptureWindowScreenshot);
-        WriteCatalogHelpLine(AutomationCommandKind.CapturePreviewFrame);
-        WriteCatalogHelpLine(AutomationCommandKind.OpenRecordingsFolder);
-        Console.WriteLine();
-        Console.WriteLine("Configure:");
-        WriteCatalogHelpLine(AutomationCommandKind.SetResolution);
-        WriteCatalogHelpLine(AutomationCommandKind.SetFrameRate);
-        WriteCatalogHelpLine(AutomationCommandKind.SetRecordingFormat);
-        WriteCatalogHelpLine(AutomationCommandKind.SetQuality);
-        WriteCatalogHelpLine(AutomationCommandKind.SetCustomBitrate);
-        WriteCatalogHelpLine(AutomationCommandKind.SetPreset);
-        WriteCatalogHelpLine(AutomationCommandKind.SetSplitEncodeMode);
-        WriteCatalogHelpLine(AutomationCommandKind.SetVideoFormat);
-        WriteCatalogHelpLine(AutomationCommandKind.SetMjpegDecoderCount);
-        WriteCatalogHelpLine(AutomationCommandKind.SetHdrEnabled);
-        WriteCatalogHelpLine(AutomationCommandKind.SetTrueHdrPreviewEnabled);
-        WriteCatalogHelpLine(AutomationCommandKind.SetAudioEnabled);
-        WriteCatalogHelpLine(AutomationCommandKind.SetAudioPreviewEnabled);
-        WriteCatalogHelpLine(AutomationCommandKind.SetPreviewVolume);
-        WriteCatalogHelpLine(AutomationCommandKind.SetDeviceAudioMode);
-        WriteCatalogHelpLine(AutomationCommandKind.SetAnalogAudioGain);
-        WriteCatalogHelpLine(AutomationCommandKind.SetOutputPath);
-        WriteCatalogHelpLine(AutomationCommandKind.SetShowAllCaptureOptions);
-        WriteCatalogHelpLine(AutomationCommandKind.SetMicrophoneEnabled);
-        Console.WriteLine();
-        Console.WriteLine("Device:");
-        WriteCatalogHelpLine(AutomationCommandKind.RefreshDevices);
-        Console.WriteLine("  device list");
-        WriteCatalogHelpLine(AutomationCommandKind.SelectDevice);
-        WriteCatalogHelpLine(AutomationCommandKind.SelectAudioInputDevice);
-        WriteCatalogHelpLine(AutomationCommandKind.SetCustomAudioInput);
-        Console.WriteLine();
-        Console.WriteLine("Flashback:");
-        WriteCatalogHelpLine(AutomationCommandKind.SetFlashbackEnabled);
-        WriteCatalogHelpLine(AutomationCommandKind.SetFlashbackTimelineVisible);
-        Console.WriteLine("  flashback play [<ms>]");
-        Console.WriteLine("  flashback pause");
-        Console.WriteLine("  flashback go-live");
-        Console.WriteLine("  flashback seek <ms>");
-        Console.WriteLine("  flashback begin-scrub <ms>");
-        Console.WriteLine("  flashback update-scrub <ms>");
-        Console.WriteLine("  flashback end-scrub [<ms>]");
-        Console.WriteLine("  flashback set-in|set-out|clear-range");
-        WriteCatalogHelpLine(AutomationCommandKind.FlashbackExport);
-        WriteCatalogHelpLine(AutomationCommandKind.FlashbackGetSegments);
-        WriteCatalogHelpLine(AutomationCommandKind.RestartFlashback);
-        Console.WriteLine();
-        Console.WriteLine("Window:");
-        Console.WriteLine("  window close|minimize|maximize|restore|center");
-        WriteCatalogHelpLine(AutomationCommandKind.SetFullScreenEnabled);
-        Console.WriteLine("  window snap left|right|top-left|top-right|bottom-left|bottom-right");
-        Console.WriteLine("  window move <x> <y>");
-        Console.WriteLine("  window resize <w> <h>");
-        Console.WriteLine();
-        Console.WriteLine("Wait / Verify:");
-        WriteCatalogHelpLine(AutomationCommandKind.WaitForCondition, "[--timeout MS] [--poll MS]");
-        Console.WriteLine("  verify [path] [--profile NAME|--verification-profile NAME]");
-        Console.WriteLine("  assert <json>|<field> <op> <value>");
-        Console.WriteLine("  probe source|color");
-        WriteCatalogHelpLine(AutomationCommandKind.SetStatsVisible);
-        WriteCatalogHelpLine(AutomationCommandKind.SetStatsSectionVisible);
-        WriteCatalogHelpLine(AutomationCommandKind.SetFrameTimeOverlayVisible);
-        WriteCatalogHelpLine(AutomationCommandKind.SetSettingsVisible);
-        Console.WriteLine();
-        Console.WriteLine("Flags:");
-        Console.WriteLine("  --json            Print raw JSON responses where supported");
-        Console.WriteLine("  --pipe NAME       Named pipe (default: SussudioAutomation)");
-        Console.WriteLine("  --timeout MS      Response timeout override for pipe calls");
-        Console.WriteLine("  --verbose         On error, print full stack trace + InnerException chain to stderr");
-        Console.WriteLine("  --help            Show this help");
-    }
-
-    private static void WriteCatalogHelpLine(AutomationCommandKind kind, string? suffix = null)
-    {
-        var command = AutomationCommandCatalog.Get(kind).CliHelp;
-        Console.WriteLine(string.IsNullOrWhiteSpace(suffix)
-            ? $"  {command}"
-            : $"  {command} {suffix}");
     }
 
     private sealed class CliOptions

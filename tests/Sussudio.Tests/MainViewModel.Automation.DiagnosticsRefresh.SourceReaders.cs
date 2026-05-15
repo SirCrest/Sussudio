@@ -108,6 +108,7 @@ static partial class Program
     {
         return new DiagnosticSessionToolSurfaceSourceFamily(
             ReadNormalizedRepoFile("tools/ssctl/Program.cs"),
+            ReadNormalizedRepoFile("tools/ssctl/SsctlHelpWriter.cs"),
             (ReadRepoFile("tools/ssctl/CommandHandlers.cs")
                 + "\n" + ReadRepoFile("tools/ssctl/CommandHandlers.Observability.cs"))
                 .Replace("\r\n", "\n"),
@@ -137,6 +138,7 @@ static partial class Program
 
     private readonly record struct DiagnosticSessionToolSurfaceSourceFamily(
         string SsctlProgramText,
+        string SsctlHelpText,
         string SsctlCommandHandlersText,
         string McpDiagnosticSessionText);
 }

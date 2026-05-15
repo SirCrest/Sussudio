@@ -4,9 +4,12 @@ static partial class Program
     {
         var diagnosticSessionToolSources = ReadDiagnosticSessionToolSurfaceSourceFamily();
         var ssctlProgramText = diagnosticSessionToolSources.SsctlProgramText;
+        var ssctlHelpText = diagnosticSessionToolSources.SsctlHelpText;
         var ssctlCommandHandlersText = diagnosticSessionToolSources.SsctlCommandHandlersText;
         var mcpDiagnosticSessionText = diagnosticSessionToolSources.McpDiagnosticSessionText;
-        AssertContains(ssctlProgramText, "DiagnosticSessionScenarios.HelpList");
+        AssertContains(ssctlProgramText, "SsctlHelpWriter.Write(Console.Out);");
+        AssertDoesNotContain(ssctlProgramText, "DiagnosticSessionScenarios.HelpList");
+        AssertContains(ssctlHelpText, "DiagnosticSessionScenarios.HelpList");
         AssertContains(ssctlCommandHandlersText, "DiagnosticSessionScenarios.HelpList");
         AssertContains(mcpDiagnosticSessionText, "flashback-export-playback");
         AssertContains(mcpDiagnosticSessionText, "flashback-playback");

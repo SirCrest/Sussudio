@@ -1734,6 +1734,10 @@ Primary owners:
   `Program.Constants.cs` owns probe constants; `Program.NativeTypes.cs` owns
   native interop DTOs; and `Program.NativeInterop.cs` owns SetupAPI, file-handle,
   KS property transfer, topology enumeration, and Win32 formatting helpers.
+- `tools/ssctl/Program.cs` owns the process entry point, Ctrl-C cancellation,
+  CLI option parsing, and exit-code shaping.
+- `tools/ssctl/SsctlHelpWriter.cs` owns `ssctl` help text and catalog-backed
+  CLI help lines.
 - `tools/ssctl/CommandHandlers.Context.cs` owns the per-invocation command
   context wrapper.
 - `tools/ssctl/CommandHandlers.Parsing.cs` owns flag parsing, value parsing,

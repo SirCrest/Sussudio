@@ -259,6 +259,9 @@ error/timeout responses plus fallback tracing in `NamedPipeAutomationServer.Resp
 `tools/ssctl/CommandHandlers.cs` is now only the top-level CLI router.
 `CommandHandlers.Observability.cs` owns state, diagnostics, options, manifest,
 timeline, memory, audio-ramp, PresentMon, and diagnostic-session commands.
+`tools/ssctl/Program.cs` owns only process entry, Ctrl-C cancellation, CLI
+option parsing, and exit-code shaping; `tools/ssctl/SsctlHelpWriter.cs` owns
+operator-facing help text and catalog-backed help lines.
 `CommandHandlers.CaptureControls.cs` owns preview/record/screenshot/frame and
 `set` capture/audio/output mutations. `CommandHandlers.DeviceWindow.cs` owns
 device, window, and recordings commands. `CommandHandlers.AutomationFlow.cs`
