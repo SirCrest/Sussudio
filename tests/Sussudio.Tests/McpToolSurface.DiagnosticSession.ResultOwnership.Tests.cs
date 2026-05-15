@@ -50,14 +50,19 @@ static partial class Program
     {
         var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
+            .Replace("\r\n", "\n");
         var builderText = ReadDiagnosticSessionResultBuilderSource();
 
         AssertContains(builderText, "internal static partial class DiagnosticSessionResultBuilder");
         AssertContains(builderText, "internal static async Task<DiagnosticSessionResult> BuildAndWriteAsync(");
         AssertContains(builderText, "private static DiagnosticSessionResult CreateResult(");
+        AssertContains(builderText, "private static DiagnosticSessionPreviewSchedulerAnalysis BuildPreviewSchedulerAnalysis(");
+        AssertContains(builderText, "private readonly record struct DiagnosticSessionPreviewSchedulerAnalysis(");
         AssertContains(builderText, "internal sealed record DiagnosticSessionResultBuildRequest(");
         AssertContains(builderText, "runState.SetStage(\"result-analysis\")");
         AssertContains(builderText, "var result = new DiagnosticSessionResult");
+        AssertContains(builderText, "var previewScheduler = BuildPreviewSchedulerAnalysis(initialSnapshot, lastSnapshot, samples);");
         AssertContains(builderText, "var artifactPaths = await WritePreSummaryAsync(");
         AssertContains(builderText, "SummaryPath = artifactPaths.SummaryPath");
         AssertContains(builderText, "SamplesPath = artifactPaths.SamplesPath");
@@ -71,6 +76,8 @@ static partial class Program
         AssertDoesNotContain(runnerText, "var result = new DiagnosticSessionResult");
         AssertDoesNotContain(runnerText, "WriteArtifactBestEffortAsync(\"write-samples\"");
         AssertDoesNotContain(runnerText, "RecordTerminalException(ex, \"summary-write\")");
+        AssertDoesNotContain(analysisText, "var previewSchedulerDroppedAtEnd =");
+        AssertDoesNotContain(analysisText, "var previewSchedulerMaxScheduleLateMsObserved = samples");
 
         return Task.CompletedTask;
     }

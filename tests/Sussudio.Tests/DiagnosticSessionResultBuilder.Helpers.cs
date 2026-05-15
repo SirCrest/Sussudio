@@ -7,6 +7,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Result.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Analysis.cs",
+            "tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Models.cs"
         };
         var parts = new string[files.Length];

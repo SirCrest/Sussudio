@@ -1658,6 +1658,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
   diagnostic-session health analysis, warning tolerance, and metric preparation
   before summary construction.
+- `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
+  diagnostic-session preview-scheduler counter/delta projection for summary
+  construction.
 - `tools/Common/DiagnosticSessionResultBuilder.Models.cs` owns the builder
   request record and private analysis handoff record.
 - `tools/Common/DiagnosticSessionSummaryWriter.cs` owns diagnostic-session

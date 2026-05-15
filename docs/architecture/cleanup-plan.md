@@ -1541,7 +1541,10 @@ summary emission while the runner keeps the phase sequence.
 health analysis, Flashback warning tolerance, metric gathering, and
 result-build handoff models live beside it in
 `DiagnosticSessionResultBuilder.Analysis.cs` and
-`DiagnosticSessionResultBuilder.Models.cs`.
+`DiagnosticSessionResultBuilder.Models.cs`. Preview-scheduler counter/delta
+projection for the summary result lives in
+`DiagnosticSessionResultBuilder.PreviewScheduler.cs` so the analysis phase can
+consume one named snapshot of the MJPEG jitter-buffer counters.
 
 Diagnostic-session summary writing now lives in
 `tools/Common/DiagnosticSessionSummaryWriter.cs`. It owns `summary.json` writes

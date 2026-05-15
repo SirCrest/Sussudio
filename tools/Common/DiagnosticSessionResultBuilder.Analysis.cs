@@ -66,22 +66,7 @@ internal static partial class DiagnosticSessionResultBuilder
 
         var sourceReaderFramesDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MfSourceReaderFramesDropped");
         var videoIngestErrorsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "VideoIngestErrorCount");
-        var previewSchedulerDroppedAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterTotalDropped") ?? 0;
-        var previewSchedulerDeadlineDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterDeadlineDropCount") ?? 0;
-        var previewSchedulerClearedDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterClearedDropCount") ?? 0;
-        var previewSchedulerUnderflowsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterUnderflowCount") ?? 0;
-        var previewSchedulerResumeReprimesAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterResumeReprimeCount") ?? 0;
-        var previewSchedulerDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterTotalDropped");
-        var previewSchedulerDeadlineDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterDeadlineDropCount");
-        var previewSchedulerClearedDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterClearedDropCount");
-        var previewSchedulerUnderflowsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterUnderflowCount");
-        var previewSchedulerResumeReprimesDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterResumeReprimeCount");
-        var previewSchedulerScheduleLateDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterScheduleLateCount");
-        var previewSchedulerMaxScheduleLateMsObserved = samples
-            .Select(sample => GetDouble(sample.Snapshot, "MjpegPreviewJitterMaxScheduleLateMs"))
-            .Append(GetDouble(lastSnapshot, "MjpegPreviewJitterMaxScheduleLateMs"))
-            .DefaultIfEmpty(0)
-            .Max();
+        var previewScheduler = BuildPreviewSchedulerAnalysis(initialSnapshot, lastSnapshot, samples);
         var isFlashbackScenario = request.ScenarioPlan.UsesFlashbackScenarioWarningPolicy;
         ValidateCleanupLifecycleRestored(
             request.Options.LeaveRunning,
@@ -105,20 +90,20 @@ internal static partial class DiagnosticSessionResultBuilder
                 request.ScenarioPlan.IsPreviewCycleScenario && visualCadenceHealthy;
             var toleratesSparsePreviewSchedulerDeadlineDrops =
                 IsSparsePreviewSchedulerDeadlineDropRun(
-                    previewSchedulerDeadlineDropsDelta,
-                    previewSchedulerUnderflowsDelta,
+                    previewScheduler.DeadlineDropsDelta,
+                    previewScheduler.UnderflowsDelta,
                     request.DurationSeconds,
                     visualCadenceHealthy);
             var toleratesSparseScrubSchedulerTransitions =
                 request.ScenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions &&
                 IsSparsePreviewSchedulerStressRun(
-                    previewSchedulerDeadlineDropsDelta,
-                    previewSchedulerUnderflowsDelta,
+                    previewScheduler.DeadlineDropsDelta,
+                    previewScheduler.UnderflowsDelta,
                     request.DurationSeconds,
                     visualCadenceHealthy);
             ValidateFlashbackPreviewScheduler(
-                previewSchedulerDeadlineDropsDelta,
-                previewSchedulerUnderflowsDelta,
+                previewScheduler.DeadlineDropsDelta,
+                previewScheduler.UnderflowsDelta,
                 previewD3DMetrics.StatsFailureDelta,
                 previewCadenceMetrics,
                 visualCadenceMetrics,
@@ -156,8 +141,8 @@ internal static partial class DiagnosticSessionResultBuilder
              IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)) ||
             (isFlashbackScenario &&
              IsSparsePreviewSchedulerDeadlineDropRun(
-                 previewSchedulerDeadlineDropsDelta,
-                 previewSchedulerUnderflowsDelta,
+                 previewScheduler.DeadlineDropsDelta,
+                 previewScheduler.UnderflowsDelta,
                  request.DurationSeconds,
                  IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate"))) &&
              IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation));
@@ -176,8 +161,8 @@ internal static partial class DiagnosticSessionResultBuilder
         else if (diagnosticHealthTolerated &&
                  !sparseSourceCaptureCadenceWarning &&
                  !IsSparsePreviewSchedulerDeadlineDropRun(
-                     previewSchedulerDeadlineDropsDelta,
-                     previewSchedulerUnderflowsDelta,
+                     previewScheduler.DeadlineDropsDelta,
+                     previewScheduler.UnderflowsDelta,
                      request.DurationSeconds,
                      IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate"))))
         {
@@ -223,18 +208,18 @@ internal static partial class DiagnosticSessionResultBuilder
             previewCadenceMetrics,
             previewD3DMetrics,
             visualCadenceMetrics,
-            previewSchedulerDroppedAtEnd,
-            previewSchedulerDeadlineDropsAtEnd,
-            previewSchedulerClearedDropsAtEnd,
-            previewSchedulerUnderflowsAtEnd,
-            previewSchedulerResumeReprimesAtEnd,
-            previewSchedulerDroppedDelta,
-            previewSchedulerDeadlineDropsDelta,
-            previewSchedulerClearedDropsDelta,
-            previewSchedulerUnderflowsDelta,
-            previewSchedulerResumeReprimesDelta,
-            previewSchedulerScheduleLateDelta,
-            previewSchedulerMaxScheduleLateMsObserved,
+            previewScheduler.DroppedAtEnd,
+            previewScheduler.DeadlineDropsAtEnd,
+            previewScheduler.ClearedDropsAtEnd,
+            previewScheduler.UnderflowsAtEnd,
+            previewScheduler.ResumeReprimesAtEnd,
+            previewScheduler.DroppedDelta,
+            previewScheduler.DeadlineDropsDelta,
+            previewScheduler.ClearedDropsDelta,
+            previewScheduler.UnderflowsDelta,
+            previewScheduler.ResumeReprimesDelta,
+            previewScheduler.ScheduleLateDelta,
+            previewScheduler.MaxScheduleLateMsObserved,
             diagnosticHealthSucceeded,
             flashbackWarningsSucceeded,
             processCpuMaxPercentObserved);
