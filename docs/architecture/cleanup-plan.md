@@ -385,7 +385,10 @@ enter/exit orchestration, `FullScreenController.Animation.cs` to rect animation,
 keyboard/scrub bridge.
 
 Automation whole-window screenshot capture now lives in
-`Sussudio/Controllers/WindowScreenshotController.cs`, while pure PNG/BMP
+`Sussudio/Controllers/WindowScreenshotController.cs`, which now only owns
+UI-thread dispatch, cancellation, and failure wrapping. Native PrintWindow/GDI
+capture and screenshot result shaping live in
+`Sussudio/Controllers/WindowScreenshotNativeCapture.cs`, while pure PNG/BMP
 byte-stream encoding lives in
 `Sussudio/Controllers/WindowScreenshotImageEncoder.cs`. `MainWindow.Screenshot.cs`
 is only the automation adapter.
@@ -1416,8 +1419,10 @@ construction now live in
 `Sussudio/Controllers/SettingsShelfController.cs`. `MainWindow.SettingsShelf.cs`
 is the XAML-facing adapter.
 
-Splash phrase loading, randomized timer pacing, and the two-line splash text
-animation now live in `Sussudio/Controllers/SplashLoadingPhraseController.cs`.
+Splash phrase file lookup, Markdown-ish parsing, cached defaults, and exception
+fallback now live in `Sussudio/Controllers/SplashLoadingPhraseCatalog.cs`.
+Randomized timer pacing and the two-line splash text animation remain in
+`Sussudio/Controllers/SplashLoadingPhraseController.cs`.
 `MainWindow.SplashLoading.cs` is the XAML-facing adapter.
 
 Splash-to-shell launch entrance choreography, initial hidden/scaled shell state,

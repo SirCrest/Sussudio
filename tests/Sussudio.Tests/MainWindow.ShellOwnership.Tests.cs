@@ -41,6 +41,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var splashAdapterText = ReadRepoFile("Sussudio/MainWindow.SplashLoading.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/SplashLoadingPhraseController.cs").Replace("\r\n", "\n");
+        var catalogText = ReadRepoFile("Sussudio/Controllers/SplashLoadingPhraseCatalog.cs").Replace("\r\n", "\n");
 
         AssertContains(splashAdapterText, "private SplashLoadingPhraseController _splashLoadingPhraseController = null!;");
         AssertContains(splashAdapterText, "private void InitializeSplashLoadingPhraseController()");
@@ -52,16 +53,26 @@ static partial class Program
         AssertContains(launchEntranceControllerText, "_context.StartSplashLoadingPhrases();");
         AssertContains(launchEntranceControllerText, "_context.StopSplashLoadingPhrases();");
         AssertContains(controllerText, "internal sealed class SplashLoadingPhraseController");
-        AssertContains(controllerText, "private static readonly string[] DefaultSplashLoadingPhrases");
         AssertContains(controllerText, "private DispatcherTimer? _splashPhraseTimer;");
-        AssertContains(controllerText, "private static string[] LoadSplashPhrases()");
+        AssertContains(controllerText, "SplashLoadingPhraseCatalog.Load()");
         AssertContains(controllerText, "private TimeSpan NextSplashPhraseInterval()");
         AssertContains(controllerText, "private void CyclePhrase()");
-        AssertContains(controllerText, "Path.Combine(AppContext.BaseDirectory, \"SplashPhrases.md\")");
         AssertContains(controllerText, "storyboard.Begin();");
+        AssertContains(catalogText, "internal static class SplashLoadingPhraseCatalog");
+        AssertContains(catalogText, "private static readonly string[] DefaultSplashLoadingPhrases");
+        AssertContains(catalogText, "public static string[] Load()");
+        AssertContains(catalogText, "Path.Combine(AppContext.BaseDirectory, \"SplashPhrases.md\")");
+        AssertContains(catalogText, "if (line.StartsWith(\"##\"))");
+        AssertContains(catalogText, "if (line.StartsWith('#')) continue;");
+        AssertContains(catalogText, "if (line.StartsWith(\"<!--\")) continue;");
+        AssertContains(catalogText, "line = line[2..].Trim();");
+        AssertContains(catalogText, "while (line.EndsWith('.'))");
+        AssertContains(catalogText, "_cachedSplashPhrases = DefaultSplashLoadingPhrases;");
         AssertDoesNotContain(animationsText, "private DispatcherTimer? _splashPhraseTimer;");
         AssertDoesNotContain(animationsText, "private static string[] LoadSplashPhrases()");
         AssertDoesNotContain(animationsText, "private void CycleSplashPhrase()");
+        AssertDoesNotContain(controllerText, "private static readonly string[] DefaultSplashLoadingPhrases");
+        AssertDoesNotContain(controllerText, "Path.Combine(AppContext.BaseDirectory, \"SplashPhrases.md\")");
 
         return Task.CompletedTask;
     }

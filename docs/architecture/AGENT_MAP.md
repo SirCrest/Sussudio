@@ -647,7 +647,9 @@ Primary current owners:
   behavior. Keep `MainWindow.FullScreen.cs` as the XAML-facing adapter and
   Flashback shortcut bridge.
 - `Sussudio/Controllers/WindowScreenshotController.cs` owns automation whole-
-  window screenshot dispatch, native PrintWindow capture, GDI/DIB lifetime, and
+  window screenshot dispatch, UI-thread enqueue/cancellation, and failure
+  wrapping. `Sussudio/Controllers/WindowScreenshotNativeCapture.cs` owns native
+  PrintWindow capture, GDI/DIB lifetime, output directory creation, and
   screenshot result shaping. `Sussudio/Controllers/WindowScreenshotImageEncoder.cs`
   owns the pure PNG/BMP byte-stream encoding helpers. Keep
   `MainWindow.Screenshot.cs` as the `IAutomationWindowControl` adapter.
@@ -1377,9 +1379,11 @@ Primary current owners:
 - `Sussudio/Controllers/SettingsShelfController.cs` owns settings shelf
   visibility, the animation gate, and show/hide storyboard construction.
   `MainWindow.SettingsShelf.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/SplashLoadingPhraseController.cs` owns splash phrase
-  loading, timer pacing, and two-line text animation. `MainWindow.SplashLoading.cs`
-  is the XAML-facing adapter.
+- `Sussudio/Controllers/SplashLoadingPhraseCatalog.cs` owns splash phrase
+  file lookup, Markdown-ish parsing, cached defaults, and exception fallback.
+  `Sussudio/Controllers/SplashLoadingPhraseController.cs` owns timer pacing and
+  two-line text animation. `MainWindow.SplashLoading.cs` is the XAML-facing
+  adapter.
 - `Sussudio/Controllers/LaunchEntranceAnimationController.cs` owns the splash-
   to-shell launch choreography, initial hidden/scaled shell state, and one-shot
   entrance state. `MainWindow.LaunchEntrance.cs` is the XAML-facing adapter.

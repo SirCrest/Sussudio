@@ -12,6 +12,9 @@ static partial class Program
             "Window screenshot capture completes on dispatcher failure and cancellation",
             MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation);
         await AddCheckAsync(results,
+            "Window screenshot native capture lives in focused helper",
+            WindowScreenshotNativeCapture_LivesInFocusedHelper);
+        await AddCheckAsync(results,
             "Window screenshot image encoding lives in focused helper",
             WindowScreenshotImageEncoding_LivesInFocusedHelper);
     }
@@ -22,7 +25,7 @@ static partial class Program
             "Settings shelf lifecycle lives in controller",
             SettingsShelfLifecycle_LivesInController);
         await AddCheckAsync(results,
-            "Splash loading phrases live in controller",
+            "Splash loading phrase catalog and animation ownership are split",
             SplashLoadingPhrases_LiveInController);
         await AddCheckAsync(results,
             "Launch entrance animation lives in controller",
