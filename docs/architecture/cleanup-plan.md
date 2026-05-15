@@ -490,11 +490,14 @@ capture pixel statistics now live in
 Window geometry automation and the recordings-folder command now live in
 `Sussudio/Controllers/WindowAutomationController.cs`.
 `MainWindow.WindowAutomation.cs` is the `IAutomationWindowControl` adapter.
-Recording-aware close behavior remains in `MainWindow.CloseLifecycle.cs`.
+Close lifecycle state remains separate from geometry automation and now lives
+in `Sussudio/Controllers/WindowCloseLifecycleController.cs`.
 
 UI-thread dispatching helpers and guarded async event-handler execution now
 live in `Sussudio/MainWindow.Dispatching.cs`. Window close completion and
-recording-aware close handling remain in `MainWindow.CloseLifecycle.cs`.
+close-request dispatch orchestration live in
+`Sussudio/Controllers/WindowCloseLifecycleController.cs`, while recording-aware
+pre-close handling remains in `MainWindow.CloseLifecycle.cs`.
 
 `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` is now only the
 MCP command-routing test family marker shell. MCP command-routing coverage is
@@ -505,8 +508,9 @@ instead of duplicating numeric IDs in routing tests.
 
 First-load startup, first-frame uncloak scheduling, initial ViewModel/device
 refresh, automation pipe hosting, and the launch entrance trigger now live in
-`Sussudio/MainWindow.Startup.cs`. Window close completion and recording-aware
-close handling remain in `MainWindow.CloseLifecycle.cs`.
+`Sussudio/MainWindow.Startup.cs`. Window close completion lives in
+`Sussudio/Controllers/WindowCloseLifecycleController.cs`; recording-aware close
+handling remains in `MainWindow.CloseLifecycle.cs`.
 
 Top-level shell resize telemetry throttling for preview compositor transforms
 now lives in `Sussudio/Controllers/PreviewResizeTelemetryController.cs`.
@@ -524,17 +528,21 @@ runtime snapshot construction now lives in
 `Sussudio/Controllers/PreviewRuntimeSnapshotController.cs`, which owns renderer
 metrics, blank/stall suspicion, cadence projection, and D3D diagnostic fields.
 Close/finalize handling remains in
-`MainWindow.CloseLifecycle.cs`.
+the close lifecycle files.
 
 Window title base/build-stamp formatting and the recording-time suffix now live
 in `Sussudio/Controllers/WindowTitleController.cs`; `MainWindow.WindowTitle.cs`
 keeps only the XAML-facing initialization and title assignment hook.
 
 Window close lifecycle and native window helpers are now explicit:
-`Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`, automation
-close completion, and recording-aware pre-close protection. `MainWindow.ShutdownCleanup.cs`
-owns `Closed` shutdown cleanup: timer stops, event detaches, preview shutdown,
-automation diagnostics disposal, NVML disposal, and ViewModel disposal.
+`Sussudio/Controllers/WindowCloseLifecycleController.cs` owns close request
+flags, completion TCS, cleanup latch, close-in-progress classification, and
+automation close dispatch orchestration. `Sussudio/MainWindow.CloseLifecycle.cs`
+owns `AppWindow.Closing`, recording-aware pre-close protection, input dimming/
+restoration while recording stops, and the actual `Close()`/Exit fallback.
+`MainWindow.ShutdownCleanup.cs` owns `Closed` shutdown cleanup: timer stops,
+event detaches, preview shutdown, automation diagnostics disposal, NVML
+disposal, and ViewModel disposal.
 Native `AppWindow` lookup, ViewModel window handle handoff, minimum-size
 subclassing, DWM cloak/dark-mode setup, initial shell size, icon, and uncloaking
 now live in `Sussudio/Controllers/NativeWindowBootstrapController.cs`.

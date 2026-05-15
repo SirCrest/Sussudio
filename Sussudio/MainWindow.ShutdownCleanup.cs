@@ -1,28 +1,28 @@
 using Microsoft.UI.Xaml;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Sussudio;
 
-// Post-close shutdown cleanup. The pre-close recording guard and automation
-// close completion stay in MainWindow.CloseLifecycle.cs.
+// Post-close shutdown cleanup. The pre-close recording guard stays in
+// MainWindow.CloseLifecycle.cs; close state/completion lives in the controller.
 public sealed partial class MainWindow
 {
     private async void MainWindow_Closed(object sender, WindowEventArgs args)
     {
-        if (Interlocked.Exchange(ref _windowCloseCleanupStarted, 1) != 0)
+        if (!_windowCloseLifecycleController.TryBeginCleanup())
         {
             return;
         }
 
         try
         {
+            var snapshot = _windowCloseLifecycleController.Snapshot;
             Logger.Log(
                 "WINDOW_CLOSED_TRIGGER " +
-                $"requested={Volatile.Read(ref _windowCloseRequested)} " +
-                $"recordingStopInProgress={Volatile.Read(ref _windowCloseRecordingStopInProgress)} " +
-                $"allowedAfterRecordingStop={Volatile.Read(ref _windowCloseAllowedAfterRecordingStop)} " +
+                $"requested={snapshot.Requested} " +
+                $"recordingStopInProgress={snapshot.RecordingStopInProgress} " +
+                $"allowedAfterRecordingStop={snapshot.AllowedAfterRecordingStop} " +
                 $"isRecording={ViewModel.IsRecording} " +
                 $"isPreviewing={ViewModel.IsPreviewing} " +
                 $"stack=\n{new System.Diagnostics.StackTrace(true)}");
@@ -33,7 +33,7 @@ public sealed partial class MainWindow
         }
 
         CompleteWindowCloseRequest();
-        _isWindowClosing = true;
+        _windowCloseLifecycleController.MarkClosing();
         ViewModel.AudioMeterActivated -= EnsureAudioMeterTimerRunning;
         ViewModel.MicrophoneMeterActivated -= EnsureAudioMeterTimerRunning;
         StopAudioMeterTimer();

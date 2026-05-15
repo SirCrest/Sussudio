@@ -10,6 +10,7 @@ static partial class Program
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var nativeWindowText = ReadRepoFile("Sussudio/MainWindow.NativeWindow.cs").Replace("\r\n", "\n");
         var nativeWindowControllerText = ReadRepoFile("Sussudio/Controllers/NativeWindowBootstrapController.cs").Replace("\r\n", "\n");
+        var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var oldWindowManagementPath = Path.Combine(
             Directory.GetCurrentDirectory(),
             "Sussudio",
@@ -20,10 +21,8 @@ static partial class Program
             throw new InvalidOperationException("MainWindow.WindowManagement.cs should not return as a catch-all partial.");
         }
 
-        AssertContains(closeLifecycleText, "private int _windowCloseRequested;");
-        AssertContains(closeLifecycleText, "private int _windowCloseCleanupStarted;");
-        AssertContains(closeLifecycleText, "private TaskCompletionSource<object?>? _windowCloseCompletion;");
-        AssertContains(closeLifecycleText, "private bool _isWindowClosing;");
+        AssertContains(closeLifecycleText, "private readonly WindowCloseLifecycleController _windowCloseLifecycleController = new();");
+        AssertContains(closeLifecycleText, "private bool _isWindowClosing => _windowCloseLifecycleController.IsClosing;");
         AssertContains(closeLifecycleText, "private void RegisterCloseLifecycle(Microsoft.UI.Windowing.AppWindow appWindow)");
         AssertContains(closeLifecycleText, "=> appWindow.Closing += MainWindow_Closing;");
         AssertContains(closeLifecycleText, "private async void MainWindow_Closing(");
@@ -31,9 +30,20 @@ static partial class Program
         AssertContains(shutdownCleanupText, "Post-close shutdown cleanup");
         AssertContains(shutdownCleanupText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");
         AssertContains(closeLifecycleText, "public Task CloseAsync(CancellationToken cancellationToken = default)");
-        AssertContains(closeLifecycleText, "private Task GetWindowCloseCompletionTask(CancellationToken cancellationToken)");
+        AssertContains(closeLifecycleText, "=> _windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken);");
         AssertContains(closeLifecycleText, "private void RequestWindowClose()");
-        AssertContains(closeLifecycleText, "private static bool IsCloseAlreadyInProgressException(Exception ex)");
+        AssertContains(closeLifecycleText, "WindowCloseLifecycleController.IsCloseAlreadyInProgressException(ex)");
+        AssertContains(closeLifecycleControllerText, "internal sealed class WindowCloseLifecycleController");
+        AssertContains(closeLifecycleControllerText, "private int _closeRequested;");
+        AssertContains(closeLifecycleControllerText, "private int _cleanupStarted;");
+        AssertContains(closeLifecycleControllerText, "private int _recordingStopInProgress;");
+        AssertContains(closeLifecycleControllerText, "private int _allowedAfterRecordingStop;");
+        AssertContains(closeLifecycleControllerText, "private TaskCompletionSource<object?>? _completion;");
+        AssertContains(closeLifecycleControllerText, "public bool TryBeginCleanup()");
+        AssertContains(closeLifecycleControllerText, "public void MarkClosing()");
+        AssertContains(closeLifecycleControllerText, "public Task CloseAsync(");
+        AssertContains(closeLifecycleControllerText, "private Task GetCompletionTask(CancellationToken cancellationToken)");
+        AssertContains(closeLifecycleControllerText, "public static bool IsCloseAlreadyInProgressException(Exception ex)");
         AssertContains(shutdownCleanupText, "StopLiveSignalInfoTimers();");
         AssertContains(shutdownCleanupText, "StopMicMeterRowAnimation();");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
@@ -77,6 +87,10 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private int _windowCloseRequested;");
         AssertDoesNotContain(mainWindowText, "private bool _isWindowClosing;");
         AssertDoesNotContain(mainWindowText, "private IntPtr _hwnd;");
+        AssertDoesNotContain(closeLifecycleText, "private int _windowCloseRequested;");
+        AssertDoesNotContain(closeLifecycleText, "private TaskCompletionSource<object?>? _windowCloseCompletion;");
+        AssertDoesNotContain(closeLifecycleText, "private Task GetWindowCloseCompletionTask(CancellationToken cancellationToken)");
+        AssertDoesNotContain(closeLifecycleText, "private static bool IsCloseAlreadyInProgressException(Exception ex)");
         AssertDoesNotContain(closeLifecycleText, "private Microsoft.UI.Windowing.AppWindow GetAppWindow()");
         AssertDoesNotContain(closeLifecycleText, "DwmSetWindowAttribute(");
         AssertDoesNotContain(closeLifecycleText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");

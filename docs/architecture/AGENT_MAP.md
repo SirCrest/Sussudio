@@ -1,6 +1,6 @@
 # Sussudio Agent Map
 
-Last reviewed: 2026-05-14.
+Last reviewed: 2026-05-15.
 
 This file maps the current repo shape to named owners, entry points, invariants,
 and fast checks. It is intentionally mechanical so future agents can find the
@@ -697,7 +697,7 @@ Primary current owners:
 - `Sussudio/Controllers/WindowAutomationController.cs` owns window geometry
   automation plus the recordings-folder command. `MainWindow.WindowAutomation.cs`
   is the `IAutomationWindowControl` adapter; recording-aware close handling
-  stays with `MainWindow.CloseLifecycle.cs`.
+  stays with the close lifecycle owner.
 - `Sussudio/MainWindow.AutomationHost.cs` owns shell automation composition:
   automation token/pipe-name resolution, diagnostics hub construction,
   command dispatcher construction, and named-pipe server construction.
@@ -731,8 +731,13 @@ Primary current owners:
   `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing adapter,
   owns the status-strip `PropertyChanged` router, and preserves the
   recording-only title refresh on recording-time updates.
-- `Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`,
-  automation close completion, and recording-aware pre-close protection.
+- `Sussudio/Controllers/WindowCloseLifecycleController.cs` owns window close
+  request flags, completion TCS, cleanup latch, recording-stop handoff flags,
+  close-in-progress exception classification, and automation close dispatch
+  orchestration.
+- `Sussudio/MainWindow.CloseLifecycle.cs` owns the XAML/AppWindow close adapter:
+  `AppWindow.Closing`, recording-aware pre-close protection, input dimming/
+  restoration while recording stops, and the actual `Close()`/Exit fallback.
 - `Sussudio/MainWindow.ShutdownCleanup.cs` owns `Closed` shutdown cleanup:
   timer stops, event detaches, preview shutdown, automation diagnostics disposal,
   NVML disposal, and ViewModel disposal.

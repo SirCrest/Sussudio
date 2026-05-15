@@ -90,6 +90,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
             .Replace("\r\n", "\n");
+        var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseLifecycleController.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(windowCtorText, "RegisterCloseLifecycle(appWindow);");
         AssertContains(closeLifecycleText, "appWindow.Closing += MainWindow_Closing;");
@@ -98,9 +100,11 @@ static partial class Program
         AssertContains(closeLifecycleText, "const int StopBudgetMs = 120_000;");
         AssertContains(closeLifecycleText, "close cancelled to protect recording");
         AssertContains(closeLifecycleText, "RequestWindowClose();");
-        AssertContains(closeLifecycleText, "GetWindowCloseCompletionTask(cancellationToken)");
+        AssertContains(closeLifecycleText, "_windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken)");
         AssertContains(closeLifecycleText, "CompleteWindowCloseRequest(new InvalidOperationException(ViewModel.StatusText));");
         AssertContains(closeLifecycleText, "CompleteWindowCloseRequest();");
+        AssertContains(closeLifecycleControllerText, "private Task GetCompletionTask(CancellationToken cancellationToken)");
+        AssertContains(closeLifecycleControllerText, "var enqueueFailure = new InvalidOperationException(\"Failed to enqueue window close action on the UI thread.\");");
         AssertDoesNotContain(closeLifecycleText, "MP4 may be truncated.");
 
         return Task.CompletedTask;

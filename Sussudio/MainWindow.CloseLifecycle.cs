@@ -1,7 +1,8 @@
 using Microsoft.UI.Xaml;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Threading;
+using Sussudio.Controllers;
 
 namespace Sussudio;
 
@@ -10,13 +11,8 @@ namespace Sussudio;
 // in-progress recording.
 public sealed partial class MainWindow
 {
-    private int _windowCloseRequested;
-    private int _windowCloseCleanupStarted;
-    private int _windowCloseRecordingStopInProgress;
-    private int _windowCloseAllowedAfterRecordingStop;
-    private readonly object _windowCloseCompletionLock = new();
-    private TaskCompletionSource<object?>? _windowCloseCompletion;
-    private bool _isWindowClosing;
+    private readonly WindowCloseLifecycleController _windowCloseLifecycleController = new();
+    private bool _isWindowClosing => _windowCloseLifecycleController.IsClosing;
 
     private void RegisterCloseLifecycle(Microsoft.UI.Windowing.AppWindow appWindow)
         => appWindow.Closing += MainWindow_Closing;
@@ -27,9 +23,10 @@ public sealed partial class MainWindow
     {
         try
         {
+            var snapshot = _windowCloseLifecycleController.Snapshot;
             Logger.Log(
                 "WINDOW_CLOSING_TRIGGER " +
-                $"requested={Volatile.Read(ref _windowCloseRequested)} " +
+                $"requested={snapshot.Requested} " +
                 $"isRecording={ViewModel.IsRecording} " +
                 $"stack=\n{new System.Diagnostics.StackTrace(true)}");
         }
@@ -38,8 +35,8 @@ public sealed partial class MainWindow
             System.Diagnostics.Trace.TraceWarning($"WINDOW_CLOSING_TRIGGER log failed: {logEx.Message}");
         }
 
-        if (Volatile.Read(ref _windowCloseCleanupStarted) != 0 ||
-            Volatile.Read(ref _windowCloseAllowedAfterRecordingStop) != 0)
+        if (_windowCloseLifecycleController.IsCleanupStarted ||
+            _windowCloseLifecycleController.IsAllowedAfterRecordingStop)
         {
             CompleteWindowCloseRequest();
             return;
@@ -52,9 +49,9 @@ public sealed partial class MainWindow
         }
 
         args.Cancel = true;
-        Interlocked.Exchange(ref _windowCloseRequested, 0);
+        _windowCloseLifecycleController.ClearRequested();
 
-        if (Interlocked.Exchange(ref _windowCloseRecordingStopInProgress, 1) != 0)
+        if (!_windowCloseLifecycleController.TryBeginRecordingStop())
         {
             Logger.Log("WINDOW_CLOSE_RECORDING_STOP: close already waiting for recording stop.");
             return;
@@ -69,14 +66,13 @@ public sealed partial class MainWindow
                 return;
             }
 
-            Interlocked.Exchange(ref _windowCloseAllowedAfterRecordingStop, 1);
-            Interlocked.Exchange(ref _windowCloseRequested, 0);
+            _windowCloseLifecycleController.AllowAfterRecordingStop();
             CompleteWindowCloseRequest();
             RequestWindowClose();
         }
         finally
         {
-            Interlocked.Exchange(ref _windowCloseRecordingStopInProgress, 0);
+            _windowCloseLifecycleController.EndRecordingStop();
         }
     }
 
@@ -120,7 +116,7 @@ public sealed partial class MainWindow
         finally
         {
             if (shutdownContent != null &&
-                Volatile.Read(ref _windowCloseAllowedAfterRecordingStop) == 0)
+                !_windowCloseLifecycleController.IsAllowedAfterRecordingStop)
             {
                 shutdownContent.IsHitTestVisible = true;
                 shutdownContent.Opacity = 1;
@@ -129,125 +125,14 @@ public sealed partial class MainWindow
     }
 
     public Task CloseAsync(CancellationToken cancellationToken = default)
-    {
-        if (Volatile.Read(ref _windowCloseCleanupStarted) != 0)
-        {
-            return Task.CompletedTask;
-        }
-
-        var closeCompletionTask = GetWindowCloseCompletionTask(cancellationToken);
-
-        if (_dispatcherQueue.HasThreadAccess)
-        {
-            RequestWindowClose();
-            return closeCompletionTask;
-        }
-
-        var completion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        CancellationTokenRegistration registration = default;
-        if (cancellationToken.CanBeCanceled)
-        {
-            registration = cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
-        }
-
-        var enqueued = _dispatcherQueue.TryEnqueue(() =>
-        {
-            try
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    completion.TrySetCanceled(cancellationToken);
-                    return;
-                }
-
-                RequestWindowClose();
-                completion.TrySetResult(null);
-            }
-            catch (Exception ex)
-            {
-                completion.TrySetException(ex);
-            }
-            finally
-            {
-                registration.Dispose();
-            }
-        });
-
-        if (!enqueued)
-        {
-            registration.Dispose();
-            if (Volatile.Read(ref _windowCloseCleanupStarted) != 0)
-            {
-                completion.TrySetResult(null);
-            }
-            else
-            {
-                var enqueueFailure = new InvalidOperationException("Failed to enqueue window close action on the UI thread.");
-                CompleteWindowCloseRequest(enqueueFailure);
-                completion.TrySetException(enqueueFailure);
-            }
-        }
-
-        return AwaitWindowCloseRequestAsync(completion.Task, closeCompletionTask);
-    }
-
-    private Task GetWindowCloseCompletionTask(CancellationToken cancellationToken)
-    {
-        TaskCompletionSource<object?> completion;
-        lock (_windowCloseCompletionLock)
-        {
-            if (_windowCloseCompletion == null || _windowCloseCompletion.Task.IsCompleted)
-            {
-                _windowCloseCompletion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-            }
-
-            completion = _windowCloseCompletion;
-        }
-
-        return cancellationToken.CanBeCanceled
-            ? completion.Task.WaitAsync(cancellationToken)
-            : completion.Task;
-    }
-
-    private static async Task AwaitWindowCloseRequestAsync(Task enqueueTask, Task closeCompletionTask)
-    {
-        await enqueueTask.ConfigureAwait(false);
-        await closeCompletionTask.ConfigureAwait(false);
-    }
+        => _windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken);
 
     private void CompleteWindowCloseRequest(Exception? exception = null)
-    {
-        TaskCompletionSource<object?>? completion;
-        lock (_windowCloseCompletionLock)
-        {
-            completion = _windowCloseCompletion;
-            _windowCloseCompletion = null;
-        }
-
-        if (completion == null)
-        {
-            return;
-        }
-
-        if (exception == null)
-        {
-            completion.TrySetResult(null);
-        }
-        else
-        {
-            completion.TrySetException(exception);
-        }
-    }
+        => _windowCloseLifecycleController.CompleteRequest(exception);
 
     private void RequestWindowClose()
     {
-        if (Volatile.Read(ref _windowCloseCleanupStarted) != 0)
-        {
-            CompleteWindowCloseRequest();
-            return;
-        }
-
-        if (Interlocked.Exchange(ref _windowCloseRequested, 1) != 0)
+        if (!_windowCloseLifecycleController.TryMarkRequested())
         {
             return;
         }
@@ -255,14 +140,14 @@ public sealed partial class MainWindow
         try
         {
             Close();
-            if (Volatile.Read(ref _windowCloseRecordingStopInProgress) == 0 &&
+            if (!_windowCloseLifecycleController.IsRecordingStopInProgress &&
                 !ViewModel.IsRecording &&
                 !ViewModel.IsRecordingTransitioning)
             {
                 CompleteWindowCloseRequest();
             }
         }
-        catch (Exception ex) when (IsCloseAlreadyInProgressException(ex))
+        catch (Exception ex) when (WindowCloseLifecycleController.IsCloseAlreadyInProgressException(ex))
         {
             Logger.Log($"Window close already in progress ({ex.GetType().Name}); treating close request as successful.");
             CompleteWindowCloseRequest();
@@ -276,20 +161,9 @@ public sealed partial class MainWindow
         catch (Exception ex)
         {
             System.Diagnostics.Trace.TraceWarning($"Suppressed exception in MainWindow.RequestWindowClose: {ex.Message}");
-            Interlocked.Exchange(ref _windowCloseRequested, 0);
+            _windowCloseLifecycleController.ResetRequestedAfterFailure();
             CompleteWindowCloseRequest(ex);
             throw;
         }
-    }
-    private static bool IsCloseAlreadyInProgressException(Exception ex)
-    {
-        if (ex is InvalidOperationException && string.IsNullOrWhiteSpace(ex.Message))
-        {
-            return true;
-        }
-
-        var message = ex.Message ?? string.Empty;
-        return message.IndexOf("closing", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               message.IndexOf("closed", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }
