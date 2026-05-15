@@ -27,6 +27,9 @@ static partial class Program
             "Automation dispatcher trivial handler payload fields match catalog",
             AutomationCommandDispatcher_TrivialHandlers_MatchCatalogPayloadFields);
         await AddCheckAsync(results,
+            "Automation dispatcher audio ramp trace payload field matches catalog",
+            AutomationCommandDispatcher_GetAudioRampTrace_MetadataMatchesDispatcherPayload);
+        await AddCheckAsync(results,
             "Automation dispatcher ready-device gate classifies commands",
             AutomationCommandDispatcher_RequiresReadyDevices_ClassifiesCommands);
         await AddCheckAsync(results,

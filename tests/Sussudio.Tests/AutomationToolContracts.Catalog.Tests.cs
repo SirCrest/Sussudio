@@ -218,7 +218,7 @@ static partial class Program
 
     private static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "B6A413C3173E67562BF2030574EC34E2F92942AB13B94B9681F64F373E55BA48";
+        const string ExpectedManifestSha256 = "876DBE09BA6A930D63287AC1C53D990C571842ECEF257A01B40F784BEA6DD15D";
         var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;

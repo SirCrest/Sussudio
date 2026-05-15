@@ -19,7 +19,7 @@ mentions the moved files.
 
 | Area | Current large files | Preferred next owner |
 |------|---------------------|----------------------|
-| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunExecution.cs`, `tools/Common/DiagnosticSessionRunExecution.Scenario.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs`, `tools/Common/DiagnosticSessionRunExecution.ResultRequest.cs` | public runner compatibility wrapper, mutable run phase plan, scenario phase handoff, named scenario phase execution/context/state/result, result-build request handoff, run bootstrap/options normalization, scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
+| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunExecution.cs`, `tools/Common/DiagnosticSessionRunExecution.Completion.cs`, `tools/Common/DiagnosticSessionRunExecution.Scenario.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs`, `tools/Common/DiagnosticSessionRunExecution.ResultRequest.cs` | public runner compatibility wrapper, mutable run phase plan, post-cleanup completion phase, scenario phase handoff, named scenario phase execution/context/state/result, result-build request handoff, run bootstrap/options normalization, scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs`, `tests/Sussudio.Tests/HarnessCheckCatalog*.cs` | runner entry point, topic check catalogs, xUnit slices, and focused contract tests such as `StatsPresentation.*.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.Initialization.cs`, `CaptureService.Audio.cs`, `CaptureService.MicrophoneMonitor.cs`, `CaptureService.WasapiPlayback.cs`, `CaptureService.Cleanup.cs`, `CaptureService.Coordination.cs`, `CaptureService.DeferredCleanup.cs`, `CaptureService.Failures.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackOrchestration.cs`, `CaptureService.FlashbackAudioInputs.cs`, `CaptureService.FlashbackPreviewBackend.cs`, `CaptureService.FlashbackPreviewBackendDisposal.cs`, `CaptureService.FlashbackBufferCycle.cs`, `CaptureService.FlashbackExportDiagnostics.cs`, `CaptureService.FlashbackExportFailureClassification.cs`, `CaptureService.FlashbackExportOperations.cs`, `CaptureService.FlashbackExportPlanning.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.HealthSnapshotCaptureCadence.cs`, `CaptureService.HealthSnapshotFlashbackBuffer.cs`, `CaptureService.HealthSnapshotFlashbackQueues.cs`, `CaptureService.HealthSnapshotMjpeg.cs`, `CaptureService.HealthSnapshotSourceTelemetry.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.PreviewPipeline.cs`, `CaptureService.Probes.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RecordingIntegrity.Models.cs`, `CaptureService.RecordingIntegrity.Summary.cs`, `CaptureService.RecordingIntegrity.Counters.cs`, `CaptureService.RecordingIntegrity.Audio.cs`, `CaptureService.RecordingIntegrity.Logging.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RecordingRollback.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.RuntimeSnapshotIngestAudio.cs`, `CaptureService.RuntimeSnapshotHdrPipeline.cs`, `CaptureService.RuntimeSnapshotSourceTelemetry.cs`, `CaptureService.RuntimeSnapshotRecordingIntegrity.cs`, `CaptureService.Snapshots.cs`, `CaptureService.SnapshotRecordingFormat.cs`, `CaptureService.SnapshotObservedFrames.cs`, `CaptureService.SnapshotAvSync.cs`, `CaptureService.SnapshotTelemetry.cs`, `CaptureService.ObservedPixelTelemetry.cs`, `CaptureService.Telemetry.cs` | service state and construction owner, initialization owner, audio preview/input switching owner, microphone monitoring owner, WASAPI playback routing owner, cleanup owner, transition/disposal owner, deferred cleanup owner, failure owner, Flashback control owner, Flashback restart orchestration owner, Flashback audio input restoration owner, Flashback preview backend startup owner, Flashback preview backend disposal owner, Flashback buffer cycle owner, Flashback export diagnostics/progress owner, Flashback export failure taxonomy, Flashback export entry/core owner, Flashback export planning/throttle owner, Flashback recording policy owner, health snapshot builder, capture cadence health projection, Flashback buffer/backend health projection, Flashback queue health projection, MJPEG health snapshot projection, source telemetry health projection, preview lifecycle owner, preview pipeline owner, probe owner, recording integrity active-backend resolver, integrity DTOs, integrity summary classification, integrity counter capture, audio integrity capture, integrity logging, recording start/stop transition owner, transient recording rollback owner, runtime snapshot builder, runtime ingest/audio projection, runtime HDR/encoder pipeline projection, runtime source-telemetry projection, runtime recording-integrity projection, diagnostics compatibility and shared snapshot utilities, recording format snapshot policy, observed frame snapshot telemetry, A/V sync snapshot policy, source telemetry snapshot policy, observed pixel telemetry owner, telemetry owner, resource managers |
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `DeviceService.FormatCache.cs`, `DeviceService.FormatProbe.cs`, `DeviceService.Scoring.cs`, `DeviceService.AudioAssociation.cs`, `DeviceService.NativeXu.cs`, `MfDeviceEnumerator.cs`, `MfDeviceEnumerator.VideoDevices.cs`, `MfDeviceEnumerator.AudioEndpoints.cs`, `MfDeviceEnumerator.FormatProbe.cs` | device enumeration orchestration, persisted format cache, inline/background format probing, priority/capability scoring, audio endpoint association, Native XU interface path resolution, shared MF constants/P/Invokes, MF video device enumeration, WASAPI capture endpoint enumeration, native MF format probing and source fallback |
@@ -1217,7 +1217,8 @@ Primary current owners:
   placement, command-kind handling, and helper coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Tests.cs` owns
   dispatcher JSON payload extraction helper coverage and the trivial-handler
-  payload-field parity check against `AutomationCommandCatalog`.
+  payload-field parity check against `AutomationCommandCatalog`, plus the
+  custom `GetAudioRampTrace.maxEntries` metadata guardrail.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Readiness.Tests.cs` owns
   dispatcher readiness gating, window close, preview health, and UI automation
   readiness-independent coverage.
@@ -2174,7 +2175,11 @@ Primary owners:
   session identity, output-directory creation, and runner process metadata.
 - `tools/Common/DiagnosticSessionRunExecution.cs` owns diagnostic-session phase
   sequencing around initial snapshot capture, scenario phase invocation,
-  cleanup, recording checks, post-run snapshots, and result handoff.
+  cleanup, and completion-phase handoff.
+- `tools/Common/DiagnosticSessionRunExecution.Completion.cs` owns the
+  post-cleanup evidence/result sequence: recording checks, post-run timeline
+  and final snapshot capture, result-build handoff, and terminal live-state
+  write.
 - `tools/Common/DiagnosticSessionRunExecution.Scenario.cs` owns the scenario
   phase handoff from the run-execution root.
 - `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs` owns the named
@@ -2183,8 +2188,8 @@ Primary owners:
   rejected-export handling, PresentMon await, fault drain, and the cleanup
   result consumed by `RunAsync`.
 - `tools/Common/DiagnosticSessionRunExecution.ResultRequest.cs` owns the final
-  diagnostic-session result-build request mapping so the runner execution root
-  keeps the phase sequence readable.
+  diagnostic-session result-build request mapping so the completion phase keeps
+  the result-builder handoff readable.
 - `tools/Common/DiagnosticSessionOutputLock.cs` owns the per-output-directory
   exclusive lock that prevents concurrent diagnostic sessions from writing the
   same artifact set.

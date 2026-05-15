@@ -1862,14 +1862,17 @@ Diagnostic session DTOs now live in focused model files:
 `tools/Common/DiagnosticSessionResult.Overview.cs`, and
 `tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionRunner.cs` owns the
 public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
-mutable run phase plan around initial snapshot, cleanup, verification, post-run
-snapshots, and summary. `DiagnosticSessionRunExecution.Scenario.cs` owns the
-scenario phase handoff, while `DiagnosticSessionScenarioPhaseRunner.cs` owns the
-main scenario execution phase for setup/startup, sampling, background task
-awaits, rejected-export handling, PresentMon await, fault drain, and explicit
-phase context/state/result records.
+mutable run phase plan around initial snapshot, scenario execution, cleanup, and
+completion handoff. `DiagnosticSessionRunExecution.Completion.cs` owns the
+post-cleanup evidence/result sequence for recording checks, post-run timeline
+and final snapshot capture, result-build handoff, and terminal live-state write.
+`DiagnosticSessionRunExecution.Scenario.cs` owns the scenario phase handoff,
+while `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario
+execution phase for setup/startup, sampling, background task awaits,
+rejected-export handling, PresentMon await, fault drain, and explicit phase
+context/state/result records.
 `DiagnosticSessionRunExecution.ResultRequest.cs` owns the final result-build
-request handoff from computed runner state to the result builder.
+request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
 DTO root owns core session metadata, terminal state, artifacts, actions, and
 warnings; the result partials own capture/source, Flashback playback,
@@ -2364,6 +2367,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionText.cs`
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionRunExecution.cs`
+- `DiagnosticSessionRunExecution.Completion.cs`
 - `DiagnosticSessionRunExecution.Scenario.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionRunExecution.ResultRequest.cs`
@@ -2381,8 +2385,10 @@ Remaining `tools/Common` ownership:
 
    `tools/Common/DiagnosticSessionRunner.cs` is now the small public wrapper,
    while `tools/Common/DiagnosticSessionRunExecution.cs` owns the mutable run
-   phase plan, `DiagnosticSessionRunExecution.Scenario.cs` owns the scenario
-   phase handoff, and `DiagnosticSessionScenarioPhaseRunner.cs` owns the main
+   phase plan, `DiagnosticSessionRunExecution.Completion.cs` owns the
+   post-cleanup evidence/result sequence,
+   `DiagnosticSessionRunExecution.Scenario.cs` owns the scenario phase handoff,
+   and `DiagnosticSessionScenarioPhaseRunner.cs` owns the main
    scenario execution phase and explicit scenario result handoff. Scenario catalog, initial scenario setup, optional scenario
    startup, cleanup mutation ownership, post-cleanup recording checks,
    post-run snapshot fetches, command send/failure plumbing, and result

@@ -163,4 +163,36 @@ static partial class Program
                    ?? throw new InvalidOperationException($"AutomationCommandCatalog.Get({kind}) returned null.");
         }
     }
+
+    private static Task AutomationCommandDispatcher_GetAudioRampTrace_MetadataMatchesDispatcherPayload()
+    {
+        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(dispatcherText, "case AutomationCommandKind.GetAudioRampTrace:");
+        AssertContains(dispatcherText, "var maxEntries = GetInt(payload, \"maxEntries\") ?? 512;");
+
+        var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
+        var kind = Enum.Parse(enumType, "GetAudioRampTrace");
+        var catalogMetadata = GetAutomationCommandCatalogMetadata(kind);
+        var catalogPayloadFields = GetMetadataCollection(catalogMetadata, "PayloadFields");
+
+        AssertEqual("{ maxEntries?: int }", (string)GetMetadataProperty(catalogMetadata, "PayloadShape")!, "GetAudioRampTrace payload shape");
+        AssertEqual(1, catalogPayloadFields.Length, "GetAudioRampTrace catalog payload field count");
+        var maxEntriesField = catalogPayloadFields[0];
+        AssertEqual("maxEntries", (string)GetMetadataProperty(maxEntriesField, "Name")!, "GetAudioRampTrace payload field name");
+        AssertEqual("Integer", GetMetadataProperty(maxEntriesField, "Type")!.ToString(), "GetAudioRampTrace payload field type");
+        AssertEqual(false, (bool)GetMetadataProperty(maxEntriesField, "Required")!, "GetAudioRampTrace payload field required flag");
+
+        return Task.CompletedTask;
+
+        static object GetAutomationCommandCatalogMetadata(object kind)
+        {
+            var catalogType = kind.GetType().Assembly.GetType("Sussudio.Tools.AutomationCommandCatalog")
+                              ?? throw new InvalidOperationException("AutomationCommandCatalog not found.");
+            var getMethod = catalogType.GetMethod("Get", BindingFlags.Static | BindingFlags.Public)
+                            ?? throw new InvalidOperationException("AutomationCommandCatalog.Get not found.");
+            return getMethod.Invoke(null, new[] { kind })
+                   ?? throw new InvalidOperationException($"AutomationCommandCatalog.Get({kind}) returned null.");
+        }
+    }
 }

@@ -33,7 +33,6 @@ internal static partial class DiagnosticSessionRunExecution
             warnings);
         var liveStateWriter = new DiagnosticSessionLiveStateWriter(runBootstrap, runState, warnings);
         var livePath = liveStateWriter.LivePath;
-        JsonElement? verification = null;
         var stoppedRecordingForVerification = false;
         using var scenarioCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var scenarioCancellationToken = scenarioCts.Token;
@@ -102,54 +101,25 @@ internal static partial class DiagnosticSessionRunExecution
             await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
         }
 
-        var recordingCheckResult = await DiagnosticSessionRecordingChecks.RunAsync(
-                options,
-                scenarioPlan,
-                scenario,
-                outputDirectory,
-                initialSnapshot,
-                samples,
-                scenarioPhase.StartedRecording,
-                scenarioPhase.FlashbackRecordingSettingsDeferredPresetState,
-                actions,
-                warnings,
-                commandChannel.SendAsync,
-                SetStage,
-                RecordTerminalException,
-                cancellationToken)
-            .ConfigureAwait(false);
-        verification = recordingCheckResult.Verification;
-
-        var postRunSnapshots = await DiagnosticSessionPostRunSnapshots.CaptureAsync(
-                samples,
-                initialSnapshot,
-                commandChannel.SendAsync,
-                SetStage,
-                RecordTerminalException)
-            .ConfigureAwait(false);
-
-        var result = await DiagnosticSessionResultBuilder.BuildAndWriteAsync(
-                CreateResultBuildRequest(
-                    options,
-                    runBootstrap,
-                    livePath,
-                    commandChannel.FailureCount,
-                    samples,
-                    initialSnapshot,
-                    postRunSnapshots,
-                    verification,
-                    scenarioPhase.PresentMon,
-                    scenarioPhase.StartedPreview,
-                    scenarioPhase.EnabledFlashback,
-                    scenarioPhase.StartedFlashbackPlayback,
-                    stoppedRecordingForVerification,
-                    actions,
-                    warnings),
-                runState)
-            .ConfigureAwait(false);
-
-        await WriteLiveStateBestEffortAsync(result.CompletedUtc, result.TerminalState).ConfigureAwait(false);
-        return result;
+        return await RunCompletionPhaseAsync(new DiagnosticSessionCompletionContext
+        {
+            Options = options,
+            RunBootstrap = runBootstrap,
+            LivePath = livePath,
+            InitialSnapshot = initialSnapshot,
+            Samples = samples,
+            ScenarioPhase = scenarioPhase,
+            StoppedRecordingForVerification = stoppedRecordingForVerification,
+            Actions = actions,
+            Warnings = warnings,
+            CommandChannel = commandChannel,
+            RunState = runState,
+            SetStage = SetStage,
+            RecordTerminalException = RecordTerminalException,
+            RunCancellationToken = cancellationToken,
+            WriteLiveStateBestEffortAsync = (completedUtc, terminalState) =>
+                WriteLiveStateBestEffortAsync(completedUtc, terminalState),
+        }).ConfigureAwait(false);
 
         void SetStage(string stage)
         {

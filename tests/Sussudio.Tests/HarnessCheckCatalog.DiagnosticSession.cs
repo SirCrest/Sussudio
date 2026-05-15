@@ -60,6 +60,9 @@ static partial class Program
             "Diagnostic session scenario phase has a named owner",
             DiagnosticSessionRunExecutionScenario_OwnsScenarioPhase);
         await AddCheckAsync(results,
+            "Diagnostic session completion phase has a named owner",
+            DiagnosticSessionRunExecutionCompletion_OwnsPostCleanupEvidenceAndResult);
+        await AddCheckAsync(results,
             "Diagnostic session scenario plan has a named owner",
             DiagnosticSessionScenarioPlan_OwnsScenarioFlags);
         await AddCheckAsync(results,
