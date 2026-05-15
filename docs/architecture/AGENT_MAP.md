@@ -1853,6 +1853,14 @@ Primary owners:
   validation, default path selection, export payload shaping, and export result
   text. `tools/McpServer/Tools/FlashbackTools.Segments.cs` owns segment-list
   command routing and segment result text.
+- `tools/McpServer/Tools/VerificationTools.cs` owns the public verification MCP
+  methods, command names, payload shaping, and verification response timeout
+  policy. `tools/McpServer/Tools/VerificationTools.Assertions.cs` owns
+  assertion JSON parsing and `JsonElement.Clone()` lifetime safety.
+  `tools/McpServer/Tools/VerificationTools.Formatting.cs` owns recording,
+  file, assertion, mismatch, and failure result text.
+  `tools/McpServer/Tools/VerificationTools.Parsing.cs` owns verification lookup
+  from `Data.Verification` and `Snapshot.LastVerification`.
 - `tools/Common/DiagnosticSessionOptions.cs` owns diagnostic session run
   options.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic session summary and

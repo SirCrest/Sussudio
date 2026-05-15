@@ -1724,6 +1724,13 @@ enable/apply commands and the tool type in `FlashbackTools.cs`, playback/scrub
 action validation in `FlashbackTools.Actions.cs`, export validation/payload/text
 in `FlashbackTools.Export.cs`, and segment-list formatting in
 `FlashbackTools.Segments.cs`.
+The verification MCP tool follows the same ownership rule: keep public
+`verify_recording`, `assert_snapshot`, and `verify_file` methods, command
+names, payloads, and 60s verification timeouts in `VerificationTools.cs`; keep
+assertion JSON parsing and clone lifetime safety in
+`VerificationTools.Assertions.cs`; keep recording/file/assertion text in
+`VerificationTools.Formatting.cs`; and keep `Data.Verification` /
+`Snapshot.LastVerification` lookup in `VerificationTools.Parsing.cs`.
 
 Diagnostic-session pipe retry/error classification now lives in
 `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a

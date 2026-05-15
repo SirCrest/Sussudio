@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Text;
 using System.Text.Json;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
@@ -9,7 +8,7 @@ namespace McpServer.Tools;
 
 [McpServerToolType]
 // MCP tools for verifying recordings and exported Flashback files.
-public static class VerificationTools
+public static partial class VerificationTools
 {
     [McpServerTool, Description("Run ffprobe validation on the last recording. Checks codec, resolution, HDR metadata parity.")]
     public static async Task<CallToolResult> verify_recording(PipeClient pipeClient)
@@ -22,31 +21,7 @@ public static class VerificationTools
             return McpToolResultFactory.FromResponse(response, message);
         }
 
-        var builder = new StringBuilder();
-        builder.AppendLine(AutomationSnapshotFormatter.IsSuccess(response) ? "== Recording Verification: PASS ==" : "== Recording Verification: FAIL ==");
-        builder.AppendLine($"Message: {message}");
-        builder.AppendLine($"Output: {AutomationSnapshotFormatter.Get(verification, "OutputPath")} | Exists: {AutomationSnapshotFormatter.Get(verification, "FileExists")} | Size: {AutomationSnapshotFormatter.Get(verification, "FileSizeBytes")} bytes");
-        builder.AppendLine($"Mode: {AutomationSnapshotFormatter.Get(verification, "VerificationMode")} | Codec: {AutomationSnapshotFormatter.Get(verification, "DetectedVideoCodec")} | Pixel Format: {AutomationSnapshotFormatter.Get(verification, "DetectedPixelFormat")}");
-        builder.AppendLine($"Resolution: {AutomationSnapshotFormatter.Get(verification, "DetectedWidth")} x {AutomationSnapshotFormatter.Get(verification, "DetectedHeight")} | FPS: {AutomationSnapshotFormatter.Get(verification, "DetectedFrameRate")}");
-        builder.AppendLine($"HDR: Level={AutomationSnapshotFormatter.Get(verification, "HdrVerificationLevel")} Metadata={AutomationSnapshotFormatter.Get(verification, "HdrMetadataPresent")} Colorimetry={AutomationSnapshotFormatter.Get(verification, "HdrColorimetryValid")} Mastering={AutomationSnapshotFormatter.Get(verification, "HdrMasteringMetadataPresent")}");
-
-        if (verification.TryGetProperty("Mismatches", out var mismatches) && mismatches.ValueKind == JsonValueKind.Array)
-        {
-            var mismatchList = mismatches.EnumerateArray()
-                .Select(m => m.ValueKind == JsonValueKind.String ? m.GetString() : m.ToString())
-                .Where(m => !string.IsNullOrWhiteSpace(m))
-                .ToList();
-
-            builder.AppendLine(mismatchList.Count == 0
-                ? "Mismatches: None"
-                : $"Mismatches: {string.Join("; ", mismatchList)}");
-        }
-        else
-        {
-            builder.AppendLine("Mismatches: None");
-        }
-
-        return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
+        return McpToolResultFactory.FromResponse(response, BuildRecordingVerificationText(response, verification, message));
     }
 
     [McpServerTool, Description("Run programmatic assertions against the current app state snapshot. Each assertion has a field name, operator (eq/neq/gt/gte/lt/lte/contains), and expected value.")]
@@ -54,25 +29,9 @@ public static class VerificationTools
         PipeClient pipeClient,
         [Description("JSON array of assertion objects with field, op, value")] string assertions)
     {
-        if (string.IsNullOrWhiteSpace(assertions))
+        if (!TryParseAssertionArray(assertions, out var parsedAssertions, out var parseError))
         {
-            return McpToolResultFactory.FromText("The assertions parameter must be a JSON array string.", isError: true);
-        }
-
-        JsonElement parsedAssertions;
-        try
-        {
-            using var assertionsDocument = JsonDocument.Parse(assertions);
-            if (assertionsDocument.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return McpToolResultFactory.FromText("The assertions parameter must be a JSON array string.", isError: true);
-            }
-
-            parsedAssertions = assertionsDocument.RootElement.Clone();
-        }
-        catch (JsonException ex)
-        {
-            return McpToolResultFactory.FromText($"Invalid assertions JSON: {ex.Message}", isError: true);
+            return McpToolResultFactory.FromText(parseError!, isError: true);
         }
 
         var payload = new Dictionary<string, object?>
@@ -81,29 +40,7 @@ public static class VerificationTools
         };
 
         var response = await pipeClient.SendCommandAsync("AssertSnapshot", payload).ConfigureAwait(false);
-        var builder = new StringBuilder();
-        builder.AppendLine(AutomationSnapshotFormatter.IsSuccess(response) ? "Snapshot assertions: PASS" : "Snapshot assertions: FAIL");
-        builder.AppendLine($"Message: {AutomationSnapshotFormatter.Get(response, "Message", "No message.")}");
-
-        if (response.TryGetProperty("Data", out var data) && data.ValueKind == JsonValueKind.Object)
-        {
-            builder.AppendLine($"Assertions: {AutomationSnapshotFormatter.Get(data, "assertions")}");
-            builder.AppendLine($"Passed: {AutomationSnapshotFormatter.Get(data, "passed")}");
-
-            if (data.TryGetProperty("failures", out var failures) && failures.ValueKind == JsonValueKind.Array)
-            {
-                var failureList = failures.EnumerateArray()
-                    .Select(f => f.ValueKind == JsonValueKind.String ? f.GetString() : f.ToString())
-                    .Where(f => !string.IsNullOrWhiteSpace(f))
-                    .ToList();
-
-                builder.AppendLine(failureList.Count == 0
-                    ? "Failures: None"
-                    : $"Failures: {string.Join("; ", failureList)}");
-            }
-        }
-
-        return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
+        return McpToolResultFactory.FromResponse(response, BuildSnapshotAssertionText(response));
     }
 
     [McpServerTool, Description("Run ffprobe validation on an arbitrary file path. Checks codec, resolution, HDR metadata.")]
@@ -126,39 +63,6 @@ public static class VerificationTools
             return McpToolResultFactory.FromResponse(response, message);
         }
 
-        var builder = new StringBuilder();
-        builder.AppendLine(AutomationSnapshotFormatter.IsSuccess(response) ? "== File Verification: PASS ==" : "== File Verification: FAIL ==");
-        builder.AppendLine($"Message: {message}");
-        builder.AppendLine($"File: {filePath} | Exists: {AutomationSnapshotFormatter.Get(verification, "FileExists")} | Size: {AutomationSnapshotFormatter.Get(verification, "FileSizeBytes")} bytes");
-        builder.AppendLine($"Codec: {AutomationSnapshotFormatter.Get(verification, "DetectedVideoCodec")} | Pixel Format: {AutomationSnapshotFormatter.Get(verification, "DetectedPixelFormat")}");
-        builder.AppendLine($"Resolution: {AutomationSnapshotFormatter.Get(verification, "DetectedWidth")} x {AutomationSnapshotFormatter.Get(verification, "DetectedHeight")} | FPS: {AutomationSnapshotFormatter.Get(verification, "DetectedFrameRate")}");
-
-        return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
+        return McpToolResultFactory.FromResponse(response, BuildFileVerificationText(filePath, response, verification, message));
     }
-
-    private static bool TryGetVerification(JsonElement response, out JsonElement verification)
-    {
-        verification = default;
-
-        if (response.ValueKind == JsonValueKind.Object &&
-            response.TryGetProperty("Data", out var data) &&
-            data.ValueKind == JsonValueKind.Object &&
-            data.TryGetProperty("Verification", out verification) &&
-            verification.ValueKind == JsonValueKind.Object)
-        {
-            return true;
-        }
-
-        if (response.ValueKind == JsonValueKind.Object &&
-            response.TryGetProperty("Snapshot", out var snapshot) &&
-            snapshot.ValueKind == JsonValueKind.Object &&
-            snapshot.TryGetProperty("LastVerification", out verification) &&
-            verification.ValueKind == JsonValueKind.Object)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
 }
