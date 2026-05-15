@@ -2069,7 +2069,12 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultFormatter.Overview.cs` owns header,
   capture-mode, recording-verification, PresentMon, and process sections.
 - `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs` owns Flashback
-  playback command/performance/decode/stage, recording, and export sections.
+  diagnostic-session text section ordering.
+  `DiagnosticSessionResultFormatter.FlashbackPlayback.cs` owns playback
+  command/performance/decode/stage lines,
+  `DiagnosticSessionResultFormatter.FlashbackRecording.cs` owns recording
+  lines, and `DiagnosticSessionResultFormatter.FlashbackExport.cs` owns export
+  lines.
 - `tools/Common/DiagnosticSessionResultFormatter.Preview.cs` owns preview
   scheduler, D3D performance/CPU timing, and visual cadence sections.
 - `tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs` owns artifact,

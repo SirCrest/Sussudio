@@ -1687,8 +1687,10 @@ verification, and PresentMon fields.
 Diagnostic-session result text now lives in a focused partial family rooted at
 `tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
 `Format(...)` flow, `.Overview.cs` owns header/capture/verification/PresentMon
-and process sections, `.Flashback.cs` owns Flashback playback/recording/export
-sections, `.Preview.cs` owns preview scheduler/D3D/visual cadence sections,
+and process sections, `.Flashback.cs` owns Flashback section ordering,
+`.FlashbackPlayback.cs` owns playback command/performance/decode/stage text,
+`.FlashbackRecording.cs` owns recording text, `.FlashbackExport.cs` owns export
+text, `.Preview.cs` owns preview scheduler/D3D/visual cadence sections,
 `.Artifacts.cs` owns artifact/action/warning sections, and `.Helpers.cs` owns
 small text helpers. The runner keeps `Format(...)` as a compatibility wrapper
 so existing ssctl and MCP callers do not need to know about the formatter owner.
@@ -2052,6 +2054,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionResultFormatter.Overview.cs`
 - `DiagnosticSessionResultFormatter.Flashback.cs`
+- `DiagnosticSessionResultFormatter.FlashbackPlayback.cs`
+- `DiagnosticSessionResultFormatter.FlashbackRecording.cs`
+- `DiagnosticSessionResultFormatter.FlashbackExport.cs`
 - `DiagnosticSessionResultFormatter.Preview.cs`
 - `DiagnosticSessionResultFormatter.Artifacts.cs`
 - `DiagnosticSessionResultFormatter.Helpers.cs`
