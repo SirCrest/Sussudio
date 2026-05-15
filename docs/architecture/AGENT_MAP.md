@@ -1448,8 +1448,9 @@ Primary current owners:
   `MainViewModel.FrameRateTiming.cs` owns shared frame-rate timing family,
   rational parsing, source-rate fallback, and preferred-format ranking helpers
   used by frame-rate, resolution, capture-settings, and automation projections.
-  Device enumeration and selected-device capability rebuilds stay in
-  `MainViewModel.DeviceManagement.cs`.
+  Video device enumeration and selected-device capability rebuilds stay in
+  `MainViewModel.DeviceManagement.cs`; watcher-driven audio endpoint refresh
+  and capture-card endpoint filtering live in `MainViewModel.AudioDeviceDiscovery.cs`.
   `MainViewModel.DeviceFormatProbes.cs` owns late device-format probe
   reconciliation, capability refresh after background probes, and active-preview
   HDR/SDR/session-mismatch retarget checks.

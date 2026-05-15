@@ -131,11 +131,15 @@ static partial class Program
         AssertContains(mainViewModelRuntimeText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
         AssertDoesNotContain(mainViewModelText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
         var deviceManagementText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs"));
+        var audioDeviceDiscoveryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioDeviceDiscovery.cs"));
         var deviceFormatProbesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceFormatProbes.cs"));
         AssertContains(deviceManagementText, "CancelPendingAudioControlWork");
         AssertContains(deviceManagementText, "_deviceAudioModeCts");
         AssertContains(deviceManagementText, "_deviceAudioRefreshCts");
-        AssertContains(deviceManagementText, "AUDIO_DEVICES_CHANGED_UI_ENQUEUE_FAILED");
+        AssertContains(audioDeviceDiscoveryText, "private void OnAudioDevicesChanged()");
+        AssertContains(audioDeviceDiscoveryText, "private async Task RefreshAudioDeviceListAsync()");
+        AssertContains(audioDeviceDiscoveryText, "AUDIO_DEVICES_CHANGED_UI_ENQUEUE_FAILED");
+        AssertDoesNotContain(deviceManagementText, "AUDIO_DEVICES_CHANGED_UI_ENQUEUE_FAILED");
         AssertContains(deviceFormatProbesText, "private void OnDeviceFormatProbeCompleted");
         AssertContains(deviceFormatProbesText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
         AssertDoesNotContain(deviceManagementText, "private void OnDeviceFormatProbeCompleted");
