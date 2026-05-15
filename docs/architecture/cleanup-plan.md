@@ -877,8 +877,11 @@ validation and dispatch into telemetry polling.
 
 Native XU audio command sequences now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioCommands.cs`. Keep
-HDMI/Analog switching, analog gain writes, gain-register mapping, selector-4
-I2C payload writes, and flash persistence sequencing there.
+the public `SwitchAudioInputAsync` and `SetAnalogGainAsync` entry points there.
+Analog gain register mapping/writes now live in
+`NativeXuAtCommandProvider.AnalogGain.cs`, HDMI/Analog codec switch sequencing
+now lives in `NativeXuAtCommandProvider.AudioSwitch.cs`, and selector-4 I2C
+payload writes now live in `NativeXuAtCommandProvider.Selector4.cs`.
 
 Native XU reference full-snapshot reads now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.FullSnapshot.cs`. Keep

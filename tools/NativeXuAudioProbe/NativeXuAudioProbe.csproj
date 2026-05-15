@@ -21,7 +21,9 @@
     <Compile Include="..\..\Sussudio\Services\Capture\KsExtensionUnitNative.Transfers.cs" Link="Shared\Services\Capture\KsExtensionUnitNative.Transfers.cs" />
     <Compile Include="..\..\Sussudio\Services\Contracts\ISourceSignalTelemetryProvider.cs" Link="Shared\Services\Contracts\ISourceSignalTelemetryProvider.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.cs" />
+    <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.AnalogGain.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.AnalogGain.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.AudioCommands.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.AudioCommands.cs" />
+    <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.AudioSwitch.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.AudioSwitch.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.AtProtocol.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.AtProtocol.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.DiagnosticSummary.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.DiagnosticSummary.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.DeviceCommands.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.DeviceCommands.cs" />
@@ -29,6 +31,7 @@
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.PayloadDecoding.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.PayloadDecoding.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.RollingCommandGroups.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.RollingCommandGroups.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.RollingPoll.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.RollingPoll.cs" />
+    <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.Selector4.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.Selector4.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.Build.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.Build.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs" />

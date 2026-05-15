@@ -30,7 +30,7 @@ static partial class Program
             "NativeXu telemetry rolling poll lives in focused partial",
             NativeXuAtCommandProvider_RollingPollLivesInFocusedPartial);
         await AddCheckAsync(results,
-            "NativeXu audio command sequences live in focused partial",
+            "NativeXu audio command sequences live in focused partials",
             NativeXuAtCommandProvider_AudioCommandsLiveInFocusedPartial);
         await AddCheckAsync(results,
             "NativeXu payload decoding lives in focused partial",

@@ -9,12 +9,15 @@ static partial class Program
         AssertContains(nativeXuProbeProjectText, "NativeXuAudioControlService.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAudioControlService.Transport.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.cs");
+        AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.AnalogGain.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.AudioCommands.cs");
+        AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.AudioSwitch.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DiagnosticSummary.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.DeviceCommands.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.FullSnapshot.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.PayloadDecoding.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
+        AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.Selector4.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Build.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs");

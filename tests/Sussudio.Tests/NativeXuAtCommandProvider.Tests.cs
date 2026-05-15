@@ -51,6 +51,12 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioCommandsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioCommands.cs")
             .Replace("\r\n", "\n");
+        var analogGainText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AnalogGain.cs")
+            .Replace("\r\n", "\n");
+        var audioSwitchText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioSwitch.cs")
+            .Replace("\r\n", "\n");
+        var selector4Text = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.Selector4.cs")
+            .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
         AssertContains(deviceCommandsText, "public static async Task<bool> SendAtSetCommandAsync(");
@@ -62,12 +68,25 @@ static partial class Program
         AssertContains(audioCommandsText, "public sealed partial class NativeXuAtCommandProvider");
         AssertContains(audioCommandsText, "public static async Task<bool> SwitchAudioInputAsync(");
         AssertContains(audioCommandsText, "public static async Task<bool> SetAnalogGainAsync(");
-        AssertContains(audioCommandsText, "private static bool ExecuteGainChange(");
-        AssertContains(audioCommandsText, "internal static void ComputeGainRegisters(");
-        AssertContains(audioCommandsText, "private static bool ExecuteAudioSwitch(");
-        AssertContains(audioCommandsText, "private static bool SendSelector4Command(");
-        AssertContains(audioCommandsText, "NATIVEXU_SWITCH_AUDIO FAILED stage=i2c_{i}");
+        AssertContains(audioCommandsText, "ExecuteAudioSwitch(handle, node.NodeId, analog, gainByte, sourceLabel, ct)");
+        AssertContains(audioCommandsText, "ExecuteGainChange(handle, node.NodeId, gainByte, persistFlash, ct)");
+        AssertDoesNotContain(audioCommandsText, "private static bool ExecuteGainChange(");
+        AssertDoesNotContain(audioCommandsText, "internal static void ComputeGainRegisters(");
+        AssertDoesNotContain(audioCommandsText, "private static bool ExecuteAudioSwitch(");
+        AssertDoesNotContain(audioCommandsText, "private static bool SendSelector4Command(");
+        AssertContains(analogGainText, "private static bool ExecuteGainChange(");
+        AssertContains(analogGainText, "internal static void ComputeGainRegisters(");
+        AssertContains(analogGainText, "SendSelector4Command(");
+        AssertContains(audioSwitchText, "private static bool ExecuteAudioSwitch(");
+        AssertContains(audioSwitchText, "NATIVEXU_SWITCH_AUDIO FAILED stage=i2c_{i}");
+        AssertContains(audioSwitchText, "commands=14");
+        AssertContains(selector4Text, "private static bool SendSelector4Command(");
+        AssertContains(selector4Text, "BuildAtWriteFrame(cmdCode, inputData)");
+        AssertContains(selector4Text, "TryXuSetViaOutput(handle, nodeId, XuGuid, I2cSelector, payload, out var win32)");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.AudioCommands.cs");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.AnalogGain.cs");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.AudioSwitch.cs");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.Selector4.cs");
 
         return Task.CompletedTask;
     }
