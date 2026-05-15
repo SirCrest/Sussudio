@@ -766,9 +766,12 @@ Primary current owners:
   visual-cadence FPS/repeat/motion text formatting.
   `Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs` owns encoder dock
   visibility, codec label, bitrate, and encoder drift text formatting.
-  `Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs` owns diagnostic
-  summary/row parsing. `Sussudio/ViewModels/StatsPresentationBuilder.Window.cs`
-  owns detached stats-window text and telemetry-detail presentation.
+  `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticRows.cs` owns
+  diagnostic row construction and source-summary parsing.
+  `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticSummary.cs` owns
+  frame-lane diagnostic health summary classification.
+  `Sussudio/ViewModels/StatsPresentationBuilder.Window.cs` owns detached
+  stats-window text and telemetry-detail presentation.
   `Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`
   owns stats lane status classification and visual-repeat drift policy.
   `Sussudio/ViewModels/StatsPresentationModels.cs` owns the internal DTO

@@ -1312,8 +1312,10 @@ hooks, and row element pooling still belongs to `StatsDiagnosticRowsController`.
 Stats presentation and frame-time overlay contract checks now live in
 `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` instead of expanding
 the legacy harness body in `tests/Sussudio.Tests/Program.cs`.
-Stats diagnostic summary/row parsing now lives in
-`Sussudio/ViewModels/StatsPresentationBuilder.Diagnostics.cs`; frame-time
+Stats diagnostic row construction and source-summary parsing now live in
+`Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticRows.cs`; frame-lane
+diagnostic health summary classification now lives in
+`Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticSummary.cs`; frame-time
 overlay presentation/range/sample text policy now lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs`; visual-cadence
 FPS/repeat/motion text formatting now lives in
