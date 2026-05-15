@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Win32;
-using Sussudio.Models;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.ViewModels;
@@ -49,28 +48,6 @@ public partial class MainViewModel
             UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
         };
         _timer.Start();
-    }
-
-    private void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot? runtimeSnapshot = null)
-    {
-        var runtime = runtimeSnapshot ?? _captureService.GetRuntimeSnapshot();
-        IsAudioPreviewActive = runtime.IsAudioPreviewActive;
-
-        var liveSignalText = LiveSignalTextPresentationBuilder.Build(
-            runtime,
-            _captureService.EncoderCodecName,
-            LiveInfoUnavailable);
-        LiveResolution = liveSignalText.Resolution;
-        LiveFrameRate = liveSignalText.FrameRate;
-        LivePixelFormat = liveSignalText.PixelFormat;
-    }
-
-    private void ResetLiveCaptureInfo()
-    {
-        IsAudioPreviewActive = false;
-        LiveResolution = LiveInfoUnavailable;
-        LiveFrameRate = LiveInfoUnavailable;
-        LivePixelFormat = LiveInfoUnavailable;
     }
 
     private void UpdateDiskSpace()

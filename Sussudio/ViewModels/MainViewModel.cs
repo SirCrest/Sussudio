@@ -119,6 +119,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Resolution selection policy: MainViewModel.ResolutionSelectionPolicy.cs
     // Disposal / teardown: MainViewModel.Disposal.cs
     // Runtime status/timers: MainViewModel.Runtime.cs
+    // Live-signal presentation: MainViewModel.LiveSignalPresentation.cs
     // Source telemetry: MainViewModel.Telemetry.cs
     // Settings persistence: MainViewModel.Settings.cs
     // Flashback settings reactions: MainViewModel.FlashbackSettings.cs

@@ -1578,8 +1578,9 @@ Primary current owners:
   `MainViewModel.Dispatching.cs` owns shared
   dispatcher enqueue/invoke helpers and preview event fan-out for the partial
   family. `MainViewModel.Runtime.cs` owns timer refreshes, recording bitrate
-  display, capture status/error fan-out, and resume cleanup callbacks, while
-  delegating live-signal label projection to
+  display, capture status/error fan-out, and resume cleanup callbacks.
+  `MainViewModel.LiveSignalPresentation.cs` owns live-signal ViewModel property
+  projection and delegates label formatting to
   `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`.
   `MainViewModel.CaptureSettings.cs` owns capture settings projection from UI
   selection and observed runtime/source state.

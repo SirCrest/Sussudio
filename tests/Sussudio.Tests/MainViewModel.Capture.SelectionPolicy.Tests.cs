@@ -251,6 +251,8 @@ static partial class Program
     {
         var runtimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Runtime.cs")
             .Replace("\r\n", "\n");
+        var liveSignalPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.LiveSignalPresentation.cs")
+            .Replace("\r\n", "\n");
         var liveSignalText = ReadRepoFile("Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs")
             .Replace("\r\n", "\n");
         var builderType = RequireType("Sussudio.ViewModels.LiveSignalTextPresentationBuilder");
@@ -260,12 +262,23 @@ static partial class Program
             System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("LiveSignalTextPresentationBuilder.Build was not found.");
 
-        AssertContains(runtimeText, "var liveSignalText = LiveSignalTextPresentationBuilder.Build(");
-        AssertContains(runtimeText, "_captureService.EncoderCodecName,");
-        AssertContains(runtimeText, "LiveInfoUnavailable);");
-        AssertContains(runtimeText, "LiveResolution = liveSignalText.Resolution;");
-        AssertContains(runtimeText, "LiveFrameRate = liveSignalText.FrameRate;");
-        AssertContains(runtimeText, "LivePixelFormat = liveSignalText.PixelFormat;");
+        AssertContains(runtimeText, "UpdateLiveCaptureInfo(runtimeSnapshot);");
+        AssertContains(runtimeText, "ResetLiveCaptureInfo();");
+        AssertDoesNotContain(runtimeText, "private void UpdateLiveCaptureInfo(");
+        AssertDoesNotContain(runtimeText, "private void ResetLiveCaptureInfo()");
+        AssertContains(liveSignalPresentationText, "private void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
+        AssertContains(liveSignalPresentationText, "IsAudioPreviewActive = runtime.IsAudioPreviewActive;");
+        AssertContains(liveSignalPresentationText, "var liveSignalText = LiveSignalTextPresentationBuilder.Build(");
+        AssertContains(liveSignalPresentationText, "_captureService.EncoderCodecName,");
+        AssertContains(liveSignalPresentationText, "LiveInfoUnavailable);");
+        AssertContains(liveSignalPresentationText, "LiveResolution = liveSignalText.Resolution;");
+        AssertContains(liveSignalPresentationText, "LiveFrameRate = liveSignalText.FrameRate;");
+        AssertContains(liveSignalPresentationText, "LivePixelFormat = liveSignalText.PixelFormat;");
+        AssertContains(liveSignalPresentationText, "private void ResetLiveCaptureInfo()");
+        AssertContains(liveSignalPresentationText, "IsAudioPreviewActive = false;");
+        AssertContains(liveSignalPresentationText, "LiveResolution = LiveInfoUnavailable;");
+        AssertContains(liveSignalPresentationText, "LiveFrameRate = LiveInfoUnavailable;");
+        AssertContains(liveSignalPresentationText, "LivePixelFormat = LiveInfoUnavailable;");
         AssertDoesNotContain(runtimeText, "runtime.ReaderSourceSubtype ??");
         AssertDoesNotContain(runtimeText, "runtime.LatestObservedFramePixelFormat ??");
         AssertContains(liveSignalText, "internal static class LiveSignalTextPresentationBuilder");

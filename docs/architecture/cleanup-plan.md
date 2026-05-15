@@ -2058,7 +2058,8 @@ Remaining `tools/Common` ownership:
    `MainViewModel.DeviceAudioPropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
    timer/status/error handling now lives in `MainViewModel.Runtime.cs`, and
-   live-signal label formatting now lives in
+   live-signal ViewModel property projection now lives in
+   `MainViewModel.LiveSignalPresentation.cs`; live-signal label formatting now lives in
    `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`. Capture settings projection from UI/runtime state
    now lives in `MainViewModel.CaptureSettings.cs`, leaving
    `MainViewModel.Capture.cs` focused on device/preview/reinitialize
