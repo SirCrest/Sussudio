@@ -820,8 +820,19 @@ Primary current owners:
   snapshot builder contract checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs` is the MainWindow UI
   contract marker shell.
-- `tests/Sussudio.Tests/MainWindow.ShellOwnership.Tests.cs` owns MainWindow
-  shell/startup/title/close/preview-runtime partial ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ShellOwnership.Tests.cs` is the MainWindow
+  shell-ownership marker shell.
+- `tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs` owns
+  MainWindow shell chrome ownership assertions for the settings shelf and window
+  title.
+- `tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.Tests.cs` owns
+  MainWindow startup/launch ownership assertions for splash loading phrases,
+  launch entrance animation, and first-load hosting.
+- `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs`
+  owns MainWindow preview resize telemetry and preview runtime/snapshot ownership
+  assertions.
+- `tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`
+  owns MainWindow close lifecycle and native bootstrap ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs` owns
   MainWindow controller-adapter ownership assertions for control bar, shell
   elevation, preview-transition, preview startup overlay, preview fade-in, and

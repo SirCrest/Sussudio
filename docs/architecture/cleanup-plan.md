@@ -516,6 +516,9 @@ subclassing, DWM cloak/dark-mode setup, initial shell size, icon, and uncloaking
 now live in `Sussudio/Controllers/NativeWindowBootstrapController.cs`.
 `Sussudio/MainWindow.NativeWindow.cs` is the XAML-facing adapter and keeps the
 `_hwnd` field consumed by screenshot and window automation paths.
+MainWindow shell ownership tests mirror these runtime owners through focused
+`MainWindow.ShellOwnership.*.Tests.cs` files for chrome, startup, preview
+runtime, and window lifecycle contracts.
 
 Audio and microphone meter rendering now lives in the
 `Sussudio/Controllers/AudioMeterController*.cs` family: the root controller owns
@@ -2204,7 +2207,9 @@ Remaining `tools/Common` ownership:
    owners. Capture configuration model tests are split into option, settings,
    encoder support, Flashback DTO, and recording pipeline owners. Pooled-frame
    tests are split into lease lifecycle, MJPEG jitter policy, MJPEG jitter
-   queue behavior, and queued lease release owners. Flashback buffer segment
+   queue behavior, and queued lease release owners. MainWindow shell ownership
+   tests are split into chrome, startup, preview runtime, and window lifecycle
+   owners. Flashback buffer segment
    tests are split between mutation/accounting/disposal coverage and segment
    lookup/list projection coverage.
 
