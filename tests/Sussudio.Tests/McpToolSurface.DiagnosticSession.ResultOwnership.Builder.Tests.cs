@@ -5,6 +5,10 @@ static partial class Program
     private static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
+        var runExecutionText = ReadRepoFile("tools/Common/DiagnosticSessionRunExecution.cs")
+            .Replace("\r\n", "\n");
+        var resultRequestText = ReadRepoFile("tools/Common/DiagnosticSessionRunExecution.ResultRequest.cs")
+            .Replace("\r\n", "\n");
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
             .Replace("\r\n", "\n");
         var previewSchedulerText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs")
@@ -240,8 +244,13 @@ static partial class Program
         AssertContains(builderText, "TimelinePath = artifactPaths.TimelinePath");
         AssertContains(builderText, "runState.SetStage(\"summary\")");
         AssertContains(builderText, "return await WriteAsync(result, runState, warnings).ConfigureAwait(false);");
-        AssertContains(runnerText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
-        AssertContains(runnerText, "new DiagnosticSessionResultBuildRequest(");
+        AssertContains(runExecutionText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
+        AssertContains(runExecutionText, "CreateResultBuildRequest(");
+        AssertDoesNotContain(runExecutionText, "new DiagnosticSessionResultBuildRequest(");
+        AssertContains(resultRequestText, "private static DiagnosticSessionResultBuildRequest CreateResultBuildRequest(");
+        AssertContains(resultRequestText, "return new DiagnosticSessionResultBuildRequest(");
+        AssertContains(resultRequestText, "runBootstrap.ScenarioPlan");
+        AssertContains(resultRequestText, "postRunSnapshots.HealthSnapshot");
         AssertDoesNotContain(runnerText, "SetStage(\"result-analysis\")");
         AssertDoesNotContain(runnerText, "var result = new DiagnosticSessionResult");
         AssertDoesNotContain(runnerText, "WriteArtifactBestEffortAsync(\"write-samples\"");

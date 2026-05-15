@@ -3,7 +3,7 @@ using static Sussudio.Tools.DiagnosticSessionSampler;
 
 namespace Sussudio.Tools;
 
-internal static class DiagnosticSessionRunExecution
+internal static partial class DiagnosticSessionRunExecution
 {
     // Scenario names and broad requirements live in DiagnosticSessionScenarios.
     // RunAsync reads like a phase plan: setup, optional background scenario
@@ -199,22 +199,14 @@ internal static class DiagnosticSessionRunExecution
             .ConfigureAwait(false);
 
         var result = await DiagnosticSessionResultBuilder.BuildAndWriteAsync(
-                new DiagnosticSessionResultBuildRequest(
+                CreateResultBuildRequest(
                     options,
-                    scenarioPlan,
-                    sessionId,
-                    scenario,
-                    durationSeconds,
-                    sampleIntervalMs,
-                    outputDirectory,
+                    runBootstrap,
                     livePath,
-                    startedUtc,
-                    runnerProcessId,
                     commandChannel.FailureCount,
                     samples,
                     initialSnapshot,
-                    postRunSnapshots.HealthSnapshot,
-                    postRunSnapshots.Timeline,
+                    postRunSnapshots,
                     verification,
                     presentMon,
                     startedPreview,

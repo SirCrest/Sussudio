@@ -1845,6 +1845,8 @@ Diagnostic session DTOs now live in focused model files:
 `tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionRunner.cs` owns the
 public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
 mutable run phase plan for setup, sampling, cleanup, verification, and summary.
+`DiagnosticSessionRunExecution.ResultRequest.cs` owns the final result-build
+request handoff from computed runner state to the result builder.
 The public options/result/sample contracts are separated from runner behavior. The result
 DTO root owns core session metadata, terminal state, artifacts, actions, and
 warnings; the result partials own capture/source, Flashback playback,
@@ -2334,6 +2336,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionText.cs`
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionRunExecution.cs`
+- `DiagnosticSessionRunExecution.ResultRequest.cs`
 - `AutomationResponseState.cs`
 - `JsonOptions.cs`
 - `PresentMonProbe.cs`
