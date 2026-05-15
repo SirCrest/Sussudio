@@ -1684,6 +1684,12 @@ Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
 and volume save suppression now live in
 `Sussudio/Controllers/PreviewAudioFadeController.cs`.
 `MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
+Preview-audio volume transition mechanics now live in
+`Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs`: it owns the
+save suppression/override state, ramp constants/easing, transition priming and
+restore behavior, and property-to-session volume forwarding. Monitoring
+enable/disable orchestration, audio input retargeting, and coordinator
+sequencing remain in `Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs`.
 
 Preview startup state and first-visual confirmation now live in
 `Sussudio/MainWindow.PreviewStartup.cs` instead of the composition-root

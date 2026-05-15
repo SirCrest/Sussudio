@@ -1712,9 +1712,13 @@ Primary current owners:
   Flashback timeline/export state. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets
   out of the root facade file. `MainViewModel.AudioRampTrace.cs` owns the audio
-  ramp diagnostic ring buffer and sampler; keep preview monitoring call sites
-  in `MainViewModel.AudioMonitoring.cs`. `MainViewModel.MicrophoneVolume.cs`
-  owns microphone endpoint volume synchronization and persistence.
+  ramp diagnostic ring buffer and sampler. `PreviewAudioVolumeTransitionController`
+  owns preview-volume save suppression/override state plus the preview-audio
+  ramp constants, easing, priming, restoring, and property-to-session volume
+  forwarding. Keep preview monitoring call sites, audio input retargeting, and
+  coordinator sequencing in `MainViewModel.AudioMonitoring.cs`.
+  `MainViewModel.MicrophoneVolume.cs` owns microphone endpoint volume
+  synchronization and persistence.
   `MainViewModel.AudioControls.cs` owns device-native audio mode/gain management.
   `Sussudio/ViewModels/DeviceAudioGainMapper.cs` owns the pure percent-to-XU-
   byte analog gain curve used by device-native gain application.

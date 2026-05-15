@@ -54,6 +54,7 @@ static partial class Program
     {
         var traceModelsText = ReadRepoFile("Sussudio/Models/Audio/AudioRampTraceModels.cs").Replace("\r\n", "\n");
         var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs").Replace("\r\n", "\n");
+        var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs").Replace("\r\n", "\n");
         var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs").Replace("\r\n", "\n");
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
         var playbackRenderText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs").Replace("\r\n", "\n");
@@ -75,9 +76,9 @@ static partial class Program
         AssertContains(traceModelsText, "public long PlaybackOutputAgeMs { get; init; }");
 
         AssertContains(audioRampTraceText, "private const int AudioRampTraceSampleIntervalMs = 10;");
-        AssertContains(audioMonitoringText, "BeginAudioRampTraceSession(");
-        AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"volume-set\")");
-        AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"primed\"");
+        AssertContains(audioVolumeTransitionText, "BeginTraceSession(");
+        AssertContains(audioVolumeTransitionText, "RecordTracePoint(\"volume-set\")");
+        AssertContains(audioVolumeTransitionText, "RecordTracePoint(\"primed\"");
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-started\"");
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-stopped\"");
         AssertContains(audioRampTraceText, "RunAudioRampTraceSamplerAsync");

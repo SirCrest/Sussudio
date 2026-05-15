@@ -20,6 +20,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly DeviceService _deviceService;
     private readonly CaptureService _captureService;
     private readonly CaptureSessionCoordinator _sessionCoordinator;
+    private readonly PreviewAudioVolumeTransitionController _previewAudioVolumeTransitionController;
     private readonly NativeXuAudioControlService _deviceAudioControlService;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly AudioDeviceWatcher _audioDeviceWatcher;
@@ -49,6 +50,17 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _deviceService.FormatProbeCompleted += OnDeviceFormatProbeCompleted;
         _captureService = dependencies.CaptureService;
         _sessionCoordinator = dependencies.SessionCoordinator;
+        _previewAudioVolumeTransitionController = new PreviewAudioVolumeTransitionController(
+            new PreviewAudioVolumeTransitionControllerContext
+            {
+                GetPreviewVolume = () => PreviewVolume,
+                SetPreviewVolume = value => PreviewVolume = value,
+                SetSessionPreviewVolume = volume => _sessionCoordinator.SetPreviewVolume(volume),
+                BeginTraceSession = BeginAudioRampTraceSession,
+                CompleteTraceSession = CompleteAudioRampTraceSession,
+                RecordTracePoint = RecordAudioRampTracePoint,
+                Log = (message, caller) => Logger.Log(message, caller),
+            });
         _deviceAudioControlService = dependencies.DeviceAudioControlService;
         _dispatcherQueue = dependencies.DispatcherQueue;
 
@@ -103,6 +115,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // UI-only automation: MainViewModel.AutomationUi.cs
     // Recording settings automation: MainViewModel.AutomationRecordingSettings.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs
+    // Preview audio volume transitions: PreviewAudioVolumeTransitionController.cs
     // Microphone endpoint volume: MainViewModel.MicrophoneVolume.cs
     // Device-native audio controls: MainViewModel.AudioControls.cs
     // Device-native audio cancellation: MainViewModel.AudioControlCancellation.cs

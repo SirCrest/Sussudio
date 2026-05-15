@@ -49,26 +49,45 @@ static partial class Program
         AssertNotNull(viewModelType.GetMethod("SavePreviewVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SavePreviewVolume");
 
         var monitoringCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs");
+        var transitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs");
         var previewChanged = ExtractMemberCode(monitoringCode, "OnPreviewVolumeChanged");
-        var rampDown = ExtractMemberCode(monitoringCode, "RampPreviewVolumeDownForAudioTransitionAsync");
-        var rampUp = ExtractMemberCode(monitoringCode, "RampPreviewVolumeUpForAudioTransitionAsync");
+        var handlePreviewChanged = ExtractMemberCode(transitionCode, "HandlePreviewVolumeChanged");
+        var rampDown = ExtractMemberCode(transitionCode, "RampDownForAudioTransitionAsync");
+        var rampUp = ExtractMemberCode(transitionCode, "RampUpForAudioTransitionAsync");
+        var primeTransition = ExtractMemberCode(transitionCode, "PrimeForAudioTransition");
+        var restoreTransition = ExtractMemberCode(transitionCode, "RestoreAfterUnavailableAudio");
         var monitoringTransition = ExtractMemberCode(monitoringCode, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
         var audioPreviewChanged = ExtractMemberCode(monitoringCode, "OnIsAudioPreviewEnabledChanged");
         var applyAudioInputSelection = ExtractMemberCode(monitoringCode, "ApplyAudioInputSelectionAsync");
 
-        AssertContains(previewChanged, "if (!SuppressVolumeSave)");
-        AssertContains(previewChanged, "VolumeSaveOverride = null;");
-        AssertContains(previewChanged, "_sessionCoordinator.SetPreviewVolume((float)Math.Clamp(value, 0.0, 1.0));");
-        AssertOccursBefore(previewChanged, "VolumeSaveOverride = null;", "_sessionCoordinator.SetPreviewVolume");
+        AssertContains(monitoringCode, "get => _previewAudioVolumeTransitionController.SuppressVolumeSave;");
+        AssertContains(monitoringCode, "set => _previewAudioVolumeTransitionController.SuppressVolumeSave = value;");
+        AssertContains(monitoringCode, "get => _previewAudioVolumeTransitionController.VolumeSaveOverride;");
+        AssertContains(monitoringCode, "set => _previewAudioVolumeTransitionController.VolumeSaveOverride = value;");
+        AssertContains(previewChanged, "_previewAudioVolumeTransitionController.HandlePreviewVolumeChanged(value);");
         AssertContains(monitoringCode, "internal void SavePreviewVolume() => SaveSettings();");
+        AssertDoesNotContain(monitoringCode, "private const int PreviewAudioRampDownSteps");
+        AssertContains(transitionCode, "internal sealed class PreviewAudioVolumeTransitionController");
+        AssertContains(transitionCode, "private const int RampDownSteps = 18;");
+        AssertContains(transitionCode, "private const int RampDownDelayMs = 25;");
+        AssertContains(transitionCode, "private const int RampUpSteps = 30;");
+        AssertContains(transitionCode, "private const int RampUpDelayMs = 30;");
 
-        AssertContains(rampDown, "var persistedVolume = Math.Clamp(VolumeSaveOverride ?? PreviewVolume, 0.0, 1.0);");
+        AssertContains(handlePreviewChanged, "if (!SuppressVolumeSave)");
+        AssertContains(handlePreviewChanged, "VolumeSaveOverride = null;");
+        AssertContains(handlePreviewChanged, "_context.SetSessionPreviewVolume((float)Math.Clamp(value, 0.0, 1.0));");
+        AssertOccursBefore(handlePreviewChanged, "VolumeSaveOverride = null;", "_context.SetSessionPreviewVolume");
+
+        AssertContains(rampDown, "var persistedVolume = PersistedVolumeTarget;");
         AssertContains(rampDown, "VolumeSaveOverride = persistedVolume;");
-        AssertContains(rampDown, "PreviewVolume = startingVolume * eased;");
-        AssertContains(rampDown, "PreviewVolume = 0;");
+        AssertContains(rampDown, "_context.SetPreviewVolume(startingVolume * eased);");
+        AssertContains(rampDown, "_context.SetPreviewVolume(0);");
         AssertContains(rampUp, "VolumeSaveOverride = volumeTarget;");
-        AssertContains(rampUp, "PreviewVolume = volumeTarget * eased;");
+        AssertContains(rampUp, "_context.SetPreviewVolume(volumeTarget * eased);");
         AssertContains(rampUp, "VolumeSaveOverride = null;");
+        AssertContains(primeTransition, "var volumeTarget = PersistedVolumeTarget;");
+        AssertContains(primeTransition, "_context.SetPreviewVolume(0);");
+        AssertContains(restoreTransition, "_context.SetPreviewVolume(volumeTarget);");
 
         AssertContains(monitoringTransition, "var volumeTarget = PrimePreviewVolumeForAudioTransition(reason);");
         AssertContains(monitoringTransition, "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);");
