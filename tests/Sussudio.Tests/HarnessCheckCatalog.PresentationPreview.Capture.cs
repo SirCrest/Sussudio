@@ -54,6 +54,9 @@ static partial class Program
             "Preview startup signal formatter preserves string contracts",
             PreviewStartupSignalFormatter_PreservesSignalStrings);
         await AddCheckAsync(results,
+            "Preview startup failure text formatter preserves string contracts",
+            PreviewStartupFailureTextFormatter_PreservesFailureStrings);
+        await AddCheckAsync(results,
             "Preview startup tolerates missing audio capture devices",
             PreviewStartup_ToleratesMissingAudioCaptureDevices);
         await AddCheckAsync(results,

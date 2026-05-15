@@ -191,7 +191,7 @@ public sealed partial class MainWindow
                 Logger.Log($"PREVIEW_START_FAILURE_STOP begin reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
                 // Preview startup failed — pipeline state is unclean; force full teardown.
                 await ViewModel.StopPreviewAsync(userInitiated: true, teardownPipeline: true);
-                ViewModel.StatusText = $"Preview startup failed: {reason}";
+                ViewModel.StatusText = PreviewStartupFailureTextFormatter.FormatFailureStopStatusText(reason);
                 Logger.Log($"PREVIEW_START_FAILURE_STOP completed reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
             }
             finally
@@ -222,9 +222,9 @@ public sealed partial class MainWindow
             ? (DateTimeOffset.UtcNow - _previewStartupRequestedUtc.Value).TotalMilliseconds
             : 0;
         _previewStartupMissingSignals = BuildPreviewStartupMissingSignals();
-        var timeoutReason = string.IsNullOrWhiteSpace(_previewStartupMissingSignals)
-            ? $"no-visual-confirmation-within-{PreviewStartupVisualTimeoutMs}ms"
-            : $"no-visual-confirmation-within-{PreviewStartupVisualTimeoutMs}ms missing:{_previewStartupMissingSignals}";
+        var timeoutReason = PreviewStartupFailureTextFormatter.FormatTimeoutReason(
+            PreviewStartupVisualTimeoutMs,
+            _previewStartupMissingSignals);
         SetPreviewStartupState(PreviewStartupState.Failed, timeoutReason);
         Logger.Log(
             $"PREVIEW_START_TIMEOUT attempt={_previewStartupAttemptId ?? "none"} " +
@@ -236,9 +236,7 @@ public sealed partial class MainWindow
         LogPreviewStartupPlaybackSnapshot("timeout");
 
         StopPreviewStartupOverlay();
-        ViewModel.StatusText = string.IsNullOrWhiteSpace(_previewStartupMissingSignals)
-            ? "Preview failed to attach to UI (session started but no visual confirmation)."
-            : $"Preview failed to start (missing readiness signal: {_previewStartupMissingSignals}).";
+        ViewModel.StatusText = PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(_previewStartupMissingSignals);
         SchedulePreviewStartupFailureStop(timeoutReason);
         return Task.CompletedTask;
     }

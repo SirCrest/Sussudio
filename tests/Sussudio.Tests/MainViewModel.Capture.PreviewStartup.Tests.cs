@@ -63,6 +63,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupSignalsText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupSignals.cs")
             .Replace("\r\n", "\n");
+        var previewStartupFailureText = ReadRepoFile("Sussudio/Controllers/PreviewStartupFailureTextFormatter.cs")
+            .Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs")
             .Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs")
@@ -93,6 +95,13 @@ static partial class Program
         AssertContains(previewStartupSignalsText, "private void LogPreviewStartupPlaybackSnapshot(string reason)");
         AssertContains(previewStartupSignalsText, "PreviewStartupSignalFormatter.FormatMissingSignals(");
         AssertContains(previewStartupSignalsText, "PreviewStartupSignalFormatter.FormatSignalList(");
+        AssertContains(previewStartupFailureText, "internal static class PreviewStartupFailureTextFormatter");
+        AssertContains(previewStartupFailureText, "public static string FormatTimeoutReason(int timeoutMs, string? missingSignals)");
+        AssertContains(previewStartupFailureText, "public static string FormatTimeoutStatusText(string? missingSignals)");
+        AssertContains(previewStartupFailureText, "public static string FormatFailureStopStatusText(string reason)");
+        AssertContains(previewStartupText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
+        AssertContains(previewStartupText, "PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(");
+        AssertContains(previewStartupText, "PreviewStartupFailureTextFormatter.FormatFailureStopStatusText(reason)");
         AssertContains(previewRuntimeSnapshotText, "_previewStartupState.ToString()");
         AssertDoesNotContain(previewRendererText, "_previewStartupState.ToString()");
         AssertContains(propertyChangedText, "await HandlePreviewingChangedAsync();");
@@ -106,6 +115,9 @@ static partial class Program
         AssertDoesNotContain(previewStartupText, "private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
         AssertDoesNotContain(previewStartupText, "private void SchedulePreviewFadeIn()");
         AssertDoesNotContain(previewStartupSignalsText, "private static string BuildPreviewStartupSignalList");
+        AssertDoesNotContain(previewStartupText, "no-visual-confirmation-within-{PreviewStartupVisualTimeoutMs}ms");
+        AssertDoesNotContain(previewStartupText, "Preview failed to attach to UI (session started but no visual confirmation).");
+        AssertDoesNotContain(previewStartupText, "Preview failed to start (missing readiness signal:");
 
         return Task.CompletedTask;
     }
@@ -143,6 +155,52 @@ static partial class Program
             string.Empty,
             formatMissingSignals.Invoke(null, new object[] { Signals(0), Signals(0), true })?.ToString(),
             "first visual confirmed with no explicit startup signals");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewStartupFailureTextFormatter_PreservesFailureStrings()
+    {
+        var formatterType = RequireType("Sussudio.Controllers.PreviewStartupFailureTextFormatter");
+        var formatTimeoutReason = formatterType.GetMethod("FormatTimeoutReason", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupFailureTextFormatter.FormatTimeoutReason was not found.");
+        var formatTimeoutStatusText = formatterType.GetMethod("FormatTimeoutStatusText", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupFailureTextFormatter.FormatTimeoutStatusText was not found.");
+        var formatFailureStopStatusText = formatterType.GetMethod("FormatFailureStopStatusText", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupFailureTextFormatter.FormatFailureStopStatusText was not found.");
+
+        AssertEqual(
+            "no-visual-confirmation-within-10000ms",
+            formatTimeoutReason.Invoke(null, new object?[] { 10000, null })?.ToString(),
+            "timeout reason without missing signals");
+        AssertEqual(
+            "no-visual-confirmation-within-10000ms",
+            formatTimeoutReason.Invoke(null, new object?[] { 10000, string.Empty })?.ToString(),
+            "timeout reason with empty missing signals");
+        AssertEqual(
+            "no-visual-confirmation-within-10000ms",
+            formatTimeoutReason.Invoke(null, new object?[] { 10000, "   " })?.ToString(),
+            "timeout reason with whitespace missing signals");
+        AssertEqual(
+            "no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual",
+            formatTimeoutReason.Invoke(null, new object?[] { 10000, "FirstCaptureFrame+FirstVisual" })?.ToString(),
+            "timeout reason with missing signals");
+        AssertEqual(
+            "Preview failed to attach to UI (session started but no visual confirmation).",
+            formatTimeoutStatusText.Invoke(null, new object?[] { null })?.ToString(),
+            "timeout status without missing signals");
+        AssertEqual(
+            "Preview failed to attach to UI (session started but no visual confirmation).",
+            formatTimeoutStatusText.Invoke(null, new object?[] { "   " })?.ToString(),
+            "timeout status with whitespace missing signals");
+        AssertEqual(
+            "Preview failed to start (missing readiness signal: FirstCaptureFrame+FirstVisual).",
+            formatTimeoutStatusText.Invoke(null, new object?[] { "FirstCaptureFrame+FirstVisual" })?.ToString(),
+            "timeout status with missing signals");
+        AssertEqual(
+            "Preview startup failed: no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual",
+            formatFailureStopStatusText.Invoke(null, new object?[] { "no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual" })?.ToString(),
+            "failure stop status");
 
         return Task.CompletedTask;
     }

@@ -1486,8 +1486,10 @@ instead of the composition-root constructor partial. Readiness-signal collection
 and playback-progress diagnostics live in
 `Sussudio/MainWindow.PreviewStartupSignals.cs`; missing-signal and signal-list
 string formatting lives in
-`Sussudio/Controllers/PreviewStartupSignalFormatter.cs`. This keeps the root
-shell focused on wiring while leaving the existing startup state machine
+`Sussudio/Controllers/PreviewStartupSignalFormatter.cs`. Timeout reason,
+timeout status, and failure-stop status text live in
+`Sussudio/Controllers/PreviewStartupFailureTextFormatter.cs`. This keeps the
+root shell focused on wiring while leaving the existing startup state machine
 behavior unchanged.
 Delayed preview reveal after first visual now lives in
 `Sussudio/Controllers/PreviewFadeInController.cs`; the adapter remains

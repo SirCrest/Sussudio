@@ -1450,6 +1450,8 @@ Primary current owners:
   collection and playback-progress diagnostics.
   `Sussudio/Controllers/PreviewStartupSignalFormatter.cs` owns missing-signal
   and signal-list string formatting.
+  `Sussudio/Controllers/PreviewStartupFailureTextFormatter.cs` owns preview
+  startup timeout reason, timeout status, and failure-stop status text.
   `MainWindow.PropertyChangedPreview.cs` owns preview-specific ViewModel events
   and property-change projections for preview start/stop/reinit state. Keep
   preview startup fields out of the composition root.
