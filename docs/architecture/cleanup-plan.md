@@ -2067,9 +2067,10 @@ Remaining `tools/Common` ownership:
    `MainViewModel.RecordingLifecycle.cs`. Recording option selections, output
    path, counters, and transition flags now live in
    `MainViewModel.RecordingState.cs`. Bounded teardown and event unsubscription now live
-   in `MainViewModel.Disposal.cs`. Automation-facing snapshot/probe/options
-   projection now lives in `MainViewModel.AutomationSnapshots.cs`. Flashback
-   playback commands, marker commands, and buffer/bitrate status projection now
+   in `MainViewModel.Disposal.cs`. Automation-facing runtime/probe/view-model
+   snapshot projection now lives in `MainViewModel.AutomationSnapshots.cs`; automation
+   option-list projection now lives in `MainViewModel.AutomationOptionsSnapshot.cs`.
+   Flashback playback commands, marker commands, and buffer/bitrate status projection now
    live in `MainViewModel.FlashbackPlayback.cs`. Flashback UI/automation export
    flow, progress/cancellation state, and segment projection now live in
    `MainViewModel.FlashbackExport.cs`. Frame-rate option rebuilding, observable
