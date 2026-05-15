@@ -194,4 +194,13 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static object CreateMjpegDecoderHealthSnapshot(
+        Type decoderType,
+        int workerIndex,
+        int sampleCount,
+        double avgMs,
+        double p95Ms,
+        double maxMs)
+        => Activator.CreateInstance(decoderType, workerIndex, sampleCount, avgMs, p95Ms, maxMs)
+           ?? throw new InvalidOperationException("Failed to create MjpegDecoderHealthSnapshot.");
 }

@@ -832,7 +832,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/DeviceModels.Tests.cs` owns capture/audio device,
   audio-level, and MediaFormat model contract checks.
 - `tests/Sussudio.Tests/SnapshotModels.Tests.cs` owns shared snapshot-model
-  spec DTOs and the CaptureDiagnostics property spec.
+  spec DTOs and registration state.
 - `tests/Sussudio.Tests/SnapshotModels.PropertyAssertions.cs` owns shared
   snapshot property-list, nullability, and helper assertion methods.
 - `tests/Sussudio.Tests/SnapshotModels.ReflectionJson.cs` owns shared
@@ -849,6 +849,8 @@ Primary current owners:
   the CPU MJPEG automation snapshot property-list contract used by that check.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns
   CaptureDiagnosticsSnapshot default, round-trip, and reflection JSON checks.
+- `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.PropertySpec.cs`
+  owns the CaptureDiagnosticsSnapshot registered property spec.
 - `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns the
   CaptureHealthSnapshot registered orchestration check;
   `SnapshotModels.CaptureHealth.Defaults.Tests.cs` owns defaults and inherited
