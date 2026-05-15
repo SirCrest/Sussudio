@@ -86,7 +86,6 @@ static partial class Program
     private static Task OutputPathButtonActions_LiveInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.OutputPathActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/OutputPathActionController.cs").Replace("\r\n", "\n");
 
@@ -98,17 +97,19 @@ static partial class Program
         AssertContains(adapterText, "=> _outputPathActionController.BrowseAsync();");
         AssertContains(adapterText, "private Task OpenRecordingsFolderFromButtonAsync()");
         AssertContains(adapterText, "=> _outputPathActionController.OpenRecordingsFolderIfAvailableAsync();");
+        AssertContains(adapterText, "private void BrowseButton_Click(object sender, RoutedEventArgs e)");
+        AssertContains(adapterText, "_ = RunUiEventHandlerAsync(() => BrowseOutputPathFromButtonAsync(), nameof(BrowseButton_Click));");
+        AssertContains(adapterText, "private void OpenRecordingsButton_Click(object sender, RoutedEventArgs e)");
+        AssertContains(adapterText, "_ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));");
         AssertContains(mainWindowText, "InitializeOutputPathActionController();");
-        AssertContains(eventHandlersText, "_ = RunUiEventHandlerAsync(() => BrowseOutputPathFromButtonAsync(), nameof(BrowseButton_Click));");
-        AssertContains(eventHandlersText, "_ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));");
         AssertContains(controllerText, "internal sealed class OutputPathActionController");
         AssertContains(controllerText, "public Task BrowseAsync()");
         AssertContains(controllerText, "=> _context.ViewModel.BrowseOutputPathAsync();");
         AssertContains(controllerText, "public Task OpenRecordingsFolderIfAvailableAsync()");
         AssertContains(controllerText, "string.IsNullOrWhiteSpace(path) || !Directory.Exists(path)");
         AssertContains(controllerText, "return _context.OpenRecordingsFolderAsync();");
-        AssertDoesNotContain(eventHandlersText, "ViewModel.BrowseOutputPathAsync()");
-        AssertDoesNotContain(eventHandlersText, "System.IO.Directory.Exists(path)");
+        AssertDoesNotContain(adapterText, "ViewModel.BrowseOutputPathAsync()");
+        AssertDoesNotContain(adapterText, "System.IO.Directory.Exists(path)");
 
         return Task.CompletedTask;
     }
@@ -116,7 +117,6 @@ static partial class Program
     private static Task PreviewScreenshotButtonWorkflow_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewScreenshot.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewScreenshotController.cs").Replace("\r\n", "\n");
 
@@ -126,8 +126,9 @@ static partial class Program
         AssertContains(adapterText, "ScreenshotButton = ScreenshotButton,");
         AssertContains(adapterText, "private Task CapturePreviewScreenshotAsync()");
         AssertContains(adapterText, "=> _previewScreenshotController.CaptureAsync();");
+        AssertContains(adapterText, "private void ScreenshotButton_Click(object sender, RoutedEventArgs e)");
+        AssertContains(adapterText, "_ = RunUiEventHandlerAsync(() => CapturePreviewScreenshotAsync(), nameof(ScreenshotButton_Click));");
         AssertContains(mainWindowText, "InitializePreviewScreenshotController();");
-        AssertContains(eventHandlersText, "_ = RunUiEventHandlerAsync(() => CapturePreviewScreenshotAsync(), nameof(ScreenshotButton_Click));");
         AssertContains(controllerText, "internal sealed class PreviewScreenshotController");
         AssertContains(controllerText, "public async Task CaptureAsync()");
         AssertContains(controllerText, "Start preview before capturing a screenshot");
@@ -139,8 +140,8 @@ static partial class Program
         AssertContains(controllerText, "SCREENSHOT_FAILED");
         AssertContains(controllerText, "_context.ScreenshotButton.IsEnabled = false;");
         AssertContains(controllerText, "_context.ScreenshotButton.IsEnabled = true;");
-        AssertDoesNotContain(eventHandlersText, "Directory.CreateDirectory(outputDir);");
-        AssertDoesNotContain(eventHandlersText, "CapturePreviewFrameAsync(filePath)");
+        AssertDoesNotContain(adapterText, "Directory.CreateDirectory(outputDir);");
+        AssertDoesNotContain(adapterText, "CapturePreviewFrameAsync(filePath)");
 
         return Task.CompletedTask;
     }

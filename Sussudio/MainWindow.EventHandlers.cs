@@ -3,18 +3,10 @@ using Microsoft.UI.Xaml;
 
 namespace Sussudio;
 
-// User-input event handlers. These bridge XAML controls to view-model commands
-// and keep animations/fades coordinated around the actual capture transitions.
+// Preview button input handler. Other one-line XAML command bridges live beside
+// their owning adapter/controller partials.
 public sealed partial class MainWindow
 {
-    private void RefreshButton_Click(object sender, RoutedEventArgs e)
-    {
-        _ = RunUiEventHandlerAsync(() => RefreshDevicesFromButtonAsync(), nameof(RefreshButton_Click));
-    }
-    private void ApplyDeviceButton_Click(object sender, RoutedEventArgs e)
-    {
-        _ = RunUiEventHandlerAsync(() => ApplySelectedDeviceFromButtonAsync(), nameof(ApplyDeviceButton_Click));
-    }
     private void PreviewButton_Click(object sender, RoutedEventArgs e)
     {
         _ = RunUiEventHandlerAsync(async () =>
@@ -55,21 +47,5 @@ public sealed partial class MainWindow
                 }
             }
         }, nameof(PreviewButton_Click));
-    }
-    private void RecordButton_Click(object sender, RoutedEventArgs e)
-    {
-        _ = RunUiEventHandlerAsync(() => ToggleRecordingFromButtonAsync(), nameof(RecordButton_Click));
-    }
-    private void BrowseButton_Click(object sender, RoutedEventArgs e)
-    {
-        _ = RunUiEventHandlerAsync(() => BrowseOutputPathFromButtonAsync(), nameof(BrowseButton_Click));
-    }
-    private void OpenRecordingsButton_Click(object sender, RoutedEventArgs e)
-    {
-        _ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));
-    }
-    private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
-    {
-        _ = RunUiEventHandlerAsync(() => CapturePreviewScreenshotAsync(), nameof(ScreenshotButton_Click));
     }
 }

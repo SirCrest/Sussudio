@@ -5,7 +5,6 @@ static partial class Program
     private static Task RecordingButtonAction_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.RecordingActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/RecordingButtonActionController.cs").Replace("\r\n", "\n");
 
@@ -18,8 +17,9 @@ static partial class Program
         AssertContains(adapterText, "NoDevicePlaceholder.Visibility == Visibility.Visible");
         AssertContains(adapterText, "private Task ToggleRecordingFromButtonAsync()");
         AssertContains(adapterText, "=> _recordingButtonActionController.ToggleRecordingAsync();");
+        AssertContains(adapterText, "private void RecordButton_Click(object sender, RoutedEventArgs e)");
+        AssertContains(adapterText, "_ = RunUiEventHandlerAsync(() => ToggleRecordingFromButtonAsync(), nameof(RecordButton_Click));");
         AssertContains(mainWindowText, "InitializeRecordingButtonActionController();");
-        AssertContains(eventHandlersText, "_ = RunUiEventHandlerAsync(() => ToggleRecordingFromButtonAsync(), nameof(RecordButton_Click));");
         AssertContains(controllerText, "internal readonly record struct RecordingPreviewActivitySnapshot");
         AssertContains(controllerText, "public bool RendererActive => GpuActive || CpuActive;");
         AssertContains(controllerText, "public async Task ToggleRecordingAsync()");
@@ -27,9 +27,9 @@ static partial class Program
         AssertContains(controllerText, "if (!_context.ViewModel.IsRecording)");
         AssertContains(controllerText, "PreviewStateDuringRecording: rendererActive={snapshot.RendererActive}");
         AssertContains(controllerText, "WARNING: preview renderer appears inactive while recording.");
-        AssertDoesNotContain(eventHandlersText, "ViewModel.ToggleRecordingAsync();");
-        AssertDoesNotContain(eventHandlersText, "PreviewStateDuringRecording");
-        AssertDoesNotContain(eventHandlersText, "WARNING: preview renderer appears inactive while recording.");
+        AssertDoesNotContain(adapterText, "ViewModel.ToggleRecordingAsync();");
+        AssertDoesNotContain(adapterText, "PreviewStateDuringRecording");
+        AssertDoesNotContain(adapterText, "WARNING: preview renderer appears inactive while recording.");
 
         return Task.CompletedTask;
     }

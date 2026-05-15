@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.UI.Xaml;
 using Sussudio.Controllers;
 
 namespace Sussudio;
@@ -22,4 +23,14 @@ public sealed partial class MainWindow
 
     private Task OpenRecordingsFolderFromButtonAsync()
         => _outputPathActionController.OpenRecordingsFolderIfAvailableAsync();
+
+    private void BrowseButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(() => BrowseOutputPathFromButtonAsync(), nameof(BrowseButton_Click));
+    }
+
+    private void OpenRecordingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));
+    }
 }

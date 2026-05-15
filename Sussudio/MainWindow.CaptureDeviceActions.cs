@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.UI.Xaml;
 using Sussudio.Controllers;
 
 namespace Sussudio;
@@ -25,4 +26,14 @@ public sealed partial class MainWindow
 
     private Task ApplySelectedDeviceFromButtonAsync()
         => _captureDeviceActionController.ApplySelectedDeviceAsync();
+
+    private void RefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(() => RefreshDevicesFromButtonAsync(), nameof(RefreshButton_Click));
+    }
+
+    private void ApplyDeviceButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(() => ApplySelectedDeviceFromButtonAsync(), nameof(ApplyDeviceButton_Click));
+    }
 }

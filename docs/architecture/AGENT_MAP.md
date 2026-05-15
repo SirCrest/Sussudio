@@ -703,8 +703,10 @@ Primary current owners:
 - `Sussudio/MainWindow.Bindings.cs` owns the root `SetupBindings()`
   orchestration and leaves feature-specific binding clusters in focused
   partials or controllers, including initial status-strip projection.
-- `Sussudio/MainWindow.EventHandlers.cs` owns XAML user-input event handlers
-  that bridge controls to view-model commands and shell animations.
+- `Sussudio/MainWindow.EventHandlers.cs` owns the preview button handler because
+  it coordinates preview fade/reinit behavior. One-line XAML command bridges for
+  capture-device, recording, output-path, and preview-screenshot buttons live in
+  their feature adapter partials beside the owning controllers.
 - `Sussudio/MainWindow.PropertyChanged.cs` owns the root ViewModel
   PropertyChanged dispatcher; feature-specific property projections stay in
   the `MainWindow.PropertyChanged*.cs` partials or named presentation

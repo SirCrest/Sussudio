@@ -55,7 +55,6 @@ static partial class Program
     private static Task CaptureDeviceButtonActions_LiveInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var eventHandlersText = ReadRepoFile("Sussudio/MainWindow.EventHandlers.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.CaptureDeviceActions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/CaptureDeviceActionController.cs").Replace("\r\n", "\n");
 
@@ -68,9 +67,11 @@ static partial class Program
         AssertContains(adapterText, "=> _captureDeviceActionController.RefreshDevicesAsync();");
         AssertContains(adapterText, "private Task ApplySelectedDeviceFromButtonAsync()");
         AssertContains(adapterText, "=> _captureDeviceActionController.ApplySelectedDeviceAsync();");
+        AssertContains(adapterText, "private void RefreshButton_Click(object sender, RoutedEventArgs e)");
+        AssertContains(adapterText, "_ = RunUiEventHandlerAsync(() => RefreshDevicesFromButtonAsync(), nameof(RefreshButton_Click));");
+        AssertContains(adapterText, "private void ApplyDeviceButton_Click(object sender, RoutedEventArgs e)");
+        AssertContains(adapterText, "_ = RunUiEventHandlerAsync(() => ApplySelectedDeviceFromButtonAsync(), nameof(ApplyDeviceButton_Click));");
         AssertContains(mainWindowText, "InitializeCaptureDeviceActionController();");
-        AssertContains(eventHandlersText, "_ = RunUiEventHandlerAsync(() => RefreshDevicesFromButtonAsync(), nameof(RefreshButton_Click));");
-        AssertContains(eventHandlersText, "_ = RunUiEventHandlerAsync(() => ApplySelectedDeviceFromButtonAsync(), nameof(ApplyDeviceButton_Click));");
         AssertContains(controllerText, "internal sealed class CaptureDeviceActionController");
         AssertContains(controllerText, "public async Task RefreshDevicesAsync()");
         AssertContains(controllerText, "new ProgressRing { Width = 16, Height = 16, IsActive = true }");
@@ -80,9 +81,9 @@ static partial class Program
         AssertContains(controllerText, "_context.DeviceComboBox.SelectedItem is not CaptureDevice selectedDevice");
         AssertContains(controllerText, "await _context.ViewModel.ApplySelectedDeviceAsync(selectedDevice);");
         AssertContains(controllerText, "_context.UpdateDeviceApplyButtonState();");
-        AssertDoesNotContain(eventHandlersText, "ViewModel.RefreshDevicesAsync();");
-        AssertDoesNotContain(eventHandlersText, "ViewModel.ApplySelectedDeviceAsync(selectedDevice);");
-        AssertDoesNotContain(eventHandlersText, "UpdateDeviceApplyButtonState();");
+        AssertDoesNotContain(adapterText, "ViewModel.RefreshDevicesAsync();");
+        AssertDoesNotContain(adapterText, "ViewModel.ApplySelectedDeviceAsync(selectedDevice);");
+        AssertDoesNotContain(adapterText, "UpdateDeviceApplyButtonState();");
 
         return Task.CompletedTask;
     }

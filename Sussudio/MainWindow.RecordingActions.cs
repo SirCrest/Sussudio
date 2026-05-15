@@ -23,4 +23,9 @@ public sealed partial class MainWindow
 
     private Task ToggleRecordingFromButtonAsync()
         => _recordingButtonActionController.ToggleRecordingAsync();
+
+    private void RecordButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(() => ToggleRecordingFromButtonAsync(), nameof(RecordButton_Click));
+    }
 }
