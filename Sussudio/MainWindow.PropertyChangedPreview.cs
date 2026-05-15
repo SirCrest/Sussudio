@@ -4,10 +4,27 @@ using Sussudio.ViewModels;
 
 namespace Sussudio;
 
-// Preview-specific ViewModel events and property projections. The main
-// PropertyChanged switch stays broad; preview startup/teardown choreography lives here.
+// Preview-specific ViewModel events and property projections. Preview
+// startup/teardown choreography and its PropertyChanged routes live here.
 public sealed partial class MainWindow
 {
+    private async Task<bool> TryHandlePreviewPropertyChangedAsync(string propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.IsPreviewing):
+                await HandlePreviewingChangedAsync();
+                return true;
+
+            case nameof(MainViewModel.IsPreviewReinitializing):
+                HandlePreviewReinitializingChanged();
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
     private void ViewModel_PreviewStartRequested(object? sender, EventArgs e)
     {
         _previewStopRequestedByUser = false;

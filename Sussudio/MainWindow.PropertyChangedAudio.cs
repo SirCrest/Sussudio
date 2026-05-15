@@ -1,4 +1,5 @@
 using Sussudio.Controllers;
+using Sussudio.ViewModels;
 
 namespace Sussudio;
 
@@ -7,6 +8,43 @@ namespace Sussudio;
 public sealed partial class MainWindow
 {
     private AudioControlPresentationController _audioControlPresentationController = null!;
+
+    private bool TryHandleAudioPropertyChanged(string propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.IsCustomAudioInputEnabled):
+                HandleCustomAudioInputEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.IsMicrophoneEnabled):
+                HandleMicrophoneEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.IsAudioEnabled):
+                HandleAudioEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.IsAudioPreviewEnabled):
+                HandleAudioPreviewEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.IsAudioPreviewActive):
+                HandleAudioPreviewActiveChanged();
+                return true;
+
+            case nameof(MainViewModel.PreviewVolume):
+                HandlePreviewVolumeChanged();
+                return true;
+
+            case nameof(MainViewModel.MicrophoneVolume):
+                HandleMicrophoneVolumeChanged();
+                return true;
+
+            default:
+                return false;
+        }
+    }
 
     private void InitializeAudioControlPresentationController()
     {

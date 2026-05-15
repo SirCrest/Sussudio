@@ -127,8 +127,9 @@ static partial class Program
         AssertContains(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatFailureStopStatusText(reason)");
         AssertContains(previewRuntimeSnapshotText, "_previewStartupState.ToString()");
         AssertDoesNotContain(previewRendererText, "_previewStartupState.ToString()");
-        AssertContains(propertyChangedText, "await HandlePreviewingChangedAsync();");
-        AssertContains(propertyChangedText, "HandlePreviewReinitializingChanged();");
+        AssertContains(propertyChangedText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
+        AssertContains(previewPropertyChangedText, "await HandlePreviewingChangedAsync();");
+        AssertContains(previewPropertyChangedText, "HandlePreviewReinitializingChanged();");
         AssertContains(previewPropertyChangedText, "Preview-specific ViewModel events and property projections");
         AssertContains(previewPropertyChangedText, "IsPreviewStartupFailedState(_previewStartupState)");
         AssertDoesNotContain(mainWindowText, "private enum PreviewStartupState");
@@ -326,7 +327,8 @@ static partial class Program
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
             .Replace("\r\n", "\n");
 
-        AssertContains(propertyChangedText, "await HandlePreviewingChangedAsync();");
+        AssertContains(propertyChangedText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
+        AssertContains(previewPropertyChangedText, "await HandlePreviewingChangedAsync();");
 
         var previewStartRequested = ExtractMemberCode(previewPropertyChangedText, "ViewModel_PreviewStartRequested");
         AssertContains(previewStartRequested, "BeginPreviewStartupAttempt();");

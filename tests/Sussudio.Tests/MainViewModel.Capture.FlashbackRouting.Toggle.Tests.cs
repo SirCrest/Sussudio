@@ -44,8 +44,9 @@ static partial class Program
         AssertContains(flashbackSettingsText, "ApplyFlashbackTimelineLockout = ApplyFlashbackTimelineLockout");
         AssertContains(flashbackSettingsControllerText, "_context.FlashbackEnabledToggle.IsOn = _context.ViewModel.IsFlashbackEnabled;");
         AssertContains(flashbackSettingsControllerText, "_context.ApplyFlashbackTimelineLockout();");
-        AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackEnabled):\n                HandleFlashbackEnabledChanged();");
-        AssertContains(propertyChangedText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):\n                HandleFlashbackTimelineVisibleChanged();");
+        AssertContains(propertyChangedText, "TryHandleFlashbackPropertyChanged(propertyName)");
+        AssertContains(flashbackPropertyChangedText, "case nameof(MainViewModel.IsFlashbackEnabled):\n                HandleFlashbackEnabledChanged();");
+        AssertContains(flashbackPropertyChangedText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):\n                HandleFlashbackTimelineVisibleChanged();");
         AssertContains(flashbackPropertyChangedText, "ApplyFlashbackTimelineLockout();");
         AssertContains(flashbackPropertyChangedText, "ApplyFlashbackTimelineVisibility(ViewModel.IsFlashbackTimelineVisible);");
         AssertContains(flashbackTimelineText, "private FlashbackTimelineController _flashbackTimelineController = null!;");

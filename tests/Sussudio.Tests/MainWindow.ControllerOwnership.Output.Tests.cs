@@ -8,6 +8,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var outputPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedOutput.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.OutputPathDisplay.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/OutputPathDisplayController.cs").Replace("\r\n", "\n");
         var formatterText = ReadRepoFile("Sussudio/Controllers/OutputPathDisplayTextFormatter.cs").Replace("\r\n", "\n");
@@ -22,7 +23,8 @@ static partial class Program
         AssertContains(adapterText, "=> _outputPathDisplayController.Update();");
         AssertContains(mainWindowText, "InitializeOutputPathDisplayController();");
         AssertContains(bindingsText, "AttachOutputPathDisplay();");
-        AssertContains(propertyChangedText, "UpdateOutputPathDisplay();");
+        AssertContains(propertyChangedText, "TryHandleOutputPropertyChanged(propertyName)");
+        AssertContains(outputPropertyChangedText, "UpdateOutputPathDisplay();");
         AssertContains(controllerText, "internal sealed class OutputPathDisplayController");
         AssertContains(controllerText, "public void Attach()");
         AssertContains(controllerText, "public void Update()");

@@ -176,7 +176,8 @@ static partial class Program
         AssertContains(adapterText, "RecordButton = RecordButton,");
         AssertContains(adapterText, "=> _recordButtonAnimationController.AnimateWidth(from, to, onCompleted);");
         AssertContains(mainWindowText, "InitializeRecordButtonAnimationController();");
-        AssertContains(propertyChangedText, "HandleRecordingChanged();");
+        AssertContains(propertyChangedText, "TryHandleRecordingPropertyChanged(propertyName)");
+        AssertContains(recordingPropertyChangedText, "HandleRecordingChanged();");
         AssertContains(recordingPropertyChangedText, "_recordingStatePresentationController.HandleRecordingChanged();");
         AssertContains(recordingPresentationText, "public required Action<double, double, Action?> AnimateRecordButtonWidth { get; init; }");
         AssertContains(recordingPresentationText, "_context.AnimateRecordButtonWidth(36, targetWidth, null);");

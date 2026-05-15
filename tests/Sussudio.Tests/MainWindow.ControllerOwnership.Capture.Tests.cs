@@ -43,7 +43,7 @@ static partial class Program
         AssertContains(adapterText, "case nameof(MainViewModel.AvailableSplitEncodeModes):");
         AssertContains(mainWindowText, "InitializeCaptureSelectionBindingController();");
         AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
-        AssertContains(propertyChangedText, "if (TryHandleCaptureSelectionPropertyChanged(e.PropertyName))");
+        AssertContains(propertyChangedText, "if (TryHandleCaptureSelectionPropertyChanged(propertyName))");
         AssertContains(controllerText, "internal sealed partial class CaptureSelectionBindingController");
         AssertContains(contextText, "internal sealed class CaptureSelectionBindingControllerContext");
         AssertContains(selectionSyncText, "private readonly int[] _selectionSyncQueued = new int[9];");
@@ -155,6 +155,8 @@ static partial class Program
         var controllerText = ReadRepoFile("Sussudio/Controllers/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
         var tooltipFormatterText = ReadRepoFile("Sussudio/Controllers/CaptureOptionTooltipFormatter.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var captureOptionPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedCaptureOptions.cs").Replace("\r\n", "\n");
+        var outputPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedOutput.cs").Replace("\r\n", "\n");
 
         AssertContains(captureOptionText, "private CaptureOptionPresentationController _captureOptionPresentationController = null!;");
         AssertContains(captureOptionText, "private void InitializeCaptureOptionPresentationController()");
@@ -202,12 +204,14 @@ static partial class Program
         AssertContains(controllerText, "_context.ViewModel.SourceTelemetrySummaryText");
         AssertContains(controllerText, "_context.ViewModel.SourceTargetSummaryText");
         AssertContains(mainWindowText, "InitializeCaptureOptionPresentationController();");
-        AssertContains(propertyChangedText, "UpdateOutputPathDisplay();");
-        AssertContains(propertyChangedText, "ApplyAudioClipVisibility();");
-        AssertContains(propertyChangedText, "ApplyHdrToggleEnabledState();");
-        AssertContains(propertyChangedText, "RefreshHdrHintText();");
-        AssertContains(propertyChangedText, "UpdateFpsTelemetryTooltip();");
-        AssertContains(propertyChangedText, "ApplyBitrateVisibility();");
+        AssertContains(propertyChangedText, "TryHandleOutputPropertyChanged(propertyName)");
+        AssertContains(propertyChangedText, "TryHandleCaptureOptionPropertyChanged(propertyName)");
+        AssertContains(outputPropertyChangedText, "UpdateOutputPathDisplay();");
+        AssertContains(captureOptionPropertyChangedText, "ApplyAudioClipVisibility();");
+        AssertContains(captureOptionPropertyChangedText, "ApplyHdrToggleEnabledState();");
+        AssertContains(captureOptionPropertyChangedText, "RefreshHdrHintText();");
+        AssertContains(captureOptionPropertyChangedText, "UpdateFpsTelemetryTooltip();");
+        AssertContains(captureOptionPropertyChangedText, "ApplyBitrateVisibility();");
         AssertDoesNotContain(bindingsText, "private void UpdateDecoderCountVisibility()");
         AssertDoesNotContain(bindingsText, "private void DecoderCountComboBox_SelectionChanged(");
         AssertDoesNotContain(bindingsText, "private void RefreshHdrHintText()");
@@ -351,7 +355,8 @@ static partial class Program
         AssertDoesNotContain(recordingOptionBindingsText, "SplitEncodeComboBox.SelectionChanged +=");
         AssertDoesNotContain(propertyChangedText, "CustomBitrateNumberBox.Value");
         AssertDoesNotContain(propertyChangedText, "Math.Abs(CustomBitrateNumberBox.Value - ViewModel.CustomBitrateMbps) > 0.01");
-        AssertContains(propertyChangedText, "HandleCustomBitratePropertyChanged();");
+        AssertContains(propertyChangedText, "TryHandleCaptureOptionPropertyChanged(propertyName)");
+        AssertContains(ReadRepoFile("Sussudio/MainWindow.PropertyChangedCaptureOptions.cs").Replace("\r\n", "\n"), "HandleCustomBitratePropertyChanged();");
         AssertDoesNotContain(bindingsText, "ResolutionComboBox.SelectionChanged +=");
         AssertDoesNotContain(bindingsText, "FrameRateComboBox.SelectionChanged +=");
         AssertDoesNotContain(bindingsText, "FormatComboBox.SelectionChanged +=");

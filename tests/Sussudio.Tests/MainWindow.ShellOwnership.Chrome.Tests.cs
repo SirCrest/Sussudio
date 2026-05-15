@@ -55,7 +55,7 @@ static partial class Program
         AssertContains(controllerText, "=> isRecording ? $\"{baseTitle} - REC {recordingTime}\" : baseTitle;");
         AssertContains(mainWindowText, "InitializeWindowTitleController();");
         AssertContains(mainWindowText, "ApplyWindowTitle();");
-        AssertContains(propertyChangedText, "TryHandleStatusStripPropertyChanged(e.PropertyName)");
+        AssertContains(propertyChangedText, "TryHandleStatusStripPropertyChanged(propertyName)");
         AssertContains(ReadRepoFile("Sussudio/MainWindow.StatusStripPresentation.cs").Replace("\r\n", "\n"), "ApplyWindowTitle();");
         AssertDoesNotContain(mainWindowText, "private static string BuildWindowTitleBase()");
         AssertDoesNotContain(mainWindowText, "private void ApplyWindowTitle()");

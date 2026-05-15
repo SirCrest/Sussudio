@@ -110,7 +110,7 @@ static partial class Program
         AssertContains(adapterText, "ApplyWindowTitle();");
         AssertContains(mainWindowText, "InitializeStatusStripPresentationController();");
         AssertContains(bindingsText, "ApplyInitialStatusStripPresentation();");
-        AssertContains(propertyChangedText, "if (TryHandleStatusStripPropertyChanged(e.PropertyName))");
+        AssertContains(propertyChangedText, "if (TryHandleStatusStripPropertyChanged(propertyName))");
         AssertContains(flashbackPropertyChangedText, "UpdateFlashbackBitratePresentation();");
         AssertContains(controllerText, "internal readonly record struct StatusStripPresentationSnapshot");
         AssertContains(controllerText, "internal sealed class StatusStripPresentationController");
@@ -184,8 +184,10 @@ static partial class Program
         AssertContains(audioControlBindingControllerText, "_context.IsPreviewAudioFadeInActive() || _context.IsPreviewAudioFadeAnimationActive()");
         AssertContains(audioControlBindingControllerText, "_context.PreviewVolumeSlider.ValueChanged +=");
         AssertContains(audioControlBindingControllerText, "_context.CancelPreviewAudioFadeInForUser();");
-        AssertContains(propertyChangedText, "await HandlePreviewingChangedAsync();");
-        AssertContains(propertyChangedText, "HandlePreviewVolumeChanged();");
+        AssertContains(propertyChangedText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
+        AssertContains(propertyChangedText, "TryHandleAudioPropertyChanged(propertyName)");
+        AssertContains(previewPropertyChangedText, "await HandlePreviewingChangedAsync();");
+        AssertContains(audioPropertyChangedText, "HandlePreviewVolumeChanged();");
         AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandlePreviewVolumeChanged();");
         AssertContains(audioControlPresentationControllerText, "if (_context.IsPreviewAudioFadeInActive())");
         AssertContains(previewPropertyChangedText, "PrimePreviewAudioFadeIn();");
@@ -312,8 +314,9 @@ static partial class Program
         AssertContains(audioBindingsText, "ApplyInitialMicrophoneControlsVisibility = ApplyInitialMicrophoneControlsVisibility,");
         AssertContains(audioControlBindingControllerText, "_context.SetupMicrophoneVolumeBindings();");
         AssertContains(audioControlBindingControllerText, "_context.ApplyInitialMicrophoneControlsVisibility();");
-        AssertContains(propertyChangedText, "HandleMicrophoneEnabledChanged();");
-        AssertContains(propertyChangedText, "HandleMicrophoneVolumeChanged();");
+        AssertContains(propertyChangedText, "TryHandleAudioPropertyChanged(propertyName)");
+        AssertContains(audioPropertyChangedText, "HandleMicrophoneEnabledChanged();");
+        AssertContains(audioPropertyChangedText, "HandleMicrophoneVolumeChanged();");
         AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandleMicrophoneEnabledChanged();");
         AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandleMicrophoneVolumeChanged();");
         AssertContains(audioControlPresentationControllerText, "_context.UpdateMicrophoneControlsVisibility();");

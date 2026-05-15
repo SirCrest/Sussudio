@@ -111,7 +111,8 @@ static partial class Program
         AssertContains(controllerText, "_context.SelectionRegion.Visibility = Visibility.Visible;");
         AssertContains(controllerText, "Canvas.SetLeft(_context.SelectionRegion, selLeft);");
         AssertContains(flashbackText, "UpdateFlashbackMarkers();");
-        AssertContains(propertyChangedText, "HandleFlashbackRangeChanged();");
+        AssertContains(propertyChangedText, "TryHandleFlashbackPropertyChanged(propertyName)");
+        AssertContains(flashbackPropertyChangedText, "HandleFlashbackRangeChanged();");
         AssertContains(flashbackPropertyChangedText, "Flashback-specific ViewModel property projections");
         AssertContains(flashbackPropertyChangedText, "UpdateFlashbackMarkers();");
         AssertDoesNotContain(flashbackText, "private void UpdateFlashbackMarkers()");
@@ -202,8 +203,9 @@ static partial class Program
         AssertContains(adapterText, "=> _flashbackExportProgressPresentationController.UpdateProgress(progress);");
         AssertContains(adapterText, "=> _flashbackExportProgressPresentationController.UpdateExporting(isExporting);");
         AssertContains(mainWindowText, "InitializeFlashbackExportProgressPresentationController();");
-        AssertContains(propertyChangedText, "HandleFlashbackExportProgressChanged();");
-        AssertContains(propertyChangedText, "HandleFlashbackExportingChanged();");
+        AssertContains(propertyChangedText, "TryHandleFlashbackPropertyChanged(propertyName)");
+        AssertContains(flashbackPropertyChangedText, "HandleFlashbackExportProgressChanged();");
+        AssertContains(flashbackPropertyChangedText, "HandleFlashbackExportingChanged();");
         AssertContains(flashbackPropertyChangedText, "UpdateFlashbackExportProgress(ViewModel.FlashbackExportProgress);");
         AssertContains(flashbackPropertyChangedText, "UpdateFlashbackExportingPresentation(ViewModel.IsFlashbackExporting);");
         AssertContains(controllerText, "internal sealed class FlashbackExportProgressPresentationController");
@@ -273,8 +275,9 @@ static partial class Program
         AssertContains(controllerText, "int.TryParse(tag, out var minutes)");
         AssertContains(controllerText, "_context.ViewModel.FlashbackBufferMinutes = minutes;");
         AssertContains(controllerText, "FLASHBACK_UI_BUFFER_DURATION_CHANGED");
-        AssertContains(propertyChangedText, "case nameof(MainViewModel.FlashbackGpuDecode):\n                HandleFlashbackGpuDecodeChanged();");
-        AssertContains(propertyChangedText, "case nameof(MainViewModel.FlashbackBufferMinutes):\n                HandleFlashbackBufferMinutesChanged();");
+        AssertContains(propertyChangedText, "TryHandleFlashbackPropertyChanged(propertyName)");
+        AssertContains(flashbackPropertyChangedText, "case nameof(MainViewModel.FlashbackGpuDecode):\n                HandleFlashbackGpuDecodeChanged();");
+        AssertContains(flashbackPropertyChangedText, "case nameof(MainViewModel.FlashbackBufferMinutes):\n                HandleFlashbackBufferMinutesChanged();");
         AssertContains(flashbackPropertyChangedText, "=> SyncFlashbackGpuDecodeSetting();");
         AssertContains(flashbackPropertyChangedText, "=> SyncFlashbackBufferDurationSetting();");
 

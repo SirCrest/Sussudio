@@ -1,4 +1,5 @@
 using Sussudio.Controllers;
+using Sussudio.ViewModels;
 
 namespace Sussudio;
 
@@ -7,6 +8,27 @@ namespace Sussudio;
 public sealed partial class MainWindow
 {
     private RecordingStatePresentationController _recordingStatePresentationController = null!;
+
+    private bool TryHandleRecordingPropertyChanged(string propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.IsRecording):
+                HandleRecordingChanged();
+                return true;
+
+            case nameof(MainViewModel.IsRecordingTransitioning):
+                HandleRecordingTransitioningChanged();
+                return true;
+
+            case nameof(MainViewModel.IsFfmpegMissing):
+                HandleFfmpegMissingChanged();
+                return true;
+
+            default:
+                return false;
+        }
+    }
 
     private void InitializeRecordingStatePresentationController()
     {

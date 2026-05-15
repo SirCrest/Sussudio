@@ -765,12 +765,12 @@ Primary current owners:
   it coordinates preview fade/reinit behavior. One-line XAML command bridges for
   capture-device, recording, output-path, and preview-screenshot buttons live in
   their feature adapter partials beside the owning controllers.
-- `Sussudio/MainWindow.PropertyChanged.cs` owns the root ViewModel
-  PropertyChanged dispatcher; capture-selection routing delegates to
-  `MainWindow.CaptureSelectionBindings.cs`, status-strip routing delegates to
-  `MainWindow.StatusStripPresentation.cs`, and other feature-specific property
-  projections stay in the `MainWindow.PropertyChanged*.cs` partials or named
-  presentation controllers.
+- `Sussudio/MainWindow.PropertyChanged.cs` owns only the root ViewModel
+  PropertyChanged event envelope, property-name normalization, and route order.
+  Capture-selection and status-strip routers are still considered first through
+  `MainWindow.CaptureSelectionBindings.cs` and
+  `MainWindow.StatusStripPresentation.cs`; broad domain property-name switches
+  live in focused `MainWindow.PropertyChanged*.cs` partials.
 - `Sussudio/Controllers/CompositionShadowFadeAnimator.cs` owns shared
   compositor opacity fade helpers for shell shadow visuals. XAML-facing
   adapters call it without adding state or dispatcher hops.
@@ -1635,8 +1635,8 @@ Primary current owners:
   `Sussudio/Controllers/PreviewStartupFailureTextFormatter.cs` owns preview
   startup timeout reason, timeout status, and failure-stop status text.
   `MainWindow.PropertyChangedPreview.cs` owns preview-specific ViewModel events
-  and property-change projections for preview start/stop/reinit state. Keep
-  preview startup fields out of the composition root.
+  and the preview property-change router for preview start/stop/reinit state.
+  Keep preview startup fields out of the composition root.
 - `Sussudio/Controllers/PreviewFadeInController.cs` owns delayed preview
   reveal after first visual: rendered-frame threshold, fade-in timer, renderer
   replacement fallback, and preview-audio fade start ordering.
@@ -1652,17 +1652,28 @@ Primary current owners:
   is the XAML-facing adapter for `SizeChanged`; preview surface sizing remains
   with `MainWindow.PreviewSurface.cs`.
 - `Sussudio/MainWindow.PropertyChangedRecording.cs` owns only the
-  recording-specific property-change adapter surface and delegates record-button,
-  glow, pulse, and recording-time lockout projection to
+  recording-specific property-change router and adapter surface, delegating
+  record-button, glow, pulse, and recording-time lockout projection to
   `RecordingStatePresentationController`.
+- `Sussudio/MainWindow.PropertyChangedOutput.cs` owns the output-path
+  property-change router and delegates display updates to
+  `OutputPathDisplayController`.
+- `Sussudio/MainWindow.PropertyChangedCaptureOptions.cs` owns capture-option
+  and source-signal property-change routing for HDR toggles, telemetry
+  tooltips, source overlay updates, bitrate visibility, and show-all-options
+  synchronization.
+- `Sussudio/MainWindow.PropertyChangedShell.cs` owns shell visibility
+  property-change routing for stats and settings chrome.
+- `Sussudio/MainWindow.PropertyChangedLiveSignal.cs` owns the live source-signal
+  property-change router for the live signal pill.
 - `Sussudio/MainWindow.PropertyChangedFlashback.cs` owns Flashback-specific
-  property-change adapter dispatch for timeline lockout, markers, playhead
-  updates, export progress, and settings-control synchronization.
+  property-change routing for timeline lockout, markers, playhead updates,
+  export progress, and settings-control synchronization.
 - `Sussudio/Controllers/AudioControlPresentationController.cs` owns audio and
   microphone property-change projections: audio toggles, monitoring meter
   state, preview volume slider sync, microphone enablement, and microphone
-  volume sync. `Sussudio/MainWindow.PropertyChangedAudio.cs` is the
-  XAML-facing adapter.
+  volume sync. `Sussudio/MainWindow.PropertyChangedAudio.cs` owns the audio
+  property-change router and XAML-facing adapter.
 - `Sussudio/Controllers/MicrophoneControlsController.cs` owns microphone volume
   slider synchronization, save triggers, shelf enablement, and mic-meter row
   animation state. `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.

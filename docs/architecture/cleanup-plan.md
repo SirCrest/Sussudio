@@ -1744,8 +1744,9 @@ sizing still lives with `MainWindow.PreviewSurface.cs`.
 
 Preview-specific ViewModel events and property-change projections now live in
 `Sussudio/MainWindow.PropertyChangedPreview.cs`. The broad
-`MainWindow.PropertyChanged.cs` dispatcher still routes `PropertyChanged`
-notifications, but preview start/stop/reinit choreography has a named owner.
+`MainWindow.PropertyChanged.cs` dispatcher now owns only the `PropertyChanged`
+event envelope, property-name normalization, and visible route order; preview
+start/stop/reinit property-name routing has a named owner.
 
 Bottom status-strip projection now lives in
 `Sussudio/Controllers/StatusStripPresentationController.cs`, while
@@ -1757,9 +1758,19 @@ Recording-state UI projection now lives in
 `Sussudio/Controllers/RecordingStatePresentationController.cs`: record-button
 content, recording glow, recording pulse, FFmpeg/transition button enablement,
 and the recording-time lockout state for capture/audio controls.
-`MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter, while
+`MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter and
+recording property-name router, while
 `Sussudio/Controllers/RecordButtonAnimationController.cs` still owns only the
 circle/pill width morph.
+
+Output-path, capture-option, shell-visibility, and live source-signal
+property-name routing now live in focused partials:
+`Sussudio/MainWindow.PropertyChangedOutput.cs`,
+`Sussudio/MainWindow.PropertyChangedCaptureOptions.cs`,
+`Sussudio/MainWindow.PropertyChangedShell.cs`, and
+`Sussudio/MainWindow.PropertyChangedLiveSignal.cs`. Keep the root dispatcher
+limited to route order, and add new property-name cases to the nearest focused
+partial.
 
 Flashback-specific ViewModel property adapter dispatch now lives in
 `Sussudio/MainWindow.PropertyChangedFlashback.cs`: timeline lockout, marker and
