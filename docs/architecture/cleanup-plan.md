@@ -1743,8 +1743,8 @@ apply state,
 `.Context.cs` owns the XAML control dependency bag, `.SelectionSync.cs` owns
 collection-change debounce/queued sync plus available-option property-change
 rebinding, and `.DeviceAudio.cs` owns device-audio mode/gain projection while
-`MainWindow.CaptureSelectionBindings.cs` keeps the old method names for
-`PropertyChanged` and binding setup.
+`MainWindow.CaptureSelectionBindings.cs` keeps the old method names for binding
+setup and owns the capture-selection `PropertyChanged` router.
 
 Capture-device refresh/apply button workflows now live in
 `Sussudio/Controllers/CaptureDeviceActionController.cs`.

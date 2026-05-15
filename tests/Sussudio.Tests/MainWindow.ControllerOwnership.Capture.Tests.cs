@@ -33,15 +33,17 @@ static partial class Program
         AssertContains(adapterText, "private void UpdateDeviceApplyButtonState()");
         AssertContains(adapterText, "private void AttachRecordingStringSelectionBindings()");
         AssertContains(adapterText, "=> _captureSelectionBindingController.AttachRecordingStringSelectionBindings();");
+        AssertContains(adapterText, "private bool TryHandleCaptureSelectionPropertyChanged(string? propertyName)");
+        AssertContains(adapterText, "case nameof(MainViewModel.SelectedDevice):");
+        AssertContains(adapterText, "case nameof(MainViewModel.AvailableResolutions):");
+        AssertContains(adapterText, "case nameof(MainViewModel.AvailableFrameRates):");
+        AssertContains(adapterText, "case nameof(MainViewModel.IsDeviceAudioControlSupported):");
+        AssertContains(adapterText, "case nameof(MainViewModel.SelectedAudioInputDevice):");
+        AssertContains(adapterText, "case nameof(MainViewModel.SelectedRecordingFormat):");
+        AssertContains(adapterText, "case nameof(MainViewModel.AvailableSplitEncodeModes):");
         AssertContains(mainWindowText, "InitializeCaptureSelectionBindingController();");
         AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
-        AssertContains(propertyChangedText, "EnsureResolutionSelection();");
-        AssertContains(propertyChangedText, "HandleSelectedDevicePropertyChanged();");
-        AssertContains(propertyChangedText, "HandleAvailableResolutionsPropertyChanged();");
-        AssertContains(propertyChangedText, "HandleAvailableFrameRatesPropertyChanged();");
-        AssertContains(propertyChangedText, "HandleAvailablePresetsPropertyChanged();");
-        AssertContains(propertyChangedText, "HandleAvailableSplitEncodeModesPropertyChanged();");
-        AssertContains(propertyChangedText, "ApplyDeviceAudioControlState();");
+        AssertContains(propertyChangedText, "if (TryHandleCaptureSelectionPropertyChanged(e.PropertyName))");
         AssertContains(controllerText, "internal sealed partial class CaptureSelectionBindingController");
         AssertContains(contextText, "internal sealed class CaptureSelectionBindingControllerContext");
         AssertContains(selectionSyncText, "private readonly int[] _selectionSyncQueued = new int[9];");
@@ -93,6 +95,18 @@ static partial class Program
         AssertDoesNotContain(propertyChangedText, "FrameRateComboBox.ItemsSource = ViewModel.AvailableFrameRates;");
         AssertDoesNotContain(propertyChangedText, "PresetComboBox.ItemsSource = ViewModel.AvailablePresets;");
         AssertDoesNotContain(propertyChangedText, "SplitEncodeComboBox.ItemsSource = ViewModel.AvailableSplitEncodeModes;");
+        AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.SelectedDevice):");
+        AssertDoesNotContain(propertyChangedText, "HandleSelectedDevicePropertyChanged();");
+        AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.AvailableResolutions):");
+        AssertDoesNotContain(propertyChangedText, "HandleAvailableResolutionsPropertyChanged();");
+        AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.AvailableFrameRates):");
+        AssertDoesNotContain(propertyChangedText, "HandleAvailableFrameRatesPropertyChanged();");
+        AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.IsDeviceAudioControlSupported):");
+        AssertDoesNotContain(propertyChangedText, "ApplyDeviceAudioControlState();");
+        AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.SelectedRecordingFormat):");
+        AssertDoesNotContain(propertyChangedText, "EnsureFormatSelection();");
+        AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.AvailableSplitEncodeModes):");
+        AssertDoesNotContain(propertyChangedText, "HandleAvailableSplitEncodeModesPropertyChanged();");
 
         return Task.CompletedTask;
     }

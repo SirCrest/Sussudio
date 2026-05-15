@@ -17,6 +17,11 @@ public sealed partial class MainWindow
 
     private async Task HandleViewModelPropertyChangedAsync(System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (TryHandleCaptureSelectionPropertyChanged(e.PropertyName))
+        {
+            return;
+        }
+
         switch (e.PropertyName)
         {
             case nameof(MainViewModel.IsPreviewing):
@@ -57,30 +62,6 @@ public sealed partial class MainWindow
 
             case nameof(MainViewModel.AudioClipping):
                 ApplyAudioClipVisibility();
-                break;
-
-            case nameof(MainViewModel.SelectedDevice):
-                HandleSelectedDevicePropertyChanged();
-                break;
-
-            case nameof(MainViewModel.SelectedResolution):
-                EnsureResolutionSelection();
-                break;
-
-            case nameof(MainViewModel.SelectedFrameRate):
-                EnsureFrameRateSelection();
-                break;
-
-            case nameof(MainViewModel.IsAutoFrameRateSelected):
-                EnsureFrameRateSelection();
-                break;
-
-            case nameof(MainViewModel.AvailableResolutions):
-                HandleAvailableResolutionsPropertyChanged();
-                break;
-
-            case nameof(MainViewModel.AvailableFrameRates):
-                HandleAvailableFrameRatesPropertyChanged();
                 break;
 
             case nameof(MainViewModel.IsHdrAvailable):
@@ -138,13 +119,6 @@ public sealed partial class MainWindow
                 HandleMicrophoneEnabledChanged();
                 break;
 
-            case nameof(MainViewModel.IsDeviceAudioControlSupported):
-            case nameof(MainViewModel.SelectedDeviceAudioMode):
-            case nameof(MainViewModel.AnalogAudioGainPercent):
-            case nameof(MainViewModel.AvailableDeviceAudioModes):
-                ApplyDeviceAudioControlState();
-                break;
-
             case nameof(MainViewModel.ShowAllCaptureOptions):
                 if ((ShowAllCaptureOptionsToggle.IsChecked == true) != ViewModel.ShowAllCaptureOptions)
                 {
@@ -162,38 +136,6 @@ public sealed partial class MainWindow
 
             case nameof(MainViewModel.IsSettingsVisible):
                 ApplySettingsVisibility(ViewModel.IsSettingsVisible);
-                break;
-
-            case nameof(MainViewModel.SelectedAudioInputDevice):
-                EnsureAudioInputSelection();
-                break;
-
-            case nameof(MainViewModel.SelectedMicrophoneDevice):
-                EnsureMicrophoneSelection();
-                break;
-
-            case nameof(MainViewModel.SelectedRecordingFormat):
-                EnsureFormatSelection();
-                break;
-
-            case nameof(MainViewModel.SelectedQuality):
-                EnsureQualitySelection();
-                break;
-
-            case nameof(MainViewModel.AvailablePresets):
-                HandleAvailablePresetsPropertyChanged();
-                break;
-
-            case nameof(MainViewModel.SelectedPreset):
-                EnsurePresetSelection();
-                break;
-
-            case nameof(MainViewModel.AvailableSplitEncodeModes):
-                HandleAvailableSplitEncodeModesPropertyChanged();
-                break;
-
-            case nameof(MainViewModel.SelectedSplitEncodeMode):
-                EnsureSplitEncodeModeSelection();
                 break;
 
             case nameof(MainViewModel.LiveResolution):

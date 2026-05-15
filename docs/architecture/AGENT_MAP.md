@@ -746,9 +746,10 @@ Primary current owners:
   capture-device, recording, output-path, and preview-screenshot buttons live in
   their feature adapter partials beside the owning controllers.
 - `Sussudio/MainWindow.PropertyChanged.cs` owns the root ViewModel
-  PropertyChanged dispatcher; feature-specific property projections stay in
-  the `MainWindow.PropertyChanged*.cs` partials or named presentation
-  controllers.
+  PropertyChanged dispatcher; capture-selection routing now delegates to
+  `MainWindow.CaptureSelectionBindings.cs`, and other feature-specific property
+  projections stay in the `MainWindow.PropertyChanged*.cs` partials or named
+  presentation controllers.
 - `Sussudio/Controllers/CompositionShadowFadeAnimator.cs` owns shared
   compositor opacity fade helpers for shell shadow visuals. XAML-facing
   adapters call it without adding state or dispatcher hops.
@@ -1646,7 +1647,8 @@ Primary current owners:
   rebinding, and
   `Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs` owns
   device-audio mode/gain control projection. `MainWindow.CaptureSelectionBindings.cs`
-  is the XAML-facing adapter.
+  is the XAML-facing adapter and owns the capture-selection `PropertyChanged`
+  router.
 - `Sussudio/Controllers/AudioControlBindingController.cs` owns audio/microphone
   initial control projection and event hookup: record/preview toggles, preview
   volume priming, custom audio/microphone selection, device-audio mode/gain event
