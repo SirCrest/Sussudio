@@ -91,6 +91,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeControlBarAnimationController();
         InitializeShellElevationController();
         InitializePreviewStartupOverlayController();
+        InitializePreviewFadeInController();
         InitializePreviewTransitionAnimationController();
         InitializePreviewButtonPresentationController();
         InitializeRecordButtonAnimationController();

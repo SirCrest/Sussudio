@@ -1455,7 +1455,8 @@ missing-signal formatting, and playback-progress diagnostics live in
 focused on wiring while leaving the existing startup state machine behavior
 unchanged.
 Delayed preview reveal after first visual now lives in
-`Sussudio/MainWindow.PreviewFadeIn.cs`; watchdog/timeout recovery remains in
+`Sussudio/Controllers/PreviewFadeInController.cs`; the adapter remains
+`Sussudio/MainWindow.PreviewFadeIn.cs`. Watchdog/timeout recovery remains in
 `MainWindow.PreviewStartup.cs`.
 Preview startup loading overlay presentation now lives in
 `Sussudio/Controllers/PreviewStartupOverlayController.cs`.

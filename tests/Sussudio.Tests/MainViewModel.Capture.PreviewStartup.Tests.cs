@@ -59,6 +59,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewFadeInText = ReadRepoFile("Sussudio/MainWindow.PreviewFadeIn.cs")
             .Replace("\r\n", "\n");
+        var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/PreviewFadeInController.cs")
+            .Replace("\r\n", "\n");
         var previewStartupSignalsText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupSignals.cs")
             .Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs")
@@ -75,10 +77,14 @@ static partial class Program
         AssertContains(previewStartupText, "private readonly Lazy<int> _previewStartupVisualTimeoutMs = new(static () =>");
         AssertContains(previewStartupText, "private DispatcherQueueTimer? _previewStartupWatchdogTimer;");
         AssertContains(previewStartupText, "private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;");
-        AssertContains(previewFadeInText, "private const int PreviewFadeInFrameThreshold = 3;");
-        AssertContains(previewFadeInText, "private DispatcherQueueTimer? _previewFadeInTimer;");
+        AssertContains(previewFadeInText, "private PreviewFadeInController _previewFadeInController = null!;");
+        AssertContains(previewFadeInText, "private void InitializePreviewFadeInController()");
         AssertContains(previewFadeInText, "private void SchedulePreviewFadeIn()");
         AssertContains(previewFadeInText, "private void StopPreviewFadeInTimer()");
+        AssertContains(previewFadeInControllerText, "private const int PreviewFadeInFrameThreshold = 3;");
+        AssertContains(previewFadeInControllerText, "private DispatcherQueueTimer? _timer;");
+        AssertContains(previewFadeInControllerText, "public void Schedule()");
+        AssertContains(previewFadeInControllerText, "public void Stop()");
         AssertContains(previewStartupSignalsText, "Preview startup readiness-signal tracking");
         AssertContains(previewStartupSignalsText, "private long _previewStartupPositionEventCount;");
         AssertContains(previewStartupSignalsText, "private bool IsPreviewStartupSignalWindowActive()");
@@ -112,6 +118,8 @@ static partial class Program
         var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
             .Replace("\r\n", "\n");
         var previewFadeInText = ReadRepoFile("Sussudio/MainWindow.PreviewFadeIn.cs")
+            .Replace("\r\n", "\n");
+        var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/PreviewFadeInController.cs")
             .Replace("\r\n", "\n");
         var previewAudioFadeText = ReadRepoFile("Sussudio/MainWindow.PreviewAudioFade.cs")
             .Replace("\r\n", "\n");
@@ -177,9 +185,10 @@ static partial class Program
         AssertContains(startAudioFade, "Storyboard.SetTarget(volumeAnimation, _context.PreviewVolumeSlider);");
         AssertContains(startAudioFade, "CompleteFadeIn(applyTarget: true)");
 
-        var schedulePreviewFadeIn = ExtractMemberCode(previewFadeInText, "SchedulePreviewFadeIn");
+        AssertContains(previewFadeInText, "=> _previewFadeInController.Schedule();");
+        var schedulePreviewFadeIn = ExtractMemberCode(previewFadeInControllerText, "Schedule");
         AssertContains(schedulePreviewFadeIn, "StartPreviewAudioFadeIn();");
-        AssertOccursBefore(schedulePreviewFadeIn, "_ = AnimatePreviewInAsync();", "StartPreviewAudioFadeIn();");
+        AssertOccursBefore(schedulePreviewFadeIn, "_ = _context.AnimatePreviewInAsync();", "_context.StartPreviewAudioFadeIn();");
 
         var setupBindings = ExtractMemberCode(bindingsText, "SetupBindings");
         AssertContains(setupBindings, "ApplyInitialAudioControlBindings();");

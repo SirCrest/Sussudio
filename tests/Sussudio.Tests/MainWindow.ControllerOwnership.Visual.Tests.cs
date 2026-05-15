@@ -125,6 +125,39 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewFadeInReveal_LivesInController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewFadeIn.cs").Replace("\r\n", "\n");
+        var previewTransitionText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewFadeInController.cs").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private PreviewFadeInController _previewFadeInController = null!;");
+        AssertContains(adapterText, "private void InitializePreviewFadeInController()");
+        AssertContains(adapterText, "DispatcherQueue = _dispatcherQueue,");
+        AssertContains(adapterText, "GetRenderer = () => _d3dRenderer,");
+        AssertContains(adapterText, "AnimatePreviewInAsync = AnimatePreviewInAsync,");
+        AssertContains(adapterText, "StartPreviewAudioFadeIn = () => StartPreviewAudioFadeIn(),");
+        AssertContains(adapterText, "=> _previewFadeInController.Schedule();");
+        AssertContains(adapterText, "=> _previewFadeInController.Stop();");
+        AssertContains(mainWindowText, "InitializePreviewFadeInController();");
+        AssertContains(previewTransitionText, "StopPreviewFadeInTimer = StopPreviewFadeInTimer,");
+        AssertContains(controllerText, "internal sealed class PreviewFadeInController");
+        AssertContains(controllerText, "private const int PreviewFadeInFrameThreshold = 3;");
+        AssertContains(controllerText, "private DispatcherQueueTimer? _timer;");
+        AssertContains(controllerText, "_timer.Interval = TimeSpan.FromMilliseconds(50);");
+        AssertContains(controllerText, "_timer.Interval = TimeSpan.FromMilliseconds(16);");
+        AssertContains(controllerText, "var baselineFrames = renderer.FramesRendered;");
+        AssertContains(controllerText, "current == null || current != renderer");
+        AssertContains(controllerText, "PREVIEW_FADE_IN_READY framesRendered={rendered} baseline={baselineFrames}");
+        AssertOccursBefore(controllerText, "_ = _context.AnimatePreviewInAsync();", "_context.StartPreviewAudioFadeIn();");
+        AssertDoesNotContain(adapterText, "private const int PreviewFadeInFrameThreshold = 3;");
+        AssertDoesNotContain(adapterText, "private DispatcherQueueTimer? _previewFadeInTimer;");
+        AssertDoesNotContain(adapterText, "PREVIEW_FADE_IN_READY");
+
+        return Task.CompletedTask;
+    }
+
     private static Task RecordButtonWidthAnimation_LivesInController()
     {
         var animationsText = ReadRepoFile("Sussudio/MainWindow.Animations.cs").Replace("\r\n", "\n");

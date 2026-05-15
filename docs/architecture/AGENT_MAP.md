@@ -1407,9 +1407,11 @@ Primary current owners:
   `MainWindow.PropertyChangedPreview.cs` owns preview-specific ViewModel events
   and property-change projections for preview start/stop/reinit state. Keep
   preview startup fields out of the composition root.
-- `Sussudio/MainWindow.PreviewFadeIn.cs` owns delayed reveal after first visual:
-  the rendered-frame threshold, fade-in timer, and preview-audio fade start.
-  Keep timeout/watchdog recovery in `MainWindow.PreviewStartup.cs`.
+- `Sussudio/Controllers/PreviewFadeInController.cs` owns delayed preview
+  reveal after first visual: rendered-frame threshold, fade-in timer, renderer
+  replacement fallback, and preview-audio fade start ordering.
+  `MainWindow.PreviewFadeIn.cs` is the XAML-facing adapter. Keep
+  timeout/watchdog recovery in `MainWindow.PreviewStartup.cs`.
 - `Sussudio/Controllers/PreviewStartupOverlayController.cs` owns preview-
   startup loading overlay presentation while the app waits for visual
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
