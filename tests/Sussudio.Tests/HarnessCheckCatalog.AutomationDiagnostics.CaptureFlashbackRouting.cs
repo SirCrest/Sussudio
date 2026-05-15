@@ -72,6 +72,9 @@ static partial class Program
             "Capture session coordinator models live in focused file",
             CaptureSessionCoordinator_ModelsLiveInFocusedFile);
         await AddCheckAsync(results,
+            "Capture session coordinator command facade lives in focused partial",
+            CaptureSessionCoordinator_CommandFacadeLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "Capture session coordinator Flashback facade lives in focused partial",
             CaptureSessionCoordinator_FlashbackFacadeLivesInFocusedPartial);
         await AddCheckAsync(results,

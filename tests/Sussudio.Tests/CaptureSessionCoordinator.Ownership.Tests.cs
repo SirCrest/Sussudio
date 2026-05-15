@@ -2,6 +2,37 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static Task CaptureSessionCoordinator_CommandFacadeLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
+            .Replace("\r\n", "\n");
+        var commandsText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.Commands.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(commandsText, "public Task InitializeAsync(CaptureDevice device, CaptureSettings settings, CancellationToken cancellationToken = default)");
+        AssertContains(commandsText, "public Task StartVideoPreviewAsync(CaptureSettings settings, CancellationToken cancellationToken = default)");
+        AssertContains(commandsText, "public Task StopVideoPreviewWithTeardownAsync(CancellationToken cancellationToken = default)");
+        AssertContains(commandsText, "public Task StartRecordingAsync(CaptureSettings settings, CancellationToken cancellationToken = default)");
+        AssertContains(commandsText, "public Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)");
+        AssertContains(commandsText, "_captureService.StopRecordingAsync(emergency: true, ct)");
+        AssertContains(commandsText, "public Task UpdateAudioMonitoringAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertOccursBefore(commandsText, "await _captureService.StartAudioPreviewAsync(ct).ConfigureAwait(false);", "_captureService.SetMonitoringMuted(false);");
+        AssertOccursBefore(commandsText, "_captureService.SetMonitoringMuted(true);", "await _captureService.StopAudioPreviewAsync(ct).ConfigureAwait(false);");
+        AssertContains(commandsText, "internal void SetPreviewVolume(double volume)");
+        AssertContains(commandsText, "ThrowIfDisposed();");
+        AssertContains(commandsText, "public Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName, CancellationToken cancellationToken = default)");
+        AssertContains(commandsText, "public Task UpdateMicrophoneMonitorAsync(bool enabled, string? micDeviceId, string? micDeviceName, CancellationToken cancellationToken = default)");
+        AssertContains(commandsText, "public Task CleanupAsync(CancellationToken cancellationToken = default)");
+
+        AssertDoesNotContain(rootText, "public Task InitializeAsync(");
+        AssertDoesNotContain(rootText, "public Task UpdateAudioMonitoringAsync(");
+        AssertDoesNotContain(rootText, "StopRecordingForEmergencyAsync");
+        AssertDoesNotContain(rootText, "SetMonitoringMuted(");
+        AssertDoesNotContain(rootText, "public Task CleanupAsync(");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureSessionCoordinator_QueueWorkerLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")

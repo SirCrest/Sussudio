@@ -318,8 +318,9 @@ Primary current owner: `Sussudio/Services/Capture/`
 
 Important entry points:
 
-- `CaptureSessionCoordinator.cs` owns construction, shared state fields, and
-  public lifecycle/audio mutation routing into the serialized worker.
+- `CaptureSessionCoordinator.cs` owns construction and shared state fields.
+- `CaptureSessionCoordinator.Commands.cs` owns the public non-Flashback
+  lifecycle/audio command facade into the serialized worker.
 - `CaptureSessionCoordinator.Models.cs` owns command enums, queue receipts,
   session snapshots, and Flashback playback/buffer status projections.
 - `CaptureSessionCoordinator.Queue.cs` owns work-item creation, command
@@ -1349,7 +1350,8 @@ Primary current owners:
   `CaptureSessionCoordinator.Api`, `CaptureSessionCoordinator.Contracts`,
   `CaptureSessionCoordinator.Queue`, `CaptureSessionCoordinator.Flashback`,
   `CaptureSessionCoordinator.Ownership`, and `CaptureSessionTransitionPolicy`
-  files; shared reflective harness helpers live in
+  files; command/source ownership checks include the focused
+  `CaptureSessionCoordinator.Commands` partial. Shared reflective harness helpers live in
   `CaptureSessionCoordinator.Helpers.cs`.
 - `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` owns shared pooled-frame
   reflection, frame factory, jitter-buffer factory, and tracking pool helpers.

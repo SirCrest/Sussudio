@@ -569,10 +569,12 @@ the same pure policy; resource ownership has not moved in this slice.
 Capture session coordinator command enums, queue receipt records, session
 snapshots, and Flashback playback/buffer status projections now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs`.
-`CaptureSessionCoordinator.cs` owns construction, shared state fields, and
-public lifecycle/audio mutation routing. Queue work item creation, command
-enqueueing, worker-loop execution, coalescing, cancellation/failure accounting,
-and pending-command counters now live in `CaptureSessionCoordinator.Queue.cs`.
+`CaptureSessionCoordinator.cs` owns construction and shared state fields.
+`CaptureSessionCoordinator.Commands.cs` owns the public non-Flashback
+lifecycle/audio command facade into the serialized worker. Queue work item
+creation, command enqueueing, worker-loop execution, coalescing,
+cancellation/failure accounting, and pending-command counters now live in
+`CaptureSessionCoordinator.Queue.cs`.
 Queue/session snapshot projection, last-command state, pending-command age
 bookkeeping, and queue latency accounting now live in
 `CaptureSessionCoordinator.Snapshot.cs`. Dispose/drain/cancel lifecycle for the
