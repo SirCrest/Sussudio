@@ -118,8 +118,23 @@ static partial class Program
             requiresReadyDevices: false,
             pathPolicy: "None",
             payloadShapeContains: "{}");
+        AssertOptionalPayloadField(entries, "WindowAction", "action");
+        AssertOptionalPayloadField(entries, "WaitForCondition", "condition");
 
         return Task.CompletedTask;
+    }
+
+    private static void AssertOptionalPayloadField(
+        object[] entries,
+        string commandName,
+        string fieldName)
+    {
+        var entry = entries.Single(candidate =>
+            string.Equals((string)GetMetadataProperty(candidate, "Name")!, commandName, StringComparison.Ordinal));
+        var fields = GetMetadataCollection(entry, "PayloadFields");
+        var field = fields.Single(candidate =>
+            string.Equals((string)GetMetadataProperty(candidate, "Name")!, fieldName, StringComparison.Ordinal));
+        AssertEqual(false, (bool)GetMetadataProperty(field, "Required")!, $"{commandName}.{fieldName} catalog optional field");
     }
 
     private static Task AutomationManifest_CoversCatalogMetadata()
@@ -218,7 +233,7 @@ static partial class Program
 
     private static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "876DBE09BA6A930D63287AC1C53D990C571842ECEF257A01B40F784BEA6DD15D";
+        const string ExpectedManifestSha256 = "74C757E49376DF5D1E9A3F3EDE18FF1FD2DCBC7B50842B320A3AAD4A5FB5D599";
         var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;

@@ -24,6 +24,12 @@ static partial class Program
             "Automation dispatcher requires missing string fields",
             AutomationCommandDispatcher_RequireString_ThrowsOnMissing);
         await AddCheckAsync(results,
+            "Automation dispatcher defaults missing window action",
+            AutomationCommandDispatcher_WindowAction_DefaultsMissingActionToRestore);
+        await AddCheckAsync(results,
+            "Automation dispatcher defaults missing wait condition",
+            AutomationCommandDispatcher_WaitForCondition_DefaultsMissingConditionToPreviewFrames);
+        await AddCheckAsync(results,
             "Automation dispatcher trivial handler payload fields match catalog",
             AutomationCommandDispatcher_TrivialHandlers_MatchCatalogPayloadFields);
         await AddCheckAsync(results,

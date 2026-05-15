@@ -119,6 +119,42 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task AutomationCommandDispatcher_WindowAction_DefaultsMissingActionToRestore()
+    {
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
+        var method = dispatcherType.GetMethod("ParseWindowAction",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ParseWindowAction not found.");
+
+        using var missingDoc = JsonDocument.Parse("{}");
+        var missingResult = method.Invoke(null, new object[] { missingDoc.RootElement });
+        AssertEqual("Restore", missingResult?.ToString(), "WindowAction missing action defaults to Restore");
+
+        using var blankDoc = JsonDocument.Parse("{\"action\":\"  \"}");
+        var blankResult = method.Invoke(null, new object[] { blankDoc.RootElement });
+        AssertEqual("Restore", blankResult?.ToString(), "WindowAction blank action defaults to Restore");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AutomationCommandDispatcher_WaitForCondition_DefaultsMissingConditionToPreviewFrames()
+    {
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
+        var method = dispatcherType.GetMethod("ParseWaitCondition",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ParseWaitCondition not found.");
+
+        using var missingDoc = JsonDocument.Parse("{}");
+        var missingResult = method.Invoke(null, new object[] { missingDoc.RootElement });
+        AssertEqual("PreviewFramesActive", missingResult?.ToString(), "WaitForCondition missing condition defaults to PreviewFramesActive");
+
+        using var blankDoc = JsonDocument.Parse("{\"condition\":\"  \"}");
+        var blankResult = method.Invoke(null, new object[] { blankDoc.RootElement });
+        AssertEqual("PreviewFramesActive", blankResult?.ToString(), "WaitForCondition blank condition defaults to PreviewFramesActive");
+
+        return Task.CompletedTask;
+    }
+
     private static Task AutomationCommandDispatcher_TrivialHandlers_MatchCatalogPayloadFields()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
