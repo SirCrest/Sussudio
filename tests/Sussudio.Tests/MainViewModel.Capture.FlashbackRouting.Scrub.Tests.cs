@@ -13,6 +13,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackScrubText = ReadRepoFile("Sussudio/MainWindow.FlashbackScrub.cs")
             .Replace("\r\n", "\n");
+        var flashbackGeometryText = ReadRepoFile("Sussudio/Controllers/FlashbackTimelineGeometry.cs")
+            .Replace("\r\n", "\n");
+        var flashbackPlayheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs")
+            .Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var fullScreenWindowText = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs")
@@ -58,12 +62,20 @@ static partial class Program
         AssertContains(flashbackScrubText, "FLASHBACK_UI_SCRUB_END");
         AssertContains(flashbackScrubText, "FlashbackScrubArea_PointerCanceled");
         AssertContains(flashbackScrubText, "FlashbackScrubArea_PointerCaptureLost");
-        AssertContains(flashbackScrubText, "if (!TryComputeFlashbackTimelineFraction(pos.X, width, out var fraction)) return;");
-        AssertContains(flashbackScrubText, "if (!TryComputeFlashbackTimelineFraction(pos.X, width, out var fraction)) return TimeSpan.Zero;");
-        AssertContains(flashbackScrubText, "private static bool TryComputeFlashbackTimelineFraction(double x, double width, out double fraction)");
-        AssertContains(flashbackScrubText, "if (!IsUsableFlashbackTrackDimension(width) || !double.IsFinite(x))");
-        AssertContains(flashbackScrubText, "private static bool IsUsableFlashbackTrackDimension(double value)\n        => double.IsFinite(value) && value > 0;");
-        AssertContains(flashbackScrubText, "private static bool IsUsableFlashbackDuration(TimeSpan value)\n        => double.IsFinite(value.TotalSeconds) && value > TimeSpan.Zero;");
+        AssertContains(flashbackScrubText, "FlashbackTimelineGeometry.TryComputeFraction(pos.X, width, out var fraction)");
+        AssertContains(flashbackScrubText, "FlashbackTimelineGeometry.IsUsableDuration(bufferDuration)");
+        AssertContains(flashbackScrubText, "FlashbackTimelineGeometry.ComputePosition(fraction, bufferDuration)");
+        AssertContains(flashbackScrubText, "FlashbackTimelineGeometry.TryComputePosition(");
+        AssertContains(flashbackGeometryText, "internal static class FlashbackTimelineGeometry");
+        AssertContains(flashbackGeometryText, "public static bool TryComputeFraction(double x, double width, out double fraction)");
+        AssertContains(flashbackGeometryText, "public static bool TryComputePosition(double x, double width, TimeSpan bufferDuration, out TimeSpan position)");
+        AssertContains(flashbackGeometryText, "public static TimeSpan ComputePosition(double fraction, TimeSpan bufferDuration)");
+        AssertContains(flashbackGeometryText, "public static bool IsUsableTrackDimension(double value)");
+        AssertContains(flashbackGeometryText, "public static bool IsUsableDuration(TimeSpan value)");
+        AssertContains(flashbackPlayheadText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
+        AssertDoesNotContain(flashbackScrubText, "private static bool TryComputeFlashbackTimelineFraction(double x, double width, out double fraction)");
+        AssertDoesNotContain(flashbackScrubText, "private static bool IsUsableFlashbackTrackDimension(double value)");
+        AssertDoesNotContain(flashbackScrubText, "private static bool IsUsableFlashbackDuration(TimeSpan value)");
         AssertContains(fullScreenWindowText, "if (ViewModel.IsFlashbackEnabled && FlashbackTimelinePanel.Visibility == Visibility.Visible)");
         AssertContains(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\")");
         AssertContains(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\")");
@@ -78,6 +90,61 @@ static partial class Program
         AssertDoesNotContain(flashbackWindowText, "private void FlashbackScrubArea_PointerPressed(");
         AssertDoesNotContain(mainWindowText, "private bool _isFlashbackScrubbing;");
         AssertDoesNotContain(mainWindowText, "private TimeSpan? _lastScrubPointerPosition;");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackTimelineGeometry_PreservesScrubMath()
+    {
+        var geometryType = RequireType("Sussudio.Controllers.FlashbackTimelineGeometry");
+        var tryComputeFraction = geometryType.GetMethod("TryComputeFraction", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("FlashbackTimelineGeometry.TryComputeFraction was not found.");
+        var tryComputePosition = geometryType.GetMethod("TryComputePosition", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("FlashbackTimelineGeometry.TryComputePosition was not found.");
+        var computePosition = geometryType.GetMethod("ComputePosition", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("FlashbackTimelineGeometry.ComputePosition was not found.");
+        var isUsableTrackDimension = geometryType.GetMethod("IsUsableTrackDimension", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("FlashbackTimelineGeometry.IsUsableTrackDimension was not found.");
+        var isUsableDuration = geometryType.GetMethod("IsUsableDuration", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("FlashbackTimelineGeometry.IsUsableDuration was not found.");
+
+        object?[] middleFractionArgs = { 50d, 100d, 0d };
+        AssertEqual(true, (bool)tryComputeFraction.Invoke(null, middleFractionArgs)!, "middle fraction computed");
+        AssertEqual(0.5d, (double)middleFractionArgs[2]!, "middle fraction value");
+
+        object?[] leftClampArgs = { -10d, 100d, 0d };
+        AssertEqual(true, (bool)tryComputeFraction.Invoke(null, leftClampArgs)!, "left fraction computed");
+        AssertEqual(0d, (double)leftClampArgs[2]!, "left fraction clamps");
+
+        object?[] rightClampArgs = { 120d, 100d, 0d };
+        AssertEqual(true, (bool)tryComputeFraction.Invoke(null, rightClampArgs)!, "right fraction computed");
+        AssertEqual(1d, (double)rightClampArgs[2]!, "right fraction clamps");
+
+        object?[] invalidWidthArgs = { 50d, 0d, 1d };
+        AssertEqual(false, (bool)tryComputeFraction.Invoke(null, invalidWidthArgs)!, "zero width rejects fraction");
+        AssertEqual(0d, (double)invalidWidthArgs[2]!, "rejected fraction resets");
+
+        object?[] invalidXArgs = { double.NaN, 100d, 1d };
+        AssertEqual(false, (bool)tryComputeFraction.Invoke(null, invalidXArgs)!, "non-finite x rejects fraction");
+        AssertEqual(0d, (double)invalidXArgs[2]!, "non-finite fraction resets");
+
+        AssertEqual(TimeSpan.FromSeconds(5), computePosition.Invoke(null, new object[] { 0.25d, TimeSpan.FromSeconds(20) }), "compute position");
+        AssertEqual(TimeSpan.Zero, computePosition.Invoke(null, new object[] { -1d, TimeSpan.FromSeconds(20) }), "compute position left clamp");
+        AssertEqual(TimeSpan.FromSeconds(20), computePosition.Invoke(null, new object[] { 2d, TimeSpan.FromSeconds(20) }), "compute position right clamp");
+        AssertEqual(TimeSpan.Zero, computePosition.Invoke(null, new object[] { 0.5d, TimeSpan.Zero }), "compute position zero duration");
+
+        object?[] positionArgs = { 25d, 100d, TimeSpan.FromSeconds(20), TimeSpan.Zero };
+        AssertEqual(true, (bool)tryComputePosition.Invoke(null, positionArgs)!, "position computed");
+        AssertEqual(TimeSpan.FromSeconds(5), positionArgs[3], "position value");
+
+        object?[] invalidPositionArgs = { 25d, 100d, TimeSpan.Zero, TimeSpan.FromSeconds(1) };
+        AssertEqual(false, (bool)tryComputePosition.Invoke(null, invalidPositionArgs)!, "zero duration rejects position");
+        AssertEqual(TimeSpan.Zero, invalidPositionArgs[3], "rejected position resets");
+
+        AssertEqual(true, (bool)isUsableTrackDimension.Invoke(null, new object[] { 1d })!, "positive track is usable");
+        AssertEqual(false, (bool)isUsableTrackDimension.Invoke(null, new object[] { double.PositiveInfinity })!, "infinite track is unusable");
+        AssertEqual(true, (bool)isUsableDuration.Invoke(null, new object[] { TimeSpan.FromMilliseconds(1) })!, "positive duration is usable");
+        AssertEqual(false, (bool)isUsableDuration.Invoke(null, new object[] { TimeSpan.Zero })!, "zero duration is unusable");
 
         return Task.CompletedTask;
     }

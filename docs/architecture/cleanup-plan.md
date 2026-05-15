@@ -1313,8 +1313,10 @@ commands remain in `MainWindow.Flashback.cs`.
 
 Active Flashback pointer-scrub state now lives in
 `Sussudio/MainWindow.FlashbackScrub.cs`. It owns scrub throttling,
-release/cancel/capture-lost cleanup, and the timeline fraction/duration
-geometry helpers used by scrub and playhead presentation.
+release/cancel/capture-lost cleanup, and pointer lifecycle around scrub
+commands. Timeline fraction/duration math used by scrub and playhead
+presentation now lives in
+`Sussudio/Controllers/FlashbackTimelineGeometry.cs`.
 
 Flashback CTI/playhead compositor state now lives in
 `Sussudio/MainWindow.FlashbackPlayhead.cs`. It owns magnetic scrub movement,

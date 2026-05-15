@@ -5,6 +5,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Sussudio.Models;
+using Sussudio.Controllers;
 
 namespace Sussudio;
 
@@ -153,7 +154,7 @@ public sealed partial class MainWindow
         EnsureFlashbackPlayheadVisuals();
 
         var trackW = FlashbackScrubArea.ActualWidth;
-        if (!IsUsableFlashbackTrackDimension(trackW)) return;
+        if (!FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)) return;
 
         var state = ViewModel.FlashbackState;
 

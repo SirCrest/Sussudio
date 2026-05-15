@@ -1,11 +1,12 @@
 using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
+using Sussudio.Controllers;
 
 namespace Sussudio;
 
 // Flashback pointer scrub interaction. This partial owns active scrub state,
-// scrub throttling, and track-position geometry helpers.
+// scrub throttling, and pointer lifecycle around scrub commands.
 public sealed partial class MainWindow
 {
     private bool _isFlashbackScrubbing;
@@ -114,7 +115,7 @@ public sealed partial class MainWindow
     {
         var pos = e.GetCurrentPoint(FlashbackScrubArea).Position;
         var width = FlashbackScrubArea.ActualWidth;
-        if (!TryComputeFlashbackTimelineFraction(pos.X, width, out var fraction)) return;
+        if (!FlashbackTimelineGeometry.TryComputeFraction(pos.X, width, out var fraction)) return;
 
         var x = Math.Clamp(fraction * width, 0, width);
         // Magnetic = ease-out toward the pointer; longer than the 16ms pointer
@@ -123,9 +124,9 @@ public sealed partial class MainWindow
         PositionFlashbackPlayhead(x, width, FlashbackPlayheadMotion.Magnetic);
 
         var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
-        if (IsUsableFlashbackDuration(bufferDuration))
+        if (FlashbackTimelineGeometry.IsUsableDuration(bufferDuration))
         {
-            ViewModel.FlashbackPlaybackPosition = TimeSpan.FromSeconds(fraction * bufferDuration.TotalSeconds);
+            ViewModel.FlashbackPlaybackPosition = FlashbackTimelineGeometry.ComputePosition(fraction, bufferDuration);
         }
     }
 
@@ -133,29 +134,12 @@ public sealed partial class MainWindow
     {
         var pos = e.GetCurrentPoint(FlashbackScrubArea).Position;
         var width = FlashbackScrubArea.ActualWidth;
-        if (!TryComputeFlashbackTimelineFraction(pos.X, width, out var fraction)) return TimeSpan.Zero;
-
-        var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
-        if (!IsUsableFlashbackDuration(bufferDuration)) return TimeSpan.Zero;
-
-        return TimeSpan.FromSeconds(fraction * bufferDuration.TotalSeconds);
+        return FlashbackTimelineGeometry.TryComputePosition(
+            pos.X,
+            width,
+            ViewModel.FlashbackBufferFilledDuration,
+            out var position)
+            ? position
+            : TimeSpan.Zero;
     }
-
-    private static bool TryComputeFlashbackTimelineFraction(double x, double width, out double fraction)
-    {
-        fraction = 0;
-        if (!IsUsableFlashbackTrackDimension(width) || !double.IsFinite(x))
-        {
-            return false;
-        }
-
-        fraction = Math.Clamp(x / width, 0, 1);
-        return true;
-    }
-
-    private static bool IsUsableFlashbackTrackDimension(double value)
-        => double.IsFinite(value) && value > 0;
-
-    private static bool IsUsableFlashbackDuration(TimeSpan value)
-        => double.IsFinite(value.TotalSeconds) && value > TimeSpan.Zero;
 }

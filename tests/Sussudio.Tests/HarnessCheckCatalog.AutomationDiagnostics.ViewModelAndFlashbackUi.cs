@@ -27,6 +27,9 @@ static partial class Program
             "Main window flashback scrub ends on release cancel and capture lost",
             MainWindowFlashbackScrub_EndsOnReleaseCancelAndCaptureLost);
         await AddCheckAsync(results,
+            "Flashback timeline geometry preserves scrub math",
+            FlashbackTimelineGeometry_PreservesScrubMath);
+        await AddCheckAsync(results,
             "Main window flashback toggle rolls back UI state on failure",
             MainWindowFlashbackToggle_RollsBackUiStateOnFailure);
         await AddCheckAsync(results,
