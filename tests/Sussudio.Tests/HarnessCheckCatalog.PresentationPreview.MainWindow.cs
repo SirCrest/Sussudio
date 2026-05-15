@@ -34,8 +34,8 @@ static partial class Program
             "MainWindow startup hosting lives in startup partial",
             MainWindowStartupHosting_LivesInStartupPartial);
         await AddCheckAsync(results,
-            "MainWindow shell resize telemetry lives in sizing partial",
-            MainWindowShellResizeTelemetry_LivesInSizingPartial);
+            "Preview resize telemetry lives in controller",
+            PreviewResizeTelemetry_LivesInController);
         await AddCheckAsync(results,
             "Preview renderer runtime state lives in renderer partial",
             PreviewRendererRuntimeState_LivesInRendererPartial);

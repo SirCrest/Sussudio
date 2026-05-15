@@ -424,12 +424,13 @@ automation pipe hosting, and the launch entrance trigger now live in
 `Sussudio/MainWindow.Startup.cs`. Window close completion and recording-aware
 close handling remain in `MainWindow.CloseLifecycle.cs`.
 
-Top-level shell resize telemetry for preview compositor transforms now lives in
-`Sussudio/MainWindow.WindowSizing.cs`. Preview surface sizing, GPU panel
-visibility, and video/control-bar composition shadows now live in
-`Sussudio/MainWindow.PreviewSurface.cs`. `MainWindow.PreviewRenderer.cs` keeps
-preview renderer instances, frame counters, expected-present interval, and
-renderer cadence state.
+Top-level shell resize telemetry throttling for preview compositor transforms
+now lives in `Sussudio/Controllers/PreviewResizeTelemetryController.cs`.
+`Sussudio/MainWindow.WindowSizing.cs` is the `SizeChanged` adapter. Preview
+surface sizing, GPU panel visibility, and video/control-bar composition shadows
+now live in `Sussudio/MainWindow.PreviewSurface.cs`.
+`MainWindow.PreviewRenderer.cs` keeps preview renderer instances, frame
+counters, expected-present interval, and renderer cadence state.
 `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
 preview snapshot provider and gathers UI-thread-only state. Read-only preview
 runtime snapshot construction now lives in
@@ -1521,6 +1522,10 @@ Preview startup loading overlay presentation now lives in
 `Sussudio/Controllers/PreviewStartupOverlayController.cs`.
 `MainWindow.PreviewStartupOverlay.cs` is the XAML-facing adapter; watchdog and
 timeout recovery stay in `MainWindow.PreviewStartup.cs`.
+Top-level preview resize telemetry throttling now lives in
+`Sussudio/Controllers/PreviewResizeTelemetryController.cs`.
+`MainWindow.WindowSizing.cs` remains the `SizeChanged` adapter; preview surface
+sizing still lives with `MainWindow.PreviewSurface.cs`.
 
 Preview-specific ViewModel events and property-change projections now live in
 `Sussudio/MainWindow.PropertyChangedPreview.cs`. The broad

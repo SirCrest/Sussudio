@@ -668,11 +668,13 @@ Primary current owners:
   uncloaking, initial ViewModel/device refresh, automation pipe hosting, and
   the launch entrance trigger. Close/finalize behavior stays in
   `MainWindow.CloseLifecycle.cs`.
-- `Sussudio/MainWindow.WindowSizing.cs` owns top-level shell resize telemetry
-  for preview compositor transforms. `MainWindow.PreviewRenderer.cs` owns
-  preview renderer instances, frame counters, expected-present interval, and
-  renderer cadence state. `MainWindow.PreviewSurface.cs` owns preview surface
-  sizing, GPU panel visibility, and video/control-bar composition shadows.
+- `Sussudio/Controllers/PreviewResizeTelemetryController.cs` owns top-level
+  preview resize telemetry throttling and reset state for preview compositor
+  transforms. `MainWindow.WindowSizing.cs` is the `SizeChanged` adapter.
+  `MainWindow.PreviewRenderer.cs` owns preview renderer instances, frame
+  counters, expected-present interval, and renderer cadence state.
+  `MainWindow.PreviewSurface.cs` owns preview surface sizing, GPU panel
+  visibility, and video/control-bar composition shadows.
 - `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
   preview snapshot provider that dispatches to the renderer/startup snapshot
   adapter and gathers UI-thread-only state. `Sussudio/Controllers/PreviewRuntimeSnapshotController.cs`
@@ -1477,6 +1479,10 @@ Primary current owners:
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
   reinit-collapse opacity reset. `MainWindow.PreviewStartupOverlay.cs` is the
   XAML-facing adapter.
+- `Sussudio/Controllers/PreviewResizeTelemetryController.cs` owns top-level
+  preview resize log throttling and reset state. `MainWindow.WindowSizing.cs`
+  is the XAML-facing adapter for `SizeChanged`; preview surface sizing remains
+  with `MainWindow.PreviewSurface.cs`.
 - `Sussudio/MainWindow.PropertyChangedRecording.cs` owns only the
   recording-specific property-change adapter surface and delegates record-button,
   glow, pulse, and recording-time lockout projection to

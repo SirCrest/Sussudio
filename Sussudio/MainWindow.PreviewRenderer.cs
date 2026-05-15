@@ -184,7 +184,7 @@ public sealed partial class MainWindow
         _previewFramesArrived = 0;
         _previewFramesDisplayed = 0;
         _previewFramesDropped = 0;
-        _previewLastResizeLogTick = 0;
+        ResetPreviewResizeTelemetry();
         _previewLastPresentedTick = 0;
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
 
