@@ -251,7 +251,8 @@ handles wait polling and snapshot predicates; and
 `AutomationCommandDispatcher.Assertions.cs` handles AssertSnapshot parsing and
 comparison helpers. `AutomationCommandDispatcher.Payload.cs` owns JSON payload
 extraction helpers, and `AutomationCommandHandler.cs` owns the reusable
-trivial-handler wrapper.
+trivial-handler wrapper plus the payload field name/type metadata checked
+against the shared automation command catalog.
 
 Automation pipe hosting is split across `NamedPipeAutomationServer.*.cs`.
 Keep constructor/configuration state in the root file, server start/stop and

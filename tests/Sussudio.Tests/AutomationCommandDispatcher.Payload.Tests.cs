@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -116,5 +117,50 @@ static partial class Program
         AssertEqual(true, threw, "RequireString throws on missing property");
 
         return Task.CompletedTask;
+    }
+
+    private static Task AutomationCommandDispatcher_TrivialHandlers_MatchCatalogPayloadFields()
+    {
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
+        var handlersField = dispatcherType.GetField(
+            "TrivialHandlers",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("TrivialHandlers not found.");
+        var handlers = ((IEnumerable)handlersField.GetValue(null)!)
+            .Cast<object>()
+            .ToArray();
+
+        AssertEqual(true, handlers.Length > 0, "dispatcher trivial handler table is not empty");
+
+        foreach (var entry in handlers)
+        {
+            var kind = GetPublicProperty(entry, "Key")
+                       ?? throw new InvalidOperationException("Trivial handler entry key was null.");
+            var commandName = kind.ToString()!;
+            var handler = GetPublicProperty(entry, "Value")
+                          ?? throw new InvalidOperationException($"Trivial handler for {commandName} was null.");
+            var handlerPayloadFieldName = (string)GetPublicProperty(handler, "PayloadFieldName")!;
+            var handlerPayloadFieldType = GetPublicProperty(handler, "PayloadFieldType")!.ToString();
+            var catalogMetadata = GetAutomationCommandCatalogMetadata(kind);
+            var catalogPayloadFields = GetMetadataCollection(catalogMetadata, "PayloadFields");
+
+            AssertEqual(1, catalogPayloadFields.Length, $"{commandName} trivial catalog payload field count");
+            var catalogPayloadField = catalogPayloadFields[0];
+            AssertEqual(handlerPayloadFieldName, (string)GetMetadataProperty(catalogPayloadField, "Name")!, $"{commandName} trivial payload field name");
+            AssertEqual(handlerPayloadFieldType, GetMetadataProperty(catalogPayloadField, "Type")!.ToString(), $"{commandName} trivial payload field type");
+            AssertEqual(true, (bool)GetMetadataProperty(catalogPayloadField, "Required")!, $"{commandName} trivial payload field required");
+        }
+
+        return Task.CompletedTask;
+
+        static object GetAutomationCommandCatalogMetadata(object kind)
+        {
+            var catalogType = kind.GetType().Assembly.GetType("Sussudio.Tools.AutomationCommandCatalog")
+                              ?? throw new InvalidOperationException("AutomationCommandCatalog not found.");
+            var getMethod = catalogType.GetMethod("Get", BindingFlags.Static | BindingFlags.Public)
+                            ?? throw new InvalidOperationException("AutomationCommandCatalog.Get not found.");
+            return getMethod.Invoke(null, new[] { kind })
+                   ?? throw new InvalidOperationException($"AutomationCommandCatalog.Get({kind}) returned null.");
+        }
     }
 }

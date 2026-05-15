@@ -103,7 +103,9 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs` owns
   JSON payload extraction helpers for dispatcher command bodies.
 - `Sussudio/Services/Automation/AutomationCommandHandler.cs` owns the shared
-  trivial-handler wrapper used by simple one-property automation commands.
+  trivial-handler wrapper used by simple one-property automation commands,
+  including the payload field name/type metadata checked against the shared
+  automation command catalog.
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.cs` owns automation
   pipe constructor/configuration state.
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.Lifecycle.cs` owns
@@ -1213,7 +1215,8 @@ Primary current owners:
   Flashback failure response, Flashback command placement, verification command
   placement, command-kind handling, and helper coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Tests.cs` owns
-  dispatcher JSON payload extraction helper coverage.
+  dispatcher JSON payload extraction helper coverage and the trivial-handler
+  payload-field parity check against `AutomationCommandCatalog`.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Readiness.Tests.cs` owns
   dispatcher readiness gating, window close, preview health, and UI automation
   readiness-independent coverage.

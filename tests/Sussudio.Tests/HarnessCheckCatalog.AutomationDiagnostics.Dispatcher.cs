@@ -24,6 +24,9 @@ static partial class Program
             "Automation dispatcher requires missing string fields",
             AutomationCommandDispatcher_RequireString_ThrowsOnMissing);
         await AddCheckAsync(results,
+            "Automation dispatcher trivial handler payload fields match catalog",
+            AutomationCommandDispatcher_TrivialHandlers_MatchCatalogPayloadFields);
+        await AddCheckAsync(results,
             "Automation dispatcher ready-device gate classifies commands",
             AutomationCommandDispatcher_RequiresReadyDevices_ClassifiesCommands);
         await AddCheckAsync(results,

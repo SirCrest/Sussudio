@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Tools;
 
 namespace Sussudio.Services.Automation;
 
@@ -14,7 +15,9 @@ namespace Sussudio.Services.Automation;
 // formatted per-command strings from the old case bodies.
 internal sealed record AutomationCommandHandler(
     Func<IAutomationViewModel, JsonElement, CancellationToken, Task> Invoke,
-    Func<AutomationCommandKind, JsonElement, string> AcknowledgeMessage)
+    Func<AutomationCommandKind, JsonElement, string> AcknowledgeMessage,
+    string PayloadFieldName,
+    AutomationPayloadFieldType PayloadFieldType)
 {
     public Task InvokeAsync(IAutomationViewModel viewModel, JsonElement payload, CancellationToken cancellationToken)
         => Invoke(viewModel, payload, cancellationToken);
@@ -28,7 +31,9 @@ internal sealed record AutomationCommandHandler(
                 var value = GetBoolRequired(payload, propertyName);
                 return action(vm, value, ct);
             },
-            (command, _) => $"{command} acknowledged.");
+            (command, _) => $"{command} acknowledged.",
+            propertyName,
+            AutomationPayloadFieldType.Boolean);
 
     public static AutomationCommandHandler String(
         Func<IAutomationViewModel, string, CancellationToken, Task> action,
@@ -39,7 +44,9 @@ internal sealed record AutomationCommandHandler(
                 var value = GetStringRequired(payload, propertyName);
                 return action(vm, value, ct);
             },
-            (command, _) => $"{command} acknowledged.");
+            (command, _) => $"{command} acknowledged.",
+            propertyName,
+            AutomationPayloadFieldType.String);
 
     public static AutomationCommandHandler Double(
         Func<IAutomationViewModel, double, CancellationToken, Task> action,
@@ -50,7 +57,9 @@ internal sealed record AutomationCommandHandler(
                 var value = GetDoubleRequired(payload, propertyName);
                 return action(vm, value, ct);
             },
-            (command, _) => $"{command} acknowledged.");
+            (command, _) => $"{command} acknowledged.",
+            propertyName,
+            AutomationPayloadFieldType.Number);
 
     private static bool GetBoolRequired(JsonElement payload, string propertyName)
     {
