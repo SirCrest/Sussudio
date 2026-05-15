@@ -3,7 +3,7 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // XAML-facing adapter for preview startup loading overlay presentation.
-// Timeout and watchdog behavior stays in MainWindow.PreviewStartup.cs.
+// Timeout and watchdog behavior stays in MainWindow.PreviewStartupWatchdog.cs.
 public sealed partial class MainWindow
 {
     private PreviewStartupOverlayController _previewStartupOverlayController = null!;

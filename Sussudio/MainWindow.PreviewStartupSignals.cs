@@ -5,9 +5,9 @@ using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// Preview startup readiness-signal tracking. The watchdog and fade-in timers
-// stay in MainWindow.PreviewStartup.cs; this partial owns signal collection
-// and playback-progress diagnostics.
+// Preview startup readiness-signal tracking. Watchdog recovery and fade-in
+// timers live in their own partials; this partial owns signal collection and
+// playback-progress diagnostics.
 public sealed partial class MainWindow
 {
     private static readonly TimeSpan PreviewStartupPlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);

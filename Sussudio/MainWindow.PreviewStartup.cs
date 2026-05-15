@@ -1,42 +1,14 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
-using Sussudio.Controllers;
 using Sussudio.Models;
-using Sussudio.ViewModels;
-using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Media.Imaging;
-using Microsoft.UI.Composition;
-using Microsoft.UI.Xaml.Hosting;
-using System.Numerics;
-using WinRT.Interop;
-using Sussudio.Services.Audio;
-using Sussudio.Services.Automation;
-using Sussudio.Services.Capture;
-using Sussudio.Services.Flashback;
-using Sussudio.Services.Gpu;
-using Sussudio.Services.Preview;
-using Sussudio.Services.Recording;
-using Sussudio.Services.Runtime;
-using Sussudio.Services.Telemetry;
 
 namespace Sussudio;
 
 // Preview startup visual state machine. It delays the "preview is visible"
 // transition until meaningful media/render signals arrive, avoiding black-frame
 // flashes during source-reader and renderer warm-up. Signal collection lives in
-// MainWindow.PreviewStartupSignals.cs.
+// MainWindow.PreviewStartupSignals.cs; watchdog recovery lives in
+// MainWindow.PreviewStartupWatchdog.cs.
 public sealed partial class MainWindow
 {
     private enum PreviewStartupState
@@ -49,22 +21,6 @@ public sealed partial class MainWindow
         Failed
     }
 
-    private const int PreviewStartupDefaultVisualTimeoutMs = 10000;
-    private const int PreviewStartupMinVisualTimeoutMs = 1000;
-    private const int PreviewStartupMaxVisualTimeoutMs = 15000;
-    // Lazy<int> instead of static readonly so per-test env overrides work:
-    // tests that flip SUSSUDIO_PREVIEW_START_TIMEOUT_MS before constructing
-    // MainWindow get the override on the first read instead of a value
-    // baked in at type-init time.
-    private readonly Lazy<int> _previewStartupVisualTimeoutMs = new(static () =>
-        EnvironmentHelpers.GetIntFromEnv(
-            "SUSSUDIO_PREVIEW_START_TIMEOUT_MS",
-            PreviewStartupDefaultVisualTimeoutMs,
-            PreviewStartupMinVisualTimeoutMs,
-            PreviewStartupMaxVisualTimeoutMs));
-
-    private DispatcherQueueTimer? _previewStartupWatchdogTimer;
-    private DispatcherQueueTimer? _previewStartupTelemetryTimer;
     private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;
     private string? _previewStartupAttemptId;
     private DateTimeOffset? _previewStartupRequestedUtc;
@@ -74,11 +30,8 @@ public sealed partial class MainWindow
     private string? _previewStartupMissingSignals;
     private int _previewRecoveryAttemptCount;
     private bool _previewFirstVisualConfirmed;
-    private int _previewStartupFailureStopScheduled;
     private bool _previewStopRequestedByUser;
     private bool _isPreviewReinitAnimating;
-
-    private int PreviewStartupVisualTimeoutMs => _previewStartupVisualTimeoutMs.Value;
 
     private static bool IsPreviewStartupFailedState(PreviewStartupState state)
         => state == PreviewStartupState.Failed;
@@ -120,125 +73,6 @@ public sealed partial class MainWindow
         Logger.Log(
             $"PREVIEW_START_REQUESTED attempt={_previewStartupAttemptId} " +
             $"device={ViewModel.SelectedDevice?.Name ?? "none"}");
-    }
-    private void StartPreviewStartupWatchdog()
-    {
-        StopPreviewStartupWatchdog();
-        if (_previewStartupState != PreviewStartupState.WaitingForFirstVisual)
-        {
-            return;
-        }
-
-        _previewStartupWatchdogTimer ??= _dispatcherQueue.CreateTimer();
-        _previewStartupWatchdogTimer.Interval = TimeSpan.FromMilliseconds(PreviewStartupVisualTimeoutMs);
-        _previewStartupWatchdogTimer.IsRepeating = false;
-        _previewStartupWatchdogTimer.Tick -= PreviewStartupWatchdogTimer_Tick;
-        _previewStartupWatchdogTimer.Tick += PreviewStartupWatchdogTimer_Tick;
-        _previewStartupWatchdogTimer.Start();
-        StartPreviewStartupTelemetry();
-        Logger.Log(
-            $"PREVIEW_START_WATCHDOG_STARTED attempt={_previewStartupAttemptId ?? "none"} " +
-            $"timeoutMs={PreviewStartupVisualTimeoutMs}");
-    }
-    private void StopPreviewStartupWatchdog()
-    {
-        _previewStartupWatchdogTimer?.Stop();
-        StopPreviewStartupTelemetry();
-    }
-    private void StartPreviewStartupTelemetry()
-    {
-        _previewStartupTelemetryTimer ??= _dispatcherQueue.CreateTimer();
-        _previewStartupTelemetryTimer.Interval = TimeSpan.FromSeconds(1);
-        _previewStartupTelemetryTimer.IsRepeating = true;
-        _previewStartupTelemetryTimer.Tick -= PreviewStartupTelemetryTimer_Tick;
-        _previewStartupTelemetryTimer.Tick += PreviewStartupTelemetryTimer_Tick;
-        _previewStartupTelemetryTimer.Start();
-    }
-    private void StopPreviewStartupTelemetry()
-    {
-        _previewStartupTelemetryTimer?.Stop();
-    }
-    private void PreviewStartupTelemetryTimer_Tick(object? sender, object e)
-    {
-        if (!IsPreviewStartupSignalWindowActive())
-        {
-            return;
-        }
-
-        LogPreviewStartupPlaybackSnapshot("watchdog-tick");
-    }
-    private void SchedulePreviewStartupFailureStop(string reason)
-    {
-        if (_isWindowClosing)
-        {
-            return;
-        }
-
-        if (Interlocked.CompareExchange(ref _previewStartupFailureStopScheduled, 1, 0) != 0)
-        {
-            return;
-        }
-
-        _ = RunUiEventHandlerAsync(async () =>
-        {
-            try
-            {
-                if (!ViewModel.IsPreviewing)
-                {
-                    return;
-                }
-
-                Logger.Log($"PREVIEW_START_FAILURE_STOP begin reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
-                // Preview startup failed — pipeline state is unclean; force full teardown.
-                await ViewModel.StopPreviewAsync(userInitiated: true, teardownPipeline: true);
-                ViewModel.StatusText = PreviewStartupFailureTextFormatter.FormatFailureStopStatusText(reason);
-                Logger.Log($"PREVIEW_START_FAILURE_STOP completed reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
-            }
-        }, "PreviewStartupFailureStop");
-    }
-    private async void PreviewStartupWatchdogTimer_Tick(object? sender, object e)
-    {
-        StopPreviewStartupWatchdog();
-        await HandlePreviewStartupTimeoutAsync();
-    }
-    private Task HandlePreviewStartupTimeoutAsync()
-    {
-        if (_isWindowClosing || _previewStopRequestedByUser)
-        {
-            Logger.Log("PREVIEW_START_TIMEOUT_IGNORED reason=user-or-shutdown-stop-requested");
-            return Task.CompletedTask;
-        }
-
-        if (!ViewModel.IsPreviewing || _previewStartupState != PreviewStartupState.WaitingForFirstVisual)
-        {
-            return Task.CompletedTask;
-        }
-
-        var elapsedMs = _previewStartupRequestedUtc.HasValue
-            ? (DateTimeOffset.UtcNow - _previewStartupRequestedUtc.Value).TotalMilliseconds
-            : 0;
-        _previewStartupMissingSignals = BuildPreviewStartupMissingSignals();
-        var timeoutReason = PreviewStartupFailureTextFormatter.FormatTimeoutReason(
-            PreviewStartupVisualTimeoutMs,
-            _previewStartupMissingSignals);
-        SetPreviewStartupState(PreviewStartupState.Failed, timeoutReason);
-        Logger.Log(
-            $"PREVIEW_START_TIMEOUT attempt={_previewStartupAttemptId ?? "none"} " +
-            $"elapsedMs={elapsedMs:0} placeholder={NoDevicePlaceholder.Visibility} " +
-            $"gpuVisible={PreviewSwapChainPanel.Visibility} cpuVisible={PreviewImage.Visibility} " +
-            $"strategy={_previewStartupStrategy} required={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)} " +
-            $"received={PreviewStartupSignalFormatter.FormatSignalList(_previewStartupReceivedSignals)} " +
-            $"missing={_previewStartupMissingSignals ?? "-"}");
-        LogPreviewStartupPlaybackSnapshot("timeout");
-
-        StopPreviewStartupOverlay();
-        ViewModel.StatusText = PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(_previewStartupMissingSignals);
-        SchedulePreviewStartupFailureStop(timeoutReason);
-        return Task.CompletedTask;
     }
     private void ConfirmPreviewFirstVisual(string source)
     {

@@ -63,6 +63,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
             .Replace("\r\n", "\n");
+        var previewStartupWatchdogText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupWatchdog.cs")
+            .Replace("\r\n", "\n");
         var previewFadeInText = ReadRepoFile("Sussudio/MainWindow.PreviewFadeIn.cs")
             .Replace("\r\n", "\n");
         var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/PreviewFadeInController.cs")
@@ -81,10 +83,14 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(previewStartupText, "private enum PreviewStartupState");
-        AssertContains(previewStartupText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");
-        AssertContains(previewStartupText, "private readonly Lazy<int> _previewStartupVisualTimeoutMs = new(static () =>");
-        AssertContains(previewStartupText, "private DispatcherQueueTimer? _previewStartupWatchdogTimer;");
         AssertContains(previewStartupText, "private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;");
+        AssertContains(previewStartupWatchdogText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");
+        AssertContains(previewStartupWatchdogText, "private readonly Lazy<int> _previewStartupVisualTimeoutMs = new(static () =>");
+        AssertContains(previewStartupWatchdogText, "private DispatcherQueueTimer? _previewStartupWatchdogTimer;");
+        AssertContains(previewStartupWatchdogText, "private DispatcherQueueTimer? _previewStartupTelemetryTimer;");
+        AssertContains(previewStartupWatchdogText, "private int _previewStartupFailureStopScheduled;");
+        AssertContains(previewStartupWatchdogText, "private void StartPreviewStartupWatchdog()");
+        AssertContains(previewStartupWatchdogText, "private Task HandlePreviewStartupTimeoutAsync()");
         AssertContains(previewFadeInText, "private PreviewFadeInController _previewFadeInController = null!;");
         AssertContains(previewFadeInText, "private void InitializePreviewFadeInController()");
         AssertContains(previewFadeInText, "private void SchedulePreviewFadeIn()");
@@ -105,9 +111,9 @@ static partial class Program
         AssertContains(previewStartupFailureText, "public static string FormatTimeoutReason(int timeoutMs, string? missingSignals)");
         AssertContains(previewStartupFailureText, "public static string FormatTimeoutStatusText(string? missingSignals)");
         AssertContains(previewStartupFailureText, "public static string FormatFailureStopStatusText(string reason)");
-        AssertContains(previewStartupText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
-        AssertContains(previewStartupText, "PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(");
-        AssertContains(previewStartupText, "PreviewStartupFailureTextFormatter.FormatFailureStopStatusText(reason)");
+        AssertContains(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
+        AssertContains(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(");
+        AssertContains(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatFailureStopStatusText(reason)");
         AssertContains(previewRuntimeSnapshotText, "_previewStartupState.ToString()");
         AssertDoesNotContain(previewRendererText, "_previewStartupState.ToString()");
         AssertContains(propertyChangedText, "await HandlePreviewingChangedAsync();");
@@ -117,6 +123,10 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private enum PreviewStartupState");
         AssertDoesNotContain(mainWindowText, "_previewStartupVisualTimeoutMs");
         AssertDoesNotContain(mainWindowText, "_previewStartupWatchdogTimer");
+        AssertDoesNotContain(previewStartupText, "private void StartPreviewStartupWatchdog()");
+        AssertDoesNotContain(previewStartupText, "private Task HandlePreviewStartupTimeoutAsync()");
+        AssertDoesNotContain(previewStartupText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
+        AssertDoesNotContain(previewStartupText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");
         AssertDoesNotContain(mainWindowText, "ResetPreviewSignalState()");
         AssertDoesNotContain(previewStartupText, "private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
         AssertDoesNotContain(previewStartupText, "private void SchedulePreviewFadeIn()");

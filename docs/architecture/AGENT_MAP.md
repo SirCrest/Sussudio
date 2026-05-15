@@ -1493,8 +1493,10 @@ Primary current owners:
 - `Sussudio/Controllers/PreviewAudioFadeController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
   save suppression. `MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
-- `Sussudio/MainWindow.PreviewStartup.cs` owns preview startup state,
-  watchdog/telemetry timers, first-visual confirmation, and timeout recovery.
+- `Sussudio/MainWindow.PreviewStartup.cs` owns preview startup state and
+  first-visual confirmation. `Sussudio/MainWindow.PreviewStartupWatchdog.cs`
+  owns watchdog/telemetry timers, timeout configuration, timeout recovery, and
+  failure-stop scheduling.
   `MainWindow.PreviewStartupSignals.cs` owns readiness-signal
   collection and playback-progress diagnostics.
   `Sussudio/Controllers/PreviewStartupSignalFormatter.cs` owns missing-signal
@@ -1508,7 +1510,7 @@ Primary current owners:
   reveal after first visual: rendered-frame threshold, fade-in timer, renderer
   replacement fallback, and preview-audio fade start ordering.
   `MainWindow.PreviewFadeIn.cs` is the XAML-facing adapter. Keep
-  timeout/watchdog recovery in `MainWindow.PreviewStartup.cs`.
+  timeout/watchdog recovery in `MainWindow.PreviewStartupWatchdog.cs`.
 - `Sussudio/Controllers/PreviewStartupOverlayController.cs` owns preview-
   startup loading overlay presentation while the app waits for visual
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
