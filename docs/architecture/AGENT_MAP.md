@@ -996,9 +996,12 @@ Primary current owners:
   reliability-gates script contract test.
 - `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` owns AGENT_MAP file/folder
   reference drift checks.
-- `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Tests.cs`
-  owns shared/ssctl snapshot formatter text, MJPEG timing rendering, parity,
-  and typed-accessor contract tests.
+- `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter*.Tests.cs`
+  owns the shared/ssctl snapshot formatter contract family: the core section
+  formatting smoke test stays in `.Tests.cs`, response accessor checks live in
+  `.ResponseAccessors.Tests.cs`, shared-vs-ssctl field parity lives in
+  `.Parity.Tests.cs`, and MJPEG timing rendering lives in
+  `.MjpegTiming.Tests.cs`.
 - `tests/Sussudio.Tests/PresentMonProbe.Tests.cs` owns PresentMon parser
   behavior contracts for swap-chain selection, artifact filtering, CSV field
   versions, and app-present correlation.
