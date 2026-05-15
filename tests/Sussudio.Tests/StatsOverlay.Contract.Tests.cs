@@ -41,13 +41,15 @@ static partial class Program
         var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsOverlayText, "private StatsOverlayController _statsOverlayController = null!;");
-        AssertContains(statsOverlayText, "private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;");
         AssertContains(statsOverlayText, "private void InitializeStatsOverlayController()");
-        AssertContains(statsOverlayText, "_frameTimeOverlayPresentationController = new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext");
-        AssertContains(statsOverlayText, "ExpectedLine = FrameTime_ExpectedLine");
+        AssertContains(statsOverlayText, "InitializeFrameTimeOverlayPresentationController();");
         AssertContains(statsOverlayText, "UpdateStatsDock = _statsDockRefreshController.RefreshDock,");
         AssertContains(statsOverlayText, "=> _statsOverlayController.ApplyStatsVisibility(visible, immediate);");
         AssertContains(statsOverlayText, "=> _statsOverlayController.SetFrameTimeOverlayVisible(visible);");
+        AssertContains(frameTimeOverlayText, "private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;");
+        AssertContains(frameTimeOverlayText, "private void InitializeFrameTimeOverlayPresentationController()");
+        AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController = new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext");
+        AssertContains(frameTimeOverlayText, "ExpectedLine = FrameTime_ExpectedLine");
         AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
         AssertContains(mainWindowText, "InitializeStatsOverlayController();");
         AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _statsPollTimer;");
@@ -61,6 +63,8 @@ static partial class Program
         AssertContains(controllerText, "STATS_POLL_TIMER_FAIL");
         AssertContains(frameTimeControllerText, "internal sealed class FrameTimeOverlayPresentationController");
         AssertContains(frameTimeControllerText, "public void Apply(StatsSnapshot snapshot)");
+        AssertDoesNotContain(statsOverlayText, "private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController");
+        AssertDoesNotContain(statsOverlayText, "new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext");
         AssertDoesNotContain(statsOverlayText, "private void StatsPollTimer_Tick(");
         AssertDoesNotContain(statsOverlayText, "private Storyboard CreateStatsDockStoryboard(");
         AssertDoesNotContain(statsOverlayText, "line.Points.Clear();");

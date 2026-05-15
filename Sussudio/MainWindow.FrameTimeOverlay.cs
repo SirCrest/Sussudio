@@ -1,9 +1,29 @@
+using Sussudio.Controllers;
+
 namespace Sussudio;
 
-// XAML-facing adapter for the compact frame-time overlay. Text and graph
-// projection live in FrameTimeOverlayPresentationController.
+// XAML-facing adapter for the compact frame-time overlay. The presentation
+// controller owns text projection and canvas math.
 public sealed partial class MainWindow
 {
+    private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;
+
+    private void InitializeFrameTimeOverlayPresentationController()
+    {
+        _frameTimeOverlayPresentationController = new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext
+        {
+            SourceValue = FrameTime_SourceValue,
+            VisualValue = FrameTime_VisualValue,
+            PreviewValue = FrameTime_PreviewValue,
+            LatencyValue = FrameTime_LatencyValue,
+            StatusValue = FrameTime_StatusValue,
+            Canvas = FrameTime_Canvas,
+            VisualLine = FrameTime_VisualLine,
+            PreviewLine = FrameTime_PreviewLine,
+            ExpectedLine = FrameTime_ExpectedLine
+        });
+    }
+
     private bool IsFrameTimeOverlayVisible()
         => _statsOverlayController.IsFrameTimeOverlayVisible;
 

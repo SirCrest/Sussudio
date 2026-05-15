@@ -1337,9 +1337,10 @@ source/audio drift calculations and encoder drift/correction projection there.
 
 Stats dock and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/StatsOverlayController.cs`. `MainWindow.StatsOverlay.cs`
-is now the XAML-facing adapter for stats controllers; polling, visibility state,
-dock refresh ordering, dynamic diagnostic row pools, dock metric value/brush
-application, and dock animations are out of the shell fields.
+is now the XAML-facing adapter for stats dock visibility, polling, and refresh
+controllers; polling, visibility state, dock refresh ordering, dynamic
+diagnostic row pools, dock metric value/brush application, and dock animations
+are out of the shell fields.
 Stats dock refresh orchestration now lives in
 `Sussudio/Controllers/StatsDockRefreshController.cs`: snapshot acquisition,
 dock presentation build/apply, diagnostics visibility gating, and decode/GPU
@@ -1358,9 +1359,10 @@ contract checks now live in
 `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs`.
 Frame-time overlay graph drawing and compact text application now live in
 `Sussudio/Controllers/FrameTimeOverlayPresentationController.cs`;
-`Sussudio/MainWindow.FrameTimeOverlay.cs` is the XAML-facing visibility
-adapter, and `Sussudio/Controllers/StatsDockRefreshController.cs` keeps the
-stats dock projection refresh adapter.
+`Sussudio/MainWindow.FrameTimeOverlay.cs` is the XAML-facing compact overlay
+adapter and owns the presentation-controller composition, while
+`Sussudio/Controllers/StatsDockRefreshController.cs` keeps the stats dock
+projection refresh adapter.
 Decode and GPU hardware stats row refresh/application now lives in
 `Sussudio/Controllers/StatsHardwareRowsController.cs`; pure row text
 projection over presentation inputs lives in

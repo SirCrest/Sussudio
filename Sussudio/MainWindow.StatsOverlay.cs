@@ -4,29 +4,16 @@ using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// Stats dock and frame-time overlay presentation. This partial only projects
-// diagnostics into UI elements; the underlying snapshot data is owned by
-// AutomationDiagnosticsHub and CaptureService.
+// Stats dock presentation and visibility wiring. Compact frame-time overlay
+// composition lives in MainWindow.FrameTimeOverlay.cs.
 public sealed partial class MainWindow
 {
     private StatsOverlayController _statsOverlayController = null!;
     private StatsDockRefreshController _statsDockRefreshController = null!;
-    private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;
 
     private void InitializeStatsOverlayController()
     {
-        _frameTimeOverlayPresentationController = new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext
-        {
-            SourceValue = FrameTime_SourceValue,
-            VisualValue = FrameTime_VisualValue,
-            PreviewValue = FrameTime_PreviewValue,
-            LatencyValue = FrameTime_LatencyValue,
-            StatusValue = FrameTime_StatusValue,
-            Canvas = FrameTime_Canvas,
-            VisualLine = FrameTime_VisualLine,
-            PreviewLine = FrameTime_PreviewLine,
-            ExpectedLine = FrameTime_ExpectedLine
-        });
+        InitializeFrameTimeOverlayPresentationController();
         var statsDockPresentationController = new StatsDockPresentationController(new StatsDockPresentationControllerContext
         {
             SessionStateValue = Stats_SessionStateValue,

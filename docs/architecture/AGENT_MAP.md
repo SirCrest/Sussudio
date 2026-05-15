@@ -764,7 +764,8 @@ Primary current owners:
   `Sussudio/Controllers/StatsSnapshotProvider.RenderMetrics.cs` owns renderer
   cadence/recent-sample acquisition and null fallback policy.
   `Sussudio/MainWindow.StatsSnapshot.cs` is the XAML-facing adapter.
-  `MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats controllers.
+  `MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats dock
+  visibility, polling, and refresh controllers.
 - `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
   contract checks for stats overlay lifecycle wiring, stats section chrome,
   stats dock refresh orchestration, source-telemetry panel projection, and
@@ -775,8 +776,8 @@ Primary current owners:
   delegates diagnostic row presentation to it.
 - `Sussudio/Controllers/FrameTimeOverlayPresentationController.cs` owns compact
   frame-time overlay text projection and graph line drawing. Keep frame-time
-  canvas math there, while `Sussudio/MainWindow.FrameTimeOverlay.cs` remains
-  the XAML-facing visibility adapter and
+  canvas math there, while `Sussudio/MainWindow.FrameTimeOverlay.cs` owns the
+  XAML-facing compact overlay adapter and presentation-controller composition.
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns shared stats
   formatting helpers.
   `Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs` owns stats dock
