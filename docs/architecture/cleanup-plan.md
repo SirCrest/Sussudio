@@ -1618,6 +1618,13 @@ The playback worker loop now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs`; keep
 `PlaybackThreadEntry` command dispatch there and leave
 `FlashbackPlaybackController.Thread.cs` as the shell marker.
+Playback-thread seek/scrub command execution now lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekScrubCommands.cs`.
+Keep coalesced seek/scrub resolution, frozen valid-start sampling, exact resume
+targets, and audio/preview suppression/resume ordering there instead of growing
+the generic playback command partial.
+Playback-thread play/pause/go-live/nudge command execution remains in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
 Playback thread exit cleanup now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs`.
 Keep repeated live-restore cleanup and playback CTS disposal warnings there
