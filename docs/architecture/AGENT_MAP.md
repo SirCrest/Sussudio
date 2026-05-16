@@ -788,10 +788,10 @@ Primary current owners:
   construction, once-only startup, ready/disabled logging, and pipe-before-hub
   shutdown disposal. `Sussudio/MainWindow.AutomationHost.cs` is the shell-facing
   start/dispose adapter.
-- `Sussudio/MainWindow.Startup.cs` owns first-load startup, first-frame
-  uncloak scheduling, initial ViewModel/device refresh, automation startup
-  timing, and the launch entrance trigger. Window close routing/finalization
-  ownership is detailed in the window close section below:
+- `Sussudio/MainWindow.Startup.cs` owns first-load startup, initial
+  ViewModel/device refresh, automation startup timing, and the launch entrance
+  trigger. Window close routing/finalization ownership is detailed in the
+  window close section below:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
   `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`,
   `Sussudio/MainWindow.CloseLifecycle.cs`, and
@@ -860,8 +860,9 @@ Primary current owners:
   NVML disposal, and ViewModel disposal.
 - `Sussudio/Controllers/Window/NativeWindowBootstrapController.cs` owns native window
   bootstrap: `AppWindow` lookup, ViewModel window handle handoff,
-  minimum-size subclassing, DWM cloak/dark-mode setup, initial shell size, icon,
-  and native helpers used by shell startup and automation controllers.
+  minimum-size subclassing, DWM cloak/dark-mode setup, first-composed-frame
+  shell reveal scheduling/cancellation, initial shell size, icon, and native
+  helpers used by shell startup and automation controllers.
   `Sussudio/MainWindow.NativeWindow.cs` is the XAML-facing adapter and keeps
   the `_hwnd` field consumed by screenshot and window automation paths.
 - `Sussudio/Controllers/Window/WindowUiDispatchController.cs` owns MainWindow
@@ -1040,7 +1041,8 @@ Primary current owners:
   owns MainWindow preview resize telemetry and preview runtime/snapshot ownership
   assertions.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`
-  owns MainWindow close lifecycle and native bootstrap ownership assertions.
+  owns MainWindow close lifecycle, native bootstrap, and first-frame native
+  reveal ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs` owns
   MainWindow controller-adapter ownership assertions for control bar, shell
   elevation, preview-transition, preview startup overlay, preview fade-in, and

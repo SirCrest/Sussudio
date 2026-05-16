@@ -1,4 +1,3 @@
-using System;
 using Microsoft.UI.Xaml;
 
 namespace Sussudio;
@@ -11,16 +10,7 @@ public sealed partial class MainWindow
     {
         ((FrameworkElement)this.Content).Loaded -= MainWindow_Loaded;
 
-        // Defer uncloak until the first frame is actually composed. Loaded fires
-        // after layout but before the first paint, so uncloaking here would expose
-        // an unrendered (black) frame before the splash background paints.
-        EventHandler<object>? uncloakOnFirstFrame = null;
-        uncloakOnFirstFrame = (_, _) =>
-        {
-            Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= uncloakOnFirstFrame;
-            UncloakNativeShellWindow();
-        };
-        Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += uncloakOnFirstFrame;
+        ScheduleNativeShellRevealAfterFirstFrame();
 
         // Start device init immediately; it runs behind the splash.
         _ = RunUiEventHandlerAsync(async () =>

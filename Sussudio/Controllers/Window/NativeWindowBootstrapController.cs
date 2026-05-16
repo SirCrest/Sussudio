@@ -17,6 +17,7 @@ internal sealed class NativeWindowBootstrapController
     private const int DWMWA_CLOAK = 13;
 
     private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
+    private EventHandler<object>? _pendingFirstFrameReveal;
 
     public NativeWindowBootstrapResult Initialize(Window window, Action<IntPtr> setWindowHandle)
     {
@@ -60,6 +61,33 @@ internal sealed class NativeWindowBootstrapController
     {
         var value = cloaked ? 1 : 0;
         DwmSetWindowAttribute(hwnd, DWMWA_CLOAK, ref value, sizeof(int));
+    }
+
+    public void ScheduleRevealAfterFirstComposedFrame(IntPtr hwnd)
+    {
+        // Loaded fires after layout but before the first paint; wait for the
+        // first composed frame so the cloaked shell never exposes a black frame.
+        CancelPendingFirstFrameReveal();
+        EventHandler<object>? revealOnFirstFrame = null;
+        revealOnFirstFrame = (_, _) =>
+        {
+            CancelPendingFirstFrameReveal();
+            SetCloaked(hwnd, cloaked: false);
+        };
+        _pendingFirstFrameReveal = revealOnFirstFrame;
+        Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += revealOnFirstFrame;
+    }
+
+    public void CancelPendingFirstFrameReveal()
+    {
+        var pending = _pendingFirstFrameReveal;
+        if (pending == null)
+        {
+            return;
+        }
+
+        Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= pending;
+        _pendingFirstFrameReveal = null;
     }
 
     private static void SetDarkMode(IntPtr hwnd, bool enabled)

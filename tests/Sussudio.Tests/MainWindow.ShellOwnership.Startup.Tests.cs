@@ -216,8 +216,7 @@ static partial class Program
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
 
         AssertContains(startupText, "private void MainWindow_Loaded(object sender, RoutedEventArgs e)");
-        AssertContains(startupText, "Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += uncloakOnFirstFrame;");
-        AssertContains(startupText, "UncloakNativeShellWindow();");
+        AssertContains(startupText, "ScheduleNativeShellRevealAfterFirstFrame();");
         AssertContains(startupText, "await ViewModel.InitializeAsync();");
         AssertContains(startupText, "PrimePreviewAudioFadeIn();");
         AssertContains(startupText, "await ViewModel.RefreshDevicesAsync();");
@@ -233,11 +232,16 @@ static partial class Program
         AssertContains(automationHostControllerText, "Automation control ready on pipe");
         AssertContains(automationHostControllerText, "Automation control disabled on pipe");
         AssertOccursBefore(startupText, "await ViewModel.InitializeAsync();", "StartAutomationServices();");
+        AssertOccursBefore(startupText, "ScheduleNativeShellRevealAfterFirstFrame();", "_ = RunUiEventHandlerAsync(async () =>");
+        AssertOccursBefore(startupText, "ScheduleNativeShellRevealAfterFirstFrame();", "await ViewModel.InitializeAsync();");
+        AssertOccursBefore(startupText, "ScheduleNativeShellRevealAfterFirstFrame();", "PlaySplashAndEntrance();");
         AssertContains(mainWindowText, "mainContent.Loaded += MainWindow_Loaded;");
         AssertDoesNotContain(mainWindowText, "private int _automationServicesStarted;");
         AssertDoesNotContain(startupText, "private int _automationServicesStarted;");
         AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _automationServicesStarted");
         AssertDoesNotContain(startupText, "_automationDiagnosticsHub.Start();");
+        AssertDoesNotContain(startupText, "CompositionTarget.Rendering");
+        AssertDoesNotContain(startupText, "UncloakNativeShellWindow();");
         AssertDoesNotContain(closeLifecycleText, "private void MainWindow_Loaded(");
         AssertDoesNotContain(closeLifecycleText, "private void StartAutomationServices()");
         AssertDoesNotContain(closeLifecycleText, "_automationServicesStarted");

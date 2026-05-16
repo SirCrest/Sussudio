@@ -10,6 +10,8 @@ public sealed partial class MainWindow
 {
     private async void MainWindow_Closed(object sender, WindowEventArgs args)
     {
+        CancelNativeShellRevealAfterFirstFrame();
+
         if (!_windowCloseLifecycleController.TryBeginCleanup())
         {
             return;

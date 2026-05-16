@@ -562,9 +562,9 @@ in `McpToolSurface.Tests.cs` require capture/pipeline-facing MCP call sites to
 use `AutomationCommandKind` enum overloads while preserving existing labels
 and wire IDs.
 
-First-load startup, first-frame uncloak scheduling, initial ViewModel/device
-refresh, automation startup timing, and the launch entrance trigger now live in
-`Sussudio/MainWindow.Startup.cs`. Automation host composition, once-only
+First-load startup, initial ViewModel/device refresh, automation startup timing,
+and the launch entrance trigger now live in `Sussudio/MainWindow.Startup.cs`.
+Automation host composition, once-only
 startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
 in `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs`, with
 `Sussudio/MainWindow.AutomationHost.cs` kept as the shell adapter. Window close
@@ -624,8 +624,9 @@ recording-aware pre-close cancellation/completion choreography, and the stable
 shutdown cleanup: timer stops, event detaches, preview shutdown, automation
 diagnostics disposal, NVML disposal, and ViewModel disposal.
 Native `AppWindow` lookup, ViewModel window handle handoff, minimum-size
-subclassing, DWM cloak/dark-mode setup, initial shell size, icon, and uncloaking
-now live in `Sussudio/Controllers/Window/NativeWindowBootstrapController.cs`.
+subclassing, DWM cloak/dark-mode setup, first-composed-frame shell reveal
+scheduling/cancellation, initial shell size, icon, and uncloaking now live in
+`Sussudio/Controllers/Window/NativeWindowBootstrapController.cs`.
 `Sussudio/MainWindow.NativeWindow.cs` is the XAML-facing adapter and keeps the
 `_hwnd` field consumed by screenshot and window automation paths.
 MainWindow shell ownership tests mirror these runtime owners through focused

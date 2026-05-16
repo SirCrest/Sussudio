@@ -161,6 +161,11 @@ static partial class Program
         AssertContains(shutdownCleanupText, "StopLiveSignalInfoTimers();");
         AssertContains(shutdownCleanupText, "StopMicMeterRowAnimation();");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
+        AssertContains(shutdownCleanupText, "CancelNativeShellRevealAfterFirstFrame();");
+        AssertOccursBefore(
+            shutdownCleanupText,
+            "CancelNativeShellRevealAfterFirstFrame();",
+            "if (!_windowCloseLifecycleController.TryBeginCleanup())");
         AssertContains(nativeWindowText, "private readonly NativeWindowBootstrapController _nativeWindowBootstrapController = new();");
         AssertContains(nativeWindowText, "private IntPtr _hwnd;");
         AssertContains(nativeWindowText, "private AppWindow InitializeNativeShellWindow()");
@@ -169,8 +174,10 @@ static partial class Program
         AssertContains(nativeWindowText, "return result.AppWindow;");
         AssertContains(nativeWindowText, "private AppWindow GetAppWindow()");
         AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.GetAppWindow(this);");
-        AssertContains(nativeWindowText, "private void UncloakNativeShellWindow()");
-        AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.SetCloaked(_hwnd, cloaked: false);");
+        AssertContains(nativeWindowText, "private void ScheduleNativeShellRevealAfterFirstFrame()");
+        AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.ScheduleRevealAfterFirstComposedFrame(_hwnd);");
+        AssertContains(nativeWindowText, "private void CancelNativeShellRevealAfterFirstFrame()");
+        AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.CancelPendingFirstFrameReveal();");
         AssertContains(nativeWindowControllerText, "internal readonly record struct NativeWindowBootstrapResult(IntPtr Hwnd, AppWindow AppWindow);");
         AssertContains(nativeWindowControllerText, "internal sealed class NativeWindowBootstrapController");
         AssertContains(nativeWindowControllerText, "private const int MinWindowWidth = 900;");
@@ -178,6 +185,7 @@ static partial class Program
         AssertContains(nativeWindowControllerText, "private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;");
         AssertContains(nativeWindowControllerText, "private const int DWMWA_CLOAK = 13;");
         AssertContains(nativeWindowControllerText, "private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;");
+        AssertContains(nativeWindowControllerText, "private EventHandler<object>? _pendingFirstFrameReveal;");
         AssertContains(nativeWindowControllerText, "public NativeWindowBootstrapResult Initialize(Window window, Action<IntPtr> setWindowHandle)");
         AssertContains(nativeWindowControllerText, "var hwnd = WindowNative.GetWindowHandle(window);");
         AssertContains(nativeWindowControllerText, "setWindowHandle(hwnd);");
@@ -188,6 +196,24 @@ static partial class Program
         AssertContains(nativeWindowControllerText, "appWindow.SetIcon(\"Assets\\\\AppIcon.ico\");");
         AssertContains(nativeWindowControllerText, "public AppWindow GetAppWindow(Window window)");
         AssertContains(nativeWindowControllerText, "public void SetCloaked(IntPtr hwnd, bool cloaked)");
+        AssertContains(nativeWindowControllerText, "public void ScheduleRevealAfterFirstComposedFrame(IntPtr hwnd)");
+        AssertContains(nativeWindowControllerText, "CancelPendingFirstFrameReveal();");
+        AssertContains(nativeWindowControllerText, "EventHandler<object>? revealOnFirstFrame = null;");
+        AssertContains(nativeWindowControllerText, "_pendingFirstFrameReveal = revealOnFirstFrame;");
+        AssertContains(nativeWindowControllerText, "SetCloaked(hwnd, cloaked: false);");
+        AssertContains(nativeWindowControllerText, "Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += revealOnFirstFrame;");
+        AssertContains(nativeWindowControllerText, "public void CancelPendingFirstFrameReveal()");
+        AssertContains(nativeWindowControllerText, "var pending = _pendingFirstFrameReveal;");
+        AssertContains(nativeWindowControllerText, "Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= pending;");
+        AssertContains(nativeWindowControllerText, "_pendingFirstFrameReveal = null;");
+        AssertOccursBefore(
+            nativeWindowControllerText,
+            "CancelPendingFirstFrameReveal();",
+            "SetCloaked(hwnd, cloaked: false);");
+        AssertOccursBefore(
+            nativeWindowControllerText,
+            "_pendingFirstFrameReveal = revealOnFirstFrame;",
+            "Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += revealOnFirstFrame;");
         AssertContains(nativeWindowControllerText, "private static extern int DwmSetWindowAttribute(");
         AssertContains(mainWindowText, "ViewModel = new MainViewModel();");
         AssertContains(mainWindowText, "InitializeWindowCloseRequestController();");

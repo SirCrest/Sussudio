@@ -21,6 +21,9 @@ public sealed partial class MainWindow
     private AppWindow GetAppWindow()
         => _nativeWindowBootstrapController.GetAppWindow(this);
 
-    private void UncloakNativeShellWindow()
-        => _nativeWindowBootstrapController.SetCloaked(_hwnd, cloaked: false);
+    private void ScheduleNativeShellRevealAfterFirstFrame()
+        => _nativeWindowBootstrapController.ScheduleRevealAfterFirstComposedFrame(_hwnd);
+
+    private void CancelNativeShellRevealAfterFirstFrame()
+        => _nativeWindowBootstrapController.CancelPendingFirstFrameReveal();
 }
