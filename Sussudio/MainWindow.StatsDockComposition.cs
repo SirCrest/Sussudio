@@ -56,12 +56,12 @@ public sealed partial class MainWindow
         });
         var statsDockRowChromeController = new StatsDockRowChromeController(new StatsDockRowChromeControllerContext
         {
-            ResourceOwner = StatsDockPanel,
-            DiagnosticsContent = Diagnostics_Content
+            ResourceOwner = StatsDockPanel
         });
         var statsDiagnosticRowsController = new StatsDiagnosticRowsController(new StatsDiagnosticRowsControllerContext
         {
-            RowChromeController = statsDockRowChromeController
+            ResourceOwner = StatsDockPanel,
+            DiagnosticsContent = Diagnostics_Content
         });
         var statsHardwareRowsController = new StatsHardwareRowsController(new StatsHardwareRowsControllerContext
         {

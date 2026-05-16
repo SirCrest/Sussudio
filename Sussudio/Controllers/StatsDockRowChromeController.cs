@@ -15,7 +15,6 @@ internal enum StatsDockSimpleRowPool
 internal sealed class StatsDockRowChromeControllerContext
 {
     public required FrameworkElement ResourceOwner { get; init; }
-    public required StackPanel DiagnosticsContent { get; init; }
 }
 
 internal sealed class StatsDockRowChromeController
@@ -23,8 +22,6 @@ internal sealed class StatsDockRowChromeController
     private readonly StatsDockRowChromeControllerContext _context;
     private readonly List<RowSlot> _decodeRowPool = new();
     private readonly List<RowSlot> _gpuRowPool = new();
-    private readonly List<DiagnosticsPoolSlot> _diagnosticsRowPool = new();
-    private TextBlock? _diagnosticsEmptyStateTextBlock;
 
     public StatsDockRowChromeController(StatsDockRowChromeControllerContext context)
     {
@@ -51,34 +48,6 @@ internal sealed class StatsDockRowChromeController
         }
 
         CollapseRows(pool, startIndex: rows.Count);
-    }
-
-    public void UpdateDiagnosticsRows(StatsDiagnosticRowsPresentation presentation)
-    {
-        EnsureDiagnosticsEmptyState();
-
-        if (presentation.IsEmpty)
-        {
-            SetVisibilityIfChanged(_diagnosticsEmptyStateTextBlock!, Visibility.Visible);
-            CollapseDiagnosticsPoolSlots();
-            return;
-        }
-
-        var slotIndex = 0;
-        foreach (var row in presentation.Rows)
-        {
-            EnsureDiagnosticsPoolCapacity(slotIndex + 1);
-            UpdateDiagnosticsPoolSlot(
-                _diagnosticsRowPool[slotIndex],
-                row.GroupHeader,
-                row.Label,
-                row.Value,
-                row.IsAlternate);
-            slotIndex++;
-        }
-
-        SetVisibilityIfChanged(_diagnosticsEmptyStateTextBlock!, Visibility.Collapsed);
-        CollapseDiagnosticsPoolSlots(startIndex: slotIndex);
     }
 
     private List<RowSlot> GetSimpleRowPool(StatsDockSimpleRowPool poolKind)
@@ -121,84 +90,6 @@ internal sealed class StatsDockRowChromeController
         {
             SetVisibilityIfChanged(pool[i].Row, Visibility.Collapsed);
         }
-    }
-
-    private void EnsureDiagnosticsEmptyState()
-    {
-        if (_diagnosticsEmptyStateTextBlock != null)
-        {
-            return;
-        }
-
-        _diagnosticsEmptyStateTextBlock = new TextBlock
-        {
-            Text = "No diagnostics available",
-            Style = GetStyle("DockStatsLabelStyle"),
-            Visibility = Visibility.Collapsed
-        };
-        _context.DiagnosticsContent.Children.Add(_diagnosticsEmptyStateTextBlock);
-    }
-
-    private void EnsureDiagnosticsPoolCapacity(int requiredCount)
-    {
-        while (_diagnosticsRowPool.Count < requiredCount)
-        {
-            var row = CreateRow("", "", alt: false);
-            var grid = (Grid)row.Child;
-            var labelBlock = (TextBlock)grid.Children[0];
-            var valueBlock = (TextBlock)grid.Children[1];
-            var header = CreateDiagnosticGroupHeader("");
-            header.Visibility = Visibility.Collapsed;
-            _context.DiagnosticsContent.Children.Add(header);
-            _context.DiagnosticsContent.Children.Add(row);
-            _diagnosticsRowPool.Add(new DiagnosticsPoolSlot(row, header, labelBlock, valueBlock));
-        }
-    }
-
-    private void UpdateDiagnosticsPoolSlot(
-        DiagnosticsPoolSlot slot,
-        string? groupHeader,
-        string label,
-        string value,
-        bool alt)
-    {
-        if (slot.GroupHeader != null)
-        {
-            if (groupHeader != null)
-            {
-                SetTextIfChanged(slot.GroupHeader, groupHeader);
-                SetVisibilityIfChanged(slot.GroupHeader, Visibility.Visible);
-            }
-            else
-            {
-                SetVisibilityIfChanged(slot.GroupHeader, Visibility.Collapsed);
-            }
-        }
-
-        UpdateRowSlot(slot.RowSlot, label, value, alt);
-    }
-
-    private void CollapseDiagnosticsPoolSlots(int startIndex = 0)
-    {
-        for (var i = startIndex; i < _diagnosticsRowPool.Count; i++)
-        {
-            var slot = _diagnosticsRowPool[i];
-            SetVisibilityIfChanged(slot.Row, Visibility.Collapsed);
-            if (slot.GroupHeader != null)
-            {
-                SetVisibilityIfChanged(slot.GroupHeader, Visibility.Collapsed);
-            }
-        }
-    }
-
-    private TextBlock CreateDiagnosticGroupHeader(string title)
-    {
-        return new TextBlock
-        {
-            Text = title,
-            Margin = new Thickness(0, 8, 0, 2),
-            Style = GetStyle("DockStatsSectionHeaderStyle")
-        };
     }
 
     private Border CreateRow(string label, string value, bool alt)
@@ -250,13 +141,4 @@ internal sealed class StatsDockRowChromeController
     }
 
     private sealed record RowSlot(Border Row, TextBlock Label, TextBlock Value);
-
-    private sealed record DiagnosticsPoolSlot(
-        Border Row,
-        TextBlock? GroupHeader,
-        TextBlock Label,
-        TextBlock Value)
-    {
-        public RowSlot RowSlot { get; } = new(Row, Label, Value);
-    }
 }

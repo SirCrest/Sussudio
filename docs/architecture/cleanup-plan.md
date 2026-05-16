@@ -1604,8 +1604,10 @@ MJPEG/NVML telemetry-to-presentation-input projection lives in
 `Sussudio/Controllers/StatsHardwareRowsInputBuilder.cs`; pure row text
 projection over presentation inputs lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs`;
-row element pooling, empty-state chrome, group-header chrome, and row style
-application live in `Sussudio/Controllers/StatsDockRowChromeController.cs`, and
+decode/GPU row element pooling and style application live in
+`Sussudio/Controllers/StatsDockRowChromeController.cs`; diagnostics empty-state
+chrome, group-header chrome, diagnostic row pooling, and diagnostic row style
+application live in `Sussudio/Controllers/StatsDiagnosticRowsController.cs`;
 `StatsDockRefreshController` owns when decode/GPU rows refresh.
 Stats presentation contract checks now live in focused
 `tests/Sussudio.Tests/StatsPresentation.*.Tests.cs` owners for builder
@@ -1644,9 +1646,9 @@ Pure capture option construction lives in
 
 Dynamic stats dock row chrome now lives in
 `Sussudio/Controllers/StatsDockRowChromeController.cs`. It owns decode/GPU row
-reuse, telemetry diagnostics empty state, group headers, and diagnostic row
-style updates. `Sussudio/Controllers/StatsDiagnosticRowsController.cs` owns the
-diagnostic row presentation handoff, while
+reuse and simple row style updates. `Sussudio/Controllers/StatsDiagnosticRowsController.cs`
+owns diagnostic row presentation, telemetry diagnostics empty state, group
+headers, diagnostic row pooling, and diagnostic row style updates, while
 `Sussudio/Controllers/StatsHardwareRowsController.cs` owns hardware row
 availability, text-row presentation building, and minimum pool sizing before
 delegating row chrome.

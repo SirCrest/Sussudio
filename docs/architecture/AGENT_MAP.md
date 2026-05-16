@@ -934,10 +934,12 @@ Primary current owners:
   stats dock refresh orchestration, diagnostic row update delegation, and row
   chrome pooling.
 - `Sussudio/Controllers/StatsDiagnosticRowsController.cs` owns diagnostic row
-  presentation handoff. `Sussudio/Controllers/StatsDockRowChromeController.cs`
-  owns dynamic decode/GPU/diagnostic row pools, empty-state rows, group headers,
-  and dock row style updates. `Sussudio/Controllers/StatsDockRefreshController.cs`
-  delegates diagnostic row presentation to `StatsDiagnosticRowsController`.
+  presentation, empty-state rows, group headers, diagnostic row pooling, and
+  diagnostic row style updates.
+  `Sussudio/Controllers/StatsDockRowChromeController.cs` owns dynamic decode/GPU
+  simple row pools and dock row style updates.
+  `Sussudio/Controllers/StatsDockRefreshController.cs` delegates diagnostic row
+  presentation to `StatsDiagnosticRowsController`.
 - `Sussudio/Controllers/StatsHardwareRowsController.cs` owns hardware row
   refresh, availability, presentation-input row building, and decode/GPU
   minimum pool sizing before delegating row chrome;
