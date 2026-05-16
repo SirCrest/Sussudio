@@ -1123,8 +1123,17 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Helpers.cs` owns
   shared reflection, option-list, and capture-mode model construction helpers
   for the selection-policy test family.
-- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` owns
-  preview startup, preview reveal, and preview stop ordering assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Ownership.Tests.cs`
+  owns preview startup controller/adapter source ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Watchdog.Tests.cs`
+  owns preview startup watchdog timeout and failure-stop contract assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs`
+  owns preview startup session-state and reinitialize-transition assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Signals.Tests.cs`
+  owns readiness-signal controller and startup/failure formatter assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs`
+  owns startup discovery/probe ordering, preview reveal priming, and preview
+  stop audio-ramp ordering assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease and export-operation lock assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Tests.cs` is the
