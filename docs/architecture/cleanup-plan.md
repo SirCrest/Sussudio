@@ -266,6 +266,11 @@ JSON framing and dispatch timeouts in `NamedPipeAutomationServer.Connections.cs`
 Windows pipe security/PInvoke in `NamedPipeAutomationServer.Security.cs`, and
 error/timeout responses plus fallback tracing in `NamedPipeAutomationServer.Responses.cs`.
 
+App project build workflow is split so `Sussudio/Sussudio.csproj` stays focused
+on app identity, assets, packages, runtime config, and project references, while
+`Sussudio/Sussudio.Build.targets` owns publish flags, English-only locale
+stripping, and repo-local `latest-build` staging.
+
 `tools/ssctl/CommandHandlers.cs` is now only the top-level CLI router.
 `CommandHandlers.Observability.cs` owns state, diagnostics, options, manifest,
 timeline, memory, and audio-ramp commands. `CommandHandlers.PresentMon.cs`

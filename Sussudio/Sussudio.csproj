@@ -89,14 +89,6 @@
     <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
   </PropertyGroup>
 
-  <!-- Publish Properties -->
-  <PropertyGroup>
-    <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
-    <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-    <PublishTrimmed>false</PublishTrimmed>
-    <LatestBuildRoot>$(MSBuildProjectDirectory)\..\latest-build\</LatestBuildRoot>
-  </PropertyGroup>
-
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="true" />
     <RuntimeHostConfigurationOption Include="System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault" Value="true" />
@@ -106,30 +98,5 @@
     <ProjectReference Include="..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj" />
   </ItemGroup>
 
-  <!-- Strip WinUI satellite locale folders that SatelliteResourceLanguages doesn't cover.
-       English-only: keep en-US/en-us. Remove all other ??-?? directories. -->
-  <Target Name="StripUnwantedLocales"
-          AfterTargets="Build;Publish"
-          Condition="'$(DesignTimeBuild)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
-    <Exec Command="powershell -NoProfile -Command &quot;Get-ChildItem '$(TargetDir)' -Directory | Where-Object { $_.Name -match '^[A-Za-z]{2,3}(-[A-Za-z]+)+$' -and $_.Name.ToLowerInvariant() -ne 'en-us' } | Remove-Item -Recurse -Force&quot;"
-          ContinueOnError="WarnAndContinue" />
-    <Exec Command="powershell -NoProfile -Command &quot;if (Test-Path '$(PublishDir)') { Get-ChildItem '$(PublishDir)' -Directory | Where-Object { $_.Name -match '^[A-Za-z]{2,3}(-[A-Za-z]+)+$' -and $_.Name.ToLowerInvariant() -ne 'en-us' } | Remove-Item -Recurse -Force }&quot;"
-          Condition="'$(PublishDir)' != ''"
-          ContinueOnError="WarnAndContinue" />
-  </Target>
-
-  <Target Name="StageLatestBuildToRepoRoot"
-          AfterTargets="Build"
-          Condition="'$(StageLatestBuild)' == 'true' and '$(DesignTimeBuild)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
-    <Message Text="Staging latest build output to $(LatestBuildRoot)" Importance="High" />
-    <RemoveDir Directories="$(LatestBuildRoot)" ContinueOnError="WarnAndContinue" />
-    <MakeDir Directories="$(LatestBuildRoot)" ContinueOnError="WarnAndContinue" />
-    <ItemGroup>
-      <LatestBuildFiles Include="$(TargetDir)**\*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(LatestBuildFiles)"
-          DestinationFiles="@(LatestBuildFiles->'$(LatestBuildRoot)%(RecursiveDir)%(Filename)%(Extension)')"
-          SkipUnchangedFiles="false"
-          ContinueOnError="WarnAndContinue" />
-  </Target>
+  <Import Project="Sussudio.Build.targets" />
 </Project>

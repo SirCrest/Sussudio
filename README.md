@@ -73,21 +73,29 @@ The app targets:
 
 ## Build
 
-From the repository root:
+Normal validation build from the repository root:
 
 ```powershell
-dotnet build Sussudio\Sussudio.csproj -p:Platform=x64 -p:StageLatestBuild=true
+dotnet build Sussudio.slnx -p:Platform=x64 --no-restore
 ```
 
-`StageLatestBuild=true` copies the debug build output to `latest-build/`, which
-is ignored by Git and useful for local manual runs.
+Manual latest-build staging:
+
+```powershell
+dotnet build Sussudio\Sussudio.csproj -p:Platform=x64 -p:StageLatestBuild=true --no-restore
+```
+
+`StageLatestBuild=true` copies the debug build output to `latest-build/`,
+which is ignored by Git and useful for local manual runs.
 
 ## Test
 
-Main regression harness:
+Normal code/test validation:
 
 ```powershell
-dotnet run --project tests\Sussudio.Tests\ -- "Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll"
+dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore
+dotnet exec tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll "Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll"
+git diff --check
 ```
 
 For deeper runtime validation, especially capture/recording/Flashback work, use
