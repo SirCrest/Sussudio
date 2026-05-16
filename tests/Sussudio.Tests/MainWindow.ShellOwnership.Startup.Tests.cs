@@ -106,9 +106,10 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs").Replace("\r\n", "\n");
+        var automationHostAdapterText = ReadRepoFile("Sussudio/MainWindow.AutomationHost.cs").Replace("\r\n", "\n");
+        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
 
-        AssertContains(startupText, "private int _automationServicesStarted;");
         AssertContains(startupText, "private void MainWindow_Loaded(object sender, RoutedEventArgs e)");
         AssertContains(startupText, "Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += uncloakOnFirstFrame;");
         AssertContains(startupText, "UncloakNativeShellWindow();");
@@ -118,12 +119,20 @@ static partial class Program
         AssertContains(startupText, "RevealPreviewUnavailablePlaceholder();");
         AssertContains(startupText, "StartAutomationServices();");
         AssertContains(startupText, "PlaySplashAndEntrance();");
-        AssertContains(startupText, "private void StartAutomationServices()");
-        AssertContains(startupText, "_automationDiagnosticsHub.Start();");
-        AssertContains(startupText, "Automation control ready on pipe");
-        AssertContains(startupText, "Automation control disabled on pipe");
+        AssertContains(automationHostAdapterText, "private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;");
+        AssertContains(automationHostAdapterText, "private void StartAutomationServices()");
+        AssertContains(automationHostAdapterText, "=> _automationHostLifecycleController.Start();");
+        AssertContains(automationHostControllerText, "private int _started;");
+        AssertContains(automationHostControllerText, "Interlocked.Exchange(ref _started, 1)");
+        AssertContains(automationHostControllerText, "if (_pipeServer.Start())\n        {\n            _diagnosticsHub.Start();");
+        AssertContains(automationHostControllerText, "Automation control ready on pipe");
+        AssertContains(automationHostControllerText, "Automation control disabled on pipe");
+        AssertOccursBefore(startupText, "await ViewModel.InitializeAsync();", "StartAutomationServices();");
         AssertContains(mainWindowText, "mainContent.Loaded += MainWindow_Loaded;");
         AssertDoesNotContain(mainWindowText, "private int _automationServicesStarted;");
+        AssertDoesNotContain(startupText, "private int _automationServicesStarted;");
+        AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _automationServicesStarted");
+        AssertDoesNotContain(startupText, "_automationDiagnosticsHub.Start();");
         AssertDoesNotContain(closeLifecycleText, "private void MainWindow_Loaded(");
         AssertDoesNotContain(closeLifecycleText, "private void StartAutomationServices()");
         AssertDoesNotContain(closeLifecycleText, "_automationServicesStarted");

@@ -141,23 +141,31 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var automationHostText = ReadRepoFile("Sussudio/MainWindow.AutomationHost.cs")
+        var automationHostAdapterText = ReadRepoFile("Sussudio/MainWindow.AutomationHost.cs")
+            .Replace("\r\n", "\n");
+        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/WindowAutomationHostLifecycleController.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(mainWindowText, "var automationHost = CreateAutomationHost();");
-        AssertContains(mainWindowText, "_automationDiagnosticsHub = automationHost.DiagnosticsHub;");
-        AssertContains(mainWindowText, "_automationPipeServer = automationHost.PipeServer;");
-        AssertContains(automationHostText, "var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);");
-        AssertContains(automationHostText, "private AutomationHostComposition CreateAutomationHost()");
-        AssertContains(automationHostText, "TokenRequired,");
-        AssertContains(automationHostText, "new NamedPipeAutomationServer(\n            automationDispatcher,\n            automationPipeName,\n            !string.IsNullOrWhiteSpace(automationToken))");
+        AssertContains(mainWindowText, "_automationHostLifecycleController = new WindowAutomationHostLifecycleController(");
+        AssertContains(mainWindowText, "GetPreviewRuntimeSnapshotAsync,\n            this);");
+        AssertContains(automationHostAdapterText, "=> _automationHostLifecycleController.Start();");
+        AssertContains(automationHostAdapterText, "=> _automationHostLifecycleController.DisposeAsync();");
+        AssertContains(automationHostControllerText, "var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);");
+        AssertContains(automationHostControllerText, "var automationPipeName = Environment.GetEnvironmentVariable(\"SUSSUDIO_AUTOMATION_PIPE\");");
+        AssertContains(automationHostControllerText, "automationPipeName = NamedPipeAutomationServer.DefaultPipeName;");
+        AssertContains(automationHostControllerText, "new AutomationDiagnosticsHub(\n            viewModel,\n            previewSnapshotProvider,\n            new RecordingVerifier())");
+        AssertContains(automationHostControllerText, "new AutomationCommandDispatcher(\n            viewModel,\n            _diagnosticsHub,\n            windowControl,\n            automationToken)");
+        AssertContains(automationHostControllerText, "_tokenRequired = !string.IsNullOrWhiteSpace(automationToken);");
+        AssertContains(automationHostControllerText, "new NamedPipeAutomationServer(\n            automationDispatcher,\n            _pipeName,\n            _tokenRequired)");
         AssertDoesNotContain(mainWindowText, "Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar)");
         AssertDoesNotContain(mainWindowText, "new NamedPipeAutomationServer(");
-        AssertContains(startupText, "if (_automationPipeServer.Start())\n        {\n            _automationDiagnosticsHub.Start();");
-        AssertContains(startupText, "Automation control ready on pipe");
-        AssertContains(startupText, "Automation control disabled on pipe");
+        AssertDoesNotContain(startupText, "new NamedPipeAutomationServer(");
+        AssertContains(startupText, "StartAutomationServices();");
+        AssertContains(automationHostControllerText, "if (_pipeServer.Start())\n        {\n            _diagnosticsHub.Start();");
+        AssertContains(automationHostControllerText, "Automation control ready on pipe '{_pipeName}' (token required={_tokenRequired}).");
+        AssertContains(automationHostControllerText, "Automation control disabled on pipe '{_pipeName}' (token required={_tokenRequired}).");
 
         return Task.CompletedTask;
     }

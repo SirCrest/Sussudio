@@ -72,15 +72,7 @@ public sealed partial class MainWindow
             ViewModel,
             Content as FrameworkElement);
 
-        try
-        {
-            await _automationPipeServer.DisposeAsync();
-            await _automationDiagnosticsHub.DisposeAsync();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Automation shutdown cleanup failed: {ex.Message}");
-        }
+        await DisposeAutomationHostAsync();
 
         _nvmlMonitor?.Dispose();
 

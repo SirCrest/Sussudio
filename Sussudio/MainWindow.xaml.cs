@@ -26,11 +26,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeWindowTitleController();
         ApplyWindowTitle();
         _nvmlMonitor = new NvmlMonitor();
-        var automationHost = CreateAutomationHost();
-        _automationDiagnosticsHub = automationHost.DiagnosticsHub;
-        _automationPipeServer = automationHost.PipeServer;
-        _automationTokenRequired = automationHost.TokenRequired;
-        _automationPipeName = automationHost.PipeName;
+        _automationHostLifecycleController = new WindowAutomationHostLifecycleController(
+            ViewModel,
+            GetPreviewRuntimeSnapshotAsync,
+            this);
         InitializePreviewRendererHostController();
         InitializeStatsSnapshotProvider();
         InitializeStatsOverlayController();

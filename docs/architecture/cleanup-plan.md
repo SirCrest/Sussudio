@@ -533,10 +533,13 @@ use `AutomationCommandKind` enum overloads while preserving existing labels
 and wire IDs.
 
 First-load startup, first-frame uncloak scheduling, initial ViewModel/device
-refresh, automation pipe hosting, and the launch entrance trigger now live in
-`Sussudio/MainWindow.Startup.cs`. Window close completion lives in
-`Sussudio/Controllers/WindowCloseLifecycleController.cs`; recording-aware close
-finalization now lives in
+refresh, automation startup timing, and the launch entrance trigger now live in
+`Sussudio/MainWindow.Startup.cs`. Automation host composition, once-only
+startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
+in `Sussudio/Controllers/WindowAutomationHostLifecycleController.cs`, with
+`Sussudio/MainWindow.AutomationHost.cs` kept as the shell adapter. Window close
+completion lives in `Sussudio/Controllers/WindowCloseLifecycleController.cs`;
+recording-aware close finalization now lives in
 `Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs`.
 
 Top-level shell resize telemetry throttling for preview compositor transforms

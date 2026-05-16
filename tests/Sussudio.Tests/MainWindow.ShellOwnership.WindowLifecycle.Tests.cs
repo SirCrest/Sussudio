@@ -10,6 +10,8 @@ static partial class Program
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var nativeWindowText = ReadRepoFile("Sussudio/MainWindow.NativeWindow.cs").Replace("\r\n", "\n");
         var nativeWindowControllerText = ReadRepoFile("Sussudio/Controllers/NativeWindowBootstrapController.cs").Replace("\r\n", "\n");
+        var automationHostAdapterText = ReadRepoFile("Sussudio/MainWindow.AutomationHost.cs").Replace("\r\n", "\n");
+        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -30,6 +32,7 @@ static partial class Program
         {
             "Sussudio/Controllers/WindowCloseLifecycleController.cs",
             "Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs",
+            "Sussudio/Controllers/WindowAutomationHostLifecycleController.cs",
             "Sussudio/MainWindow.CloseLifecycle.cs",
             "Sussudio/MainWindow.ShutdownCleanup.cs",
             "Sussudio/Controllers/NativeWindowBootstrapController.cs",
@@ -61,6 +64,16 @@ static partial class Program
         AssertContains(shutdownCleanupText, "Post-close shutdown cleanup");
         AssertContains(shutdownCleanupText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");
         AssertContains(shutdownCleanupText, "await _windowCloseRecordingFinalizationController.StopAfterClosedBestEffortAsync(");
+        AssertContains(shutdownCleanupText, "await DisposeAutomationHostAsync();");
+        AssertContains(automationHostAdapterText, "private ValueTask DisposeAutomationHostAsync()");
+        AssertContains(automationHostAdapterText, "=> _automationHostLifecycleController.DisposeAsync();");
+        AssertContains(automationHostControllerText, "public async ValueTask DisposeAsync()");
+        AssertContains(automationHostControllerText, "await _pipeServer.DisposeAsync();");
+        AssertContains(automationHostControllerText, "await _diagnosticsHub.DisposeAsync();");
+        AssertContains(automationHostControllerText, "Logger.Log($\"Automation shutdown cleanup failed: {ex.Message}\");");
+        AssertContains(automationHostControllerText, "Logger.Log($\"Automation diagnostics shutdown cleanup failed: {ex.Message}\");");
+        AssertOccursBefore(automationHostControllerText, "await _pipeServer.DisposeAsync();", "await _diagnosticsHub.DisposeAsync();");
+        AssertOccursBefore(automationHostControllerText, "Logger.Log($\"Automation shutdown cleanup failed: {ex.Message}\");", "await _diagnosticsHub.DisposeAsync();");
         AssertOccursBefore(shutdownCleanupText, "CompleteWindowCloseRequest();", "_windowCloseLifecycleController.MarkClosing();");
         AssertContains(closeLifecycleText, "public Task CloseAsync(CancellationToken cancellationToken = default)");
         AssertContains(closeLifecycleText, "=> _windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken);");
@@ -149,6 +162,8 @@ static partial class Program
         AssertDoesNotContain(shutdownCleanupText, "Task.WhenAny(");
         AssertDoesNotContain(shutdownCleanupText, "StopBudgetMs");
         AssertDoesNotContain(shutdownCleanupText, "StopRecordingAndWaitAsync");
+        AssertDoesNotContain(shutdownCleanupText, "_automationPipeServer.DisposeAsync()");
+        AssertDoesNotContain(shutdownCleanupText, "_automationDiagnosticsHub.DisposeAsync()");
         AssertDoesNotContain(closeLifecycleText, "private Microsoft.UI.Windowing.AppWindow GetAppWindow()");
         AssertDoesNotContain(closeLifecycleText, "DwmSetWindowAttribute(");
         AssertDoesNotContain(closeLifecycleText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");

@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using Microsoft.UI.Xaml;
 
 namespace Sussudio;
@@ -8,8 +7,6 @@ namespace Sussudio;
 // in MainWindow.CloseLifecycle.cs; recording finalization lives in its controller.
 public sealed partial class MainWindow
 {
-    private int _automationServicesStarted;
-
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         ((FrameworkElement)this.Content).Loaded -= MainWindow_Loaded;
@@ -49,25 +46,5 @@ public sealed partial class MainWindow
 
         // Start the splash-to-entrance sequence.
         PlaySplashAndEntrance();
-    }
-
-    private void StartAutomationServices()
-    {
-        if (Interlocked.Exchange(ref _automationServicesStarted, 1) != 0)
-        {
-            return;
-        }
-
-        if (_automationPipeServer.Start())
-        {
-            _automationDiagnosticsHub.Start();
-            Logger.Log(
-                $"Automation control ready on pipe '{_automationPipeName}' (token required={_automationTokenRequired}).");
-        }
-        else
-        {
-            Logger.Log(
-                $"Automation control disabled on pipe '{_automationPipeName}' (token required={_automationTokenRequired}).");
-        }
     }
 }
