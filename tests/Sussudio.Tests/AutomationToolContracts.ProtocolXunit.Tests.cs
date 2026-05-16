@@ -141,12 +141,17 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("public string ErrorCode { get; }", sharedClientText);
 
         Assert.Contains("catch (AutomationPipeConnectException ex)", ssctlPipeText);
-        Assert.Contains("CreateSyntheticError(ex.Message, ex.ErrorCode)", ssctlPipeText);
+        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, ex.ErrorCode)", ssctlPipeText);
+        Assert.DoesNotContain("private static JsonElement CreateSyntheticError", ssctlPipeText);
         Assert.DoesNotContain("Sussudio is not running or not responding. Start the app and try again.", ssctlPipeText);
 
         Assert.Contains("catch (AutomationPipeConnectException ex)", mcpPipeText);
-        Assert.Contains("CreateSyntheticError(ex.Message, ex.ErrorCode)", mcpPipeText);
+        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, ex.ErrorCode)", mcpPipeText);
+        Assert.DoesNotContain("private static JsonElement CreateSyntheticError", mcpPipeText);
         Assert.DoesNotContain("Sussudio is not running or not responding. Start the app and try again.", mcpPipeText);
+        Assert.Contains("internal static class AutomationSyntheticErrorResponse", sharedClientText);
+        Assert.Contains("[\"CommandLifecycle\"] = \"failed\"", sharedClientText);
+        Assert.Contains("[\"Snapshot\"] = null", sharedClientText);
 
         Assert.Contains("using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;", diagnosticSessionCommandChannelText);
         Assert.Contains("SendCommandWithConnectRetryAsync(", diagnosticSessionCommandChannelText);
@@ -210,7 +215,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
                 "tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs",
                 "tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs",
                 "tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs",
-                "tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs"
+                "tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs",
+                "tools/Common/AutomationPipeClient/AutomationSyntheticErrorResponse.cs"
             }.Select(file => RuntimeContractSource.ReadRepoFile(file).Replace("\r\n", "\n", StringComparison.Ordinal)));
 
     private static string ReadDiagnosticSessionRunnerSource()

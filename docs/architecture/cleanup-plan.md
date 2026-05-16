@@ -2611,8 +2611,10 @@ owns pipe connect failure classification and exact CLI/MCP diagnostic error
 codes, `AutomationPipeClient.Commands.cs` owns command envelope sending and
 `not_ready` retry policy, `AutomationPipeClient.ResponseState.cs` owns tolerant
 response-state parsing, `AutomationPipeClient.Models.cs` owns command result
-and exception types, and `AutomationResponseState.cs` owns tolerant
-response-state DTOs shared by the pipe client and tool surfaces.
+and exception types, `AutomationSyntheticErrorResponse.cs` owns shared
+structured error-envelope creation for ssctl/MCP adapters, and
+`AutomationResponseState.cs` owns tolerant response-state DTOs shared by the
+pipe client and tool surfaces.
 
 PresentMon model and text ownership is split from the probe runner.
 `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon options, result,
@@ -2647,6 +2649,7 @@ Remaining `tools/Common` ownership:
 - `AutomationPipeClient/AutomationPipeClient.Commands.cs`
 - `AutomationPipeClient/AutomationPipeClient.ResponseState.cs`
 - `AutomationPipeClient/AutomationPipeClient.Models.cs`
+- `AutomationPipeClient/AutomationSyntheticErrorResponse.cs`
 - `AutomationPipeClient/AutomationResponseState.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`

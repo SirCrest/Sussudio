@@ -49,35 +49,35 @@ public sealed class PipeClient
         }
         catch (AutomationPipeConnectException ex)
         {
-            return CreateSyntheticError(ex.Message, ex.ErrorCode);
+            return AutomationSyntheticErrorResponse.Create(ex.Message, ex.ErrorCode);
         }
         catch (AutomationPipeResponseTimeoutException ex)
         {
-            return CreateSyntheticError(ex.Message, "pipe-response-timeout");
+            return AutomationSyntheticErrorResponse.Create(ex.Message, "pipe-response-timeout");
         }
         catch (AutomationPipeProtocolException ex)
         {
-            return CreateSyntheticError(ex.Message, "pipe-protocol-error");
+            return AutomationSyntheticErrorResponse.Create(ex.Message, "pipe-protocol-error");
         }
         catch (ArgumentException ex)
         {
-            return CreateSyntheticError(ex.Message, "unknown-command");
+            return AutomationSyntheticErrorResponse.Create(ex.Message, "unknown-command");
         }
         catch (JsonException ex)
         {
-            return CreateSyntheticError(
+            return AutomationSyntheticErrorResponse.Create(
                 $"Automation pipe returned invalid JSON: {ex.Message}",
                 "pipe-invalid-json");
         }
         catch (IOException ex)
         {
-            return CreateSyntheticError(
+            return AutomationSyntheticErrorResponse.Create(
                 $"Automation pipe I/O failed ({ex.GetType().Name}): {ex.Message}",
                 "pipe-io-error");
         }
         catch (OperationCanceledException ex)
         {
-            return CreateSyntheticError(
+            return AutomationSyntheticErrorResponse.Create(
                 $"Automation pipe request canceled: {ex.Message}",
                 "pipe-canceled");
         }
@@ -88,26 +88,5 @@ public sealed class PipeClient
         Dictionary<string, object?>? payload = null,
         int? responseTimeoutMs = null)
         => SendCommandAsync(AutomationCommandCatalog.Get(kind).Name, payload, responseTimeoutMs);
-
-    private static JsonElement CreateSyntheticError(string message, string errorCode)
-    {
-        var response = new Dictionary<string, object?>
-        {
-            ["Success"] = false,
-            ["CorrelationId"] = Guid.NewGuid().ToString("N"),
-            ["TimestampUtc"] = DateTimeOffset.UtcNow,
-            ["Status"] = "error",
-            ["CommandLifecycle"] = "failed",
-            ["RetryAfterMs"] = null,
-            ["ElapsedMs"] = null,
-            ["Message"] = string.IsNullOrWhiteSpace(message) ? "Unknown pipe client error." : message,
-            ["ErrorCode"] = errorCode,
-            ["Data"] = null,
-            ["Snapshot"] = null
-        };
-
-        using var responseDocument = JsonDocument.Parse(JsonSerializer.Serialize(response));
-        return responseDocument.RootElement.Clone();
-    }
 
 }

@@ -2309,6 +2309,9 @@ Primary owners:
   tolerant response state parsing.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs` owns pipe
   command result and exception types.
+- `tools/Common/AutomationPipeClient/AutomationSyntheticErrorResponse.cs` owns
+  the shared structured error-envelope factory used by ssctl and MCP transport
+  adapters.
 - Fixed MCP routes whose commands exist in `AutomationCommandKind` should call
   the typed MCP `PipeClient.SendCommandAsync(AutomationCommandKind, ...)`
   overload at the pipe seam. Do not list converted routes here; the shared
