@@ -899,7 +899,7 @@ Primary current owners:
   `AudioControlBindingController.Meters.cs` owns audio-meter activation,
   initial meter presentation, and device-audio gain/meter resize hooks.
   `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
-- `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility
+- `Sussudio/Controllers/Stats/StatsOverlayController.cs` owns stats dock visibility
   orchestration, stats toggle checked/unchecked handling, stats toggle-to-view
   model sync, frame-time overlay visibility, and polling lifetime.
   `Sussudio/MainWindow.StatsOverlayComposition.cs` owns the stats overlay
@@ -908,23 +908,23 @@ Primary current owners:
   presentation, diagnostic row, hardware row, and refresh-controller XAML
   wiring. `Sussudio/MainWindow.StatsOverlay.cs` is the XAML-facing adapter for
   stats toggle and visibility commands.
-  `Sussudio/Controllers/StatsOverlayController.DockAnimation.cs` owns stats dock
+  `Sussudio/Controllers/Stats/StatsOverlayController.DockAnimation.cs` owns stats dock
   show/hide storyboard construction, dock visibility mutations, and completion
   state.
-  `Sussudio/Controllers/StatsDockRefreshController.cs` owns stats dock refresh
+  `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` owns stats dock refresh
   orchestration: snapshot acquisition, dock presentation build/apply,
   diagnostics visibility gating, and decode/GPU row refresh ordering.
-  `Sussudio/Controllers/StatsDockPresentationController.cs` owns
+  `Sussudio/Controllers/Stats/StatsDockPresentationController.cs` owns
   stats dock metric text, visibility, and status brush application after the
-  presentation model is built. `Sussudio/Controllers/StatsSectionChromeController.cs`
+  presentation model is built. `Sussudio/Controllers/Stats/StatsSectionChromeController.cs`
   owns stats dock section expand/collapse chrome and automation-visible section
   visibility application, and `Sussudio/MainWindow.StatsSections.cs` is its
-  XAML/automation adapter. `Sussudio/Controllers/StatsWindowPresentationController.cs`
+  XAML/automation adapter. `Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`
   owns detached stats-window metric text and delegates dynamic telemetry detail
-  rendering to `Sussudio/Controllers/StatsWindowTelemetryDetailsController.cs`.
-  `Sussudio/Controllers/StatsSnapshotProvider.cs` owns shell stats snapshot
+  rendering to `Sussudio/Controllers/Stats/StatsWindowTelemetryDetailsController.cs`.
+  `Sussudio/Controllers/Stats/StatsSnapshotProvider.cs` owns shell stats snapshot
   orchestration from capture-health, renderer metrics, and view state.
-  `Sussudio/Controllers/StatsSnapshotProvider.RenderMetrics.cs` owns renderer
+  `Sussudio/Controllers/Stats/StatsSnapshotProvider.RenderMetrics.cs` owns renderer
   cadence/recent-sample acquisition and null fallback policy.
   `Sussudio/MainWindow.StatsSnapshot.cs` is the XAML-facing adapter.
   `MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats toggle
@@ -933,23 +933,23 @@ Primary current owners:
   contract checks for stats overlay lifecycle wiring, stats section chrome,
   stats dock refresh orchestration, diagnostic row update delegation, and row
   chrome pooling.
-- `Sussudio/Controllers/StatsDiagnosticRowsController.cs` owns diagnostic row
+- `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs` owns diagnostic row
   presentation, empty-state rows, group headers, diagnostic row pooling, and
   diagnostic row style updates.
-  `Sussudio/Controllers/StatsDockRowChromeController.cs` owns dynamic decode/GPU
+  `Sussudio/Controllers/Stats/StatsDockRowChromeController.cs` owns dynamic decode/GPU
   simple row pools and dock row style updates.
-  `Sussudio/Controllers/StatsDockRefreshController.cs` delegates diagnostic row
+  `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` delegates diagnostic row
   presentation to `StatsDiagnosticRowsController`.
-- `Sussudio/Controllers/StatsHardwareRowsController.cs` owns hardware row
+- `Sussudio/Controllers/Stats/StatsHardwareRowsController.cs` owns hardware row
   refresh, availability, presentation-input row building, and decode/GPU
   minimum pool sizing before delegating row chrome;
-  `Sussudio/Controllers/StatsHardwareRowsInputBuilder.cs` owns MJPEG/NVML
+  `Sussudio/Controllers/Stats/StatsHardwareRowsInputBuilder.cs` owns MJPEG/NVML
   telemetry projection into the hardware-row presentation input DTOs;
   `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs` owns pure
   decode/GPU row text projection over presentation inputs, and
   `StatsDockRowChromeController` owns decode/GPU row pooling/styling while
   `StatsDockRefreshController` owns when decode/GPU rows refresh.
-- `Sussudio/Controllers/FrameTimeOverlayPresentationController.cs` owns compact
+- `Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs` owns compact
   frame-time overlay text projection and graph line drawing. Keep frame-time
   canvas math there, while `Sussudio/MainWindow.FrameTimeOverlay.cs` owns the
   XAML-facing compact overlay adapter and presentation-controller composition.
@@ -966,7 +966,7 @@ Primary current owners:
   visibility, codec label, bitrate, and encoder drift text formatting.
   `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticRows.cs` owns
   diagnostic row construction and source-summary parsing.
-  `Sussudio/Controllers/StatsHardwareRowsInputBuilder.cs` owns telemetry-to-
+  `Sussudio/Controllers/Stats/StatsHardwareRowsInputBuilder.cs` owns telemetry-to-
   presentation-input projection for MJPEG/NVML hardware rows.
   `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs` owns decode
   and GPU row text projection over presentation inputs.

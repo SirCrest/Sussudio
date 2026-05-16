@@ -5,9 +5,9 @@ static partial class Program
     private static Task StatsPresentationLogic_LivesInFocusedBuilder()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRefreshController.cs").Replace("\r\n", "\n");
+        var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
-        var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
+        var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationDockText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs").Replace("\r\n", "\n");
         var statsPresentationFrameTimeText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs").Replace("\r\n", "\n");
@@ -20,8 +20,8 @@ static partial class Program
         var statsPresentationWindowText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.Window.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
-        var statsWindowPresentationControllerText = ReadRepoFile("Sussudio/Controllers/StatsWindowPresentationController.cs").Replace("\r\n", "\n");
-        var statsWindowTelemetryDetailsControllerText = ReadRepoFile("Sussudio/Controllers/StatsWindowTelemetryDetailsController.cs").Replace("\r\n", "\n");
+        var statsWindowPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsWindowPresentationController.cs").Replace("\r\n", "\n");
+        var statsWindowTelemetryDetailsControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsWindowTelemetryDetailsController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsPresentationText, "internal static partial class StatsPresentationBuilder");
         AssertContains(statsPresentationDockText, "internal static partial class StatsPresentationBuilder");

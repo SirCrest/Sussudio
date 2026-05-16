@@ -1577,7 +1577,7 @@ A/V sync snapshot policy now lives in
 source/audio drift calculations and encoder drift/correction projection there.
 
 Stats dock, stats toggle, and frame-time overlay lifecycle now live in
-`Sussudio/Controllers/StatsOverlayController.cs`. Stats overlay controller graph
+`Sussudio/Controllers/Stats/StatsOverlayController.cs`. Stats overlay controller graph
 construction now lives in `Sussudio/MainWindow.StatsOverlayComposition.cs`, and
 stats dock presentation/diagnostic/hardware/refresh controller graph wiring now
 lives in `Sussudio/MainWindow.StatsDockComposition.cs`;
@@ -1588,22 +1588,22 @@ initial/property-changed visibility sync, polling, visibility state, dock
 refresh ordering, dynamic diagnostic row pools, dock metric value/brush
 application, and dock animations are out of the event adapter.
 Stats dock show/hide animation mechanics now live in
-`Sussudio/Controllers/StatsOverlayController.DockAnimation.cs`, keeping
+`Sussudio/Controllers/Stats/StatsOverlayController.DockAnimation.cs`, keeping
 storyboards, dock visibility mutations, dock width/fade targets, and animation
 completion state out of the polling/visibility orchestration controller root.
 Stats dock refresh orchestration now lives in
-`Sussudio/Controllers/StatsDockRefreshController.cs`: snapshot acquisition,
+`Sussudio/Controllers/Stats/StatsDockRefreshController.cs`: snapshot acquisition,
 dock presentation build/apply, diagnostics visibility gating, and decode/GPU
 row refresh ordering.
 Stats dock metric value, visibility, and status brush application now live in
-`Sussudio/Controllers/StatsDockPresentationController.cs`.
+`Sussudio/Controllers/Stats/StatsDockPresentationController.cs`.
 Stats section expand/collapse chrome and automation-visible section application
-now live in `Sussudio/Controllers/StatsSectionChromeController.cs`.
+now live in `Sussudio/Controllers/Stats/StatsSectionChromeController.cs`.
 `Sussudio/MainWindow.StatsSections.cs` is the XAML/automation adapter.
 Detached stats-window metric text now lives in
-`Sussudio/Controllers/StatsWindowPresentationController.cs`, while dynamic
+`Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`, while dynamic
 telemetry-detail clearing, empty state, group headers, and row rendering live
-in `Sussudio/Controllers/StatsWindowTelemetryDetailsController.cs`, with
+in `Sussudio/Controllers/Stats/StatsWindowTelemetryDetailsController.cs`, with
 `Sussudio/StatsWindow.xaml.cs` kept to lifecycle, sizing, polling, controller
 composition, and always-on-top behavior.
 Stats overlay lifecycle, stats dock refresh, stats section chrome, and
@@ -1612,21 +1612,21 @@ diagnostic row pooling contract checks now live in
 projection checks live with stats presentation coverage in
 `tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs`.
 Frame-time overlay graph drawing and compact text application now live in
-`Sussudio/Controllers/FrameTimeOverlayPresentationController.cs`;
+`Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs`;
 `Sussudio/MainWindow.FrameTimeOverlay.cs` is the XAML-facing compact overlay
 adapter and owns the presentation-controller composition, while
-`Sussudio/Controllers/StatsDockRefreshController.cs` keeps the stats dock
+`Sussudio/Controllers/Stats/StatsDockRefreshController.cs` keeps the stats dock
 projection refresh adapter.
 Decode and GPU hardware stats row refresh/application over presentation inputs
-now lives in `Sussudio/Controllers/StatsHardwareRowsController.cs`;
+now lives in `Sussudio/Controllers/Stats/StatsHardwareRowsController.cs`;
 MJPEG/NVML telemetry-to-presentation-input projection lives in
-`Sussudio/Controllers/StatsHardwareRowsInputBuilder.cs`; pure row text
+`Sussudio/Controllers/Stats/StatsHardwareRowsInputBuilder.cs`; pure row text
 projection over presentation inputs lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs`;
 decode/GPU row element pooling and style application live in
-`Sussudio/Controllers/StatsDockRowChromeController.cs`; diagnostics empty-state
+`Sussudio/Controllers/Stats/StatsDockRowChromeController.cs`; diagnostics empty-state
 chrome, group-header chrome, diagnostic row pooling, and diagnostic row style
-application live in `Sussudio/Controllers/StatsDiagnosticRowsController.cs`;
+application live in `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs`;
 `StatsDockRefreshController` owns when decode/GPU rows refresh.
 Stats presentation contract checks now live in focused
 `tests/Sussudio.Tests/StatsPresentation.*.Tests.cs` owners for builder
@@ -1655,20 +1655,20 @@ visual-repeat drift result.
 Stats presentation DTO records/enums now live in
 `Sussudio/ViewModels/StatsPresentationModels.cs`.
 The UI stats snapshot contract lives in `Sussudio/ViewModels/StatsSnapshot.cs`;
-shell snapshot orchestration lives in `Sussudio/Controllers/StatsSnapshotProvider.cs`;
+shell snapshot orchestration lives in `Sussudio/Controllers/Stats/StatsSnapshotProvider.cs`;
 renderer cadence/recent-sample acquisition lives in
-`Sussudio/Controllers/StatsSnapshotProvider.RenderMetrics.cs`; and projection
+`Sussudio/Controllers/Stats/StatsSnapshotProvider.RenderMetrics.cs`; and projection
 from capture health, renderer metrics, and shell view state lives in
 `Sussudio/ViewModels/StatsSnapshotBuilder.cs`.
 Pure capture option construction lives in
 `Sussudio/ViewModels/CaptureModeOptionsBuilder.cs`.
 
 Dynamic stats dock row chrome now lives in
-`Sussudio/Controllers/StatsDockRowChromeController.cs`. It owns decode/GPU row
-reuse and simple row style updates. `Sussudio/Controllers/StatsDiagnosticRowsController.cs`
+`Sussudio/Controllers/Stats/StatsDockRowChromeController.cs`. It owns decode/GPU row
+reuse and simple row style updates. `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs`
 owns diagnostic row presentation, telemetry diagnostics empty state, group
 headers, diagnostic row pooling, and diagnostic row style updates, while
-`Sussudio/Controllers/StatsHardwareRowsController.cs` owns hardware row
+`Sussudio/Controllers/Stats/StatsHardwareRowsController.cs` owns hardware row
 availability, text-row presentation building, and minimum pool sizing before
 delegating row chrome.
 

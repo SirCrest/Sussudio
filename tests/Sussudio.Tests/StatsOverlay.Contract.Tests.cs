@@ -6,9 +6,9 @@ static partial class Program
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsOverlayComposition.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/StatsOverlayController.cs").Replace("\r\n", "\n");
-        var dockAnimationText = ReadRepoFile("Sussudio/Controllers/StatsOverlayController.DockAnimation.cs").Replace("\r\n", "\n");
-        var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.cs").Replace("\r\n", "\n");
+        var dockAnimationText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.DockAnimation.cs").Replace("\r\n", "\n");
+        var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsOverlayCompositionText, "private StatsOverlayController _statsOverlayController = null!;");
         AssertContains(statsOverlayCompositionText, "private void InitializeStatsOverlayController()");
@@ -75,8 +75,8 @@ static partial class Program
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsOverlayComposition.cs").Replace("\r\n", "\n");
         var statsDockCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsDockComposition.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/StatsDockPresentationController.cs").Replace("\r\n", "\n");
-        var refreshControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRefreshController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockPresentationController.cs").Replace("\r\n", "\n");
+        var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsDockCompositionText, "private StatsDockRefreshController _statsDockRefreshController = null!;");
         AssertContains(statsDockCompositionText, "private void InitializeStatsDockRefreshController()");
@@ -128,7 +128,7 @@ static partial class Program
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsSectionsText = ReadRepoFile("Sussudio/MainWindow.StatsSections.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/StatsSectionChromeController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSectionChromeController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsSectionsText, "private StatsSectionChromeController _statsSectionChromeController = null!;");
         AssertContains(statsSectionsText, "private void InitializeStatsSectionChromeController()");
@@ -162,13 +162,13 @@ static partial class Program
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsDockCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsDockComposition.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
-        var rowChromeControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRowChromeController.cs").Replace("\r\n", "\n");
-        var hardwareRowsControllerText = ReadRepoFile("Sussudio/Controllers/StatsHardwareRowsController.cs").Replace("\r\n", "\n");
-        var hardwareRowsInputBuilderText = ReadRepoFile("Sussudio/Controllers/StatsHardwareRowsInputBuilder.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
+        var rowChromeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRowChromeController.cs").Replace("\r\n", "\n");
+        var hardwareRowsControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsHardwareRowsController.cs").Replace("\r\n", "\n");
+        var hardwareRowsInputBuilderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsHardwareRowsInputBuilder.cs").Replace("\r\n", "\n");
         var hardwareRowsBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
-        var refreshControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRefreshController.cs").Replace("\r\n", "\n");
+        var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsDockCompositionText, "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
         AssertContains(statsDockCompositionText, "var statsDockRowChromeController = new StatsDockRowChromeController(new StatsDockRowChromeControllerContext");
