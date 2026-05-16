@@ -916,6 +916,8 @@ Primary current owners:
   assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` is the automation
   view-model test family marker shell.
+- `tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs` owns
+  automation preview enable/disable command ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.PreviewVolume.Tests.cs` owns
   preview-volume persistence and automation options surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
@@ -1863,7 +1865,9 @@ Primary current owners:
   owns automation command entry points for audio enablement, audio-preview
   enablement, preview-volume clamp/persist, device-native mode/gain
   application, and microphone enablement with recording-time refusal and
-  idempotent handling.
+  idempotent handling. `MainViewModel.AutomationPreview.cs` owns automation
+  preview enable/disable idempotence, pending-reinit cancellation, and
+  start/stop routing.
   `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh,
   capture-device selection, audio-input selection, and custom audio-input
   enablement.
@@ -1875,7 +1879,7 @@ Primary current owners:
   mutators. `MainViewModel.RecordingCapabilityRefresh.cs` owns startup FFmpeg
   capability probes for recording formats and split-encode modes.
   Remaining automation command mutation code for Flashback enable/restart, HDR,
-  preview, and recording desired state stays in `MainViewModel.Automation.cs`.
+  and recording desired state stays in `MainViewModel.Automation.cs`.
 
 Refactor direction:
 

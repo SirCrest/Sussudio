@@ -59,35 +59,6 @@ public partial class MainViewModel
         }, cancellationToken);
     }
 
-    public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
-    {
-        return InvokeOnUiThreadAsync(async () =>
-        {
-            if (!enabled && IsPreviewReinitializing)
-            {
-                CancelPendingPreviewRestart();
-                if (!IsPreviewing)
-                {
-                    return;
-                }
-            }
-
-            if (enabled == IsPreviewing)
-            {
-                return;
-            }
-
-            if (enabled)
-            {
-                await StartPreviewAsync(userInitiated: true, cancellationToken);
-            }
-            else
-            {
-                await StopPreviewAsync(userInitiated: true, teardownPipeline: false, cancellationToken);
-            }
-        }, cancellationToken);
-    }
-
     public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
         return SetRecordingDesiredStateAsync(enabled, cancellationToken);

@@ -36,10 +36,13 @@ static partial class Program
             .Replace("\r\n", "\n");
         var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
             .Replace("\r\n", "\n");
+        var automationPreviewText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationPreview.cs")
+            .Replace("\r\n", "\n");
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationUi.cs")
             .Replace("\r\n", "\n");
         var automationText = automationRootText
             + "\n" + automationAudioText
+            + "\n" + automationPreviewText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
@@ -164,6 +167,7 @@ static partial class Program
         AssertDoesNotContain(automationRootText, "public Task SetDeviceAudioModeAsync");
         AssertDoesNotContain(automationRootText, "public Task SetAnalogAudioGainAsync");
         AssertDoesNotContain(automationRootText, "public Task SetMicrophoneEnabledAsync");
+        AssertDoesNotContain(automationRootText, "public Task SetPreviewEnabledAsync");
         AssertDoesNotContain(automationRootText, "public Task SetPreviewVolumeAsync");
         AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
         AssertContains(automationText, "=> InvokeOnUiThreadAsync(() => RefreshDevicesAsync(cancellationToken), cancellationToken);");

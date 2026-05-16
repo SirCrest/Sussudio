@@ -2571,6 +2571,9 @@ Remaining `tools/Common` ownership:
    clamp/persist, device-native audio mode/gain application, and microphone
    enablement with recording-time refusal/idempotent handling now live in
    `MainViewModel.AutomationAudio.cs`.
+   Automation preview enable/disable idempotence, pending-reinit cancellation,
+   and preview start/stop routing now live in
+   `MainViewModel.AutomationPreview.cs`.
    Automation device refresh, capture-device selection, audio-input selection,
    and custom audio-input enablement now live in
    `MainViewModel.AutomationDeviceSelection.cs`.
@@ -2582,7 +2585,7 @@ Remaining `tools/Common` ownership:
    `MainViewModel.AutomationCaptureMode.cs`.
    Startup FFmpeg capability probes for recording formats and split-encode modes
    now live in `MainViewModel.RecordingCapabilityRefresh.cs`.
-   Keep the remaining Flashback/HDR/preview/recording command mutation code in
+   Keep the remaining Flashback/HDR/recording command mutation code in
    `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.
