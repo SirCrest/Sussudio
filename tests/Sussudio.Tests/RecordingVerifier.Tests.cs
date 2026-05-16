@@ -114,9 +114,9 @@ static partial class Program
 
     private static Task RecordingVerifier_CadenceAnalysisLivesInFocusedPartial()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.cs")
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.cs")
             .Replace("\r\n", "\n");
-        var cadenceText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.Cadence.cs")
+        var cadenceText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Cadence.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public sealed partial class RecordingVerifier : IRecordingVerifier");
@@ -133,15 +133,15 @@ static partial class Program
 
     private static Task RecordingVerifier_ProbeValidationAndResultsLiveInFocusedPartials()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.cs")
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.cs")
             .Replace("\r\n", "\n");
-        var ffprobeText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.Ffprobe.cs")
+        var ffprobeText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs")
             .Replace("\r\n", "\n");
-        var parsingText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.ProbeParsing.cs")
+        var parsingText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.ProbeParsing.cs")
             .Replace("\r\n", "\n");
-        var validationText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.Validation.cs")
+        var validationText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs")
             .Replace("\r\n", "\n");
-        var resultsText = ReadRepoFile("Sussudio/Services/Recording/RecordingVerifier.Results.cs")
+        var resultsText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public async Task<RecordingVerificationResult> VerifyAsync(");

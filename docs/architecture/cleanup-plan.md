@@ -956,12 +956,17 @@ batches, cancellation cleanup, frame-encoded event dispatch, and fatal encoder
 failure handling there.
 
 Recording verifier ownership is split across focused partials. Keep strict
-verification orchestration in `Sussudio/Services/Recording/RecordingVerifier.cs`,
-ffprobe process/spec/side-data probing in `RecordingVerifier.Ffprobe.cs`, probe
-scalar parsing in `RecordingVerifier.ProbeParsing.cs`, stream/container/HDR and
-cadence validation policy in `RecordingVerifier.Validation.cs`, result/taxonomy
-shaping in `RecordingVerifier.Results.cs`, and ffprobe frame timestamp cadence
-analysis in `RecordingVerifier.Cadence.cs`.
+verification orchestration in `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`,
+ffprobe process/spec/side-data probing in
+`Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs`, probe
+scalar parsing in
+`Sussudio/Services/Recording/Verification/RecordingVerifier.ProbeParsing.cs`,
+stream/container/HDR and cadence validation policy in
+`Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs`,
+result/taxonomy shaping in
+`Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs`, and
+ffprobe frame timestamp cadence analysis in
+`Sussudio/Services/Recording/Verification/RecordingVerifier.Cadence.cs`.
 `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` now keeps only
 shared fake process-supervisor, runtime snapshot, verifier construction, and
 verification invocation helpers. Recording verifier integration scenarios are
