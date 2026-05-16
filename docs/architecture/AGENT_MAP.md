@@ -1068,7 +1068,7 @@ Primary current owners:
   event model contract checks.
 - `tests/Sussudio.Tests/DeviceModels.CaptureDevice.Tests.cs` owns capture
   device metadata and default collection contract checks.
-- `tests/Sussudio.Tests/DeviceModels.MediaFormat.Tests.cs` owns MediaFormat
+- `tests/Sussudio.Tests/XUnit.MediaFormatTests.cs` owns MediaFormat
   equality and hash-code contract checks.
 - `tests/Sussudio.Tests/DeviceModels.PropertyAssertions.cs` owns shared device
   model property reflection assertions.

@@ -18,6 +18,8 @@ incrementally.
   uses `Assembly.LoadFrom` against the staged `Sussudio.dll` (the legacy
   runner already does the same), and asserts via xUnit primitives instead
   of the hand-rolled `AssertContains/AssertEqual` helpers.
+- `XUnit.MediaFormatTests.cs` owns the former legacy MediaFormat equality and
+  hash-code checks.
 
 ## Targeting reality
 

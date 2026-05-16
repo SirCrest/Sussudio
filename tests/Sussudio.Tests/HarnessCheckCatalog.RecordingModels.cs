@@ -12,7 +12,6 @@ static partial class Program
         await AddRecordingModelFlashbackBufferChecksAsync(results);
         await AddRecordingModelRecordingContextChecksAsync(results);
         await AddRecordingModelDeviceModelChecksAsync(results);
-        await AddRecordingModelMediaFormatChecksAsync(results);
         await AddRecordingModelAutomationContractChecksAsync(results);
         await AddRecordingModelRuntimePathChecksAsync(results);
         await AddRecordingModelSourceSignalTelemetryChecksAsync(results);
