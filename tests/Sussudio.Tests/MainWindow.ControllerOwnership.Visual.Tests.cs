@@ -6,7 +6,7 @@ static partial class Program
 {
     private static Task ControlBarHoverAnimations_LiveInController()
     {
-        var launchEntranceControllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
+        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBarAnimations.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/ControlBarAnimationController.cs").Replace("\r\n", "\n");
@@ -19,7 +19,7 @@ static partial class Program
         AssertContains(adapterText, "=> _controlBarAnimationController.EntranceButtons;");
         AssertContains(mainWindowText, "InitializeControlBarAnimationController();");
         AssertContains(mainWindowText, "SetupButtonHoverAnimations();");
-        AssertContains(launchEntranceControllerText, "var buttons = _context.GetEntranceButtons();");
+        AssertContains(launchEntranceShellText, "var buttons = _context.GetEntranceButtons();");
         AssertContains(controllerText, "internal sealed class ControlBarAnimationController");
         AssertContains(controllerText, "public IReadOnlyList<FrameworkElement> EntranceButtons");
         AssertContains(controllerText, "public void AttachHoverAnimations()");
@@ -59,7 +59,7 @@ static partial class Program
 
     private static Task PreviewTransitionAnimations_LiveInController()
     {
-        var launchEntranceControllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
+        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
@@ -77,7 +77,7 @@ static partial class Program
         AssertContains(adapterText, "=> _previewTransitionAnimationController.PrepareStartupPresentation();");
         AssertContains(adapterText, "=> PreviewTransitionAnimationController.FadeInElement(element);");
         AssertContains(mainWindowText, "InitializePreviewTransitionAnimationController();");
-        AssertContains(launchEntranceControllerText, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
+        AssertContains(launchEntranceShellText, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
         AssertContains(controllerText, "internal sealed class PreviewTransitionAnimationController");
         AssertContains(controllerText, "public void AddPreviewShellEntranceAnimations(Storyboard storyboard, EasingFunctionBase easing, int beginMs, int durationMs)");
         AssertContains(controllerText, "public Task AnimatePreviewOutAsync()");

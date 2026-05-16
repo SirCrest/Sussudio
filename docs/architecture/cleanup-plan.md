@@ -1743,10 +1743,16 @@ Randomized timer pacing and the two-line splash text animation remain in
 `Sussudio/Controllers/SplashLoadingPhraseController.cs`.
 `MainWindow.SplashLoading.cs` is the XAML-facing adapter.
 
-Splash-to-shell launch entrance choreography, initial hidden/scaled shell state,
-and one-shot playback state now live in
-`Sussudio/Controllers/LaunchEntranceAnimationController.cs`.
-`MainWindow.LaunchEntrance.cs` is the XAML-facing adapter.
+Launch entrance ownership is split by phase:
+`Sussudio/Controllers/LaunchEntranceAnimationController.cs` owns context and
+initial hidden/scaled shell state,
+`Sussudio/Controllers/LaunchEntranceAnimationController.Splash.cs` owns splash
+fade, loading-phrase start/stop ordering, one-shot splash playback state, and
+handoff into shell entrance, and
+`Sussudio/Controllers/LaunchEntranceAnimationController.Shell.cs` owns shell
+chrome/button/stats entrance choreography, deferred preview reveal logging,
+active-storyboard cleanup, and control-bar shadow fade. `MainWindow.LaunchEntrance.cs`
+is the XAML-facing adapter.
 
 Control-bar button ownership and hover/press/release scale behavior now live in
 `Sussudio/Controllers/ControlBarAnimationController.cs`.

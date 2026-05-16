@@ -642,7 +642,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewTransitionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewTransitionAnimationController.cs")
             .Replace("\r\n", "\n");
-        var launchEntranceControllerText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.cs")
+        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/LaunchEntranceAnimationController.Shell.cs")
             .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
             .Replace("\r\n", "\n");
@@ -662,7 +662,7 @@ static partial class Program
         AssertContains(previewStartRequested, "PreparePreviewStartupPresentation();");
         AssertOccursBefore(previewStartRequested, "PrimePreviewAudioFadeIn();", "PreparePreviewStartupPresentation();");
 
-        var playEntranceAnimation = ExtractMemberCode(launchEntranceControllerText, "PlayEntranceAnimation");
+        var playEntranceAnimation = ExtractMemberCode(launchEntranceShellText, "PlayEntranceAnimation");
         AssertContains(playEntranceAnimation, "LAUNCH_PREVIEW_REVEAL_DEFERRED");
         AssertContains(playEntranceAnimation, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
         AssertDoesNotContain(playEntranceAnimation, "Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);");
