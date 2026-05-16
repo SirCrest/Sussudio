@@ -4,6 +4,8 @@ static partial class Program
     {
         var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Result.cs")
             .Replace("\r\n", "\n");
+        var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
+            .Replace("\r\n", "\n");
         var compositionText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Composition.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")
@@ -23,13 +25,15 @@ static partial class Program
         var flashbackExportResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(resultText, "return FlattenResultProjectionSet(");
+        AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
         AssertContains(compositionText, "FlashbackPlayback: BuildFlashbackPlaybackResultProjection(analysis)");
-        AssertContains(resultText, "var flashbackPlaybackResult = resultProjections.FlashbackPlayback;");
-        AssertContains(resultText, "var flashbackPlaybackCommandsResult = flashbackPlaybackResult.CommandsResult;");
-        AssertContains(resultText, "var flashbackPlaybackCadenceResult = flashbackPlaybackResult.CadenceResult;");
-        AssertContains(resultText, "var flashbackPlaybackDecodeResult = flashbackPlaybackResult.DecodeResult;");
-        AssertContains(resultText, "var flashbackPlaybackAudioMasterResult = flashbackPlaybackResult.AudioMasterResult;");
-        AssertContains(resultText, "var flashbackPlaybackStagesResult = flashbackPlaybackResult.StagesResult;");
+        AssertContains(flatteningText, "var flashbackPlaybackResult = resultProjections.FlashbackPlayback;");
+        AssertContains(flatteningText, "var flashbackPlaybackCommandsResult = flashbackPlaybackResult.CommandsResult;");
+        AssertContains(flatteningText, "var flashbackPlaybackCadenceResult = flashbackPlaybackResult.CadenceResult;");
+        AssertContains(flatteningText, "var flashbackPlaybackDecodeResult = flashbackPlaybackResult.DecodeResult;");
+        AssertContains(flatteningText, "var flashbackPlaybackAudioMasterResult = flashbackPlaybackResult.AudioMasterResult;");
+        AssertContains(flatteningText, "var flashbackPlaybackStagesResult = flashbackPlaybackResult.StagesResult;");
         AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackResultProjection(");
         AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackResultProjection BuildFlashbackPlaybackResultProjection(");
         AssertContains(flashbackPlaybackResultText, "CommandsResult: commandsResult");
@@ -63,39 +67,39 @@ static partial class Program
         AssertContains(flashbackPlaybackStagesResultText, "FlashbackPlaybackSubmitFailuresDelta: playbackSessionMetrics.SubmitFailuresDelta");
         AssertContains(flashbackPlaybackStagesResultText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta: playbackResultMetrics.SeekForwardDecodeCapHitsDelta");
         AssertContains(flashbackPlaybackStagesResultText, "FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd: playbackResultMetrics.LastSeekHitForwardDecodeCapAtEnd");
-        AssertContains(resultText, "FlashbackPlaybackPendingCommandsAtEnd = flashbackPlaybackCommandsResult.FlashbackPlaybackPendingCommandsAtEnd,");
-        AssertContains(resultText, "FlashbackPlaybackDroppedFramesDelta = flashbackPlaybackCadenceResult.FlashbackPlaybackDroppedFramesDelta,");
-        AssertContains(resultText, "FlashbackPlaybackMaxDecodePhaseAtEnd = flashbackPlaybackDecodeResult.FlashbackPlaybackMaxDecodePhaseAtEnd,");
-        AssertContains(resultText, "FlashbackPlaybackAudioMasterFallbacksAtEnd = flashbackPlaybackAudioMasterResult.FlashbackPlaybackAudioMasterFallbacksAtEnd,");
-        AssertContains(resultText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = flashbackPlaybackStagesResult.FlashbackPlaybackSeekForwardDecodeCapHitsDelta,");
+        AssertContains(flatteningText, "FlashbackPlaybackPendingCommandsAtEnd = flashbackPlaybackCommandsResult.FlashbackPlaybackPendingCommandsAtEnd,");
+        AssertContains(flatteningText, "FlashbackPlaybackDroppedFramesDelta = flashbackPlaybackCadenceResult.FlashbackPlaybackDroppedFramesDelta,");
+        AssertContains(flatteningText, "FlashbackPlaybackMaxDecodePhaseAtEnd = flashbackPlaybackDecodeResult.FlashbackPlaybackMaxDecodePhaseAtEnd,");
+        AssertContains(flatteningText, "FlashbackPlaybackAudioMasterFallbacksAtEnd = flashbackPlaybackAudioMasterResult.FlashbackPlaybackAudioMasterFallbacksAtEnd,");
+        AssertContains(flatteningText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = flashbackPlaybackStagesResult.FlashbackPlaybackSeekForwardDecodeCapHitsDelta,");
         AssertDoesNotContain(flashbackPlaybackResultText, "FlashbackPlaybackPendingCommandsAtEnd: playbackResultMetrics.PendingCommandsAtEnd");
         AssertDoesNotContain(flashbackPlaybackResultText, "FlashbackPlaybackMinOnePercentLowFpsObserved: playbackSessionMetrics.MinOnePercentLowFpsObserved");
         AssertDoesNotContain(flashbackPlaybackResultText, "FlashbackPlaybackMaxDecodePhaseAtEnd: playbackResultMetrics.MaxDecodePhaseAtEnd");
         AssertDoesNotContain(flashbackPlaybackResultText, "FlashbackPlaybackAudioMasterFallbacksAtEnd: playbackResultMetrics.AudioMasterFallbacksAtEnd");
         AssertDoesNotContain(flashbackPlaybackResultText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta: playbackResultMetrics.SeekForwardDecodeCapHitsDelta");
-        AssertDoesNotContain(resultText, "FlashbackPlaybackPendingCommandsAtEnd = playbackResultMetrics");
-        AssertDoesNotContain(resultText, "FlashbackPlaybackMinOnePercentLowFpsObserved = playbackSessionMetrics");
-        AssertDoesNotContain(resultText, "FlashbackPlaybackMaxDecodePhaseAtEnd = playbackResultMetrics");
-        AssertDoesNotContain(resultText, "FlashbackPlaybackAudioMasterFallbacksAtEnd = playbackResultMetrics");
-        AssertDoesNotContain(resultText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = playbackResultMetrics");
+        AssertDoesNotContain(flatteningText, "FlashbackPlaybackPendingCommandsAtEnd = playbackResultMetrics");
+        AssertDoesNotContain(flatteningText, "FlashbackPlaybackMinOnePercentLowFpsObserved = playbackSessionMetrics");
+        AssertDoesNotContain(flatteningText, "FlashbackPlaybackMaxDecodePhaseAtEnd = playbackResultMetrics");
+        AssertDoesNotContain(flatteningText, "FlashbackPlaybackAudioMasterFallbacksAtEnd = playbackResultMetrics");
+        AssertDoesNotContain(flatteningText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = playbackResultMetrics");
         AssertContains(compositionText, "FlashbackRecording: BuildFlashbackRecordingResultProjection(analysis)");
-        AssertContains(resultText, "var flashbackRecordingResult = resultProjections.FlashbackRecording;");
+        AssertContains(flatteningText, "var flashbackRecordingResult = resultProjections.FlashbackRecording;");
         AssertContains(flashbackRecordingResultText, "private readonly record struct DiagnosticSessionFlashbackRecordingResultProjection(");
         AssertContains(flashbackRecordingResultText, "private static DiagnosticSessionFlashbackRecordingResultProjection BuildFlashbackRecordingResultProjection(");
         AssertContains(flashbackRecordingResultText, "FlashbackRecordingBackendObserved: recordingMetrics.BackendObserved");
         AssertContains(flashbackRecordingResultText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta: recordingMetrics.IntegrityQueueDroppedFramesDelta");
-        AssertDoesNotContain(resultText, "FlashbackRecordingBackendObserved = recordingMetrics");
-        AssertDoesNotContain(resultText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta = recordingMetrics");
+        AssertDoesNotContain(flatteningText, "FlashbackRecordingBackendObserved = recordingMetrics");
+        AssertDoesNotContain(flatteningText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta = recordingMetrics");
         AssertContains(compositionText, "FlashbackExport: BuildFlashbackExportResultProjection(analysis)");
-        AssertContains(resultText, "var flashbackExportResult = resultProjections.FlashbackExport;");
+        AssertContains(flatteningText, "var flashbackExportResult = resultProjections.FlashbackExport;");
         AssertContains(flashbackExportResultText, "private readonly record struct DiagnosticSessionFlashbackExportResultProjection(");
         AssertContains(flashbackExportResultText, "private static DiagnosticSessionFlashbackExportResultProjection BuildFlashbackExportResultProjection(");
         AssertContains(flashbackExportResultText, "FlashbackExportObserved: exportMetrics.Observed");
         AssertContains(flashbackExportResultText, "FlashbackExportForceRotateFallbacksDelta: exportMetrics.ForceRotateFallbacksDelta");
         AssertContains(flashbackExportResultText, "LastExportSuccessAtEnd: exportMetrics.LastSuccessAtEnd");
         AssertContains(flashbackExportResultText, "FlashbackExportMaxThroughputBytesPerSecObserved: exportMetrics.MaxThroughputBytesPerSecObserved");
-        AssertDoesNotContain(resultText, "FlashbackExportObserved = exportMetrics");
-        AssertDoesNotContain(resultText, "FlashbackExportForceRotateFallbacksAtEnd = flashbackExportForceRotateFallbacksAtEnd");
-        AssertDoesNotContain(resultText, "LastExportSuccessAtEnd = exportMetrics");
+        AssertDoesNotContain(flatteningText, "FlashbackExportObserved = exportMetrics");
+        AssertDoesNotContain(flatteningText, "FlashbackExportForceRotateFallbacksAtEnd = flashbackExportForceRotateFallbacksAtEnd");
+        AssertDoesNotContain(flatteningText, "LastExportSuccessAtEnd = exportMetrics");
     }
 }

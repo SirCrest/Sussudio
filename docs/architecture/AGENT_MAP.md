@@ -1,6 +1,6 @@
 # Sussudio Agent Map
 
-Last reviewed: 2026-05-15.
+Last reviewed: 2026-05-16.
 
 This file maps the current repo shape to named owners, entry points, invariants,
 and fast checks. It is intentionally mechanical so future agents can find the
@@ -2335,7 +2335,12 @@ Primary owners:
   and final summary emission. Keep `summary.json` field shape stable in the
   builder family.
 - `tools/Common/DiagnosticSessionResultBuilder.Result.cs` owns
-  diagnostic-session final DTO construction from a named projection set.
+  diagnostic-session final-result orchestration from analysis and artifact
+  paths into the named projection set and flattening owner.
+- `tools/Common/DiagnosticSessionResultBuilder.Flattening.cs` owns final
+  `DiagnosticSessionResult` DTO assignment from the projection set. Keep
+  domain projection composition in the projection owners and composition file,
+  not in this initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.Composition.cs` owns
   diagnostic-session result projection-set assembly from overview, capture,
   Flashback, preview, D3D, and visual-cadence projection owners.

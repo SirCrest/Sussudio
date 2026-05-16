@@ -1,6 +1,6 @@
 # Architecture Cleanup Plan
 
-Last reviewed: 2026-05-15.
+Last reviewed: 2026-05-16.
 
 ## Objective
 
@@ -2092,8 +2092,11 @@ Diagnostic-session result construction now lives in
 `tools/Common/DiagnosticSessionResultBuilder.cs`. The root owns result phase
 orchestration, artifact-write handoff, summary-write handoff, and final
 summary emission while the runner keeps the phase sequence.
-`DiagnosticSessionResultBuilder.Result.cs` owns final
-`DiagnosticSessionResult` construction from a named projection set.
+`DiagnosticSessionResultBuilder.Result.cs` owns final-result orchestration from
+analysis and artifact paths into the named projection set and flattening owner.
+`DiagnosticSessionResultBuilder.Flattening.cs` owns final
+`DiagnosticSessionResult` DTO assignment from the projection set; keep domain
+projection composition outside this initializer.
 `DiagnosticSessionResultBuilder.Composition.cs` owns result projection-set
 assembly from overview, capture, Flashback, preview, D3D, and visual-cadence
 projection owners. Overview
@@ -2534,6 +2537,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultArtifacts.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultBuilder.Result.cs`
+- `DiagnosticSessionResultBuilder.Flattening.cs`
 - `DiagnosticSessionResultBuilder.Composition.cs`
 - `DiagnosticSessionResultBuilder.OverviewResult.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`

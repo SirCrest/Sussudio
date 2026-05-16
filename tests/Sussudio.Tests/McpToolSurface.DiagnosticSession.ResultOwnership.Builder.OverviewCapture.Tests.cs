@@ -4,6 +4,8 @@ static partial class Program
     {
         var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Result.cs")
             .Replace("\r\n", "\n");
+        var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
+            .Replace("\r\n", "\n");
         var compositionText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Composition.cs")
             .Replace("\r\n", "\n");
         var overviewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs")
@@ -11,9 +13,13 @@ static partial class Program
         var captureResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(resultText, "var resultProjections = BuildResultProjectionSet(request, runState, analysis);");
+        AssertContains(resultText, "return FlattenResultProjectionSet(");
+        AssertDoesNotContain(resultText, "return new DiagnosticSessionResult");
+        AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
         AssertContains(compositionText, "Overview: BuildOverviewResultProjection(request, runState, analysis)");
-        AssertContains(resultText, "var overviewResult = resultProjections.Overview;");
-        AssertContains(resultText, "Success = overviewResult.Success,");
+        AssertContains(flatteningText, "var overviewResult = resultProjections.Overview;");
+        AssertContains(flatteningText, "Success = overviewResult.Success,");
         AssertContains(overviewResultText, "private readonly record struct DiagnosticSessionOverviewResultProjection(");
         AssertContains(overviewResultText, "private static DiagnosticSessionOverviewResultProjection BuildOverviewResultProjection(");
         AssertContains(overviewResultText, "var verificationSucceeded = request.Verification.HasValue");
@@ -29,18 +35,18 @@ static partial class Program
         AssertContains(overviewResultText, "(request.PresentMon is null || request.PresentMon.Success) &&");
         AssertContains(overviewResultText, "(!verificationSucceeded.HasValue || verificationSucceeded.Value) &&");
         AssertContains(overviewResultText, "analysis.FlashbackWarningsSucceeded");
-        AssertDoesNotContain(resultText, "request.CommandFailureCount == 0 &&");
-        AssertDoesNotContain(resultText, "ProcessCpuPercentAtEnd = GetDouble(lastSnapshot");
-        AssertDoesNotContain(resultText, "RecordingVerificationMessage = request.Verification.HasValue");
+        AssertDoesNotContain(flatteningText, "request.CommandFailureCount == 0 &&");
+        AssertDoesNotContain(flatteningText, "ProcessCpuPercentAtEnd = GetDouble(lastSnapshot");
+        AssertDoesNotContain(flatteningText, "RecordingVerificationMessage = request.Verification.HasValue");
         AssertContains(compositionText, "Capture: BuildCaptureResultProjection(analysis)");
-        AssertContains(resultText, "var captureResult = resultProjections.Capture;");
+        AssertContains(flatteningText, "var captureResult = resultProjections.Capture;");
         AssertContains(captureResultText, "private readonly record struct DiagnosticSessionCaptureResultProjection(");
         AssertContains(captureResultText, "private static DiagnosticSessionCaptureResultProjection BuildCaptureResultProjection(");
         AssertContains(captureResultText, "SelectedResolutionAtEnd: GetString(lastSnapshot, \"SelectedResolution\") ?? string.Empty");
         AssertContains(captureResultText, "SourceWidthAtEnd: (int)(GetNullableLong(lastSnapshot, \"SourceWidth\") ?? 0)");
         AssertContains(captureResultText, "SourceTelemetrySummaryAtEnd: GetString(lastSnapshot, \"SourceTelemetrySummaryText\") ?? string.Empty");
-        AssertDoesNotContain(resultText, "SelectedResolutionAtEnd = GetString(lastSnapshot");
-        AssertDoesNotContain(resultText, "SourceWidthAtEnd = (int)(GetNullableLong");
-        AssertDoesNotContain(resultText, "SourceTelemetrySummaryAtEnd = GetString(lastSnapshot");
+        AssertDoesNotContain(flatteningText, "SelectedResolutionAtEnd = GetString(lastSnapshot");
+        AssertDoesNotContain(flatteningText, "SourceWidthAtEnd = (int)(GetNullableLong");
+        AssertDoesNotContain(flatteningText, "SourceTelemetrySummaryAtEnd = GetString(lastSnapshot");
     }
 }

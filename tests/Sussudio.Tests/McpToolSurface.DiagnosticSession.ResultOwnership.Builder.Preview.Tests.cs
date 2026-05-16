@@ -4,6 +4,8 @@ static partial class Program
     {
         var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Result.cs")
             .Replace("\r\n", "\n");
+        var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
+            .Replace("\r\n", "\n");
         var compositionText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Composition.cs")
             .Replace("\r\n", "\n");
         var previewD3DResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs")
@@ -13,12 +15,14 @@ static partial class Program
         var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(resultText, "return FlattenResultProjectionSet(");
+        AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
         AssertContains(compositionText, "Preview: BuildPreviewResultProjection(analysis)");
         AssertContains(compositionText, "PreviewD3D: BuildPreviewD3DResultProjection(analysis)");
         AssertContains(compositionText, "PreviewVisualCadence: BuildPreviewVisualCadenceResultProjection(analysis)");
-        AssertContains(resultText, "var previewResult = resultProjections.Preview;");
-        AssertContains(resultText, "var previewD3DResult = resultProjections.PreviewD3D;");
-        AssertContains(resultText, "var previewVisualCadenceResult = resultProjections.PreviewVisualCadence;");
+        AssertContains(flatteningText, "var previewResult = resultProjections.Preview;");
+        AssertContains(flatteningText, "var previewD3DResult = resultProjections.PreviewD3D;");
+        AssertContains(flatteningText, "var previewVisualCadenceResult = resultProjections.PreviewVisualCadence;");
         AssertContains(previewResultText, "private readonly record struct DiagnosticSessionPreviewResultProjection(");
         AssertContains(previewResultText, "private static DiagnosticSessionPreviewResultProjection BuildPreviewResultProjection(");
         AssertContains(previewD3DResultText, "private readonly record struct DiagnosticSessionPreviewD3DResultProjection(");
@@ -32,16 +36,16 @@ static partial class Program
         AssertContains(previewD3DResultText, "PreviewD3DTotalFrameCpuMaxMsObserved: previewD3DMetrics.TotalFrameCpuMaxMsObserved");
         AssertContains(previewVisualCadenceResultText, "VisualCadenceOutputFpsAtEnd: visualCadenceMetrics.OutputFpsAtEnd");
         AssertContains(previewVisualCadenceResultText, "VisualCadenceLongestRepeatRunAtEnd: visualCadenceMetrics.LongestRepeatRunAtEnd");
-        AssertContains(resultText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewD3DResult.PreviewD3DInputUploadCpuP99MsAtEnd,");
-        AssertContains(resultText, "VisualCadenceOutputFpsAtEnd = previewVisualCadenceResult.VisualCadenceOutputFpsAtEnd,");
-        AssertDoesNotContain(resultText, "GetString(lastSnapshot, \"MjpegPreviewJitterLastDropReason\")");
+        AssertContains(flatteningText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewD3DResult.PreviewD3DInputUploadCpuP99MsAtEnd,");
+        AssertContains(flatteningText, "VisualCadenceOutputFpsAtEnd = previewVisualCadenceResult.VisualCadenceOutputFpsAtEnd,");
+        AssertDoesNotContain(flatteningText, "GetString(lastSnapshot, \"MjpegPreviewJitterLastDropReason\")");
         AssertDoesNotContain(previewResultText, "previewD3DMetrics");
         AssertDoesNotContain(previewResultText, "PreviewD3DInputUploadCpuP99MsAtEnd");
         AssertDoesNotContain(previewResultText, "analysis.VisualCadenceMetrics");
         AssertDoesNotContain(previewResultText, "VisualCadenceOutputFpsAtEnd");
-        AssertDoesNotContain(resultText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewResult");
-        AssertDoesNotContain(resultText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewD3DMetrics");
-        AssertDoesNotContain(resultText, "VisualCadenceOutputFpsAtEnd = previewResult");
-        AssertDoesNotContain(resultText, "VisualCadenceOutputFpsAtEnd = visualCadenceMetrics");
+        AssertDoesNotContain(flatteningText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewResult");
+        AssertDoesNotContain(flatteningText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewD3DMetrics");
+        AssertDoesNotContain(flatteningText, "VisualCadenceOutputFpsAtEnd = previewResult");
+        AssertDoesNotContain(flatteningText, "VisualCadenceOutputFpsAtEnd = visualCadenceMetrics");
     }
 }
