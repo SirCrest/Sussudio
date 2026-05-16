@@ -3,29 +3,36 @@ using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// XAML-facing responsive-layout adapter. ResponsiveShellLayoutController applies
+// XAML-facing responsive-layout adapter. Controllers apply
 // ResponsiveShellLayoutPolicy decisions to the WinUI elements.
 public sealed partial class MainWindow
 {
+    private ControlBarLabelVisibilityController _controlBarLabelVisibilityController = null!;
     private ResponsiveShellLayoutController _responsiveShellLayoutController = null!;
 
     private void InitializeResponsiveShellLayoutController()
     {
-        _responsiveShellLayoutController = new ResponsiveShellLayoutController(new ResponsiveShellLayoutControllerContext
+        var controlBarLabels = new UIElement[]
+        {
+            HdrToggleLabel,
+            AudioRecordToggleLabel,
+            PreviewButtonLabel,
+            HdrPreviewToggleLabel,
+            AudioPreviewToggleLabel,
+            StatsToggleLabel,
+            FrameTimeOverlayToggleLabel,
+            FlashbackToggleLabel,
+        };
+
+        _controlBarLabelVisibilityController = new ControlBarLabelVisibilityController(new ControlBarLabelVisibilityControllerContext
         {
             ControlBarBorder = ControlBarBorder,
+            ControlBarLabels = controlBarLabels,
+        });
+
+        _responsiveShellLayoutController = new ResponsiveShellLayoutController(new ResponsiveShellLayoutControllerContext
+        {
             CaptureSettingsGrid = CaptureSettingsGrid,
-            ControlBarLabels = new UIElement[]
-            {
-                HdrToggleLabel,
-                AudioRecordToggleLabel,
-                PreviewButtonLabel,
-                HdrPreviewToggleLabel,
-                AudioPreviewToggleLabel,
-                StatsToggleLabel,
-                FrameTimeOverlayToggleLabel,
-                FlashbackToggleLabel,
-            },
             VideoFormatColumn = VideoFormatColumn,
             PresetColumn = PresetColumn,
             SplitColumn = SplitColumn,
@@ -37,5 +44,8 @@ public sealed partial class MainWindow
     }
 
     private void SetupResponsiveShellLayoutBindings()
-        => _responsiveShellLayoutController.Attach();
+    {
+        _controlBarLabelVisibilityController.Attach();
+        _responsiveShellLayoutController.Attach();
+    }
 }

@@ -1859,12 +1859,13 @@ Primary current owners:
 - `Sussudio/Controllers/MicrophoneControlsController.cs` owns microphone volume
   slider synchronization, save triggers, shelf enablement, and mic-meter row
   animation state. `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/ResponsiveShellLayoutController.cs` owns applying
-  responsive visibility for the complete control-bar label set and
+- `Sussudio/Controllers/ControlBarLabelVisibilityController.cs` owns applying
+  responsive visibility for the complete control-bar label set.
+  `Sussudio/Controllers/ResponsiveShellLayoutController.cs` owns applying
   capture-settings grid placement to XAML elements.
   `Sussudio/Controllers/ResponsiveShellLayoutPolicy.cs` owns
-  the breakpoint and narrow/wide placement policy. `MainWindow.ResponsiveShellLayout.cs`
-  is the XAML-facing adapter.
+  the control-bar label breakpoint and narrow/wide placement policy.
+  `MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/CaptureSelectionBindingController.cs` owns
   capture/audio/microphone/encoder selection collection wiring, recording string
   selection handlers, and pending-device apply state.

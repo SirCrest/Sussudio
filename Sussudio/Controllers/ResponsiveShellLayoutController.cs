@@ -5,9 +5,7 @@ namespace Sussudio.Controllers;
 
 internal sealed class ResponsiveShellLayoutControllerContext
 {
-    public required Border ControlBarBorder { get; init; }
     public required Grid CaptureSettingsGrid { get; init; }
-    public required UIElement[] ControlBarLabels { get; init; }
     public required ColumnDefinition VideoFormatColumn { get; init; }
     public required ColumnDefinition PresetColumn { get; init; }
     public required ColumnDefinition SplitColumn { get; init; }
@@ -20,7 +18,6 @@ internal sealed class ResponsiveShellLayoutControllerContext
 internal sealed class ResponsiveShellLayoutController
 {
     private readonly ResponsiveShellLayoutControllerContext _context;
-    private bool _toggleLabelsVisible;
     private bool _captureSettingsNarrow;
 
     public ResponsiveShellLayoutController(ResponsiveShellLayoutControllerContext context)
@@ -30,24 +27,7 @@ internal sealed class ResponsiveShellLayoutController
 
     public void Attach()
     {
-        _context.ControlBarBorder.SizeChanged += (_, e) => ApplyControlBarWidth(e.NewSize.Width);
         _context.CaptureSettingsGrid.SizeChanged += (_, e) => ApplyCaptureSettingsWidth(e.NewSize.Width);
-    }
-
-    private void ApplyControlBarWidth(double controlBarWidth)
-    {
-        var showLabels = ResponsiveShellLayoutPolicy.ShouldShowControlBarLabels(controlBarWidth);
-        if (showLabels == _toggleLabelsVisible)
-        {
-            return;
-        }
-
-        _toggleLabelsVisible = showLabels;
-        var visibility = showLabels ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var label in _context.ControlBarLabels)
-        {
-            label.Visibility = visibility;
-        }
     }
 
     private void ApplyCaptureSettingsWidth(double width)
