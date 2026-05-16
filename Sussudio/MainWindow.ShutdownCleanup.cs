@@ -42,6 +42,7 @@ public sealed partial class MainWindow
         StopLiveSignalInfoTimers();
         StopFullScreenAutoHideTimer();
         StopFlashbackStatusPolling();
+        DetachStatsOverlayToggleBindings();
         StopStatsDockPolling();
         HideStatsDockPanel(immediate: true);
         StopMicMeterRowAnimation();

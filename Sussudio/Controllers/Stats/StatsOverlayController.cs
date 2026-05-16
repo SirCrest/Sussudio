@@ -26,6 +26,7 @@ internal sealed partial class StatsOverlayController
 {
     private readonly StatsOverlayControllerContext _context;
     private DispatcherQueueTimer? _statsPollTimer;
+    private bool _toggleBindingsAttached;
 
     public StatsOverlayController(StatsOverlayControllerContext context)
     {
@@ -34,6 +35,34 @@ internal sealed partial class StatsOverlayController
 
     public bool IsFrameTimeOverlayVisible
         => _context.FrameTimeOverlay.Visibility == Visibility.Visible;
+
+    public void AttachToggleBindings()
+    {
+        if (_toggleBindingsAttached)
+        {
+            return;
+        }
+
+        _context.StatsToggle.Checked += StatsToggle_Checked;
+        _context.StatsToggle.Unchecked += StatsToggle_Unchecked;
+        _context.FrameTimeOverlayToggle.Checked += FrameTimeOverlayToggle_Checked;
+        _context.FrameTimeOverlayToggle.Unchecked += FrameTimeOverlayToggle_Unchecked;
+        _toggleBindingsAttached = true;
+    }
+
+    public void DetachToggleBindings()
+    {
+        if (!_toggleBindingsAttached)
+        {
+            return;
+        }
+
+        _context.StatsToggle.Checked -= StatsToggle_Checked;
+        _context.StatsToggle.Unchecked -= StatsToggle_Unchecked;
+        _context.FrameTimeOverlayToggle.Checked -= FrameTimeOverlayToggle_Checked;
+        _context.FrameTimeOverlayToggle.Unchecked -= FrameTimeOverlayToggle_Unchecked;
+        _toggleBindingsAttached = false;
+    }
 
     public void HandleStatsToggleChecked()
     {
@@ -135,6 +164,18 @@ internal sealed partial class StatsOverlayController
             _context.Log($"STATS_POLL_TIMER_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
     }
+
+    private void StatsToggle_Checked(object sender, RoutedEventArgs e)
+        => HandleStatsToggleChecked();
+
+    private void StatsToggle_Unchecked(object sender, RoutedEventArgs e)
+        => HandleStatsToggleUnchecked();
+
+    private void FrameTimeOverlayToggle_Checked(object sender, RoutedEventArgs e)
+        => SetFrameTimeOverlayVisible(true);
+
+    private void FrameTimeOverlayToggle_Unchecked(object sender, RoutedEventArgs e)
+        => SetFrameTimeOverlayVisible(false);
 
     private static void SetVisibilityIfChanged(UIElement element, Visibility visibility)
     {

@@ -3,8 +3,8 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // Stats overlay controller composition. Stats dock controller graph composition
-// lives in MainWindow.StatsDockComposition.cs, and the XAML event adapter lives
-// in MainWindow.StatsOverlay.cs.
+// lives in MainWindow.StatsDockComposition.cs, and the binding adapter lives in
+// MainWindow.StatsOverlay.cs.
 public sealed partial class MainWindow
 {
     private StatsOverlayController _statsOverlayController = null!;

@@ -72,10 +72,7 @@ public sealed partial class MainWindow
 
         AttachRecordingOptionBindings();
         AttachAudioRecordPreviewToggleBindings();
-        StatsToggle.Checked += StatsToggle_Checked;
-        StatsToggle.Unchecked += StatsToggle_Unchecked;
-        FrameTimeOverlayToggle.Checked += FrameTimeOverlayToggle_Checked;
-        FrameTimeOverlayToggle.Unchecked += FrameTimeOverlayToggle_Unchecked;
+        AttachStatsOverlayToggleBindings();
         AttachAudioInputToggleBindings();
         AttachShowAllCaptureOptionsBinding();
         AttachFlashbackSettingsBindings();
