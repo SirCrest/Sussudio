@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using Sussudio.Controllers;
 
 namespace Sussudio;
@@ -7,8 +6,8 @@ namespace Sussudio;
 // Preview startup visual state machine. It delays the "preview is visible"
 // transition until meaningful media/render signals arrive, avoiding black-frame
 // flashes during source-reader and renderer warm-up. Signal collection lives in
-// MainWindow.PreviewStartupSignals.cs; watchdog recovery lives in
-// MainWindow.PreviewStartupWatchdog.cs.
+// MainWindow.PreviewStartupSignals.cs; watchdog recovery is wired by
+// MainWindow.PreviewStartupWatchdog.cs and owned by its controller.
 public sealed partial class MainWindow
 {
     private PreviewStartupSessionController _previewStartupSessionController = null!;
@@ -74,7 +73,7 @@ public sealed partial class MainWindow
             Guid.NewGuid().ToString("N"),
             DateTimeOffset.UtcNow);
         ResetPreviewSignalState();
-        Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
+        ResetPreviewStartupFailureStopSchedule();
 
         if (stateChanged)
         {
@@ -133,7 +132,7 @@ public sealed partial class MainWindow
             Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(ResetPreviewStartupTracking)}");
         }
         ResetPreviewSignalState();
-        Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
+        ResetPreviewStartupFailureStopSchedule();
 
         if (_previewStartupSessionController.Reset(keepRecoveryCount))
         {
