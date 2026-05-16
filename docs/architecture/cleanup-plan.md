@@ -2031,9 +2031,11 @@ Capture option binding setup now lives in the
 context, `CaptureOptionBindingController.Initialization.cs` owns video-format
 collection setup and initial capture/recording option projection,
 `CaptureOptionBindingController.SelectionHandlers.cs` owns resolution/frame-rate
-selection handlers, video-format/custom-bitrate event bindings, and click-based
-HDR/true-HDR toggle bindings plus custom-bitrate property-change value
-projection, and `CaptureOptionBindingController.ShowAll.cs` owns
+selection handlers, video-format/custom-bitrate event bindings, and
+custom-bitrate property-change value projection,
+`CaptureOptionBindingController.Hdr.cs` owns HDR/true-HDR click binding,
+ViewModel-to-control sync, and preview HDR passthrough forwarding, and
+`CaptureOptionBindingController.ShowAll.cs` owns
 `ShowAllCaptureOptionsToggle` click binding and ViewModel-to-control sync while
 reusing `CaptureComboBoxSelectionNormalizer` for shared frame-rate auto/exact
 matching. The controller delegates presentation affordances back through the

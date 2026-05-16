@@ -23,6 +23,7 @@ internal sealed class CaptureOptionBindingControllerContext
     public required Action ApplyInitialDecoderCountSelection { get; init; }
     public required Action ApplyBitrateVisibility { get; init; }
     public required Action ApplyHdrToggleEnabledState { get; init; }
+    public required Action<bool> SetHdrPassthroughEnabled { get; init; }
     public required Action UpdateDecoderCountVisibility { get; init; }
     public required Action EnsureResolutionSelection { get; init; }
     public required Action EnsureFrameRateSelection { get; init; }

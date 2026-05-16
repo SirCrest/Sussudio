@@ -60,9 +60,7 @@ internal sealed partial class CaptureOptionBindingController
                 _context.ViewModel.CustomBitrateMbps = _context.CustomBitrateNumberBox.Value;
             }
         };
-        _context.HdrToggle.Click += (s, e) => _context.ViewModel.IsHdrEnabled = _context.HdrToggle.IsChecked == true;
-        _context.TrueHdrPreviewToggle.Click += (s, e) =>
-            _context.ViewModel.IsTrueHdrPreviewEnabled = _context.TrueHdrPreviewToggle.IsChecked == true;
+        AttachHdrToggleBindings();
     }
 
     public void HandleCustomBitratePropertyChanged()

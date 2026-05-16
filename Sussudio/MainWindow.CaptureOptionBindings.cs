@@ -27,6 +27,7 @@ public sealed partial class MainWindow
             ApplyInitialDecoderCountSelection = ApplyInitialDecoderCountSelection,
             ApplyBitrateVisibility = ApplyBitrateVisibility,
             ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
+            SetHdrPassthroughEnabled = enabled => _previewRendererHostController.SetHdrPassthroughEnabled(enabled),
             UpdateDecoderCountVisibility = UpdateDecoderCountVisibility,
             EnsureResolutionSelection = EnsureResolutionSelection,
             EnsureFrameRateSelection = EnsureFrameRateSelection,
@@ -55,6 +56,12 @@ public sealed partial class MainWindow
 
     private void HandleCustomBitratePropertyChanged()
         => _captureOptionBindingController.HandleCustomBitratePropertyChanged();
+
+    private void HandleHdrEnabledChanged()
+        => _captureOptionBindingController.HandleHdrEnabledChanged();
+
+    private void HandleTrueHdrPreviewEnabledChanged()
+        => _captureOptionBindingController.HandleTrueHdrPreviewEnabledChanged();
 
     private void HandleShowAllCaptureOptionsChanged()
         => _captureOptionBindingController.HandleShowAllCaptureOptionsChanged();

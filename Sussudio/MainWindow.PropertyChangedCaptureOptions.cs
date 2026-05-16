@@ -60,24 +60,4 @@ public sealed partial class MainWindow
                 return false;
         }
     }
-
-    private void HandleHdrEnabledChanged()
-    {
-        if (HdrToggle.IsChecked != ViewModel.IsHdrEnabled)
-        {
-            HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
-        }
-
-        ApplyHdrToggleEnabledState();
-    }
-
-    private void HandleTrueHdrPreviewEnabledChanged()
-    {
-        if (TrueHdrPreviewToggle.IsChecked != ViewModel.IsTrueHdrPreviewEnabled)
-        {
-            TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
-        }
-
-        _previewRendererHostController.SetHdrPassthroughEnabled(ViewModel.IsTrueHdrPreviewEnabled);
-    }
 }

@@ -1972,9 +1972,11 @@ Primary current owners:
   XAML/view-model adapter context, `CaptureOptionBindingController.Initialization.cs`
   owns video-format collection binding plus initial capture/recording selection
   projection, `CaptureOptionBindingController.SelectionHandlers.cs` owns
-  resolution/frame-rate selection handlers plus video-format/custom-bitrate/HDR
+  resolution/frame-rate selection handlers plus video-format/custom-bitrate
   event bindings during `SetupBindings()` and custom-bitrate property-change
-  value projection, and `CaptureOptionBindingController.ShowAll.cs` owns
+  value projection, `CaptureOptionBindingController.Hdr.cs` owns HDR/true-HDR
+  click binding, ViewModel-to-control sync, and preview HDR passthrough
+  forwarding, and `CaptureOptionBindingController.ShowAll.cs` owns
   `ShowAllCaptureOptionsToggle` click binding and ViewModel-to-control sync,
   reusing `CaptureComboBoxSelectionNormalizer` for shared frame-rate auto/exact
   matching. Recording format, quality, preset, and split-encode string
