@@ -821,9 +821,12 @@ emergency flag, cancellation-token handoff, and shared result routing.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs`
 owns active Flashback recording backend finalization: live-edge finalize/export
 handoff, finalize-in-progress choreography, boundary snapshots, Flashback
-recording-integrity summaries, pending-settings apply or buffer-cycle handling,
-cancellation-result classification, recovery preservation, and
-Flashback-specific microphone monitor restart.
+recording-integrity summaries, cancellation-result classification, outcome
+publication, and Flashback-specific microphone monitor restart.
+`Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackendReconcile.cs`
+owns post-finalize Flashback backend reconciliation: failed-finalize recovery
+preservation, deferred settings apply, buffer cycling, buffer-cycle failure
+classification, recovery preservation, and backend cleanup launch.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs`
 owns standard LibAv recording finalization: unified-video recording stop and
 optional teardown, WASAPI recording detach/disposal, LibAv sink normal/emergency

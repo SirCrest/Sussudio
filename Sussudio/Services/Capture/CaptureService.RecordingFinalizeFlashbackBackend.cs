@@ -71,44 +71,10 @@ public partial class CaptureService
         _recordingIntegrityAudioBaseline = null;
         LogRecordingIntegritySummary(_lastRecordingIntegrity);
 
-        // If settings changed during recording (format, buffer duration, etc.),
-        // do a full restart to apply them. Otherwise just cycle the sink to
-        // preserve DVR history.
-        try
-        {
-            if (!fbResult.Succeeded)
-            {
-                var hadPendingFlashbackSettingsChange = _pendingFlashbackSettingsChange;
-                _pendingFlashbackSettingsChange = false;
-                _flashbackBackend.PreserveRecoverySegments("recording_finalize_failed");
-                Logger.Log(
-                    "FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING_DEFERRED " +
-                    $"reason=recording_finalize_failed pending_settings={hadPendingFlashbackSettingsChange}");
-            }
-            else if (_pendingFlashbackSettingsChange)
-            {
-                _pendingFlashbackSettingsChange = false;
-                Logger.Log("FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING");
-                await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
-                if (_flashbackEnabled && _unifiedVideoCapture != null && _currentSettings != null)
-                    await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                await CycleFlashbackBufferAsync(cancellationToken).ConfigureAwait(false);
-            }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_BUFFER_CYCLE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
-            RecordLastFlashbackFailure(ex);
-            _flashbackBackend.PreserveRecoverySegments("buffer_cycle_failed");
-            BeginFlashbackBackendCleanup(ex);
-        }
+        flashbackCancellationException = await ReconcileFlashbackBackendAfterRecordingFinalizeAsync(
+            fbResult,
+            flashbackCancellationException,
+            cancellationToken).ConfigureAwait(false);
 
         _recordingStopwatch.Stop();
         _isRecording = false;
