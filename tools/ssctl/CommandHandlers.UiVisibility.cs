@@ -1,3 +1,5 @@
+using Sussudio.Models;
+
 namespace Sussudio.Tools.Ssctl;
 
 internal static partial class CommandHandlers
@@ -16,7 +18,7 @@ internal static partial class CommandHandlers
             var visible = ParseShowHide(context.Rest[^1], "stats section <name> show|hide");
             return HandleSimpleCommandAsync(
                 context,
-                "SetStatsSectionVisible",
+                AutomationCommandKind.SetStatsSectionVisible,
                 new Dictionary<string, object?>
                 {
                     ["section"] = sectionName,
@@ -28,7 +30,7 @@ internal static partial class CommandHandlers
         EnsureArgCount(context.Rest, 1, "stats show|hide");
         return HandleSimpleCommandAsync(
             context,
-            "SetStatsVisible",
+            AutomationCommandKind.SetStatsVisible,
             new Dictionary<string, object?> { ["visible"] = ParseShowHide(subcommand, "stats show|hide") },
             includeData: false);
     }
@@ -39,7 +41,7 @@ internal static partial class CommandHandlers
         var visible = ParseShowHide(context.Rest[0], "settings show|hide");
         return HandleSimpleCommandAsync(
             context,
-            "SetSettingsVisible",
+            AutomationCommandKind.SetSettingsVisible,
             new Dictionary<string, object?> { ["visible"] = visible },
             includeData: false);
     }
@@ -50,7 +52,7 @@ internal static partial class CommandHandlers
         var visible = ParseShowHide(context.Rest[0], "frametime show|hide");
         return HandleSimpleCommandAsync(
             context,
-            "SetFrameTimeOverlayVisible",
+            AutomationCommandKind.SetFrameTimeOverlayVisible,
             new Dictionary<string, object?> { ["visible"] = visible },
             includeData: false);
     }

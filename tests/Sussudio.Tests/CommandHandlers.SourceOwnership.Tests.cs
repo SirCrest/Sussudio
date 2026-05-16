@@ -43,10 +43,10 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleStatsAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleSettingsAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleFrameTimeAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "\"SetStatsVisible\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "\"SetStatsSectionVisible\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "\"SetSettingsVisible\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "\"SetFrameTimeOverlayVisible\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetStatsVisible");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetStatsSectionVisible");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetSettingsVisible");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetFrameTimeOverlayVisible");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "HandleVerifyAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "\"VerifyFile\"");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "\"VerifyLastRecording\"");

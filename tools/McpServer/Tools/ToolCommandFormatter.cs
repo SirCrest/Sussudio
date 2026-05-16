@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 
@@ -17,9 +18,16 @@ internal static class ToolCommandFormatter
     internal static PendingCommand Optional(string commandName, string label, string payloadKey, string? value)
         => Optional(commandName, label, !string.IsNullOrWhiteSpace(value), new Dictionary<string, object?> { [payloadKey] = value });
 
+    internal static PendingCommand Optional(AutomationCommandKind kind, string label, string payloadKey, string? value)
+        => Optional(AutomationCommandCatalog.Get(kind).Name, label, payloadKey, value);
+
     internal static PendingCommand Optional<T>(string commandName, string label, string payloadKey, T? value)
         where T : struct
         => Optional(commandName, label, value.HasValue, value.HasValue ? new Dictionary<string, object?> { [payloadKey] = value.Value } : null);
+
+    internal static PendingCommand Optional<T>(AutomationCommandKind kind, string label, string payloadKey, T? value)
+        where T : struct
+        => Optional(AutomationCommandCatalog.Get(kind).Name, label, payloadKey, value);
 
     internal static PendingCommand Optional(
         string commandName,
@@ -30,6 +38,16 @@ internal static class ToolCommandFormatter
 
     internal static PendingCommand Optional(string commandName, string label, bool hasValue)
         => Optional(commandName, label, hasValue, payload: null);
+
+    internal static PendingCommand Optional(
+        AutomationCommandKind kind,
+        string label,
+        bool hasValue,
+        Dictionary<string, object?>? payload = null)
+        => Optional(AutomationCommandCatalog.Get(kind).Name, label, hasValue, payload);
+
+    internal static PendingCommand Optional(AutomationCommandKind kind, string label, bool hasValue)
+        => Optional(kind, label, hasValue, payload: null);
 
     internal static async Task<string> ExecuteAndFormatAsync(
         PipeClient pipeClient,
@@ -42,6 +60,17 @@ internal static class ToolCommandFormatter
         return FormatCommandResponse(response, label);
     }
 
+    internal static async Task<string> ExecuteAndFormatAsync(
+        PipeClient pipeClient,
+        AutomationCommandKind kind,
+        string label,
+        Dictionary<string, object?>? payload = null,
+        int? responseTimeoutMs = null)
+    {
+        var response = await pipeClient.SendCommandAsync(kind, payload, responseTimeoutMs).ConfigureAwait(false);
+        return FormatCommandResponse(response, label);
+    }
+
     internal static async Task<CallToolResult> ExecuteAndFormatResultAsync(
         PipeClient pipeClient,
         string commandName,
@@ -50,6 +79,17 @@ internal static class ToolCommandFormatter
         int? responseTimeoutMs = null)
     {
         var response = await pipeClient.SendCommandAsync(commandName, payload, responseTimeoutMs).ConfigureAwait(false);
+        return McpToolResultFactory.FromResponse(response, FormatCommandResponse(response, label));
+    }
+
+    internal static async Task<CallToolResult> ExecuteAndFormatResultAsync(
+        PipeClient pipeClient,
+        AutomationCommandKind kind,
+        string label,
+        Dictionary<string, object?>? payload = null,
+        int? responseTimeoutMs = null)
+    {
+        var response = await pipeClient.SendCommandAsync(kind, payload, responseTimeoutMs).ConfigureAwait(false);
         return McpToolResultFactory.FromResponse(response, FormatCommandResponse(response, label));
     }
 

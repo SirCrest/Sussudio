@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using Sussudio.Models;
 
 namespace Sussudio.Tools.Ssctl;
 
@@ -32,6 +33,16 @@ internal static partial class CommandHandlers
         bool includeData = false)
     {
         var response = await context.Transport.SendCommandAsync(commandName, payload).ConfigureAwait(false);
+        return WriteResponse(response, context.GlobalJson, value => Formatters.FormatResult(value, includeData));
+    }
+
+    private static async Task<int> HandleSimpleCommandAsync(
+        CommandContext context,
+        AutomationCommandKind kind,
+        Dictionary<string, object?>? payload = null,
+        bool includeData = false)
+    {
+        var response = await context.Transport.SendCommandAsync(kind, payload).ConfigureAwait(false);
         return WriteResponse(response, context.GlobalJson, value => Formatters.FormatResult(value, includeData));
     }
 

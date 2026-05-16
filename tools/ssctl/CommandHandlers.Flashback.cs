@@ -11,7 +11,7 @@ internal static partial class CommandHandlers
             {
                 EnsureArgCount(context.Rest, 2, "flashback timeline show|hide");
                 var visible = ParseShowHide(context.Rest[1], "flashback timeline show|hide");
-                return HandleSimpleCommandAsync(context, "SetFlashbackTimelineVisible",
+                return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.SetFlashbackTimelineVisible,
                     new Dictionary<string, object?> { ["visible"] = visible }, includeData: false);
             }
             case "on":

@@ -12,7 +12,12 @@ static partial class Program
         // Verify PipeTransport exposes expected command routing
         var transportType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.PipeTransport")
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.PipeTransport type not found.");
-        var sendCommandAsync = transportType.GetMethod("SendCommandAsync", BindingFlags.Instance | BindingFlags.Public)
+        var sendCommandAsync = transportType.GetMethod(
+                "SendCommandAsync",
+                BindingFlags.Instance | BindingFlags.Public,
+                binder: null,
+                types: new[] { typeof(string), typeof(Dictionary<string, object?>), typeof(int?) },
+                modifiers: null)
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.PipeTransport.SendCommandAsync not found.");
 
         var pipeName = $"ssctl-pipe-transport-{Guid.NewGuid():N}";

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using Sussudio.Models;
 
 namespace McpServer.Tools;
 
@@ -17,9 +18,9 @@ public static class UiSettingsTools
         => await ToolCommandFormatter.ExecuteBatchResultAsync(
                 pipeClient,
                 "No UI setting changes requested.",
-                ToolCommandFormatter.Optional("SetShowAllCaptureOptions", "SetShowAllCaptureOptions", "enabled", showAllCaptureOptions),
-                ToolCommandFormatter.Optional("SetPreviewVolume", "SetPreviewVolume", "previewVolumePercent", previewVolumePercent),
-                ToolCommandFormatter.Optional("SetStatsVisible", "SetStatsVisible", "visible", statsVisible))
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetShowAllCaptureOptions, "SetShowAllCaptureOptions", "enabled", showAllCaptureOptions),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetPreviewVolume, "SetPreviewVolume", "previewVolumePercent", previewVolumePercent),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetStatsVisible, "SetStatsVisible", "visible", statsVisible))
             .ConfigureAwait(false);
 
     [McpServerTool, Description("Show or hide the settings panel")]
@@ -28,7 +29,7 @@ public static class UiSettingsTools
         [Description("True to show the settings panel, false to hide it")] bool visible)
     {
         var payload = new Dictionary<string, object?> { ["visible"] = visible };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, "SetSettingsVisible", "SetSettingsVisible", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetSettingsVisible, "SetSettingsVisible", payload).ConfigureAwait(false);
     }
 
     [McpServerTool, Description("Show or hide the frametime graph overlay")]
@@ -37,7 +38,7 @@ public static class UiSettingsTools
         [Description("True to show the frametime graph, false to hide it")] bool visible)
     {
         var payload = new Dictionary<string, object?> { ["visible"] = visible };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, "SetFrameTimeOverlayVisible", "SetFrameTimeOverlayVisible", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFrameTimeOverlayVisible, "SetFrameTimeOverlayVisible", payload).ConfigureAwait(false);
     }
 
     [McpServerTool, Description("Show or hide the Flashback timeline UI")]
@@ -46,7 +47,7 @@ public static class UiSettingsTools
         [Description("True to show the Flashback timeline, false to hide it")] bool visible)
     {
         var payload = new Dictionary<string, object?> { ["visible"] = visible };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, "SetFlashbackTimelineVisible", "SetFlashbackTimelineVisible", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFlashbackTimelineVisible, "SetFlashbackTimelineVisible", payload).ConfigureAwait(false);
     }
 
     [McpServerTool, Description("Show or hide a specific stats section by name")]
@@ -60,7 +61,7 @@ public static class UiSettingsTools
             ["section"] = section,
             ["visible"] = visible
         };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, "SetStatsSectionVisible", "SetStatsSectionVisible", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetStatsSectionVisible, "SetStatsSectionVisible", payload).ConfigureAwait(false);
     }
 
 }

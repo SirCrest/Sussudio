@@ -35,6 +35,51 @@ public sealed class AutomationToolContractsProtocolXunitTests
     }
 
     [Fact]
+    public void UiAutomationAdapters_UseEnumCommands_WithoutChangingLabelsOrWireNames()
+    {
+        var ssctlPipeText = RuntimeContractSource.ReadRepoFile("tools/ssctl/PipeTransport.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var ssctlTransportText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.Transport.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var ssctlUiText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var ssctlFlashbackText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var mcpPipeText = RuntimeContractSource.ReadRepoFile("tools/McpServer/PipeClient.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var formatterText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Tools/ToolCommandFormatter.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var uiSettingsToolsText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Tools/UiSettingsTools.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+
+        Assert.Contains("SendCommandAsync(\n        AutomationCommandKind kind,", ssctlPipeText);
+        Assert.Contains("=> SendCommandAsync(AutomationCommandCatalog.Get(kind).Name, payload, responseTimeoutMs);", ssctlPipeText);
+        Assert.Contains("HandleSimpleCommandAsync(\n        CommandContext context,\n        AutomationCommandKind kind,", ssctlTransportText);
+        Assert.Contains("SendCommandAsync(\n        AutomationCommandKind kind,", mcpPipeText);
+        Assert.Contains("=> SendCommandAsync(AutomationCommandCatalog.Get(kind).Name, payload, responseTimeoutMs);", mcpPipeText);
+        Assert.Contains("Optional(AutomationCommandKind kind, string label,", formatterText);
+        Assert.Contains("ExecuteAndFormatResultAsync(\n        PipeClient pipeClient,\n        AutomationCommandKind kind,", formatterText);
+        Assert.Contains("pipeClient.SendCommandAsync(kind, payload, responseTimeoutMs)", formatterText);
+
+        Assert.Contains("AutomationCommandKind.SetStatsVisible", ssctlUiText);
+        Assert.Contains("AutomationCommandKind.SetStatsSectionVisible", ssctlUiText);
+        Assert.Contains("AutomationCommandKind.SetSettingsVisible", ssctlUiText);
+        Assert.Contains("AutomationCommandKind.SetFrameTimeOverlayVisible", ssctlUiText);
+        Assert.Contains("AutomationCommandKind.SetFlashbackTimelineVisible", ssctlFlashbackText);
+        Assert.DoesNotContain("\"SetStatsVisible\"", ssctlUiText);
+        Assert.DoesNotContain("\"SetStatsSectionVisible\"", ssctlUiText);
+        Assert.DoesNotContain("\"SetSettingsVisible\"", ssctlUiText);
+        Assert.DoesNotContain("\"SetFrameTimeOverlayVisible\"", ssctlUiText);
+        Assert.DoesNotContain("\"SetFlashbackTimelineVisible\"", ssctlFlashbackText);
+
+        Assert.Contains("ToolCommandFormatter.Optional(AutomationCommandKind.SetStatsVisible, \"SetStatsVisible\"", uiSettingsToolsText);
+        Assert.Contains("ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetSettingsVisible, \"SetSettingsVisible\"", uiSettingsToolsText);
+        Assert.Contains("ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFrameTimeOverlayVisible, \"SetFrameTimeOverlayVisible\"", uiSettingsToolsText);
+        Assert.Contains("ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFlashbackTimelineVisible, \"SetFlashbackTimelineVisible\"", uiSettingsToolsText);
+        Assert.Contains("ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetStatsSectionVisible, \"SetStatsSectionVisible\"", uiSettingsToolsText);
+    }
+
+    [Fact]
     public void AutomationClient_UsesSharedProtocol_ForCommandResolution()
     {
         var entryText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.cs");

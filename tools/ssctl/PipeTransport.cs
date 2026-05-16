@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 
 namespace Sussudio.Tools.Ssctl;
@@ -86,6 +87,12 @@ internal sealed class PipeTransport
                 "pipe-canceled");
         }
     }
+
+    public Task<JsonElement> SendCommandAsync(
+        AutomationCommandKind kind,
+        Dictionary<string, object?>? payload = null,
+        int? responseTimeoutMs = null)
+        => SendCommandAsync(AutomationCommandCatalog.Get(kind).Name, payload, responseTimeoutMs);
 
     private static JsonElement CreateSyntheticError(string message, string errorCode)
     {
