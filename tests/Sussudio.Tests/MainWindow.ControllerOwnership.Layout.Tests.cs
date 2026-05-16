@@ -6,20 +6,27 @@ static partial class Program
     private static Task ResponsiveShellLayout_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ResponsiveShellLayout.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/ResponsiveShellLayoutController.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/Controllers/ResponsiveShellLayoutPolicy.cs").Replace("\r\n", "\n");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private ResponsiveShellLayoutController _responsiveShellLayoutController = null!;");
         AssertContains(adapterText, "private void InitializeResponsiveShellLayoutController()");
         AssertContains(adapterText, "ControlBarBorder = ControlBarBorder,");
         AssertContains(adapterText, "CaptureSettingsGrid = CaptureSettingsGrid,");
+        AssertContains(adapterText, "ControlBarLabels = new UIElement[]");
+        AssertContains(adapterText, "FlashbackToggleLabel,");
         AssertContains(adapterText, "private void SetupResponsiveShellLayoutBindings()");
         AssertContains(adapterText, "=> _responsiveShellLayoutController.Attach();");
+        AssertContains(xamlText, "x:Name=\"FlashbackToggleLabel\"");
         AssertContains(mainWindowText, "InitializeResponsiveShellLayoutController();");
         AssertContains(bindingsText, "SetupResponsiveShellLayoutBindings();");
         AssertContains(controllerText, "internal sealed class ResponsiveShellLayoutController");
+        AssertContains(controllerText, "public required UIElement[] ControlBarLabels { get; init; }");
         AssertContains(policyText, "internal static class ResponsiveShellLayoutPolicy");
         AssertContains(policyText, "public const double ControlBarLabelThreshold = 900.0;");
         AssertContains(policyText, "public const double CaptureSettingsNarrowWidth = 700.0;");
@@ -29,14 +36,21 @@ static partial class Program
         AssertContains(controllerText, "public void Attach()");
         AssertContains(controllerText, "_context.ControlBarBorder.SizeChanged += (_, e) => ApplyControlBarWidth(e.NewSize.Width);");
         AssertContains(controllerText, "ResponsiveShellLayoutPolicy.ShouldShowControlBarLabels(controlBarWidth);");
+        AssertContains(controllerText, "foreach (var label in _context.ControlBarLabels)");
+        AssertContains(controllerText, "label.Visibility = visibility;");
         AssertContains(controllerText, "ResponsiveShellLayoutPolicy.GetCaptureSettingsLayoutKind(width);");
         AssertContains(controllerText, "private void ApplyCaptureSettingsLayout(ResponsiveCaptureSettingsPlacement placement)");
         AssertContains(controllerText, "private static void ApplyGridSlot(FrameworkElement element, ResponsiveGridSlot slot)");
+        AssertContains(agentMapText, "complete control-bar label set");
+        AssertContains(cleanupPlanText, "complete control-bar label set");
         AssertDoesNotContain(mainWindowText, "private bool _toggleLabelsVisible;");
         AssertDoesNotContain(mainWindowText, "private bool _captureSettingsNarrow;");
         AssertDoesNotContain(mainWindowText, "private const double ControlBarLabelThreshold = 900.0;");
         AssertDoesNotContain(controllerText, "private const double ControlBarLabelThreshold = 900.0;");
         AssertDoesNotContain(controllerText, "private const double CaptureSettingsNarrowWidth = 700.0;");
+        AssertDoesNotContain(controllerText, "_context.HdrToggleLabel.Visibility = visibility;");
+        AssertDoesNotContain(controllerText, "_context.FrameTimeOverlayToggleLabel.Visibility = visibility;");
+        AssertDoesNotContain(adapterText, "FlashbackToggleLabel = FlashbackToggleLabel,");
         AssertDoesNotContain(controllerText, "private void ApplyNarrowCaptureSettingsLayout()");
         AssertDoesNotContain(controllerText, "private void ApplyWideCaptureSettingsLayout()");
         AssertDoesNotContain(bindingsText, "private void UpdateToggleLabelVisibility(");

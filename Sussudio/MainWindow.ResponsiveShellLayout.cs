@@ -1,3 +1,4 @@
+using Microsoft.UI.Xaml;
 using Sussudio.Controllers;
 
 namespace Sussudio;
@@ -14,13 +15,17 @@ public sealed partial class MainWindow
         {
             ControlBarBorder = ControlBarBorder,
             CaptureSettingsGrid = CaptureSettingsGrid,
-            HdrToggleLabel = HdrToggleLabel,
-            AudioRecordToggleLabel = AudioRecordToggleLabel,
-            PreviewButtonLabel = PreviewButtonLabel,
-            HdrPreviewToggleLabel = HdrPreviewToggleLabel,
-            AudioPreviewToggleLabel = AudioPreviewToggleLabel,
-            StatsToggleLabel = StatsToggleLabel,
-            FrameTimeOverlayToggleLabel = FrameTimeOverlayToggleLabel,
+            ControlBarLabels = new UIElement[]
+            {
+                HdrToggleLabel,
+                AudioRecordToggleLabel,
+                PreviewButtonLabel,
+                HdrPreviewToggleLabel,
+                AudioPreviewToggleLabel,
+                StatsToggleLabel,
+                FrameTimeOverlayToggleLabel,
+                FlashbackToggleLabel,
+            },
             VideoFormatColumn = VideoFormatColumn,
             PresetColumn = PresetColumn,
             SplitColumn = SplitColumn,
