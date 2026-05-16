@@ -22,7 +22,7 @@ static partial class Program
         var unifiedDisposeCore = ExtractTextBetween(
             unifiedVideoCaptureText,
             "private async ValueTask DisposeCoreAsync",
-            "private void OnFrameArrived");
+            "private void ThrowIfDisposed()");
 
         AssertContains(disposePreviewPipeline, "unifiedVideoCapture.SetPreviewSink(null);");
         AssertContains(disposePreviewPipeline, "unifiedVideoCapture.SetFlashbackSink(null);");

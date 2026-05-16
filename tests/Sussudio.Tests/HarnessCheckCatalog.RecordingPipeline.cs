@@ -30,6 +30,9 @@ static partial class Program
             "Unified video capture sink fan-out lives in focused partial",
             UnifiedVideoCapture_SinkFanoutLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "Unified video capture frame ingress lives in focused partial",
+            UnifiedVideoCapture_FrameIngressLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "Unified video capture lifecycle lives in focused partial",
             UnifiedVideoCapture_LifecycleLivesInFocusedPartial);
         await AddCheckAsync(results,

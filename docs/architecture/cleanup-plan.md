@@ -1320,7 +1320,13 @@ Unified capture diagnostic metric projection now lives in
 `Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs`. Keep MJPEG timing
 records, source-reader cadence forwarding, MJPEG jitter/hash metrics, preview
 visual cadence metrics, and frame-ledger summary projection there; keep
-top-level frame arrival routing in `UnifiedVideoCapture.cs`.
+top-level frame arrival routing in `UnifiedVideoCapture.FrameIngress.cs`.
+
+Unified capture frame ingress now lives in
+`Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs`. Keep source
+frame arrival callbacks, MJPEG pipeline frame emission, capture-arrival ledger
+records, pixel-format observer dispatch, and fatal-error signaling there; keep
+public control/configuration methods in `UnifiedVideoCapture.cs`.
 
 Unified capture source-session lifecycle now lives in
 `Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs`. Keep source-reader
@@ -1331,7 +1337,8 @@ Unified capture recording/Flashback sink fan-out now lives in
 `Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs`. Keep recording
 and Flashback enqueue helpers, non-blocking queue rejection accounting, legacy
 encoder fallback enqueue adapters, and Flashback recording sequence-gap
-accounting there; keep frame arrival callbacks in `UnifiedVideoCapture.cs`.
+accounting there; keep frame arrival callbacks in
+`UnifiedVideoCapture.FrameIngress.cs`.
 
 Unified capture preview routing now lives in
 `Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs`. Keep preview sink

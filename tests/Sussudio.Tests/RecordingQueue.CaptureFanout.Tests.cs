@@ -25,6 +25,68 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task UnifiedVideoCapture_FrameIngressLivesInFocusedPartial()
+    {
+        var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
+            .Replace("\r\n", "\n");
+        var frameIngressSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs")
+            .Replace("\r\n", "\n");
+        var previewSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(frameIngressSource, "private void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)");
+        AssertContains(frameIngressSource, "private void OnMjpegPipelineFrameEmitted(PooledVideoFrame frame)");
+        AssertContains(frameIngressSource, "private void OnDualFrameArrived(");
+        AssertContains(frameIngressSource, "private void RecordCaptureArrived(long sourceSequence, long arrivalTick, int width, int height, int compressedByteLength)");
+        AssertContains(frameIngressSource, "private void FirePixelFormatObserverOnce(string format)");
+        AssertContains(frameIngressSource, "private void SignalFatalError(Exception ex, string logMessage)");
+        AssertDoesNotContain(frameIngressSource, "private void OnMjpegPipelinePreviewFrameDecoded(PooledVideoFrameLease frame)");
+        AssertContains(previewSource, "private void OnMjpegPipelinePreviewFrameDecoded(PooledVideoFrameLease frame)");
+
+        AssertDoesNotContain(rootSource, "private void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)");
+        AssertDoesNotContain(rootSource, "private void OnMjpegPipelineFrameEmitted(PooledVideoFrame frame)");
+        AssertDoesNotContain(rootSource, "private void OnDualFrameArrived(");
+        AssertDoesNotContain(rootSource, "private void RecordCaptureArrived(long sourceSequence, long arrivalTick, int width, int height, int compressedByteLength)");
+        AssertDoesNotContain(rootSource, "private void FirePixelFormatObserverOnce(string format)");
+        AssertDoesNotContain(rootSource, "private void SignalFatalError(Exception ex, string logMessage)");
+
+        var rawIngress = ExtractSourceBlock(
+            frameIngressSource,
+            "private void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)",
+            "private void OnMjpegPipelineFrameEmitted(PooledVideoFrame frame)");
+        AssertOccursBefore(rawIngress, "Interlocked.Increment(ref _videoFramesArrived)", "Interlocked.Exchange(ref _lastVideoFrameArrivedTick");
+        AssertOccursBefore(rawIngress, "Interlocked.Exchange(ref _lastVideoFrameArrivedTick", "RecordCaptureArrived(sourceSequence, arrivalTick, width, height, frameData.Length);");
+        AssertOccursBefore(rawIngress, "FrameLedgerStage.CompressedQueued", "return;");
+        AssertOccursBefore(rawIngress, "FirePixelFormatObserverOnce(isP010 ? \"P010\" : \"NV12\");", "EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);");
+        AssertOccursBefore(rawIngress, "EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);", "EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);");
+        AssertOccursBefore(rawIngress, "EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);", "SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick, sourceSequence);");
+
+        var mjpegIngress = ExtractSourceBlock(
+            frameIngressSource,
+            "private void OnMjpegPipelineFrameEmitted(PooledVideoFrame frame)",
+            "private void OnDualFrameArrived(");
+        AssertOccursBefore(mjpegIngress, "FirePixelFormatObserverOnce(\"NV12\");", "EnqueueRecordingFrame(frame);");
+        AssertOccursBefore(mjpegIngress, "EnqueueRecordingFrame(frame);", "EnqueueFlashbackFrame(frame);");
+
+        var dualIngress = ExtractSourceBlock(
+            frameIngressSource,
+            "private void OnDualFrameArrived(",
+            "private void RecordCaptureArrived(long sourceSequence, long arrivalTick, int width, int height, int compressedByteLength)");
+        AssertOccursBefore(dualIngress, "Interlocked.Increment(ref _videoFramesArrived)", "Interlocked.Exchange(ref _lastVideoFrameArrivedTick");
+        AssertOccursBefore(dualIngress, "FirePixelFormatObserverOnce(isP010 ? \"P010\" : \"NV12\");", "var gpuEncoder = Volatile.Read(ref _gpuRecordingEncoder);");
+        AssertOccursBefore(dualIngress, "EnqueueGpuRecordingFrame(gpuEncoder, gpuTexture, gpuSubresource, sourceSequence);", "EnqueueFlashbackGpuFrame(gpuTexture, gpuSubresource, sourceSequence);");
+        AssertOccursBefore(dualIngress, "EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);", "EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);");
+        AssertOccursBefore(dualIngress, "EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);", "previewSink.SubmitTexture(");
+        AssertOccursBefore(dualIngress, "Volatile.Read(ref _strictPreviewTextureRequired)", "SignalFatalError(");
+        AssertOccursBefore(dualIngress, "Volatile.Read(ref _strictPreviewTextureRequired)", "SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick, sourceSequence);");
+
+        AssertOccursBefore(frameIngressSource, "Logger.Log(logMessage);", "Interlocked.Exchange(ref _fatalErrorSignaled, 1)");
+        AssertOccursBefore(frameIngressSource, "Interlocked.Exchange(ref _fatalErrorSignaled, 1)", "FatalErrorOccurred?.Invoke(this, ex);");
+        AssertContains(frameIngressSource, "UNIFIED_VIDEO_FATAL_CALLBACK_FAIL");
+
+        return Task.CompletedTask;
+    }
+
     private static Task UnifiedVideoCapture_LifecycleLivesInFocusedPartial()
     {
         var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")

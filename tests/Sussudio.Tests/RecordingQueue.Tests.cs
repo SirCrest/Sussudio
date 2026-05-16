@@ -27,6 +27,7 @@ static partial class Program
         var parts = new[]
         {
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Metrics.cs").Replace("\r\n", "\n"),
