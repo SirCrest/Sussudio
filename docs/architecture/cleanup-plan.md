@@ -1388,11 +1388,12 @@ and recording-integrity summary projection now lives in
 Recording-format and observed-frame helper policy live in focused snapshot
 partials.
 
-Capture health snapshot projection now lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file owns
-the diagnostics/automation health DTO construction for source telemetry and
-shared fields; MJPEG timing, jitter, packet-hash, visual-cadence, and
-per-decoder projection lives in
+Capture health snapshot sampling now lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file
+captures current service references and invokes focused field builders; final
+diagnostics/automation DTO construction lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`. MJPEG
+timing, jitter, packet-hash, visual-cadence, and per-decoder projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs`;
 source telemetry, backend, suppression, and circuit-state projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs`;

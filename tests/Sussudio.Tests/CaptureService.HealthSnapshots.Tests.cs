@@ -3,18 +3,37 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static Task CaptureService_HealthSnapshotAssemblyLivesInFocusedPartial()
+    {
+        var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(healthSnapshotText, "return AssembleCaptureHealthSnapshot(");
+        AssertContains(healthSnapshotText, "new CaptureHealthSnapshotAssemblyFields(");
+        AssertContains(healthSnapshotAssemblerText, "private CaptureHealthSnapshot AssembleCaptureHealthSnapshot(");
+        AssertContains(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields(");
+        AssertContains(healthSnapshotAssemblerText, "TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(snapshotUtcUnixMs),");
+        AssertDoesNotContain(healthSnapshotText, "return new CaptureHealthSnapshot");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_HealthSnapshotFlashbackExportFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
+            .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackExport = CaptureFlashbackExportHealthSnapshotFields(snapshotUtcUnixMs);");
-        AssertContains(healthSnapshotText, "FlashbackExportActive = flashbackExport.Active,");
-        AssertContains(healthSnapshotText, "FlashbackExportElapsedMs = flashbackExport.ElapsedMs,");
-        AssertContains(healthSnapshotText, "FlashbackExportThroughputBytesPerSec = flashbackExport.ThroughputBytesPerSec,");
-        AssertContains(healthSnapshotText, "LastExportId = flashbackExport.LastResultId,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackExportActive = flashbackExport.Active,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackExportElapsedMs = flashbackExport.ElapsedMs,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackExportThroughputBytesPerSec = flashbackExport.ThroughputBytesPerSec,");
+        AssertContains(healthSnapshotAssemblerText, "LastExportId = flashbackExport.LastResultId,");
         AssertDoesNotContain(healthSnapshotText, "lock (_flashbackExportDiagnosticsLock)");
         AssertDoesNotContain(healthSnapshotText, "ComputeFlashbackExportElapsedMs(");
         AssertDoesNotContain(healthSnapshotText, "GetFileLengthOrZero(");
@@ -37,13 +56,15 @@ static partial class Program
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
+            .Replace("\r\n", "\n");
         var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackBuffer = CaptureFlashbackBufferHealthSnapshotFields(");
-        AssertContains(healthSnapshotText, "FlashbackBufferedDurationMs = flashbackBuffer.BufferedDurationMs,");
-        AssertContains(healthSnapshotText, "FlashbackBackendSettingsStaleReason = flashbackBuffer.BackendSettingsStaleReason,");
-        AssertContains(healthSnapshotText, "EncoderTargetBitRate = flashbackBuffer.EncoderTargetBitRate,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackBufferedDurationMs = flashbackBuffer.BufferedDurationMs,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackBackendSettingsStaleReason = flashbackBuffer.BackendSettingsStaleReason,");
+        AssertContains(healthSnapshotAssemblerText, "EncoderTargetBitRate = flashbackBuffer.EncoderTargetBitRate,");
         AssertDoesNotContain(healthSnapshotText, "FlashbackBufferedDurationMs = (long)(bufMgr?.BufferedDuration.TotalMilliseconds ?? 0)");
         AssertDoesNotContain(healthSnapshotText, "ResolveFlashbackBackendSettingsStaleReason(flashbackBackendSettings, _currentSettings)");
 
@@ -61,12 +82,14 @@ static partial class Program
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
+            .Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var recordingHealth = CaptureRecordingHealthSnapshotFields(sink, fbSink);");
-        AssertContains(healthSnapshotText, "RecordingEncodingFailed = recordingHealth.EncodingFailed,");
-        AssertContains(healthSnapshotText, "RecordingVideoQueueLatencyP95Ms = recordingHealth.VideoQueueLatencyMetrics.P95Ms,");
+        AssertContains(healthSnapshotAssemblerText, "RecordingEncodingFailed = recordingHealth.EncodingFailed,");
+        AssertContains(healthSnapshotAssemblerText, "RecordingVideoQueueLatencyP95Ms = recordingHealth.VideoQueueLatencyMetrics.P95Ms,");
         AssertDoesNotContain(healthSnapshotText, "var activeRecordingVideoQueueLatencyMetrics");
         AssertDoesNotContain(healthSnapshotText, "var flashbackIsRecordingBackend = IsFlashbackRecordingBackendOwnedByRecording();");
 
@@ -83,14 +106,16 @@ static partial class Program
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
+            .Replace("\r\n", "\n");
         var flashbackQueueText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackQueues.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackQueues = CaptureFlashbackQueueHealthSnapshotFields(");
-        AssertContains(healthSnapshotText, "FlashbackVideoQueueDepth = flashbackQueues.VideoQueueDepth,");
-        AssertContains(healthSnapshotText, "FlashbackForceRotateActive = flashbackQueues.ForceRotateActive,");
-        AssertContains(healthSnapshotText, "FlashbackVideoQueueLatencyP99Ms = flashbackQueues.VideoQueueLatencyMetrics.P99Ms,");
-        AssertContains(healthSnapshotText, "FlashbackGpuQueueLastRejectReason = flashbackQueues.GpuQueueLastRejectReason,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackVideoQueueDepth = flashbackQueues.VideoQueueDepth,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackForceRotateActive = flashbackQueues.ForceRotateActive,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackVideoQueueLatencyP99Ms = flashbackQueues.VideoQueueLatencyMetrics.P99Ms,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackGpuQueueLastRejectReason = flashbackQueues.GpuQueueLastRejectReason,");
         AssertDoesNotContain(healthSnapshotText, "FlashbackVideoQueueDepth = fbSink?.VideoQueueCount");
         AssertDoesNotContain(healthSnapshotText, "FlashbackForceRotateActive = fbSink?.IsForceRotateActive");
         AssertDoesNotContain(healthSnapshotText, "FlashbackGpuQueueLastRejectReason = fbSink?.LastGpuQueueRejectReason");
@@ -108,13 +133,15 @@ static partial class Program
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
+            .Replace("\r\n", "\n");
         var flashbackPlaybackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackPlayback = CaptureFlashbackPlaybackHealthSnapshotFields(fbPlayback);");
-        AssertContains(healthSnapshotText, "FlashbackPlaybackState = flashbackPlayback.State,");
-        AssertContains(healthSnapshotText, "FlashbackPlaybackDecodeP95Ms = flashbackPlayback.DecodeP95Ms,");
-        AssertContains(healthSnapshotText, "FlashbackPlaybackLastCommandFailure = flashbackPlayback.LastCommandFailure,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackPlaybackState = flashbackPlayback.State,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackPlaybackDecodeP95Ms = flashbackPlayback.DecodeP95Ms,");
+        AssertContains(healthSnapshotAssemblerText, "FlashbackPlaybackLastCommandFailure = flashbackPlayback.LastCommandFailure,");
         AssertDoesNotContain(healthSnapshotText, "var playbackCadence = fbPlayback?.GetPlaybackCadenceMetrics()");
         AssertDoesNotContain(healthSnapshotText, "var playbackDecode = fbPlayback?.GetPlaybackDecodeMetrics()");
         AssertDoesNotContain(healthSnapshotText, "FlashbackPlaybackFrameCount = fbPlayback?.PlaybackFrameCount");
@@ -131,13 +158,15 @@ static partial class Program
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
+            .Replace("\r\n", "\n");
         var sourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var sourceTelemetry = CaptureSourceTelemetryHealthSnapshotFields(_latestSourceTelemetry);");
-        AssertContains(healthSnapshotText, "SourceTelemetryAvailability = sourceTelemetry.Availability,");
-        AssertContains(healthSnapshotText, "SourceTelemetryBackend = sourceTelemetry.Backend,");
-        AssertContains(healthSnapshotText, "SourceTelemetryCircuitState = sourceTelemetry.CircuitState,");
+        AssertContains(healthSnapshotAssemblerText, "SourceTelemetryAvailability = sourceTelemetry.Availability,");
+        AssertContains(healthSnapshotAssemblerText, "SourceTelemetryBackend = sourceTelemetry.Backend,");
+        AssertContains(healthSnapshotAssemblerText, "SourceTelemetryCircuitState = sourceTelemetry.CircuitState,");
         AssertDoesNotContain(healthSnapshotText, "ResolveSourceTelemetrySuppressedReason(_latestSourceTelemetry)");
         AssertDoesNotContain(healthSnapshotText, "ResolveSourceTelemetryCircuitState(");
 
@@ -154,12 +183,14 @@ static partial class Program
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
+            .Replace("\r\n", "\n");
         var captureCadenceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotCaptureCadence.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var captureCadence = BuildCaptureCadenceHealthSnapshotFields(unifiedVideoCapture);");
-        AssertContains(healthSnapshotText, "CaptureCadenceSampleCount = captureCadence.SampleCount,");
-        AssertContains(healthSnapshotText, "CaptureCadenceEstimatedDropPercent = captureCadence.EstimatedDropPercent,");
+        AssertContains(healthSnapshotAssemblerText, "CaptureCadenceSampleCount = captureCadence.SampleCount,");
+        AssertContains(healthSnapshotAssemblerText, "CaptureCadenceEstimatedDropPercent = captureCadence.EstimatedDropPercent,");
         AssertDoesNotContain(healthSnapshotText, "GetSourceCadenceMetrics()");
         AssertDoesNotContain(healthSnapshotText, "MfSourceReaderVideoCapture.SourceCadenceMetrics");
 
@@ -175,14 +206,16 @@ static partial class Program
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
+            .Replace("\r\n", "\n");
         var mjpegText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var mjpegHealth = CaptureMjpegHealthSnapshotFields(unifiedVideoCapture);");
-        AssertContains(healthSnapshotText, "MjpegDecodeSampleCount = mjpegHealth.Timing.DecodeSampleCount,");
-        AssertContains(healthSnapshotText, "MjpegPreviewJitterEnabled = mjpegHealth.PreviewJitter.Enabled,");
-        AssertContains(healthSnapshotText, "VisualCadenceSampleCount = mjpegHealth.VisualCadence.SampleCount,");
-        AssertContains(healthSnapshotText, "MjpegPerDecoder = mjpegHealth.PerDecoder,");
+        AssertContains(healthSnapshotAssemblerText, "MjpegDecodeSampleCount = mjpegHealth.Timing.DecodeSampleCount,");
+        AssertContains(healthSnapshotAssemblerText, "MjpegPreviewJitterEnabled = mjpegHealth.PreviewJitter.Enabled,");
+        AssertContains(healthSnapshotAssemblerText, "VisualCadenceSampleCount = mjpegHealth.VisualCadence.SampleCount,");
+        AssertContains(healthSnapshotAssemblerText, "MjpegPerDecoder = mjpegHealth.PerDecoder,");
         AssertDoesNotContain(healthSnapshotText, "GetMjpegPipelineTimingSnapshot()");
         AssertDoesNotContain(healthSnapshotText, "GetMjpegPreviewJitterMetrics()");
         AssertDoesNotContain(healthSnapshotText, "FrameFingerprintCadenceTracker.Empty");
@@ -203,13 +236,15 @@ static partial class Program
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
+            .Replace("\r\n", "\n");
         var avSyncText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.AvSync.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var avSyncHealth = CaptureAvSyncHealthSnapshotFields();");
-        AssertContains(healthSnapshotText, "AvSyncCaptureDriftMs = avSyncHealth.CaptureDriftMs,");
-        AssertContains(healthSnapshotText, "AvSyncCaptureDriftRateMsPerSec = avSyncHealth.CaptureDriftRateMsPerSec,");
-        AssertContains(healthSnapshotText, "AvSyncEncoderCorrectionSamples = avSyncHealth.EncoderCorrectionSamples");
+        AssertContains(healthSnapshotAssemblerText, "AvSyncCaptureDriftMs = avSyncHealth.CaptureDriftMs,");
+        AssertContains(healthSnapshotAssemblerText, "AvSyncCaptureDriftRateMsPerSec = avSyncHealth.CaptureDriftRateMsPerSec,");
+        AssertContains(healthSnapshotAssemblerText, "AvSyncEncoderCorrectionSamples = avSyncHealth.EncoderCorrectionSamples");
         AssertDoesNotContain(healthSnapshotText, "var (avSyncDriftMs, avSyncDriftRate) = ComputeAvSyncDrift();");
         AssertDoesNotContain(healthSnapshotText, "var (avSyncEncoderDriftMs, avSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();");
 

@@ -42,6 +42,9 @@ static partial class Program
             "Health snapshot propagates structured source telemetry details",
             CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails);
         await AddCheckAsync(results,
+            "Health snapshot assembly lives in focused partial",
+            CaptureService_HealthSnapshotAssemblyLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "Health snapshot Flashback export fields live in focused partial",
             CaptureService_HealthSnapshotFlashbackExportFields_LiveInFocusedPartial);
         await AddCheckAsync(results,
