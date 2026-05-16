@@ -2476,27 +2476,27 @@ and exception types, and `AutomationResponseState.cs` owns tolerant
 response-state DTOs shared by the pipe client and tool surfaces.
 
 PresentMon model and text ownership is split from the probe runner.
-`tools/Common/PresentMonProbe.Models.cs` owns PresentMon options, result,
+`tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon options, result,
 summary, swap-chain, correlation, and metric DTOs.
-`tools/Common/PresentMonProbe.ResultMessage.cs` owns success, expected-swap-chain
+`tools/Common/PresentMon/PresentMonProbe.ResultMessage.cs` owns success, expected-swap-chain
 mismatch, and no-frame result-message shaping.
-`tools/Common/PresentMonProbe.Format.cs` owns result text formatting while
-`tools/Common/PresentMonProbe.Csv.cs` owns CSV parse overloads, selected-row
+`tools/Common/PresentMon/PresentMonProbe.Format.cs` owns result text formatting while
+`tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns CSV parse overloads, selected-row
 filtering, summary assembly, and handoff to row/swap-chain/warning/correlation
-helpers. `PresentMonProbe.Csv.Rows.cs` owns row ingestion, header index
+helpers. `tools/Common/PresentMon/PresentMonProbe.Csv.Rows.cs` owns row ingestion, header index
 construction, schema-presence detection, blank-line skipping, row index
 assignment, and row projection from header-indexed fields.
-`PresentMonProbe.Csv.Fields.cs` owns header/field parsing, scalar field/metric
-reads, and CSV line tokenization. `PresentMonProbe.Csv.SwapChains.cs` owns
+`tools/Common/PresentMon/PresentMonProbe.Csv.Fields.cs` owns header/field parsing, scalar field/metric
+reads, and CSV line tokenization. `tools/Common/PresentMon/PresentMonProbe.Csv.SwapChains.cs` owns
 swap-chain normalization, artifact filtering, and selected-chain summaries.
-`PresentMonProbe.Csv.Correlation.cs` owns app-present correlation, while
-`PresentMonProbe.Csv.Summary.cs` owns warnings, counted text fields, and
-percentile metric aggregation. `PresentMonProbe.Csv.Models.cs` owns the private
-parsed CSV handoff and row shapes. `PresentMonProbe.cs` keeps the public run
+`tools/Common/PresentMon/PresentMonProbe.Csv.Correlation.cs` owns app-present correlation, while
+`tools/Common/PresentMon/PresentMonProbe.Csv.Summary.cs` owns warnings, counted text fields, and
+percentile metric aggregation. `tools/Common/PresentMon/PresentMonProbe.Csv.Models.cs` owns the private
+parsed CSV handoff and row shapes. `tools/Common/PresentMon/PresentMonProbe.cs` keeps the public run
 orchestration.
-`PresentMonProbe.Paths.cs` owns target process,
-PresentMon executable, and output-path resolution. `PresentMonProbe.Arguments.cs`
-owns command-line construction and argument quoting. `PresentMonProbe.Process.cs`
+`tools/Common/PresentMon/PresentMonProbe.Paths.cs` owns target process,
+PresentMon executable, and output-path resolution. `tools/Common/PresentMon/PresentMonProbe.Arguments.cs`
+owns command-line construction and argument quoting. `tools/Common/PresentMon/PresentMonProbe.Process.cs`
 owns process supervision, stdout/stderr drain, timeout kill, and temp CSV
 cleanup.
 
@@ -2642,11 +2642,11 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionRunExecution.ResultRequest.cs`
 - `JsonOptions.cs`
-- `PresentMonProbe.cs`
-- `PresentMonProbe.Paths.cs`
-- `PresentMonProbe.Arguments.cs`
-- `PresentMonProbe.Process.cs`
-- `PresentMonProbe.ResultMessage.cs`
+- `tools/Common/PresentMon/PresentMonProbe.cs`
+- `tools/Common/PresentMon/PresentMonProbe.Paths.cs`
+- `tools/Common/PresentMon/PresentMonProbe.Arguments.cs`
+- `tools/Common/PresentMon/PresentMonProbe.Process.cs`
+- `tools/Common/PresentMon/PresentMonProbe.ResultMessage.cs`
 
 ## Next Slices
 

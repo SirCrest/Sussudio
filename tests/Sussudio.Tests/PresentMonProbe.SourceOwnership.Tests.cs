@@ -4,20 +4,23 @@ static partial class Program
 {
     private static Task PresentMonProbe_SourceOwnership_IsSplit()
     {
-        var rootText = ReadRepoFile("tools/Common/PresentMonProbe.cs").Replace("\r\n", "\n");
-        var modelsText = ReadRepoFile("tools/Common/PresentMonProbe.Models.cs").Replace("\r\n", "\n");
-        var formatText = ReadRepoFile("tools/Common/PresentMonProbe.Format.cs").Replace("\r\n", "\n");
-        var resultMessageText = ReadRepoFile("tools/Common/PresentMonProbe.ResultMessage.cs").Replace("\r\n", "\n");
-        var csvText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.cs").Replace("\r\n", "\n");
-        var csvRowsText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.Rows.cs").Replace("\r\n", "\n");
-        var fieldsText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.Fields.cs").Replace("\r\n", "\n");
-        var swapChainsText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.SwapChains.cs").Replace("\r\n", "\n");
-        var correlationText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.Correlation.cs").Replace("\r\n", "\n");
-        var summaryText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.Summary.cs").Replace("\r\n", "\n");
-        var csvModelsText = ReadRepoFile("tools/Common/PresentMonProbe.Csv.Models.cs").Replace("\r\n", "\n");
-        var pathsText = ReadRepoFile("tools/Common/PresentMonProbe.Paths.cs").Replace("\r\n", "\n");
-        var argumentsText = ReadRepoFile("tools/Common/PresentMonProbe.Arguments.cs").Replace("\r\n", "\n");
-        var processText = ReadRepoFile("tools/Common/PresentMonProbe.Process.cs").Replace("\r\n", "\n");
+        static string ReadPresentMonProbeFile(string fileName)
+            => ReadRepoFile($"tools/Common/PresentMon/{fileName}").Replace("\r\n", "\n");
+
+        var rootText = ReadPresentMonProbeFile("PresentMonProbe.cs");
+        var modelsText = ReadPresentMonProbeFile("PresentMonProbe.Models.cs");
+        var formatText = ReadPresentMonProbeFile("PresentMonProbe.Format.cs");
+        var resultMessageText = ReadPresentMonProbeFile("PresentMonProbe.ResultMessage.cs");
+        var csvText = ReadPresentMonProbeFile("PresentMonProbe.Csv.cs");
+        var csvRowsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Rows.cs");
+        var fieldsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Fields.cs");
+        var swapChainsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.SwapChains.cs");
+        var correlationText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Correlation.cs");
+        var summaryText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Summary.cs");
+        var csvModelsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Models.cs");
+        var pathsText = ReadPresentMonProbeFile("PresentMonProbe.Paths.cs");
+        var argumentsText = ReadPresentMonProbeFile("PresentMonProbe.Arguments.cs");
+        var processText = ReadPresentMonProbeFile("PresentMonProbe.Process.cs");
 
         AssertContains(rootText, "public static async Task<PresentMonProbeResult> RunAsync(");
         AssertContains(rootText, "var targetProcess = ResolveTargetProcess(options);");
