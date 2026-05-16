@@ -1605,8 +1605,12 @@ Primary current owners:
   owns diagnostic-session helper ownership assertions for core runner,
   scenario, cleanup, sampling, and metric collaborators.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.InfrastructureOwnership.Tests.cs`
-  owns diagnostic-session infrastructure ownership assertions for initial
-  snapshot capture, pipe retry, command channel, run state, and output lock.
+  is the diagnostic-session infrastructure ownership marker shell. Keep
+  runner/initial-snapshot checks in the adjacent `InfrastructureOwnership.Runner`
+  test file, pipe retry and command-channel checks in `InfrastructureOwnership.CommandChannel`,
+  run-state/live-state/context/bootstrap/output-lock checks in
+  `InfrastructureOwnership.RunContext`, and scenario/completion phase checks in
+  `InfrastructureOwnership.Execution`.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`
   owns diagnostic-session model ownership assertions, with builder, formatter,
   summary-writer/artifact, JSON/shared-text, and infrastructure assertions split

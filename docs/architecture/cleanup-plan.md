@@ -365,12 +365,16 @@ the diagnostic-session MCP surface index shell. Diagnostic-session coverage is
 split into `McpToolSurface.DiagnosticSession.Tool.Tests.cs` for MCP tool
 artifact contracts, `McpToolSurface.DiagnosticSession.Ownership.Tests.cs` for
 core helper ownership assertions, `McpToolSurface.DiagnosticSession.Flashback.Tests.cs`
-for Flashback scenario/metrics/wait/export ownership assertions, and
+for Flashback scenario/metrics/wait/export ownership assertions,
+`McpToolSurface.DiagnosticSession.InfrastructureOwnership.Tests.cs` as a marker
+shell for focused infrastructure ownership tests, and
 `McpToolSurface.DiagnosticSession.Runner.Tests.cs` as a marker shell for
 focused reflective runner behavior tests. The runner behavior files now own
 final-snapshot artifact failures, sparse source-cadence health tolerance,
 Flashback export/playback command flow, unknown-initial-snapshot mutation
 safety, synthetic pipe-connect retry, and concurrent-output-directory lockout.
+Infrastructure ownership files now split runner/initial-snapshot, pipe
+retry/command channel, run context, and scenario/completion phase assertions.
 
 `tests/Sussudio.Tests/Flashback.Tests.cs` is now only the shared helper shell.
 Flashback regression coverage is split into buffer, encoder-sink, exporter
