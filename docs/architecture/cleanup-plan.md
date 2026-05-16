@@ -1802,11 +1802,15 @@ XAML/MainWindow-facing adapter that preserves logging and UI side effects.
 Watchdog/telemetry timers, timeout configuration, timeout recovery, and failure-stop scheduling live in
 `Sussudio/Controllers/PreviewStartupWatchdogController.cs`;
 `Sussudio/MainWindow.PreviewStartupWatchdog.cs` wires the MainWindow/XAML-facing
-adapter and timeout diagnostic payload. Readiness-signal collection
-and playback-progress diagnostics live in
-`Sussudio/MainWindow.PreviewStartupSignals.cs`; readiness-signal required/
-received state, missing-signal calculation, playback-advance threshold checks,
-and readiness result snapshots live in
+adapter and timeout diagnostic payload. Readiness-signal coordination now lives
+in `Sussudio/Controllers/PreviewStartupSignalCoordinator.cs`: missing-signal
+updates, playback-progress diagnostics, startup signal log strings, GPU
+position counter state, and first-visual confirmation decisions. The
+`Sussudio/MainWindow.PreviewStartupSignals.cs` partial is the XAML/MainWindow
+adapter that supplies live preview state, renderer visibility details, logging,
+and confirmation callbacks. Readiness-signal required/received state,
+missing-signal calculation, playback-advance threshold checks, and readiness
+result snapshots live in
 `Sussudio/Controllers/PreviewStartupReadinessSignalController.cs`. Missing-signal
 and signal-list string formatting lives in
 `Sussudio/Controllers/PreviewStartupSignalFormatter.cs`. Timeout reason,

@@ -77,6 +77,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupReadinessSignalControllerText = ReadRepoFile("Sussudio/Controllers/PreviewStartupReadinessSignalController.cs")
             .Replace("\r\n", "\n");
+        var previewStartupSignalCoordinatorText = ReadRepoFile("Sussudio/Controllers/PreviewStartupSignalCoordinator.cs")
+            .Replace("\r\n", "\n");
         var previewStartupFailureText = ReadRepoFile("Sussudio/Controllers/PreviewStartupFailureTextFormatter.cs")
             .Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs")
@@ -91,6 +93,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupSessionController();");
+        AssertContains(mainWindowText, "InitializePreviewStartupSignalCoordinator();");
         AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");
         AssertContains(previewStartupText, "private PreviewStartupSessionController _previewStartupSessionController = null!;");
         AssertContains(previewStartupText, "private void InitializePreviewStartupSessionController()");
@@ -159,15 +162,41 @@ static partial class Program
         AssertContains(previewFadeInControllerText, "private DispatcherQueueTimer? _timer;");
         AssertContains(previewFadeInControllerText, "public void Schedule()");
         AssertContains(previewFadeInControllerText, "public void Stop()");
-        AssertContains(previewStartupSignalsText, "Preview startup readiness-signal tracking");
-        AssertContains(previewStartupSignalsText, "private readonly PreviewStartupReadinessSignalController _previewStartupReadinessSignals = new();");
-        AssertContains(previewStartupSignalsText, "private long _previewStartupPositionEventCount;");
+        AssertContains(previewStartupSignalsText, "XAML-facing preview startup signal adapter");
+        AssertContains(previewStartupSignalsText, "private PreviewStartupSignalCoordinator _previewStartupSignalCoordinator = null!;");
+        AssertContains(previewStartupSignalsText, "private void InitializePreviewStartupSignalCoordinator()");
+        AssertContains(previewStartupSignalsText, "IsSignalWindowActive = IsPreviewStartupSignalWindowActive,");
+        AssertContains(previewStartupSignalsText, "ConfirmFirstVisual = ConfirmPreviewFirstVisual,");
+        AssertContains(previewStartupSignalsText, "GetPlaybackSnapshotState = GetPreviewStartupPlaybackSnapshotState");
+        AssertContains(previewStartupSignalsText, "private long PreviewStartupGpuPositionEventCount => _previewStartupSignalCoordinator.PositionEventCount;");
         AssertContains(previewStartupSignalsText, "private bool IsPreviewStartupSignalWindowActive()");
         AssertContains(previewStartupSignalsText, "private void ResetPreviewSignalState()");
         AssertContains(previewStartupSignalsText, "private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
         AssertContains(previewStartupSignalsText, "private void LogPreviewStartupPlaybackSnapshot(string reason)");
-        AssertContains(previewStartupSignalsText, "_previewStartupReadinessSignals.BuildMissingSignals(IsPreviewFirstVisualConfirmed)");
-        AssertContains(previewStartupSignalsText, "_previewStartupReadinessSignals.TrackPlaybackPosition(");
+        AssertContains(previewStartupSignalsText, "=> _previewStartupSignalCoordinator.BuildMissingSignals();");
+        AssertContains(previewStartupSignalsText, "=> _previewStartupSignalCoordinator.Configure(strategy, requiredSignals);");
+        AssertContains(previewStartupSignalsText, "=> _previewStartupSignalCoordinator.LogPlaybackSnapshot(reason);");
+        AssertContains(previewStartupSignalsText, "new PreviewStartupPlaybackSnapshotState(");
+        AssertContains(previewStartupSignalCoordinatorText, "internal sealed class PreviewStartupSignalCoordinatorContext");
+        AssertContains(previewStartupSignalCoordinatorText, "internal sealed record PreviewStartupPlaybackSnapshotState(");
+        AssertContains(previewStartupSignalCoordinatorText, "internal sealed class PreviewStartupSignalCoordinator");
+        AssertContains(previewStartupSignalCoordinatorText, "private readonly PreviewStartupReadinessSignalController _readinessSignals = new();");
+        AssertContains(previewStartupSignalCoordinatorText, "private bool _expectGpuDualSignals;");
+        AssertContains(previewStartupSignalCoordinatorText, "private long _positionEventCount;");
+        AssertContains(previewStartupSignalCoordinatorText, "public PreviewStartupReadinessSignalSnapshot Snapshot => _readinessSignals.Snapshot;");
+        AssertContains(previewStartupSignalCoordinatorText, "public long PositionEventCount => Interlocked.Read(ref _positionEventCount);");
+        AssertContains(previewStartupSignalCoordinatorText, "public void Configure(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
+        AssertContains(previewStartupSignalCoordinatorText, "public void MarkGpuStartupSignal(PreviewStartupSignalFlags signal, string signalName)");
+        AssertContains(previewStartupSignalCoordinatorText, "public void MarkGpuStartupSignalPlaybackAdvancing(TimeSpan position)");
+        AssertContains(previewStartupSignalCoordinatorText, "private void HandleGpuStartupSignalResult(PreviewStartupReadinessSignalResult? result, string signalName)");
+        AssertContains(previewStartupSignalCoordinatorText, "private void TryConfirmFirstVisualFromGpuSignals(PreviewStartupReadinessSignalResult result)");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_STRATEGY");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_SIGNAL");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_WAITING");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_POSITION_IGNORED");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_POSITION_BASELINE");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_POSITION_CHECK");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_PLAYBACK_SNAPSHOT");
         AssertContains(previewStartupReadinessSignalControllerText, "internal sealed class PreviewStartupReadinessSignalController");
         AssertContains(previewStartupReadinessSignalControllerText, "public static readonly TimeSpan PlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);");
         AssertContains(previewStartupReadinessSignalControllerText, "public PreviewStartupReadinessSignalSnapshot Snapshot => new(");
@@ -175,7 +204,7 @@ static partial class Program
         AssertContains(previewStartupReadinessSignalControllerText, "public PreviewStartupReadinessSignalResult MarkSignal(");
         AssertContains(previewStartupReadinessSignalControllerText, "public PreviewStartupPlaybackPositionResult TrackPlaybackPosition(");
         AssertContains(previewStartupReadinessSignalControllerText, "PreviewStartupSignalFormatter.FormatMissingSignals(");
-        AssertContains(previewStartupSignalsText, "PreviewStartupSignalFormatter.FormatSignalList(");
+        AssertContains(previewStartupSignalCoordinatorText, "PreviewStartupSignalFormatter.FormatSignalList(");
         AssertContains(previewStartupFailureText, "internal static class PreviewStartupFailureTextFormatter");
         AssertContains(previewStartupFailureText, "public static string FormatTimeoutReason(int timeoutMs, string? missingSignals)");
         AssertContains(previewStartupFailureText, "public static string FormatTimeoutStatusText(string? missingSignals)");
@@ -230,6 +259,11 @@ static partial class Program
         AssertDoesNotContain(previewStartupText, "private Task HandlePreviewStartupTimeoutAsync()");
         AssertDoesNotContain(previewStartupText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
         AssertDoesNotContain(previewStartupText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");
+        AssertDoesNotContain(previewStartupSignalsText, "private readonly PreviewStartupReadinessSignalController");
+        AssertDoesNotContain(previewStartupSignalsText, "private long _previewStartupPositionEventCount;");
+        AssertDoesNotContain(previewStartupSignalsText, "_readinessSignals.TrackPlaybackPosition(");
+        AssertDoesNotContain(previewStartupSignalsText, "PREVIEW_START_SIGNAL");
+        AssertDoesNotContain(previewStartupSignalsText, "PREVIEW_START_WAITING");
         AssertDoesNotContain(mainWindowText, "ResetPreviewSignalState()");
         AssertDoesNotContain(previewStartupText, "private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
         AssertDoesNotContain(previewStartupText, "private void SchedulePreviewFadeIn()");

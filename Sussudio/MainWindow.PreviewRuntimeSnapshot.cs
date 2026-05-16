@@ -114,7 +114,7 @@ public sealed partial class MainWindow
             StartupRecoveryAttemptCount = PreviewStartupRecoveryAttemptCount,
             StartupLastFailureReason = PreviewStartupLastFailureReason,
             FirstVisualConfirmed = IsPreviewFirstVisualConfirmed,
-            GpuPositionEventCount = Interlocked.Read(ref _previewStartupPositionEventCount)
+            GpuPositionEventCount = PreviewStartupGpuPositionEventCount
         });
     }
 }

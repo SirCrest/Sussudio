@@ -166,7 +166,7 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotText, "FramesArrived = _previewRendererHostController.FramesArrived,");
         AssertContains(previewRuntimeSnapshotText, "PreviewMinPresentationIntervalMs = _previewRendererHostController.PreviewMinPresentationIntervalMs,");
         AssertContains(previewRuntimeSnapshotText, "StartupState = CurrentPreviewStartupState.ToString(),");
-        AssertContains(previewRuntimeSnapshotText, "GpuPositionEventCount = Interlocked.Read(ref _previewStartupPositionEventCount)");
+        AssertContains(previewRuntimeSnapshotText, "GpuPositionEventCount = PreviewStartupGpuPositionEventCount");
         AssertContains(previewRuntimeSnapshotControllerText, "internal sealed class PreviewRuntimeSnapshotInput");
         AssertContains(previewRuntimeSnapshotControllerText, "internal static class PreviewRuntimeSnapshotController");
         AssertContains(previewRuntimeSnapshotControllerText, "public static PreviewRuntimeSnapshot Build(PreviewRuntimeSnapshotInput input)");
