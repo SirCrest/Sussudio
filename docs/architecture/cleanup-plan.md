@@ -1522,12 +1522,13 @@ commands. `MainWindow.FlashbackScrub.cs` is the XAML-facing adapter. Timeline
 fraction/duration math used by scrub and playhead presentation now lives in
 `Sussudio/Controllers/FlashbackTimelineGeometry.cs`.
 
-Flashback CTI/playhead compositor visuals now live in
-`Sussudio/MainWindow.FlashbackPlayhead.cs`. It owns visual setup, snap
-placement, and magnetic scrub movement. Long-horizon linear playhead
-extrapolation and CTI anchor timing live in
-`Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs`; command handling and
-toggle/apply workflows now live in the command controller.
+Flashback CTI/playhead compositor motion now lives in
+`Sussudio/Controllers/FlashbackPlayheadMotionController.cs`. It owns visual
+setup, snap placement, magnetic scrub movement, long-horizon linear playhead
+extrapolation, snap-on-open state, and CTI anchor timing.
+`Sussudio/MainWindow.FlashbackPlayhead.cs` and
+`Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs` are XAML-facing adapters;
+command handling and toggle/apply workflows now live in the command controller.
 
 Flashback marker placement and compact duration text now live in
 `Sussudio/Controllers/FlashbackMarkerPresentationController.cs`, including
@@ -1539,7 +1540,8 @@ Flashback playback presentation now lives in
 glyph policy, Go Live enabled state, buffer-duration text, and floating
 playhead label text. `MainWindow.FlashbackPlaybackPresentation.cs` wires the
 XAML controls, while `MainWindow.Flashback.cs` keeps playback-polling
-start/stop and CTI re-anchor sequencing.
+start/stop and routes CTI re-anchor sequencing to the playhead motion
+controller.
 
 Flashback command semantics now live in
 `Sussudio/Controllers/FlashbackCommandController.cs`: in/out point commands,
@@ -1654,7 +1656,7 @@ the root controller can remain a field/property facade plus shared state setter.
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/FlashbackPollingController.cs`.
 `MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing
-stays with playhead motion.
+lives in `Sussudio/Controllers/FlashbackPlayheadMotionController.cs`.
 
 Settings shelf visibility, the animation gate, and show/hide storyboard
 construction now live in

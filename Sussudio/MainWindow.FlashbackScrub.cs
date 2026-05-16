@@ -18,7 +18,7 @@ public sealed partial class MainWindow
         {
             ViewModel = ViewModel,
             ScrubArea = FlashbackScrubArea,
-            PositionMagneticPlayhead = (x, width) => PositionFlashbackPlayhead(x, width, FlashbackPlayheadMotion.Magnetic),
+            PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,
             RefreshCtiMotion = RefreshFlashbackCtiMotion,
             GetTickCount64 = () => Environment.TickCount64,
         });

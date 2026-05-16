@@ -3,7 +3,8 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // XAML-facing Flashback polling adapter. FlashbackPollingController owns the
-// status and playback timers; CTI anchor timing stays with playhead motion.
+// status and playback timers; FlashbackPlayheadMotionController owns CTI anchor
+// timing.
 public sealed partial class MainWindow
 {
     private FlashbackPollingController _flashbackPollingController = null!;

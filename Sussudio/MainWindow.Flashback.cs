@@ -27,7 +27,7 @@ public sealed partial class MainWindow
 
         // Track resize jumps the playhead to its layout-correct position
         // without sweeping through stale translation from the old width.
-        _snapFlashbackPlayheadOnNextUpdate = true;
+        RequestFlashbackPlayheadSnapOnNextUpdate();
 
         UpdateFlashbackPositionUI();
         UpdateFlashbackMarkers();

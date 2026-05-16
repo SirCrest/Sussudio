@@ -21,7 +21,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackPlayheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs")
             .Replace("\r\n", "\n");
-        var flashbackCtiMotionText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs")
+        var flashbackPlayheadControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackPlayheadMotionController.cs")
             .Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
@@ -42,7 +42,7 @@ static partial class Program
         AssertContains(flashbackScrubText, "XAML-facing Flashback pointer scrub adapter");
         AssertContains(flashbackScrubText, "private FlashbackScrubInteractionController _flashbackScrubInteractionController = null!;");
         AssertContains(flashbackScrubText, "private void InitializeFlashbackScrubInteractionController()");
-        AssertContains(flashbackScrubText, "PositionMagneticPlayhead = (x, width) => PositionFlashbackPlayhead(x, width, FlashbackPlayheadMotion.Magnetic),");
+        AssertContains(flashbackScrubText, "PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,");
         AssertContains(flashbackScrubText, "RefreshCtiMotion = RefreshFlashbackCtiMotion,");
         AssertContains(flashbackScrubText, "GetTickCount64 = () => Environment.TickCount64,");
         AssertContains(flashbackScrubControllerText, "internal sealed class FlashbackScrubInteractionController");
@@ -88,7 +88,7 @@ static partial class Program
         AssertContains(flashbackGeometryText, "public static TimeSpan ComputePosition(double fraction, TimeSpan bufferDuration)");
         AssertContains(flashbackGeometryText, "public static bool IsUsableTrackDimension(double value)");
         AssertContains(flashbackGeometryText, "public static bool IsUsableDuration(TimeSpan value)");
-        AssertContains(flashbackCtiMotionText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
+        AssertContains(flashbackPlayheadControllerText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
         AssertDoesNotContain(flashbackPlayheadText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
         AssertDoesNotContain(flashbackScrubText, "private static bool TryComputeFlashbackTimelineFraction(double x, double width, out double fraction)");
         AssertDoesNotContain(flashbackScrubText, "private static bool IsUsableFlashbackTrackDimension(double value)");

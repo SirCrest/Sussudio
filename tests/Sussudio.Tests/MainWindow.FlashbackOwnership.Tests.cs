@@ -44,37 +44,57 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlayheadMotion_LivesInFocusedPartial()
+    private static Task FlashbackPlayheadMotion_LivesInController()
     {
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var scrubText = ReadRepoFile("Sussudio/MainWindow.FlashbackScrub.cs").Replace("\r\n", "\n");
         var scrubControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackScrubInteractionController.cs").Replace("\r\n", "\n");
         var playheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs").Replace("\r\n", "\n");
         var ctiMotionText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs").Replace("\r\n", "\n");
         var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPolling.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/FlashbackPlayheadMotionController.cs").Replace("\r\n", "\n");
 
-        AssertContains(playheadText, "Flashback current-time-indicator visuals");
-        AssertContains(playheadText, "steady-state CTI extrapolation lives in");
-        AssertContains(playheadText, "private enum FlashbackPlayheadMotion");
-        AssertContains(playheadText, "private Visual? _flashbackPlayheadVisual;");
-        AssertContains(playheadText, "private void PositionFlashbackPlayhead(double x, double trackWidth, FlashbackPlayheadMotion motion)");
-        AssertContains(playheadText, "private void AnimateFlashbackPlayheadX(");
-        AssertContains(ctiMotionText, "Flashback CTI playback motion");
-        AssertContains(ctiMotionText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
-        AssertContains(ctiMotionText, "private CompositionEasingFunction? _flashbackPlayheadEaseLinear;");
-        AssertContains(ctiMotionText, "private void RefreshFlashbackCtiMotion(string reason)");
-        AssertContains(ctiMotionText, "StartLinearPlayheadExtrapolation(");
-        AssertContains(ctiMotionText, "private static void StartLinearKeyframe(");
-        AssertContains(ctiMotionText, "private void SnapPlayheadVisualsToFraction(");
-        AssertContains(ctiMotionText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
-        AssertContains(scrubText, "PositionMagneticPlayhead = (x, width) => PositionFlashbackPlayhead(x, width, FlashbackPlayheadMotion.Magnetic),");
+        AssertContains(playheadText, "XAML-facing Flashback playhead motion adapter");
+        AssertContains(playheadText, "private FlashbackPlayheadMotionController _flashbackPlayheadMotionController = null!;");
+        AssertContains(playheadText, "private void InitializeFlashbackPlayheadMotionController()");
+        AssertContains(playheadText, "IsScrubbing = () => _flashbackScrubInteractionController.IsScrubbing,");
+        AssertContains(playheadText, "private void RequestFlashbackPlayheadSnapOnNextUpdate()");
+        AssertContains(playheadText, "private void PositionFlashbackMagneticPlayhead(double x, double trackWidth)");
+        AssertContains(ctiMotionText, "XAML-facing Flashback CTI motion adapter");
+        AssertContains(ctiMotionText, "=> _flashbackPlayheadMotionController.RefreshCtiMotion(reason);");
+        AssertContains(ctiMotionText, "=> _flashbackPlayheadMotionController.StopCtiAnchorTimer();");
+        AssertContains(mainWindowText, "InitializeFlashbackPlayheadMotionController();");
+        AssertOccursBefore(mainWindowText, "InitializeFlashbackScrubInteractionController();", "InitializeFlashbackPlayheadMotionController();");
+        AssertOccursBefore(mainWindowText, "InitializeFlashbackPlayheadMotionController();", "InitializeFlashbackTimelineController();");
+        AssertContains(controllerText, "internal sealed class FlashbackPlayheadMotionControllerContext");
+        AssertContains(controllerText, "internal sealed class FlashbackPlayheadMotionController");
+        AssertContains(controllerText, "private enum FlashbackPlayheadMotion");
+        AssertContains(controllerText, "private Visual? _flashbackPlayheadVisual;");
+        AssertContains(controllerText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
+        AssertContains(controllerText, "private CompositionEasingFunction? _flashbackPlayheadEaseLinear;");
+        AssertContains(controllerText, "private bool _snapFlashbackPlayheadOnNextUpdate;");
+        AssertContains(controllerText, "public void RequestSnapOnNextUpdate()");
+        AssertContains(controllerText, "public void PositionMagneticPlayhead(double x, double trackWidth)");
+        AssertContains(controllerText, "public void RefreshCtiMotion(string reason)");
+        AssertContains(controllerText, "public void StopCtiAnchorTimer()");
+        AssertContains(controllerText, "private void PositionFlashbackPlayhead(double x, double trackWidth, FlashbackPlayheadMotion motion)");
+        AssertContains(controllerText, "StartLinearPlayheadExtrapolation(");
+        AssertContains(controllerText, "private static void StartLinearKeyframe(");
+        AssertContains(controllerText, "private void SnapPlayheadVisualsToFraction(");
+        AssertContains(controllerText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
+        AssertContains(scrubText, "PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,");
         AssertContains(scrubControllerText, "_context.PositionMagneticPlayhead(x, width);");
         AssertContains(flashbackText, "RefreshFlashbackCtiMotion(\"state_change\");");
         AssertContains(pollingAdapterText, "StopFlashbackCtiAnchorTimer();");
+        AssertContains(flashbackText, "RequestFlashbackPlayheadSnapOnNextUpdate();");
         AssertDoesNotContain(playheadText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
         AssertDoesNotContain(playheadText, "private void RefreshFlashbackCtiMotion(string reason)");
         AssertDoesNotContain(playheadText, "private void StartLinearPlayheadExtrapolation(");
         AssertDoesNotContain(playheadText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
+        AssertDoesNotContain(ctiMotionText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
+        AssertDoesNotContain(ctiMotionText, "private void StartLinearPlayheadExtrapolation(");
+        AssertDoesNotContain(ctiMotionText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
         AssertDoesNotContain(flashbackText, "private enum FlashbackPlayheadMotion");
         AssertDoesNotContain(flashbackText, "private Visual? _flashbackPlayheadVisual;");
         AssertDoesNotContain(flashbackText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");

@@ -52,7 +52,7 @@ static partial class Program
         AssertContains(flashbackTimelineText, "private FlashbackTimelineController _flashbackTimelineController = null!;");
         AssertContains(flashbackTimelineText, "FlashbackToggle = FlashbackToggle,");
         AssertContains(flashbackTimelineText, "FlashbackTimelinePanel = FlashbackTimelinePanel,");
-        AssertContains(flashbackTimelineText, "SnapPlayheadOnNextOpen = () => _snapFlashbackPlayheadOnNextUpdate = true,");
+        AssertContains(flashbackTimelineText, "SnapPlayheadOnNextOpen = RequestFlashbackPlayheadSnapOnNextUpdate,");
         AssertContains(flashbackTimelineText, "ClearScrubInteraction = ClearFlashbackScrubInteractionForLockout,");
         AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.OnToggleChecked();");
         AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.ApplyLockout();");

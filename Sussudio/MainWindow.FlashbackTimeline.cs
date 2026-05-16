@@ -16,7 +16,7 @@ public sealed partial class MainWindow
             ViewModel = ViewModel,
             FlashbackToggle = FlashbackToggle,
             FlashbackTimelinePanel = FlashbackTimelinePanel,
-            SnapPlayheadOnNextOpen = () => _snapFlashbackPlayheadOnNextUpdate = true,
+            SnapPlayheadOnNextOpen = RequestFlashbackPlayheadSnapOnNextUpdate,
             StartStatusPolling = StartFlashbackStatusPolling,
             StopStatusPolling = StopFlashbackStatusPolling,
             ClearScrubInteraction = ClearFlashbackScrubInteractionForLockout,
