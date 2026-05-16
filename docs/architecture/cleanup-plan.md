@@ -1869,7 +1869,7 @@ presentation now live in
 `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
 `MainWindow.PreviewTransitions.cs` is the XAML-facing adapter; shared compositor
 shadow opacity fades live in
-`Sussudio/Controllers/CompositionShadowFadeAnimator.cs`.
+`Sussudio/Controllers/Visual/CompositionShadowFadeAnimator.cs`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives in `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs`.

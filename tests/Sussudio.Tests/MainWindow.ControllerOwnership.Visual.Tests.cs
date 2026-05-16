@@ -63,7 +63,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
-        var shadowAnimatorText = ReadRepoFile("Sussudio/Controllers/CompositionShadowFadeAnimator.cs").Replace("\r\n", "\n");
+        var shadowAnimatorText = ReadRepoFile("Sussudio/Controllers/Visual/CompositionShadowFadeAnimator.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;");
         AssertContains(adapterText, "private void InitializePreviewTransitionAnimationController()");

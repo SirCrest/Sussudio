@@ -876,7 +876,7 @@ Primary current owners:
   `MainWindow.CaptureSelectionBindings.cs` and
   `MainWindow.StatusStripPresentation.cs`; broad domain property-name switches
   live in focused `MainWindow.PropertyChanged*.cs` partials.
-- `Sussudio/Controllers/CompositionShadowFadeAnimator.cs` owns shared
+- `Sussudio/Controllers/Visual/CompositionShadowFadeAnimator.cs` owns shared
   compositor opacity fade helpers for shell shadow visuals. XAML-facing
   adapters call it without adding state or dispatcher hops.
 - `Sussudio/Controllers/Audio/AudioMeterController.cs` owns audio/microphone meter
