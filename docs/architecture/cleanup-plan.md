@@ -2600,8 +2600,10 @@ Remaining `tools/Common` ownership:
    Microphone endpoint volume synchronization and persistence now live in
    `MainViewModel.MicrophoneVolume.cs`; device-native audio mode/gain
    management stays in `MainViewModel.AudioControls.cs`. UI-facing state is
-   split by owner: `MainViewModel.State.cs` owns shared shell/runtime flags and
-   coordination gates, `MainViewModel.CaptureState.cs` owns capture-selection,
+   split by owner: `MainViewModel.State.cs` owns shared shell/status/live-info
+   flags and non-preview coordination gates, `MainViewModel.PreviewState.cs`
+   owns preview lifecycle flags, preview reinitialize coordination, and preview
+   request events, `MainViewModel.CaptureState.cs` owns capture-selection,
    source, and HDR state, `MainViewModel.AudioState.cs` owns audio/microphone/
    device-audio state, and `MainViewModel.FlashbackState.cs` owns Flashback
    timeline/export state. Keep the root `MainViewModel.cs` focused on the

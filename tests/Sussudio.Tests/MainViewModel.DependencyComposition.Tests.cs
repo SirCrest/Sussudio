@@ -6,6 +6,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var stateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
+        var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewState.cs").Replace("\r\n", "\n");
         var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
@@ -25,10 +26,25 @@ static partial class Program
         AssertDoesNotContain(rootText, "_deviceAudioControlService = new NativeXuAudioControlService();");
         AssertDoesNotContain(rootText, "_audioDeviceWatcher = new AudioDeviceWatcher();");
         AssertDoesNotContain(rootText, "[ObservableProperty]");
+        AssertContains(stateText, "public partial bool IsStatsVisible");
+        AssertContains(stateText, "public partial bool IsSettingsVisible");
+        AssertContains(stateText, "public partial string StatusText");
+        AssertContains(stateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
+        AssertDoesNotContain(stateText, "public partial bool IsPreviewing");
+        AssertDoesNotContain(stateText, "public event EventHandler? PreviewStartRequested");
+        AssertContains(previewStateText, "public partial bool IsPreviewing");
+        AssertContains(previewStateText, "public partial bool IsPreviewReinitializing");
+        AssertContains(previewStateText, "public partial bool IsInitialized");
+        AssertContains(previewStateText, "private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);");
+        AssertContains(previewStateText, "private int _previewReinitializeGeneration;");
+        AssertContains(previewStateText, "private bool _cancelPreviewRestartAfterReinitialize;");
+        AssertContains(previewStateText, "public event EventHandler? PreviewStartRequested;");
+        AssertContains(previewStateText, "public event EventHandler? PreviewStopRequested;");
+        AssertContains(previewStateText, "public event Func<string, Task>? PreviewReinitRequested;");
+        AssertContains(previewStateText, "public event Func<Task>? PreviewRendererStopRequested;");
         AssertContains(captureStateText, "public partial ObservableCollection<CaptureDevice> Devices");
         AssertContains(audioStateText, "public partial bool IsAudioPreviewActive");
         AssertContains(flashbackStateText, "partial void OnIsFlashbackEnabledChanged(bool value)");
-        AssertContains(stateText, "private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);");
 
         AssertContains(dependenciesText, "internal sealed class MainViewModelDependencies");
         AssertContains(dependenciesText, "public static MainViewModelDependencies CreateDefault()");

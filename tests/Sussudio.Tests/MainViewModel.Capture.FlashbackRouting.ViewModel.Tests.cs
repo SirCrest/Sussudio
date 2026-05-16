@@ -43,6 +43,7 @@ static partial class Program
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelText = string.Join("\n", viewModelFiles.Values);
         var viewModelSharedStateText = viewModelFiles["MainViewModel.State.cs"];
+        var viewModelPreviewStateText = viewModelFiles["MainViewModel.PreviewState.cs"];
         var viewModelCaptureStateText = viewModelFiles["MainViewModel.CaptureState.cs"];
         var viewModelAudioStateText = viewModelFiles["MainViewModel.AudioState.cs"];
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
@@ -139,7 +140,8 @@ static partial class Program
         AssertContains(rawDisposalText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
         AssertContains(viewModelFlashbackStateText, "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
         AssertContains(viewModelCaptureStateText, "private const int PreviewReinitializeDebounceMs = 250;");
-        AssertContains(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
+        AssertContains(viewModelPreviewStateText, "private int _previewReinitializeGeneration;");
+        AssertDoesNotContain(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
         AssertContains(rawPreviewReinitializationText, "var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);");
         AssertContains(rawPreviewReinitializationText, "await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);");
         AssertContains(rawPreviewReinitializationText, "Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration");
