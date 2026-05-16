@@ -42,7 +42,7 @@ static partial class Program
 
         AssertContains(frameRateOptionsText, "var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
         AssertContains(frameRateOptionsText, "AvailableFrameRates.Clear();");
-        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selected, fallbackRate);");
+        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
         AssertContains(modeSelectionText, "private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)");
         AssertContains(sourceFilterPolicyText, "private static class FrameRateSourceFilterPolicy");
         AssertContains(sourceFilterPolicyText, "internal static FrameRateSourceFilterResult Apply(");
@@ -56,6 +56,147 @@ static partial class Program
         AssertDoesNotContain(sourceFilterPolicyText, "AvailableFrameRates.Clear();");
         AssertDoesNotContain(sourceFilterPolicyText, "ApplyResolvedFrameRateSelection(");
         AssertDoesNotContain(sourceFilterPolicyText, "DetectedSourceFrameRate =");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FrameRateAutoSelectionPolicy_LivesInFocusedHelper()
+    {
+        var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
+        var autoSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateAutoSelectionPolicy.cs").Replace("\r\n", "\n");
+        var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs").Replace("\r\n", "\n");
+
+        AssertContains(frameRateOptionsText, "/// Frame-rate option building and observable collection mutation.");
+        AssertContains(frameRateOptionsText, "FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(");
+        AssertContains(frameRateOptionsText, "AvailableFrameRates.Clear();");
+        AssertContains(frameRateOptionsText, "AvailableFrameRates.Add(option);");
+        AssertContains(frameRateOptionsText, "IsAutoFrameRateSelected = selection.SelectAutoOption;");
+        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
+        AssertContains(frameRateOptionsText, "_pendingSdrAutoSelectionForDeviceChange = false;");
+        AssertDoesNotContain(frameRateOptionsText, "OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))");
+        AssertContains(autoSelectionPolicyText, "private static class FrameRateAutoSelectionPolicy");
+        AssertContains(autoSelectionPolicyText, "private readonly record struct FrameRateAutoSelectionSource(");
+        AssertContains(autoSelectionPolicyText, "private sealed record FrameRateAutoSelectionRequest(");
+        AssertContains(autoSelectionPolicyText, "private sealed record FrameRateAutoSelection(");
+        AssertContains(autoSelectionPolicyText, "internal static FrameRateAutoSelection Select(FrameRateAutoSelectionRequest request)");
+        AssertContains(autoSelectionPolicyText, "request.PendingSdrAutoSelectionForDeviceChange");
+        AssertContains(autoSelectionPolicyText, "request.PendingSdrAutoFriendlyFrameRateBucket.Value");
+        AssertContains(autoSelectionPolicyText, ".OrderBy(option => Math.Abs(option.Value - source.Rate.Value))");
+        AssertContains(autoSelectionPolicyText, "TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily)");
+        AssertContains(autoSelectionPolicyText, "optionFamily == source.TimingFamily");
+        AssertContains(autoSelectionPolicyText, "IsFrameRateMatch(option.Value, previousRate)");
+        AssertContains(autoSelectionPolicyText, "IsFriendlyFrameRateMatch(option.FriendlyValue, previousRate)");
+        AssertContains(autoSelectionPolicyText, "IsFriendlyFrameRateMatch(option.FriendlyValue, 60)");
+        AssertContains(autoSelectionPolicyText, "IsFriendlyFrameRateMatch(option.FriendlyValue, 30)");
+        AssertDoesNotContain(autoSelectionPolicyText, "AvailableFrameRates.Clear();");
+        AssertDoesNotContain(autoSelectionPolicyText, "ApplyResolvedFrameRateSelection(");
+        AssertDoesNotContain(autoSelectionPolicyText, "SelectedFrameRate =");
+        AssertContains(modeSelectionText, "SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(SelectedFrameRate);");
+        AssertContains(modeSelectionText, "SelectedExactFrameRate = selected?.Value ?? SelectedFrameRate;");
+        AssertContains(modeSelectionText, "SelectedExactFrameRateArg = selected?.Rational;");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FrameRateAutoSelectionPolicy_PreservesSelectionBehavior()
+    {
+        var frameRateType = RequireType("Sussudio.Models.FrameRateOption");
+
+        var sourceNearestOptions = CreateFrameRateOptionList(
+            frameRateType,
+            CreateFrameRateOption(frameRateType, 30, 30, "30/1", isEnabled: true),
+            CreateFrameRateOption(frameRateType, 60, 60000d / 1001d, "60000/1001", isEnabled: true),
+            CreateFrameRateOption(frameRateType, 120, 120, "120/1", isEnabled: true));
+        var sourceNearest = InvokeFrameRateAutoSelection(
+            sourceNearestOptions,
+            autoFrameRateOptionAvailable: true,
+            forceAutoSelection: false,
+            isAutoFrameRateSelected: true,
+            hasUserOverriddenFrameRateForCurrentMode: false,
+            isHdrEnabled: false,
+            pendingSdrAutoSelectionForDeviceChange: false,
+            pendingSdrAutoFriendlyFrameRateBucket: null,
+            sourceRate: 59.94,
+            sourceTimingFamilyKnown: true,
+            sourceTimingFamilyName: "Ntsc1001",
+            previousRate: 30);
+        AssertEqual(60000d / 1001d, GetDoubleProperty(GetPropertyValue(sourceNearest, "Selected")!, "Value"), "Frame-rate auto source nearest selection");
+        AssertEqual(true, GetBoolProperty(sourceNearest, "SelectAutoOption"), "Frame-rate source nearest keeps auto selected");
+
+        var pendingBucketOptions = CreateFrameRateOptionList(
+            frameRateType,
+            CreateFrameRateOption(frameRateType, 60, 60000d / 1001d, "60000/1001", isEnabled: true),
+            CreateFrameRateOption(frameRateType, 120, 120, "120/1", isEnabled: true));
+        var pendingBucket = InvokeFrameRateAutoSelection(
+            pendingBucketOptions,
+            autoFrameRateOptionAvailable: true,
+            forceAutoSelection: false,
+            isAutoFrameRateSelected: true,
+            hasUserOverriddenFrameRateForCurrentMode: false,
+            isHdrEnabled: false,
+            pendingSdrAutoSelectionForDeviceChange: true,
+            pendingSdrAutoFriendlyFrameRateBucket: 60,
+            sourceRate: 120,
+            sourceTimingFamilyKnown: true,
+            sourceTimingFamilyName: "Integer",
+            previousRate: 120);
+        AssertEqual(60d, GetDoubleProperty(GetPropertyValue(pendingBucket, "Selected")!, "FriendlyValue"), "Frame-rate auto pending SDR bucket selection");
+
+        var hdrSkipsPendingBucket = InvokeFrameRateAutoSelection(
+            pendingBucketOptions,
+            autoFrameRateOptionAvailable: true,
+            forceAutoSelection: false,
+            isAutoFrameRateSelected: true,
+            hasUserOverriddenFrameRateForCurrentMode: false,
+            isHdrEnabled: true,
+            pendingSdrAutoSelectionForDeviceChange: true,
+            pendingSdrAutoFriendlyFrameRateBucket: 60,
+            sourceRate: 120,
+            sourceTimingFamilyKnown: true,
+            sourceTimingFamilyName: "Integer",
+            previousRate: 60);
+        AssertEqual(120d, GetDoubleProperty(GetPropertyValue(hdrSkipsPendingBucket, "Selected")!, "Value"), "Frame-rate auto HDR skips pending SDR bucket");
+
+        var manualFallbackOptions = CreateFrameRateOptionList(
+            frameRateType,
+            CreateFrameRateOption(frameRateType, 30, 30, "30/1", isEnabled: true),
+            CreateFrameRateOption(frameRateType, 60, 60, "60/1", isEnabled: true),
+            CreateFrameRateOption(frameRateType, 120, 120, "120/1", isEnabled: true));
+        var manualFallback = InvokeFrameRateAutoSelection(
+            manualFallbackOptions,
+            autoFrameRateOptionAvailable: true,
+            forceAutoSelection: false,
+            isAutoFrameRateSelected: false,
+            hasUserOverriddenFrameRateForCurrentMode: true,
+            isHdrEnabled: false,
+            pendingSdrAutoSelectionForDeviceChange: false,
+            pendingSdrAutoFriendlyFrameRateBucket: null,
+            sourceRate: 60,
+            sourceTimingFamilyKnown: true,
+            sourceTimingFamilyName: "Integer",
+            previousRate: 119.88);
+        AssertEqual(120d, GetDoubleProperty(GetPropertyValue(manualFallback, "Selected")!, "Value"), "Frame-rate manual previous friendly fallback");
+        AssertEqual(false, GetBoolProperty(manualFallback, "SelectAutoOption"), "Frame-rate manual fallback leaves auto deselected");
+
+        var autoFallbackOptions = CreateFrameRateOptionList(
+            frameRateType,
+            CreateFrameRateOption(frameRateType, 30, 30, "30/1", isEnabled: false),
+            CreateFrameRateOption(frameRateType, 60, 60, "60/1", isEnabled: true));
+        var autoFallback = InvokeFrameRateAutoSelection(
+            autoFallbackOptions,
+            autoFrameRateOptionAvailable: false,
+            forceAutoSelection: true,
+            isAutoFrameRateSelected: false,
+            hasUserOverriddenFrameRateForCurrentMode: true,
+            isHdrEnabled: false,
+            pendingSdrAutoSelectionForDeviceChange: false,
+            pendingSdrAutoFriendlyFrameRateBucket: null,
+            sourceRate: null,
+            sourceTimingFamilyKnown: false,
+            sourceTimingFamilyName: "Unknown",
+            previousRate: 30);
+        AssertEqual(60d, GetDoubleProperty(GetPropertyValue(autoFallback, "Selected")!, "Value"), "Frame-rate forced auto fallback chooses first enabled option");
+        AssertEqual(true, GetBoolProperty(autoFallback, "SelectAutoOption"), "Frame-rate forced auto fallback selects auto");
 
         return Task.CompletedTask;
     }
@@ -74,8 +215,8 @@ static partial class Program
         AssertDoesNotContain(frameRateOptionsText, "private void ResetFrameRateSelectionState()");
         AssertDoesNotContain(frameRateOptionsText, "private void ApplyResolvedFrameRateSelection(");
         AssertDoesNotContain(frameRateOptionsText, "private void ResetModeSelectionState()");
-        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selected, SelectedFrameRate > 0 ? SelectedFrameRate : 60);");
-        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selected, fallbackRate);");
+        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selection.Selected, SelectedFrameRate > 0 ? SelectedFrameRate : 60);");
+        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
         AssertContains(modeSelectionText, "private void ResetFrameRateSelectionState()");
         AssertContains(modeSelectionText, "_hasUserOverriddenFrameRateForCurrentMode = false;");
         AssertContains(modeSelectionText, "IsAutoFrameRateSelected = true;");
@@ -472,6 +613,51 @@ static partial class Program
             ?? throw new InvalidOperationException("CaptureResolutionSelectionPolicy.Select returned null.");
     }
 
+    private static object InvokeFrameRateAutoSelection(
+        object options,
+        bool autoFrameRateOptionAvailable,
+        bool forceAutoSelection,
+        bool isAutoFrameRateSelected,
+        bool hasUserOverriddenFrameRateForCurrentMode,
+        bool isHdrEnabled,
+        bool pendingSdrAutoSelectionForDeviceChange,
+        int? pendingSdrAutoFriendlyFrameRateBucket,
+        double? sourceRate,
+        bool sourceTimingFamilyKnown,
+        string sourceTimingFamilyName,
+        double previousRate)
+    {
+        var sourceType = RequireType("Sussudio.ViewModels.MainViewModel+FrameRateAutoSelectionSource");
+        var requestType = RequireType("Sussudio.ViewModels.MainViewModel+FrameRateAutoSelectionRequest");
+        var policyType = RequireType("Sussudio.ViewModels.MainViewModel+FrameRateAutoSelectionPolicy");
+        var timingFamily = ParseEnum("Sussudio.ViewModels.MainViewModel+FrameRateTimingFamily", sourceTimingFamilyName);
+        var sourceConstructor = FindConstructor(sourceType, parameterCount: 3);
+        var source = sourceConstructor.Invoke(new object?[]
+        {
+            sourceRate,
+            sourceTimingFamilyKnown,
+            timingFamily
+        });
+        var requestConstructor = FindConstructor(requestType, parameterCount: 10);
+        var request = requestConstructor.Invoke(new object?[]
+        {
+            options,
+            autoFrameRateOptionAvailable,
+            forceAutoSelection,
+            isAutoFrameRateSelected,
+            hasUserOverriddenFrameRateForCurrentMode,
+            isHdrEnabled,
+            pendingSdrAutoSelectionForDeviceChange,
+            pendingSdrAutoFriendlyFrameRateBucket,
+            source,
+            previousRate
+        });
+        var select = policyType.GetMethod("Select", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FrameRateAutoSelectionPolicy.Select missing.");
+        return select.Invoke(null, new[] { request })
+            ?? throw new InvalidOperationException("FrameRateAutoSelectionPolicy.Select returned null.");
+    }
+
     private static ConstructorInfo FindConstructor(Type type, int parameterCount)
     {
         foreach (var constructor in type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
@@ -497,6 +683,18 @@ static partial class Program
         return list;
     }
 
+    private static object CreateFrameRateOptionList(Type frameRateType, params object[] options)
+    {
+        var list = (IList)(Activator.CreateInstance(typeof(System.Collections.Generic.List<>).MakeGenericType(frameRateType))
+                           ?? throw new InvalidOperationException("Failed to create frame-rate option list."));
+        foreach (var option in options)
+        {
+            list.Add(option);
+        }
+
+        return list;
+    }
+
     private static object CreateResolutionOption(
         Type resolutionType,
         string value,
@@ -508,6 +706,21 @@ static partial class Program
         SetPropertyOrBackingField(option, "Value", value);
         SetPropertyOrBackingField(option, "Width", width);
         SetPropertyOrBackingField(option, "Height", height);
+        SetPropertyOrBackingField(option, "IsEnabled", isEnabled);
+        return option;
+    }
+
+    private static object CreateFrameRateOption(
+        Type frameRateType,
+        double friendlyValue,
+        double value,
+        string rational,
+        bool isEnabled)
+    {
+        var option = CreateConfigInstance(frameRateType);
+        SetPropertyOrBackingField(option, "FriendlyValue", friendlyValue);
+        SetPropertyOrBackingField(option, "Value", value);
+        SetPropertyOrBackingField(option, "Rational", rational);
         SetPropertyOrBackingField(option, "IsEnabled", isEnabled);
         return option;
     }

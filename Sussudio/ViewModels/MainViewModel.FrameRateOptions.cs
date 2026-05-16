@@ -6,7 +6,7 @@ using Sussudio.Models;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Frame-rate option building, source-rate filtering, and automatic frame-rate selection.
+/// Frame-rate option building and observable collection mutation.
 /// </summary>
 public partial class MainViewModel
 {
@@ -64,34 +64,19 @@ public partial class MainViewModel
         var selectedResolutionKey = GetEffectiveResolutionKey(SelectedResolution);
         var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, currentOptions, SelectedFrameRate);
         var sourceTimingFamilyKnown = TryInferFrameRateTimingFamily(sourceRate.Arg, sourceRate.Rate, out var sourceTimingFamily);
-        FrameRateOption? selected = null;
-        if (!IsHdrEnabled &&
-            _pendingSdrAutoSelectionForDeviceChange &&
-            _pendingSdrAutoFriendlyFrameRateBucket.HasValue)
-        {
-            selected = currentOptions.FirstOrDefault(option =>
-                option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, _pendingSdrAutoFriendlyFrameRateBucket.Value));
-        }
+        var selection = FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(
+            currentOptions,
+            AutoFrameRateOptionAvailable: false,
+            ForceAutoSelection: true,
+            IsAutoFrameRateSelected: IsAutoFrameRateSelected,
+            HasUserOverriddenFrameRateForCurrentMode: _hasUserOverriddenFrameRateForCurrentMode,
+            IsHdrEnabled: IsHdrEnabled,
+            PendingSdrAutoSelectionForDeviceChange: _pendingSdrAutoSelectionForDeviceChange,
+            PendingSdrAutoFriendlyFrameRateBucket: _pendingSdrAutoFriendlyFrameRateBucket,
+            Source: new FrameRateAutoSelectionSource(sourceRate.Rate, sourceTimingFamilyKnown, sourceTimingFamily),
+            PreviousRate: SelectedFrameRate));
 
-        if (selected == null &&
-            sourceRate.Rate.HasValue)
-        {
-            selected = currentOptions
-                .Where(option => option.IsEnabled)
-                .OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))
-                .ThenBy(option =>
-                    sourceTimingFamilyKnown &&
-                    TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily) &&
-                    optionFamily == sourceTimingFamily
-                        ? 0
-                        : 1)
-                .FirstOrDefault();
-        }
-
-        selected ??= currentOptions.FirstOrDefault(option => option.IsEnabled)
-            ?? currentOptions.FirstOrDefault();
-
-        ApplyResolvedFrameRateSelection(selected, SelectedFrameRate > 0 ? SelectedFrameRate : 60);
+        ApplyResolvedFrameRateSelection(selection.Selected, SelectedFrameRate > 0 ? SelectedFrameRate : 60);
         UpdateSelectedFormat();
         UpdateTargetSummary();
     }
@@ -185,65 +170,32 @@ public partial class MainViewModel
                 AvailableFrameRates.Add(option);
             }
 
-            FrameRateOption? selected = null;
-            var selectAutoOption = autoFrameRateOption != null &&
-                                   (IsAutoFrameRateSelected || !_hasUserOverriddenFrameRateForCurrentMode);
-            if (selectAutoOption &&
-                !IsHdrEnabled &&
-                _pendingSdrAutoSelectionForDeviceChange &&
-                _pendingSdrAutoFriendlyFrameRateBucket.HasValue)
-            {
-                selected = options.FirstOrDefault(option =>
-                    option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, _pendingSdrAutoFriendlyFrameRateBucket.Value));
-            }
-
-            if (selected == null &&
-                selectAutoOption &&
-                sourceRate.Rate.HasValue)
-            {
-                selected = options
-                    .Where(option => option.IsEnabled)
-                    .OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))
-                    .ThenBy(option =>
-                        sourceTimingFamilyKnown &&
-                        TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily) &&
-                        optionFamily == sourceTimingFamily
-                            ? 0
-                            : 1)
-                    .FirstOrDefault();
-            }
-
-            if (selected == null)
-            {
-                selected = selectAutoOption
-                    ? options.FirstOrDefault(option => option.IsEnabled)
-                        ?? options.FirstOrDefault()
-                    : options.FirstOrDefault(option =>
-                        option.IsEnabled && IsFrameRateMatch(option.Value, previousRate))
-                        ?? options.FirstOrDefault(option =>
-                            option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, previousRate))
-                        ?? options.FirstOrDefault(option =>
-                            option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, 60))
-                        ?? options.FirstOrDefault(option =>
-                            option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, 30))
-                        ?? options.FirstOrDefault(option => option.IsEnabled)
-                        ?? options.FirstOrDefault();
-            }
+            var selection = FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(
+                options,
+                AutoFrameRateOptionAvailable: autoFrameRateOption != null,
+                ForceAutoSelection: false,
+                IsAutoFrameRateSelected: IsAutoFrameRateSelected,
+                HasUserOverriddenFrameRateForCurrentMode: _hasUserOverriddenFrameRateForCurrentMode,
+                IsHdrEnabled: IsHdrEnabled,
+                PendingSdrAutoSelectionForDeviceChange: _pendingSdrAutoSelectionForDeviceChange,
+                PendingSdrAutoFriendlyFrameRateBucket: _pendingSdrAutoFriendlyFrameRateBucket,
+                Source: new FrameRateAutoSelectionSource(sourceRate.Rate, sourceTimingFamilyKnown, sourceTimingFamily),
+                PreviousRate: previousRate));
 
             if (autoFrameRateOption != null)
             {
-                IsAutoFrameRateSelected = selectAutoOption;
+                IsAutoFrameRateSelected = selection.SelectAutoOption;
             }
             var fallbackRate = previousRate > 0
                 ? previousRate
                 : 60;
-            ApplyResolvedFrameRateSelection(selected, fallbackRate);
-            if (IsHdrEnabled && selected is { IsEnabled: false })
+            ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);
+            if (IsHdrEnabled && selection.Selected is { IsEnabled: false })
             {
                 StatusText = $"No HDR-capable frame rate is available for {GetSelectedResolutionDisplayText()}.";
             }
 
-            if (!IsHdrEnabled && _pendingSdrAutoSelectionForDeviceChange && selected != null)
+            if (!IsHdrEnabled && _pendingSdrAutoSelectionForDeviceChange && selection.Selected != null)
             {
                 _pendingSdrAutoSelectionForDeviceChange = false;
                 _pendingSdrAutoFriendlyFrameRateBucket = null;

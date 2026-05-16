@@ -36,6 +36,12 @@ static partial class Program
             "Frame-rate source filter policy lives in focused helper",
             FrameRateSourceFilterPolicy_LivesInFocusedHelper);
         await AddCheckAsync(results,
+            "Frame-rate auto selection policy lives in focused helper",
+            FrameRateAutoSelectionPolicy_LivesInFocusedHelper);
+        await AddCheckAsync(results,
+            "Frame-rate auto selection policy preserves behavior",
+            FrameRateAutoSelectionPolicy_PreservesSelectionBehavior);
+        await AddCheckAsync(results,
             "Resolution selection policy lives in focused partial",
             ResolutionSelectionPolicy_LivesInFocusedPartial);
         await AddCheckAsync(results,

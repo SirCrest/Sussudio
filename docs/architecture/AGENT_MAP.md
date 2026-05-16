@@ -1345,6 +1345,10 @@ Primary current owners:
   `HarnessCheckCatalog.PresentationPreview.*.cs` partials own capture/root
   policy, MainViewModel, MainWindow, stats, D3D renderer, and preview pacing
   registration groups.
+- `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
+  classifier source ownership and automation-snapshot wiring assertions;
+  `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral
+  classifier cases.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.McpDiagnosticsPipeline.cs` owns MCP,
   diagnostic-session, unified-video, MJPEG, D3D pending-frame, and recording
   queue check registration.
@@ -1839,8 +1843,11 @@ Primary current owners:
   playback snapshot access plus buffer, bitrate, playback-state, in/out marker,
   and gap-from-live UI projection. `MainViewModel.FlashbackExport.cs` owns Flashback UI/automation
   export flow, progress/cancellation state, and segment projection.
-  `MainViewModel.FrameRateOptions.cs` owns frame-rate option rebuilding,
-  observable collection mutation, and automatic frame-rate selection.
+  `MainViewModel.FrameRateOptions.cs` owns frame-rate option rebuilding and
+  observable collection mutation. `MainViewModel.FrameRateAutoSelectionPolicy.cs`
+  owns pure frame-rate option choice: pending SDR bucket preference,
+  Source-rate nearest match with timing-family tie-break, generic auto fallback,
+  and previous/manual selection fallback.
   `MainViewModel.ModeSelectionState.cs` owns shared frame-rate selection reset,
   resolved automatic frame-rate application, disabled frame-rate reason
   projection, and capture-mode reset flags.

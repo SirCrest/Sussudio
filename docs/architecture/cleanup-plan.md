@@ -2536,8 +2536,11 @@ Remaining `tools/Common` ownership:
    gap-from-live UI projection live in `MainViewModel.FlashbackPlayback.cs`. Flashback UI/automation export
    flow, progress/cancellation state, and segment projection now live in
    `MainViewModel.FlashbackExport.cs`. Frame-rate option rebuilding, observable
-   collection mutation, and automatic frame-rate selection now live in
-   `MainViewModel.FrameRateOptions.cs`. Shared frame-rate selection reset,
+   collection mutation now live in `MainViewModel.FrameRateOptions.cs`. Pure
+   frame-rate option choice, including pending SDR bucket preference,
+   Source-rate nearest match with timing-family tie-break, generic auto fallback,
+   and previous/manual selection fallback, now lives in
+   `MainViewModel.FrameRateAutoSelectionPolicy.cs`. Shared frame-rate selection reset,
    resolved automatic frame-rate application, disabled frame-rate reason
    projection, and capture-mode reset flags live in
    `MainViewModel.ModeSelectionState.cs`. Source-rate filtering and
