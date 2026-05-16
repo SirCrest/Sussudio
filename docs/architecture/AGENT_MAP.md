@@ -760,9 +760,12 @@ Primary current owners:
   preview-frame capture, logging side effects, and button enable/disable state.
   `MainWindow.PreviewScreenshot.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/WindowAutomationController.cs` owns window geometry
-  automation plus the recordings-folder command. `MainWindow.WindowAutomation.cs`
-  is the `IAutomationWindowControl` adapter; recording-aware close handling
-  stays with the close lifecycle/finalization owners.
+  automation plus the recordings-folder command: UI-thread dispatch, AppWindow
+  and DisplayArea access, maximized presenter restore, and side effects.
+  `Sussudio/Controllers/WindowSnapRegionLayoutPolicy.cs` owns the pure
+  snap-region rectangle math. `MainWindow.WindowAutomation.cs` is the
+  `IAutomationWindowControl` adapter; recording-aware close handling stays with
+  the close lifecycle/finalization owners.
 - `Sussudio/Controllers/WindowAutomationHostLifecycleController.cs` owns shell
   automation host lifecycle: automation token/pipe-name resolution, diagnostics
   hub construction, command dispatcher construction, named-pipe server
@@ -962,7 +965,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindowUiContract.AutomationIds.Tests.cs` owns
   MainWindow automation ID inventory checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.WindowAutomation.Tests.cs` owns
-  MainWindow full-screen and window automation contract checks.
+  MainWindow full-screen and window automation source contract checks.
+  `tests/Sussudio.Tests/WindowSnapRegionLayoutPolicy.Tests.cs` owns snap-region
+  rectangle policy behavior checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.Dispatching.Tests.cs` owns
   MainWindow UI-dispatching contract checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.StatsSnapshot.Tests.cs` owns stats

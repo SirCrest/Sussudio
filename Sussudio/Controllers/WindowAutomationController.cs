@@ -89,30 +89,16 @@ internal sealed class WindowAutomationController
                 presenter.Restore();
             }
 
-            int x, y, w, h;
-            switch (region)
+            var currentSize = region == AutomationWindowAction.Center
+                ? appWindow.Size
+                : default;
+            var targetBounds = WindowSnapRegionLayoutPolicy.ResolveTargetBounds(region, work, currentSize);
+            if (targetBounds is not { } bounds)
             {
-                case AutomationWindowAction.SnapLeft:
-                    x = work.X; y = work.Y; w = work.Width / 2; h = work.Height; break;
-                case AutomationWindowAction.SnapRight:
-                    x = work.X + work.Width / 2; y = work.Y; w = work.Width - work.Width / 2; h = work.Height; break;
-                case AutomationWindowAction.SnapTopLeft:
-                    x = work.X; y = work.Y; w = work.Width / 2; h = work.Height / 2; break;
-                case AutomationWindowAction.SnapTopRight:
-                    x = work.X + work.Width / 2; y = work.Y; w = work.Width - work.Width / 2; h = work.Height / 2; break;
-                case AutomationWindowAction.SnapBottomLeft:
-                    x = work.X; y = work.Y + work.Height / 2; w = work.Width / 2; h = work.Height - work.Height / 2; break;
-                case AutomationWindowAction.SnapBottomRight:
-                    x = work.X + work.Width / 2; y = work.Y + work.Height / 2; w = work.Width - work.Width / 2; h = work.Height - work.Height / 2; break;
-                case AutomationWindowAction.Center:
-                    var curSize = appWindow.Size;
-                    w = curSize.Width; h = curSize.Height;
-                    x = work.X + (work.Width - w) / 2; y = work.Y + (work.Height - h) / 2; break;
-                default:
-                    return;
+                return;
             }
 
-            appWindow.MoveAndResize(new Windows.Graphics.RectInt32(x, y, w, h));
+            appWindow.MoveAndResize(bounds);
         }, cancellationToken);
     }
 

@@ -64,6 +64,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var controllerSource = ReadRepoFile("Sussudio/Controllers/WindowAutomationController.cs")
             .Replace("\r\n", "\n");
+        var snapPolicySource = ReadRepoFile("Sussudio/Controllers/WindowSnapRegionLayoutPolicy.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(adapterSource, "private WindowAutomationController _windowAutomationController = null!;");
         AssertContains(adapterSource, "private void InitializeWindowAutomationController()");
@@ -82,7 +84,15 @@ static partial class Program
         AssertContains(controllerSource, "public Task ResizeToAsync(int width, int height, CancellationToken cancellationToken = default)");
         AssertContains(controllerSource, "public Task SnapToRegionAsync(AutomationWindowAction region, CancellationToken cancellationToken = default)");
         AssertContains(controllerSource, "DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary)");
+        AssertContains(controllerSource, "var currentSize = region == AutomationWindowAction.Center");
+        AssertContains(controllerSource, "WindowSnapRegionLayoutPolicy.ResolveTargetBounds(region, work, currentSize)");
+        AssertContains(controllerSource, "appWindow.MoveAndResize(bounds);");
         AssertContains(controllerSource, "Process.Start(\"explorer.exe\", path);");
+        AssertContains(snapPolicySource, "internal static class WindowSnapRegionLayoutPolicy");
+        AssertContains(snapPolicySource, "public static RectInt32? ResolveTargetBounds(");
+        AssertContains(snapPolicySource, "AutomationWindowAction.Center => new RectInt32(");
+        AssertDoesNotContain(controllerSource, "case AutomationWindowAction.SnapLeft:");
+        AssertDoesNotContain(controllerSource, "work.Width / 2");
         AssertContains(closeLifecycleSource, "public Task CloseAsync(CancellationToken cancellationToken = default)");
         AssertDoesNotContain(closeLifecycleSource, "public Task MinimizeAsync(");
         AssertDoesNotContain(closeLifecycleSource, "public Task OpenRecordingsFolderAsync(");

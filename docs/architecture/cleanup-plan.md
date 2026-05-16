@@ -509,7 +509,10 @@ capture pixel statistics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotEncoding.cs`.
 
 Window geometry automation and the recordings-folder command now live in
-`Sussudio/Controllers/WindowAutomationController.cs`.
+`Sussudio/Controllers/WindowAutomationController.cs`. Display-area/AppWindow
+access, UI-thread dispatch, presenter restore, and side effects stay there, while
+`Sussudio/Controllers/WindowSnapRegionLayoutPolicy.cs` owns the pure snap-region
+rectangle math for window actions.
 `MainWindow.WindowAutomation.cs` is the `IAutomationWindowControl` adapter.
 Close lifecycle state remains separate from geometry automation; see the
 explicit window close lifecycle section below for the close-state and recording
