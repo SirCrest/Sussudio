@@ -154,6 +154,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Diagnostics.cs")
             .Replace("\r\n", "\n");
+        var startupText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs")
+            .Replace("\r\n", "\n");
+        var stopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.StopLifecycle.cs")
+            .Replace("\r\n", "\n");
         var lifetimeText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Lifetime.cs")
             .Replace("\r\n", "\n");
         var optionsText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Options.cs")
@@ -163,12 +167,35 @@ static partial class Program
 
         AssertContains(diagnosticsText, "public long DroppedVideoFrames =>");
         AssertContains(diagnosticsText, "public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)");
+        AssertContains(startupText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
+        AssertContains(startupText, "LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);");
+        AssertContains(startupText, "_encodingTask = Task.Factory.StartNew(");
+        AssertContains(startupText, "TaskCreationOptions.LongRunning");
+        AssertContains(startupText, "LIBAV_SINK_START output='{context.FinalOutputPath}'");
+        AssertContains(stopText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
+        AssertContains(stopText, "=> StopCoreAsync(emergency: false, cancellationToken);");
+        AssertContains(stopText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
+        AssertContains(stopText, "=> StopCoreAsync(emergency, cancellationToken);");
+        AssertContains(stopText, "private async Task<FinalizeResult> StopCoreAsync(bool emergency, CancellationToken cancellationToken)");
+        AssertContains(stopText, "var drainTimeoutMs = emergency ? EmergencyStopTimeoutMs : StopTimeoutMs;");
+        AssertContains(stopText, "_cts?.Cancel();");
+        AssertContains(stopText, "LIBAV_SINK_STOP_DRAIN_FLUSH_SKIPPED reason=encoder_task_still_running");
+        AssertContains(stopText, "return FinalizeResult.Failure(outputPath, \"Stopped (libav encode drain timed out; emergency flush attempted)\");");
+        AssertContains(stopText, "TryValidateStoppedOutputFile(outputPath, out var outputBytes, out var outputFailure)");
+        AssertContains(stopText, "if (context?.HdrPipelineActive == true)");
+        AssertContains(stopText, "LIBAV_SINK_STOP output='{outputPath}' bytes={outputBytes}");
         AssertContains(lifetimeText, "public async ValueTask DisposeAsync()");
         AssertContains(lifetimeText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
         AssertContains(optionsText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
         AssertContains(optionsText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
         AssertContains(outputValidationText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
+        AssertContains(rootText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
+        AssertContains(rootText, "SignalWork(\"complete_writer\");");
         AssertDoesNotContain(rootText, "public long DroppedVideoFrames =>");
+        AssertDoesNotContain(rootText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(rootText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(rootText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(rootText, "private async Task<FinalizeResult> StopCoreAsync(bool emergency, CancellationToken cancellationToken)");
         AssertDoesNotContain(rootText, "public async ValueTask DisposeAsync()");
         AssertDoesNotContain(rootText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
         AssertDoesNotContain(rootText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");

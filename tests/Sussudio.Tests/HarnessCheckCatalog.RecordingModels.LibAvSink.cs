@@ -15,7 +15,7 @@ static partial class Program
             "LibAv recording audio queues live in focused partial",
             LibAvRecordingSink_AudioQueuesLiveInFocusedPartial);
         await AddCheckAsync(results,
-            "LibAv recording lifecycle helpers live in focused partials",
+            "LibAv recording startup and stop lifecycle live in focused partials",
             LibAvRecordingSink_LifecycleHelpersLiveInFocusedPartials);
     }
 }
