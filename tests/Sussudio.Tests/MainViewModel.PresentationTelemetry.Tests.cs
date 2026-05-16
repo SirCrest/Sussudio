@@ -77,13 +77,21 @@ static partial class Program
     private static Task SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
     {
         var telemetryText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Telemetry.cs").Replace("\r\n", "\n");
+        var targetSummaryPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.TargetSummaryPresentation.cs").Replace("\r\n", "\n");
         var autoResolutionPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionPresentation.cs").Replace("\r\n", "\n");
         var builderText = ReadRepoFile("Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs").Replace("\r\n", "\n");
 
         AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(_latestSourceTelemetry, DateTimeOffset.UtcNow);");
         AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(snapshot, DateTimeOffset.UtcNow);");
-        AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildTargetSummary(");
-        AssertContains(telemetryText, "GetSelectedResolutionDisplayText(),");
+        AssertContains(telemetryText, "UpdateTargetSummary();");
+        AssertDoesNotContain(telemetryText, "private void UpdateTargetSummary()");
+        AssertDoesNotContain(telemetryText, "SourceTelemetryPresentationBuilder.BuildTargetSummary(");
+        AssertContains(targetSummaryPresentationText, "private void UpdateTargetSummary()");
+        AssertContains(targetSummaryPresentationText, "SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(");
+        AssertContains(targetSummaryPresentationText, "GetSelectedResolutionDisplayText(),");
+        AssertContains(targetSummaryPresentationText, "SelectedFriendlyFrameRate,");
+        AssertContains(targetSummaryPresentationText, "SelectedExactFrameRate,");
+        AssertContains(targetSummaryPresentationText, "SelectedExactFrameRateArg,");
         AssertContains(autoResolutionPresentationText, "private string GetSelectedResolutionDisplayText()");
         AssertDoesNotContain(telemetryText, "private static string BuildSourceTelemetrySummaryText(");
         AssertDoesNotContain(telemetryText, "private static string BuildTelemetryAgeText(");

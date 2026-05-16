@@ -152,15 +152,4 @@ public partial class MainViewModel
             UpdateTargetSummary();
         }
     }
-
-    private void UpdateTargetSummary()
-    {
-        SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(
-            GetSelectedResolutionDisplayText(),
-            SelectedFrameRate,
-            SelectedFriendlyFrameRate,
-            SelectedExactFrameRate,
-            SelectedExactFrameRateArg,
-            HdrRuntimeState);
-    }
 }
