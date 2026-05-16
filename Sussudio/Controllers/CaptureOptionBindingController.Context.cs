@@ -31,5 +31,4 @@ internal sealed class CaptureOptionBindingControllerContext
     public required Action EnsureQualitySelection { get; init; }
     public required Action EnsurePresetSelection { get; init; }
     public required Action EnsureSplitEncodeModeSelection { get; init; }
-    public required Action AttachRecordingStringSelectionBindings { get; init; }
 }

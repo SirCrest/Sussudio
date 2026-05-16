@@ -39,37 +39,4 @@ internal sealed partial class CaptureOptionBindingController
         };
     }
 
-    public void AttachRecordingOptionBindings()
-    {
-        _context.AttachRecordingStringSelectionBindings();
-
-        _context.VideoFormatComboBox.SelectionChanged += (s, e) =>
-        {
-            if (_context.VideoFormatComboBox.SelectedItem is string videoFormat)
-            {
-                _context.ViewModel.SelectedVideoFormat = videoFormat;
-            }
-
-            _context.UpdateDecoderCountVisibility();
-        };
-
-        _context.CustomBitrateNumberBox.ValueChanged += (s, e) =>
-        {
-            if (!double.IsNaN(_context.CustomBitrateNumberBox.Value))
-            {
-                _context.ViewModel.CustomBitrateMbps = _context.CustomBitrateNumberBox.Value;
-            }
-        };
-        AttachHdrToggleBindings();
-    }
-
-    public void HandleCustomBitratePropertyChanged()
-    {
-        if (double.IsNaN(_context.CustomBitrateNumberBox.Value) ||
-            Math.Abs(_context.CustomBitrateNumberBox.Value - _context.ViewModel.CustomBitrateMbps) > 0.01)
-        {
-            _context.CustomBitrateNumberBox.Value = _context.ViewModel.CustomBitrateMbps;
-        }
-    }
-
 }

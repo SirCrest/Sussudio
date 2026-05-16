@@ -34,8 +34,7 @@ public sealed partial class MainWindow
             EnsureFormatSelection = EnsureFormatSelection,
             EnsureQualitySelection = EnsureQualitySelection,
             EnsurePresetSelection = EnsurePresetSelection,
-            EnsureSplitEncodeModeSelection = EnsureSplitEncodeModeSelection,
-            AttachRecordingStringSelectionBindings = AttachRecordingStringSelectionBindings
+            EnsureSplitEncodeModeSelection = EnsureSplitEncodeModeSelection
         });
     }
 

@@ -1922,8 +1922,8 @@ Primary current owners:
   the control-bar label breakpoint and narrow/wide placement policy.
   `MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/CaptureSelectionBindingController.cs` owns
-  capture/audio/microphone/encoder selection collection wiring, recording string
-  selection handlers, and pending-device apply state.
+  capture/audio/microphone/encoder selection collection wiring and
+  pending-device apply state.
   `Sussudio/Controllers/CaptureSelectionBindingController.Context.cs`
   owns the XAML control dependency bag,
   `Sussudio/Controllers/CaptureSelectionBindingController.SelectionSync.cs` owns
@@ -1972,16 +1972,17 @@ Primary current owners:
   XAML/view-model adapter context, `CaptureOptionBindingController.Initialization.cs`
   owns video-format collection binding plus initial capture/recording selection
   projection, `CaptureOptionBindingController.SelectionHandlers.cs` owns
-  resolution/frame-rate selection handlers plus video-format/custom-bitrate
-  event bindings during `SetupBindings()` and custom-bitrate property-change
-  value projection, `CaptureOptionBindingController.Hdr.cs` owns HDR/true-HDR
+  resolution/frame-rate selection handlers,
+  `CaptureOptionBindingController.RecordingOptions.cs` owns recording option
+  event bindings for format, quality, preset, split-encode, video format, and
+  custom bitrate plus custom-bitrate property-change value projection, and
+  delegates HDR click binding during `SetupBindings()`,
+  `CaptureOptionBindingController.Hdr.cs` owns HDR/true-HDR
   click binding, ViewModel-to-control sync, and preview HDR passthrough
   forwarding, and `CaptureOptionBindingController.ShowAll.cs` owns
   `ShowAllCaptureOptionsToggle` click binding and ViewModel-to-control sync,
   reusing `CaptureComboBoxSelectionNormalizer` for shared frame-rate auto/exact
-  matching. Recording format, quality, preset, and split-encode string
-  selection handlers live with
-  `CaptureSelectionBindingController`.
+  matching.
   `MainWindow.CaptureOptionBindings.cs` and
   `MainWindow.RecordingOptionBindings.cs` are XAML-facing adapters.
 - `Sussudio/Controllers/OutputPathDisplayController.cs` owns recording output-

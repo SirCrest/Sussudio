@@ -1990,8 +1990,7 @@ Responsive layout ownership checks live in
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
 the `Sussudio/Controllers/CaptureSelectionBindingController*.cs` family. The
-root controller owns collection wiring, recording string-selection event
-handlers, and pending-device apply state,
+root controller owns collection wiring and pending-device apply state,
 `.Context.cs` owns the XAML control dependency bag, `.SelectionSync.cs` owns
 collection-change debounce/queued sync plus available-option property-change
 rebinding, `.SelectionState.cs` is the family marker, `.DeviceSelection.cs` owns
@@ -2031,17 +2030,18 @@ Capture option binding setup now lives in the
 context, `CaptureOptionBindingController.Initialization.cs` owns video-format
 collection setup and initial capture/recording option projection,
 `CaptureOptionBindingController.SelectionHandlers.cs` owns resolution/frame-rate
-selection handlers, video-format/custom-bitrate event bindings, and
-custom-bitrate property-change value projection,
+selection handlers,
+`CaptureOptionBindingController.RecordingOptions.cs` owns recording option event
+bindings for format, quality, preset, split-encode, video format, and custom
+bitrate plus custom-bitrate property-change value projection, and delegates HDR
+click binding during `SetupBindings()`,
 `CaptureOptionBindingController.Hdr.cs` owns HDR/true-HDR click binding,
 ViewModel-to-control sync, and preview HDR passthrough forwarding, and
 `CaptureOptionBindingController.ShowAll.cs` owns
 `ShowAllCaptureOptionsToggle` click binding and ViewModel-to-control sync while
 reusing `CaptureComboBoxSelectionNormalizer` for shared frame-rate auto/exact
 matching. The controller delegates presentation affordances back through the
-capture-option presentation adapter and delegates recording
-format/quality/preset/split-encode string selection to
-`CaptureSelectionBindingController`. `MainWindow.CaptureOptionBindings.cs` and
+capture-option presentation adapter. `MainWindow.CaptureOptionBindings.cs` and
 `MainWindow.RecordingOptionBindings.cs` keep only the old method names used by
 `SetupBindings()`.
 
