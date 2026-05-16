@@ -53,10 +53,12 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "AutomationCommandKind.VerifyLastRecording");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "ConsumeFlag(context.Rest, \"--json\")");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "ParseOptionalStringFlag(context.Rest, \"--verification-profile\")");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "HandleFlashbackAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "return HandleFlashbackActionAsync(context, subcommand);");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "return HandleFlashbackExportAsync(context);");
-        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "[\"action\"] = \"begin-scrub\"");
+        var flashbackRouterSource = ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs");
+        AssertContains(flashbackRouterSource, "HandleFlashbackAsync");
+        AssertContains(flashbackRouterSource, "return HandleFlashbackActionAsync(context, subcommand);");
+        AssertContains(flashbackRouterSource, "return HandleFlashbackExportAsync(context);");
+        AssertDoesNotContain(flashbackRouterSource, "AutomationCommandKind.FlashbackAction");
+        AssertDoesNotContain(flashbackRouterSource, "[\"action\"] = ");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "private static Task<int> HandleFlashbackActionAsync(CommandContext context, string subcommand)");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "[\"action\"] = \"begin-scrub\"");
