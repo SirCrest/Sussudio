@@ -23,63 +23,8 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static (string Name, int Value)[] ExpectedAutomationCommands() =>
-    [
-        ("Authenticate", 0),
-        ("GetSnapshot", 1),
-        ("GetDiagnostics", 2),
-        ("RefreshDevices", 3),
-        ("SelectDevice", 4),
-        ("SelectAudioInputDevice", 5),
-        ("SetCustomAudioInput", 6),
-        ("SetResolution", 7),
-        ("SetFrameRate", 8),
-        ("SetRecordingFormat", 9),
-        ("SetQuality", 10),
-        ("SetCustomBitrate", 11),
-        ("SetHdrEnabled", 12),
-        ("SetAudioEnabled", 13),
-        ("SetAudioPreviewEnabled", 14),
-        ("SetOutputPath", 15),
-        ("SetPreviewEnabled", 16),
-        ("SetRecordingEnabled", 17),
-        ("ArmClose", 18),
-        ("WindowAction", 19),
-        ("WaitForCondition", 20),
-        ("VerifyLastRecording", 21),
-        ("AssertSnapshot", 22),
-        ("SetTrueHdrPreviewEnabled", 23),
-        ("ProbeVideoSource", 24),
-        ("ProbePreviewColor", 25),
-        ("CapturePreviewFrame", 26),
-        ("CaptureWindowScreenshot", 27),
-        ("SetVideoFormat", 28),
-        ("GetCaptureOptions", 29),
-        ("SetPreset", 30),
-        ("SetSplitEncodeMode", 31),
-        ("SetMjpegDecoderCount", 32),
-        ("SetShowAllCaptureOptions", 33),
-        ("SetPreviewVolume", 34),
-        ("SetStatsVisible", 35),
-        ("SetDeviceAudioMode", 36),
-        ("GetPerformanceTimeline", 37),
-        ("SetStatsSectionVisible", 38),
-        ("SetAnalogAudioGain", 39),
-        ("SetSettingsVisible", 40),
-        ("FlashbackAction", 41),
-        ("FlashbackExport", 42),
-        ("FlashbackGetSegments", 43),
-        ("VerifyFile", 44),
-        ("RestartFlashback", 45),
-        ("SetMicrophoneEnabled", 46),
-        ("SetFlashbackEnabled", 47),
-        ("GetAudioRampTrace", 48),
-        ("SetFrameTimeOverlayVisible", 49),
-        ("SetFlashbackTimelineVisible", 50),
-        ("GetAutomationManifest", 51),
-        ("SetFullScreenEnabled", 52),
-        ("OpenRecordingsFolder", 53)
-    ];
+    private static (string Name, int Value)[] ExpectedAutomationCommands()
+        => AutomationCommandGoldenTable.ExpectedCommands();
 
     private static Task AutomationWindowAction_HasExpectedValues()
     {

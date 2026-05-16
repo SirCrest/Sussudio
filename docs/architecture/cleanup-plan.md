@@ -405,10 +405,17 @@ assertions. Source ownership coverage has its own marker shell plus focused
 ContractsAndMetrics, RenderPipeline, and RuntimeCapture owner files.
 
 `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` now keeps only shared
-reflection helpers. Automation tool contract coverage is split into protocol
-and pipe-failure contracts, catalog/manifest/path-policy contracts,
-reliability-gates script checks, shared/ssctl snapshot formatter contracts, and
-PresentMon parser contracts. Shared formatter tests now mirror the formatter
+reflection helpers. Pure `Sussudio.Automation.Contracts` command ID, manifest
+ID, protocol resolution, timeout/auth/envelope, and `CommandMap` checks now
+have fast xUnit coverage in
+`tests/Sussudio.Tests/AutomationContracts.ProtocolXunit.Tests.cs`, backed by
+the single golden command table in
+`tests/Sussudio.Tests/AutomationCommandGoldenTable.cs`. The legacy protocol
+harness stays focused on pipe-failure contracts, tool delegation, script
+freshness, and response-state parsing. Automation tool contract coverage is
+otherwise split into catalog/manifest/path-policy contracts, reliability-gates
+script checks, shared/ssctl snapshot formatter contracts, and PresentMon parser
+contracts. Shared formatter tests now mirror the formatter
 partials: the root snapshot-formatter test owns accessors, invalid-response
 handling, section ordering, and the Flashback opt-in gate; Flashback output,
 Preview D3D output, MJPEG timing, response accessors, source ownership, and

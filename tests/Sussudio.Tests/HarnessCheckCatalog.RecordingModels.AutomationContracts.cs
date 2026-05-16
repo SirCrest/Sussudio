@@ -7,9 +7,6 @@ static partial class Program
     {
         // --- AutomationContracts ---
         await AddCheckAsync(results,
-            "AutomationCommandKind preserves numeric values through GetAutomationManifest",
-            AutomationCommandKind_PreservesNumericValuesThroughGetAutomationManifest);
-        await AddCheckAsync(results,
             "AutomationWindowAction has expected values",
             AutomationWindowAction_HasExpectedValues);
     }

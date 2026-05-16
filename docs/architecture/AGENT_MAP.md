@@ -1246,12 +1246,18 @@ Primary current owners:
   device support.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers for automation tool contract tests.
+- `tests/Sussudio.Tests/AutomationCommandGoldenTable.cs` owns the shared golden
+  automation command table used by protocol, manifest, and MCP tests.
+- `tests/Sussudio.Tests/AutomationContracts.ProtocolXunit.Tests.cs` owns fast
+  xUnit coverage for pure `Sussudio.Automation.Contracts` command IDs,
+  manifest IDs, pipe protocol command resolution, timeout, auth-token, envelope,
+  and `CommandMap` contracts.
 - `tests/Sussudio.Tests/AutomationToolContracts.CommandKinds.Tests.cs` owns
-  automation command enum numeric IDs, window action enum membership, and the
-  shared golden automation command table used by protocol/MCP tests.
+  legacy harness coverage for window action enum membership and keeps the
+  `ExpectedAutomationCommands()` adapter used by protocol/MCP helpers.
 - `tests/Sussudio.Tests/AutomationToolContracts.Protocol.Tests.cs` owns
-  automation pipe protocol, pipe-connect failure, and response-state contract
-  tests.
+  legacy harness coverage for pipe-connect failure, tool delegation, script
+  freshness, and response-state contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Catalog.Tests.cs` owns
   automation command catalog, manifest, path policy, and manifest
   serialization contract tests.

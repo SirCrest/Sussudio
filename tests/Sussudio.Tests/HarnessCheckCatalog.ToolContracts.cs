@@ -29,9 +29,6 @@ static partial class Program
 
         // --- Tool CommandMap & Formatter Alignment ---
         await AddCheckAsync(results,
-            "Automation pipe protocol resolves commands timeouts auth and envelopes",
-            AutomationPipeProtocol_ResolvesCommandsTimeoutsAuthAndEnvelopes);
-        await AddCheckAsync(results,
             "Automation command catalog covers command metadata and policy",
             AutomationCommandCatalog_CoversCommandsAndPolicyMetadata);
         await AddCheckAsync(results,
@@ -82,9 +79,6 @@ static partial class Program
         await AddCheckAsync(results,
             "Shared automation formatter renders MJPEG timing section when fields exist",
             SharedFormatter_RendersMjpegTimingSection_WhenFieldsExist);
-        await AddCheckAsync(results,
-            "Shared AutomationPipeProtocol CommandMap covers every AutomationCommandKind enum value",
-            SharedProtocol_CommandMap_CoversEveryAutomationCommandKind);
         await AddCheckAsync(results,
             "MCP PipeClient delegates to shared protocol for command resolution",
             PipeClient_UsesSharedProtocol_ForCommandResolution);
