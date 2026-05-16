@@ -1994,14 +1994,14 @@ Flashback-specific ViewModel property adapter dispatch now lives in
 playhead refresh, export progress, and Flashback settings-control sync.
 
 Audio and microphone-specific ViewModel property projections now live in
-`Sussudio/Controllers/AudioControlPresentationController.cs`: audio toggles,
+`Sussudio/Controllers/Audio/AudioControlPresentationController.cs`: audio toggles,
 monitoring meter state, preview volume slider sync, microphone enablement, and
 microphone volume sync. `Sussudio/MainWindow.PropertyChangedAudio.cs` is the
 XAML-facing adapter.
 
 Microphone volume slider synchronization, save triggers, shelf enablement, and
 mic-meter row animation state now live in
-`Sussudio/Controllers/MicrophoneControlsController.cs`.
+`Sussudio/Controllers/Audio/MicrophoneControlsController.cs`.
 `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.
 
 Responsive shell layout is split between

@@ -169,7 +169,7 @@ static partial class Program
         var audioControlBindingControllerMetersText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.Meters.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerSelectionsText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.Selections.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerTogglesText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.Toggles.cs").Replace("\r\n", "\n");
-        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlPresentationController.cs").Replace("\r\n", "\n");
+        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(audioBindingsText, "private AudioControlBindingController _audioControlBindingController = null!;");
         AssertContains(audioBindingsText, "private void InitializeAudioControlBindingController()");
@@ -230,7 +230,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/AudioControlPresentationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(audioPropertyChangedText, "private AudioControlPresentationController _audioControlPresentationController = null!;");
         AssertContains(audioPropertyChangedText, "private void InitializeAudioControlPresentationController()");
@@ -347,9 +347,9 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/MicrophoneControlsController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Audio/MicrophoneControlsController.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerInitialStateText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.InitialState.cs").Replace("\r\n", "\n");
-        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlPresentationController.cs").Replace("\r\n", "\n");
+        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private MicrophoneControlsController _microphoneControlsController = null!;");
         AssertContains(adapterText, "private void InitializeMicrophoneControlsController()");
