@@ -8,14 +8,42 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
+        var startStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartState.cs")
+            .Replace("\r\n", "\n");
+        var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs")
+            .Replace("\r\n", "\n");
+        var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
+            .Replace("\r\n", "\n");
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(rootText, "public Task StartRecordingAsync(");
         AssertDoesNotContain(rootText, "public Task StopRecordingAsync(");
         AssertContains(lifecycleText, "public Task StartRecordingAsync(");
-        AssertContains(lifecycleText, "FLASHBACK_UNIFIED_RECORDING_START");
-        AssertContains(lifecycleText, "await recordingSink.StartAsync(recordingContext, transitionToken)");
+        AssertContains(lifecycleText, "RunTransitionAsync(CaptureSessionState.Recording");
+        AssertContains(lifecycleText, "var rollback = new RecordingStartRollbackState();");
+        AssertContains(lifecycleText, "await DisposeUnusableFlashbackRecordingBackendAsync(transitionToken)");
+        AssertContains(lifecycleText, "await StartFlashbackRecordingAsync(settings, transitionToken, rollback)");
+        AssertContains(lifecycleText, "await StartLibAvRecordingAsync(settings, transitionToken, rollback)");
+        AssertContains(lifecycleText, "CAPTURE_RECORDING_START_FAIL");
+        AssertContains(lifecycleText, "FLASHBACK_RECORDING_START_ROLLBACK_WARN");
+        AssertDoesNotContain(lifecycleText, "FLASHBACK_UNIFIED_RECORDING_START");
+        AssertDoesNotContain(lifecycleText, "HDR_NEGOTIATION");
+        AssertContains(startStateText, "private sealed class RecordingStartRollbackState");
+        AssertContains(startStateText, "public RecordingContext? RecordingContext { get; set; }");
+        AssertContains(startStateText, "public FlashbackEncoderSink? FlashbackRecordingStartedSink { get; set; }");
+        AssertContains(flashbackStartText, "private async Task DisposeUnusableFlashbackRecordingBackendAsync(");
+        AssertContains(flashbackStartText, "private async Task StartFlashbackRecordingAsync(");
+        AssertContains(flashbackStartText, "FLASHBACK_UNIFIED_RECORDING_START");
+        AssertContains(flashbackStartText, "FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REJECT");
+        AssertContains(flashbackStartText, "WaitForForceRotateIdle(TimeSpan.FromSeconds(10))");
+        AssertContains(flashbackStartText, "_unifiedVideoCapture?.BeginFlashbackRecordingAccounting();");
+        AssertDoesNotContain(flashbackStartText, "HDR_NEGOTIATION");
+        AssertContains(libAvStartText, "private async Task StartLibAvRecordingAsync(");
+        AssertContains(libAvStartText, "await RefreshSourceTelemetryAsync(transitionToken)");
+        AssertContains(libAvStartText, "HDR_NEGOTIATION");
+        AssertContains(libAvStartText, "await rollback.RecordingSink.StartAsync(rollback.RecordingContext, transitionToken)");
+        AssertDoesNotContain(libAvStartText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertDoesNotContain(lifecycleText, "public Task StopRecordingAsync(");
         AssertDoesNotContain(lifecycleText, "internal Task StopRecordingAsync(bool emergency");
         AssertContains(stopLifecycleText, "public Task StopRecordingAsync(");
@@ -73,8 +101,13 @@ static partial class Program
         AssertContains(outcomeStateText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
         AssertContains(outcomeStateText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
 
-        AssertContains(lifecycleText, "PublishRecordingStartedOutcome(fbRecordingContext.FinalOutputPath);");
-        AssertContains(lifecycleText, "PublishRecordingStartedOutcome(recordingContext.FinalOutputPath);");
+        var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs")
+            .Replace("\r\n", "\n");
+        var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(flashbackStartText, "PublishRecordingStartedOutcome(fbRecordingContext.FinalOutputPath);");
+        AssertContains(libAvStartText, "PublishRecordingStartedOutcome(rollback.RecordingContext.FinalOutputPath);");
         AssertDoesNotContain(lifecycleText, "_lastOutputPath = fbRecordingContext.FinalOutputPath;");
         AssertDoesNotContain(lifecycleText, "_lastOutputPath = recordingContext.FinalOutputPath;");
         AssertDoesNotContain(lifecycleText, "_lastFinalizeStatus = \"Recording\";");

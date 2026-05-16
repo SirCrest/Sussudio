@@ -1,0 +1,182 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Windows.Storage;
+using Sussudio.Models;
+using Sussudio.Services.Flashback;
+
+namespace Sussudio.Services.Capture;
+
+public partial class CaptureService
+{
+    private async Task DisposeUnusableFlashbackRecordingBackendAsync(CancellationToken transitionToken)
+    {
+        if (_flashbackEnabled &&
+            _flashbackSink != null &&
+            !_flashbackSink.CanBeginRecording)
+        {
+            Logger.Log(
+                "FLASHBACK_RECORDING_BACKEND_UNUSABLE_FALLBACK " +
+                $"failed={_flashbackSink.EncodingFailed} type={_flashbackSink.EncodingFailureType ?? "None"}");
+            await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
+        }
+    }
+
+    private async Task StartFlashbackRecordingAsync(
+        CaptureSettings settings,
+        CancellationToken transitionToken,
+        RecordingStartRollbackState rollback)
+    {
+        if (_flashbackSink == null)
+        {
+            throw new InvalidOperationException("Flashback backend is not available for recording.");
+        }
+
+        // Guard: if the existing flashback sink's pixel format no longer matches the
+        // negotiated UVC format, reject the reuse path so the slow path rebuilds correctly.
+        if (_flashbackSink.IsP010 is bool recSinkIsP010 &&
+            _unifiedVideoCapture != null &&
+            recSinkIsP010 != _unifiedVideoCapture.IsP010)
+        {
+            Logger.Log(
+                $"FLASHBACK_FAST_PATH_FORMAT_MISMATCH " +
+                $"existing_p010={recSinkIsP010} requested_p010={_unifiedVideoCapture.IsP010}");
+            throw new InvalidOperationException(
+                $"Flashback recording fast path: pixel-format mismatch — sink was built for " +
+                $"{(recSinkIsP010 ? "P010" : "NV12")} but UVC session negotiated " +
+                $"{(_unifiedVideoCapture.IsP010 ? "P010" : "NV12")}. " +
+                "Rebuild the flashback backend with the correct format.");
+        }
+
+        StorageFolder fbOutputFolder;
+        try
+        {
+            fbOutputFolder = await StorageFolder.GetFolderFromPathAsync(settings.OutputPath);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Output folder is unavailable: {settings.OutputPath}", ex);
+        }
+
+        transitionToken.ThrowIfCancellationRequested();
+
+        var fbEffectiveFrameRate = _unifiedVideoCapture?.Fps > 0 ? _unifiedVideoCapture.Fps : settings.FrameRate;
+        var fbRecordingContext = await _artifactManager.CreateContextAsync(
+            fbOutputFolder,
+            new RecordingContextRequest
+            {
+                Settings = settings,
+                UsePostMuxAudio = false,
+                AudioDeviceName = settings.AudioEnabled
+                    ? (settings.UseCustomAudioInput ? settings.AudioDeviceName : (_audioDeviceName ?? _currentDevice?.AudioDeviceName))
+                    : null,
+                MicrophoneDeviceName = settings.MicrophoneEnabled ? settings.MicrophoneDeviceName : null,
+                EffectiveFrameRate = fbEffectiveFrameRate,
+                FrameRateArg = ResolveFrameRateArg(settings, fbEffectiveFrameRate),
+                EffectiveWidth = _actualWidth ?? settings.Width,
+                EffectiveHeight = _actualHeight ?? settings.Height,
+                VideoInputPixelFormat = _unifiedVideoCapture?.IsP010 == true ? "p010le" : "nv12",
+                IsFullRangeInput = _unifiedVideoCapture?.IsSoftwareMjpegPipelineActive == true,
+                GpuHandles = GpuPipelineHandles.None
+            }).ConfigureAwait(false);
+        rollback.RecordingContext = fbRecordingContext;
+
+        // If flashback settings changed while preview was stopped, rebuild
+        // before recording so the retained backend matches the requested file.
+        var flashbackBackendSettingsChanged = _flashbackBackendSettings == null ||
+            !CanReuseFlashbackBackend(_flashbackBackendSettings, settings);
+        var flashbackAudioTopologyChanged =
+            _flashbackSink.AudioEnabled != settings.AudioEnabled ||
+            _flashbackSink.MicrophoneEnabled != settings.MicrophoneEnabled;
+        if (flashbackAudioTopologyChanged)
+        {
+            Logger.Log($"FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REJECT " +
+                $"audio={settings.AudioEnabled} (was {_flashbackSink.AudioEnabled}) " +
+                $"mic={settings.MicrophoneEnabled} (was {_flashbackSink.MicrophoneEnabled})");
+            EnsureFlashbackRecordingTopologyMatches(
+                _flashbackSink,
+                settings.AudioEnabled,
+                settings.MicrophoneEnabled);
+        }
+
+        if (flashbackBackendSettingsChanged)
+        {
+            Logger.Log($"FLASHBACK_SETTINGS_MISMATCH_AUTO_RESTART " +
+                $"settings_changed={flashbackBackendSettingsChanged} " +
+                $"audio={settings.AudioEnabled} " +
+                $"mic={settings.MicrophoneEnabled}");
+
+            await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
+
+            var uvc = _unifiedVideoCapture;
+            if (uvc != null)
+            {
+                await EnsureFlashbackPreviewBackendAsync(uvc, settings, transitionToken).ConfigureAwait(false);
+            }
+
+            if (_flashbackSink == null)
+            {
+                throw new InvalidOperationException("Failed to restart flashback backend for updated recording settings.");
+            }
+        }
+
+        await EnsureFlashbackAudioInputsAsync(settings, transitionToken, "recording_flashback_start").ConfigureAwait(false);
+        await _flashbackBackendLeaseLock.WaitAsync(transitionToken).ConfigureAwait(false);
+        rollback.FlashbackRecordingBackendLeaseHeld = true;
+        Volatile.Write(ref _flashbackRecordingStartInProgress, 1);
+        try
+        {
+            var activeFlashbackSink = _flashbackSink
+                ?? throw new InvalidOperationException("Flashback backend is not available for recording.");
+            if (!activeFlashbackSink.CanBeginRecording)
+            {
+                throw new InvalidOperationException("Flashback backend is not healthy enough to begin recording.");
+            }
+
+            if (!activeFlashbackSink.WaitForForceRotateIdle(TimeSpan.FromSeconds(10)))
+            {
+                throw new InvalidOperationException("Flashback backend export rotation did not quiesce before recording start.");
+            }
+
+            if (!activeFlashbackSink.CanBeginRecording)
+            {
+                throw new InvalidOperationException("Flashback backend became unavailable before recording start.");
+            }
+
+            rollback.FlashbackRecordingStartedSink = activeFlashbackSink;
+            _recordingIntegrityCounterBaseline = CaptureRecordingIntegrityCounters(activeFlashbackSink);
+            _recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(
+                _wasapiAudioCapture,
+                activeFlashbackSink,
+                settings);
+            activeFlashbackSink.BeginRecording(fbRecordingContext.FinalOutputPath);
+            if (activeFlashbackSink.EncodingFailed)
+            {
+                throw new InvalidOperationException(
+                    $"Flashback backend failed while starting recording: {activeFlashbackSink.EncodingFailureMessage ?? "unknown error"}");
+            }
+
+            _unifiedVideoCapture?.BeginFlashbackRecordingAccounting();
+            _recordingSink = activeFlashbackSink;
+            _libavSink = null;
+            _recordingContext = fbRecordingContext;
+            _activeRecordingSettings = settings;
+            ClearLastRecordingFailure();
+            _isRecording = true;
+            _flashbackRecordingStartBytes = _flashbackBufferManager?.TotalBytesWritten ?? 0;
+            PublishRecordingStartedOutcome(fbRecordingContext.FinalOutputPath);
+            _recordingStopwatch.Restart();
+            StatusChanged?.Invoke(this, "Recording");
+            Logger.Log($"FLASHBACK_UNIFIED_RECORDING_START output='{fbRecordingContext.FinalOutputPath}'");
+        }
+        finally
+        {
+            Volatile.Write(ref _flashbackRecordingStartInProgress, 0);
+            if (rollback.FlashbackRecordingBackendLeaseHeld)
+            {
+                rollback.FlashbackRecordingBackendLeaseHeld = false;
+                ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_recording_start");
+            }
+        }
+    }
+}

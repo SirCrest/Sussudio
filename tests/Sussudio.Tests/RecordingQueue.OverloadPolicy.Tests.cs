@@ -136,7 +136,7 @@ static partial class Program
         AssertOccursBefore(
             startRecordingFailure,
             "RecordLastRecordingFailure(ex);",
-            "await _artifactManager.RollbackAsync(recordingContext)");
+            "await _artifactManager.RollbackAsync(rollback.RecordingContext)");
         AssertDoesNotContain(captureServiceSource, "System.Diagnostics.Trace.TraceWarning($\"Suppressed exception in CaptureService.StartRecordingAsync");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_CYCLE_OK mode=preserve_rebuild");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_CLEANUP_PURGE_WARN");
@@ -219,7 +219,7 @@ static partial class Program
         AssertContains(captureServiceSource, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
         AssertContains(captureServiceSource, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
         AssertContains(captureServiceSource, "PublishRecordingStartedOutcome(fbRecordingContext.FinalOutputPath);");
-        AssertContains(captureServiceSource, "PublishRecordingStartedOutcome(recordingContext.FinalOutputPath);");
+        AssertContains(captureServiceSource, "PublishRecordingStartedOutcome(rollback.RecordingContext.FinalOutputPath);");
         AssertContains(captureServiceSource, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
         AssertContains(captureServiceSource, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
         var standardMicMonitorRestart = ExtractSourceBlock(
