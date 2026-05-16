@@ -2776,14 +2776,19 @@ Remaining `tools/Common` ownership:
    `MainViewModel.HdrModeChanges.cs` owns HDR toggle side effects: recording-time
    revert/status, mode option rebuilds, immediate reinitialize scheduling, and
    settings persistence.
-   Late-arriving device format probe reconciliation, collection mutation,
-   selected-device capability refresh, and enqueue/failure logging live in
-   `MainViewModel.DeviceFormatProbes.cs`; UI-side late-probe retarget
-   application now lives in `MainViewModel.DeviceFormatProbeRetarget.cs`, while
-   pure late-probe retarget decisions live in
-   `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
-   Automatic resolution ranking and source-aware auto-selection now live in
-   `MainViewModel.AutoResolutionOptions.cs`; effective Source resolution state,
+    Late-arriving device format probe reconciliation, collection mutation,
+    selected-device capability refresh, and enqueue/failure logging live in
+    `MainViewModel.DeviceFormatProbes.cs`; UI-side late-probe retarget
+    application now lives in `MainViewModel.DeviceFormatProbeRetarget.cs`, while
+    pure late-probe retarget decisions live in
+    `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
+    The presentation-preview ownership tests for this capture selection policy
+    area are split across the
+    `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.*.cs` family so
+    frame-rate, resolution, mode-selection, late-probe, recording-format, and
+    runtime-flag assertions stay near their matching policy owners.
+    Automatic resolution ranking and source-aware auto-selection now live in
+    `MainViewModel.AutoResolutionOptions.cs`; effective Source resolution state,
    display text, auto-value detection, and effective resolution query helpers
    live in `MainViewModel.AutoResolutionState.cs`.
    Pure resolution selection policy now lives in the

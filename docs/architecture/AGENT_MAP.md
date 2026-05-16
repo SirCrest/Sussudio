@@ -1105,9 +1105,24 @@ Primary current owners:
   assertions that output folder picker ownership stays out of `MainViewModel`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
   MainViewModel source-inspection helpers for capture-facing tests.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` owns
-  capture option, resolution-selection policy, frame-rate timing, live
-  pixel-format, and runtime error-projection ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.Tests.cs`
+  owns frame-rate source filtering, automatic frame-rate choice,
+  `ShowAllCaptureOptions` behavior, and timing-policy ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Tests.cs`
+  owns resolution-selection policy assertions, including HDR and SDR source
+  retarget behavior.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.ModeSelection.Tests.cs`
+  owns mode-selection reset and resolved automatic frame-rate application
+  assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.DeviceFormatProbeRetarget.Tests.cs`
+  owns late device-format probe retarget policy behavior assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.RecordingFormat.Tests.cs`
+  owns recording format selection policy ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.RuntimeFlags.Tests.cs`
+  owns runtime error-projection ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Helpers.cs` owns
+  shared reflection, option-list, and capture-mode model construction helpers
+  for the selection-policy test family.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` owns
   preview startup, preview reveal, and preview stop ordering assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
