@@ -633,7 +633,7 @@ audio-meter activation, initial meter presentation, and device-audio gain/meter
 resize hooks. `Sussudio/MainWindow.AudioBindings.cs` is the XAML-facing adapter;
 video-format collection setup, initial capture/recording option projection, and
 code-attached resolution/frame-rate handlers now live in the
-`Sussudio/Controllers/CaptureOptionBindingController*.cs` family, with
+`Sussudio/Controllers/Capture/CaptureOptionBindingController*.cs` family, with
 `MainWindow.CaptureOptionBindings.cs` and
 `MainWindow.RecordingOptionBindings.cs` left as XAML-facing adapters.
 Flashback settings-control initialization, GPU decode binding/sync, and buffer
@@ -2016,7 +2016,7 @@ Responsive layout ownership checks live in
 `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs`.
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
-the `Sussudio/Controllers/CaptureSelectionBindingController*.cs` family. The
+the `Sussudio/Controllers/Capture/CaptureSelectionBindingController*.cs` family. The
 root controller owns the controller shell and context lifetime,
 `.Context.cs` owns the XAML control dependency bag, `.CollectionBindings.cs`
 owns capture/audio/microphone/encoder collection wiring, `.SelectionSync.cs` owns
@@ -2027,7 +2027,7 @@ microphone selection, `.CaptureModeSelection.cs` owns resolution and frame-rate
 selection, `.RecordingSelection.cs` owns recording format/quality/preset/
 split-encode selection, `.StringSelection.cs` owns shared string ComboBox
 selection application,
-`CaptureComboBoxSelectionNormalizer.cs` owns pure capture/audio/microphone/
+`Sussudio/Controllers/Capture/CaptureComboBoxSelectionNormalizer.cs` owns pure capture/audio/microphone/
 resolution/frame-rate/string ComboBox selection and fallback matching, and
 `.DeviceAudio.cs` owns device-audio mode/gain projection. `.PropertyChanges.cs`
 owns the capture-selection `PropertyChanged` router, while
@@ -2035,24 +2035,24 @@ owns the capture-selection `PropertyChanged` router, while
 XAML-facing adapter for binding setup and cross-controller calls.
 
 Capture-device refresh/apply button workflows now live in
-`Sussudio/Controllers/CaptureDeviceActionController.cs`.
+`Sussudio/Controllers/Capture/CaptureDeviceActionController.cs`.
 `MainWindow.CaptureDeviceActions.cs` is the XAML-facing adapter and keeps the
 explicit apply/reinit path separate from selection synchronization.
 
 Pure capture-option presentation decisions now live in
-`Sussudio/Controllers/CaptureOptionPresentationPolicy.cs`: HDR toggle
+`Sussudio/Controllers/Capture/CaptureOptionPresentationPolicy.cs`: HDR toggle
 enablement, MJPEG decoder count visibility, bitrate/preset visibility, audio
 clipping visibility, and initial decoder-count clamping. XAML control
 application, decoder-count selection handling, and delegation to policy/tooltip
-helpers live in `Sussudio/Controllers/CaptureOptionPresentationController.cs`.
+helpers live in `Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs`.
 Pure HDR readiness hint and FPS telemetry tooltip text policy now lives in
-`Sussudio/Controllers/CaptureOptionTooltipFormatter.cs`.
+`Sussudio/Controllers/Capture/CaptureOptionTooltipFormatter.cs`.
 `MainWindow.CaptureOptionPresentation.cs` is the XAML-facing adapter and keeps
 the existing method names for binding setup, property-change projection, and
 the XAML decoder-count selection event.
 
 Capture option binding setup now lives in the
-`Sussudio/Controllers/CaptureOptionBindingController*.cs` family:
+`Sussudio/Controllers/Capture/CaptureOptionBindingController*.cs` family:
 `CaptureOptionBindingController.cs` is the controller shell,
 `CaptureOptionBindingController.Context.cs` owns the XAML/view-model adapter
 context, `CaptureOptionBindingController.Initialization.cs` owns video-format

@@ -11,17 +11,17 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.CaptureSelectionBindings.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
-        var contextText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.Context.cs").Replace("\r\n", "\n");
-        var collectionBindingsText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.CollectionBindings.cs").Replace("\r\n", "\n");
-        var deviceAudioText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs").Replace("\r\n", "\n");
-        var propertyChangesText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.PropertyChanges.cs").Replace("\r\n", "\n");
-        var selectionSyncText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.SelectionSync.cs").Replace("\r\n", "\n");
-        var deviceSelectionText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.DeviceSelection.cs").Replace("\r\n", "\n");
-        var audioSelectionText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.AudioSelection.cs").Replace("\r\n", "\n");
-        var captureModeSelectionText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.CaptureModeSelection.cs").Replace("\r\n", "\n");
-        var recordingSelectionText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.RecordingSelection.cs").Replace("\r\n", "\n");
-        var stringSelectionText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.StringSelection.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
+        var contextText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.Context.cs").Replace("\r\n", "\n");
+        var collectionBindingsText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.CollectionBindings.cs").Replace("\r\n", "\n");
+        var deviceAudioText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.DeviceAudio.cs").Replace("\r\n", "\n");
+        var propertyChangesText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.PropertyChanges.cs").Replace("\r\n", "\n");
+        var selectionSyncText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.SelectionSync.cs").Replace("\r\n", "\n");
+        var deviceSelectionText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.DeviceSelection.cs").Replace("\r\n", "\n");
+        var audioSelectionText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.AudioSelection.cs").Replace("\r\n", "\n");
+        var captureModeSelectionText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.CaptureModeSelection.cs").Replace("\r\n", "\n");
+        var recordingSelectionText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.RecordingSelection.cs").Replace("\r\n", "\n");
+        var stringSelectionText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.StringSelection.cs").Replace("\r\n", "\n");
         var selectionFamilyText = string.Join(
             "\n",
             deviceSelectionText,
@@ -38,7 +38,7 @@ static partial class Program
             propertyChangesText,
             selectionSyncText,
             selectionFamilyText);
-        var selectionNormalizerText = ReadRepoFile("Sussudio/Controllers/CaptureComboBoxSelectionNormalizer.cs").Replace("\r\n", "\n");
+        var selectionNormalizerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureComboBoxSelectionNormalizer.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private CaptureSelectionBindingController _captureSelectionBindingController = null!;");
         AssertContains(adapterText, "private void InitializeCaptureSelectionBindingController()");
@@ -102,7 +102,7 @@ static partial class Program
         AssertContains(selectionSyncText, "private readonly int[] _selectionSyncQueued = new int[9];");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "CaptureSelectionBindingController.SelectionState.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Capture", "CaptureSelectionBindingController.SelectionState.cs")),
             "empty selection-state marker partial should stay removed");
         AssertContains(deviceSelectionText, "internal sealed partial class CaptureSelectionBindingController");
         AssertContains(audioSelectionText, "internal sealed partial class CaptureSelectionBindingController");
@@ -349,7 +349,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.CaptureDeviceActions.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/CaptureDeviceActionController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureDeviceActionController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private CaptureDeviceActionController _captureDeviceActionController = null!;");
         AssertContains(adapterText, "private void InitializeCaptureDeviceActionController()");
@@ -386,9 +386,9 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var captureOptionText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionPresentation.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
-        var policyText = ReadRepoFile("Sussudio/Controllers/CaptureOptionPresentationPolicy.cs").Replace("\r\n", "\n");
-        var tooltipFormatterText = ReadRepoFile("Sussudio/Controllers/CaptureOptionTooltipFormatter.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
+        var policyText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationPolicy.cs").Replace("\r\n", "\n");
+        var tooltipFormatterText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionTooltipFormatter.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var captureOptionPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedCaptureOptions.cs").Replace("\r\n", "\n");
         var outputPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedOutput.cs").Replace("\r\n", "\n");
@@ -570,13 +570,13 @@ static partial class Program
         var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
         var recordingOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.RecordingOptionBindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
-        var controllerRootText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
-        var controllerContextText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.Context.cs").Replace("\r\n", "\n");
-        var controllerInitializationText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.Initialization.cs").Replace("\r\n", "\n");
-        var controllerSelectionHandlersText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.SelectionHandlers.cs").Replace("\r\n", "\n");
-        var controllerRecordingOptionsText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.RecordingOptions.cs").Replace("\r\n", "\n");
-        var controllerHdrText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.Hdr.cs").Replace("\r\n", "\n");
-        var controllerShowAllText = ReadRepoFile("Sussudio/Controllers/CaptureOptionBindingController.ShowAll.cs").Replace("\r\n", "\n");
+        var controllerRootText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
+        var controllerContextText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.Context.cs").Replace("\r\n", "\n");
+        var controllerInitializationText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.Initialization.cs").Replace("\r\n", "\n");
+        var controllerSelectionHandlersText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.SelectionHandlers.cs").Replace("\r\n", "\n");
+        var controllerRecordingOptionsText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.RecordingOptions.cs").Replace("\r\n", "\n");
+        var controllerHdrText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.Hdr.cs").Replace("\r\n", "\n");
+        var controllerShowAllText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.ShowAll.cs").Replace("\r\n", "\n");
         var captureOptionPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedCaptureOptions.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
@@ -589,12 +589,12 @@ static partial class Program
             controllerRecordingOptionsText,
             controllerHdrText,
             controllerShowAllText);
-        var selectionBindingControllerText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
+        var selectionBindingControllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
         var selectionBindingFamilyText = string.Join(
             "\n",
             selectionBindingControllerText,
-            ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.RecordingSelection.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.StringSelection.cs").Replace("\r\n", "\n"));
+            ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.RecordingSelection.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.StringSelection.cs").Replace("\r\n", "\n"));
         var recordingOptionBindingsWithoutVideoFormat = recordingOptionBindingsText.Replace("VideoFormatComboBox.SelectionChanged +=", string.Empty);
 
         AssertContains(captureOptionBindingsText, "private CaptureOptionBindingController _captureOptionBindingController = null!;");
