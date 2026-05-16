@@ -921,6 +921,15 @@ Primary current owners:
   owns dynamic decode/GPU/diagnostic row pools, empty-state rows, group headers,
   and dock row style updates. `Sussudio/Controllers/StatsDockRefreshController.cs`
   delegates diagnostic row presentation to `StatsDiagnosticRowsController`.
+- `Sussudio/Controllers/StatsHardwareRowsController.cs` owns hardware row
+  refresh, availability, presentation-input row building, and decode/GPU
+  minimum pool sizing before delegating row chrome;
+  `Sussudio/Controllers/StatsHardwareRowsInputBuilder.cs` owns MJPEG/NVML
+  telemetry projection into the hardware-row presentation input DTOs;
+  `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs` owns pure
+  decode/GPU row text projection over presentation inputs, and
+  `StatsDockRowChromeController` owns decode/GPU row pooling/styling while
+  `StatsDockRefreshController` owns when decode/GPU rows refresh.
 - `Sussudio/Controllers/FrameTimeOverlayPresentationController.cs` owns compact
   frame-time overlay text projection and graph line drawing. Keep frame-time
   canvas math there, while `Sussudio/MainWindow.FrameTimeOverlay.cs` owns the
@@ -958,13 +967,20 @@ Primary current owners:
   video-format option construction, HDR mode enablement, and source aspect-ratio
   filtering. Shell files bind and display those options.
 - `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` is the stats
-  presentation contract marker shell. `StatsPresentation.Ownership.Tests.cs`
-  owns builder/controller/DTO source-shape assertions,
-  `StatsPresentation.SourceTelemetry.Tests.cs` owns HDMI source telemetry panel
-  projection checks, `StatsPresentation.Window.Tests.cs` owns detached-window
-  formatting, `StatsPresentation.Encoder.Tests.cs` owns dock encoder formatting,
-  and `StatsPresentation.FrameTime.Tests.cs` owns compact preview summary and
-  frame-time range policy checks.
+  presentation contract marker shell.
+  `tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs` owns
+  builder/controller/DTO source-shape assertions,
+  `tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs` owns HDMI
+  source telemetry panel projection checks,
+  `tests/Sussudio.Tests/StatsPresentation.Window.Tests.cs` owns detached-window
+  formatting, `tests/Sussudio.Tests/StatsPresentation.Encoder.Tests.cs` owns
+  dock encoder formatting,
+  `tests/Sussudio.Tests/StatsPresentation.FrameTime.Tests.cs` owns compact
+  preview summary and frame-time range policy checks,
+  `tests/Sussudio.Tests/StatsHardwareRowsController.Tests.cs` owns hardware row
+  presentation/input behavior checks, and
+  `tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs` owns disk
+  space presentation bridge checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.AutomationIds.Tests.cs` owns
   MainWindow automation ID inventory checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.WindowAutomation.Tests.cs` owns
@@ -993,7 +1009,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs` owns
   MainWindow controller-adapter ownership assertions for control bar, shell
   elevation, preview-transition, preview startup overlay, preview fade-in, and
-  record-button width visual controllers.
+  recording-button chrome controller.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` is the
   MainWindow controller-adapter ownership marker shell.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs`
@@ -1701,15 +1717,6 @@ Primary current owners:
   audio, timestamp, stream-bound, validation, lifetime, and callback tests.
 - `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
   support/logging contract tests.
-- `Sussudio/Controllers/StatsHardwareRowsController.cs` owns hardware row
-  refresh, availability, presentation-input row building, and decode/GPU
-  minimum pool sizing before delegating row chrome;
-  `Sussudio/Controllers/StatsHardwareRowsInputBuilder.cs` owns MJPEG/NVML
-  telemetry projection into the hardware-row presentation input DTOs;
-  `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs` owns pure
-  decode/GPU row text projection over presentation inputs, and
-  `StatsDockRowChromeController` owns decode/GPU row pooling/styling while
-  `StatsDockRefreshController` owns when decode/GPU rows refresh.
 - `Sussudio/Controllers/FlashbackTimelineController.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, show/hide animation
   state, and timeline track layout sizing. `MainWindow.FlashbackTimeline.cs`
