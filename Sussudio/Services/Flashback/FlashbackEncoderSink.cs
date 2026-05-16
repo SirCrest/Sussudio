@@ -65,11 +65,6 @@ internal sealed partial class FlashbackEncoderSink : IRecordingSink, IRawVideoFr
     private int _disposeFinalized;
     private int _deferredDisposeScheduled;
 
-    private bool _forceRotateRequested;
-    private volatile ForceRotateRequest? _forceRotateRequest;
-    private TimeSpan _forceRotateInPoint;
-    private TimeSpan _forceRotateOutPoint;
-
     private long _segmentStartBytes;
     private long _lastDiskBytesUpdateMs;
     private long _segmentRotationFailures;
@@ -90,7 +85,6 @@ internal sealed partial class FlashbackEncoderSink : IRecordingSink, IRawVideoFr
     private long _gpuFramesDropped;
     private long _gpuQueueRejectedFrames;
     private Action<Exception>? _onFatalError;
-    private bool _forceRotateDraining;
     private int _videoQueueDepth;
     private int _videoQueueMaxDepth;
     private int _videoQueueCapacity = DefaultVideoQueueCapacity;
@@ -126,33 +120,6 @@ internal sealed partial class FlashbackEncoderSink : IRecordingSink, IRawVideoFr
         _ownsBufferManager = false;
         _videoLatencyTracker = new VideoQueueLatencyTracker(
             "FLASHBACK_SINK", _videoQueueSync, VideoQueueLatencyWindowSize);
-    }
-
-    public bool IsForceRotateActive =>
-        Volatile.Read(ref _forceRotateRequested) ||
-        Volatile.Read(ref _forceRotateDraining);
-    public bool IsForceRotateRequested => Volatile.Read(ref _forceRotateRequested);
-    public bool IsForceRotateDraining => Volatile.Read(ref _forceRotateDraining);
-
-    public bool WaitForForceRotateIdle(TimeSpan timeout)
-    {
-        var timeoutMs = Math.Max(0, (long)timeout.TotalMilliseconds);
-        var deadlineTick = Environment.TickCount64 + timeoutMs;
-        while (IsForceRotateActive)
-        {
-            if (timeoutMs == 0 || Environment.TickCount64 >= deadlineTick)
-            {
-                return false;
-            }
-
-            SignalWork("force_rotate_idle");
-            if (WaitForCancellation(TimeSpan.FromMilliseconds(10)))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private static int ResolveVideoQueueCapacity(FlashbackSessionContext context, bool useHardwareFrames)

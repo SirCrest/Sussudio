@@ -84,10 +84,25 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(forceRotateText, "public FlashbackForceRotateResult ForceRotateForExport(");
+        AssertContains(forceRotateText, "public bool IsForceRotateActive =>");
+        AssertContains(forceRotateText, "public bool IsForceRotateRequested =>");
+        AssertContains(forceRotateText, "public bool IsForceRotateDraining =>");
+        AssertContains(forceRotateText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
+        AssertContains(forceRotateText, "private bool _forceRotateRequested;");
+        AssertContains(forceRotateText, "private volatile ForceRotateRequest? _forceRotateRequest;");
+        AssertContains(forceRotateText, "private TimeSpan _forceRotateInPoint;");
+        AssertContains(forceRotateText, "private TimeSpan _forceRotateOutPoint;");
+        AssertContains(forceRotateText, "private bool _forceRotateDraining;");
         AssertContains(forceRotateText, "private sealed class ForceRotateRequest");
         AssertContains(forceRotateText, "private const int ForceRotateCommittedGraceMs = 1_000;");
         AssertContains(forceRotateText, "private static bool ShouldAbortForceRotateDrain(");
         AssertDoesNotContain(rootText, "public FlashbackForceRotateResult ForceRotateForExport(");
+        AssertDoesNotContain(rootText, "public bool IsForceRotateActive =>");
+        AssertDoesNotContain(rootText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
+        AssertDoesNotContain(rootText, "private bool _forceRotateRequested;");
+        AssertDoesNotContain(rootText, "private TimeSpan _forceRotateInPoint;");
+        AssertDoesNotContain(rootText, "private TimeSpan _forceRotateOutPoint;");
+        AssertDoesNotContain(rootText, "private bool _forceRotateDraining;");
         AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
         AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
 
