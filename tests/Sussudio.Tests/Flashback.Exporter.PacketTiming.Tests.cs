@@ -13,10 +13,10 @@ static partial class Program
         AssertContains(sourceText, "var seekTimestamp = ToAvTimeBaseTimestamp(inPoint);");
         AssertContains(sourceText, "var outPtsLimit = ToAvTimeBaseTimestampOrMax(outPoint);");
         AssertContains(sourceText, "var outPtsLimitUs = ToAvTimeBaseTimestampOrMax(outPoint);");
-        AssertContains(sourceText, "? ToMicrosecondsSaturated(SaturatingSubtract(inPoint, segment.StartPts!.Value))");
-        AssertContains(sourceText, "var segmentOutDelta = useSegmentTimeline");
-        AssertContains(sourceText, "? ToMicrosecondsSaturated(segmentOutDelta)");
-        AssertContains(sourceText, "if (useSegmentTimeline && segmentOutDelta <= TimeSpan.Zero)");
+        AssertContains(sourceText, "var segmentInOffsetUs = ToMicrosecondsSaturated(SaturatingSubtract(inPoint, segment.StartPts!.Value));");
+        AssertContains(sourceText, "var segmentOutDelta = SaturatingSubtract(");
+        AssertContains(sourceText, "var segmentOutOffsetUs = ToMicrosecondsSaturated(segmentOutDelta);");
+        AssertContains(sourceText, "SkipBecauseEmpty: segmentOutDelta <= TimeSpan.Zero");
         AssertContains(sourceText, "private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)");
         AssertContains(sourceText, "private static long AddNonNegativeSaturated(long left, long right)");
         AssertContains(sourceText, "var segmentLength = new FileInfo(segment.Path).Length;\n                    readableSegmentCount++;\n                    totalEstimatedBytes = AddNonNegativeSaturated(totalEstimatedBytes, segmentLength);");

@@ -105,22 +105,14 @@ internal sealed unsafe partial class FlashbackExporter
                     ct.ThrowIfCancellationRequested();
                     var segment = segments[segIdx];
                     var segPath = segment.Path;
-                    var useSegmentTimeline = segment.StartPts.HasValue;
-                    var segmentInOffsetUs = useSegmentTimeline
-                        ? ToMicrosecondsSaturated(SaturatingSubtract(inPoint, segment.StartPts!.Value))
-                        : 0;
-                    var segmentOutDelta = useSegmentTimeline
-                        ? SaturatingSubtract(
-                            (segment.EndPts.HasValue && segment.EndPts.Value < outPoint) ? segment.EndPts.Value : outPoint,
-                            segment.StartPts!.Value)
-                        : TimeSpan.Zero;
-                    var segmentOutOffsetUs = useSegmentTimeline
-                        ? ToMicrosecondsSaturated(segmentOutDelta)
-                        : outPtsLimitUs;
-                    if (useSegmentTimeline && segmentOutDelta <= TimeSpan.Zero)
+                    var segmentExportWindow = ProjectSegmentExportWindow(segment, inPoint, outPoint, outPtsLimitUs);
+                    if (segmentExportWindow.SkipBecauseEmpty)
                     {
                         continue;
                     }
+                    var useSegmentTimeline = segmentExportWindow.UseSegmentTimeline;
+                    var segmentInOffsetUs = segmentExportWindow.SegmentInOffsetUs;
+                    var segmentOutOffsetUs = segmentExportWindow.SegmentOutOffsetUs;
 
                     if (!TryOpenSegmentInputForExport(
                             segment,
