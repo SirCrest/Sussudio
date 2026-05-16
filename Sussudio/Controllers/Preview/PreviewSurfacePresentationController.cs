@@ -159,11 +159,11 @@ internal sealed class PreviewSurfacePresentationController
     }
 
     public void FadeInVideoFrameShadow(int delayMs, int durationMs)
-        => CompositionShadowFadeAnimator.FadeIn(_videoShadowVisual, delayMs, durationMs);
+        => PreviewShadowFadeAnimator.FadeIn(_videoShadowVisual, delayMs, durationMs);
 
     public void FadeOutVideoFrameShadow(int durationMs)
-        => CompositionShadowFadeAnimator.FadeOut(_videoShadowVisual, durationMs);
+        => PreviewShadowFadeAnimator.FadeOut(_videoShadowVisual, durationMs);
 
     public void FadeInControlBarShadow(int delayMs, int durationMs)
-        => CompositionShadowFadeAnimator.FadeIn(_controlBarShadowVisual, delayMs, durationMs);
+        => PreviewShadowFadeAnimator.FadeIn(_controlBarShadowVisual, delayMs, durationMs);
 }

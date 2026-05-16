@@ -4,7 +4,7 @@ using Microsoft.UI.Composition;
 
 namespace Sussudio.Controllers;
 
-internal static class CompositionShadowFadeAnimator
+internal static class PreviewShadowFadeAnimator
 {
     public static void FadeIn(SpriteVisual? visual, int delayMs, int durationMs)
     {

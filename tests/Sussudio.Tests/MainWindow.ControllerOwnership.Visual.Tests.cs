@@ -63,7 +63,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
-        var shadowAnimatorText = ReadRepoFile("Sussudio/Controllers/Visual/CompositionShadowFadeAnimator.cs").Replace("\r\n", "\n");
+        var shadowAnimatorText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;");
         AssertContains(adapterText, "private void InitializePreviewTransitionAnimationController()");
@@ -87,7 +87,7 @@ static partial class Program
         AssertContains(controllerText, "public static void FadeOutElement(UIElement element)");
         AssertContains(controllerText, "private Task AnimatePreviewTransitionAsync(");
         AssertContains(controllerText, "private static Task BeginStoryboardAsync(");
-        AssertContains(shadowAnimatorText, "internal static class CompositionShadowFadeAnimator");
+        AssertContains(shadowAnimatorText, "internal static class PreviewShadowFadeAnimator");
         AssertContains(shadowAnimatorText, "public static void FadeIn(SpriteVisual? visual, int delayMs, int durationMs)");
         AssertContains(shadowAnimatorText, "public static void FadeOut(SpriteVisual? visual, int durationMs)");
         AssertContains(shadowAnimatorText, "if (visual == null) return;");
