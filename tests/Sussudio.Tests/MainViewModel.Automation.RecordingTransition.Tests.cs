@@ -30,7 +30,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
+        var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs")
+            .Replace("\r\n", "\n");
         var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
+            .Replace("\r\n", "\n");
+        var runtimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Runtime.cs")
             .Replace("\r\n", "\n");
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
@@ -58,6 +62,17 @@ static partial class Program
         AssertContains(recordingStateText, "public partial ObservableCollection<string> AvailableRecordingFormats");
         AssertContains(recordingStateText, "public partial string OutputPath");
         AssertContains(recordingStateText, "public partial bool IsRecording");
+        AssertContains(recordingRuntimeText, "partial void OnIsRecordingChanged(bool value)");
+        AssertContains(recordingRuntimeText, "private void UpdateRecordingStats()");
+        AssertContains(recordingRuntimeText, "private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)");
+        AssertContains(recordingRuntimeText, "RecordingSizeInfo = DisplayFormatters.FormatBytes(totalBytes, \"0\");");
+        AssertContains(recordingRuntimeText, "RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : \"--\";");
+        AssertContains(recordingRuntimeText, "_pendingModeOptionsRefresh = false;");
+        AssertContains(recordingRuntimeText, "RebuildResolutionOptions();");
+        AssertContains(runtimeText, "UpdateRecordingStats();");
+        AssertDoesNotContain(runtimeText, "private void UpdateRecordingStats()");
+        AssertDoesNotContain(runtimeText, "private static double? ComputeAverageBitrate(");
+        AssertDoesNotContain(runtimeText, "partial void OnIsRecordingChanged(bool value)");
         AssertDoesNotContain(rootViewModelText, "public partial ObservableCollection<string> AvailableRecordingFormats");
         AssertDoesNotContain(rootViewModelText, "public partial string OutputPath");
         AssertContains(automationText, "return SetRecordingDesiredStateAsync(enabled, cancellationToken);");

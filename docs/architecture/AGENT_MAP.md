@@ -1887,8 +1887,9 @@ Primary current owners:
   and analog gain property handlers.
   `MainViewModel.Dispatching.cs` owns shared
   dispatcher enqueue/invoke helpers and preview event fan-out for the partial
-  family. `MainViewModel.Runtime.cs` owns timer refreshes, recording bitrate
-  display, capture status/error fan-out, and resume cleanup callbacks.
+  family. `MainViewModel.Runtime.cs` owns timer refreshes, capture status/error
+  fan-out, and resume cleanup callbacks. `MainViewModel.RecordingRuntime.cs`
+  owns recording size/bitrate projection and recording-state reset reactions.
   `MainViewModel.LiveSignalPresentation.cs` owns live-capture info projection
   from `CaptureRuntimeSnapshot`, including audio-preview activity and
   live-resolution/frame-rate/pixel-format assignment, and delegates label

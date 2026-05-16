@@ -2615,7 +2615,9 @@ Remaining `tools/Common` ownership:
    device-native audio mode/gain handlers live in
    `MainViewModel.DeviceAudioPropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
-   timer/status/error handling now lives in `MainViewModel.Runtime.cs`, and
+   timer/status/error handling now lives in `MainViewModel.Runtime.cs`,
+   recording size/bitrate projection and recording-state reset reactions now
+   live in `MainViewModel.RecordingRuntime.cs`, and
    live-capture info projection from runtime snapshots now lives in
    `MainViewModel.LiveSignalPresentation.cs`, including audio-preview activity
    and live resolution/frame-rate/pixel-format assignment; live-signal label
