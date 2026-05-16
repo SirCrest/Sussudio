@@ -879,13 +879,13 @@ Primary current owners:
 - `Sussudio/Controllers/CompositionShadowFadeAnimator.cs` owns shared
   compositor opacity fade helpers for shell shadow visuals. XAML-facing
   adapters call it without adding state or dispatcher hops.
-- `Sussudio/Controllers/AudioMeterController.cs` owns audio/microphone meter
+- `Sussudio/Controllers/Audio/AudioMeterController.cs` owns audio/microphone meter
   setup and shared runtime fields.
-  `Sussudio/Controllers/AudioMeterController.Context.cs` owns the XAML/view-model
-  dependency bag, `Sussudio/Controllers/AudioMeterController.MeterState.cs`
+  `Sussudio/Controllers/Audio/AudioMeterController.Context.cs` owns the XAML/view-model
+  dependency bag, `Sussudio/Controllers/Audio/AudioMeterController.MeterState.cs`
   owns smoothing, peak/range markers, microphone meter clipping, reset behavior,
   timer lifetime, and `TranslateMarker`, and
-  `Sussudio/Controllers/AudioMeterController.PresentationAnimations.cs` owns
+  `Sussudio/Controllers/Audio/AudioMeterController.PresentationAnimations.cs` owns
   monitoring/disabled animations plus rounded content clips.
   `Sussudio/MainWindow.AudioMeter.cs` is its XAML-facing adapter.
   `Sussudio/Controllers/AudioControlBindingController.cs` owns the audio-control
