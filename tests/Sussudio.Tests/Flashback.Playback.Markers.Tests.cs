@@ -84,7 +84,7 @@ static partial class Program
 
         // UI must call the explicit-position overload so the marker matches the
         // visual playhead, not the controller's keyframe-snapped PlaybackPosition.
-        var mainWindowFlashback = ReadRepoFile("Sussudio/Controllers/FlashbackCommandController.cs")
+        var mainWindowFlashback = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
             .Replace("\r\n", "\n");
         AssertContains(mainWindowFlashback, "_context.ViewModel.FlashbackSetInPointAt(_context.ViewModel.FlashbackPlaybackPosition)");
         AssertContains(mainWindowFlashback, "_context.ViewModel.FlashbackSetOutPointAt(_context.ViewModel.FlashbackPlaybackPosition)");

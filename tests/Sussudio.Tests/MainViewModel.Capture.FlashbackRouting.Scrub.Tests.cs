@@ -11,17 +11,17 @@ static partial class Program
     {
         var flashbackWindowText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
-        var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackCommandController.cs")
+        var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
             .Replace("\r\n", "\n");
         var flashbackScrubText = ReadRepoFile("Sussudio/MainWindow.FlashbackScrub.cs")
             .Replace("\r\n", "\n");
-        var flashbackScrubControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackScrubInteractionController.cs")
+        var flashbackScrubControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs")
             .Replace("\r\n", "\n");
-        var flashbackGeometryText = ReadRepoFile("Sussudio/Controllers/FlashbackTimelineGeometry.cs")
+        var flashbackGeometryText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineGeometry.cs")
             .Replace("\r\n", "\n");
         var flashbackPlayheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs")
             .Replace("\r\n", "\n");
-        var flashbackPlayheadControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackPlayheadMotionController.cs")
+        var flashbackPlayheadControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs")
             .Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");

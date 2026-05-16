@@ -12,7 +12,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackSource = ReadRepoFile("Sussudio/MainWindow.FlashbackCommands.cs")
             .Replace("\r\n", "\n");
-        var flashbackControllerSource = ReadRepoFile("Sussudio/Controllers/FlashbackCommandController.cs")
+        var flashbackControllerSource = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(dispatchingSource, "private WindowUiDispatchController? _windowUiDispatchController;");

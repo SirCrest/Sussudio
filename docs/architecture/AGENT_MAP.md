@@ -1740,51 +1740,51 @@ Primary current owners:
   audio, timestamp, stream-bound, validation, lifetime, and callback tests.
 - `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
   support/logging contract tests.
-- `Sussudio/Controllers/FlashbackTimelineController.cs` owns Flashback
+- `Sussudio/Controllers/Flashback/FlashbackTimelineController.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, show/hide animation
   state, and timeline track layout sizing. `MainWindow.FlashbackTimeline.cs`
   is the XAML-facing adapter; command semantics live in
   `FlashbackCommandController`.
-- `Sussudio/Controllers/FlashbackScrubInteractionController.cs` owns active
+- `Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs` owns active
   Flashback pointer-scrub state, scrub throttling, release/cancel/capture-lost
   cleanup, fullscreen scrub termination, lockout clearing, and scrub visual
   updates. `MainWindow.FlashbackScrub.cs` is the XAML-facing adapter.
-  `Sussudio/Controllers/FlashbackTimelineGeometry.cs` owns pure timeline
+  `Sussudio/Controllers/Flashback/FlashbackTimelineGeometry.cs` owns pure timeline
   fraction/duration math used by scrub and playhead presentation.
-- `Sussudio/Controllers/FlashbackPlayheadMotionController.cs` owns Flashback
+- `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs` owns Flashback
   current-time-indicator compositor motion: visual setup, snap placement,
   magnetic pointer-scrub movement, long-horizon linear playhead extrapolation,
   snap-on-open state, and CTI anchor timing.
   `Sussudio/MainWindow.FlashbackPlayhead.cs` and
   `Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs` are the XAML-facing
   adapters.
-- `Sussudio/Controllers/FlashbackMarkerPresentationController.cs` owns
+- `Sussudio/Controllers/Flashback/FlashbackMarkerPresentationController.cs` owns
   Flashback marker placement, selection-region layout, and compact duration
   text formatting. `MainWindow.FlashbackMarkers.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/FlashbackPlaybackPresentationController.cs` owns
+- `Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs` owns
   Flashback play/pause glyph policy, Go Live enabled state, buffer-duration
   text, and floating playhead label text. `MainWindow.FlashbackPlaybackPresentation.cs`
   wires the XAML controls.
-- `Sussudio/Controllers/FlashbackPlaybackUiCoordinator.cs` owns Flashback
+- `Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs` owns Flashback
   playback UI sequencing: track-resize snap/position/marker/CTI refresh order,
   playback state polling start/stop, buffer-fill presentation, and position-label
   updates with CTI re-anchor gating. `MainWindow.Flashback.cs` is the adapter.
-- `Sussudio/Controllers/FlashbackCommandController.cs` owns Flashback command
+- `Sussudio/Controllers/Flashback/FlashbackCommandController.cs` owns Flashback command
   semantics for in/out points, clear, play/pause, Go Live, fullscreen keyboard
   shortcuts including left/right nudge rejection logging, export, save-last-5m,
   enable-toggle rollback, and apply/restart. `MainWindow.FlashbackCommands.cs`
   preserves the XAML event-handler surface as a thin adapter.
-- `Sussudio/Controllers/FlashbackExportProgressPresentationController.cs` owns
+- `Sussudio/Controllers/Flashback/FlashbackExportProgressPresentationController.cs` owns
   Flashback export progress-bar value, visibility, and reset-on-complete
   semantics. `MainWindow.FlashbackExportProgressPresentation.cs` is the
   XAML-facing adapter.
-- `Sussudio/Controllers/FlashbackSettingsBindingController.cs` owns Flashback
+- `Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs` owns Flashback
   settings-control initialization, GPU decode toggle binding/sync, buffer
   duration combo selection/sync, and buffer-duration change logging.
   `MainWindow.FlashbackSettingsBindings.cs` is the XAML-facing adapter; enable
   toggle rollback and apply/restart command behavior live in
   `FlashbackCommandController`.
-- `Sussudio/Controllers/FlashbackPollingController.cs` owns Flashback status
+- `Sussudio/Controllers/Flashback/FlashbackPollingController.cs` owns Flashback status
   and playback-position polling timers. `MainWindow.FlashbackPolling.cs` is the
   XAML-facing adapter; CTI anchor timing lives in
   `FlashbackPlayheadMotionController`.

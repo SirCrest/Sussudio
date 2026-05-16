@@ -13,15 +13,15 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackCommandAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackCommands.cs")
             .Replace("\r\n", "\n");
-        var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackCommandController.cs")
+        var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
             .Replace("\r\n", "\n");
         var flashbackTimelineText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs")
             .Replace("\r\n", "\n");
         var flashbackSettingsText = ReadRepoFile("Sussudio/MainWindow.FlashbackSettingsBindings.cs")
             .Replace("\r\n", "\n");
-        var flashbackTimelineControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackTimelineController.cs")
+        var flashbackTimelineControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs")
             .Replace("\r\n", "\n");
-        var flashbackSettingsControllerText = ReadRepoFile("Sussudio/Controllers/FlashbackSettingsBindingController.cs")
+        var flashbackSettingsControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs")
             .Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
