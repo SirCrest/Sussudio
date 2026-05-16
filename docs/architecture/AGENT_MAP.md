@@ -1827,10 +1827,14 @@ Primary current owners:
   health, recording, and probe snapshot projection.
   `MainViewModel.ViewModelRuntimeSnapshot.cs` owns automation-facing view-model runtime snapshot projection.
   `MainViewModel.AutomationOptionsSnapshot.cs` owns automation-facing options
-  and selected-control-state projection for CLI/MCP clients.
-  `MainViewModel.FlashbackPlayback.cs` owns
-  Flashback playback commands, marker commands, and buffer/bitrate status
-  projection. `MainViewModel.FlashbackExport.cs` owns Flashback UI/automation
+  UI-thread snapshot capture for CLI/MCP clients, while
+  `AutomationOptionsSnapshotBuilder.cs` owns the pure selected-control-state DTO
+  construction.
+  `MainViewModel.FlashbackPlaybackCommands.cs` owns Flashback playback, scrub,
+  nudge, marker, and automation action command routing plus rejection status
+  projection. `MainViewModel.FlashbackPlayback.cs` owns read-only Flashback
+  playback snapshot access plus buffer, bitrate, playback-state, in/out marker,
+  and gap-from-live UI projection. `MainViewModel.FlashbackExport.cs` owns Flashback UI/automation
   export flow, progress/cancellation state, and segment projection.
   `MainViewModel.FrameRateOptions.cs` owns frame-rate option rebuilding,
   observable collection mutation, and automatic frame-rate selection.

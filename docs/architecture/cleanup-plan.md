@@ -2518,10 +2518,14 @@ Remaining `tools/Common` ownership:
    recording, and probe snapshot projection now lives in
    `MainViewModel.AutomationSnapshots.cs`; automation-facing view-model runtime
    snapshot projection now lives in `MainViewModel.ViewModelRuntimeSnapshot.cs`;
-   automation options and selected-control-state projection now live in
-   `MainViewModel.AutomationOptionsSnapshot.cs`.
-   Flashback playback commands, marker commands, and buffer/bitrate status projection now
-   live in `MainViewModel.FlashbackPlayback.cs`. Flashback UI/automation export
+   automation options UI-thread snapshot capture now lives in
+   `MainViewModel.AutomationOptionsSnapshot.cs`; pure selected-control-state DTO
+   construction lives in `AutomationOptionsSnapshotBuilder.cs`.
+   Flashback playback, scrub, nudge, marker, and automation action command routing
+   plus rejection status projection now live in
+   `MainViewModel.FlashbackPlaybackCommands.cs`; read-only Flashback playback
+   snapshot access plus buffer, bitrate, playback-state, in/out marker, and
+   gap-from-live UI projection live in `MainViewModel.FlashbackPlayback.cs`. Flashback UI/automation export
    flow, progress/cancellation state, and segment projection now live in
    `MainViewModel.FlashbackExport.cs`. Frame-rate option rebuilding, observable
    collection mutation, and automatic frame-rate selection now live in

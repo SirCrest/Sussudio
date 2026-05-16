@@ -8,21 +8,27 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
         var automationSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs");
         var automationOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationOptionsSnapshot.cs");
+        var automationOptionsBuilderText = ReadRepoFile("Sussudio/ViewModels/AutomationOptionsSnapshotBuilder.cs");
 
         AssertDoesNotContain(diagnosticsHubText, "GetAutomationOptionsSnapshotAsync(cancellationToken)");
         AssertDoesNotContain(diagnosticsHubText, "Options = optionsSnapshot");
         AssertDoesNotContain(automationSnapshotText, "GetAutomationOptionsSnapshotAsync");
         AssertDoesNotContain(automationSnapshotText, "BuildStringOptions(");
         AssertContains(automationOptionsText, "GetAutomationOptionsSnapshotAsync");
-        AssertContains(automationOptionsText, "BuildStringOptions(");
-        AssertContains(automationOptionsText, "RecordingFormats = BuildStringOptions(AvailableRecordingFormats, SelectedRecordingFormat)");
-        AssertContains(automationOptionsText, "MjpegDecoderCounts = Enumerable.Range(1, 8)");
-        AssertContains(automationOptionsText, "SelectedDeviceId = SelectedDevice?.Id");
-        AssertContains(automationOptionsText, "SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id");
-        AssertContains(automationOptionsText, "SelectedFrameRate = SelectedFrameRate");
-        AssertContains(automationOptionsText, "ShowAllCaptureOptions = ShowAllCaptureOptions");
-        AssertContains(automationOptionsText, "PreviewVolumePercent = PreviewVolume * 100.0");
-        AssertContains(automationOptionsText, "IsStatsVisible = IsStatsVisible");
+        AssertContains(automationOptionsText, "InvokeOnUiThreadAsync(() =>");
+        AssertContains(automationOptionsText, "AvailableFrameRates");
+        AssertContains(automationOptionsText, "IsFrameRateMatch(option.Value, selectedFrameRate)");
+        AssertContains(automationOptionsText, "AutomationOptionsSnapshotBuilder.Build(input)");
+        AssertNoRegex(
+            automationOptionsText,
+            @"new\s+AutomationOptionsSnapshot\s*\{",
+            "MainViewModel automation options DTO construction");
+        AssertContains(automationOptionsBuilderText, "internal static class AutomationOptionsSnapshotBuilder");
+        AssertContains(automationOptionsBuilderText, "internal sealed class AutomationOptionsSnapshotInput");
+        AssertContains(automationOptionsBuilderText, "BuildStringOptions(input.RecordingFormats, input.SelectedRecordingFormat)");
+        AssertContains(automationOptionsBuilderText, "MjpegDecoderCounts = Enumerable.Range(1, 8)");
+        AssertContains(automationOptionsBuilderText, "DisableReason = option.DisableReason ?? string.Empty");
+        AssertContains(automationOptionsBuilderText, "PreviewVolumePercent = input.PreviewVolume * 100.0");
 
         return Task.CompletedTask;
     }
