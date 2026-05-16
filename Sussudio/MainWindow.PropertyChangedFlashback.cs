@@ -78,9 +78,7 @@ public sealed partial class MainWindow
 
     private void HandleFlashbackBufferChanged()
     {
-        UpdateFlashbackBufferFill();
-        UpdateFlashbackPositionUI(); // Recalculate playhead fraction as buffer grows.
-        UpdateFlashbackMarkers();    // Recalculate in/out positions too.
+        UpdateFlashbackBufferPresentation();
     }
 
     private void HandleFlashbackBitrateChanged()

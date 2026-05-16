@@ -1811,7 +1811,8 @@ XAML controls.
 Flashback playback UI sequencing now lives in
 `Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs`: track-resize
 snap/position/marker/CTI refresh order, playback state polling start/stop,
-buffer-fill presentation, and position-label updates with CTI re-anchor gating.
+buffer-fill/position/marker refresh order, and position-label updates with CTI
+re-anchor gating.
 `MainWindow.Flashback.cs` is the adapter.
 
 Flashback command semantics now live in

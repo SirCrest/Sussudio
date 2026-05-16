@@ -38,4 +38,7 @@ public sealed partial class MainWindow
 
     private void UpdateFlashbackPositionUI()
         => _flashbackPlaybackUiCoordinator.UpdatePosition();
+
+    private void UpdateFlashbackBufferPresentation()
+        => _flashbackPlaybackUiCoordinator.UpdateBufferPresentation();
 }

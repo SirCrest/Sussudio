@@ -202,6 +202,7 @@ static partial class Program
         var adapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlaybackPresentation.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
+        var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private FlashbackPlaybackPresentationController _flashbackPlaybackPresentationController = null!;");
         AssertContains(adapterText, "private void InitializeFlashbackPlaybackPresentationController()");
@@ -229,9 +230,13 @@ static partial class Program
         AssertContains(playbackCoordinatorText, "_context.StartPlaybackPolling();");
         AssertContains(playbackCoordinatorText, "_context.StopPlaybackPolling();");
         AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"state_change\");");
+        AssertContains(playbackCoordinatorText, "public void UpdateBufferPresentation()\n    {\n        UpdateBufferFill();\n        UpdatePosition();\n        _context.UpdateMarkers();\n    }");
         AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdateBufferFill(duration);");
         AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdatePosition(");
         AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"position_change\");");
+        AssertContains(flashbackText, "private void UpdateFlashbackBufferPresentation()\n        => _flashbackPlaybackUiCoordinator.UpdateBufferPresentation();");
+        AssertContains(flashbackPropertyChangedText, "private void HandleFlashbackBufferChanged()\n    {\n        UpdateFlashbackBufferPresentation();\n    }");
+        AssertDoesNotContain(flashbackPropertyChangedText, "UpdateFlashbackBufferFill();\n        UpdateFlashbackPositionUI();");
         AssertDoesNotContain(flashbackText, "_flashbackPlaybackPresentationController.UpdateState(state);");
         AssertDoesNotContain(flashbackText, "if (state == FlashbackPlaybackState.Playing)");
         AssertDoesNotContain(flashbackText, "RefreshFlashbackCtiMotion(\"position_change\");");

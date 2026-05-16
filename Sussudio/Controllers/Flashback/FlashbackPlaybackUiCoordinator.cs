@@ -65,6 +65,13 @@ internal sealed class FlashbackPlaybackUiCoordinator
         _context.PlaybackPresentation.UpdateBufferFill(duration);
     }
 
+    public void UpdateBufferPresentation()
+    {
+        UpdateBufferFill();
+        UpdatePosition();
+        _context.UpdateMarkers();
+    }
+
     // Position-changed handler. Visual CTI motion is driven by RefreshCtiMotion;
     // this method refreshes label text. For Paused/Live states a position change
     // implies seek or scrub-end, so it also re-anchors. Playing ticks deliberately

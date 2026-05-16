@@ -1840,8 +1840,9 @@ Primary current owners:
   wires the XAML controls.
 - `Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs` owns Flashback
   playback UI sequencing: track-resize snap/position/marker/CTI refresh order,
-  playback state polling start/stop, buffer-fill presentation, and position-label
-  updates with CTI re-anchor gating. `MainWindow.Flashback.cs` is the adapter.
+  playback state polling start/stop, buffer-fill/position/marker refresh order,
+  and position-label updates with CTI re-anchor gating. `MainWindow.Flashback.cs`
+  is the adapter.
 - `Sussudio/Controllers/Flashback/FlashbackCommandController.cs` owns Flashback command
   semantics for in/out points, clear, play/pause, Go Live, fullscreen keyboard
   shortcuts including left/right nudge rejection logging, export, save-last-5m,
