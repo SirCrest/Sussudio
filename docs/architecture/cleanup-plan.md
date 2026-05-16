@@ -2678,8 +2678,9 @@ Remaining `tools/Common` ownership:
    or automation contracts. The live audio/microphone meter callback state
    now has a named owner in `MainViewModel.AudioMeters.cs`; keep future meter
    behavior there instead of growing the root facade file. Audio ramp trace
-   buffering/sampling now lives in `MainViewModel.AudioRampTrace.cs`; keep the
-   preview monitoring call sites in `MainViewModel.AudioMonitoring.cs`.
+   buffering/sampling now lives in `AudioRampTraceRecorder.cs`, with
+   `MainViewModel.AudioRampTrace.cs` kept as the automation-facing adapter; keep
+   the preview monitoring call sites in `MainViewModel.AudioMonitoring.cs`.
    Microphone endpoint volume synchronization and persistence now live in
    `MainViewModel.MicrophoneVolume.cs`; device-native audio mode/gain
    management stays in `MainViewModel.AudioControls.cs`. UI-facing state is

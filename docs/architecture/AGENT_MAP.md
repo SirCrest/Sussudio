@@ -1943,8 +1943,9 @@ Primary current owners:
   microphone, and device-audio state; `MainViewModel.FlashbackState.cs` owns
   Flashback timeline/export state. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets
-  out of the root facade file. `MainViewModel.AudioRampTrace.cs` owns the audio
-  ramp diagnostic ring buffer and sampler. `PreviewAudioVolumeTransitionController`
+  out of the root facade file. `AudioRampTraceRecorder.cs` owns the audio ramp
+  diagnostic ring buffer and sampler, while `MainViewModel.AudioRampTrace.cs`
+  keeps the automation-facing adapter methods. `PreviewAudioVolumeTransitionController`
   owns preview-volume save suppression/override state plus the preview-audio
   ramp constants, easing, priming, restoring, and property-to-session volume
   forwarding. Keep preview monitoring call sites, audio input retargeting, and
