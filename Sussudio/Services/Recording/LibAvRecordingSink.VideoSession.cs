@@ -1,7 +1,6 @@
 using System.Threading;
 using System.Threading.Channels;
 using Sussudio.Models;
-using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Recording;
 
@@ -69,4 +68,6 @@ public sealed partial class LibAvRecordingSink
         Interlocked.Exchange(ref _lastVideoWriteTick, 0);
         ResetVideoDiagnostics();
     }
+
+    private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();
 }

@@ -997,7 +997,8 @@ generic error helpers in `LibAvEncoder.Diagnostics.cs`.
 
 LibAv recording sink queue ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`. Keep public
-video/GPU/CUDA enqueue entry points and caller-side validation there.
+video/GPU/CUDA enqueue entry points, caller-side validation, and shared
+work-signal/fatal-failure/queue-depth-underflow helpers there.
 Video/GPU/CUDA queue admission policy, TryWrite depth accounting, overload
 fatal signaling, and video packet records now live in
 `LibAvRecordingSink.VideoQueueSubmission.cs`. Video/GPU/CUDA queue cleanup,

@@ -184,6 +184,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var diagnosticsText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Diagnostics.cs")
             .Replace("\r\n", "\n");
+        var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs")
+            .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs")
             .Replace("\r\n", "\n");
         var videoSessionText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.VideoSession.cs")
@@ -221,6 +223,7 @@ static partial class Program
         AssertContains(videoSessionText, "Interlocked.Exchange(ref _cudaFramesEnqueued, 0);");
         AssertContains(videoSessionText, "Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);");
         AssertContains(videoSessionText, "ResetVideoDiagnostics();");
+        AssertContains(videoSessionText, "private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();");
         AssertContains(stopText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
         AssertContains(stopText, "=> StopCoreAsync(emergency: false, cancellationToken);");
         AssertContains(stopText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
@@ -248,6 +251,7 @@ static partial class Program
         AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _videoFramesEnqueued, 0);");
         AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _gpuFramesEnqueued, 0);");
         AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _cudaFramesEnqueued, 0);");
+        AssertDoesNotContain(queueText, "private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();");
         AssertDoesNotContain(rootText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "private async Task<FinalizeResult> StopCoreAsync(bool emergency, CancellationToken cancellationToken)");

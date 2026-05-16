@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using FFmpeg.AutoGen;
 using Sussudio.Services.Capture;
-using Sussudio.Services.Flashback;
 
 namespace Sussudio.Services.Recording;
 
@@ -165,8 +164,6 @@ public sealed partial class LibAvRecordingSink
             Logger.Log($"LIBAV_SINK_WORK_SIGNAL_SKIPPED op={operation} reason=disposed");
         }
     }
-
-    private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();
 
     private void FailEncoding(Exception ex)
     {
