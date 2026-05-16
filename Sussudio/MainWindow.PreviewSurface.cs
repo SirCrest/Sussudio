@@ -4,23 +4,30 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // XAML-facing preview surface adapter. PreviewSurfacePresentationController
-// owns content-fit sizing, panel visibility, and composition shadows around the
-// video frame and control bar.
+// owns content-fit sizing and panel visibility; PreviewSurfaceShadowController
+// owns composition shadows around the video frame and control bar.
 public sealed partial class MainWindow
 {
     private PreviewSurfacePresentationController _previewSurfacePresentationController = null!;
+    private PreviewSurfaceShadowController _previewSurfaceShadowController = null!;
 
     private void InitializePreviewSurfacePresentationController()
     {
-        _previewSurfacePresentationController = new PreviewSurfacePresentationController(new PreviewSurfacePresentationControllerContext
+        _previewSurfaceShadowController = new PreviewSurfaceShadowController(new PreviewSurfaceShadowControllerContext
         {
-            GetPreviewSwapChainPanel = () => PreviewSwapChainPanel,
-            PreviewContentGrid = PreviewContentGrid,
-            RecordingGlowBorder = RecordingGlowBorder,
             VideoShadowHost = VideoShadowHost,
             ControlBarShadowHost = ControlBarShadowHost,
             ControlBarBorder = ControlBarBorder,
         });
+
+        _previewSurfacePresentationController = new PreviewSurfacePresentationController(
+            new PreviewSurfacePresentationControllerContext
+            {
+                GetPreviewSwapChainPanel = () => PreviewSwapChainPanel,
+                PreviewContentGrid = PreviewContentGrid,
+                RecordingGlowBorder = RecordingGlowBorder,
+            },
+            _previewSurfaceShadowController);
     }
 
     private void OnPreviewSwapChainPanelSizeChanged(object sender, SizeChangedEventArgs e)
@@ -37,23 +44,23 @@ public sealed partial class MainWindow
         => _previewSurfacePresentationController.UpdateVideoContentOverlays(ViewModel.SourceWidth, ViewModel.SourceHeight);
 
     private void SetupVideoFrameShadow()
-        => _previewSurfacePresentationController.SetupVideoFrameShadow();
+        => _previewSurfaceShadowController.SetupVideoFrameShadow();
 
     private void SetupControlBarShadow()
-        => _previewSurfacePresentationController.SetupControlBarShadow();
+        => _previewSurfaceShadowController.SetupControlBarShadow();
 
     private void SetGpuPreviewVisibility(Visibility visibility)
         => _previewSurfacePresentationController.SetGpuPreviewVisibility(visibility);
 
     private void ClearVideoFrameShadow()
-        => _previewSurfacePresentationController.ClearVideoFrameShadow();
+        => _previewSurfaceShadowController.ClearVideoFrameShadow();
 
     private void FadeInVideoFrameShadow(int delayMs, int durationMs)
-        => _previewSurfacePresentationController.FadeInVideoFrameShadow(delayMs, durationMs);
+        => _previewSurfaceShadowController.FadeInVideoFrameShadow(delayMs, durationMs);
 
     private void FadeOutVideoFrameShadow(int durationMs)
-        => _previewSurfacePresentationController.FadeOutVideoFrameShadow(durationMs);
+        => _previewSurfaceShadowController.FadeOutVideoFrameShadow(durationMs);
 
     private void FadeInControlBarShadow(int delayMs, int durationMs)
-        => _previewSurfacePresentationController.FadeInControlBarShadow(delayMs, durationMs);
+        => _previewSurfaceShadowController.FadeInControlBarShadow(delayMs, durationMs);
 }

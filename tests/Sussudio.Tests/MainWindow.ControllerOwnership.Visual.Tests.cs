@@ -64,6 +64,7 @@ static partial class Program
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
         var shadowAnimatorText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs").Replace("\r\n", "\n");
+        var shadowControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;");
         AssertContains(adapterText, "private void InitializePreviewTransitionAnimationController()");
@@ -96,6 +97,11 @@ static partial class Program
         AssertContains(shadowAnimatorText, "animation.InsertKeyFrame(1f, 1f, compositor.CreateCubicBezierEasingFunction(new Vector2(0.25f, 0.1f), new Vector2(0.25f, 1f)));");
         AssertContains(shadowAnimatorText, "animation.DelayTime = TimeSpan.FromMilliseconds(delayMs);");
         AssertContains(shadowAnimatorText, "visual.StartAnimation(\"Opacity\", animation);");
+        AssertContains(shadowControllerText, "internal sealed class PreviewSurfaceShadowController");
+        AssertContains(shadowControllerText, "PreviewShadowFadeAnimator.FadeIn(_videoShadowVisual, delayMs, durationMs);");
+        AssertContains(shadowControllerText, "PreviewShadowFadeAnimator.FadeOut(_videoShadowVisual, durationMs);");
+        AssertContains(shadowControllerText, "PreviewShadowFadeAnimator.FadeIn(_controlBarShadowVisual, delayMs, durationMs);");
+        AssertDoesNotContain(controllerText, "PreviewShadowFadeAnimator.");
         AssertDoesNotContain(adapterText, "private Task AnimatePreviewTransitionAsync(");
         AssertDoesNotContain(adapterText, "private static Task BeginStoryboardAsync(");
 

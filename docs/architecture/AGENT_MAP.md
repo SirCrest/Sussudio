@@ -849,8 +849,10 @@ Primary current owners:
   `MainWindow.PreviewRendererReinit.cs` keeps the small public/reinit adapter
   surface.
   `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs` owns preview
-  surface sizing, GPU panel visibility, and video/control-bar composition
-  shadows. `MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
+  surface content-fit sizing and GPU panel visibility.
+  `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs` owns
+  video/control-bar composition shadow visuals, bounds alignment, clear behavior,
+  and fade routing. `MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
 - `Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs` is the stable
   automation preview snapshot adapter over MainWindow UI dispatching.
   `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns UI-thread-only preview
@@ -1072,8 +1074,8 @@ Primary current owners:
   MainWindow startup/launch ownership assertions for splash loading phrases,
   splash pacing policy, launch entrance animation, and first-load hosting.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs`
-  owns MainWindow preview resize telemetry and preview runtime/snapshot ownership
-  assertions.
+  owns MainWindow preview resize telemetry, preview surface/shadow controller,
+  and preview runtime/snapshot ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`
   owns MainWindow close lifecycle, native bootstrap, and first-frame native
   reveal ownership assertions.
@@ -1969,7 +1971,8 @@ Primary current owners:
 - `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
   preview resize log throttling and reset state. `MainWindow.WindowSizing.cs`
   is the XAML-facing adapter for `SizeChanged`; preview surface presentation
-  lives in `PreviewSurfacePresentationController`.
+  lives in `PreviewSurfacePresentationController`, and preview shadow visuals
+  live in `PreviewSurfaceShadowController`.
 - `Sussudio/MainWindow.PropertyChangedRecording.cs` owns only the
   recording-specific property-change router and adapter surface, delegating
   record-button, glow, pulse, and recording-time lockout projection through
