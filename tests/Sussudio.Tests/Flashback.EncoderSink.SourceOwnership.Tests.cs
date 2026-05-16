@@ -46,4 +46,33 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackEncoderSink_QueueCleanupLivesInFocusedPartial()
+    {
+        var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs")
+            .Replace("\r\n", "\n");
+        var queueCleanupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.QueueCleanup.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(queueCleanupText, "private void ReturnAllRemainingQueuedBuffers()");
+        AssertContains(queueCleanupText, "private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)");
+        AssertContains(queueCleanupText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
+        AssertContains(queueCleanupText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
+        AssertContains(queueCleanupText, "ReturnVideoPacketBestEffort(packet);");
+        AssertContains(queueCleanupText, "_videoLatencyTracker.ClearEnqueueTicksUnderLock();");
+        AssertContains(queueCleanupText, "ReturnBuffer(packet.Buffer);");
+        AssertContains(queueCleanupText, "ReleaseGpuTextureBestEffort(packet.Texture);");
+        AssertContains(queueCleanupText, "Interlocked.Exchange(ref queueDepth, 0);");
+
+        AssertDoesNotContain(queuesText, "private void ReturnAllRemainingQueuedBuffers()");
+        AssertDoesNotContain(queuesText, "private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)");
+        AssertDoesNotContain(queuesText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
+        AssertDoesNotContain(queuesText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
+        AssertContains(queuesText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
+        AssertContains(queuesText, "private void SignalWork(string operation)");
+        AssertContains(queuesText, "private bool WaitForCancellation(TimeSpan timeout)");
+        AssertContains(queuesText, "private void FailEncoding(Exception ex)");
+
+        return Task.CompletedTask;
+    }
 }

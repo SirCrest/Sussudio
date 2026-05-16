@@ -61,6 +61,9 @@ static partial class Program
             "Flashback encoder sink packet drains live in focused partial",
             FlashbackEncoderSink_PacketDrainLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "Flashback encoder sink queue cleanup lives in focused partial",
+            FlashbackEncoderSink_QueueCleanupLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "Flashback encoder sink startup lives in focused partial",
             FlashbackEncoderSink_StartupLivesInFocusedPartial);
     }

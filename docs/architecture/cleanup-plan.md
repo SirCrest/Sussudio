@@ -951,7 +951,11 @@ shared helpers.
 Flashback encoder queue helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep queue
 completion/signaling, queue-depth accounting, enqueue rejection guards/logging,
-hot audio packet enqueue, and queued-buffer cleanup there.
+and hot audio packet enqueue there.
+
+Flashback encoder queued-buffer cleanup now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.QueueCleanup.cs`. Keep
+remaining queued video/audio/microphone/GPU buffer return and depth reset there.
 
 Flashback encoder loop orchestration now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs`. Keep the
