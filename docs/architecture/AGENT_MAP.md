@@ -1855,9 +1855,10 @@ Primary current owners:
   owns selected-item normalization and selected-device property-change
   reconciliation, and
   `Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs` owns
-  device-audio mode/gain control projection. `MainWindow.CaptureSelectionBindings.cs`
-  is the XAML-facing adapter and owns the capture-selection `PropertyChanged`
-  router.
+  device-audio mode/gain control projection.
+  `Sussudio/Controllers/CaptureSelectionBindingController.PropertyChanges.cs`
+  owns the capture-selection `PropertyChanged` router.
+  `MainWindow.CaptureSelectionBindings.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/AudioControlBindingController.cs` owns audio/microphone
   initial control projection and event hookup: record/preview toggles, preview
   volume priming, custom audio/microphone selection, device-audio mode/gain event

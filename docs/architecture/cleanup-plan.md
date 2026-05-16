@@ -1956,9 +1956,10 @@ handlers, and pending-device apply state,
 collection-change debounce/queued sync plus available-option property-change
 rebinding, `.SelectionState.cs` owns selected-item normalization and
 selected-device property-change reconciliation, and `.DeviceAudio.cs` owns
-device-audio mode/gain projection while
-`MainWindow.CaptureSelectionBindings.cs` keeps the old method names for binding
-setup and owns the capture-selection `PropertyChanged` router.
+device-audio mode/gain projection. `.PropertyChanges.cs` owns the
+capture-selection `PropertyChanged` router, while
+`MainWindow.CaptureSelectionBindings.cs` keeps the old method names as the
+XAML-facing adapter for binding setup and cross-controller calls.
 
 Capture-device refresh/apply button workflows now live in
 `Sussudio/Controllers/CaptureDeviceActionController.cs`.
