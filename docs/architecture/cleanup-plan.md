@@ -315,7 +315,12 @@ in `Formatters.Snapshot.AvSync.cs`, embedded snapshot Memory/GC text in
 `Formatters.Snapshot.Memory.cs`, MJPEG timing text in
 `Formatters.Snapshot.Mjpeg.cs`, preview renderer-mode routing and non-D3D
 fallback text in `Formatters.Snapshot.Preview.cs`, D3D preview renderer text in
-`Formatters.Snapshot.PreviewD3D.cs`, thread-health text in
+the `Formatters.Snapshot.PreviewD3D*.cs` family (`.PreviewD3D.cs` owns
+routing/header order, `.CpuTiming.cs` owns CPU timing text, `.FrameFlow.cs`
+owns pipeline latency and frame-ownership text, `.FrameLatencyWait.cs` owns
+frame-latency wait text, `.FrameStats.cs` owns DXGI frame-stat text, and
+`.SlowFrames.cs` delegates to the shared slow-frame formatter), thread-health
+text in
 `Formatters.Snapshot.ThreadHealth.cs`, source telemetry snapshot text in
 `Formatters.Snapshot.Source.cs`, diagnostic-event text in
 `Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
@@ -347,8 +352,11 @@ encoder/buffer/cache/queue/failure text in
 and cadence/decode/frame/drift text in
 `AutomationSnapshotFormatter.Flashback.Playback.cs`, and export progress/result
 text in `AutomationSnapshotFormatter.Flashback.Export.cs`. MJPEG timing, AV
-sync, preview routing, D3D preview/slow-frame diagnostics, thread-health, and
-source sections live in the remaining focused formatter partials. Tests that
+sync, preview routing, D3D preview text, thread-health, and source sections
+live in the remaining focused formatter partials. The
+`AutomationSnapshotFormatter.PreviewD3D*.cs` family keeps D3D header/routing,
+CPU timing, frame-flow, frame-latency wait, DXGI frame stats, and slow-frame
+diagnostics in separate owners while preserving output order. Tests that
 reason about formatter source use `ReadAutomationSnapshotFormatterSource()` so
 ownership checks cover the full partial family.
 

@@ -155,6 +155,11 @@ public sealed class ToolFormatterContractsTests
             "tools/Common/AutomationSnapshotFormatter.AvSync.cs",
             "tools/Common/AutomationSnapshotFormatter.Preview.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.CpuTiming.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameFlow.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameLatencyWait.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameStats.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs",
             "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs",
             "tools/Common/AutomationSnapshotFormatter.Source.cs"
         });
@@ -177,6 +182,11 @@ public sealed class ToolFormatterContractsTests
             "tools/ssctl/Formatters.Snapshot.Performance.cs",
             "tools/ssctl/Formatters.Snapshot.Preview.cs",
             "tools/ssctl/Formatters.Snapshot.PreviewD3D.cs",
+            "tools/ssctl/Formatters.Snapshot.PreviewD3D.CpuTiming.cs",
+            "tools/ssctl/Formatters.Snapshot.PreviewD3D.FrameFlow.cs",
+            "tools/ssctl/Formatters.Snapshot.PreviewD3D.FrameLatencyWait.cs",
+            "tools/ssctl/Formatters.Snapshot.PreviewD3D.FrameStats.cs",
+            "tools/ssctl/Formatters.Snapshot.PreviewD3D.SlowFrames.cs",
             "tools/ssctl/Formatters.Snapshot.Recording.cs",
             "tools/ssctl/Formatters.Snapshot.State.cs",
             "tools/ssctl/Formatters.Snapshot.ThreadHealth.cs",

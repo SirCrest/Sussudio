@@ -64,6 +64,15 @@ static partial class Program
                 "PreviewD3DFrameStatsMissedRefreshCount": 4,
                 "PreviewD3DFrameStatsRecentMissedRefreshCount": 2,
                 "PreviewD3DFrameStatsLastError": "DXGI_ERROR_WAS_STILL_DRAWING",
+                "PreviewD3DLastSubmittedPreviewPresentId": 41,
+                "PreviewD3DLastSubmittedSourceSequenceNumber": 9000,
+                "PreviewD3DLastSubmittedSourcePtsTicks": 123456,
+                "PreviewD3DLastRenderedPreviewPresentId": 42,
+                "PreviewD3DLastRenderedSourceSequenceNumber": 9001,
+                "PreviewD3DLastRenderedSourcePtsTicks": 123789,
+                "PreviewD3DLastRenderedSchedulerToPresentMs": 7.7,
+                "PreviewD3DLastDropReason": "none",
+                "PreviewD3DLastDroppedSourcePtsTicks": 0,
                 "PreviewD3DRecentSlowFrames": [
                   {
                     "PreviewPresentId": 42,
@@ -110,8 +119,14 @@ static partial class Program
         AssertContains(formatted, "D3D pipeline latency: avg=7.8ms P95=8.9ms P99=9.9ms max=12.3ms last=8.4ms samples=120");
         AssertContains(formatted, "D3D frame-latency wait: enabled=true handle=true calls=118 signaled=110 timeouts=8 unexpected=0 lastResult=0 last=0.05ms avg=0.2ms P95=0.8ms max=2.0ms samples=118");
         AssertContains(formatted, "D3D DXGI stats: ok=119/120 failures=1 recentFailures=1 missedRefresh=4 recentMissed=2 lastError=DXGI_ERROR_WAS_STILL_DRAWING");
+        AssertContains(formatted, "D3D Ownership: submitted present=41 sourceSeq=9000 pts=123456 | rendered present=42 sourceSeq=9001 pts=123789 schedulerToPresent=7.7ms pipeline=8.4ms | lastDrop=none dropPts=0");
         AssertContains(formatted, "D3D Slow Frames: present=42 srcSeq=9001 reason=present_interval target=8.33ms over=0.87ms interval=9.20ms");
         AssertContains(formatted, "presentCall=3.30ms sched=7.70ms pipeline=8.80ms");
+        AssertOccursBefore(formatted, "D3D CPU timing:", "D3D pipeline latency:");
+        AssertOccursBefore(formatted, "D3D pipeline latency:", "D3D frame-latency wait:");
+        AssertOccursBefore(formatted, "D3D frame-latency wait:", "D3D DXGI stats:");
+        AssertOccursBefore(formatted, "D3D DXGI stats:", "D3D Ownership:");
+        AssertOccursBefore(formatted, "D3D Ownership:", "D3D Slow Frames:");
 
         return Task.CompletedTask;
     }

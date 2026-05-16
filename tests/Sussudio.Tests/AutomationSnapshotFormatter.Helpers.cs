@@ -24,6 +24,11 @@ static partial class Program
             "tools/Common/AutomationSnapshotFormatter.AvSync.cs",
             "tools/Common/AutomationSnapshotFormatter.Preview.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.CpuTiming.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameFlow.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameLatencyWait.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameStats.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs",
             "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs",
             "tools/Common/AutomationSnapshotFormatter.Source.cs"
         };
