@@ -2008,9 +2008,12 @@ post-cleanup evidence/result sequence for recording checks, post-run timeline
 and final snapshot capture, result-build handoff, and terminal live-state write.
 `DiagnosticSessionRunExecution.Scenario.cs` owns the scenario phase handoff,
 while `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario
-execution phase for setup/startup, sampling, background task awaits,
-rejected-export handling, PresentMon await, fault drain, and explicit phase
-context/state/result records.
+execution phase for setup/startup, sampling/completion delegation, fault drain
+delegation, and explicit phase context/state/result records.
+`DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owns scenario sampling and
+post-sampling completion: live-state sampling setup, sample-loop invocation,
+scenario background task awaits, recording-settings deferred await,
+rejected-export handling, PresentMon await, and background-task fault drain.
 `DiagnosticSessionRunExecution.ResultRequest.cs` owns the final result-build
 request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
@@ -2557,7 +2560,10 @@ Remaining `tools/Common` ownership:
    post-cleanup evidence/result sequence,
    `DiagnosticSessionRunExecution.Scenario.cs` owns the scenario phase handoff,
    and `DiagnosticSessionScenarioPhaseRunner.cs` owns the main
-   scenario execution phase and explicit scenario result handoff. Scenario catalog, initial scenario setup, optional scenario
+   scenario execution phase and explicit scenario result handoff, with
+   `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owning sampling,
+   post-sampling background-task completion, rejected-export handling,
+   PresentMon await, and fault drain. Scenario catalog, initial scenario setup, optional scenario
    startup, cleanup mutation ownership, post-cleanup recording checks,
    post-run snapshot fetches, command send/failure plumbing, and result
    construction are extracted; next, split remaining production runner
@@ -2704,9 +2710,11 @@ Remaining `tools/Common` ownership:
    revert/status, mode option rebuilds, immediate reinitialize scheduling, and
    settings persistence.
    Late-arriving device format probe reconciliation, collection mutation,
-   logging, and reinitialize dispatch live in
-   `MainViewModel.DeviceFormatProbes.cs`; pure late-probe retarget decisions now
-   live in `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
+   selected-device capability refresh, and enqueue/failure logging live in
+   `MainViewModel.DeviceFormatProbes.cs`; UI-side late-probe retarget
+   application now lives in `MainViewModel.DeviceFormatProbeRetarget.cs`, while
+   pure late-probe retarget decisions live in
+   `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
    Automatic resolution ranking, source-aware auto-selection, and auto-resolved
    dimension/frame-rate state now live in `MainViewModel.AutoResolutionOptions.cs`.
    Pure resolution selection policy now lives in the

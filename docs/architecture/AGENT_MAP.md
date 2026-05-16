@@ -1971,8 +1971,11 @@ Primary current owners:
   endpoint filtering plus previous/saved/default audio and microphone selection
   fallback policy.
   `MainViewModel.DeviceFormatProbes.cs` owns late device-format probe
-  reconciliation, capability refresh after background probes, UI-side
-  restoration, logging, and reinitialize dispatch. `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`
+  reconciliation, format collection mutation, capability refresh after
+  background probes, and enqueue/failure logging.
+  `MainViewModel.DeviceFormatProbeRetarget.cs` owns UI-side late-probe
+  retarget application: HDR/SDR reinitialize dispatch, MJPG HFR preserve,
+  session mismatch check, and active-capture restore. `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`
   owns the pure late-probe decision policy for HDR retarget, SDR NV12 retarget,
   MJPG HFR preservation, session mismatch, and active-capture restore.
   `MainViewModel.AutoResolutionOptions.cs` owns automatic resolution ranking,
@@ -2356,9 +2359,13 @@ Primary owners:
   phase handoff from the run-execution root.
 - `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs` owns the named
   diagnostic-session scenario phase: context/state/result records,
-  state-mutation gating, setup/startup, sampling, background task awaits,
-  rejected-export handling, PresentMon await, fault drain, and the cleanup
-  result consumed by `RunAsync`.
+  state-mutation gating, setup/startup, sampling/completion delegation, fault
+  drain delegation, and the cleanup result consumed by `RunAsync`.
+- `tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owns
+  diagnostic-session scenario sampling and post-sampling completion: live-state
+  sampling setup, sample-loop invocation, scenario background task awaits,
+  recording-settings deferred await, rejected-export handling, PresentMon await,
+  and background-task fault drain.
 - `tools/Common/DiagnosticSessionRunExecution.ResultRequest.cs` owns the final
   diagnostic-session result-build request mapping so the completion phase keeps
   the result-builder handoff readable.
@@ -2678,6 +2685,10 @@ Invariants:
 - Preserve diagnostic-session background task await order when moving scenario
   startup; interrupted-task warnings are evidence and should keep stable stage
   names.
+- Preserve diagnostic-session scenario sampling/completion order when moving
+  runner code: sampling live state, sample loop, scenario task await, deferred
+  recording-settings await, rejected-export handling, PresentMon await, and
+  fault drain keep their existing sequence and stage names.
 - Preserve diagnostic-session cleanup stage/action names when moving cleanup
   mutations; downstream result text and failure reports use those names as
   evidence.

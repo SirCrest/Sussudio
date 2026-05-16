@@ -406,16 +406,19 @@ static partial class Program
     private static Task DeviceFormatProbeRetargetPolicy_LivesInFocusedHelper()
     {
         var deviceFormatProbesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceFormatProbes.cs").Replace("\r\n", "\n");
+        var retargetApplicationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceFormatProbeRetarget.cs").Replace("\r\n", "\n");
         var retargetPolicyText = ReadRepoFile("Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(deviceFormatProbesText, "private void OnDeviceFormatProbeCompleted");
-        AssertContains(deviceFormatProbesText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
+        AssertContains(deviceFormatProbesText, "TryApplyDeviceFormatProbeRetarget(");
         AssertContains(deviceFormatProbesText, "RebuildSelectedDeviceCapabilities(SelectedDevice, resetTelemetryState: false);");
-        AssertContains(deviceFormatProbesText, "RebuildFrameRateOptions();");
-        AssertContains(deviceFormatProbesText, "EnqueueUiOperation(");
         AssertContains(deviceFormatProbesText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
         AssertDoesNotContain(deviceFormatProbesText, "var nv12Candidates = target.SupportedFormats");
         AssertDoesNotContain(deviceFormatProbesText, "ShouldPreserveMjpegHighFrameRateMode(SelectedFormat)");
+        AssertContains(retargetApplicationText, "private bool TryApplyDeviceFormatProbeRetarget(");
+        AssertContains(retargetApplicationText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
+        AssertContains(retargetApplicationText, "RebuildFrameRateOptions();");
+        AssertContains(retargetApplicationText, "EnqueueUiOperation(");
         AssertContains(retargetPolicyText, "internal static class DeviceFormatProbeRetargetPolicy");
         AssertContains(retargetPolicyText, "internal static DeviceFormatProbeRetargetDecision Decide(DeviceFormatProbeRetargetRequest request)");
         AssertContains(retargetPolicyText, "internal sealed record DeviceFormatProbeRetargetRequest(");
