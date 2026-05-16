@@ -170,8 +170,8 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var recordingPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.RecordButtonAnimations.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/RecordingButtonChromeController.cs").Replace("\r\n", "\n");
-        var recordingPresentationText = ReadRepoFile("Sussudio/Controllers/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingButtonChromeController.cs").Replace("\r\n", "\n");
+        var recordingPresentationText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private RecordingButtonChromeController _recordingButtonChromeController = null!;");
         AssertContains(adapterText, "private void InitializeRecordingButtonChromeController()");
@@ -249,8 +249,8 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
-        var policyText = ReadRepoFile("Sussudio/Controllers/RecordingStatePresentationPolicy.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
+        var policyText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private RecordingStatePresentationController _recordingStatePresentationController = null!;");
         AssertContains(adapterText, "private void InitializeRecordingStatePresentationController()");

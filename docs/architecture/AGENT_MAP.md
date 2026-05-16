@@ -1825,20 +1825,20 @@ Primary current owners:
   fade-out ordering, preview start/stop calls, reinit animation reset, and
   unavailable-placeholder reveal. `MainWindow.PreviewActions.cs` keeps the XAML
   event name stable.
-- `Sussudio/Controllers/RecordingStatePresentationPolicy.cs` owns pure
+- `Sussudio/Controllers/Recording/RecordingStatePresentationPolicy.cs` owns pure
   recording-state lockout decisions: recording-time capture/audio control
   enablement, analog gain enablement, transition button enablement, FFmpeg
   button enablement, and settled record-button content visibility.
-  `Sussudio/Controllers/RecordingStatePresentationController.cs` owns
+  `Sussudio/Controllers/Recording/RecordingStatePresentationController.cs` owns
   ViewModel-derived lockout/HDR/title/audio-meter policy application and
   delegates record-button chrome.
-  `Sussudio/Controllers/RecordingButtonChromeController.cs` owns demo-visible
+  `Sussudio/Controllers/Recording/RecordingButtonChromeController.cs` owns demo-visible
   record-button chrome: recording glow, Rec pulse, starting spinner,
   normal/recording content, padding, enabled-state application, and the
   circle/pill width morph. `MainWindow.RecordButtonAnimations.cs` is the
   XAML-facing adapter.
   `MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/RecordingButtonActionController.cs` owns the recording
+- `Sussudio/Controllers/Recording/RecordingButtonActionController.cs` owns the recording
   button command workflow and preview-state logging after a start.
   `MainWindow.RecordingActions.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/LiveSignalInfoController.cs` owns live-signal pill
