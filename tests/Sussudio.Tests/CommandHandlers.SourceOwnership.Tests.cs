@@ -17,28 +17,28 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.CaptureControls.cs"), "HandleSetAsync");
         AssertSsctlCapturePipelineRoutingUsesAutomationCommandKinds();
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "HandleDeviceAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"RefreshDevices\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"GetCaptureOptions\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"SelectDevice\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"SelectAudioInputDevice\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"SetCustomAudioInput\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "AutomationCommandKind.RefreshDevices");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "AutomationCommandKind.GetCaptureOptions");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "AutomationCommandKind.SelectDevice");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "AutomationCommandKind.SelectAudioInputDevice");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "AutomationCommandKind.SetCustomAudioInput");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "HandleWindowAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleWindowAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "\"ArmClose\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "\"WindowAction\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "\"SetFullScreenEnabled\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.ArmClose");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.WindowAction");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.SetFullScreenEnabled");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleDeviceAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Recordings.cs"), "HandleRecordingsAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Recordings.cs"), "\"OpenRecordingsFolder\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Recordings.cs"), "AutomationCommandKind.OpenRecordingsFolder");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleWaitAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "\"WaitForCondition\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.WaitForCondition");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "Math.Max(timeoutMs.GetValueOrDefault(0) + 5000, 60000)");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleAssertAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "JsonDocument.Parse(assertionsJson)");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "\"AssertSnapshot\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.AssertSnapshot");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleProbeAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "\"ProbeVideoSource\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "\"ProbePreviewColor\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.ProbeVideoSource");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.ProbePreviewColor");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleStatsAsync");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleVerifyAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "HandleStatsAsync");
@@ -49,8 +49,8 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetSettingsVisible");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.UiVisibility.cs"), "AutomationCommandKind.SetFrameTimeOverlayVisible");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "HandleVerifyAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "\"VerifyFile\"");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "\"VerifyLastRecording\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "AutomationCommandKind.VerifyFile");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "AutomationCommandKind.VerifyLastRecording");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "ConsumeFlag(context.Rest, \"--json\")");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "ParseOptionalStringFlag(context.Rest, \"--verification-profile\")");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "HandleFlashbackAsync");
@@ -68,13 +68,9 @@ static partial class Program
         AssertContains(commandHandlersSource, "\"manifest\" => HandleManifestAsync(context)");
         AssertContains(commandHandlersSource, "\"audio-ramp-trace\" => HandleAudioRampTraceAsync(context)");
         AssertContains(commandHandlersSource, "\"recordings\" => HandleRecordingsAsync(context)");
-        AssertContains(commandHandlersSource, "context.Transport.SendCommandAsync(\"GetAutomationManifest\")");
-        AssertContains(commandHandlersSource, "context.Transport.SendCommandAsync(\"GetAudioRampTrace\")");
-        AssertContains(commandHandlersSource, "\"RefreshDevices\",");
-        AssertContains(commandHandlersSource, "\"SetFullScreenEnabled\",");
-        AssertContains(commandHandlersSource, "\"OpenRecordingsFolder\"");
+        AssertSsctlFixedAutomationRoutesUseAutomationCommandKinds(commandHandlersSource);
         AssertContains(commandHandlersSource, "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
-        AssertContains(commandHandlersSource, "return HandleSimpleCommandAsync(context, \"FlashbackAction\", playPayload, includeData: true);");
+        AssertContains(commandHandlersSource, "return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction, playPayload, includeData: true);");
         AssertContains(commandHandlersSource, "ParseOptionalStringFlag(context.Rest, \"--profile\")");
         AssertContains(commandHandlersSource, "payload[\"verificationProfile\"] = verificationProfile;");
         AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback seek <ms>\"))");
@@ -101,6 +97,51 @@ static partial class Program
             "old ssctl device/window grab-bag removed");
 
         return Task.CompletedTask;
+    }
+
+    private static void AssertSsctlFixedAutomationRoutesUseAutomationCommandKinds(string commandHandlersSource)
+    {
+        AssertContains(
+            commandHandlersSource,
+            "(command, payload, responseTimeoutMs) => context.Transport.SendCommandAsync(command, payload, responseTimeoutMs)");
+        AssertDoesNotContain(
+            ReadRepoFile("tools/ssctl/CommandHandlers.Transport.cs"),
+            "private static async Task<int> HandleSimpleCommandAsync(\n        CommandContext context,\n        string commandName,");
+
+        foreach (var commandName in new[]
+        {
+            "GetSnapshot",
+            "GetDiagnostics",
+            "RefreshDevices",
+            "GetCaptureOptions",
+            "GetAutomationManifest",
+            "GetAudioRampTrace",
+            "GetPerformanceTimeline",
+            "SelectDevice",
+            "SelectAudioInputDevice",
+            "SetCustomAudioInput",
+            "ArmClose",
+            "WindowAction",
+            "SetFullScreenEnabled",
+            "OpenRecordingsFolder",
+            "WaitForCondition",
+            "AssertSnapshot",
+            "ProbeVideoSource",
+            "ProbePreviewColor",
+            "VerifyFile",
+            "VerifyLastRecording",
+            "SetFlashbackEnabled",
+            "SetFlashbackTimelineVisible",
+            "RestartFlashback",
+            "FlashbackAction",
+            "FlashbackExport",
+            "FlashbackGetSegments"
+        })
+        {
+            AssertContains(commandHandlersSource, $"AutomationCommandKind.{commandName}");
+            AssertDoesNotContain(commandHandlersSource, $"SendCommandAsync(\"{commandName}\"");
+            AssertDoesNotContain(commandHandlersSource, $"HandleSimpleCommandAsync(context, \"{commandName}\"");
+        }
     }
 
     private static void AssertSsctlCapturePipelineRoutingUsesAutomationCommandKinds()

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Sussudio.Models;
 
 namespace Sussudio.Tools.Ssctl;
 
@@ -25,7 +26,7 @@ internal static partial class CommandHandlers
 
         var responseTimeoutMs = Math.Max(timeoutMs.GetValueOrDefault(0) + 5000, 60000);
         var response = await context.Transport.SendCommandAsync(
-            "WaitForCondition",
+            AutomationCommandKind.WaitForCondition,
             payload,
             responseTimeoutMs).ConfigureAwait(false);
         return WriteResponse(response, context.GlobalJson, responseValue => Formatters.FormatResult(responseValue, includeData: true));
@@ -59,7 +60,7 @@ internal static partial class CommandHandlers
         }
 
         var response = await context.Transport.SendCommandAsync(
-            "AssertSnapshot",
+            AutomationCommandKind.AssertSnapshot,
             new Dictionary<string, object?> { ["assertions"] = assertionsPayload }).ConfigureAwait(false);
         return WriteResponse(response, context.GlobalJson, responseValue => Formatters.FormatResult(responseValue, includeData: true));
     }
@@ -70,8 +71,8 @@ internal static partial class CommandHandlers
         EnsureArgCount(context.Rest, 1, "probe source|color");
         return subcommand switch
         {
-            "source" => HandleSimpleCommandAsync(context, "ProbeVideoSource", includeData: true),
-            "color" => HandleSimpleCommandAsync(context, "ProbePreviewColor", includeData: true),
+            "source" => HandleSimpleCommandAsync(context, AutomationCommandKind.ProbeVideoSource, includeData: true),
+            "color" => HandleSimpleCommandAsync(context, AutomationCommandKind.ProbePreviewColor, includeData: true),
             _ => throw new UsageException($"Unknown probe command '{subcommand}'.")
         };
     }

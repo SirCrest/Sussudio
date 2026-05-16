@@ -46,7 +46,7 @@ internal static partial class CommandHandlers
     {
         try
         {
-            var response = await context.Transport.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+            var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
             if (!AutomationSnapshotFormatter.IsSuccess(response) ||
                 !response.TryGetProperty("Snapshot", out var snapshot))
             {

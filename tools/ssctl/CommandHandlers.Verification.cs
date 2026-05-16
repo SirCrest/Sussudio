@@ -18,7 +18,7 @@ internal static partial class CommandHandlers
             }
 
             var response = await context.Transport.SendCommandAsync(
-                "VerifyFile",
+                Sussudio.Models.AutomationCommandKind.VerifyFile,
                 payload,
                 60000).ConfigureAwait(false);
             return WriteResponse(response, json, value => Formatters.FormatResult(value, includeData: true));
@@ -26,7 +26,7 @@ internal static partial class CommandHandlers
         else
         {
             // Verify last recording (existing behavior)
-            var response = await context.Transport.SendCommandAsync("VerifyLastRecording").ConfigureAwait(false);
+            var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.VerifyLastRecording).ConfigureAwait(false);
             return WriteResponse(response, json, value => Formatters.FormatResult(value, includeData: true));
         }
     }

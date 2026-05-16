@@ -1,3 +1,5 @@
+using Sussudio.Models;
+
 namespace Sussudio.Tools.Ssctl;
 
 internal static partial class CommandHandlers
@@ -11,18 +13,18 @@ internal static partial class CommandHandlers
                 EnsureArgCount(context.Rest, 1, "device refresh");
                 return await HandleSimpleCommandAsync(
                     context,
-                    "RefreshDevices",
+                    AutomationCommandKind.RefreshDevices,
                     includeData: false).ConfigureAwait(false);
             case "list":
             {
                 EnsureArgCount(context.Rest, 1, "device list");
-                var refreshResponse = await context.Transport.SendCommandAsync("RefreshDevices").ConfigureAwait(false);
+                var refreshResponse = await context.Transport.SendCommandAsync(AutomationCommandKind.RefreshDevices).ConfigureAwait(false);
                 if (!IsSuccess(refreshResponse))
                 {
                     return WriteResponse(refreshResponse, context.GlobalJson, response => Formatters.FormatResult(response, includeData: false));
                 }
 
-                var optionsResponse = await context.Transport.SendCommandAsync("GetCaptureOptions").ConfigureAwait(false);
+                var optionsResponse = await context.Transport.SendCommandAsync(AutomationCommandKind.GetCaptureOptions).ConfigureAwait(false);
                 return WriteResponse(optionsResponse, context.GlobalJson, Formatters.FormatDeviceList);
             }
             case "select":
@@ -33,7 +35,7 @@ internal static partial class CommandHandlers
 
                 return await HandleSimpleCommandAsync(
                     context,
-                    "SelectDevice",
+                    AutomationCommandKind.SelectDevice,
                     new Dictionary<string, object?> { ["deviceName"] = JoinRemaining(context.Rest, 1) },
                     includeData: false).ConfigureAwait(false);
             case "audio-select":
@@ -44,14 +46,14 @@ internal static partial class CommandHandlers
 
                 return await HandleSimpleCommandAsync(
                     context,
-                    "SelectAudioInputDevice",
+                    AutomationCommandKind.SelectAudioInputDevice,
                     new Dictionary<string, object?> { ["deviceName"] = JoinRemaining(context.Rest, 1) },
                     includeData: false).ConfigureAwait(false);
             case "custom-audio":
                 EnsureArgCount(context.Rest, 2, "device custom-audio on|off");
                 return await HandleSimpleCommandAsync(
                     context,
-                    "SetCustomAudioInput",
+                    AutomationCommandKind.SetCustomAudioInput,
                     new Dictionary<string, object?> { ["enabled"] = ParseOnOff(RequireWord(context.Rest, 1, "device custom-audio on|off")) },
                     includeData: false).ConfigureAwait(false);
             default:

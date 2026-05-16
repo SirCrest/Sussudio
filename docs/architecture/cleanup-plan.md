@@ -447,10 +447,11 @@ focused `CommandHandlers.Routing.*.Tests.cs` files, with source ownership kept
 separate in `CommandHandlers.SourceOwnership.Tests.cs`. Captured ssctl
 `request.command` ID assertions now flow through `AssertSsctlCommandRequest`,
 which delegates to the shared golden-table-backed `AssertAutomationCommandId`
-helper instead of duplicating numeric IDs in routing tests. Capture/pipeline
-source guards also live in `CommandHandlers.SourceOwnership.Tests.cs`; they
-require `AutomationCommandKind` enum overloads at routing call sites while
-leaving labels and wire IDs catalog-backed.
+helper instead of duplicating numeric IDs in routing tests. Fixed ssctl source
+guards also live in `CommandHandlers.SourceOwnership.Tests.cs`; they require
+`AutomationCommandKind` enum overloads at routing call sites while leaving
+labels and wire IDs catalog-backed, with the dynamic diagnostic-session runner
+channel intentionally remaining string-based.
 `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` is now only the
 architecture-doc test family marker shell. AGENT_MAP reference resolution,
 test-owner code-span coverage, automation consumer checklist coverage,

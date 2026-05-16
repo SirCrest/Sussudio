@@ -13,7 +13,7 @@ internal static partial class CommandHandlers
             ? JoinRemaining(context.Rest, 2)
             : $"temp/flashback_export_{DateTime.Now:yyyyMMdd_HHmmss}.mp4";
         Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
-        return HandleSimpleCommandAsync(context, "FlashbackExport",
+        return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackExport,
             new Dictionary<string, object?>
             {
                 ["seconds"] = seconds,

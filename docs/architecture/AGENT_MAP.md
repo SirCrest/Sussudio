@@ -2254,10 +2254,11 @@ Primary owners:
   `tools/ssctl/CommandHandlers.DiagnosticSession.cs` owns
   `diagnostic-session` command parsing and runner invocation.
 - `tools/ssctl/CommandHandlers.CaptureControls.cs` owns preview/record,
-  screenshot/frame capture, and `set` capture/audio/output mutations. These
-  capture/pipeline routes should call the shared enum overloads with
+  screenshot/frame capture, and `set` capture/audio/output mutations. Fixed
+  ssctl automation routes should call shared enum overloads with
   `AutomationCommandKind` values; labels and wire command IDs remain catalog
-  owned.
+  owned. Dynamic diagnostic-session runner command names stay string-based at
+  the transport seam.
 - `tools/ssctl/CommandHandlers.Device.cs` owns device refresh/list/select,
   audio-input selection, and custom-audio enablement.
 - `tools/ssctl/CommandHandlers.Window.cs` owns window close arming, window

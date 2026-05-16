@@ -9,7 +9,7 @@ internal static partial class CommandHandlers
         {
             case "open":
                 EnsureArgCount(context.Rest, 1, "recordings open");
-                return HandleSimpleCommandAsync(context, "OpenRecordingsFolder", includeData: false);
+                return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.OpenRecordingsFolder, includeData: false);
             default:
                 throw new UsageException($"Unknown recordings command '{subcommand}'.");
         }

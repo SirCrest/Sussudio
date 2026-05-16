@@ -7,7 +7,7 @@ internal static partial class CommandHandlers
     private static async Task<int> HandleStateAsync(CommandContext context)
     {
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
-        var response = await context.Transport.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+        var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatSnapshot);
     }
 
@@ -18,7 +18,7 @@ internal static partial class CommandHandlers
         EnsureNoArgs(context.Rest, "diagnostics [--max N] [--json]");
 
         var response = await context.Transport.SendCommandAsync(
-            "GetDiagnostics",
+            Sussudio.Models.AutomationCommandKind.GetDiagnostics,
             new Dictionary<string, object?> { ["maxEvents"] = max }).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatDiagnostics);
     }
@@ -28,7 +28,7 @@ internal static partial class CommandHandlers
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
         EnsureNoArgs(context.Rest, "options [--json]");
 
-        var response = await context.Transport.SendCommandAsync("GetCaptureOptions").ConfigureAwait(false);
+        var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetCaptureOptions).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatOptions);
     }
 
@@ -37,7 +37,7 @@ internal static partial class CommandHandlers
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
         EnsureNoArgs(context.Rest, "manifest [--json]");
 
-        var response = await context.Transport.SendCommandAsync("GetAutomationManifest").ConfigureAwait(false);
+        var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetAutomationManifest).ConfigureAwait(false);
         return WriteResponse(response, json, responseValue => Formatters.FormatResult(responseValue, includeData: true));
     }
 
@@ -48,7 +48,7 @@ internal static partial class CommandHandlers
         EnsureNoArgs(context.Rest, "timeline [--max N] [--json]");
 
         var response = await context.Transport.SendCommandAsync(
-            "GetPerformanceTimeline",
+            Sussudio.Models.AutomationCommandKind.GetPerformanceTimeline,
             new Dictionary<string, object?> { ["maxEntries"] = max }).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatTimeline);
     }
@@ -58,7 +58,7 @@ internal static partial class CommandHandlers
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
         EnsureNoArgs(context.Rest, "memory [--json]");
 
-        var response = await context.Transport.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+        var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatMemory);
     }
 
@@ -67,7 +67,7 @@ internal static partial class CommandHandlers
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
         EnsureNoArgs(context.Rest, "audio-ramp-trace [--json]");
 
-        var response = await context.Transport.SendCommandAsync("GetAudioRampTrace").ConfigureAwait(false);
+        var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetAudioRampTrace).ConfigureAwait(false);
         return WriteResponse(response, json, responseValue => Formatters.FormatResult(responseValue, includeData: true));
     }
 

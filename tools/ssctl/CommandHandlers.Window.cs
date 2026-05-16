@@ -11,7 +11,7 @@ internal static partial class CommandHandlers
             {
                 EnsureArgCount(context.Rest, 1, "window close");
                 var armResponse = await context.Transport.SendCommandAsync(
-                    "ArmClose",
+                    Sussudio.Models.AutomationCommandKind.ArmClose,
                     new Dictionary<string, object?> { ["armed"] = true }).ConfigureAwait(false);
                 if (!IsSuccess(armResponse))
                 {
@@ -20,7 +20,7 @@ internal static partial class CommandHandlers
 
                 return await HandleSimpleCommandAsync(
                     context,
-                    "WindowAction",
+                    Sussudio.Models.AutomationCommandKind.WindowAction,
                     new Dictionary<string, object?> { ["action"] = "Close" },
                     includeData: false).ConfigureAwait(false);
             }
@@ -31,7 +31,7 @@ internal static partial class CommandHandlers
                 EnsureArgCount(context.Rest, 1, $"window {subcommand}");
                 return await HandleSimpleCommandAsync(
                     context,
-                    "WindowAction",
+                    Sussudio.Models.AutomationCommandKind.WindowAction,
                     new Dictionary<string, object?> { ["action"] = Capitalize(subcommand) },
                     includeData: false).ConfigureAwait(false);
             case "fullscreen":
@@ -39,21 +39,21 @@ internal static partial class CommandHandlers
                 EnsureArgCount(context.Rest, 2, "window fullscreen on|off");
                 return await HandleSimpleCommandAsync(
                     context,
-                    "SetFullScreenEnabled",
+                    Sussudio.Models.AutomationCommandKind.SetFullScreenEnabled,
                     new Dictionary<string, object?> { ["enabled"] = ParseOnOff(RequireWord(context.Rest, 1, "window fullscreen on|off")) },
                     includeData: false).ConfigureAwait(false);
             case "snap":
                 EnsureArgCount(context.Rest, 2, "window snap <dir>");
                 return await HandleSimpleCommandAsync(
                     context,
-                    "WindowAction",
+                    Sussudio.Models.AutomationCommandKind.WindowAction,
                     new Dictionary<string, object?> { ["action"] = MapSnapAction(RequireWord(context.Rest, 1, "window snap <dir>")) },
                     includeData: false).ConfigureAwait(false);
             case "move":
                 EnsureArgCount(context.Rest, 3, "window move <x> <y>");
                 return await HandleSimpleCommandAsync(
                     context,
-                    "WindowAction",
+                    Sussudio.Models.AutomationCommandKind.WindowAction,
                     new Dictionary<string, object?>
                     {
                         ["action"] = "Move",
@@ -65,7 +65,7 @@ internal static partial class CommandHandlers
                 EnsureArgCount(context.Rest, 3, "window resize <w> <h>");
                 return await HandleSimpleCommandAsync(
                     context,
-                    "WindowAction",
+                    Sussudio.Models.AutomationCommandKind.WindowAction,
                     new Dictionary<string, object?>
                     {
                         ["action"] = "Resize",
