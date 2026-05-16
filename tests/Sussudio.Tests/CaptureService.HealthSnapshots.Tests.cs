@@ -89,6 +89,8 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs")
             .Replace("\r\n", "\n");
+        var activeBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecordingActiveBackend.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var recordingHealth = CaptureRecordingHealthSnapshotFields(sink, fbSink);");
         AssertContains(healthSnapshotAssemblerText, "RecordingEncodingFailed = recordingHealth.EncodingFailed,");
@@ -99,8 +101,19 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(recordingText, "private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(");
         AssertContains(recordingText, "GetLastFailureTelemetry()");
         AssertContains(recordingText, "IsFlashbackRecordingBackendOwnedByRecording()");
-        AssertContains(recordingText, "Interlocked.Read(ref _videoFramesDropped)");
+        AssertContains(recordingText, "CaptureActiveRecordingBackendHealthSnapshotFields(");
+        AssertContains(recordingText, "activeRecording.FlashbackVideoQueueLatencyMetrics");
         AssertContains(recordingText, "private readonly record struct RecordingHealthSnapshotFields");
+        AssertDoesNotContain(recordingText, "var flashbackVideoQueueLatencyMetrics");
+        AssertDoesNotContain(recordingText, "sink?.VideoQueueLatencyMetrics ??");
+        AssertDoesNotContain(recordingText, "Interlocked.Read(ref _videoFramesDropped)");
+        AssertDoesNotContain(recordingText, "flashbackIsRecordingBackend ? fbSink?.VideoQueueCount ?? 0 : 0");
+
+        AssertContains(activeBackendText, "private ActiveRecordingBackendHealthSnapshotFields CaptureActiveRecordingBackendHealthSnapshotFields(");
+        AssertContains(activeBackendText, "sink?.VideoQueueLatencyMetrics ??");
+        AssertContains(activeBackendText, "flashbackIsRecordingBackend ? fbSink?.VideoQueueCount ?? 0 : 0");
+        AssertContains(activeBackendText, "Interlocked.Read(ref _videoFramesDropped)");
+        AssertContains(activeBackendText, "private readonly record struct ActiveRecordingBackendHealthSnapshotFields");
 
     }
 

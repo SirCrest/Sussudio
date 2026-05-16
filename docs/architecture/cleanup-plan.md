@@ -1603,8 +1603,11 @@ summary projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs`;
 Flashback live queue, force-rotate, backpressure, and GPU queue projection lives
 in `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackQueues.cs`;
-active recording queue/failure projection lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs`,
+recording health orchestration lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs`, while
+active recording backend selection, LibAv-vs-Flashback fallback, and
+backend-specific queue/counter normalization live in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotRecordingActiveBackend.cs`;
 Flashback export diagnostic and derived progress/throughput projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs`,
 and Flashback playback state/cadence/decode/command projection lives in
