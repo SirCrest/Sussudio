@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Sussudio.Models;
 
 namespace Sussudio.ViewModels;
@@ -29,102 +28,24 @@ public partial class MainViewModel
             _ => VideoQuality.High
         };
 
-        var selectedFrameRateOption = AvailableFrameRates
-            .FirstOrDefault(option => IsFrameRateMatch(option.Value, SelectedFrameRate))
-            ?? AvailableFrameRates.FirstOrDefault(option => IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
-
-        var requestedFrameRateArg = selectedFrameRateOption?.Rational;
-        var requestedFrameRateNumerator = selectedFrameRateOption?.Numerator;
-        var requestedFrameRateDenominator = selectedFrameRateOption?.Denominator;
-        var effectiveFrameRate = IsAutoResolutionValue(SelectedResolution) && AutoResolvedFrameRate.HasValue && AutoResolvedFrameRate.Value > 0
-            ? AutoResolvedFrameRate.Value
-            : SelectedFrameRate > 0
-            ? SelectedFrameRate
-            : selectedFrameRateOption?.Value
-                ?? SelectedFormat?.FrameRateExact
-                ?? 60;
         var effectiveResolutionKnown = TryGetEffectiveResolutionSelection(out _, out var effectiveWidth, out var effectiveHeight);
         var runtime = _captureService.GetRuntimeSnapshot();
         var sourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();
-        var selectedFriendlyRate = selectedFrameRateOption?.FriendlyValue ?? effectiveFrameRate;
-        var runtimeRate = runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate;
-        var runtimeRateArg = runtime.ActualFrameRateArg ?? runtime.NegotiatedFrameRateArg;
-        var runtimeMatchesResolution = false;
-        if (effectiveResolutionKnown)
-        {
-            runtimeMatchesResolution =
-                (runtime.ActualWidth == effectiveWidth && runtime.ActualHeight == effectiveHeight) ||
-                (runtime.NegotiatedWidth == effectiveWidth && runtime.NegotiatedHeight == effectiveHeight);
-        }
-
-        if (runtimeMatchesResolution &&
-            runtimeRate.HasValue &&
-            runtimeRate.Value > 0 &&
-            IsFriendlyFrameRateMatch(selectedFriendlyRate, runtimeRate.Value))
-        {
-            if (!string.IsNullOrWhiteSpace(runtimeRateArg))
-            {
-                requestedFrameRateArg = runtimeRateArg;
-            }
-
-            if (runtime.NegotiatedFrameRateNumerator.HasValue &&
-                runtime.NegotiatedFrameRateDenominator.HasValue &&
-                runtime.NegotiatedFrameRateDenominator.Value > 0)
-            {
-                requestedFrameRateNumerator = runtime.NegotiatedFrameRateNumerator;
-                requestedFrameRateDenominator = runtime.NegotiatedFrameRateDenominator;
-            }
-            else if (TryParseFrameRateRational(runtimeRateArg, out var runtimeNumerator, out var runtimeDenominator))
-            {
-                requestedFrameRateNumerator = runtimeNumerator;
-                requestedFrameRateDenominator = runtimeDenominator;
-            }
-        }
-
-        if (sourceTelemetry.HasFrameRate &&
-            IsFriendlyFrameRateMatch(selectedFriendlyRate, sourceTelemetry.FrameRateExact ?? 0))
-        {
-            if (!string.IsNullOrWhiteSpace(sourceTelemetry.FrameRateArg))
-            {
-                requestedFrameRateArg = sourceTelemetry.FrameRateArg;
-            }
-
-            if (TryParseFrameRateRational(sourceTelemetry.FrameRateArg, out var sourceNumerator, out var sourceDenominator))
-            {
-                requestedFrameRateNumerator = sourceNumerator;
-                requestedFrameRateDenominator = sourceDenominator;
-            }
-        }
-
-        if ((requestedFrameRateNumerator == null || requestedFrameRateDenominator == null) &&
-            TryParseFrameRateRational(requestedFrameRateArg, out var parsedNumerator, out var parsedDenominator))
-        {
-            requestedFrameRateNumerator = parsedNumerator;
-            requestedFrameRateDenominator = parsedDenominator;
-        }
-
-        if (requestedFrameRateNumerator == null || requestedFrameRateDenominator == null)
-        {
-            if (SelectedFormat?.FrameRateNumerator > 0 && SelectedFormat.FrameRateDenominator > 0)
-            {
-                requestedFrameRateNumerator = SelectedFormat.FrameRateNumerator;
-                requestedFrameRateDenominator = SelectedFormat.FrameRateDenominator;
-                requestedFrameRateArg = SelectedFormat.FrameRateRational;
-            }
-            else
-            {
-                requestedFrameRateArg = effectiveFrameRate.ToString("0.###");
-            }
-        }
+        var frameRateProjection = ProjectCaptureSettingsFrameRate(new CaptureSettingsFrameRateRequest(
+            effectiveResolutionKnown,
+            effectiveWidth,
+            effectiveHeight,
+            runtime,
+            sourceTelemetry));
 
         var settings = new CaptureSettings
         {
             Width = effectiveResolutionKnown ? effectiveWidth : (SelectedFormat?.Width ?? 1920),
             Height = effectiveResolutionKnown ? effectiveHeight : (SelectedFormat?.Height ?? 1080),
-            FrameRate = effectiveFrameRate,
-            RequestedFrameRateArg = requestedFrameRateArg,
-            RequestedFrameRateNumerator = requestedFrameRateNumerator,
-            RequestedFrameRateDenominator = requestedFrameRateDenominator,
+            FrameRate = frameRateProjection.EffectiveFrameRate,
+            RequestedFrameRateArg = frameRateProjection.RequestedFrameRateArg,
+            RequestedFrameRateNumerator = frameRateProjection.RequestedFrameRateNumerator,
+            RequestedFrameRateDenominator = frameRateProjection.RequestedFrameRateDenominator,
             RequestedPixelFormat = ResolveRequestedPixelFormat(),
             ForceMjpegDecode = ShouldForceMjpegDecode(),
             FlashbackGpuDecode = FlashbackGpuDecode,

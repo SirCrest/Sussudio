@@ -1092,7 +1092,8 @@ Primary current owners:
   owns Flashback startup-cache and session-recovery cleanup ownership
   assertions that used to live in the automation test catch-all.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SettingsProjection.Tests.cs`
-  owns capture settings projection ownership assertions.
+  owns capture settings projection ownership assertions, including the focused
+  frame-rate request projector used by `BuildCaptureSettings`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.AudioMonitoring.Tests.cs` owns
   capture audio-monitoring coordinator surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.OutputPath.Tests.cs` owns
@@ -1963,7 +1964,10 @@ Primary current owners:
   reset, and delegates label formatting to
   `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`.
   `MainViewModel.CaptureSettings.cs` owns capture settings projection from UI
-  selection and observed runtime/source state.
+  selection and observed runtime/source state, while
+  `MainViewModel.CaptureSettingsFrameRate.cs` owns frame-rate request
+  projection: selected option seed, auto-resolved effective FPS, negotiated
+  rational/source-telemetry overrides, and rational/decimal fallbacks.
   `MainViewModel.Capture.cs` owns device initialization, preview start/stop,
   and selected-device apply. `MainViewModel.PreviewReinitialization.cs` owns
   debounced preview reinitialization, Flashback-cycle wait-before-reinit,

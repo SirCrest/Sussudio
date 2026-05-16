@@ -2693,9 +2693,12 @@ Remaining `tools/Common` ownership:
    live-info reset; live-signal label formatting now lives in
    `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`. Capture
    settings projection from UI/runtime state now lives in
-   `MainViewModel.CaptureSettings.cs`, leaving `MainViewModel.Capture.cs`
-   focused on device initialization, preview start/stop, and selected-device
-   apply. Debounced preview reinitialization, Flashback-cycle wait-before-reinit,
+   `MainViewModel.CaptureSettings.cs`, with frame-rate request projection split
+   to `MainViewModel.CaptureSettingsFrameRate.cs` for selected-option seeding,
+   auto-resolved effective FPS, runtime/source rational overrides, and
+   rational/decimal fallbacks; `MainViewModel.Capture.cs` stays focused on
+   device initialization, preview start/stop, and selected-device apply.
+   Debounced preview reinitialization, Flashback-cycle wait-before-reinit,
    renderer-stop handoff, teardown restart, and gate release now live in
    `MainViewModel.PreviewReinitialization.cs`. Output folder selection now lives in
    `MainViewModel.OutputPathSelection.cs`. Recording toggle serialization, graceful stop, emergency stop,
