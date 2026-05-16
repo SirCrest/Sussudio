@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -38,7 +39,7 @@ public static partial class FlashbackTools
             ["force"] = force
         };
 
-        var response = await pipeClient.SendCommandAsync("FlashbackExport", payload).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.FlashbackExport, payload).ConfigureAwait(false);
         var status = AutomationSnapshotFormatter.IsSuccess(response) ? "OK" : "ERROR";
         var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
 

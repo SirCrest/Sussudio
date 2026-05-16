@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 
 namespace McpServer.Tools;
@@ -16,7 +17,7 @@ public static partial class PresentMonTools
     {
         try
         {
-            var response = await pipeClient.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+            var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
             if (!AutomationSnapshotFormatter.IsSuccess(response) ||
                 !response.TryGetProperty("Snapshot", out var snapshot))
             {

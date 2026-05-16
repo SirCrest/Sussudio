@@ -94,7 +94,7 @@ static partial class Program
 
         AssertContains(correlationText, "private readonly record struct PresentMonCorrelation(");
         AssertContains(correlationText, "private static async Task<PresentMonCorrelation> TryResolvePreviewPresentCorrelationAsync(");
-        AssertContains(correlationText, "SendCommandAsync(\"GetSnapshot\")");
+        AssertContains(correlationText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
         AssertContains(correlationText, "PreviewD3DSwapChainAddress");
         AssertContains(correlationText, "PreviewD3DLastRenderedPreviewPresentId");
         AssertContains(correlationText, "PreviewD3DLastRenderedSourceSequenceNumber");

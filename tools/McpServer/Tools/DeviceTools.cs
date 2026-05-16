@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Sussudio.Models;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
@@ -21,11 +22,11 @@ public static class DeviceTools
                 pipeClient,
                 "No device configuration changes requested.",
                 ToolCommandFormatter.Optional(
-                    "RefreshDevices",
+                    AutomationCommandKind.RefreshDevices,
                     "RefreshDevices",
                     refresh),
                 ToolCommandFormatter.Optional(
-                    "SelectDevice",
+                    AutomationCommandKind.SelectDevice,
                     "SelectDevice",
                     !string.IsNullOrWhiteSpace(deviceId) || !string.IsNullOrWhiteSpace(deviceName),
                     new Dictionary<string, object?>
@@ -34,7 +35,7 @@ public static class DeviceTools
                         ["deviceName"] = string.IsNullOrWhiteSpace(deviceName) ? null : deviceName
                     }),
                 ToolCommandFormatter.Optional(
-                    "SelectAudioInputDevice",
+                    AutomationCommandKind.SelectAudioInputDevice,
                     "SelectAudioInputDevice",
                     !string.IsNullOrWhiteSpace(audioDeviceId) || !string.IsNullOrWhiteSpace(audioDeviceName),
                     new Dictionary<string, object?>
@@ -43,7 +44,7 @@ public static class DeviceTools
                         ["deviceName"] = string.IsNullOrWhiteSpace(audioDeviceName) ? null : audioDeviceName
                     }),
                 ToolCommandFormatter.Optional(
-                    "SetCustomAudioInput",
+                    AutomationCommandKind.SetCustomAudioInput,
                     "SetCustomAudioInput",
                     customAudioInput.HasValue,
                     customAudioInput.HasValue ? new Dictionary<string, object?> { ["enabled"] = customAudioInput.Value } : null))

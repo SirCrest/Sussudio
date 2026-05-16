@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -14,7 +15,7 @@ public static class VideoSourceProbeTools
     [McpServerTool, Description("Query the live video source's supported formats during preview. Shows P010/NV12 availability, current format, memory preference, and full format table without starting recording.")]
     public static async Task<CallToolResult> probe_video_source(PipeClient pipeClient)
     {
-        var response = await pipeClient.SendCommandAsync("ProbeVideoSource").ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.ProbeVideoSource).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, GetMessage(response));

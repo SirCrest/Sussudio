@@ -2266,11 +2266,12 @@ Primary owners:
   tolerant response state parsing.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs` owns pipe
   command result and exception types.
-- Fixed MCP routes that already have `AutomationCommandKind` entries should call
+- Fixed MCP routes whose commands exist in `AutomationCommandKind` should call
   the typed MCP `PipeClient.SendCommandAsync(AutomationCommandKind, ...)`
-  overload. `WaitTools.cs` owns the typed condition-wait route and catalog-backed
-  response-timeout policy; dynamic diagnostic-session command callbacks remain
-  the string-command exception.
+  overload at the pipe seam. Do not list converted routes here; the shared
+  catalog, per-file MCP owner bullets, and `McpToolSurface.*` source guards are
+  the source of truth. String command names remain only for catalog/manifest-backed
+  dynamic batches and diagnostic-session command callbacks.
 - `tools/Common/AutomationPipeClient/AutomationResponseState.cs` owns tolerant
   response-state DTOs shared by the pipe client and tool surfaces.
 - `tools/AutomationClient/Program.cs` owns the low-level pipe client entry

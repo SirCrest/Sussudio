@@ -9,6 +9,9 @@ static partial class Program
             "MCP raw app state keeps capture options separate",
             McpToolSurface_KeepsCaptureOptionsSeparateFromRawState);
         await AddCheckAsync(results,
+            "MCP fixed automation routes use command kinds",
+            McpToolSurface_FixedAutomationRoutesUseAutomationCommandKinds);
+        await AddCheckAsync(results,
             "MCP host tool schema uses PipeClient as a service",
             McpHostToolSchema_UsesPipeClientAsService);
         await AddCheckAsync(results,

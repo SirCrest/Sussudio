@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Server;
 
@@ -12,7 +13,7 @@ public static class CaptureOptionsTools
     [McpServerTool(UseStructuredContent = true), Description("Get structured capture options and current selections, including devices, audio inputs, formats, resolutions, frame rates, presets, split encode modes, video formats, and UI-facing automation state.")]
     public static async Task<object> get_capture_options(PipeClient pipeClient)
     {
-        var response = await pipeClient.SendCommandAsync("GetCaptureOptions").ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetCaptureOptions).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return CreateError(response);

@@ -192,9 +192,9 @@ static partial class Program
         AssertContains(verificationRootText, "public static async Task<CallToolResult> verify_recording");
         AssertContains(verificationRootText, "public static async Task<CallToolResult> assert_snapshot");
         AssertContains(verificationRootText, "public static async Task<CallToolResult> verify_file");
-        AssertContains(verificationRootText, "SendCommandAsync(\"VerifyLastRecording\", responseTimeoutMs: 60000)");
-        AssertContains(verificationRootText, "SendCommandAsync(\"AssertSnapshot\", payload)");
-        AssertContains(verificationRootText, "SendCommandAsync(\"VerifyFile\", payload, responseTimeoutMs: 60000)");
+        AssertContains(verificationRootText, "SendCommandAsync(AutomationCommandKind.VerifyLastRecording)");
+        AssertContains(verificationRootText, "SendCommandAsync(AutomationCommandKind.AssertSnapshot, payload)");
+        AssertContains(verificationRootText, "SendCommandAsync(AutomationCommandKind.VerifyFile, payload)");
         AssertContains(verificationRootText, "TryParseAssertionArray(assertions, out var parsedAssertions, out var parseError)");
         AssertContains(verificationRootText, "BuildRecordingVerificationText(response, verification, message)");
         AssertContains(verificationRootText, "BuildSnapshotAssertionText(response)");

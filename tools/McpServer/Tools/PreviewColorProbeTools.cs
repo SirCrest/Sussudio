@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -14,7 +15,7 @@ public static class PreviewColorProbeTools
     [McpServerTool, Description("Probe the active preview renderer mode, negotiated subtype, and available color metadata. Reports D3D11 input/output color spaces when available; extended MF attributes are shown only when provided by the active pipeline.")]
     public static async Task<CallToolResult> probe_preview_color(PipeClient pipeClient)
     {
-        var response = await pipeClient.SendCommandAsync("ProbePreviewColor").ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.ProbePreviewColor).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, GetMessage(response));

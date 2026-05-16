@@ -2445,11 +2445,11 @@ count, derived outside export-observed relevance gating. These helpers remain
 snapshot-only projections and must not send automation commands.
 
 MCP fixed command routes should use `AutomationCommandKind` overloads when the
-command is part of the shared catalog. `tools/McpServer/Tools/WaitTools.cs` now
-routes condition waits through `AutomationCommandKind.WaitForCondition` and uses
-the typed catalog response-timeout policy, leaving string command names only for
-dynamic diagnostic-session command callbacks and older tool surfaces that have
-their own focused compatibility coverage.
+command is part of the shared catalog. Keep this as an ownership rule, not a
+per-route table: record only new file ownership or deliberate exceptions here.
+String command names remain only for catalog/manifest-backed dynamic batches,
+diagnostic-session command callbacks, and intentionally unconverted compatibility
+surfaces with focused coverage.
 
 Diagnostic-session Flashback preview-cycle scenarios now live in a focused
 partial family. `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`

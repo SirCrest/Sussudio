@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Linq;
+using Sussudio.Models;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
@@ -30,7 +31,7 @@ public static class WindowTools
             {
                 ["armed"] = true
             };
-            var armResponse = await pipeClient.SendCommandAsync("ArmClose", armPayload).ConfigureAwait(false);
+            var armResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.ArmClose, armPayload).ConfigureAwait(false);
             results.Add(ToolCommandFormatter.FormatCommandResponse(armResponse, "ArmClose"));
             if (!Sussudio.Tools.AutomationSnapshotFormatter.IsSuccess(armResponse))
             {
@@ -48,7 +49,7 @@ public static class WindowTools
         if (width.HasValue) actionPayload["width"] = width.Value;
         if (height.HasValue) actionPayload["height"] = height.Value;
 
-        var actionResponse = await pipeClient.SendCommandAsync("WindowAction", actionPayload).ConfigureAwait(false);
+        var actionResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.WindowAction, actionPayload).ConfigureAwait(false);
         results.Add(ToolCommandFormatter.FormatCommandResponse(actionResponse, "WindowAction"));
 
         return McpToolResultFactory.FromResponse(actionResponse, string.Join(Environment.NewLine, results));
@@ -61,7 +62,7 @@ public static class WindowTools
     {
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
-                "SetFullScreenEnabled",
+                AutomationCommandKind.SetFullScreenEnabled,
                 "SetFullScreenEnabled",
                 new Dictionary<string, object?> { ["enabled"] = enabled })
             .ConfigureAwait(false);
@@ -72,7 +73,7 @@ public static class WindowTools
     {
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
-                "OpenRecordingsFolder",
+                AutomationCommandKind.OpenRecordingsFolder,
                 "OpenRecordingsFolder")
             .ConfigureAwait(false);
     }

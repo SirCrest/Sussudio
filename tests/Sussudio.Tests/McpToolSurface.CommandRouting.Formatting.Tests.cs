@@ -12,19 +12,23 @@ static partial class Program
         var pipeName = NewMcpToolPipeName("formatter");
         var pipeClient = CreateMcpPipeClient(pipeName);
         var formatterType = RequireMcpType("McpServer.Tools.ToolCommandFormatter");
-        var optional = formatterType.GetMethod(
-                "Optional",
-                BindingFlags.Static | BindingFlags.NonPublic,
-                binder: null,
-                types:
-                [
-                    typeof(string),
-                    typeof(string),
-                    typeof(bool),
-                    typeof(Dictionary<string, object?>)
-                ],
-                modifiers: null)
+        var optional = formatterType.GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+            .SingleOrDefault(method =>
+            {
+                if (method.Name != "Optional" || method.IsGenericMethodDefinition)
+                {
+                    return false;
+                }
+
+                var parameters = method.GetParameters();
+                return parameters.Length == 4 &&
+                       parameters[0].ParameterType.FullName == "Sussudio.Models.AutomationCommandKind" &&
+                       parameters[1].ParameterType == typeof(string) &&
+                       parameters[2].ParameterType == typeof(bool) &&
+                       parameters[3].ParameterType == typeof(Dictionary<string, object?>);
+            })
             ?? throw new InvalidOperationException("ToolCommandFormatter.Optional overload was not found.");
+        var automationCommandKindType = optional.GetParameters()[0].ParameterType;
         var pendingType = optional.ReturnType;
         var executeBatch = formatterType.GetMethod(
                 "ExecuteBatchAsync",
@@ -46,7 +50,7 @@ static partial class Program
             null,
             new object?[]
             {
-                "SetShowAllCaptureOptions",
+                Enum.Parse(automationCommandKindType, "SetShowAllCaptureOptions"),
                 "SetShowAllCaptureOptions",
                 false,
                 new Dictionary<string, object?> { ["enabled"] = true }
@@ -55,7 +59,7 @@ static partial class Program
             null,
             new object?[]
             {
-                "SetStatsVisible",
+                Enum.Parse(automationCommandKindType, "SetStatsVisible"),
                 "SetStatsVisible",
                 true,
                 new Dictionary<string, object?> { ["visible"] = true }
@@ -64,7 +68,7 @@ static partial class Program
             null,
             new object?[]
             {
-                "SetSettingsVisible",
+                Enum.Parse(automationCommandKindType, "SetSettingsVisible"),
                 "SetSettingsVisible",
                 true,
                 new Dictionary<string, object?> { ["visible"] = false }

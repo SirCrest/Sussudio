@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Sussudio.Models;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
@@ -15,7 +16,7 @@ public static partial class FlashbackTools
     {
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
-                commandName: "SetFlashbackEnabled",
+                AutomationCommandKind.SetFlashbackEnabled,
                 label: "SetFlashbackEnabled",
                 payload: new Dictionary<string, object?> { ["enabled"] = enabled })
             .ConfigureAwait(false);
@@ -26,7 +27,7 @@ public static partial class FlashbackTools
     {
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
-                commandName: "RestartFlashback",
+                AutomationCommandKind.RestartFlashback,
                 label: "RestartFlashback")
             .ConfigureAwait(false);
     }

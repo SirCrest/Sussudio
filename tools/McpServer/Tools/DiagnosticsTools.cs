@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -21,7 +22,7 @@ public static class DiagnosticsTools
             ["maxEvents"] = maxEvents
         };
 
-        var response = await pipeClient.SendCommandAsync("GetDiagnostics", payload).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetDiagnostics, payload).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, GetMessage(response));

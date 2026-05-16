@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Sussudio.Models;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
@@ -54,7 +55,7 @@ public static partial class FlashbackTools
 
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
-                commandName: "FlashbackAction",
+                AutomationCommandKind.FlashbackAction,
                 label: $"FlashbackAction({normalizedAction})",
                 payload: payload)
             .ConfigureAwait(false);

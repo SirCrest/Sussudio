@@ -14,8 +14,8 @@ static partial class Program
         AssertContains(rootSource, "[McpServerToolType]");
         AssertContains(rootSource, "[McpServerTool, Description(\"Get a compact frame pacing verdict");
         AssertContains(rootSource, "public static async Task<CallToolResult> get_frame_pacing_verdict");
-        AssertContains(rootSource, "SendCommandAsync(\"GetSnapshot\")");
-        AssertContains(rootSource, "SendCommandAsync(\"GetPerformanceTimeline\", timelinePayload)");
+        AssertContains(rootSource, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
+        AssertContains(rootSource, "SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload)");
         AssertContains(rootSource, "BuildFramePacingVerdictText(");
         AssertDoesNotContain(rootSource, "new StringBuilder()");
         AssertDoesNotContain(rootSource, "private sealed record FramePacingChannel");

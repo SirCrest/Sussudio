@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -13,7 +14,7 @@ public static partial class VerificationTools
     [McpServerTool, Description("Run ffprobe validation on the last recording. Checks codec, resolution, HDR metadata parity.")]
     public static async Task<CallToolResult> verify_recording(PipeClient pipeClient)
     {
-        var response = await pipeClient.SendCommandAsync("VerifyLastRecording", responseTimeoutMs: 60000).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.VerifyLastRecording).ConfigureAwait(false);
         var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
 
         if (!TryGetVerification(response, out var verification))
@@ -39,7 +40,7 @@ public static partial class VerificationTools
             ["assertions"] = parsedAssertions
         };
 
-        var response = await pipeClient.SendCommandAsync("AssertSnapshot", payload).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.AssertSnapshot, payload).ConfigureAwait(false);
         return McpToolResultFactory.FromResponse(response, BuildSnapshotAssertionText(response));
     }
 
@@ -55,7 +56,7 @@ public static partial class VerificationTools
             payload["verificationProfile"] = verificationProfile;
         }
 
-        var response = await pipeClient.SendCommandAsync("VerifyFile", payload, responseTimeoutMs: 60000).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.VerifyFile, payload).ConfigureAwait(false);
         var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
 
         if (!TryGetVerification(response, out var verification))

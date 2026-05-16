@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -13,7 +14,7 @@ public static class AppStateTools
     [McpServerTool, Description("Get the full application state snapshot including device, preview, recording, HDR, audio, and performance status")]
     public static async Task<CallToolResult> get_app_state(PipeClient pipeClient)
     {
-        var response = await pipeClient.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, GetMessage(response));
@@ -27,7 +28,7 @@ public static class AppStateTools
     [McpServerTool(UseStructuredContent = true), Description("Get the raw structured application state snapshot for agent consumption.")]
     public static async Task<object> get_app_state_raw(PipeClient pipeClient)
     {
-        var response = await pipeClient.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return CreateError(response);
