@@ -159,7 +159,7 @@ static partial class Program
     {
         var windowText = ReadRepoFile("Sussudio/MainWindow.Screenshot.cs")
             .Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/WindowScreenshotController.cs")
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
             .Replace("\r\n", "\n");
         var method = ExtractTextBetween(
             controllerText,
@@ -183,9 +183,9 @@ static partial class Program
 
     private static Task WindowScreenshotNativeCapture_LivesInFocusedHelper()
     {
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/WindowScreenshotController.cs")
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
             .Replace("\r\n", "\n");
-        var nativeCaptureText = ReadRepoFile("Sussudio/Controllers/Screenshot/WindowScreenshotNativeCapture.cs")
+        var nativeCaptureText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(controllerText, "=> WindowScreenshotNativeCapture.Capture(_windowHandleProvider(), outputPath);");
@@ -208,11 +208,11 @@ static partial class Program
 
     private static Task WindowScreenshotImageEncoding_LivesInFocusedHelper()
     {
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/WindowScreenshotController.cs")
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
             .Replace("\r\n", "\n");
-        var nativeCaptureText = ReadRepoFile("Sussudio/Controllers/Screenshot/WindowScreenshotNativeCapture.cs")
+        var nativeCaptureText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs")
             .Replace("\r\n", "\n");
-        var encoderText = ReadRepoFile("Sussudio/Controllers/Screenshot/WindowScreenshotImageEncoder.cs")
+        var encoderText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(controllerText, "WindowScreenshotNativeCapture.Capture(");

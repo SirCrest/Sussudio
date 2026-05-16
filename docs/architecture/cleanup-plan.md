@@ -500,17 +500,17 @@ root controller to the public toggle/state surface,
 gate/adapter, timeline visibility, and scrub-end bridging.
 
 Automation whole-window screenshot capture now lives in
-`Sussudio/Controllers/Screenshot/WindowScreenshotController.cs`, which now only owns
+`Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs`, which now only owns
 UI-thread dispatch, cancellation, and failure wrapping. Native PrintWindow/GDI
 capture and screenshot result shaping live in
-`Sussudio/Controllers/Screenshot/WindowScreenshotNativeCapture.cs`, while pure PNG/BMP
+`Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs`, while pure PNG/BMP
 byte-stream encoding lives in
-`Sussudio/Controllers/Screenshot/WindowScreenshotImageEncoder.cs`. `MainWindow.Screenshot.cs`
+`Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs`. `MainWindow.Screenshot.cs`
 is only the automation adapter.
 
 Preview-frame screenshot button behavior now lives in
-`Sussudio/Controllers/Screenshot/PreviewScreenshotController.cs`.
-`Sussudio/Controllers/Screenshot/PreviewScreenshotPlanPolicy.cs` owns the pure output
+`Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs`.
+`Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotPlanPolicy.cs` owns the pure output
 directory fallback, file naming, status text, and log text policy.
 `MainWindow.PreviewScreenshot.cs` is the XAML-facing adapter; the controller
 keeps directory creation, preview-frame capture, logging side effects, and

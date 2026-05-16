@@ -759,16 +759,16 @@ Primary current owners:
   behavior. Keep `MainWindow.FullScreen.cs` as the XAML-facing adapter.
   `MainWindow.FullScreenFlashbackBridge.cs` owns the Flashback fullscreen
   keyboard gate/adapter, timeline visibility, and scrub-end bridging.
-- `Sussudio/Controllers/Screenshot/WindowScreenshotController.cs` owns automation whole-
+- `Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs` owns automation whole-
   window screenshot dispatch, UI-thread enqueue/cancellation, and failure
-  wrapping. `Sussudio/Controllers/Screenshot/WindowScreenshotNativeCapture.cs` owns native
+  wrapping. `Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs` owns native
   PrintWindow capture, GDI/DIB lifetime, output directory creation, and
-  screenshot result shaping. `Sussudio/Controllers/Screenshot/WindowScreenshotImageEncoder.cs`
+  screenshot result shaping. `Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs`
   owns the pure PNG/BMP byte-stream encoding helpers. Keep
   `MainWindow.Screenshot.cs` as the `IAutomationWindowControl` adapter.
-- `Sussudio/Controllers/Screenshot/PreviewScreenshotPlanPolicy.cs` owns the pure preview-
+- `Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotPlanPolicy.cs` owns the pure preview-
   frame screenshot output-directory fallback, file naming, status text, and log
-  text policy. `Sussudio/Controllers/Screenshot/PreviewScreenshotController.cs` owns the
+  text policy. `Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns the
   XAML preview-frame screenshot button workflow: directory creation,
   preview-frame capture, logging side effects, and button enable/disable state.
   `MainWindow.PreviewScreenshot.cs` is the XAML-facing adapter.
