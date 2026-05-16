@@ -73,8 +73,8 @@ static partial class Program
             "Preview fade-in reveal lives in controller",
             PreviewFadeInReveal_LivesInController);
         await AddCheckAsync(results,
-            "Record button width animation lives in controller",
-            RecordButtonWidthAnimation_LivesInController);
+            "Recording button chrome lives in controller",
+            RecordingButtonChrome_LivesInController);
         await AddCheckAsync(results,
             "Recording state presentation lives in controller",
             RecordingStatePresentation_LivesInController);

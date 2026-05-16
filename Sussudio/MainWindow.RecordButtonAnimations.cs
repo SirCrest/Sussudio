@@ -1,22 +1,24 @@
-using System;
 using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// XAML-facing record-button animation adapter. RecordButtonAnimationController
-// owns the circle/pill width morph used when recording state changes.
+// XAML-facing record-button chrome adapter. RecordingButtonChromeController owns
+// the demo-visible glow, pulse, spinner, content, padding, and width morph.
 public sealed partial class MainWindow
 {
-    private RecordButtonAnimationController _recordButtonAnimationController = null!;
+    private RecordingButtonChromeController _recordingButtonChromeController = null!;
 
-    private void InitializeRecordButtonAnimationController()
+    private void InitializeRecordingButtonChromeController()
     {
-        _recordButtonAnimationController = new RecordButtonAnimationController(new RecordButtonAnimationControllerContext
+        _recordingButtonChromeController = new RecordingButtonChromeController(new RecordingButtonChromeControllerContext
         {
+            RecordingGlowBorder = RecordingGlowBorder,
+            RecordingGlowPulseStoryboard = RecordingGlowPulseStoryboard,
+            RecPulseStoryboard = RecPulseStoryboard,
             RecordButton = RecordButton,
+            RecordButtonNormalContent = RecordButtonNormalContent,
+            RecordButtonStartingContent = RecordButtonStartingContent,
+            RecordButtonRecordingContent = RecordButtonRecordingContent,
         });
     }
-
-    private void AnimateRecordButtonWidth(double from, double to, Action? onCompleted = null)
-        => _recordButtonAnimationController.AnimateWidth(from, to, onCompleted);
 }

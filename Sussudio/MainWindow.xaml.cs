@@ -100,7 +100,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializePreviewFadeInController();
         InitializePreviewTransitionAnimationController();
         InitializePreviewButtonPresentationController();
-        InitializeRecordButtonAnimationController();
+        InitializeRecordingButtonChromeController();
         InitializeRecordingStatePresentationController();
         InitializeRecordingButtonActionController();
         InitializeLaunchEntranceAnimationController();

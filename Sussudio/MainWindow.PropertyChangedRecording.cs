@@ -4,7 +4,7 @@ using Sussudio.ViewModels;
 namespace Sussudio;
 
 // XAML-facing recording-state presentation adapter. RecordingStatePresentationController
-// owns record-button content, recording glow, and recording-time control lockouts.
+// owns ViewModel-derived recording lockouts and delegates record-button chrome.
 public sealed partial class MainWindow
 {
     private RecordingStatePresentationController _recordingStatePresentationController = null!;
@@ -35,13 +35,7 @@ public sealed partial class MainWindow
         _recordingStatePresentationController = new RecordingStatePresentationController(new RecordingStatePresentationControllerContext
         {
             ViewModel = ViewModel,
-            RecordingGlowBorder = RecordingGlowBorder,
-            RecordingGlowPulseStoryboard = RecordingGlowPulseStoryboard,
-            RecPulseStoryboard = RecPulseStoryboard,
-            RecordButton = RecordButton,
-            RecordButtonNormalContent = RecordButtonNormalContent,
-            RecordButtonStartingContent = RecordButtonStartingContent,
-            RecordButtonRecordingContent = RecordButtonRecordingContent,
+            RecordingButtonChrome = _recordingButtonChromeController,
             AudioRecordToggle = AudioRecordToggle,
             CustomAudioToggle = CustomAudioToggle,
             MicrophoneToggle = MicrophoneToggle,
@@ -49,7 +43,6 @@ public sealed partial class MainWindow
             MicrophoneComboBox = MicrophoneComboBox,
             DeviceAudioModeToggle = DeviceAudioModeToggle,
             AnalogAudioGainSlider = AnalogAudioGainSlider,
-            AnimateRecordButtonWidth = AnimateRecordButtonWidth,
             ResetAudioMeterVisuals = ResetAudioMeterVisuals,
             ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
             RefreshHdrHintText = RefreshHdrHintText,

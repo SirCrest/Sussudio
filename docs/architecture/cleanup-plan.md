@@ -1835,8 +1835,10 @@ button command choreography now lives in
 `Sussudio/Controllers/PreviewButtonActionController.cs`, while
 `MainWindow.PreviewActions.cs` keeps the XAML event name stable.
 
-Record-button circle/pill width animation now lives in
-`Sussudio/Controllers/RecordButtonAnimationController.cs`.
+Demo-visible record-button chrome now lives in
+`Sussudio/Controllers/RecordingButtonChromeController.cs`: recording glow,
+Rec pulse, starting spinner, normal/recording content, padding, enabled-state
+application, and the circle/pill width morph.
 `MainWindow.RecordButtonAnimations.cs` is the XAML-facing adapter.
 
 Recording button command execution and preview-state logging after a recording
@@ -1928,13 +1930,12 @@ Pure recording-state lockout decisions now live in
 capture/audio control enablement, analog gain enablement, transition button
 enablement, FFmpeg button enablement, and settled record-button content
 visibility. Recording-state UI projection now lives in
-`Sussudio/Controllers/RecordingStatePresentationController.cs`: record-button
-content application, recording glow/pulse storyboards, width animation handoff,
-and recording-time side effects.
+`Sussudio/Controllers/RecordingStatePresentationController.cs`: ViewModel-derived
+lockout/HDR/title/audio-meter policy application and delegation to
+`Sussudio/Controllers/RecordingButtonChromeController.cs` for record-button
+chrome.
 `MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter and
-recording property-name router, while
-`Sussudio/Controllers/RecordButtonAnimationController.cs` still owns only the
-circle/pill width morph.
+recording property-name router.
 
 Output-path, capture-option, shell-visibility, and live source-signal
 property-name routing now live in focused partials:
