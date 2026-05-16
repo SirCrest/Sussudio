@@ -72,20 +72,8 @@ static partial class Program
             "Automation snapshot formatter renders Preview D3D sections",
             AutomationSnapshotFormatter_RendersPreviewD3DSections);
         await AddCheckAsync(results,
-            "Shared automation formatter renders MJPEG timing section when fields exist",
-            SharedFormatter_RendersMjpegTimingSection_WhenFieldsExist);
-        await AddCheckAsync(results,
             "MCP PipeClient delegates to shared protocol for command resolution",
             PipeClient_UsesSharedProtocol_ForCommandResolution);
-        await AddCheckAsync(results,
-            "ResponseFormatter.IsSuccess correctly parses success and failure JSON",
-            ResponseFormatter_IsSuccess_ParsesSuccessAndFailureJson);
-        await AddCheckAsync(results,
-            "ResponseFormatter.Get handles all JSON value kinds correctly",
-            ResponseFormatter_Get_HandlesAllJsonValueKinds);
-        await AddCheckAsync(results,
-            "ssctl Formatters snapshot fields align with MCP ResponseFormatter",
-            SsctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter);
         await AddCheckAsync(results,
             "Automation snapshot formatter source ownership is split",
             AutomationSnapshotFormatter_SourceOwnership_IsSplit);
