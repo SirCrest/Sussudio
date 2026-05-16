@@ -473,7 +473,7 @@ Important entry points:
   baseline deltas; `.Logging.cs` owns the structured `RECORDING_INTEGRITY` log
   line.
 - `CaptureService.RecordingLifecycle.cs` owns public recording start
-  transition routing and shared start rollback ordering;
+  transition routing and delegates failed-start cleanup to the rollback owner;
   `CaptureService.RecordingStartState.cs` owns the private rollback-state holder;
   `CaptureService.RecordingStartFlashback.cs` owns Flashback recording backend
   startup and fast-path reuse; `CaptureService.RecordingStartLibAv.cs` owns
@@ -491,8 +491,9 @@ Important entry points:
   export finalization, live-edge boundary snapshots, and cancellation-result
   classification.
 - `CaptureService.RecordingRollback.cs` owns transient backend teardown after
-  recording-start failures, including best-effort sink, WASAPI, unified-video,
-  and deferred LibAv drain cleanup.
+  recording-start failures, including the failure log/last-failure update,
+  Flashback rollback accounting, rollback artifact cleanup, best-effort sink,
+  WASAPI, unified-video, and deferred LibAv drain cleanup.
 - `CaptureService.RuntimeSnapshots.cs` samples runtime snapshot inputs consumed by UI,
   automation, and verification, then delegates final DTO construction.
 - `CaptureService.RuntimeSnapshotAssembler.cs` owns final `CaptureRuntimeSnapshot` DTO construction

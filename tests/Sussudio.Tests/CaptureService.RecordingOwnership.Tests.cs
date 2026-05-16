@@ -25,8 +25,10 @@ static partial class Program
         AssertContains(lifecycleText, "await DisposeUnusableFlashbackRecordingBackendAsync(transitionToken)");
         AssertContains(lifecycleText, "await StartFlashbackRecordingAsync(settings, transitionToken, rollback)");
         AssertContains(lifecycleText, "await StartLibAvRecordingAsync(settings, transitionToken, rollback)");
-        AssertContains(lifecycleText, "CAPTURE_RECORDING_START_FAIL");
-        AssertContains(lifecycleText, "FLASHBACK_RECORDING_START_ROLLBACK_WARN");
+        AssertContains(lifecycleText, "await RollbackRecordingStartAsync(rollback, ex).ConfigureAwait(false);");
+        AssertContains(lifecycleText, "await RollbackRecordingStartAsync(rollback, ex).ConfigureAwait(false);\n                throw;");
+        AssertDoesNotContain(lifecycleText, "CAPTURE_RECORDING_START_FAIL");
+        AssertDoesNotContain(lifecycleText, "FLASHBACK_RECORDING_START_ROLLBACK_WARN");
         AssertDoesNotContain(lifecycleText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertDoesNotContain(lifecycleText, "HDR_NEGOTIATION");
         AssertContains(startStateText, "private sealed class RecordingStartRollbackState");
@@ -57,15 +59,31 @@ static partial class Program
     {
         var finalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
             .Replace("\r\n", "\n");
+        var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
+            .Replace("\r\n", "\n");
         var rollbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs")
             .Replace("\r\n", "\n");
 
+        AssertDoesNotContain(lifecycleText, "Recording start rollback cleanup failed");
+        AssertContains(rollbackText, "private async Task RollbackRecordingStartAsync(");
+        AssertContains(rollbackText, "CAPTURE_RECORDING_START_FAIL");
+        AssertContains(rollbackText, "RecordLastRecordingFailure(ex);");
+        AssertContains(rollbackText, "CancelRecordingStartRollback(\"start_recording_failed\")");
+        AssertContains(rollbackText, "FLASHBACK_RECORDING_START_ROLLBACK_WARN");
+        AssertContains(rollbackText, "ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_recording_start_fail\")");
+        AssertContains(rollbackText, "Recording start rollback cleanup failed");
+        AssertContains(rollbackText, "Transient recording backend cleanup failed during start rollback");
+        AssertContains(rollbackText, "_recordingStopwatch.Reset();");
         AssertDoesNotContain(finalizationText, "private async Task DisposeTransientRecordingBackendAsync(");
         AssertContains(rollbackText, "private async Task DisposeTransientRecordingBackendAsync(");
         AssertContains(rollbackText, "Transient recording sink stop failed during rollback");
         AssertContains(rollbackText, "Transient unified video dispose failed during rollback");
         AssertContains(rollbackText, "ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertContains(rollbackText, "reason: \"recording_start_rollback\"");
+        AssertOccursBefore(rollbackText, "CAPTURE_RECORDING_START_FAIL", "RecordLastRecordingFailure(ex);");
+        AssertOccursBefore(rollbackText, "RecordLastRecordingFailure(ex);", "await _artifactManager.RollbackAsync(rollback.RecordingContext)");
+        AssertOccursBefore(rollbackText, "rollback.FlashbackRecordingBackendLeaseHeld = false;", "ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_recording_start_fail\")");
+        AssertOccursBefore(rollbackText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);", "await DisposeTransientRecordingBackendAsync(");
 
         return Task.CompletedTask;
     }
