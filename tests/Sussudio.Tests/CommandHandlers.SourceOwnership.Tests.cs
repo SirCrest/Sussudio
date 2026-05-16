@@ -187,7 +187,9 @@ static partial class Program
             AssertDoesNotContain(captureControlsSource, $"SendSetValueAsync(context, \"{commandName}\"");
         }
 
-        AssertContains(transportSource, "private static Task<int> SendSetValueAsync(\n        CommandContext context,\n        AutomationCommandKind kind,");
-        AssertContains(transportSource, "HandleSimpleCommandAsync(\n            context,\n            kind,");
+        AssertContains(captureControlsSource, "private static Task<int> SendSetValueAsync(\n        CommandContext context,\n        AutomationCommandKind kind,");
+        AssertDoesNotContain(transportSource, "private static Task<int> SendSetValueAsync(");
+        AssertContains(captureControlsSource, "HandleSimpleCommandAsync(\n            context,\n            kind,");
+        AssertContains(transportSource, "context.Transport.SendCommandAsync(kind, payload)");
     }
 }

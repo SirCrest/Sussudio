@@ -65,4 +65,22 @@ internal static partial class CommandHandlers
         };
     }
 
+    private static Task<int> SendSetValueAsync(
+        CommandContext context,
+        AutomationCommandKind kind,
+        string propertyName,
+        object value,
+        string usage)
+    {
+        if (context.Rest.Count < 2)
+        {
+            throw new UsageException(usage);
+        }
+
+        return HandleSimpleCommandAsync(
+            context,
+            kind,
+            new Dictionary<string, object?> { [propertyName] = value },
+            includeData: false);
+    }
 }

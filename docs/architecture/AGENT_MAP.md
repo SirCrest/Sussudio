@@ -2259,11 +2259,11 @@ Primary owners:
   `tools/ssctl/CommandHandlers.DiagnosticSession.cs` owns
   `diagnostic-session` command parsing and runner invocation.
 - `tools/ssctl/CommandHandlers.CaptureControls.cs` owns preview/record,
-  screenshot/frame capture, and `set` capture/audio/output mutations. Fixed
-  ssctl automation routes should call shared enum overloads with
-  `AutomationCommandKind` values; labels and wire command IDs remain catalog
-  owned. Dynamic diagnostic-session runner command names stay string-based at
-  the transport seam.
+  screenshot/frame capture, and `set` capture/audio/output mutations, including
+  the shared set-value payload helper. Fixed ssctl automation routes should
+  call shared enum overloads with `AutomationCommandKind` values; labels and
+  wire command IDs remain catalog owned. Dynamic diagnostic-session runner
+  command names stay string-based at the transport seam.
 - `tools/ssctl/CommandHandlers.Device.cs` owns device refresh/list/select,
   audio-input selection, and custom-audio enablement.
 - `tools/ssctl/CommandHandlers.Window.cs` owns window close arming, window
@@ -2318,7 +2318,8 @@ Primary owners:
   value parsing.
 - `tools/ssctl/CommandHandlers.Transport.cs` owns shared command sending,
   `AutomationCommandKind` command resolution for handlers, and response
-  exit-code shaping.
+  exit-code shaping; command-family payload helpers stay with their owning
+  command partials.
 - `tools/ssctl/Formatters.cs` is the console projection facade only.
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration and
   section ordering only.

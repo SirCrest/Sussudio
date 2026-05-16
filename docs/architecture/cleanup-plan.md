@@ -283,7 +283,8 @@ the help facade, `tools/ssctl/SsctlHelpWriter.Sections.cs` owns
 operator-facing help section text, and `tools/ssctl/SsctlHelpWriter.Catalog.cs`
 owns catalog-backed help lines.
 `CommandHandlers.CaptureControls.cs` owns preview/record/screenshot/frame and
-`set` capture/audio/output mutations. `CommandHandlers.Device.cs` owns device
+`set` capture/audio/output mutations, including the shared set-value payload
+helper. `CommandHandlers.Device.cs` owns device
 refresh/list/select, audio-input selection, and custom-audio enablement.
 `CommandHandlers.Window.cs` owns window close arming, state/geometry actions,
 fullscreen toggles, and snap commands. `CommandHandlers.Recordings.cs` owns the
@@ -300,7 +301,8 @@ per-invocation command context,
 `CommandHandlers.Arguments.cs` owns usage validation and argument joining,
 `CommandHandlers.Json.cs` owns JSON detection/pretty-printing, `CommandHandlers.Values.cs`
 owns primitive/domain value parsing, and `CommandHandlers.Transport.cs` owns
-shared command sending plus response exit-code shaping.
+shared command sending plus response exit-code shaping. Command-family payload
+helpers stay with their owning command partials.
 
 `tools/ssctl/Formatters.cs` is only the projection facade for console output.
 Keep app snapshot orchestration and section ordering in `Formatters.Snapshot.cs`,
