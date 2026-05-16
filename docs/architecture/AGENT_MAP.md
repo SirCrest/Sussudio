@@ -2317,8 +2317,9 @@ Primary owners:
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs` owns pipe
   command result and exception types.
 - `tools/Common/AutomationPipeClient/AutomationSyntheticErrorResponse.cs` owns
-  the shared structured error-envelope factory used by ssctl and MCP transport
-  adapters.
+  the shared structured error-envelope factory and common transport/protocol
+  exception-to-envelope mapper used by ssctl and MCP adapters. Adapter-specific
+  unknown-command policy stays at the ssctl/MCP edges.
 - Fixed MCP routes whose commands exist in `AutomationCommandKind` should call
   the typed MCP `PipeClient.SendCommandAsync(AutomationCommandKind, ...)`
   overload at the pipe seam. Do not list converted routes here; the shared

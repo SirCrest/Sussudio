@@ -56,35 +56,9 @@ internal sealed class PipeTransport
             // exception class that should propagate.
             throw new UsageException(ex.Message);
         }
-        catch (AutomationPipeConnectException ex)
+        catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))
         {
-            return AutomationSyntheticErrorResponse.Create(ex.Message, ex.ErrorCode);
-        }
-        catch (AutomationPipeResponseTimeoutException ex)
-        {
-            return AutomationSyntheticErrorResponse.Create(ex.Message, "pipe-response-timeout");
-        }
-        catch (AutomationPipeProtocolException ex)
-        {
-            return AutomationSyntheticErrorResponse.Create(ex.Message, "pipe-protocol-error");
-        }
-        catch (JsonException ex)
-        {
-            return AutomationSyntheticErrorResponse.Create(
-                $"Automation pipe returned invalid JSON: {ex.Message}",
-                "pipe-invalid-json");
-        }
-        catch (IOException ex)
-        {
-            return AutomationSyntheticErrorResponse.Create(
-                $"Automation pipe I/O failed ({ex.GetType().Name}): {ex.Message}",
-                "pipe-io-error");
-        }
-        catch (OperationCanceledException ex)
-        {
-            return AutomationSyntheticErrorResponse.Create(
-                $"Automation pipe request canceled: {ex.Message}",
-                "pipe-canceled");
+            return AutomationSyntheticErrorResponse.Create(ex);
         }
     }
 

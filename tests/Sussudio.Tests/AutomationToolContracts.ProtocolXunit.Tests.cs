@@ -140,18 +140,33 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("\"pipe-connect-failed\"", pipeClientConnectErrorsText);
         Assert.Contains("public string ErrorCode { get; }", sharedClientText);
 
-        Assert.Contains("catch (AutomationPipeConnectException ex)", ssctlPipeText);
-        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, ex.ErrorCode)", ssctlPipeText);
+        Assert.Contains("catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))", ssctlPipeText);
+        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex)", ssctlPipeText);
+        Assert.Contains("throw new UsageException(ex.Message);", ssctlPipeText);
+        Assert.DoesNotContain("catch (AutomationPipeConnectException ex)", ssctlPipeText);
+        Assert.DoesNotContain("AutomationSyntheticErrorResponse.Create(ex.Message, ex.ErrorCode)", ssctlPipeText);
         Assert.DoesNotContain("private static JsonElement CreateSyntheticError", ssctlPipeText);
         Assert.DoesNotContain("Sussudio is not running or not responding. Start the app and try again.", ssctlPipeText);
 
-        Assert.Contains("catch (AutomationPipeConnectException ex)", mcpPipeText);
-        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, ex.ErrorCode)", mcpPipeText);
+        Assert.Contains("catch (ArgumentException ex)", mcpPipeText);
+        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, \"unknown-command\")", mcpPipeText);
+        Assert.Contains("catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))", mcpPipeText);
+        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex)", mcpPipeText);
+        Assert.DoesNotContain("catch (AutomationPipeConnectException ex)", mcpPipeText);
+        Assert.DoesNotContain("AutomationSyntheticErrorResponse.Create(ex.Message, ex.ErrorCode)", mcpPipeText);
         Assert.DoesNotContain("private static JsonElement CreateSyntheticError", mcpPipeText);
         Assert.DoesNotContain("Sussudio is not running or not responding. Start the app and try again.", mcpPipeText);
         Assert.Contains("internal static class AutomationSyntheticErrorResponse", sharedClientText);
         Assert.Contains("[\"CommandLifecycle\"] = \"failed\"", sharedClientText);
         Assert.Contains("[\"Snapshot\"] = null", sharedClientText);
+        Assert.Contains("public static bool CanCreateFromException(Exception exception)", sharedClientText);
+        Assert.Contains("public static JsonElement Create(Exception exception)", sharedClientText);
+        Assert.Contains("AutomationPipeConnectException ex => Create(ex.Message, ex.ErrorCode)", sharedClientText);
+        Assert.Contains("AutomationPipeResponseTimeoutException ex => Create(ex.Message, \"pipe-response-timeout\")", sharedClientText);
+        Assert.Contains("AutomationPipeProtocolException ex => Create(ex.Message, \"pipe-protocol-error\")", sharedClientText);
+        Assert.Contains("\"pipe-invalid-json\"", sharedClientText);
+        Assert.Contains("\"pipe-io-error\"", sharedClientText);
+        Assert.Contains("\"pipe-canceled\"", sharedClientText);
 
         Assert.Contains("using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;", diagnosticSessionCommandChannelText);
         Assert.Contains("SendCommandWithConnectRetryAsync(", diagnosticSessionCommandChannelText);
