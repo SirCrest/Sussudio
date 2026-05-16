@@ -538,13 +538,19 @@ now live in `Sussudio/Controllers/PreviewSurfacePresentationController.cs`,
 while `Sussudio/MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
 `Sussudio/Controllers/PreviewRendererStartupPlanBuilder.cs` owns renderer
 startup dimension/fps/HDR/min-present-interval planning.
-`Sussudio/Controllers/PreviewRendererHostController.cs` owns the hosted preview
-renderer state: D3D renderer instance, CPU fallback source, frame counters,
-renderer cadence interval, D3D/CPU start-stop flow, reinit safety telemetry,
-fresh SwapChainPanel replacement, and retired-renderer handoff during D3D
-renderer mode switches. `MainWindow.PreviewRenderer.cs` is the XAML-facing host
-adapter, and `Sussudio/MainWindow.PreviewRendererReinit.cs` keeps the small
-public/reinit adapter surface.
+`Sussudio/Controllers/PreviewRendererHostController.cs` owns hosted preview
+renderer context, public runtime state, counters, and simple renderer surface
+methods. `Sussudio/Controllers/PreviewRendererHostController.Lifecycle.cs` owns
+start/stop/shutdown flow, renderer startup planning, and cleanup.
+`Sussudio/Controllers/PreviewRendererHostController.D3D.cs` owns D3D renderer
+startup and event/failure handling.
+`Sussudio/Controllers/PreviewRendererHostController.Cpu.cs` owns CPU preview
+fallback attachment. `Sussudio/Controllers/PreviewRendererHostController.Reinit.cs`
+owns D3D reinit disposal, unsafe-window telemetry, stop tick accounting, fresh
+SwapChainPanel replacement, and retired-renderer handoff during D3D renderer
+mode switches. `MainWindow.PreviewRenderer.cs` is the XAML-facing host adapter,
+and `Sussudio/MainWindow.PreviewRendererReinit.cs` keeps the small public/reinit
+adapter surface.
 `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
 preview snapshot provider and gathers UI-thread-only state. Read-only preview
 runtime snapshot construction now lives in
