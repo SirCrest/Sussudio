@@ -676,13 +676,13 @@ enumeration orchestration in `DeviceService.cs`, format cache serialization in
 `DeviceService.AudioAssociation.cs`, and native XU interface path resolution in
 `DeviceService.NativeXu.cs`.
 
-Native XU Kernel Streaming calls are split across `KsExtensionUnitNative.*.cs`.
-Keep constants and DTOs in the root, SetupAPI interface enumeration in
-`.Interfaces.cs`, handle opening in `.Handles.cs`, topology node parsing in
-`.Topology.cs`, XU GET/SET transfer shapes in `.Transfers.cs`, and P/Invoke
-struct declarations in `.Interop.cs`. `tools/NativeXuAudioProbe` links this
-whole partial family explicitly, so update its project file with every new
-partial.
+Native XU Kernel Streaming calls are grouped under
+`Sussudio/Services/Capture/NativeXu/`. Keep constants and DTOs in the root,
+SetupAPI interface enumeration in `.Interfaces.cs`, handle opening in
+`.Handles.cs`, topology node parsing in `.Topology.cs`, XU GET/SET transfer
+shapes in `.Transfers.cs`, and P/Invoke struct declarations in `.Interop.cs`.
+`tools/NativeXuAudioProbe` links this whole partial family explicitly, so
+update its project file with every new partial.
 
 Native device enumeration ownership is grouped under
 `Sussudio/Services/Capture/DeviceDiscovery/`. Keep shared Media Foundation

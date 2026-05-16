@@ -5,12 +5,12 @@ static partial class Program
 {
     private static Task KsExtensionUnitNative_SourceOwnership_IsSplitByNativeBoundary()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/KsExtensionUnitNative.cs");
-        var interfacesText = ReadRepoFile("Sussudio/Services/Capture/KsExtensionUnitNative.Interfaces.cs");
-        var handlesText = ReadRepoFile("Sussudio/Services/Capture/KsExtensionUnitNative.Handles.cs");
-        var topologyText = ReadRepoFile("Sussudio/Services/Capture/KsExtensionUnitNative.Topology.cs");
-        var transfersText = ReadRepoFile("Sussudio/Services/Capture/KsExtensionUnitNative.Transfers.cs");
-        var interopText = ReadRepoFile("Sussudio/Services/Capture/KsExtensionUnitNative.Interop.cs");
+        var rootText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.cs");
+        var interfacesText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.Interfaces.cs");
+        var handlesText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.Handles.cs");
+        var topologyText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.Topology.cs");
+        var transfersText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.Transfers.cs");
+        var interopText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.Interop.cs");
 
         AssertContains(rootText, "internal static partial class KsExtensionUnitNative");
         AssertContains(rootText, "internal readonly record struct KsInterfacePath");
@@ -37,12 +37,12 @@ static partial class Program
             "NativeXuAudioProbe.csproj"));
         foreach (var include in new[]
         {
-            @"..\..\Sussudio\Services\Capture\KsExtensionUnitNative.cs",
-            @"..\..\Sussudio\Services\Capture\KsExtensionUnitNative.Handles.cs",
-            @"..\..\Sussudio\Services\Capture\KsExtensionUnitNative.Interfaces.cs",
-            @"..\..\Sussudio\Services\Capture\KsExtensionUnitNative.Interop.cs",
-            @"..\..\Sussudio\Services\Capture\KsExtensionUnitNative.Topology.cs",
-            @"..\..\Sussudio\Services\Capture\KsExtensionUnitNative.Transfers.cs"
+            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.cs",
+            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Handles.cs",
+            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Interfaces.cs",
+            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Interop.cs",
+            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Topology.cs",
+            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Transfers.cs"
         })
         {
             AssertEqual(1, CountCompileInclude(probeIncludes, include), $"NativeXuAudioProbe links {include}");
@@ -50,4 +50,7 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static string ReadKsExtensionUnitNativeFile(string fileName) =>
+        ReadRepoFile($"Sussudio/Services/Capture/NativeXu/{fileName}");
 }

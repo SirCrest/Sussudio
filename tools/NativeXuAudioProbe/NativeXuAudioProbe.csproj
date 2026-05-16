@@ -13,12 +13,12 @@
     <Compile Include="..\..\Sussudio\Services\Audio\NativeXuAudioControlService.cs" Link="Shared\Services\Audio\NativeXuAudioControlService.cs" />
     <Compile Include="..\..\Sussudio\Services\Audio\NativeXuAudioControlService.Profiles.cs" Link="Shared\Services\Audio\NativeXuAudioControlService.Profiles.cs" />
     <Compile Include="..\..\Sussudio\Services\Audio\NativeXuAudioControlService.Transport.cs" Link="Shared\Services\Audio\NativeXuAudioControlService.Transport.cs" />
-    <Compile Include="..\..\Sussudio\Services\Capture\KsExtensionUnitNative.cs" Link="Shared\Services\Capture\KsExtensionUnitNative.cs" />
-    <Compile Include="..\..\Sussudio\Services\Capture\KsExtensionUnitNative.Handles.cs" Link="Shared\Services\Capture\KsExtensionUnitNative.Handles.cs" />
-    <Compile Include="..\..\Sussudio\Services\Capture\KsExtensionUnitNative.Interfaces.cs" Link="Shared\Services\Capture\KsExtensionUnitNative.Interfaces.cs" />
-    <Compile Include="..\..\Sussudio\Services\Capture\KsExtensionUnitNative.Interop.cs" Link="Shared\Services\Capture\KsExtensionUnitNative.Interop.cs" />
-    <Compile Include="..\..\Sussudio\Services\Capture\KsExtensionUnitNative.Topology.cs" Link="Shared\Services\Capture\KsExtensionUnitNative.Topology.cs" />
-    <Compile Include="..\..\Sussudio\Services\Capture\KsExtensionUnitNative.Transfers.cs" Link="Shared\Services\Capture\KsExtensionUnitNative.Transfers.cs" />
+    <Compile Include="..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.cs" Link="Shared\Services\Capture\NativeXu\KsExtensionUnitNative.cs" />
+    <Compile Include="..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Handles.cs" Link="Shared\Services\Capture\NativeXu\KsExtensionUnitNative.Handles.cs" />
+    <Compile Include="..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Interfaces.cs" Link="Shared\Services\Capture\NativeXu\KsExtensionUnitNative.Interfaces.cs" />
+    <Compile Include="..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Interop.cs" Link="Shared\Services\Capture\NativeXu\KsExtensionUnitNative.Interop.cs" />
+    <Compile Include="..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Topology.cs" Link="Shared\Services\Capture\NativeXu\KsExtensionUnitNative.Topology.cs" />
+    <Compile Include="..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Transfers.cs" Link="Shared\Services\Capture\NativeXu\KsExtensionUnitNative.Transfers.cs" />
     <Compile Include="..\..\Sussudio\Services\Contracts\ISourceSignalTelemetryProvider.cs" Link="Shared\Services\Contracts\ISourceSignalTelemetryProvider.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.AnalogGain.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.AnalogGain.cs" />
