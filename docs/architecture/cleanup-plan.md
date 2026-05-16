@@ -2442,10 +2442,11 @@ should use `DiagnosticSessionCommandChannel` typed `AutomationCommandKind`
 sends.
 
 Diagnostic-session cleanup mutations now live in
-`tools/Common/DiagnosticSessionCleanupActions.cs`. The root owns recording stop
-for verification and the public cleanup flow through
-`AutomationCommandKind.SetRecordingEnabled`. Flashback playback go-live
-restore, preview stop, and Flashback enable-state restore live beside it in
+`tools/Common/DiagnosticSessionCleanupActions.cs`. The root owns the public
+cleanup flow and ordering. Recording stop for verification lives in
+`DiagnosticSessionCleanupActions.Recording.cs` through typed
+`AutomationCommandKind.SetRecordingEnabled`. Flashback playback go-live restore,
+preview stop, and Flashback enable-state restore live beside it in
 `DiagnosticSessionCleanupActions.StateRestore.cs` through typed
 `AutomationCommandKind.FlashbackAction`, `SetPreviewEnabled`, and
 `SetFlashbackEnabled` sends. The cleanup result record lives in
@@ -2647,6 +2648,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`
 - `DiagnosticSessionBackgroundTasks.Models.cs`
 - `DiagnosticSessionCleanupActions.cs`
+- `DiagnosticSessionCleanupActions.Recording.cs`
 - `DiagnosticSessionCleanupActions.StateRestore.cs`
 - `DiagnosticSessionCleanupActions.Models.cs`
 - `DiagnosticSessionCleanupPolicy.cs`

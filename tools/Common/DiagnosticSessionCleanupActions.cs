@@ -1,6 +1,4 @@
 using System.Text.Json;
-using Sussudio.Models;
-using static Sussudio.Tools.AutomationSnapshotFormatter;
 
 namespace Sussudio.Tools;
 
@@ -20,38 +18,15 @@ internal static partial class DiagnosticSessionCleanupActions
         Action<string> setStage,
         Action<Exception, string> recordTerminalException)
     {
-        var stoppedRecordingForVerification = false;
-        var shouldStopRecordingForVerification = startedRecording && options.VerifyRecording;
-        if (startedRecording && (shouldStopRecordingForVerification || !options.LeaveRunning))
-        {
-            try
-            {
-                setStage("cleanup-stop-recording");
-                const int recordingCleanupTimeoutMs = 300_000;
-                using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs));
-                var stopResponse = await commandChannel.SendWithTokenAsync(
-                        AutomationCommandKind.SetRecordingEnabled,
-                        new Dictionary<string, object?> { ["enabled"] = false },
-                        recordingCleanupTimeoutMs,
-                        false,
-                        cleanupCts.Token)
-                    .ConfigureAwait(false);
-                actions.Add(shouldStopRecordingForVerification && options.LeaveRunning
-                    ? "recording stopped for verification"
-                    : "recording stopped");
-                stoppedRecordingForVerification = shouldStopRecordingForVerification &&
-                                                   IsSuccess(stopResponse);
-                if (IsSuccess(stopResponse))
-                {
-                    await tryWaitWithTokenAsync("RecordingStopped", recordingCleanupTimeoutMs, cleanupCts.Token)
-                        .ConfigureAwait(false);
-                }
-            }
-            catch (Exception ex)
-            {
-                recordTerminalException(ex, "cleanup-stop-recording");
-            }
-        }
+        var stoppedRecordingForVerification = await StopRecordingForCleanupAsync(
+                options,
+                startedRecording,
+                actions,
+                commandChannel,
+                tryWaitWithTokenAsync,
+                setStage,
+                recordTerminalException)
+            .ConfigureAwait(false);
 
         if (!options.LeaveRunning)
         {

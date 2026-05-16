@@ -69,7 +69,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback recording preview cycle preview stopped");
         AssertContains(diagnosticSessionText, "const int recordingCleanupTimeoutMs = 300_000;");
-        AssertContains(diagnosticSessionText, "\"SetRecordingEnabled\",");
+        AssertContains(diagnosticSessionText, "AutomationCommandKind.SetRecordingEnabled,");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"enabled\"] = false }");
         AssertContains(diagnosticSessionText, "recordingCleanupTimeoutMs,");
         AssertContains(diagnosticSessionText, "internal static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");

@@ -2671,9 +2671,11 @@ Primary owners:
   associated readiness conditions. Keep fixed setup mutations on
   `DiagnosticSessionCommandChannel` typed `AutomationCommandKind` sends.
 - `tools/Common/DiagnosticSessionCleanupActions.cs` owns diagnostic-session
-  cleanup flow and recording stop for verification through
-  `AutomationCommandKind.SetRecordingEnabled`. Keep cleanup stage/action names
-  stable in the cleanup family.
+  cleanup flow and ordering. Keep cleanup stage/action names stable in the
+  cleanup family.
+- `tools/Common/DiagnosticSessionCleanupActions.Recording.cs` owns
+  diagnostic-session recording stop for verification through typed
+  `AutomationCommandKind.SetRecordingEnabled`.
 - `tools/Common/DiagnosticSessionCleanupActions.StateRestore.cs` owns
   Flashback playback go-live restore, preview stop, and Flashback enable-state
   restore through typed `AutomationCommandKind.FlashbackAction`,
