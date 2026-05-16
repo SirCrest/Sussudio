@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 
 namespace Sussudio.Tools.Ssctl;
@@ -24,8 +25,8 @@ internal static partial class CommandHandlers
             "diagnostic-session" or "session" => HandleDiagnosticSessionAsync(context),
             "preview" => HandlePreviewAsync(context),
             "record" => HandleRecordAsync(context),
-            "screenshot" => HandleCaptureAsync(context, "CaptureWindowScreenshot", "temp/window_screenshot.png"),
-            "frame" => HandleCaptureAsync(context, "CapturePreviewFrame", "temp/preview_capture.bmp"),
+            "screenshot" => HandleCaptureAsync(context, AutomationCommandKind.CaptureWindowScreenshot, "temp/window_screenshot.png"),
+            "frame" => HandleCaptureAsync(context, AutomationCommandKind.CapturePreviewFrame, "temp/preview_capture.bmp"),
             "recordings" => HandleRecordingsAsync(context),
             "set" => HandleSetAsync(context),
             "device" => HandleDeviceAsync(context),

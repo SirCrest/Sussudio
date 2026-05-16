@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -25,7 +26,7 @@ public static partial class PreviewFrameCaptureTools
             ["outputPath"] = effectiveOutputPath
         };
 
-        var response = await pipeClient.SendCommandAsync("CapturePreviewFrame", payload).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, AutomationSnapshotFormatter.Get(response, "Message", "Command failed."));

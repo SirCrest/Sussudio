@@ -199,7 +199,8 @@ static partial class Program
         AssertContains(rootText, "public static partial class PreviewFrameCaptureTools");
         AssertContains(rootText, "public static async Task<CallToolResult> capture_preview_frame");
         AssertContains(rootText, "Path.Combine(Environment.CurrentDirectory, \"temp\", \"preview_capture.bmp\")");
-        AssertContains(rootText, "SendCommandAsync(\"CapturePreviewFrame\", payload)");
+        AssertContains(rootText, "SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload)");
+        AssertDoesNotContain(rootText, "SendCommandAsync(\"CapturePreviewFrame\", payload)");
         AssertContains(rootText, "BuildPreviewFrameCaptureText(data)");
         AssertDoesNotContain(rootText, "new StringBuilder()");
         AssertDoesNotContain(rootText, "LuminanceHistogram");

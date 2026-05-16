@@ -9,7 +9,7 @@ internal static partial class CommandHandlers
 {
     private static Task<int> SendSetValueAsync(
         CommandContext context,
-        string commandName,
+        AutomationCommandKind kind,
         string propertyName,
         object value,
         string usage)
@@ -21,7 +21,7 @@ internal static partial class CommandHandlers
 
         return HandleSimpleCommandAsync(
             context,
-            commandName,
+            kind,
             new Dictionary<string, object?> { [propertyName] = value },
             includeData: false);
     }

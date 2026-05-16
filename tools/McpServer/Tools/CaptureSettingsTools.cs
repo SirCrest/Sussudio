@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using Sussudio.Models;
 
 namespace McpServer.Tools;
 
@@ -24,15 +25,15 @@ public static class CaptureSettingsTools
         => await ToolCommandFormatter.ExecuteBatchResultAsync(
                 pipeClient,
                 "No capture setting changes requested.",
-                ToolCommandFormatter.Optional("SetResolution", "SetResolution", "resolution", resolution),
-                ToolCommandFormatter.Optional("SetFrameRate", "SetFrameRate", "frameRate", frameRate),
-                ToolCommandFormatter.Optional("SetVideoFormat", "SetVideoFormat", "videoFormat", videoFormat),
-                ToolCommandFormatter.Optional("SetRecordingFormat", "SetRecordingFormat", "format", format),
-                ToolCommandFormatter.Optional("SetQuality", "SetQuality", "quality", quality),
-                ToolCommandFormatter.Optional("SetCustomBitrate", "SetCustomBitrate", "bitrateMbps", bitrateMbps),
-                ToolCommandFormatter.Optional("SetPreset", "SetPreset", "preset", preset),
-                ToolCommandFormatter.Optional("SetSplitEncodeMode", "SetSplitEncodeMode", "splitEncodeMode", splitEncodeMode),
-                ToolCommandFormatter.Optional("SetMjpegDecoderCount", "SetMjpegDecoderCount", "decoderCount", mjpegDecoderCount))
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetResolution, "SetResolution", "resolution", resolution),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetFrameRate, "SetFrameRate", "frameRate", frameRate),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetVideoFormat, "SetVideoFormat", "videoFormat", videoFormat),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetRecordingFormat, "SetRecordingFormat", "format", format),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetQuality, "SetQuality", "quality", quality),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetCustomBitrate, "SetCustomBitrate", "bitrateMbps", bitrateMbps),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetPreset, "SetPreset", "preset", preset),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetSplitEncodeMode, "SetSplitEncodeMode", "splitEncodeMode", splitEncodeMode),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetMjpegDecoderCount, "SetMjpegDecoderCount", "decoderCount", mjpegDecoderCount))
             .ConfigureAwait(false);
 
 }

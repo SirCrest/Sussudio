@@ -15,6 +15,7 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.PresentMon.cs"), "HandlePresentMonAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.PresentMon.cs"), "TryResolvePreviewSwapChainAddressAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.CaptureControls.cs"), "HandleSetAsync");
+        AssertSsctlCapturePipelineRoutingUsesAutomationCommandKinds();
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "HandleDeviceAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"RefreshDevices\"");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Device.cs"), "\"GetCaptureOptions\"");
@@ -100,5 +101,52 @@ static partial class Program
             "old ssctl device/window grab-bag removed");
 
         return Task.CompletedTask;
+    }
+
+    private static void AssertSsctlCapturePipelineRoutingUsesAutomationCommandKinds()
+    {
+        var rootSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs");
+        var captureControlsSource = ReadRepoFile("tools/ssctl/CommandHandlers.CaptureControls.cs");
+        var transportSource = ReadRepoFile("tools/ssctl/CommandHandlers.Transport.cs");
+
+        AssertContains(rootSource, "HandleCaptureAsync(context, AutomationCommandKind.CaptureWindowScreenshot");
+        AssertContains(rootSource, "HandleCaptureAsync(context, AutomationCommandKind.CapturePreviewFrame");
+        AssertDoesNotContain(rootSource, "HandleCaptureAsync(context, \"CaptureWindowScreenshot\"");
+        AssertDoesNotContain(rootSource, "HandleCaptureAsync(context, \"CapturePreviewFrame\"");
+
+        AssertContains(captureControlsSource, "HandleSimpleCommandAsync(\n            context,\n            AutomationCommandKind.SetPreviewEnabled,");
+        AssertContains(captureControlsSource, "HandleSimpleCommandAsync(\n            context,\n            AutomationCommandKind.SetRecordingEnabled,");
+        AssertContains(captureControlsSource, "private static Task<int> HandleCaptureAsync(CommandContext context, AutomationCommandKind kind, string defaultPath)");
+        AssertContains(captureControlsSource, "HandleSimpleCommandAsync(\n            context,\n            kind,");
+
+        foreach (var commandName in new[]
+        {
+            "SetResolution",
+            "SetFrameRate",
+            "SetRecordingFormat",
+            "SetQuality",
+            "SetCustomBitrate",
+            "SetPreset",
+            "SetSplitEncodeMode",
+            "SetVideoFormat",
+            "SetMjpegDecoderCount",
+            "SetHdrEnabled",
+            "SetTrueHdrPreviewEnabled",
+            "SetAudioEnabled",
+            "SetAudioPreviewEnabled",
+            "SetPreviewVolume",
+            "SetDeviceAudioMode",
+            "SetAnalogAudioGain",
+            "SetOutputPath",
+            "SetShowAllCaptureOptions",
+            "SetMicrophoneEnabled"
+        })
+        {
+            AssertContains(captureControlsSource, $"SendSetValueAsync(context, AutomationCommandKind.{commandName},");
+            AssertDoesNotContain(captureControlsSource, $"SendSetValueAsync(context, \"{commandName}\"");
+        }
+
+        AssertContains(transportSource, "private static Task<int> SendSetValueAsync(\n        CommandContext context,\n        AutomationCommandKind kind,");
+        AssertContains(transportSource, "HandleSimpleCommandAsync(\n            context,\n            kind,");
     }
 }

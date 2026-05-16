@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -22,7 +23,7 @@ public static class RecordingTools
 
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
-                "SetRecordingEnabled",
+                AutomationCommandKind.SetRecordingEnabled,
                 "SetRecordingEnabled",
                 payload)
             .ConfigureAwait(false);

@@ -1478,7 +1478,9 @@ Primary current owners:
   D3D pending-frame and recording/Flashback queued lease return tests.
 - `tests/Sussudio.Tests/McpToolSurface.Tests.cs` owns MCP surface compatibility
   checks that span raw app state, capture options, capture settings, and UI
-  settings tools.
+  settings tools. It also owns source guards that capture/pipeline-facing MCP
+  tools route through `AutomationCommandKind` enum overloads while preserving
+  existing command labels and wire IDs.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` is now the
   MCP command-routing test family marker shell. Keep route/formatter assertions
   in the focused `CommandRouting.Capture`, `CommandRouting.Host`,
@@ -2064,7 +2066,10 @@ Primary owners:
   `tools/ssctl/CommandHandlers.DiagnosticSession.cs` owns
   `diagnostic-session` command parsing and runner invocation.
 - `tools/ssctl/CommandHandlers.CaptureControls.cs` owns preview/record,
-  screenshot/frame capture, and `set` capture/audio/output mutations.
+  screenshot/frame capture, and `set` capture/audio/output mutations. These
+  capture/pipeline routes should call the shared enum overloads with
+  `AutomationCommandKind` values; labels and wire command IDs remain catalog
+  owned.
 - `tools/ssctl/CommandHandlers.Device.cs` owns device refresh/list/select,
   audio-input selection, and custom-audio enablement.
 - `tools/ssctl/CommandHandlers.Window.cs` owns window close arming, window
@@ -2117,8 +2122,9 @@ Primary owners:
   owns primitive parsing, Flashback numeric validation, on/off and show/hide
   parsing, recording format normalization, snap action mapping, and assertion
   value parsing.
-- `tools/ssctl/CommandHandlers.Transport.cs` owns shared command sending and
-  response exit-code shaping.
+- `tools/ssctl/CommandHandlers.Transport.cs` owns shared command sending,
+  `AutomationCommandKind` command resolution for handlers, and response
+  exit-code shaping.
 - `tools/ssctl/Formatters.cs` is the console projection facade only.
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration and
   section ordering only.
@@ -2209,8 +2215,8 @@ Primary owners:
   `tools/McpServer/Tools/VerificationTools.Parsing.cs` owns verification lookup
   from `Data.Verification` and `Snapshot.LastVerification`.
 - `tools/McpServer/Tools/PreviewFrameCaptureTools.cs` owns the public preview
-  frame-capture MCP entry point, default output path, payload shaping, command
-  routing, and failure/missing-data response handling.
+  frame-capture MCP entry point, default output path, payload shaping, enum
+  command routing, and failure/missing-data response handling.
   `tools/McpServer/Tools/PreviewFrameCaptureTools.Rendering.cs` owns the
   operator-facing report layout and section ordering.
   `tools/McpServer/Tools/PreviewFrameCaptureTools.Histogram.cs` owns 16-bin

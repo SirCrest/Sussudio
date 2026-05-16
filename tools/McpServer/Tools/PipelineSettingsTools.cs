@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using Sussudio.Models;
 
 namespace McpServer.Tools;
 
@@ -19,11 +20,11 @@ public static class PipelineSettingsTools
         => await ToolCommandFormatter.ExecuteBatchResultAsync(
                 pipeClient,
                 "No pipeline setting changes requested.",
-                ToolCommandFormatter.Optional("SetHdrEnabled", "SetHdrEnabled", "enabled", hdrEnabled),
-                ToolCommandFormatter.Optional("SetTrueHdrPreviewEnabled", "SetTrueHdrPreviewEnabled", "enabled", trueHdrPreviewEnabled),
-                ToolCommandFormatter.Optional("SetAudioEnabled", "SetAudioEnabled", "enabled", audioEnabled),
-                ToolCommandFormatter.Optional("SetAudioPreviewEnabled", "SetAudioPreviewEnabled", "enabled", audioPreviewEnabled),
-                ToolCommandFormatter.Optional("SetOutputPath", "SetOutputPath", "outputPath", outputPath))
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetHdrEnabled, "SetHdrEnabled", "enabled", hdrEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetTrueHdrPreviewEnabled, "SetTrueHdrPreviewEnabled", "enabled", trueHdrPreviewEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioEnabled, "SetAudioEnabled", "enabled", audioEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioPreviewEnabled, "SetAudioPreviewEnabled", "enabled", audioPreviewEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetOutputPath, "SetOutputPath", "outputPath", outputPath))
             .ConfigureAwait(false);
 
     [McpServerTool, Description("Set device audio mode to HDMI or analog")]
@@ -32,7 +33,7 @@ public static class PipelineSettingsTools
         [Description("Audio mode: hdmi or analog")] string mode)
     {
         var payload = new Dictionary<string, object?> { ["mode"] = mode.ToLowerInvariant() };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, "SetDeviceAudioMode", "SetDeviceAudioMode", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetDeviceAudioMode, "SetDeviceAudioMode", payload).ConfigureAwait(false);
     }
 
     [McpServerTool, Description("Set analog audio input gain (0-100%)")]
@@ -41,7 +42,7 @@ public static class PipelineSettingsTools
         [Description("Gain value as a percentage (0-100)")] double gainPercent)
     {
         var payload = new Dictionary<string, object?> { ["gain"] = gainPercent };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, "SetAnalogAudioGain", "SetAnalogAudioGain", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetAnalogAudioGain, "SetAnalogAudioGain", payload).ConfigureAwait(false);
     }
 
 }

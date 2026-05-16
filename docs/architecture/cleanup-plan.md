@@ -434,7 +434,10 @@ focused `CommandHandlers.Routing.*.Tests.cs` files, with source ownership kept
 separate in `CommandHandlers.SourceOwnership.Tests.cs`. Captured ssctl
 `request.command` ID assertions now flow through `AssertSsctlCommandRequest`,
 which delegates to the shared golden-table-backed `AssertAutomationCommandId`
-helper instead of duplicating numeric IDs in routing tests.
+helper instead of duplicating numeric IDs in routing tests. Capture/pipeline
+source guards also live in `CommandHandlers.SourceOwnership.Tests.cs`; they
+require `AutomationCommandKind` enum overloads at routing call sites while
+leaving labels and wire IDs catalog-backed.
 `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` is now only the
 architecture-doc test family marker shell. AGENT_MAP reference resolution,
 test-owner code-span coverage, automation consumer checklist coverage,
@@ -522,7 +525,10 @@ MCP command-routing test family marker shell. MCP command-routing coverage is
 split into capture, host/pipe, recording, formatter batching, device, pipeline,
 UI, and verification owner files. Captured `request.command` ID assertions now
 flow through `AssertAutomationCommandId`, which reads the golden command table
-instead of duplicating numeric IDs in routing tests.
+instead of duplicating numeric IDs in routing tests. Cross-tool source guards
+in `McpToolSurface.Tests.cs` require capture/pipeline-facing MCP call sites to
+use `AutomationCommandKind` enum overloads while preserving existing labels
+and wire IDs.
 
 First-load startup, first-frame uncloak scheduling, initial ViewModel/device
 refresh, automation pipe hosting, and the launch entrance trigger now live in
@@ -2119,7 +2125,8 @@ assertion JSON parsing and clone lifetime safety in
 `Snapshot.LastVerification` lookup in `VerificationTools.Parsing.cs`.
 Preview frame capture MCP reporting is split without changing visible text:
 keep the public `capture_preview_frame` entry point, default output path,
-payload, and `CapturePreviewFrame` routing in `PreviewFrameCaptureTools.cs`;
+payload, and enum-backed `CapturePreviewFrame` routing in
+`PreviewFrameCaptureTools.cs`;
 keep report section layout in `PreviewFrameCaptureTools.Rendering.cs`; keep
 16-bin histogram math/rendering in `PreviewFrameCaptureTools.Histogram.cs`; and
 keep anomaly diagnosis policy and aspect checks in

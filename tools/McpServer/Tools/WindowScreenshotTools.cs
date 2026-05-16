@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -24,7 +25,7 @@ public static class WindowScreenshotTools
             ["outputPath"] = effectiveOutputPath
         };
 
-        var response = await pipeClient.SendCommandAsync("CaptureWindowScreenshot", payload).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.CaptureWindowScreenshot, payload).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, AutomationSnapshotFormatter.Get(response, "Message", "Screenshot failed."));
