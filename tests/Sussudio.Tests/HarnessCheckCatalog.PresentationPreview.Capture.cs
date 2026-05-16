@@ -102,6 +102,9 @@ static partial class Program
             "Preview startup tolerates missing audio capture devices",
             PreviewStartup_ToleratesMissingAudioCaptureDevices);
         await AddCheckAsync(results,
+            "Capture service preview lifecycle lives in focused partials",
+            CaptureService_PreviewLifecycleLivesInFocusedPartials);
+        await AddCheckAsync(results,
             "Preview startup begins device discovery before recording capability probes finish",
             PreviewStartup_BeginsDeviceDiscoveryBeforeRecordingCapabilityProbesFinish);
         await AddCheckAsync(results,
