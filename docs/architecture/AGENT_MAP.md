@@ -976,7 +976,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs` owns
   automation preview enable/disable command ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Hdr.Tests.cs` owns
-  automation HDR/true-HDR preview enablement guard and ownership assertions.
+  automation HDR/true-HDR preview enablement guard assertions plus HDR mode
+  change side-effect ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.PreviewVolume.Tests.cs` owns
   preview-volume persistence and automation options surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
@@ -1957,8 +1958,10 @@ Primary current owners:
   and preferred-format ranking helpers used by frame-rate, resolution,
   capture-settings, and automation projections.
   `MainViewModel.FormatSelection.cs` owns pixel-format option building,
-  recording-format policy application to observable state, HDR toggle side
-  effects, and selected capture-format selection policy.
+  recording-format policy application to observable state, and selected
+  capture-format selection policy. `MainViewModel.HdrModeChanges.cs` owns
+  HDR toggle side effects: recording-time revert/status, mode option rebuilds,
+  immediate reinitialize scheduling, and settings persistence.
   `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs` owns pure recording
   codec filtering and selected-codec fallback policy shared by UI and automation.
   Video device enumeration and selected-device capability rebuilds stay in

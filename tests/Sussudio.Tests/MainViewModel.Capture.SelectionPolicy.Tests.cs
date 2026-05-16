@@ -729,11 +729,14 @@ static partial class Program
     private static Task FrameRateTimingPolicy_LivesInFocusedPartial()
     {
         var formatSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FormatSelection.cs").Replace("\r\n", "\n");
+        var hdrModeChangesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.HdrModeChanges.cs").Replace("\r\n", "\n");
         var timingText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateTiming.cs").Replace("\r\n", "\n");
 
         AssertContains(formatSelectionText, "private void UpdateSelectedFormat()");
         AssertContains(formatSelectionText, "private void RebuildVideoFormatOptions()");
-        AssertContains(formatSelectionText, "partial void OnIsHdrEnabledChanged(bool value)");
+        AssertDoesNotContain(formatSelectionText, "partial void OnIsHdrEnabledChanged(bool value)");
+        AssertContains(hdrModeChangesText, "/// HDR/SDR mode transition side effects for the capture pipeline.");
+        AssertContains(hdrModeChangesText, "partial void OnIsHdrEnabledChanged(bool value)");
         AssertDoesNotContain(formatSelectionText, "private FrameRateTimingFamily ResolvePreferredTimingFamily(");
         AssertDoesNotContain(formatSelectionText, "private static bool TryInferFrameRateTimingFamily(");
         AssertContains(timingText, "private FrameRateTimingFamily ResolvePreferredTimingFamily(");

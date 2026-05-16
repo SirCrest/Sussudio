@@ -2699,8 +2699,10 @@ Remaining `tools/Common` ownership:
    recording codec filtering and selected-codec fallback policy now live in
    `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs`, while
    `MainViewModel.FormatSelection.cs`
-   keeps collection mutation, HDR side effects, and selected capture-format
-   policy.
+   keeps collection mutation and selected capture-format policy, while
+   `MainViewModel.HdrModeChanges.cs` owns HDR toggle side effects: recording-time
+   revert/status, mode option rebuilds, immediate reinitialize scheduling, and
+   settings persistence.
    Late-arriving device format probe reconciliation, collection mutation,
    logging, and reinitialize dispatch live in
    `MainViewModel.DeviceFormatProbes.cs`; pure late-probe retarget decisions now
