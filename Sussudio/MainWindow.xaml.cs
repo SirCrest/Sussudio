@@ -21,6 +21,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         ViewModel = new MainViewModel();
+        InitializeWindowCloseRequestController();
         ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;
         ViewModel.FrameTimeOverlayVisibilityHandler = SetFrameTimeOverlayVisible;
         InitializeWindowTitleController();

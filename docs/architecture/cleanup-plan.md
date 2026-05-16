@@ -607,13 +607,17 @@ Window close lifecycle and native window helpers are now explicit:
 `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` owns close request
 flags, completion TCS, cleanup latch, close-in-progress classification, and
 automation close dispatch orchestration.
+`Sussudio/Controllers/Window/WindowCloseRequestController.cs` owns actual close
+request execution: `Close()`, completion timing after non-recording closes,
+close-in-progress success handling, COM `Application.Current.Exit()` fallback,
+and requested-state reset after unexpected failures.
 `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs` owns the
 recording finalization side effects during pre-close and post-close cleanup:
 the 120-second stop budget, `StopRecordingAndWaitAsync` wait race, timeout/
 failure breadcrumbs, status text, and shutdown-content dim/restore policy.
 `Sussudio/MainWindow.CloseLifecycle.cs` owns `AppWindow.Closing`,
-recording-aware pre-close cancellation/completion choreography, and the actual
-`Close()`/Exit fallback. `Sussudio/MainWindow.ShutdownCleanup.cs` owns `Closed`
+recording-aware pre-close cancellation/completion choreography, and the stable
+`RequestWindowClose()` adapter. `Sussudio/MainWindow.ShutdownCleanup.cs` owns `Closed`
 shutdown cleanup: timer stops, event detaches, preview shutdown, automation
 diagnostics disposal, NVML disposal, and ViewModel disposal.
 Native `AppWindow` lookup, ViewModel window handle handoff, minimum-size

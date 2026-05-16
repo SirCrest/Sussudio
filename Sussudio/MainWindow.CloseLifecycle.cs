@@ -12,7 +12,20 @@ public sealed partial class MainWindow
 {
     private readonly WindowCloseLifecycleController _windowCloseLifecycleController = new();
     private readonly WindowCloseRecordingFinalizationController _windowCloseRecordingFinalizationController = new();
+    private WindowCloseRequestController _windowCloseRequestController = null!;
     private bool _isWindowClosing => _windowCloseLifecycleController.IsClosing;
+
+    private void InitializeWindowCloseRequestController()
+    {
+        _windowCloseRequestController = new WindowCloseRequestController(new WindowCloseRequestControllerContext
+        {
+            LifecycleController = _windowCloseLifecycleController,
+            CloseWindow = Close,
+            ExitApplication = () => Application.Current.Exit(),
+            IsRecording = () => ViewModel.IsRecording,
+            IsRecordingTransitioning = () => ViewModel.IsRecordingTransitioning
+        });
+    }
 
     private void RegisterCloseLifecycle(Microsoft.UI.Windowing.AppWindow appWindow)
         => appWindow.Closing += MainWindow_Closing;
@@ -89,39 +102,5 @@ public sealed partial class MainWindow
         => _windowCloseLifecycleController.CompleteRequest(exception);
 
     private void RequestWindowClose()
-    {
-        if (!_windowCloseLifecycleController.TryMarkRequested())
-        {
-            return;
-        }
-
-        try
-        {
-            Close();
-            if (!_windowCloseLifecycleController.IsRecordingStopInProgress &&
-                !ViewModel.IsRecording &&
-                !ViewModel.IsRecordingTransitioning)
-            {
-                CompleteWindowCloseRequest();
-            }
-        }
-        catch (Exception ex) when (WindowCloseLifecycleController.IsCloseAlreadyInProgressException(ex))
-        {
-            Logger.Log($"Window close already in progress ({ex.GetType().Name}); treating close request as successful.");
-            CompleteWindowCloseRequest();
-        }
-        catch (System.Runtime.InteropServices.COMException ex)
-        {
-            Logger.Log($"Window.Close COMException (0x{ex.HResult:X8}); using Application.Current.Exit() fallback.");
-            CompleteWindowCloseRequest();
-            Application.Current.Exit();
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in MainWindow.RequestWindowClose: {ex.Message}");
-            _windowCloseLifecycleController.ResetRequestedAfterFailure();
-            CompleteWindowCloseRequest(ex);
-            throw;
-        }
-    }
+        => _windowCloseRequestController.RequestClose();
 }

@@ -842,13 +842,17 @@ Primary current owners:
   request flags, completion TCS, cleanup latch, recording-stop handoff flags,
   close-in-progress exception classification, and automation close dispatch
   orchestration.
+- `Sussudio/Controllers/Window/WindowCloseRequestController.cs` owns actual
+  close request execution: `Close()`, completion timing after non-recording
+  closes, close-in-progress success handling, COM `Application.Current.Exit()`
+  fallback, and requested-state reset after unexpected failures.
 - `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs` owns
   recording finalization side effects during pre-close and post-close cleanup:
   the 120-second stop budget, `StopRecordingAndWaitAsync` wait race, timeout/
   failure breadcrumbs, status text, and shutdown-content dim/restore policy.
 - `Sussudio/MainWindow.CloseLifecycle.cs` owns the XAML/AppWindow close adapter:
   `AppWindow.Closing`, recording-aware pre-close cancellation/completion
-  choreography, and the actual `Close()`/Exit fallback.
+  choreography, and the stable `RequestWindowClose()` adapter.
 - `Sussudio/MainWindow.ShutdownCleanup.cs` owns `Closed` shutdown cleanup:
   timer stops, event detaches, preview shutdown, automation diagnostics disposal,
   NVML disposal, and ViewModel disposal.

@@ -13,6 +13,7 @@ static partial class Program
         var automationHostAdapterText = ReadRepoFile("Sussudio/MainWindow.AutomationHost.cs").Replace("\r\n", "\n");
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
+        var closeRequestControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRequestController.cs").Replace("\r\n", "\n");
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
@@ -49,6 +50,7 @@ static partial class Program
         var documentedOwners = new[]
         {
             "Sussudio/Controllers/Window/WindowCloseLifecycleController.cs",
+            "Sussudio/Controllers/Window/WindowCloseRequestController.cs",
             "Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs",
             "Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs",
             "Sussudio/MainWindow.CloseLifecycle.cs",
@@ -69,7 +71,13 @@ static partial class Program
 
         AssertContains(closeLifecycleText, "private readonly WindowCloseLifecycleController _windowCloseLifecycleController = new();");
         AssertContains(closeLifecycleText, "private readonly WindowCloseRecordingFinalizationController _windowCloseRecordingFinalizationController = new();");
+        AssertContains(closeLifecycleText, "private WindowCloseRequestController _windowCloseRequestController = null!;");
         AssertContains(closeLifecycleText, "private bool _isWindowClosing => _windowCloseLifecycleController.IsClosing;");
+        AssertContains(closeLifecycleText, "private void InitializeWindowCloseRequestController()");
+        AssertContains(closeLifecycleText, "CloseWindow = Close,");
+        AssertContains(closeLifecycleText, "ExitApplication = () => Application.Current.Exit(),");
+        AssertContains(closeLifecycleText, "IsRecording = () => ViewModel.IsRecording,");
+        AssertContains(closeLifecycleText, "IsRecordingTransitioning = () => ViewModel.IsRecordingTransitioning");
         AssertContains(closeLifecycleText, "private void RegisterCloseLifecycle(Microsoft.UI.Windowing.AppWindow appWindow)");
         AssertContains(closeLifecycleText, "=> appWindow.Closing += MainWindow_Closing;");
         AssertContains(closeLifecycleText, "private async void MainWindow_Closing(");
@@ -96,7 +104,7 @@ static partial class Program
         AssertContains(closeLifecycleText, "public Task CloseAsync(CancellationToken cancellationToken = default)");
         AssertContains(closeLifecycleText, "=> _windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken);");
         AssertContains(closeLifecycleText, "private void RequestWindowClose()");
-        AssertContains(closeLifecycleText, "WindowCloseLifecycleController.IsCloseAlreadyInProgressException(ex)");
+        AssertContains(closeLifecycleText, "=> _windowCloseRequestController.RequestClose();");
         AssertContains(closeLifecycleControllerText, "internal sealed class WindowCloseLifecycleController");
         AssertContains(closeLifecycleControllerText, "private int _closeRequested;");
         AssertContains(closeLifecycleControllerText, "private int _cleanupStarted;");
@@ -108,6 +116,23 @@ static partial class Program
         AssertContains(closeLifecycleControllerText, "public Task CloseAsync(");
         AssertContains(closeLifecycleControllerText, "private Task GetCompletionTask(CancellationToken cancellationToken)");
         AssertContains(closeLifecycleControllerText, "public static bool IsCloseAlreadyInProgressException(Exception ex)");
+        AssertContains(closeRequestControllerText, "internal sealed class WindowCloseRequestControllerContext");
+        AssertContains(closeRequestControllerText, "public required WindowCloseLifecycleController LifecycleController { get; init; }");
+        AssertContains(closeRequestControllerText, "public required Action CloseWindow { get; init; }");
+        AssertContains(closeRequestControllerText, "public required Action ExitApplication { get; init; }");
+        AssertContains(closeRequestControllerText, "public required Func<bool> IsRecording { get; init; }");
+        AssertContains(closeRequestControllerText, "internal sealed class WindowCloseRequestController");
+        AssertContains(closeRequestControllerText, "public void RequestClose()");
+        AssertContains(closeRequestControllerText, "_context.LifecycleController.TryMarkRequested()");
+        AssertContains(closeRequestControllerText, "_context.CloseWindow();");
+        AssertContains(closeRequestControllerText, "_context.LifecycleController.IsRecordingStopInProgress");
+        AssertContains(closeRequestControllerText, "!_context.IsRecording()");
+        AssertContains(closeRequestControllerText, "!_context.IsRecordingTransitioning()");
+        AssertContains(closeRequestControllerText, "_context.LifecycleController.CompleteRequest();");
+        AssertContains(closeRequestControllerText, "WindowCloseLifecycleController.IsCloseAlreadyInProgressException(ex)");
+        AssertContains(closeRequestControllerText, "catch (COMException ex)");
+        AssertContains(closeRequestControllerText, "_context.ExitApplication();");
+        AssertContains(closeRequestControllerText, "_context.LifecycleController.ResetRequestedAfterFailure();");
         AssertContains(closeRecordingFinalizationControllerText, "internal sealed class WindowCloseRecordingFinalizationController");
         AssertContains(closeRecordingFinalizationControllerText, "private const int StopBudgetMs = 120_000;");
         AssertContains(closeRecordingFinalizationControllerText, "public async Task<bool> StopBeforeCloseAsync(");
@@ -164,8 +189,13 @@ static partial class Program
         AssertContains(nativeWindowControllerText, "public AppWindow GetAppWindow(Window window)");
         AssertContains(nativeWindowControllerText, "public void SetCloaked(IntPtr hwnd, bool cloaked)");
         AssertContains(nativeWindowControllerText, "private static extern int DwmSetWindowAttribute(");
+        AssertContains(mainWindowText, "ViewModel = new MainViewModel();");
+        AssertContains(mainWindowText, "InitializeWindowCloseRequestController();");
+        AssertOccursBefore(mainWindowText, "ViewModel = new MainViewModel();", "InitializeWindowCloseRequestController();");
+        AssertOccursBefore(mainWindowText, "InitializeWindowCloseRequestController();", "_automationHostLifecycleController = new WindowAutomationHostLifecycleController(");
         AssertContains(mainWindowText, "var appWindow = InitializeNativeShellWindow();");
         AssertContains(mainWindowText, "RegisterCloseLifecycle(appWindow);");
+        AssertOccursBefore(mainWindowText, "InitializeWindowCloseRequestController();", "RegisterCloseLifecycle(appWindow);");
         AssertContains(mainWindowText, "InitializeShellControllers();");
         AssertContains(mainWindowText, "Closed += MainWindow_Closed;");
         AssertDoesNotContain(mainWindowText, "WindowNative.GetWindowHandle(this);");
@@ -180,6 +210,10 @@ static partial class Program
         AssertDoesNotContain(closeLifecycleText, "private TaskCompletionSource<object?>? _windowCloseCompletion;");
         AssertDoesNotContain(closeLifecycleText, "private Task GetWindowCloseCompletionTask(CancellationToken cancellationToken)");
         AssertDoesNotContain(closeLifecycleText, "private static bool IsCloseAlreadyInProgressException(Exception ex)");
+        AssertDoesNotContain(closeLifecycleText, "WindowCloseLifecycleController.IsCloseAlreadyInProgressException(ex)");
+        AssertDoesNotContain(closeLifecycleText, "catch (System.Runtime.InteropServices.COMException ex)");
+        AssertDoesNotContain(closeLifecycleText, "Window.Close COMException");
+        AssertDoesNotContain(closeLifecycleText, "ResetRequestedAfterFailure();");
         AssertDoesNotContain(closeLifecycleText, "Task.WhenAny(");
         AssertDoesNotContain(closeLifecycleText, "StopBudgetMs");
         AssertDoesNotContain(closeLifecycleText, "StopRecordingAndWaitAsync");

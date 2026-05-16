@@ -92,6 +92,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs")
             .Replace("\r\n", "\n");
+        var closeRequestControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRequestController.cs")
+            .Replace("\r\n", "\n");
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs")
             .Replace("\r\n", "\n");
 
@@ -103,6 +105,10 @@ static partial class Program
         AssertContains(closeLifecycleText, "=> _windowCloseRecordingFinalizationController.StopBeforeCloseAsync(");
         AssertContains(closeLifecycleText, "RequestWindowClose();");
         AssertContains(closeLifecycleText, "_windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken)");
+        AssertContains(closeLifecycleText, "=> _windowCloseRequestController.RequestClose();");
+        AssertContains(closeRequestControllerText, "_context.CloseWindow();");
+        AssertContains(closeRequestControllerText, "_context.LifecycleController.CompleteRequest();");
+        AssertContains(closeRequestControllerText, "_context.ExitApplication();");
         AssertContains(closeLifecycleText, "CompleteWindowCloseRequest(new InvalidOperationException(ViewModel.StatusText));");
         AssertContains(closeLifecycleText, "CompleteWindowCloseRequest();");
         AssertContains(closeLifecycleControllerText, "private Task GetCompletionTask(CancellationToken cancellationToken)");
