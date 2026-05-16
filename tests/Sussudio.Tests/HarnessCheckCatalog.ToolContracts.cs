@@ -53,6 +53,9 @@ static partial class Program
             "Architecture agent map covers UI presentation ownership files",
             ArchitectureAgentMap_CoversUiPresentationOwnershipFiles);
         await AddCheckAsync(results,
+            "Architecture agent map covers CaptureService ownership files",
+            ArchitectureAgentMap_CoversCaptureRuntimeOwnershipFiles);
+        await AddCheckAsync(results,
             "Architecture agent map covers tool automation partial families with exact paths",
             ArchitectureAgentMap_CoversToolAutomationPartialFamiliesWithExactPaths);
         await AddCheckAsync(results,

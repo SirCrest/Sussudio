@@ -158,6 +158,15 @@ static partial class Program
             .OrderBy(file => file, StringComparer.OrdinalIgnoreCase);
     }
 
+    private static IEnumerable<string> EnumerateCaptureRuntimeOwnershipFiles(string repoRoot)
+    {
+        var captureDirectory = Path.Combine(repoRoot, "Sussudio", "Services", "Capture");
+        return EnumerateSourceFiles(captureDirectory, SearchOption.TopDirectoryOnly)
+            .Select(file => NormalizeRepoRelativePath(repoRoot, file))
+            .Where(file => GetRepoFileName(file).StartsWith("CaptureService", StringComparison.Ordinal))
+            .OrderBy(file => file, StringComparer.OrdinalIgnoreCase);
+    }
+
     private static bool AgentMapContainsExactCodeSpan(string agentMapText, string relativePath)
     {
         var normalizedPath = NormalizeProjectInclude(relativePath);
