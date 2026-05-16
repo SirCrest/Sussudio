@@ -9,12 +9,17 @@ static partial class Program
         var scenarioText = ReadDiagnosticSessionRunExecutionScenarioSource();
         var phaseRunnerText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.cs")
             .Replace("\r\n", "\n");
+        var phaseModelsText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.Models.cs")
+            .Replace("\r\n", "\n");
         var samplingText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(scenarioText, "private static Task<DiagnosticSessionScenarioPhaseResult> RunScenarioPhaseAsync(DiagnosticSessionScenarioPhaseContext context)");
         AssertContains(scenarioText, "DiagnosticSessionScenarioPhaseRunner.RunAsync(context)");
         AssertContains(phaseRunnerText, "internal static partial class DiagnosticSessionScenarioPhaseRunner");
+        AssertContains(phaseModelsText, "internal sealed class DiagnosticSessionScenarioPhaseContext");
+        AssertContains(phaseModelsText, "internal sealed record DiagnosticSessionScenarioPhaseResult(");
+        AssertContains(phaseModelsText, "internal sealed class DiagnosticSessionScenarioPhaseState");
         AssertContains(samplingText, "internal static partial class DiagnosticSessionScenarioPhaseRunner");
         AssertContains(scenarioText, "internal sealed class DiagnosticSessionScenarioPhaseContext");
         AssertContains(scenarioText, "internal sealed record DiagnosticSessionScenarioPhaseResult(");
@@ -35,6 +40,9 @@ static partial class Program
         AssertContains(phaseRunnerText, "DrainBackgroundTasksAfterFaultAsync(context, backgroundTasks, scenarioPhase)");
         AssertContains(samplingText, "private static async Task DrainBackgroundTasksAfterFaultAsync(");
         AssertContains(samplingText, "backgroundTasks.ObserveAfterFaultAsync(");
+        AssertDoesNotContain(phaseRunnerText, "internal sealed class DiagnosticSessionScenarioPhaseContext");
+        AssertDoesNotContain(phaseRunnerText, "internal sealed record DiagnosticSessionScenarioPhaseResult(");
+        AssertDoesNotContain(phaseRunnerText, "internal sealed class DiagnosticSessionScenarioPhaseState");
         AssertContains(contextText, "new DiagnosticSessionScenarioPhaseContext");
         AssertContains(executionText, "var scenarioPhaseContext = runContext.CreateScenarioPhaseContext(options, cancellationToken);");
         AssertContains(executionText, "var scenarioPhase = DiagnosticSessionScenarioPhaseResult.Empty;");

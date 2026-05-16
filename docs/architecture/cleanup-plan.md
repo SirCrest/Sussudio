@@ -2213,8 +2213,9 @@ post-cleanup evidence/result sequence for recording checks, post-run timeline
 and final snapshot capture, result-build handoff, and terminal live-state write.
 `DiagnosticSessionRunExecution.Scenario.cs` owns the scenario phase handoff,
 while `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario
-execution phase for setup/startup, sampling/completion delegation, fault drain
-delegation, and explicit phase context/state/result records.
+execution phase for setup/startup, sampling/completion delegation, and fault
+drain delegation. `DiagnosticSessionScenarioPhaseRunner.Models.cs` owns the
+explicit phase context/state/result records.
 `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owns scenario sampling and
 post-sampling completion: live-state sampling setup, sample-loop invocation,
 scenario background task awaits, recording-settings deferred await,
@@ -2776,6 +2777,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunExecution.Completion.cs`
 - `DiagnosticSessionRunExecution.Scenario.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
+- `DiagnosticSessionScenarioPhaseRunner.Models.cs`
 - `DiagnosticSessionRunExecution.ResultRequest.cs`
 - `ToolJsonOptions.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`
@@ -2795,7 +2797,8 @@ Remaining `tools/Common` ownership:
    post-cleanup evidence/result sequence,
    `DiagnosticSessionRunExecution.Scenario.cs` owns the scenario phase handoff,
    and `DiagnosticSessionScenarioPhaseRunner.cs` owns the main
-   scenario execution phase and explicit scenario result handoff, with
+   scenario execution phase, `DiagnosticSessionScenarioPhaseRunner.Models.cs`
+   owns the explicit scenario context/state/result handoff, with
    `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owning sampling,
    post-sampling background-task completion, rejected-export handling,
    PresentMon await, and fault drain. Scenario catalog, initial scenario setup, optional scenario
