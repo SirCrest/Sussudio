@@ -13,6 +13,18 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"flashback_storage\"");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"source_capture\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "var previewDiagnostic = TryBuildRealtimePreviewDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewDiagnosticEvaluation(");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"preview_scheduler\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"renderer\"");
+        AssertContains(diagnostics.DiagnosticEvaluationRealtimePreviewText, "\"present_display\"");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"preview_scheduler\"");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"renderer\"");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "\"present_display\"");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Preview scheduler failed to submit frames.");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Renderer pacing is the likely preview bottleneck.");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Present/display cadence is the likely preview bottleneck.");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationRealtimeText, "Present/display 1% low is below target.");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationText, "\"flashback_storage\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationText, "\"source_capture\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationText, "var sourceTarget =");

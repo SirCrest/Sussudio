@@ -206,7 +206,10 @@ orchestration and the final healthy/mixed fallback.
 `AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs` owns Flashback-specific
 diagnostic verdict ordering and summaries.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs` owns idle, warmup,
-recording/audio, source/MJPEG, preview, renderer, and present/display
+recording/audio, source/capture, source-signal, and MJPEG decode/reorder
+diagnostic verdict ordering.
+`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs` owns preview
+scheduler, renderer pacing, present/display cadence, and preview display 1% low
 diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs` owns diagnostic lane text
 formatting used by diagnostic verdicts.
