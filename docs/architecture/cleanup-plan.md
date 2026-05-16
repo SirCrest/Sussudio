@@ -810,11 +810,17 @@ preview-frame sink attachment, late Flashback playback preview wiring, shared
 D3D preview-device handoff, negotiated video getters, and cached MJPEG pipeline
 timing details.
 
-Preview start/stop lifecycle now lives in
-`Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`. That file owns
-video-preview start/stop transitions, retained-backend reuse checks, Flashback
-backend reuse policy, preview-start rollback, and preview pipeline disposal
-ordering.
+Preview lifecycle now lives in focused CaptureService partials:
+`Sussudio/Services/Capture/CaptureService.PreviewStart.cs` owns video-preview
+start transitions, retained-backend fast-path reattachment, preview-start
+rollback, and fresh preview backend startup ordering;
+`Sussudio/Services/Capture/CaptureService.PreviewStop.cs` owns video-preview
+stop transitions, keep-pipeline-alive detach semantics, and stopped-state/
+telemetry commit; `Sussudio/Services/Capture/CaptureService.PreviewReuse.cs`
+owns retained video/Flashback backend reuse checks and capture-settings cloning;
+`Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs` owns preview
+pipeline disposal ordering, deferred video cleanup, Flashback backend disposal,
+WASAPI disposal, and microphone cleanup.
 
 Recording integrity policy is now split under
 `Sussudio/Services/Capture/CaptureService.RecordingIntegrity*.cs`. The root

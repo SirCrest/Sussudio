@@ -14,7 +14,7 @@ static partial class Program
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.RecordingStartState.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
-            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
+            + "\n" + ReadCaptureServicePreviewLifecycleCodeWithoutCommentsOrStrings()
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             + "\n" + ReadCaptureServiceAudioCodeWithoutCommentsOrStrings()
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs")
@@ -29,8 +29,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
-                .Replace("\r\n", "\n")
+            + "\n" + ReadCaptureServicePreviewLifecycleSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceAudioSource()
@@ -39,8 +38,7 @@ static partial class Program
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource();
         var captureServiceRootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
-        var previewLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
-            .Replace("\r\n", "\n");
+        var previewLifecycleText = ReadCaptureServicePreviewLifecycleSource();
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var viewModelCaptureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");

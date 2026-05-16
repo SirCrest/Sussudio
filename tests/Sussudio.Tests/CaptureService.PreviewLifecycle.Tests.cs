@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,11 +8,42 @@ static partial class Program
 {
     private static Task PreviewStartup_ToleratesMissingAudioCaptureDevices()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "if (settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId))");
         AssertContains(captureServiceText, "Audio preview requested but no audio capture device is available; continuing with video-only preview.");
         AssertDoesNotContain(captureServiceText, "Audio preview is enabled but no audio capture device is available.");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_PreviewLifecycleLivesInFocusedPartials()
+    {
+        var startText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs").Replace("\r\n", "\n");
+        var stopText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStop.cs").Replace("\r\n", "\n");
+        var reuseText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewReuse.cs").Replace("\r\n", "\n");
+        var disposalText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs").Replace("\r\n", "\n");
+
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewLifecycle.cs")),
+            "mixed preview lifecycle partial should stay removed");
+        AssertContains(startText, "public Task StartVideoPreviewAsync(CaptureSettings settings, CancellationToken cancellationToken = default)");
+        AssertContains(startText, "var previewStartRollbackToken = CancellationToken.None;");
+        AssertContains(stopText, "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)");
+        AssertContains(stopText, "private Task StopVideoPreviewCoreAsync(bool teardownPipeline, CancellationToken cancellationToken = default)");
+        AssertContains(reuseText, "private bool CanReuseVideoCaptureForPreview(UnifiedVideoCapture capture, CaptureSettings settings)");
+        AssertContains(reuseText, "private static bool CanReuseFlashbackBackend(CaptureSettings current, CaptureSettings next)");
+        AssertContains(reuseText, "private static CaptureSettings CloneCaptureSettings(CaptureSettings source)");
+        AssertContains(disposalText, "private async Task DisposePreviewPipelineAsync(");
+        AssertDoesNotContain(startText, "private Task StopVideoPreviewCoreAsync(");
+        AssertDoesNotContain(startText, "private async Task DisposePreviewPipelineAsync(");
+        AssertDoesNotContain(stopText, "public Task StartVideoPreviewAsync(");
+        AssertDoesNotContain(stopText, "private static CaptureSettings CloneCaptureSettings(");
+        AssertDoesNotContain(reuseText, "public Task StartVideoPreviewAsync(");
+        AssertDoesNotContain(reuseText, "private async Task DisposePreviewPipelineAsync(");
+        AssertDoesNotContain(disposalText, "public Task StartVideoPreviewAsync(");
+        AssertDoesNotContain(disposalText, "private bool CanReuseVideoCaptureForPreview(");
 
         return Task.CompletedTask;
     }
@@ -64,7 +96,7 @@ static partial class Program
 
     private static Task PreviewBackendLog_ReflectsVideoOnlyFallback()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "_wasapiAudioCapture != null");
         AssertContains(captureServiceText, "\"Preview backend active: IMFSourceReader video + WASAPI audio ingest.\"");

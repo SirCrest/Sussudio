@@ -27,6 +27,14 @@ static partial class Program
         "Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs"
     };
 
+    private static readonly string[] CaptureServicePreviewLifecycleFiles =
+    {
+        "Sussudio/Services/Capture/CaptureService.PreviewStart.cs",
+        "Sussudio/Services/Capture/CaptureService.PreviewStop.cs",
+        "Sussudio/Services/Capture/CaptureService.PreviewReuse.cs",
+        "Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs"
+    };
+
     private static readonly string[] CaptureServiceRecordingIntegrityFiles =
     {
         "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs",
@@ -52,6 +60,11 @@ static partial class Program
             "\n",
             CaptureServiceAudioFiles.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
 
+    private static string ReadCaptureServicePreviewLifecycleSource()
+        => string.Join(
+            "\n",
+            CaptureServicePreviewLifecycleFiles.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
+
     private static string ReadCaptureServiceRecordingIntegritySource()
         => string.Join(
             "\n",
@@ -66,6 +79,11 @@ static partial class Program
         => string.Join(
             "\n",
             CaptureServiceAudioFiles.Select(ReadRepoCodeWithoutCommentsOrStrings));
+
+    private static string ReadCaptureServicePreviewLifecycleCodeWithoutCommentsOrStrings()
+        => string.Join(
+            "\n",
+            CaptureServicePreviewLifecycleFiles.Select(ReadRepoCodeWithoutCommentsOrStrings));
 
     private static Task CaptureService_FlashbackOrchestrationLivesInFocusedPartials()
     {

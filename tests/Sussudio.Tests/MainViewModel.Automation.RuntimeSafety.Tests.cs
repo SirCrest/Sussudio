@@ -256,8 +256,7 @@ static partial class Program
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
-                .Replace("\r\n", "\n")
+            + "\n" + ReadCaptureServicePreviewLifecycleSource()
             + "\n" + ReadCaptureServiceAudioSource();
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
