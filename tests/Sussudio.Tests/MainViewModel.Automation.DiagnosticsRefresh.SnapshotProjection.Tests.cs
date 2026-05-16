@@ -15,7 +15,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionText, "var audioDrops = BuildAudioDropsProjection(health);");
         AssertContains(diagnostics.SnapshotProjectionAudioDropsText, "private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionAudioDropsText, "QueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
-        AssertContains(diagnostics.SnapshotProjectionText, "AudioQueueDropsRealtime = audioDrops.QueueDropsRealtime,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AudioQueueDropsRealtime = audioDrops.QueueDropsRealtime,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "AudioDropsQueueSaturated = health.AudioDropsQueueSaturated,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "AudioQueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
         AssertContains(diagnostics.SnapshotProjectionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
@@ -57,7 +57,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingQueuesText, "private static FlashbackRecordingQueuesProjection BuildFlashbackRecordingQueuesProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingQueuesText, "GpuQueueLastRejectReason = health.FlashbackGpuQueueLastRejectReason,");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingQueuesText, "AudioQueueCapacity = health.FlashbackAudioQueueCapacity");
-        AssertContains(diagnostics.SnapshotProjectionText, "FlashbackEncodingFailed = flashbackRecording.EncodingFailed,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "FlashbackEncodingFailed = flashbackRecording.EncodingFailed,");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "EncodingFailed = health.FlashbackEncodingFailed,");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "FlashbackEncodingFailed = health.FlashbackEncodingFailed,");
@@ -116,7 +116,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionText, "var hdrTruth = BuildHdrTruthProjection(hdrTruthVerdict);");
         AssertContains(diagnostics.SnapshotProjectionHdrTruthText, "private static HdrTruthProjection BuildHdrTruthProjection(HdrTruthVerdict verdict)");
         AssertContains(diagnostics.SnapshotProjectionHdrTruthText, "Verdict = verdict");
-        AssertContains(diagnostics.SnapshotProjectionText, "HdrTruthVerdict = hdrTruth.Verdict,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "HdrTruthVerdict = hdrTruth.Verdict,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "HdrTruthVerdict = hdrTruthVerdict,");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatProjection BuildCaptureFormatProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");

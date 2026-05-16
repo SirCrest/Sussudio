@@ -30,8 +30,10 @@ Automation diagnostics now have named partial owners instead of one large hub
 body. `AutomationDiagnosticsHub.cs` is the compact field/constructor and
 counter state owner. `AutomationDiagnosticsHub.Snapshots.cs` owns snapshot
 refresh and read-only snapshot access. `AutomationDiagnosticsHub.SnapshotProjection.cs`
-owns `AutomationSnapshot` DTO property projection from runtime/view-model
-snapshots and diagnostic classifiers. `AutomationDiagnosticsHub.SnapshotState.cs`
+owns snapshot projection orchestration from runtime/view-model snapshots and
+diagnostic classifiers. `AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs`
+owns the final `AutomationSnapshot` DTO initializer that flattens the named
+projection records into the automation wire snapshot. `AutomationDiagnosticsHub.SnapshotState.cs`
 owns stateful snapshot bookkeeping for audio mute suspicion and recording file
 growth tracking. `AutomationDiagnosticsHub.Timeline.cs`
 owns performance-timeline ring reads and append mechanics.

@@ -6,6 +6,8 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var mjpegProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs")
             .Replace("\r\n", "\n");
         var mjpegTimingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegTiming.cs")
@@ -16,18 +18,18 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var mjpeg = BuildMjpegProjection(health);");
-        AssertContains(snapshotProjectionText, "MjpegDecodeSampleCount = mjpeg.Timing.DecodeSampleCount,");
-        AssertContains(snapshotProjectionText, "MjpegPreviewJitterLastDropReason = mjpeg.PreviewJitter.LastDropReason,");
-        AssertContains(snapshotProjectionText, "MjpegPacketHashPattern = mjpeg.PacketHash.Pattern,");
-        AssertContains(snapshotProjectionText, "MjpegPerDecoder = mjpeg.Timing.PerDecoder,");
-        AssertDoesNotContain(snapshotProjectionText, "MjpegDecodeSampleCount = health.MjpegDecodeSampleCount,");
-        AssertDoesNotContain(snapshotProjectionText, "MjpegDecodeSampleCount = mjpeg.DecodeSampleCount,");
-        AssertDoesNotContain(snapshotProjectionText, "MjpegPreviewJitterLastDropReason = mjpeg.PreviewJitterLastDropReason,");
-        AssertDoesNotContain(snapshotProjectionText, "MjpegPreviewJitterLastDropReason = health.MjpegPreviewJitterLastDropReason,");
-        AssertDoesNotContain(snapshotProjectionText, "MjpegPacketHashPattern = mjpeg.PacketHashPattern,");
-        AssertDoesNotContain(snapshotProjectionText, "MjpegPacketHashPattern = health.MjpegPacketHashPattern,");
-        AssertDoesNotContain(snapshotProjectionText, "MjpegPerDecoder = mjpeg.PerDecoder,");
-        AssertDoesNotContain(snapshotProjectionText, "MjpegPerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder");
+        AssertContains(snapshotFlatteningText, "MjpegDecodeSampleCount = mjpeg.Timing.DecodeSampleCount,");
+        AssertContains(snapshotFlatteningText, "MjpegPreviewJitterLastDropReason = mjpeg.PreviewJitter.LastDropReason,");
+        AssertContains(snapshotFlatteningText, "MjpegPacketHashPattern = mjpeg.PacketHash.Pattern,");
+        AssertContains(snapshotFlatteningText, "MjpegPerDecoder = mjpeg.Timing.PerDecoder,");
+        AssertDoesNotContain(snapshotFlatteningText, "MjpegDecodeSampleCount = health.MjpegDecodeSampleCount,");
+        AssertDoesNotContain(snapshotFlatteningText, "MjpegDecodeSampleCount = mjpeg.DecodeSampleCount,");
+        AssertDoesNotContain(snapshotFlatteningText, "MjpegPreviewJitterLastDropReason = mjpeg.PreviewJitterLastDropReason,");
+        AssertDoesNotContain(snapshotFlatteningText, "MjpegPreviewJitterLastDropReason = health.MjpegPreviewJitterLastDropReason,");
+        AssertDoesNotContain(snapshotFlatteningText, "MjpegPacketHashPattern = mjpeg.PacketHashPattern,");
+        AssertDoesNotContain(snapshotFlatteningText, "MjpegPacketHashPattern = health.MjpegPacketHashPattern,");
+        AssertDoesNotContain(snapshotFlatteningText, "MjpegPerDecoder = mjpeg.PerDecoder,");
+        AssertDoesNotContain(snapshotFlatteningText, "MjpegPerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder");
 
         AssertContains(mjpegProjectionText, "private static MjpegProjection BuildMjpegProjection(CaptureHealthSnapshot health)");
         AssertContains(mjpegProjectionText, "var timing = BuildMjpegTimingProjection(health);");

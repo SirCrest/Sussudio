@@ -6,16 +6,18 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var processResourceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var processResourceProjection = BuildProcessResourceProjection(processResources);");
-        AssertContains(snapshotProjectionText, "MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,");
-        AssertContains(snapshotProjectionText, "MemoryGcFragmentationPercent = processResourceProjection.MemoryGcFragmentationPercent,");
-        AssertContains(snapshotProjectionText, "ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax,");
-        AssertDoesNotContain(snapshotProjectionText, "MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,");
-        AssertDoesNotContain(snapshotProjectionText, "MemoryGcFragmentationPercent = processResources.MemoryGcFragmentationPercent,");
-        AssertDoesNotContain(snapshotProjectionText, "ThreadPoolIoMax = processResources.ThreadPoolIoMax,");
+        AssertContains(snapshotFlatteningText, "MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,");
+        AssertContains(snapshotFlatteningText, "MemoryGcFragmentationPercent = processResourceProjection.MemoryGcFragmentationPercent,");
+        AssertContains(snapshotFlatteningText, "ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax,");
+        AssertDoesNotContain(snapshotFlatteningText, "MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,");
+        AssertDoesNotContain(snapshotFlatteningText, "MemoryGcFragmentationPercent = processResources.MemoryGcFragmentationPercent,");
+        AssertDoesNotContain(snapshotFlatteningText, "ThreadPoolIoMax = processResources.ThreadPoolIoMax,");
 
         AssertContains(processResourceProjectionText, "private static ProcessResourceProjection BuildProcessResourceProjection(ProcessResourceSnapshot processResources)");
         AssertContains(processResourceProjectionText, "MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,");
@@ -30,15 +32,17 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var avSyncProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.AvSync.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var avSync = BuildAvSyncProjection(captureRuntime);");
-        AssertContains(snapshotProjectionText, "AvSyncCaptureDriftMs = avSync.CaptureDriftMs,");
-        AssertContains(snapshotProjectionText, "AvSyncCaptureDriftRateMsPerSec = avSync.CaptureDriftRateMsPerSec,");
-        AssertContains(snapshotProjectionText, "AvSyncEncoderCorrectionSamples = avSync.EncoderCorrectionSamples,");
-        AssertDoesNotContain(snapshotProjectionText, "AvSyncCaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,");
-        AssertDoesNotContain(snapshotProjectionText, "AvSyncEncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples,");
+        AssertContains(snapshotFlatteningText, "AvSyncCaptureDriftMs = avSync.CaptureDriftMs,");
+        AssertContains(snapshotFlatteningText, "AvSyncCaptureDriftRateMsPerSec = avSync.CaptureDriftRateMsPerSec,");
+        AssertContains(snapshotFlatteningText, "AvSyncEncoderCorrectionSamples = avSync.EncoderCorrectionSamples,");
+        AssertDoesNotContain(snapshotFlatteningText, "AvSyncCaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,");
+        AssertDoesNotContain(snapshotFlatteningText, "AvSyncEncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples,");
 
         AssertContains(avSyncProjectionText, "private static AvSyncProjection BuildAvSyncProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(avSyncProjectionText, "CaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,");

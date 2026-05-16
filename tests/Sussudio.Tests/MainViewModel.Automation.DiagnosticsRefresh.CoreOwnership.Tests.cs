@@ -42,6 +42,8 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SnapshotsText, "var previewHdrInputDetected =");
         AssertContains(diagnostics.SnapshotsText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnostics.SnapshotProjectionText, "private AutomationSnapshot BuildAutomationSnapshot(");
-        AssertContains(diagnostics.SnapshotProjectionText, "new AutomationSnapshot");
+        AssertContains(diagnostics.SnapshotProjectionText, "return BuildAutomationSnapshotFromProjections(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "private static AutomationSnapshot BuildAutomationSnapshotFromProjections(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "new AutomationSnapshot");
     }
 }

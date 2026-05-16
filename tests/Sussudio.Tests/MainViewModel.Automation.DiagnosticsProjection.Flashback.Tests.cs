@@ -6,6 +6,8 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var flashbackExportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs")
             .Replace("\r\n", "\n");
         var flashbackExportLastResultProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackExportLastResult.cs")
@@ -13,15 +15,15 @@ static partial class Program
 
         AssertContains(snapshotProjectionText, "var flashbackExport = BuildFlashbackExportProjection(health);");
         AssertContains(snapshotProjectionText, "var flashbackExportLastResult = BuildFlashbackExportLastResultProjection(health);");
-        AssertContains(snapshotProjectionText, "FlashbackExportActive = flashbackExport.Active,");
-        AssertContains(snapshotProjectionText, "FlashbackExportPercent = flashbackExport.Percent,");
-        AssertContains(snapshotProjectionText, "FlashbackExportLastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,");
-        AssertContains(snapshotProjectionText, "LastExportId = flashbackExportLastResult.LastExportId,");
-        AssertContains(snapshotProjectionText, "LastExportMessage = flashbackExportLastResult.LastExportMessage");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackExportActive = health.FlashbackExportActive,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackExportPercent = health.FlashbackExportPercent,");
-        AssertDoesNotContain(snapshotProjectionText, "LastExportId = health.LastExportId,");
-        AssertDoesNotContain(snapshotProjectionText, "LastExportId = flashbackExport.LastExportId,");
+        AssertContains(snapshotFlatteningText, "FlashbackExportActive = flashbackExport.Active,");
+        AssertContains(snapshotFlatteningText, "FlashbackExportPercent = flashbackExport.Percent,");
+        AssertContains(snapshotFlatteningText, "FlashbackExportLastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,");
+        AssertContains(snapshotFlatteningText, "LastExportId = flashbackExportLastResult.LastExportId,");
+        AssertContains(snapshotFlatteningText, "LastExportMessage = flashbackExportLastResult.LastExportMessage");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackExportActive = health.FlashbackExportActive,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackExportPercent = health.FlashbackExportPercent,");
+        AssertDoesNotContain(snapshotFlatteningText, "LastExportId = health.LastExportId,");
+        AssertDoesNotContain(snapshotFlatteningText, "LastExportId = flashbackExport.LastExportId,");
 
         AssertContains(flashbackExportProjectionText, "private static FlashbackExportProjection BuildFlashbackExportProjection(CaptureHealthSnapshot health)");
         AssertContains(flashbackExportProjectionText, "Active = health.FlashbackExportActive,");
@@ -43,6 +45,8 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var flashbackRecordingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
         var flashbackRecordingStartupCacheProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecordingStartupCache.cs")
@@ -51,26 +55,26 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);");
-        AssertContains(snapshotProjectionText, "FlashbackEncodingFailed = flashbackRecording.EncodingFailed,");
-        AssertContains(snapshotProjectionText, "FlashbackStartupCacheOverBudget = flashbackRecording.StartupCache.OverBudget,");
-        AssertContains(snapshotProjectionText, "FlashbackVideoQueueCapacity = flashbackRecording.Queues.VideoQueueCapacity,");
-        AssertContains(snapshotProjectionText, "FlashbackGpuQueueLastRejectReason = flashbackRecording.Queues.GpuQueueLastRejectReason,");
-        AssertContains(snapshotProjectionText, "FlashbackActive = flashbackRecording.Active,");
-        AssertContains(snapshotProjectionText, "FlashbackBackendSettingsStale = flashbackRecording.BackendSettingsStale,");
-        AssertContains(snapshotProjectionText, "FlashbackExportVerificationFormat = flashbackRecording.ExportVerificationFormat,");
-        AssertContains(snapshotProjectionText, "EncoderCodecName = flashbackRecording.EncoderCodecName,");
-        AssertContains(snapshotProjectionText, "FlashbackAudioQueueCapacity = flashbackRecording.Queues.AudioQueueCapacity,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackEncodingFailed = health.FlashbackEncodingFailed,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackVideoQueueCapacity = health.FlashbackVideoQueueCapacity,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackGpuQueueLastRejectReason = health.FlashbackGpuQueueLastRejectReason,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackActive = health.FlashbackActive,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
-        AssertDoesNotContain(snapshotProjectionText, "EncoderCodecName = health.EncoderCodecName,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackStartupCacheOverBudget = flashbackRecording.StartupCacheOverBudget,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackStartupCacheOverBudget = health.FlashbackStartupCacheOverBudget,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackVideoQueueCapacity = flashbackRecording.VideoQueueCapacity,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackGpuQueueLastRejectReason = flashbackRecording.GpuQueueLastRejectReason,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackAudioQueueCapacity = flashbackRecording.AudioQueueCapacity,");
+        AssertContains(snapshotFlatteningText, "FlashbackEncodingFailed = flashbackRecording.EncodingFailed,");
+        AssertContains(snapshotFlatteningText, "FlashbackStartupCacheOverBudget = flashbackRecording.StartupCache.OverBudget,");
+        AssertContains(snapshotFlatteningText, "FlashbackVideoQueueCapacity = flashbackRecording.Queues.VideoQueueCapacity,");
+        AssertContains(snapshotFlatteningText, "FlashbackGpuQueueLastRejectReason = flashbackRecording.Queues.GpuQueueLastRejectReason,");
+        AssertContains(snapshotFlatteningText, "FlashbackActive = flashbackRecording.Active,");
+        AssertContains(snapshotFlatteningText, "FlashbackBackendSettingsStale = flashbackRecording.BackendSettingsStale,");
+        AssertContains(snapshotFlatteningText, "FlashbackExportVerificationFormat = flashbackRecording.ExportVerificationFormat,");
+        AssertContains(snapshotFlatteningText, "EncoderCodecName = flashbackRecording.EncoderCodecName,");
+        AssertContains(snapshotFlatteningText, "FlashbackAudioQueueCapacity = flashbackRecording.Queues.AudioQueueCapacity,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackEncodingFailed = health.FlashbackEncodingFailed,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackVideoQueueCapacity = health.FlashbackVideoQueueCapacity,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackGpuQueueLastRejectReason = health.FlashbackGpuQueueLastRejectReason,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackActive = health.FlashbackActive,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
+        AssertDoesNotContain(snapshotFlatteningText, "EncoderCodecName = health.EncoderCodecName,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackStartupCacheOverBudget = flashbackRecording.StartupCacheOverBudget,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackStartupCacheOverBudget = health.FlashbackStartupCacheOverBudget,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackVideoQueueCapacity = flashbackRecording.VideoQueueCapacity,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackGpuQueueLastRejectReason = flashbackRecording.GpuQueueLastRejectReason,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackAudioQueueCapacity = flashbackRecording.AudioQueueCapacity,");
 
         AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingProjection BuildFlashbackRecordingProjection(");
         AssertContains(flashbackRecordingProjectionText, "CaptureRuntimeSnapshot captureRuntime,");
@@ -103,6 +107,8 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var flashbackPlaybackProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackAudioMasterProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlaybackAudioMaster.cs")
@@ -113,13 +119,13 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var flashbackPlayback = BuildFlashbackPlaybackProjection(health);");
-        AssertContains(snapshotProjectionText, "FlashbackPlaybackState = flashbackPlayback.State,");
-        AssertContains(snapshotProjectionText, "FlashbackPlaybackTargetFps = flashbackPlayback.TargetFps,");
-        AssertContains(snapshotProjectionText, "FlashbackPlaybackMaxDecodePhase = flashbackPlayback.Decode.MaxPhase,");
-        AssertContains(snapshotProjectionText, "FlashbackPlaybackLastCommandFailure = flashbackPlayback.Commands.LastFailure,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackPlaybackState = health.FlashbackPlaybackState,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
-        AssertDoesNotContain(snapshotProjectionText, "FlashbackPlaybackLastCommandFailure = health.FlashbackPlaybackLastCommandFailure,");
+        AssertContains(snapshotFlatteningText, "FlashbackPlaybackState = flashbackPlayback.State,");
+        AssertContains(snapshotFlatteningText, "FlashbackPlaybackTargetFps = flashbackPlayback.TargetFps,");
+        AssertContains(snapshotFlatteningText, "FlashbackPlaybackMaxDecodePhase = flashbackPlayback.Decode.MaxPhase,");
+        AssertContains(snapshotFlatteningText, "FlashbackPlaybackLastCommandFailure = flashbackPlayback.Commands.LastFailure,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackState = health.FlashbackPlaybackState,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
+        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackLastCommandFailure = health.FlashbackPlaybackLastCommandFailure,");
 
         AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackProjection BuildFlashbackPlaybackProjection(CaptureHealthSnapshot health)");
         AssertContains(flashbackPlaybackProjectionText, "var audioMaster = BuildFlashbackPlaybackAudioMasterProjection(health);");

@@ -6,16 +6,18 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var captureCommandProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCommands.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);");
-        AssertContains(snapshotProjectionText, "CaptureCommandCommandsEnqueued = captureCommands.CommandsEnqueued,");
-        AssertContains(snapshotProjectionText, "CaptureCommandMaxQueueLatencyMs = captureCommands.MaxQueueLatencyMs,");
-        AssertContains(snapshotProjectionText, "CaptureCommandLastError = captureCommands.LastError,");
-        AssertDoesNotContain(snapshotProjectionText, "CaptureCommandCommandsEnqueued = viewModelSnapshot.CaptureCommandCommandsEnqueued,");
-        AssertDoesNotContain(snapshotProjectionText, "CaptureCommandMaxQueueLatencyMs = viewModelSnapshot.CaptureCommandMaxQueueLatencyMs,");
-        AssertDoesNotContain(snapshotProjectionText, "CaptureCommandLastError = viewModelSnapshot.CaptureCommandLastError,");
+        AssertContains(snapshotFlatteningText, "CaptureCommandCommandsEnqueued = captureCommands.CommandsEnqueued,");
+        AssertContains(snapshotFlatteningText, "CaptureCommandMaxQueueLatencyMs = captureCommands.MaxQueueLatencyMs,");
+        AssertContains(snapshotFlatteningText, "CaptureCommandLastError = captureCommands.LastError,");
+        AssertDoesNotContain(snapshotFlatteningText, "CaptureCommandCommandsEnqueued = viewModelSnapshot.CaptureCommandCommandsEnqueued,");
+        AssertDoesNotContain(snapshotFlatteningText, "CaptureCommandMaxQueueLatencyMs = viewModelSnapshot.CaptureCommandMaxQueueLatencyMs,");
+        AssertDoesNotContain(snapshotFlatteningText, "CaptureCommandLastError = viewModelSnapshot.CaptureCommandLastError,");
 
         AssertContains(captureCommandProjectionText, "private static CaptureCommandProjection BuildCaptureCommandProjection(ViewModelRuntimeSnapshot viewModelSnapshot)");
         AssertContains(captureCommandProjectionText, "CommandsEnqueued = viewModelSnapshot.CaptureCommandCommandsEnqueued,");
@@ -30,6 +32,8 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var userSettingsProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs")
             .Replace("\r\n", "\n");
         var recordingSettingsProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingSettings.cs")
@@ -37,16 +41,16 @@ static partial class Program
 
         AssertContains(snapshotProjectionText, "var userSettings = BuildUserSettingsProjection(viewModelSnapshot);");
         AssertContains(snapshotProjectionText, "var recordingSettings = BuildRecordingSettingsProjection(userSettings);");
-        AssertContains(snapshotProjectionText, "SelectedDeviceId = userSettings.SelectedDeviceId,");
-        AssertContains(snapshotProjectionText, "SelectedFriendlyFrameRate = userSettings.SelectedFriendlyFrameRate,");
-        AssertContains(snapshotProjectionText, "SelectedRecordingFormat = recordingSettings.SelectedRecordingFormat,");
-        AssertContains(snapshotProjectionText, "CustomBitrateMbps = recordingSettings.CustomBitrateMbps,");
-        AssertContains(snapshotProjectionText, "IsStatsVisible = userSettings.IsStatsVisible,");
-        AssertDoesNotContain(snapshotProjectionText, "SelectedDeviceId = viewModelSnapshot.SelectedDeviceId,");
-        AssertDoesNotContain(snapshotProjectionText, "SelectedFriendlyFrameRate = viewModelSnapshot.SelectedFriendlyFrameRate ?? Math.Round(viewModelSnapshot.SelectedFrameRate),");
-        AssertDoesNotContain(snapshotProjectionText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
-        AssertDoesNotContain(snapshotProjectionText, "CustomBitrateMbps = userSettings.CustomBitrateMbps,");
-        AssertDoesNotContain(snapshotProjectionText, "IsStatsVisible = viewModelSnapshot.IsStatsVisible,");
+        AssertContains(snapshotFlatteningText, "SelectedDeviceId = userSettings.SelectedDeviceId,");
+        AssertContains(snapshotFlatteningText, "SelectedFriendlyFrameRate = userSettings.SelectedFriendlyFrameRate,");
+        AssertContains(snapshotFlatteningText, "SelectedRecordingFormat = recordingSettings.SelectedRecordingFormat,");
+        AssertContains(snapshotFlatteningText, "CustomBitrateMbps = recordingSettings.CustomBitrateMbps,");
+        AssertContains(snapshotFlatteningText, "IsStatsVisible = userSettings.IsStatsVisible,");
+        AssertDoesNotContain(snapshotFlatteningText, "SelectedDeviceId = viewModelSnapshot.SelectedDeviceId,");
+        AssertDoesNotContain(snapshotFlatteningText, "SelectedFriendlyFrameRate = viewModelSnapshot.SelectedFriendlyFrameRate ?? Math.Round(viewModelSnapshot.SelectedFrameRate),");
+        AssertDoesNotContain(snapshotFlatteningText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
+        AssertDoesNotContain(snapshotFlatteningText, "CustomBitrateMbps = userSettings.CustomBitrateMbps,");
+        AssertDoesNotContain(snapshotFlatteningText, "IsStatsVisible = viewModelSnapshot.IsStatsVisible,");
 
         AssertContains(userSettingsProjectionText, "private static UserSettingsProjection BuildUserSettingsProjection(ViewModelRuntimeSnapshot viewModelSnapshot)");
         AssertContains(userSettingsProjectionText, "SelectedDeviceId = viewModelSnapshot.SelectedDeviceId,");
@@ -67,20 +71,22 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var captureFormatProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
-        AssertContains(snapshotProjectionText, "RequestedWidth = captureFormat.RequestedWidth,");
-        AssertContains(snapshotProjectionText, "HdrActivationReason = captureFormat.HdrActivationReason,");
-        AssertContains(snapshotProjectionText, "NegotiatedWidth = captureFormat.NegotiatedWidth,");
-        AssertContains(snapshotProjectionText, "LatestObservedFramePixelFormat = captureFormat.LatestObservedFramePixelFormat,");
-        AssertContains(snapshotProjectionText, "EncoderVideoCodec = captureFormat.EncoderVideoCodec,");
-        AssertDoesNotContain(snapshotProjectionText, "RequestedWidth = captureRuntime.RequestedWidth,");
-        AssertDoesNotContain(snapshotProjectionText, "HdrActivationReason = captureRuntime.HdrActivationReason,");
-        AssertDoesNotContain(snapshotProjectionText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
-        AssertDoesNotContain(snapshotProjectionText, "LatestObservedFramePixelFormat = captureRuntime.LatestObservedFramePixelFormat,");
-        AssertDoesNotContain(snapshotProjectionText, "EncoderVideoCodec = captureRuntime.EncoderVideoCodec,");
+        AssertContains(snapshotFlatteningText, "RequestedWidth = captureFormat.RequestedWidth,");
+        AssertContains(snapshotFlatteningText, "HdrActivationReason = captureFormat.HdrActivationReason,");
+        AssertContains(snapshotFlatteningText, "NegotiatedWidth = captureFormat.NegotiatedWidth,");
+        AssertContains(snapshotFlatteningText, "LatestObservedFramePixelFormat = captureFormat.LatestObservedFramePixelFormat,");
+        AssertContains(snapshotFlatteningText, "EncoderVideoCodec = captureFormat.EncoderVideoCodec,");
+        AssertDoesNotContain(snapshotFlatteningText, "RequestedWidth = captureRuntime.RequestedWidth,");
+        AssertDoesNotContain(snapshotFlatteningText, "HdrActivationReason = captureRuntime.HdrActivationReason,");
+        AssertDoesNotContain(snapshotFlatteningText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
+        AssertDoesNotContain(snapshotFlatteningText, "LatestObservedFramePixelFormat = captureRuntime.LatestObservedFramePixelFormat,");
+        AssertDoesNotContain(snapshotFlatteningText, "EncoderVideoCodec = captureRuntime.EncoderVideoCodec,");
 
         AssertContains(captureFormatProjectionText, "private static CaptureFormatProjection BuildCaptureFormatProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(captureFormatProjectionText, "private readonly record struct CaptureFormatProjection");
@@ -97,15 +103,17 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var captureTransportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var captureTransport = BuildCaptureTransportProjection(captureRuntime);");
-        AssertContains(snapshotProjectionText, "MemoryPreference = captureTransport.MemoryPreference,");
-        AssertContains(snapshotProjectionText, "VideoNegotiatedSubtype = captureTransport.VideoNegotiatedSubtype,");
-        AssertContains(snapshotProjectionText, "FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents,");
-        AssertDoesNotContain(snapshotProjectionText, "MemoryPreference = captureRuntime.MemoryPreference,");
-        AssertDoesNotContain(snapshotProjectionText, "FrameLedgerRecentEvents = captureRuntime.FrameLedgerRecentEvents,");
+        AssertContains(snapshotFlatteningText, "MemoryPreference = captureTransport.MemoryPreference,");
+        AssertContains(snapshotFlatteningText, "VideoNegotiatedSubtype = captureTransport.VideoNegotiatedSubtype,");
+        AssertContains(snapshotFlatteningText, "FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents,");
+        AssertDoesNotContain(snapshotFlatteningText, "MemoryPreference = captureRuntime.MemoryPreference,");
+        AssertDoesNotContain(snapshotFlatteningText, "FrameLedgerRecentEvents = captureRuntime.FrameLedgerRecentEvents,");
 
         AssertContains(captureTransportProjectionText, "private static CaptureTransportProjection BuildCaptureTransportProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(captureTransportProjectionText, "MemoryPreference = captureRuntime.MemoryPreference,");
@@ -120,20 +128,22 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var hdrPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(snapshotProjectionText, "IsHdrAvailable = hdrPipeline.IsHdrAvailable,");
-        AssertContains(snapshotProjectionText, "HdrRuntimeState = hdrPipeline.HdrRuntimeState,");
-        AssertContains(snapshotProjectionText, "HdrWarmupObservedNonP010Frames = hdrPipeline.HdrWarmupObservedNonP010Frames,");
-        AssertContains(snapshotProjectionText, "PipelineModeStatus = hdrPipeline.PipelineModeStatus,");
-        AssertContains(snapshotProjectionText, "TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,");
-        AssertDoesNotContain(snapshotProjectionText, "IsHdrAvailable = viewModelSnapshot.IsHdrAvailable,");
-        AssertDoesNotContain(snapshotProjectionText, "HdrRuntimeState = !string.IsNullOrWhiteSpace(viewModelSnapshot.HdrRuntimeState)");
-        AssertDoesNotContain(snapshotProjectionText, "HdrWarmupObservedNonP010Frames = captureRuntime.HdrWarmupObservedNonP010Frames,");
-        AssertDoesNotContain(snapshotProjectionText, "PipelineModeStatus = captureRuntime.PipelineModeStatus,");
-        AssertDoesNotContain(snapshotProjectionText, "TelemetryAlignmentReason = captureRuntime.TelemetryAlignmentReason,");
+        AssertContains(snapshotFlatteningText, "IsHdrAvailable = hdrPipeline.IsHdrAvailable,");
+        AssertContains(snapshotFlatteningText, "HdrRuntimeState = hdrPipeline.HdrRuntimeState,");
+        AssertContains(snapshotFlatteningText, "HdrWarmupObservedNonP010Frames = hdrPipeline.HdrWarmupObservedNonP010Frames,");
+        AssertContains(snapshotFlatteningText, "PipelineModeStatus = hdrPipeline.PipelineModeStatus,");
+        AssertContains(snapshotFlatteningText, "TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,");
+        AssertDoesNotContain(snapshotFlatteningText, "IsHdrAvailable = viewModelSnapshot.IsHdrAvailable,");
+        AssertDoesNotContain(snapshotFlatteningText, "HdrRuntimeState = !string.IsNullOrWhiteSpace(viewModelSnapshot.HdrRuntimeState)");
+        AssertDoesNotContain(snapshotFlatteningText, "HdrWarmupObservedNonP010Frames = captureRuntime.HdrWarmupObservedNonP010Frames,");
+        AssertDoesNotContain(snapshotFlatteningText, "PipelineModeStatus = captureRuntime.PipelineModeStatus,");
+        AssertDoesNotContain(snapshotFlatteningText, "TelemetryAlignmentReason = captureRuntime.TelemetryAlignmentReason,");
 
         AssertContains(hdrPipelineProjectionText, "private static HdrPipelineProjection BuildHdrPipelineProjection(");
         AssertContains(hdrPipelineProjectionText, "IsHdrAvailable = viewModelSnapshot.IsHdrAvailable,");
@@ -151,17 +161,19 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var sourceTelemetryProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SourceTelemetry.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(snapshotProjectionText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
-        AssertContains(snapshotProjectionText, "SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,");
-        AssertContains(snapshotProjectionText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
-        AssertContains(snapshotProjectionText, "SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText,");
-        AssertDoesNotContain(snapshotProjectionText, "SourceTelemetryAvailability = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceTelemetryAvailability)");
-        AssertDoesNotContain(snapshotProjectionText, "SourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(");
-        AssertDoesNotContain(snapshotProjectionText, "SourceTelemetryDetails = captureRuntime.SourceTelemetryDetails,");
+        AssertContains(snapshotFlatteningText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
+        AssertContains(snapshotFlatteningText, "SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,");
+        AssertContains(snapshotFlatteningText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
+        AssertContains(snapshotFlatteningText, "SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText,");
+        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAvailability = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceTelemetryAvailability)");
+        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(");
+        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryDetails = captureRuntime.SourceTelemetryDetails,");
 
         AssertContains(sourceTelemetryProjectionText, "private static SourceTelemetryProjection BuildSourceTelemetryProjection(");
         AssertContains(sourceTelemetryProjectionText, "private static string PreferKnownTelemetryValue(string viewModelValue, string runtimeValue)");
@@ -177,15 +189,17 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(snapshotProjectionText, "DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,");
-        AssertContains(snapshotProjectionText, "SourceFrameRateOrigin = sourceSignal.FrameRateOrigin,");
-        AssertContains(snapshotProjectionText, "SourceRawTimingHex = sourceSignal.RawTimingHex,");
-        AssertDoesNotContain(snapshotProjectionText, "DetectedSourceFrameRate = viewModelSnapshot.DetectedSourceFrameRate ?? captureRuntime.DetectedSourceFrameRate,");
-        AssertDoesNotContain(snapshotProjectionText, "SourceRawTimingHex = captureRuntime.SourceRawTimingHex,");
+        AssertContains(snapshotFlatteningText, "DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,");
+        AssertContains(snapshotFlatteningText, "SourceFrameRateOrigin = sourceSignal.FrameRateOrigin,");
+        AssertContains(snapshotFlatteningText, "SourceRawTimingHex = sourceSignal.RawTimingHex,");
+        AssertDoesNotContain(snapshotFlatteningText, "DetectedSourceFrameRate = viewModelSnapshot.DetectedSourceFrameRate ?? captureRuntime.DetectedSourceFrameRate,");
+        AssertDoesNotContain(snapshotFlatteningText, "SourceRawTimingHex = captureRuntime.SourceRawTimingHex,");
 
         AssertContains(sourceSignalProjectionText, "private static SourceSignalProjection BuildSourceSignalProjection(");
         AssertContains(sourceSignalProjectionText, "DetectedFrameRate = viewModelSnapshot.DetectedSourceFrameRate ?? captureRuntime.DetectedSourceFrameRate,");
@@ -201,18 +215,20 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var captureCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var captureCadence = BuildCaptureCadenceProjection(health);");
-        AssertContains(snapshotProjectionText, "ExpectedCaptureFrameRate = captureCadence.ExpectedFrameRate,");
-        AssertContains(snapshotProjectionText, "CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames,");
-        AssertContains(snapshotProjectionText, "VisualCadenceMotionConfidence = captureCadence.VisualMotionConfidence,");
-        AssertContains(snapshotProjectionText, "VisualCenterCadenceRecentChangeIntervalsMs = captureCadence.VisualCenterRecentChangeIntervalsMs,");
-        AssertDoesNotContain(snapshotProjectionText, "ExpectedCaptureFrameRate = health.ExpectedFrameRate,");
-        AssertDoesNotContain(snapshotProjectionText, "CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,");
-        AssertDoesNotContain(snapshotProjectionText, "VisualCadenceMotionConfidence = health.VisualCadenceMotionConfidence,");
-        AssertDoesNotContain(snapshotProjectionText, "VisualCenterCadenceRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs,");
+        AssertContains(snapshotFlatteningText, "ExpectedCaptureFrameRate = captureCadence.ExpectedFrameRate,");
+        AssertContains(snapshotFlatteningText, "CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames,");
+        AssertContains(snapshotFlatteningText, "VisualCadenceMotionConfidence = captureCadence.VisualMotionConfidence,");
+        AssertContains(snapshotFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = captureCadence.VisualCenterRecentChangeIntervalsMs,");
+        AssertDoesNotContain(snapshotFlatteningText, "ExpectedCaptureFrameRate = health.ExpectedFrameRate,");
+        AssertDoesNotContain(snapshotFlatteningText, "CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,");
+        AssertDoesNotContain(snapshotFlatteningText, "VisualCadenceMotionConfidence = health.VisualCadenceMotionConfidence,");
+        AssertDoesNotContain(snapshotFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs,");
 
         AssertContains(captureCadenceProjectionText, "private static CaptureCadenceProjection BuildCaptureCadenceProjection(CaptureHealthSnapshot health)");
         AssertContains(captureCadenceProjectionText, "ExpectedFrameRate = health.ExpectedFrameRate,");

@@ -6,19 +6,21 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var recordingPipeline = BuildRecordingPipelineProjection(health);");
-        AssertContains(snapshotProjectionText, "EncoderVideoFramesEnqueued = recordingPipeline.EncoderVideoFramesEnqueued,");
-        AssertContains(snapshotProjectionText, "ConversionQueueDepth = recordingPipeline.ConversionQueueDepth,");
-        AssertContains(snapshotProjectionText, "RecordingVideoQueueCapacity = recordingPipeline.RecordingVideoQueueCapacity,");
-        AssertContains(snapshotProjectionText, "RecordingGpuFramesEnqueued = recordingPipeline.RecordingGpuFramesEnqueued,");
-        AssertContains(snapshotProjectionText, "RecordingCudaFramesDropped = recordingPipeline.RecordingCudaFramesDropped,");
-        AssertDoesNotContain(snapshotProjectionText, "EncoderVideoFramesEnqueued = health.VideoFramesEnqueued,");
-        AssertDoesNotContain(snapshotProjectionText, "ConversionQueueDepth = health.ConversionQueueDepth,");
-        AssertDoesNotContain(snapshotProjectionText, "RecordingVideoQueueCapacity = health.RecordingVideoQueueCapacity,");
-        AssertDoesNotContain(snapshotProjectionText, "RecordingCudaFramesDropped = health.RecordingCudaFramesDropped,");
+        AssertContains(snapshotFlatteningText, "EncoderVideoFramesEnqueued = recordingPipeline.EncoderVideoFramesEnqueued,");
+        AssertContains(snapshotFlatteningText, "ConversionQueueDepth = recordingPipeline.ConversionQueueDepth,");
+        AssertContains(snapshotFlatteningText, "RecordingVideoQueueCapacity = recordingPipeline.RecordingVideoQueueCapacity,");
+        AssertContains(snapshotFlatteningText, "RecordingGpuFramesEnqueued = recordingPipeline.RecordingGpuFramesEnqueued,");
+        AssertContains(snapshotFlatteningText, "RecordingCudaFramesDropped = recordingPipeline.RecordingCudaFramesDropped,");
+        AssertDoesNotContain(snapshotFlatteningText, "EncoderVideoFramesEnqueued = health.VideoFramesEnqueued,");
+        AssertDoesNotContain(snapshotFlatteningText, "ConversionQueueDepth = health.ConversionQueueDepth,");
+        AssertDoesNotContain(snapshotFlatteningText, "RecordingVideoQueueCapacity = health.RecordingVideoQueueCapacity,");
+        AssertDoesNotContain(snapshotFlatteningText, "RecordingCudaFramesDropped = health.RecordingCudaFramesDropped,");
 
         AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineProjection BuildRecordingPipelineProjection(CaptureHealthSnapshot health)");
         AssertContains(recordingPipelineProjectionText, "private readonly record struct RecordingPipelineProjection");
@@ -34,15 +36,17 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var recordingBackendProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingBackend.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
-        AssertContains(snapshotProjectionText, "RecordingBackend = recordingBackend.Backend,");
-        AssertContains(snapshotProjectionText, "AudioPathMode = recordingBackend.AudioPathMode,");
-        AssertContains(snapshotProjectionText, "MuxResult = recordingBackend.MuxResult,");
-        AssertDoesNotContain(snapshotProjectionText, "RecordingBackend = captureRuntime.RecordingBackend,");
-        AssertDoesNotContain(snapshotProjectionText, "MuxResult = captureRuntime.MuxSucceeded.HasValue");
+        AssertContains(snapshotFlatteningText, "RecordingBackend = recordingBackend.Backend,");
+        AssertContains(snapshotFlatteningText, "AudioPathMode = recordingBackend.AudioPathMode,");
+        AssertContains(snapshotFlatteningText, "MuxResult = recordingBackend.MuxResult,");
+        AssertDoesNotContain(snapshotFlatteningText, "RecordingBackend = captureRuntime.RecordingBackend,");
+        AssertDoesNotContain(snapshotFlatteningText, "MuxResult = captureRuntime.MuxSucceeded.HasValue");
 
         AssertContains(recordingBackendProjectionText, "private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(recordingBackendProjectionText, "Backend = captureRuntime.RecordingBackend,");
@@ -58,18 +62,20 @@ static partial class Program
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
+            .Replace("\r\n", "\n");
         var recordingOutputProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var recordingOutput = BuildRecordingOutputProjection(");
-        AssertContains(snapshotProjectionText, "OutputPath = recordingOutput.OutputPath,");
-        AssertContains(snapshotProjectionText, "RecordingVideoBytes = recordingOutput.RecordingVideoBytes,");
-        AssertContains(snapshotProjectionText, "LastOutputPath = recordingOutput.LastOutputPath,");
-        AssertContains(snapshotProjectionText, "LastVerification = recordingOutput.LastVerification,");
-        AssertDoesNotContain(snapshotProjectionText, "OutputPath = viewModelSnapshot.OutputPath,");
-        AssertDoesNotContain(snapshotProjectionText, "RecordingVideoBytes = recordingStats.VideoBytes,");
-        AssertDoesNotContain(snapshotProjectionText, "LastOutputPath = captureRuntime.LastOutputPath,");
-        AssertDoesNotContain(snapshotProjectionText, "LastOutputSizeBytes = lastOutput.SizeBytes,");
+        AssertContains(snapshotFlatteningText, "OutputPath = recordingOutput.OutputPath,");
+        AssertContains(snapshotFlatteningText, "RecordingVideoBytes = recordingOutput.RecordingVideoBytes,");
+        AssertContains(snapshotFlatteningText, "LastOutputPath = recordingOutput.LastOutputPath,");
+        AssertContains(snapshotFlatteningText, "LastVerification = recordingOutput.LastVerification,");
+        AssertDoesNotContain(snapshotFlatteningText, "OutputPath = viewModelSnapshot.OutputPath,");
+        AssertDoesNotContain(snapshotFlatteningText, "RecordingVideoBytes = recordingStats.VideoBytes,");
+        AssertDoesNotContain(snapshotFlatteningText, "LastOutputPath = captureRuntime.LastOutputPath,");
+        AssertDoesNotContain(snapshotFlatteningText, "LastOutputSizeBytes = lastOutput.SizeBytes,");
 
         AssertContains(recordingOutputProjectionText, "private static RecordingOutputProjection BuildRecordingOutputProjection(");
         AssertContains(recordingOutputProjectionText, "OutputPath = viewModelSnapshot.OutputPath,");

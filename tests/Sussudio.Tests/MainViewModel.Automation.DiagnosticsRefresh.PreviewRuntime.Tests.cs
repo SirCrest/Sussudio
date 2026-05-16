@@ -3,7 +3,7 @@ static partial class Program
     private static void AssertDiagnosticsPreviewRuntimeProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
         AssertContains(diagnostics.SnapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeProjection BuildPreviewRuntimeProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "var cadence = BuildPreviewRuntimeCadenceProjection(previewRuntime);");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Cadence = cadence,");
