@@ -103,6 +103,13 @@ static partial class Program
         var resolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptions.cs").Replace("\r\n", "\n");
         var selectionPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
         var helperText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
+        var sourcePolicyText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Source.cs").Replace("\r\n", "\n");
+        var hdrPolicyText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Hdr.cs").Replace("\r\n", "\n");
+        var sdrPolicyText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Sdr.cs").Replace("\r\n", "\n");
+        var supportPolicyText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Support.cs").Replace("\r\n", "\n");
+        var rankingPolicyText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Ranking.cs").Replace("\r\n", "\n");
+        var modelsPolicyText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Models.cs").Replace("\r\n", "\n");
+        var policyFamilyText = helperText + sourcePolicyText + hdrPolicyText + sdrPolicyText + supportPolicyText + rankingPolicyText + modelsPolicyText;
 
         AssertContains(resolutionOptionsText, "private void RebuildResolutionOptions()");
         AssertContains(resolutionOptionsText, "private bool TryResolveResolutionKey(");
@@ -113,19 +120,30 @@ static partial class Program
         AssertContains(selectionPolicyText, "CaptureResolutionSelectionPolicy.BuildHdrSupportHint(");
         AssertDoesNotContain(selectionPolicyText, "SelectNearestResolution(");
         AssertDoesNotContain(selectionPolicyText, "sdrFriendlyBucketsByResolution");
-        AssertContains(helperText, "internal static class CaptureResolutionSelectionPolicy");
+        AssertContains(helperText, "internal static partial class CaptureResolutionSelectionPolicy");
         AssertContains(helperText, "internal static CaptureResolutionSelection Select(CaptureResolutionSelectionRequest request)");
-        AssertContains(helperText, "internal sealed record CaptureResolutionSelectionRequest(");
-        AssertContains(helperText, "internal sealed record CaptureResolutionSelection(");
-        AssertContains(helperText, "private static ResolutionOption? SelectSourceResolutionOption(");
-        AssertContains(helperText, "private static HdrResolutionSelection SelectHdrResolutionOption(");
-        AssertContains(helperText, "private static SdrAutoResolutionSelection? SelectSdrAutoResolutionOption(");
-        AssertContains(helperText, "SelectNearestResolution(sourceKey, enabled)");
-        AssertContains(helperText, "SelectNearestResolution(previousSelection, sameFpsCandidates)");
-        AssertContains(helperText, "sdrFriendlyBucketsByResolution");
-        AssertDoesNotContain(helperText, "AvailableResolutions.Clear();");
-        AssertDoesNotContain(helperText, "OnPropertyChanged(");
-        AssertDoesNotContain(helperText, "SelectedResolution =");
+        AssertDoesNotContain(helperText, "internal static bool TryParseResolutionKey(");
+        AssertDoesNotContain(helperText, "internal static string BuildHdrSupportHint(");
+        AssertDoesNotContain(helperText, "private static ResolutionOption? SelectSourceResolutionOption(");
+        AssertDoesNotContain(helperText, "private static HdrResolutionSelection SelectHdrResolutionOption(");
+        AssertDoesNotContain(helperText, "private static SdrAutoResolutionSelection? SelectSdrAutoResolutionOption(");
+        AssertContains(sourcePolicyText, "private static ResolutionOption? SelectSourceResolutionOption(");
+        AssertContains(sourcePolicyText, "SelectNearestResolution(sourceKey, enabled)");
+        AssertDoesNotContain(sourcePolicyText, "private static ResolutionOption? SelectNearestResolution(");
+        AssertContains(rankingPolicyText, "private static ResolutionOption? SelectNearestResolution(");
+        AssertContains(hdrPolicyText, "private static HdrResolutionSelection SelectHdrResolutionOption(");
+        AssertContains(hdrPolicyText, "internal static string BuildHdrSupportHint(");
+        AssertContains(hdrPolicyText, "SelectNearestResolution(previousSelection, sameFpsCandidates)");
+        AssertContains(sdrPolicyText, "private static SdrAutoResolutionSelection? SelectSdrAutoResolutionOption(");
+        AssertDoesNotContain(sdrPolicyText, "private static ResolutionOption? SelectNearestResolution(");
+        AssertContains(sdrPolicyText, "sdrFriendlyBucketsByResolution");
+        AssertContains(supportPolicyText, "internal static bool TryParseResolutionKey(");
+        AssertContains(supportPolicyText, "internal static bool ResolutionSupportsFriendlyFrameRate(");
+        AssertContains(modelsPolicyText, "internal sealed record CaptureResolutionSelectionRequest(");
+        AssertContains(modelsPolicyText, "internal sealed record CaptureResolutionSelection(");
+        AssertDoesNotContain(policyFamilyText, "AvailableResolutions.Clear();");
+        AssertDoesNotContain(policyFamilyText, "OnPropertyChanged(");
+        AssertDoesNotContain(policyFamilyText, "SelectedResolution =");
 
         return Task.CompletedTask;
     }

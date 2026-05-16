@@ -2561,8 +2561,17 @@ Remaining `tools/Common` ownership:
    live in `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
    Automatic resolution ranking, source-aware auto-selection, and auto-resolved
    dimension/frame-rate state now live in `MainViewModel.AutoResolutionOptions.cs`.
-   Pure source-aware, HDR-aware, and SDR fallback resolution selection policy
-   now lives in `Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs`.
+   Pure resolution selection policy now lives in the
+   `Sussudio/ViewModels/CaptureResolutionSelectionPolicy*.cs` family:
+   `CaptureResolutionSelectionPolicy.cs` owns the facade,
+   `CaptureResolutionSelectionPolicy.Support.cs` owns parsing and frame-rate
+   support checks, `CaptureResolutionSelectionPolicy.Ranking.cs` owns
+   nearest-resolution ranking, `CaptureResolutionSelectionPolicy.Source.cs`
+   owns source-aware selection,
+   `CaptureResolutionSelectionPolicy.Hdr.cs` owns HDR retarget/support-hint
+   selection, `CaptureResolutionSelectionPolicy.Sdr.cs` owns SDR auto/fallback
+   selection, and `CaptureResolutionSelectionPolicy.Models.cs` owns the
+   request/result records.
    `MainViewModel.ResolutionSelectionPolicy.cs` only keeps state-backed
    delegates for callers that still live across the partial family; keep
    dropdown rebuild, collection mutation, property notifications, and effective
