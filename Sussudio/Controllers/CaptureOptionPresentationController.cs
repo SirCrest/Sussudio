@@ -33,26 +33,15 @@ internal sealed class CaptureOptionPresentationController
 
     public void ApplyInitialDecoderCountSelection()
     {
-        _selectedDecoderCount = Math.Clamp(_context.ViewModel.MjpegDecoderCount, 1, 8);
+        var affordances = BuildAffordances();
+        _selectedDecoderCount = affordances.InitialDecoderCount;
         _context.DecoderCountComboBox.SelectedItem = _selectedDecoderCount;
     }
 
     public void UpdateDecoderCountVisibility()
     {
-        var selectedFormat = _context.VideoFormatComboBox.SelectedItem as string ?? _context.ViewModel.SelectedVideoFormat;
-        var selectedFrameRate = GetSelectedFriendlyFrameRate();
-
-        // Show decoder count when MJPG is explicitly selected, OR when auto
-        // resolves to a format that would use the parallel MJPEG pipeline
-        // (i.e. the device's native format is MJPG at high frame rates).
-        var isExplicitMjpg = string.Equals(selectedFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
-        var isAutoWithMjpgDevice = string.Equals(selectedFormat, "Auto", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(_context.ViewModel.SelectedFormat?.PixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
-
-        _context.DecoderCountPanel.Visibility =
-            (isExplicitMjpg || isAutoWithMjpgDevice) && selectedFrameRate >= 90
-                ? Visibility.Visible
-                : Visibility.Collapsed;
+        var affordances = BuildAffordances();
+        _context.DecoderCountPanel.Visibility = ToVisibility(affordances.ShowDecoderCount);
     }
 
     public void HandleDecoderCountSelectionChanged()
@@ -86,38 +75,45 @@ internal sealed class CaptureOptionPresentationController
 
     public void ApplyHdrToggleEnabledState()
     {
-        _context.HdrToggle.IsEnabled = _context.ViewModel.IsHdrAvailable &&
-                                       !_context.ViewModel.IsRecording &&
-                                       _context.ViewModel.SourceIsHdr != false;
-        _context.TrueHdrPreviewToggle.IsEnabled = _context.ViewModel.IsHdrEnabled && !_context.ViewModel.IsRecording;
+        var affordances = BuildAffordances();
+        _context.HdrToggle.IsEnabled = affordances.EnableHdrToggle;
+        _context.TrueHdrPreviewToggle.IsEnabled = affordances.EnableTrueHdrPreviewToggle;
     }
 
     public void ApplyBitrateVisibility()
     {
-        _context.CustomBitratePanel.Visibility = _context.ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
-        _context.PresetPanel.Visibility = _context.ViewModel.IsCustomBitrateVisible ? Visibility.Collapsed : Visibility.Visible;
+        var affordances = BuildAffordances();
+        _context.CustomBitratePanel.Visibility = ToVisibility(affordances.ShowCustomBitrate);
+        _context.PresetPanel.Visibility = ToVisibility(affordances.ShowPreset);
     }
 
     public void ApplyAudioClipVisibility()
     {
-        _context.AudioClipText.Visibility = _context.ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
+        var affordances = BuildAffordances();
+        _context.AudioClipText.Visibility = ToVisibility(affordances.ShowAudioClip);
     }
 
-    private double GetSelectedFriendlyFrameRate()
+    private CaptureOptionPresentationAffordances BuildAffordances()
+        => CaptureOptionPresentationPolicy.Build(BuildPolicyInput());
+
+    private CaptureOptionPresentationInput BuildPolicyInput()
     {
-        if (_context.FrameRateComboBox.SelectedItem is FrameRateOption option)
-        {
-            if (option.FriendlyValue > 0)
-            {
-                return option.FriendlyValue;
-            }
-
-            if (option.Value > 0)
-            {
-                return option.Value;
-            }
-        }
-
-        return _context.ViewModel.SelectedFrameRate;
+        var selectedFrameRateOption = _context.FrameRateComboBox.SelectedItem as FrameRateOption;
+        return new CaptureOptionPresentationInput(
+            SelectedVideoFormat: _context.VideoFormatComboBox.SelectedItem as string ?? _context.ViewModel.SelectedVideoFormat,
+            SelectedFormatPixelFormat: _context.ViewModel.SelectedFormat?.PixelFormat,
+            SelectedFrameRateOptionFriendlyValue: selectedFrameRateOption?.FriendlyValue,
+            SelectedFrameRateOptionValue: selectedFrameRateOption?.Value,
+            SelectedFrameRateFallback: _context.ViewModel.SelectedFrameRate,
+            MjpegDecoderCount: _context.ViewModel.MjpegDecoderCount,
+            IsHdrAvailable: _context.ViewModel.IsHdrAvailable,
+            IsRecording: _context.ViewModel.IsRecording,
+            SourceIsHdr: _context.ViewModel.SourceIsHdr,
+            IsHdrEnabled: _context.ViewModel.IsHdrEnabled,
+            IsCustomBitrateVisible: _context.ViewModel.IsCustomBitrateVisible,
+            AudioClipping: _context.ViewModel.AudioClipping);
     }
+
+    private static Visibility ToVisibility(bool isVisible)
+        => isVisible ? Visibility.Visible : Visibility.Collapsed;
 }

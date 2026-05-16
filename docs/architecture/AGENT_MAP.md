@@ -1800,10 +1800,12 @@ Primary current owners:
 - `Sussudio/Controllers/CaptureDeviceActionController.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
   path. `MainWindow.CaptureDeviceActions.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/CaptureOptionPresentationController.cs` owns
-  presentation-only rules for capture option affordances: HDR readiness hints,
-  FPS telemetry tooltips, MJPEG decoder count selection/visibility, bitrate
-  mode visibility, and audio clipping visibility.
+- `Sussudio/Controllers/CaptureOptionPresentationPolicy.cs` owns pure
+  capture-option presentation decisions: HDR toggle enablement, MJPEG decoder
+  count visibility, bitrate/preset visibility, audio clipping visibility, and
+  initial decoder-count clamping. `CaptureOptionPresentationController.cs`
+  owns XAML control application, decoder-count selection handling, and
+  delegation to pure policy/tooltip helpers.
   `Sussudio/Controllers/CaptureOptionTooltipFormatter.cs` owns pure HDR hint
   and FPS telemetry tooltip text policy.
   `MainWindow.CaptureOptionPresentation.cs` is the XAML-facing adapter.

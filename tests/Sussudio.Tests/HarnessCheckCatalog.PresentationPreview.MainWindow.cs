@@ -115,6 +115,9 @@ static partial class Program
             "Capture option presentation lives in controller",
             CaptureOptionPresentation_LivesInController);
         await AddCheckAsync(results,
+            "Capture option presentation policy preserves affordance rules",
+            CaptureOptionPresentationPolicy_PreservesAffordanceRules);
+        await AddCheckAsync(results,
             "Capture option bindings live in controller",
             CaptureOptionBindings_LiveInController);
         await AddCheckAsync(results,
