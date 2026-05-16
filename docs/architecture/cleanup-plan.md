@@ -2756,7 +2756,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunExecution.Scenario.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionRunExecution.ResultRequest.cs`
-- `JsonOptions.cs`
+- `ToolJsonOptions.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`
 - `tools/Common/PresentMon/PresentMonProbe.Paths.cs`
 - `tools/Common/PresentMon/PresentMonProbe.Arguments.cs`

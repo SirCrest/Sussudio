@@ -13,7 +13,7 @@ internal static class DiagnosticSessionJsonArtifacts
 
     internal static async Task WriteJsonAsync<T>(string path, T value, CancellationToken cancellationToken)
     {
-        var json = JsonSerializer.Serialize(value, JsonOptions.Pretty);
+        var json = JsonSerializer.Serialize(value, ToolJsonOptions.Pretty);
         await File.WriteAllTextAsync(path, json, cancellationToken).ConfigureAwait(false);
     }
 

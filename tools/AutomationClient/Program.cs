@@ -79,7 +79,7 @@ internal static partial class Program
             if (options.Pretty)
             {
                 using var responseDocument = JsonDocument.Parse(responseLine);
-                var pretty = JsonSerializer.Serialize(responseDocument.RootElement, JsonOptions.Pretty);
+                var pretty = JsonSerializer.Serialize(responseDocument.RootElement, ToolJsonOptions.Pretty);
                 Console.WriteLine(pretty);
             }
             else

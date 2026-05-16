@@ -6,7 +6,7 @@ namespace Sussudio.Tools.Ssctl;
 internal static partial class CommandHandlers
 {
     private static string PrettyJson<T>(T value)
-        => JsonSerializer.Serialize(value, JsonOptions.Pretty);
+        => JsonSerializer.Serialize(value, ToolJsonOptions.Pretty);
 
     private static bool LooksLikeJson(string value)
     {
