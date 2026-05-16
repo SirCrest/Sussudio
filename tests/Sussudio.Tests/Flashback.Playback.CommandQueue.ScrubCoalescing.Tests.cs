@@ -8,6 +8,10 @@ static partial class Program
     private static Task FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+        var coalescingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandCoalescing.cs")
+            .Replace("\r\n", "\n");
 
         var seekBlock = ExtractTextBetween(
             sourceText,
@@ -41,16 +45,24 @@ static partial class Program
             "private void DrainAbandonedCommandsOnThreadExit(Channel<PlaybackCommand> commandChannel)",
             "    private static void CompleteCommandChannelForThreadExit");
 
-        AssertContains(sourceText, "private long _latestScrubUpdateTicks;");
-        AssertContains(sourceText, "private sealed class SeekIntentSlot");
-        AssertContains(sourceText, "private sealed class ScrubUpdateIntentSlot");
+        AssertContains(coalescingText, "private long _latestScrubUpdateTicks;");
+        AssertContains(coalescingText, "private sealed class SeekIntentSlot");
+        AssertContains(coalescingText, "private sealed class ScrubUpdateIntentSlot");
         AssertContains(sourceText, "public SeekIntentSlot? SeekSlot { get; init; }");
         AssertContains(sourceText, "public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }");
-        AssertContains(sourceText, "private readonly object _seekSlotSync = new();");
-        AssertContains(sourceText, "private SeekIntentSlot? _queuedSeekSlot;");
-        AssertContains(sourceText, "private ScrubUpdateIntentSlot? _queuedScrubUpdateSlot;");
-        AssertContains(sourceText, "private long _scrubUpdatesCoalesced;");
-        AssertContains(sourceText, "private long _seekCommandsCoalesced;");
+        AssertContains(coalescingText, "private readonly object _seekSlotSync = new();");
+        AssertContains(coalescingText, "private SeekIntentSlot? _queuedSeekSlot;");
+        AssertContains(coalescingText, "private ScrubUpdateIntentSlot? _queuedScrubUpdateSlot;");
+        AssertContains(coalescingText, "private long _scrubUpdatesCoalesced;");
+        AssertContains(coalescingText, "private long _seekCommandsCoalesced;");
+        AssertDoesNotContain(rootText, "private sealed class SeekIntentSlot");
+        AssertDoesNotContain(rootText, "private sealed class ScrubUpdateIntentSlot");
+        AssertDoesNotContain(rootText, "private long _latestScrubUpdateTicks;");
+        AssertDoesNotContain(rootText, "private readonly object _seekSlotSync = new();");
+        AssertDoesNotContain(rootText, "private SeekIntentSlot? _queuedSeekSlot;");
+        AssertDoesNotContain(rootText, "private ScrubUpdateIntentSlot? _queuedScrubUpdateSlot;");
+        AssertDoesNotContain(rootText, "private long _scrubUpdatesCoalesced;");
+        AssertDoesNotContain(rootText, "private long _seekCommandsCoalesced;");
         AssertContains(sourceText, "public long SeekCommandsCoalesced => Interlocked.Read(ref _seekCommandsCoalesced);");
         AssertContains(sourceText, "public bool HasPositionOverride { get; init; }");
         AssertContains(sourceText, "public bool EndScrub() => EndScrubAt(null);");

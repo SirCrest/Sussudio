@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
@@ -54,26 +53,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         public SeekIntentSlot? SeekSlot { get; init; }
         public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }
         public long QueuedTimestamp { get; init; }
-    }
-
-    private sealed class SeekIntentSlot
-    {
-        public SeekIntentSlot(long ticks)
-        {
-            LatestTicks = ticks;
-        }
-
-        public long LatestTicks;
-    }
-
-    private sealed class ScrubUpdateIntentSlot
-    {
-        public ScrubUpdateIntentSlot(long ticks)
-        {
-            LatestTicks = ticks;
-        }
-
-        public long LatestTicks;
     }
 
     // --- Dependencies ---
@@ -189,13 +168,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private string _lastCommandFailure = string.Empty;
     private int _activeCommandKind = -1;
     private long _activeCommandStartedTimestamp;
-    private long _latestScrubUpdateTicks;
-    private readonly object _seekSlotSync = new();
-    private SeekIntentSlot? _queuedSeekSlot;
-    private ScrubUpdateIntentSlot? _queuedScrubUpdateSlot;
-    private long _scrubUpdatesCoalesced;
-    private long _seekCommandsCoalesced;
-
     // --- Deferred frame release for D3D11VA (C1 fix) ---
     // The renderer's render thread hasn't copied the texture yet when we release.
     // Keep the previous frame alive until the next frame is submitted.

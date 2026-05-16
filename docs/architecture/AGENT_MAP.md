@@ -620,7 +620,7 @@ Entry points:
 - `FlashbackPlaybackController.Lifecycle.cs` owns initialize/update component references, preview-detach cleanup, deferred reattach, and dispose.
 - `FlashbackPlaybackController.Commands.cs` owns public playback command entry points for scrub, seek, play/pause, go-live, and nudge.
 - `FlashbackPlaybackController.CommandQueue.cs` owns command queue writes and queue drop policy.
-- `FlashbackPlaybackController.CommandCoalescing.cs` owns seek/scrub coalescing slots, queued-command resolution, and control-yield peek policy.
+- `FlashbackPlaybackController.CommandCoalescing.cs` owns seek/scrub coalescing slot state, queued-command resolution, and control-yield peek policy.
 - `FlashbackPlaybackController.CommandTelemetry.cs` owns command readiness guards, failure-detail formatting, and queue command telemetry bookkeeping.
 - `FlashbackPlaybackController.Thread.cs` is the playback-thread shell.
 - `FlashbackPlaybackController.ThreadLoop.cs` owns `PlaybackThreadEntry`,
@@ -1617,7 +1617,7 @@ Primary current owners:
   playback thread recovery and live-preview transition tests.
 - `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` is the
   Flashback playback command queue marker shell. Capacity/drop-oldest,
-  scrub-coalescing, and seek-slot barrier coverage lives in focused
+  scrub-coalescing source ownership, and seek-slot barrier behavior coverage live in focused
   `CommandQueue.Capacity`, `CommandQueue.ScrubCoalescing`, and
   `CommandQueue.SeekSlots` owner files.
 - `tests/Sussudio.Tests/Flashback.Playback.Cadence.Tests.cs` owns Flashback

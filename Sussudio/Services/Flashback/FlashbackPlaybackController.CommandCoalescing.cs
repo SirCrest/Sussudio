@@ -8,6 +8,33 @@ internal sealed partial class FlashbackPlaybackController
 {
     // --- Command coalescing and slot resolution ---
 
+    private sealed class SeekIntentSlot
+    {
+        public SeekIntentSlot(long ticks)
+        {
+            LatestTicks = ticks;
+        }
+
+        public long LatestTicks;
+    }
+
+    private sealed class ScrubUpdateIntentSlot
+    {
+        public ScrubUpdateIntentSlot(long ticks)
+        {
+            LatestTicks = ticks;
+        }
+
+        public long LatestTicks;
+    }
+
+    private long _latestScrubUpdateTicks;
+    private readonly object _seekSlotSync = new();
+    private SeekIntentSlot? _queuedSeekSlot;
+    private ScrubUpdateIntentSlot? _queuedScrubUpdateSlot;
+    private long _scrubUpdatesCoalesced;
+    private long _seekCommandsCoalesced;
+
     private bool SendSeekCommand(TimeSpan position)
     {
         lock (_seekSlotSync)
