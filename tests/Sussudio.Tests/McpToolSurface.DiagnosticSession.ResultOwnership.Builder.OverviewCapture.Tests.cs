@@ -4,12 +4,15 @@ static partial class Program
     {
         var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Result.cs")
             .Replace("\r\n", "\n");
+        var compositionText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Composition.cs")
+            .Replace("\r\n", "\n");
         var overviewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs")
             .Replace("\r\n", "\n");
         var captureResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(resultText, "var overviewResult = BuildOverviewResultProjection(request, runState, analysis);");
+        AssertContains(compositionText, "Overview: BuildOverviewResultProjection(request, runState, analysis)");
+        AssertContains(resultText, "var overviewResult = resultProjections.Overview;");
         AssertContains(resultText, "Success = overviewResult.Success,");
         AssertContains(overviewResultText, "private readonly record struct DiagnosticSessionOverviewResultProjection(");
         AssertContains(overviewResultText, "private static DiagnosticSessionOverviewResultProjection BuildOverviewResultProjection(");
@@ -29,7 +32,8 @@ static partial class Program
         AssertDoesNotContain(resultText, "request.CommandFailureCount == 0 &&");
         AssertDoesNotContain(resultText, "ProcessCpuPercentAtEnd = GetDouble(lastSnapshot");
         AssertDoesNotContain(resultText, "RecordingVerificationMessage = request.Verification.HasValue");
-        AssertContains(resultText, "var captureResult = BuildCaptureResultProjection(analysis);");
+        AssertContains(compositionText, "Capture: BuildCaptureResultProjection(analysis)");
+        AssertContains(resultText, "var captureResult = resultProjections.Capture;");
         AssertContains(captureResultText, "private readonly record struct DiagnosticSessionCaptureResultProjection(");
         AssertContains(captureResultText, "private static DiagnosticSessionCaptureResultProjection BuildCaptureResultProjection(");
         AssertContains(captureResultText, "SelectedResolutionAtEnd: GetString(lastSnapshot, \"SelectedResolution\") ?? string.Empty");

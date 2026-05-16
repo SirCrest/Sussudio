@@ -12,7 +12,6 @@ public sealed partial class MainWindow
 {
     private PreviewStartupSessionController _previewStartupSessionController = null!;
     private bool _previewStopRequestedByUser;
-    private bool _isPreviewReinitAnimating;
 
     private void InitializePreviewStartupSessionController()
         => _previewStartupSessionController = new PreviewStartupSessionController();

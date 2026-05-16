@@ -6,6 +6,7 @@ static partial class Program
         {
             "tools/Common/DiagnosticSessionResultBuilder.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Result.cs",
+            "tools/Common/DiagnosticSessionResultBuilder.Composition.cs",
             "tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Analysis.cs",
             "tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs",

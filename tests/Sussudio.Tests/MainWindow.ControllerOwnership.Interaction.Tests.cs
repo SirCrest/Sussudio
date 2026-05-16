@@ -260,6 +260,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewActions.cs").Replace("\r\n", "\n");
         var propertyChangedPreviewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
+        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewButtonPresentation.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonPresentationController.cs").Replace("\r\n", "\n");
         var actionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonActionController.cs").Replace("\r\n", "\n");
@@ -275,6 +276,7 @@ static partial class Program
         AssertContains(mainWindowText, "InitializePreviewButtonPresentationController();");
         AssertContains(propertyChangedPreviewText, "ShowStopPreviewButtonPresentation();");
         AssertContains(propertyChangedPreviewText, "ShowStartPreviewButtonPresentation();");
+        AssertContains(previewReinitText, "ShowStartPreviewButtonPresentation();");
         AssertContains(controllerText, "internal sealed class PreviewButtonPresentationController");
         AssertContains(controllerText, "private const string StopPreviewGlyph = \"\\uE71A\";");
         AssertContains(controllerText, "private const string StartPreviewGlyph = \"\\uE768\";");
@@ -305,6 +307,10 @@ static partial class Program
         AssertDoesNotContain(propertyChangedPreviewText, "PreviewButtonIcon.Glyph = \"\\uE768\";");
         AssertDoesNotContain(propertyChangedPreviewText, "ToolTipService.SetToolTip(PreviewButton, \"Stop Preview\");");
         AssertDoesNotContain(propertyChangedPreviewText, "ToolTipService.SetToolTip(PreviewButton, \"Start Preview\");");
+        AssertDoesNotContain(previewReinitText, "PreviewButtonIcon.Glyph = \"\\uE71A\";");
+        AssertDoesNotContain(previewReinitText, "PreviewButtonIcon.Glyph = \"\\uE768\";");
+        AssertDoesNotContain(previewReinitText, "ToolTipService.SetToolTip(PreviewButton, \"Stop Preview\");");
+        AssertDoesNotContain(previewReinitText, "ToolTipService.SetToolTip(PreviewButton, \"Start Preview\");");
 
         return Task.CompletedTask;
     }

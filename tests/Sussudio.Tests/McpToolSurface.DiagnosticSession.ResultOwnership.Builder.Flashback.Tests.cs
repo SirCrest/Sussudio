@@ -4,6 +4,8 @@ static partial class Program
     {
         var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Result.cs")
             .Replace("\r\n", "\n");
+        var compositionText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Composition.cs")
+            .Replace("\r\n", "\n");
         var flashbackPlaybackResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackCommandsResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs")
@@ -21,7 +23,8 @@ static partial class Program
         var flashbackExportResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(resultText, "var flashbackPlaybackResult = BuildFlashbackPlaybackResultProjection(analysis);");
+        AssertContains(compositionText, "FlashbackPlayback: BuildFlashbackPlaybackResultProjection(analysis)");
+        AssertContains(resultText, "var flashbackPlaybackResult = resultProjections.FlashbackPlayback;");
         AssertContains(resultText, "var flashbackPlaybackCommandsResult = flashbackPlaybackResult.CommandsResult;");
         AssertContains(resultText, "var flashbackPlaybackCadenceResult = flashbackPlaybackResult.CadenceResult;");
         AssertContains(resultText, "var flashbackPlaybackDecodeResult = flashbackPlaybackResult.DecodeResult;");
@@ -75,14 +78,16 @@ static partial class Program
         AssertDoesNotContain(resultText, "FlashbackPlaybackMaxDecodePhaseAtEnd = playbackResultMetrics");
         AssertDoesNotContain(resultText, "FlashbackPlaybackAudioMasterFallbacksAtEnd = playbackResultMetrics");
         AssertDoesNotContain(resultText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = playbackResultMetrics");
-        AssertContains(resultText, "var flashbackRecordingResult = BuildFlashbackRecordingResultProjection(analysis);");
+        AssertContains(compositionText, "FlashbackRecording: BuildFlashbackRecordingResultProjection(analysis)");
+        AssertContains(resultText, "var flashbackRecordingResult = resultProjections.FlashbackRecording;");
         AssertContains(flashbackRecordingResultText, "private readonly record struct DiagnosticSessionFlashbackRecordingResultProjection(");
         AssertContains(flashbackRecordingResultText, "private static DiagnosticSessionFlashbackRecordingResultProjection BuildFlashbackRecordingResultProjection(");
         AssertContains(flashbackRecordingResultText, "FlashbackRecordingBackendObserved: recordingMetrics.BackendObserved");
         AssertContains(flashbackRecordingResultText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta: recordingMetrics.IntegrityQueueDroppedFramesDelta");
         AssertDoesNotContain(resultText, "FlashbackRecordingBackendObserved = recordingMetrics");
         AssertDoesNotContain(resultText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta = recordingMetrics");
-        AssertContains(resultText, "var flashbackExportResult = BuildFlashbackExportResultProjection(analysis);");
+        AssertContains(compositionText, "FlashbackExport: BuildFlashbackExportResultProjection(analysis)");
+        AssertContains(resultText, "var flashbackExportResult = resultProjections.FlashbackExport;");
         AssertContains(flashbackExportResultText, "private readonly record struct DiagnosticSessionFlashbackExportResultProjection(");
         AssertContains(flashbackExportResultText, "private static DiagnosticSessionFlashbackExportResultProjection BuildFlashbackExportResultProjection(");
         AssertContains(flashbackExportResultText, "FlashbackExportObserved: exportMetrics.Observed");

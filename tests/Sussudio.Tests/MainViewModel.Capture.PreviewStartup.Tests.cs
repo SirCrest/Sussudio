@@ -87,6 +87,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
             .Replace("\r\n", "\n");
+        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupSessionController();");
         AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");
@@ -192,6 +194,14 @@ static partial class Program
         AssertContains(previewPropertyChangedText, "HandlePreviewReinitializingChanged();");
         AssertContains(previewPropertyChangedText, "Preview-specific ViewModel events and property projections");
         AssertContains(previewPropertyChangedText, "if (ShouldBeginPreviewStartupAttempt)");
+        AssertDoesNotContain(previewStartupText, "private bool _isPreviewReinitAnimating;");
+        AssertDoesNotContain(previewPropertyChangedText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
+        AssertDoesNotContain(previewPropertyChangedText, "private Task ViewModel_PreviewRendererStopRequested()");
+        AssertDoesNotContain(previewPropertyChangedText, "private void HandlePreviewReinitializingChanged()");
+        AssertContains(previewReinitText, "private bool _isPreviewReinitAnimating;");
+        AssertContains(previewReinitText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
+        AssertContains(previewReinitText, "private Task ViewModel_PreviewRendererStopRequested()");
+        AssertContains(previewReinitText, "private void HandlePreviewReinitializingChanged()");
         AssertDoesNotContain(mainWindowText, "private enum PreviewStartupState");
         AssertDoesNotContain(previewStartupText, "private enum PreviewStartupState");
         AssertDoesNotContain(previewStartupText, "private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;");
@@ -693,6 +703,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewActions.cs")
             .Replace("\r\n", "\n");
+        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs")
+            .Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
             .Replace("\r\n", "\n");
         var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs")
@@ -732,7 +744,8 @@ static partial class Program
         AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "PreviewStopRequested?.Invoke(this, EventArgs.Empty);");
         AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _sessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
 
-        var previewReinitStop = ExtractMemberCode(previewPropertyChangedText, "ViewModel_PreviewRendererStopRequested");
+        AssertDoesNotContain(previewPropertyChangedText, "private Task ViewModel_PreviewRendererStopRequested()");
+        var previewReinitStop = ExtractMemberCode(previewReinitText, "ViewModel_PreviewRendererStopRequested");
         AssertContains(previewReinitStop, "DisposeD3DPreviewRendererForReinit();");
         AssertDoesNotContain(previewReinitStop, "renderer.StopRenderThread();");
 

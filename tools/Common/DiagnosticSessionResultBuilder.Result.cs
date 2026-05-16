@@ -14,19 +14,20 @@ internal static partial class DiagnosticSessionResultBuilder
         var likelyStage = analysis.LikelyStage;
         var summary = analysis.Summary;
         var evidence = analysis.Evidence;
-        var overviewResult = BuildOverviewResultProjection(request, runState, analysis);
-        var captureResult = BuildCaptureResultProjection(analysis);
-        var flashbackPlaybackResult = BuildFlashbackPlaybackResultProjection(analysis);
+        var resultProjections = BuildResultProjectionSet(request, runState, analysis);
+        var overviewResult = resultProjections.Overview;
+        var captureResult = resultProjections.Capture;
+        var flashbackPlaybackResult = resultProjections.FlashbackPlayback;
         var flashbackPlaybackCommandsResult = flashbackPlaybackResult.CommandsResult;
         var flashbackPlaybackCadenceResult = flashbackPlaybackResult.CadenceResult;
         var flashbackPlaybackDecodeResult = flashbackPlaybackResult.DecodeResult;
         var flashbackPlaybackAudioMasterResult = flashbackPlaybackResult.AudioMasterResult;
         var flashbackPlaybackStagesResult = flashbackPlaybackResult.StagesResult;
-        var flashbackRecordingResult = BuildFlashbackRecordingResultProjection(analysis);
-        var flashbackExportResult = BuildFlashbackExportResultProjection(analysis);
-        var previewResult = BuildPreviewResultProjection(analysis);
-        var previewD3DResult = BuildPreviewD3DResultProjection(analysis);
-        var previewVisualCadenceResult = BuildPreviewVisualCadenceResultProjection(analysis);
+        var flashbackRecordingResult = resultProjections.FlashbackRecording;
+        var flashbackExportResult = resultProjections.FlashbackExport;
+        var previewResult = resultProjections.Preview;
+        var previewD3DResult = resultProjections.PreviewD3D;
+        var previewVisualCadenceResult = resultProjections.PreviewVisualCadence;
 
         var result = new DiagnosticSessionResult
         {

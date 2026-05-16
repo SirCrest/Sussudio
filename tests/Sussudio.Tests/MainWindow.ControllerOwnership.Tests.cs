@@ -6,6 +6,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var previewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
+        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs").Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
         var outputText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedOutput.cs").Replace("\r\n", "\n");
         var captureOptionText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedCaptureOptions.cs").Replace("\r\n", "\n");
@@ -45,6 +46,24 @@ static partial class Program
         AssertContains(previewText, "private async Task<bool> TryHandlePreviewPropertyChangedAsync(string propertyName)");
         AssertContains(previewText, "case nameof(MainViewModel.IsPreviewing):");
         AssertContains(previewText, "await HandlePreviewingChangedAsync();");
+        AssertContains(previewText, "case nameof(MainViewModel.IsPreviewReinitializing):");
+        AssertContains(previewText, "HandlePreviewReinitializingChanged();");
+        AssertContains(previewText, "private void ViewModel_PreviewStartRequested(object? sender, EventArgs e)");
+        AssertContains(previewText, "private void ViewModel_PreviewStopRequested(object? sender, EventArgs e)");
+        AssertContains(previewText, "private async Task HandlePreviewingChangedAsync()");
+        AssertDoesNotContain(previewText, "private bool _isPreviewReinitAnimating;");
+        AssertDoesNotContain(previewText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
+        AssertDoesNotContain(previewText, "private Task ViewModel_PreviewRendererStopRequested()");
+        AssertDoesNotContain(previewText, "private void HandlePreviewReinitializingChanged()");
+        AssertContains(previewReinitText, "private bool _isPreviewReinitAnimating;");
+        AssertContains(previewReinitText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
+        AssertContains(previewReinitText, "private Task ViewModel_PreviewRendererStopRequested()");
+        AssertContains(previewReinitText, "private void HandlePreviewReinitializingChanged()");
+        var rendererStop = ExtractMemberCode(previewReinitText, "ViewModel_PreviewRendererStopRequested");
+        AssertContains(rendererStop, "DisposeD3DPreviewRendererForReinit();");
+        AssertContains(rendererStop, "catch (TimeoutException ex)");
+        AssertContains(rendererStop, "PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; continuing reinit with orphan render thread expected to exit shortly.");
+        AssertDoesNotContain(rendererStop, "renderer.StopRenderThread();");
         AssertContains(recordingText, "private bool TryHandleRecordingPropertyChanged(string propertyName)");
         AssertContains(recordingText, "case nameof(MainViewModel.IsRecording):");
         AssertContains(outputText, "private bool TryHandleOutputPropertyChanged(string propertyName)");

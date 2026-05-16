@@ -1676,6 +1676,8 @@ Primary current owners:
   startup timeout reason, timeout status, and failure-stop status text.
   `MainWindow.PropertyChangedPreview.cs` owns preview-specific ViewModel events
   and the preview property-change router for preview start/stop/reinit state.
+  `MainWindow.PreviewReinit.cs` owns preview reinit animation state,
+  renderer-stop-before-teardown handoff, and reinit completion presentation.
   Keep preview startup fields out of the composition root.
 - `Sussudio/Controllers/PreviewFadeInController.cs` owns delayed preview
   reveal after first visual: rendered-frame threshold, fade-in timer, renderer
@@ -2131,7 +2133,10 @@ Primary owners:
   and final summary emission. Keep `summary.json` field shape stable in the
   builder family.
 - `tools/Common/DiagnosticSessionResultBuilder.Result.cs` owns
-  diagnostic-session final DTO construction from named result projections.
+  diagnostic-session final DTO construction from a named projection set.
+- `tools/Common/DiagnosticSessionResultBuilder.Composition.cs` owns
+  diagnostic-session result projection-set assembly from overview, capture,
+  Flashback, preview, D3D, and visual-cadence projection owners.
 - `tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs` owns
   diagnostic-session outcome policy plus overview DTO projection for process
   CPU, recording verification, and PresentMon fields.

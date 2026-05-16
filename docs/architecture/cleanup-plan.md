@@ -1768,7 +1768,9 @@ Preview-specific ViewModel events and property-change projections now live in
 `Sussudio/MainWindow.PropertyChangedPreview.cs`. The broad
 `MainWindow.PropertyChanged.cs` dispatcher now owns only the `PropertyChanged`
 event envelope, property-name normalization, and visible route order; preview
-start/stop/reinit property-name routing has a named owner.
+start/stop/reinit property-name routing has a named owner. Preview reinit
+animation state, renderer-stop-before-teardown handoff, and reinit completion
+presentation now live in `Sussudio/MainWindow.PreviewReinit.cs`.
 
 Bottom status-strip projection now lives in
 `Sussudio/Controllers/StatusStripPresentationController.cs`, while
@@ -1920,7 +1922,10 @@ Diagnostic-session result construction now lives in
 orchestration, artifact-write handoff, summary-write handoff, and final
 summary emission while the runner keeps the phase sequence.
 `DiagnosticSessionResultBuilder.Result.cs` owns final
-`DiagnosticSessionResult` construction from named result projections. Overview
+`DiagnosticSessionResult` construction from a named projection set.
+`DiagnosticSessionResultBuilder.Composition.cs` owns result projection-set
+assembly from overview, capture, Flashback, preview, D3D, and visual-cadence
+projection owners. Overview
 outcome policy plus process CPU, recording verification, and PresentMon DTO
 projection values live in `DiagnosticSessionResultBuilder.OverviewResult.cs`.
 Diagnostic
@@ -2345,6 +2350,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultArtifacts.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultBuilder.Result.cs`
+- `DiagnosticSessionResultBuilder.Composition.cs`
 - `DiagnosticSessionResultBuilder.OverviewResult.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`

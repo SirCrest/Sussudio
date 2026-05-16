@@ -4,6 +4,8 @@ static partial class Program
     {
         var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Result.cs")
             .Replace("\r\n", "\n");
+        var compositionText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Composition.cs")
+            .Replace("\r\n", "\n");
         var previewD3DResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs")
             .Replace("\r\n", "\n");
         var previewVisualCadenceResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs")
@@ -11,9 +13,12 @@ static partial class Program
         var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(resultText, "var previewResult = BuildPreviewResultProjection(analysis);");
-        AssertContains(resultText, "var previewD3DResult = BuildPreviewD3DResultProjection(analysis);");
-        AssertContains(resultText, "var previewVisualCadenceResult = BuildPreviewVisualCadenceResultProjection(analysis);");
+        AssertContains(compositionText, "Preview: BuildPreviewResultProjection(analysis)");
+        AssertContains(compositionText, "PreviewD3D: BuildPreviewD3DResultProjection(analysis)");
+        AssertContains(compositionText, "PreviewVisualCadence: BuildPreviewVisualCadenceResultProjection(analysis)");
+        AssertContains(resultText, "var previewResult = resultProjections.Preview;");
+        AssertContains(resultText, "var previewD3DResult = resultProjections.PreviewD3D;");
+        AssertContains(resultText, "var previewVisualCadenceResult = resultProjections.PreviewVisualCadence;");
         AssertContains(previewResultText, "private readonly record struct DiagnosticSessionPreviewResultProjection(");
         AssertContains(previewResultText, "private static DiagnosticSessionPreviewResultProjection BuildPreviewResultProjection(");
         AssertContains(previewD3DResultText, "private readonly record struct DiagnosticSessionPreviewD3DResultProjection(");
