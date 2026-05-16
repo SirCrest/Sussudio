@@ -1,0 +1,155 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Sussudio.Models;
+using Sussudio.Services.Runtime;
+
+namespace Sussudio.Services.Capture;
+
+// Unified Flashback recording stop/finalize path: finish the live-edge export,
+// preserve/cycle the DVR backend, publish outcome state, and restore mic monitor.
+public partial class CaptureService
+{
+    private async Task<FinalizeResult> StopAndDisposeFlashbackRecordingBackendAsync(CancellationToken cancellationToken)
+    {
+        var flashbackSink = _flashbackSink!;
+        var fbRecordingContext = _recordingContext;
+        var fbOutputPath = fbRecordingContext?.FinalOutputPath ?? (_lastOutputPath ?? string.Empty);
+        var recordingBoundary = new FlashbackRecordingBoundarySnapshot();
+
+        Volatile.Write(ref _flashbackRecordingFinalizeInProgress, 1);
+        _recordingSink = null;
+        // Don't null _flashbackSink - it continues for the buffer
+
+        FinalizeResult fbResult;
+        OperationCanceledException? flashbackCancellationException = null;
+        try
+        {
+            try
+            {
+                fbResult = await FinalizeFlashbackRecordingAsync(
+                        fbRecordingContext,
+                        recordingBoundary,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            finally
+            {
+                Volatile.Write(ref _flashbackRecordingFinalizeInProgress, 0);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            flashbackCancellationException = new OperationCanceledException(cancellationToken);
+            fbResult = FinalizeResult.Failure(fbOutputPath, "Flashback recording finalize cancelled.");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+            fbResult = FinalizeResult.Failure(fbOutputPath, $"Flashback recording finalize failed: {ex.Message}");
+        }
+
+        CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);
+
+        if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))
+        {
+            flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
+        }
+
+        _lastRecordingIntegrity = BuildRecordingIntegritySummary(
+            backend: "Flashback",
+            recordingActive: false,
+            finalizeSucceeded: fbResult.Succeeded,
+            finalizeStatus: fbResult.StatusMessage,
+            completedUtc: DateTimeOffset.UtcNow,
+            sourceFrames: recordingBoundary.RecordingFramesDelivered,
+            acceptedFrames: recordingBoundary.RecordingFramesEnqueued,
+            counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, _unifiedVideoCapture),
+            audioCounters: recordingBoundary.AudioCounters ?? GetRecordingAudioCountersSinceBaseline(
+                CaptureRecordingAudioCounters(_wasapiAudioCapture, flashbackSink, _activeRecordingSettings)));
+        _recordingIntegrityCounterBaseline = null;
+        _recordingIntegrityAudioBaseline = null;
+        LogRecordingIntegritySummary(_lastRecordingIntegrity);
+
+        // If settings changed during recording (format, buffer duration, etc.),
+        // do a full restart to apply them. Otherwise just cycle the sink to
+        // preserve DVR history.
+        try
+        {
+            if (!fbResult.Succeeded)
+            {
+                var hadPendingFlashbackSettingsChange = _pendingFlashbackSettingsChange;
+                _pendingFlashbackSettingsChange = false;
+                _flashbackBackend.PreserveRecoverySegments("recording_finalize_failed");
+                Logger.Log(
+                    "FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING_DEFERRED " +
+                    $"reason=recording_finalize_failed pending_settings={hadPendingFlashbackSettingsChange}");
+            }
+            else if (_pendingFlashbackSettingsChange)
+            {
+                _pendingFlashbackSettingsChange = false;
+                Logger.Log("FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING");
+                await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
+                if (_flashbackEnabled && _unifiedVideoCapture != null && _currentSettings != null)
+                    await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await CycleFlashbackBufferAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_BUFFER_CYCLE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+            RecordLastFlashbackFailure(ex);
+            _flashbackBackend.PreserveRecoverySegments("buffer_cycle_failed");
+            BeginFlashbackBackendCleanup(ex);
+        }
+
+        _recordingStopwatch.Stop();
+        _isRecording = false;
+        if (!_isVideoPreviewActive) await StopTelemetryPollAsync().ConfigureAwait(false);
+        _recordingContext = null;
+        _activeRecordingSettings = null;
+        PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);
+
+        // Restart mic monitoring if preview is still active
+        try
+        {
+            await RestartMicrophoneMonitorAfterRecordingAsync(
+                new MicrophoneMonitorRestartOptions(
+                    OnlyWhenMissing: true,
+                    FlashbackAttachReason: null,
+                    RestartLogEvent: null,
+                    DisposeWarningEvent: "FLASHBACK_MIC_RESTART_DISPOSE_WARN"),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_MIC_RESTART_WARN type={ex.GetType().Name} error='{ex.Message}'");
+        }
+
+        if (fbResult.Succeeded)
+        {
+            Logger.Log($"FLASHBACK_UNIFIED_RECORDING_STOP_OK output='{fbResult.OutputPath}'");
+        }
+        else
+        {
+            Logger.Log($"FLASHBACK_UNIFIED_RECORDING_STOP_FAIL output='{fbResult.OutputPath}'");
+        }
+        if (flashbackCancellationException != null)
+        {
+            throw flashbackCancellationException;
+        }
+
+        return fbResult;
+    }
+}

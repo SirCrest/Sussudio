@@ -816,8 +816,20 @@ stop lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs`, including
 normal stop routing and the emergency stop overload that feeds finalization.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs` owns
-backend stop/finalize routing and shared post-stop state cleanup while
-delegating recording outcome field publication to
+the stop/finalize dispatcher: active backend selection, fallback status,
+emergency flag, cancellation-token handoff, and shared result routing.
+`Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs`
+owns active Flashback recording backend finalization: live-edge finalize/export
+handoff, finalize-in-progress choreography, boundary snapshots, Flashback
+recording-integrity summaries, pending-settings apply or buffer-cycle handling,
+cancellation-result classification, recovery preservation, and
+Flashback-specific microphone monitor restart.
+`Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs`
+owns standard LibAv recording finalization: unified-video recording stop and
+optional teardown, WASAPI recording detach/disposal, LibAv sink normal/emergency
+stop and drain tracking, encoder/runtime and recording-integrity summaries,
+pending Flashback enable after recording, and standard post-recording microphone
+monitor restart. Recording outcome field publication is delegated to
 `Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs` and
 post-recording microphone monitor restart mechanics to
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.

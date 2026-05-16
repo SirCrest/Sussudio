@@ -64,7 +64,7 @@ static partial class Program
 
     private static Task CaptureService_FlashbackEnableDisable_PreservesPreviewState()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+        var captureServiceText = ReadCaptureServiceRecordingFinalizationSource()
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs")
                 .Replace("\r\n", "\n")
@@ -78,7 +78,7 @@ static partial class Program
             "/// <summary>\n    /// Updates flashback-specific fields");
         var stopAndDisposeRecordingBackend = ExtractTextBetween(
             captureServiceText,
-            "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync",
+            "private async Task<FinalizeResult> StopAndDisposeLibAvRecordingBackendAsync",
             "private async Task DisposeTransientRecordingBackendAsync");
 
         AssertContains(setFlashbackEnabled, "_pendingFlashbackEnableAfterRecording = false;");

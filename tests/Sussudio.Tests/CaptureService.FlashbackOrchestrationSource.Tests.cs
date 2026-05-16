@@ -14,6 +14,8 @@ static partial class Program
     private static readonly string[] CaptureServiceRecordingFinalizationFiles =
     {
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs",
+        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs",
+        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs"
     };
@@ -157,7 +159,7 @@ static partial class Program
 
     private static Task CaptureService_MicrophoneRestartAfterRecordingLivesInMicrophoneMonitorPartial()
     {
-        var finalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+        var finalizationText = ReadCaptureServiceRecordingFinalizationSource()
             .Replace("\r\n", "\n");
         var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs")
             .Replace("\r\n", "\n");
@@ -193,10 +195,20 @@ static partial class Program
     private static Task CaptureService_RecordingFinalizationLivesInFocusedPartials()
     {
         var recordFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs");
+        var flashbackBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs");
+        var libAvBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs");
         var flashbackFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs");
         var outcomeStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs");
 
         AssertContains(recordFinalizationText, "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(");
+        AssertContains(recordFinalizationText, "StopAndDisposeFlashbackRecordingBackendAsync(cancellationToken)");
+        AssertContains(recordFinalizationText, "StopAndDisposeLibAvRecordingBackendAsync(fallbackStatusMessage, emergency, cancellationToken)");
+        AssertContains(flashbackBackendFinalizationText, "private async Task<FinalizeResult> StopAndDisposeFlashbackRecordingBackendAsync(");
+        AssertContains(flashbackBackendFinalizationText, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
+        AssertContains(flashbackBackendFinalizationText, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
+        AssertContains(libAvBackendFinalizationText, "private async Task<FinalizeResult> StopAndDisposeLibAvRecordingBackendAsync(");
+        AssertContains(libAvBackendFinalizationText, "var sinkResult = libAvSink != null");
+        AssertContains(libAvBackendFinalizationText, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
         AssertContains(flashbackFinalizationText, "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync(");
         AssertContains(flashbackFinalizationText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertContains(flashbackFinalizationText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
@@ -205,6 +217,8 @@ static partial class Program
         AssertContains(outcomeStateText, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
         AssertDoesNotContain(recordFinalizationText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertDoesNotContain(recordFinalizationText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
+        AssertDoesNotContain(recordFinalizationText, "Unified video recording stop failed");
+        AssertDoesNotContain(recordFinalizationText, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
         AssertDoesNotContain(recordFinalizationText, "_lastOutputPath = result.OutputPath;");
         AssertDoesNotContain(recordFinalizationText, "_lastFinalizeStatus = result.StatusMessage;");
         AssertDoesNotContain(recordFinalizationText, "_lastPreservedArtifacts = result.PreservedArtifacts;");

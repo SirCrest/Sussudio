@@ -150,7 +150,7 @@ static partial class Program
 
     private static Task RecordingStop_PropagatesUnifiedVideoStopFailure()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "Unified video recording stop failed");
