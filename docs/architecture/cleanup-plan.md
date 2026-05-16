@@ -516,9 +516,11 @@ explicit window close lifecycle section below for the close-state and recording
 finalization owners.
 
 UI-thread dispatching helpers and guarded async event-handler execution now
-live in `Sussudio/MainWindow.Dispatching.cs`. Window close completion,
-close-request dispatch, and recording finalization are covered by the explicit
-window close lifecycle section below.
+live in `Sussudio/Controllers/WindowUiDispatchController.cs`.
+`Sussudio/MainWindow.Dispatching.cs` keeps the stable private MainWindow adapter
+names for callers. Window close completion, close-request dispatch, and
+recording finalization are covered by the explicit window close lifecycle
+section below.
 
 `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` is now only the
 MCP command-routing test family marker shell. MCP command-routing coverage is
@@ -2625,9 +2627,10 @@ Remaining `tools/Common` ownership:
 
 3. Continue converting MainWindow partial concerns into controllers.
 
-   `FullScreen`, automation `Screenshot`, audio meter rendering, preview
-   startup, Flashback playback/export presentation, and stats overlay/row/
-   snapshot projection are extracted behind named controllers or builders.
+   `FullScreen`, automation `Screenshot`, MainWindow UI dispatching, audio
+   meter rendering, preview startup, Flashback playback/export presentation,
+   and stats overlay/row/snapshot projection are extracted behind named
+   controllers or builders.
    Start the next UI cleanup from remaining broad adapters not already covered
    by controller ownership tests. Keep XAML bindings stable.
 
@@ -2657,9 +2660,10 @@ Remaining `tools/Common` ownership:
    bridge methods. Audio capture/preview property handlers now live in
    `MainViewModel.AudioPropertyChanges.cs`, custom audio input handlers live in
    `MainViewModel.AudioInputPropertyChanges.cs`, microphone monitor/device
-   selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`, and
+   selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`,
    device-native audio mode/gain handlers live in
-   `MainViewModel.DeviceAudioPropertyChanges.cs`. Shared
+   `MainViewModel.DeviceAudioPropertyChanges.cs`, and capture-mode property
+   handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
    periodic timer refresh orchestration now lives in `MainViewModel.Runtime.cs`,
    output drive free-space projection now lives in
@@ -2715,9 +2719,10 @@ Remaining `tools/Common` ownership:
    resolution timing-variant projection, rational parsing, source-rate fallback,
    and preferred-format ranking now live in `MainViewModel.FrameRateTiming.cs`;
    keep device enumeration and selected device capability rebuilds in
-   `MainViewModel.DeviceManagement.cs`, while
-   startup audio-list and watcher-driven audio endpoint refresh adaptation live
-   in `MainViewModel.AudioDeviceDiscovery.cs`. Pure audio-device filtering and
+   `MainViewModel.DeviceManagement.cs`, while capture-mode property-change
+   hooks live in `MainViewModel.CaptureModePropertyChanges.cs` and startup
+   audio-list and watcher-driven audio endpoint refresh adaptation live in
+   `MainViewModel.AudioDeviceDiscovery.cs`. Pure audio-device filtering and
    previous/saved/default audio and microphone selection fallback policy now
    lives in `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs`. Pure
    recording codec filtering and selected-codec fallback policy now live in

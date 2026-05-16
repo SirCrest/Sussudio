@@ -837,9 +837,11 @@ Primary current owners:
   and native helpers used by shell startup and automation controllers.
   `Sussudio/MainWindow.NativeWindow.cs` is the XAML-facing adapter and keeps
   the `_hwnd` field consumed by screenshot and window automation paths.
-- `Sussudio/MainWindow.Dispatching.cs` owns UI-thread enqueue helpers and
-  guarded async event-handler execution used by automation adapters and XAML
-  event handlers.
+- `Sussudio/Controllers/WindowUiDispatchController.cs` owns MainWindow
+  UI-thread direct execution, dispatcher enqueue/cancellation/error wrapping,
+  and guarded async event-handler status updates used by automation adapters and
+  XAML event handlers. `Sussudio/MainWindow.Dispatching.cs` keeps the stable
+  private MainWindow adapter names for callers.
 - `Sussudio/MainWindow.Bindings.cs` owns the root `SetupBindings()`
   orchestration and leaves feature-specific binding clusters in focused
   partials or controllers, including initial status-strip projection.
@@ -1929,7 +1931,9 @@ Primary current owners:
   input property handlers. `MainViewModel.MicrophonePropertyChanges.cs` owns
   microphone monitor and selected-microphone property handlers.
   `MainViewModel.DeviceAudioPropertyChanges.cs` owns device-native audio mode
-  and analog gain property handlers.
+  and analog gain property handlers. `MainViewModel.CaptureModePropertyChanges.cs`
+  owns capture-mode property handlers for selected resolution, selected format,
+  selected video format, and MJPEG decoder count changes.
   `MainViewModel.Dispatching.cs` owns shared
   dispatcher enqueue/invoke helpers and preview event fan-out for the partial
   family. `MainViewModel.Runtime.cs` owns periodic timer refresh orchestration.
@@ -1994,8 +1998,9 @@ Primary current owners:
   `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs` owns pure recording
   codec filtering and selected-codec fallback policy shared by UI and automation.
   Video device enumeration and selected-device capability rebuilds stay in
-  `MainViewModel.DeviceManagement.cs`; startup audio-list and watcher-driven
-  audio endpoint refresh adaptation lives in `MainViewModel.AudioDeviceDiscovery.cs`.
+  `MainViewModel.DeviceManagement.cs`; capture-mode property-change hooks live
+  in `MainViewModel.CaptureModePropertyChanges.cs`; startup audio-list and
+  watcher-driven audio endpoint refresh adaptation lives in `MainViewModel.AudioDeviceDiscovery.cs`.
   `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs` owns pure capture-card
   endpoint filtering plus previous/saved/default audio and microphone selection
   fallback policy.

@@ -122,6 +122,7 @@ static partial class Program
         var mainViewModelAudioInputPropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputPropertyChanges.cs"));
         var mainViewModelMicrophonePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.MicrophonePropertyChanges.cs"));
         var mainViewModelDeviceAudioPropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioPropertyChanges.cs"));
+        var mainViewModelCaptureModePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureModePropertyChanges.cs"));
         var mainViewModelDispatchingText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs"));
         var mainViewModelRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Runtime.cs"));
         var mainViewModelDiskSpacePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DiskSpacePresentation.cs"));
@@ -143,6 +144,11 @@ static partial class Program
         AssertContains(mainViewModelDeviceAudioPropertyChangesText, "OnSelectedDeviceAudioModeChanged");
         AssertContains(mainViewModelDeviceAudioPropertyChangesText, "OnAnalogAudioGainPercentChanged");
         AssertContains(mainViewModelDeviceAudioPropertyChangesText, "allowDuringDispose: true");
+        AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnSelectedResolutionChanged(string? value)");
+        AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnSelectedFormatChanged(MediaFormat? value)");
+        AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnSelectedVideoFormatChanged(string value)");
+        AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnMjpegDecoderCountChanged(int value)");
+        AssertContains(mainViewModelCaptureModePropertyChangesText, "BuildCaptureSettings().UseMjpegHighFrameRateMode");
         AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedDeviceAudioModeChanged");
         AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
         AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedAudioInputDeviceChanged");
@@ -176,6 +182,10 @@ static partial class Program
         var deviceFormatProbesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceFormatProbes.cs"));
         AssertContains(deviceManagementText, "CancelPendingAudioControlWork();");
         AssertContains(deviceManagementText, "_deviceAudioRefreshCts");
+        AssertDoesNotContain(deviceManagementText, "partial void OnSelectedResolutionChanged");
+        AssertDoesNotContain(deviceManagementText, "partial void OnSelectedFormatChanged");
+        AssertDoesNotContain(deviceManagementText, "partial void OnSelectedVideoFormatChanged");
+        AssertDoesNotContain(deviceManagementText, "partial void OnMjpegDecoderCountChanged");
         AssertContains(audioControlCancellationText, "private void CancelPendingAudioControlWork()");
         AssertContains(audioControlCancellationText, "_gainFlashDebounceCts");
         AssertContains(audioControlCancellationText, "_gainXuDebounceCts");
