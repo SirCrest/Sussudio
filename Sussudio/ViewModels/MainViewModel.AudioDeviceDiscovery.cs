@@ -32,47 +32,33 @@ public partial class MainViewModel
         string? previousAudioId,
         string? previousMicrophoneId)
     {
-        var captureCardAudioId = (videoDevices.FirstOrDefault(d => d.Id == previousDeviceId) ?? videoDevices.FirstOrDefault())?.AudioDeviceId;
-        var filteredAudio = FilterOutCaptureCardAudio(audioDevices, captureCardAudioId);
-        ReplaceCollection(AudioInputDevices, filteredAudio);
-        ReplaceCollection(MicrophoneDevices, filteredAudio);
-
         var savedAudioId = _pendingSavedAudioDeviceId;
         _pendingSavedAudioDeviceId = null;
         var savedMicrophoneId = _pendingSavedMicrophoneDeviceId;
         _pendingSavedMicrophoneDeviceId = null;
+        var selection = AudioDeviceSelectionPolicy.SelectStartup(
+            audioDevices,
+            videoDevices,
+            previousDeviceId,
+            previousAudioId,
+            savedAudioId,
+            previousMicrophoneId,
+            savedMicrophoneId);
 
-        SelectedAudioInputDevice =
-            AudioInputDevices.FirstOrDefault(d => d.Id == previousAudioId)
-            ?? (!string.IsNullOrWhiteSpace(savedAudioId) ? AudioInputDevices.FirstOrDefault(d => d.Id == savedAudioId) : null)
-            ?? AudioInputDevices.FirstOrDefault();
-        SelectedMicrophoneDevice =
-            MicrophoneDevices.FirstOrDefault(d => d.Id == previousMicrophoneId)
-            ?? (!string.IsNullOrWhiteSpace(savedMicrophoneId) ? MicrophoneDevices.FirstOrDefault(d => d.Id == savedMicrophoneId) : null)
-            ?? MicrophoneDevices.FirstOrDefault();
+        ReplaceCollection(AudioInputDevices, selection.AvailableDevices);
+        ReplaceCollection(MicrophoneDevices, selection.AvailableDevices);
+        SelectedAudioInputDevice = selection.SelectedAudioInputDevice;
+        SelectedMicrophoneDevice = selection.SelectedMicrophoneDevice;
 
-        if (!string.IsNullOrWhiteSpace(savedAudioId) && SelectedAudioInputDevice?.Id != savedAudioId)
+        if (selection.ShouldLogSavedAudioFallback)
         {
             Logger.Log($"SETTINGS_RESTORE: saved audio device '{savedAudioId}' not found, using fallback.");
         }
 
-        if (!string.IsNullOrWhiteSpace(savedMicrophoneId) && SelectedMicrophoneDevice?.Id != savedMicrophoneId)
+        if (selection.ShouldLogSavedMicrophoneFallback)
         {
             Logger.Log($"SETTINGS_RESTORE: saved microphone device '{savedMicrophoneId}' not found, using fallback.");
         }
-    }
-
-    private List<AudioInputDevice> FilterOutCaptureCardAudio(List<AudioInputDevice> devices)
-        => FilterOutCaptureCardAudio(devices, SelectedDevice?.AudioDeviceId);
-
-    private static List<AudioInputDevice> FilterOutCaptureCardAudio(List<AudioInputDevice> devices, string? excludeId)
-    {
-        if (string.IsNullOrWhiteSpace(excludeId))
-        {
-            return devices;
-        }
-
-        return devices.Where(d => !string.Equals(d.Id, excludeId, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
     private async Task RefreshAudioDeviceListAsync()
@@ -81,19 +67,19 @@ public partial class MainViewModel
         {
             var previousAudioId = SelectedAudioInputDevice?.Id;
             var previousMicrophoneId = SelectedMicrophoneDevice?.Id;
-            var audioDevices = FilterOutCaptureCardAudio(
-                (await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync()).ToList());
-
-            ReplaceCollection(AudioInputDevices, audioDevices);
-            ReplaceCollection(MicrophoneDevices, audioDevices);
+            var audioDevices = (await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync()).ToList();
             var savedMicrophoneId = _pendingSavedMicrophoneDeviceId;
-            SelectedAudioInputDevice =
-                AudioInputDevices.FirstOrDefault(d => d.Id == previousAudioId)
-                ?? AudioInputDevices.FirstOrDefault();
-            SelectedMicrophoneDevice =
-                MicrophoneDevices.FirstOrDefault(d => d.Id == previousMicrophoneId)
-                ?? (!string.IsNullOrWhiteSpace(savedMicrophoneId) ? MicrophoneDevices.FirstOrDefault(d => d.Id == savedMicrophoneId) : null)
-                ?? MicrophoneDevices.FirstOrDefault();
+            var selection = AudioDeviceSelectionPolicy.SelectRefresh(
+                audioDevices,
+                SelectedDevice?.AudioDeviceId,
+                previousAudioId,
+                previousMicrophoneId,
+                savedMicrophoneId);
+
+            ReplaceCollection(AudioInputDevices, selection.AvailableDevices);
+            ReplaceCollection(MicrophoneDevices, selection.AvailableDevices);
+            SelectedAudioInputDevice = selection.SelectedAudioInputDevice;
+            SelectedMicrophoneDevice = selection.SelectedMicrophoneDevice;
 
             Logger.Log($"Audio device list refreshed ({AudioInputDevices.Count} devices).");
         }

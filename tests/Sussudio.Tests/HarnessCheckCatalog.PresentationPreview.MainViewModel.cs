@@ -43,6 +43,21 @@ static partial class Program
             "MainViewModel audio controls preserve microphone and device guards",
             MainViewModelAudioControls_PreserveMicrophoneVolumeAndDeviceGuards);
         await AddCheckAsync(results,
+            "MainViewModel audio-device selection policy lives in focused helper",
+            AudioDeviceSelectionPolicy_LivesInFocusedHelper);
+        await AddCheckAsync(results,
+            "MainViewModel audio-device startup policy filters capture audio and uses saved fallbacks",
+            AudioDeviceSelectionPolicy_StartupFiltersCaptureCardAndUsesSavedFallbacks);
+        await AddCheckAsync(results,
+            "MainViewModel audio-device startup policy preserves previous selections",
+            AudioDeviceSelectionPolicy_StartupPreservesPreviousSelections);
+        await AddCheckAsync(results,
+            "MainViewModel audio-device refresh policy preserves selections",
+            AudioDeviceSelectionPolicy_RefreshPreservesPreviousAudioAndSavedMicrophoneFallback);
+        await AddCheckAsync(results,
+            "MainViewModel audio-device selection policy handles empty lists",
+            AudioDeviceSelectionPolicy_EmptyListsReturnNullSelections);
+        await AddCheckAsync(results,
             "Native XU audio control profiles live in focused partial",
             NativeXuAudioControlService_ProfilesLiveInFocusedPartial);
         await AddCheckAsync(results,
