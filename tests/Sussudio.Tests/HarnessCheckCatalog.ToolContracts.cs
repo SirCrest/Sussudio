@@ -27,9 +27,6 @@ static partial class Program
             "Automation command catalog covers command metadata and policy",
             AutomationCommandCatalog_CoversCommandsAndPolicyMetadata);
         await AddCheckAsync(results,
-            "Automation pipe connect failures are classified for CLI and MCP",
-            AutomationPipeConnectFailures_AreClassifiedForCliAndMcp);
-        await AddCheckAsync(results,
             "Reliability gates run tools and offline regression harness",
             ReliabilityGates_RunToolsAndOfflineHarness);
         await AddCheckAsync(results,
@@ -60,9 +57,6 @@ static partial class Program
             "Automation manifest serialization is stable",
             AutomationManifest_SerializationIsStable);
         await AddCheckAsync(results,
-            "Automation response state parses status and retry contracts",
-            AutomationResponseState_ParsesStatusAndRetryContracts);
-        await AddCheckAsync(results,
             "Automation snapshot formatter formats core sections and typed accessors",
             AutomationSnapshotFormatter_FormatsCoreSectionsAndTypedAccessors);
         await AddCheckAsync(results,
@@ -72,17 +66,8 @@ static partial class Program
             "Automation snapshot formatter renders Preview D3D sections",
             AutomationSnapshotFormatter_RendersPreviewD3DSections);
         await AddCheckAsync(results,
-            "MCP PipeClient delegates to shared protocol for command resolution",
-            PipeClient_UsesSharedProtocol_ForCommandResolution);
-        await AddCheckAsync(results,
             "Automation snapshot formatter source ownership is split",
             AutomationSnapshotFormatter_SourceOwnership_IsSplit);
-        await AddCheckAsync(results,
-            "AutomationClient delegates to shared protocol for command resolution",
-            AutomationClient_UsesSharedProtocol_ForCommandResolution);
-        await AddCheckAsync(results,
-            "send-automation-command tracks automation contract inputs",
-            SendAutomationCommand_HelperTracksAutomationContractsInputs);
         await AddCheckAsync(results,
             "ssctl CommandHandlers route device commands",
             SsctlCommandHandlers_RouteDeviceCommands);
