@@ -1898,7 +1898,7 @@ live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`.
 
 Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
 and volume save suppression now live in
-`Sussudio/Controllers/PreviewAudioFadeController.cs`.
+`Sussudio/Controllers/Preview/PreviewAudioFadeController.cs`.
 `MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
 Preview-audio volume transition mechanics now live in
 `Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs`: it owns the

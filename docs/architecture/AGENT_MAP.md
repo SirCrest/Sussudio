@@ -1846,7 +1846,7 @@ Primary current owners:
   scale/fade animation. `MainWindow.LiveSignalInfo.cs` is the XAML-facing
   adapter. `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs` owns the
   view-model live-signal label formatting and pixel-format/codec suffix policy.
-- `Sussudio/Controllers/PreviewAudioFadeController.cs` owns preview-volume
+- `Sussudio/Controllers/Preview/PreviewAudioFadeController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
   save suppression. `MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs` owns preview

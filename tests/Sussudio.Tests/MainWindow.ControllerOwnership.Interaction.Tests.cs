@@ -162,7 +162,7 @@ static partial class Program
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewAudioFade.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewAudioFadeController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewAudioFadeController.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerRootText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerContextText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.Context.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerInitialStateText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.InitialState.cs").Replace("\r\n", "\n");
