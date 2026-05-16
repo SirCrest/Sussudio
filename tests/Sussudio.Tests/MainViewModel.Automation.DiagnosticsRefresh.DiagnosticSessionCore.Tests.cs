@@ -19,8 +19,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "internal sealed partial class DiagnosticSessionBackgroundTasks");
         AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionRunState");
         AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionLiveStateWriter");
-        AssertContains(diagnosticSessionText, "var runState = new DiagnosticSessionRunState(");
-        AssertContains(diagnosticSessionText, "var liveStateWriter = new DiagnosticSessionLiveStateWriter(");
+        AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionRunContext : IDisposable");
+        AssertContains(diagnosticSessionText, "RunState = new DiagnosticSessionRunState(");
+        AssertContains(diagnosticSessionText, "_liveStateWriter = new DiagnosticSessionLiveStateWriter(");
         AssertContains(diagnosticSessionText, "backgroundTasks.AwaitScenarioTasksAsync()");
         AssertContains(diagnosticSessionText, "backgroundTasks.ObserveAfterFaultAsync(");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<string> All { get; }");
@@ -50,9 +51,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "catch (JsonException ex)");
         AssertContains(diagnosticSessionModelsText, "public sealed partial class DiagnosticSessionResult");
         AssertContains(diagnosticSessionModelsText, "public string TerminalState { get; set; }");
-        AssertContains(diagnosticSessionText, "var livePath = liveStateWriter.LivePath;");
+        AssertContains(diagnosticSessionText, "LivePath = _liveStateWriter.LivePath;");
         AssertContains(diagnosticSessionText, "DiagnosticSessionInitialSnapshot.CreateUnknown()");
-        AssertContains(diagnosticSessionText, "var initialSnapshotKnown = initialSnapshotResult.Known;");
+        AssertContains(diagnosticSessionText, "InitialSnapshotKnown = initialSnapshotResult.Known;");
         AssertContains(diagnosticSessionText, "skipped state-mutating scenario");
         AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs))");
         AssertContains(diagnosticSessionText, "\"SetRecordingEnabled\",");

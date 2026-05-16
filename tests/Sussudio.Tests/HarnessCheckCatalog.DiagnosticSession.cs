@@ -51,6 +51,9 @@ static partial class Program
             "Diagnostic session live-state writer has a named owner",
             DiagnosticSessionLiveStateWriter_OwnsBreadcrumbFile);
         await AddCheckAsync(results,
+            "Diagnostic session run context has a named owner",
+            DiagnosticSessionRunContext_OwnsMutableRunInfrastructure);
+        await AddCheckAsync(results,
             "Diagnostic session run bootstrap has a named owner",
             DiagnosticSessionRunBootstrap_OwnsNormalizedSessionIdentity);
         await AddCheckAsync(results,

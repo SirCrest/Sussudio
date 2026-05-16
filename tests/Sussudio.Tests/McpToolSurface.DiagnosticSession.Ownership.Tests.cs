@@ -53,7 +53,7 @@ static partial class Program
         AssertContains(planText, "internal bool ToleratesFlashbackForceRotateDrainWarning");
         AssertContains(planText, "internal bool IsPreviewCycleScenario");
         AssertContains(bootstrapText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
-        AssertContains(runnerText, "var scenarioPlan = runBootstrap.ScenarioPlan;");
+        AssertContains(runnerText, "ScenarioPlan = RunBootstrap.ScenarioPlan;");
         AssertDoesNotContain(runnerText, "scenario == \"flashback-playback\"");
         AssertDoesNotContain(runnerText, "scenario == \"flashback-stress\"");
         AssertDoesNotContain(runnerText, "scenario == \"combined\"");

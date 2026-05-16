@@ -28,6 +28,7 @@ static partial class Program
     private static Task DiagnosticSessionInitialSnapshot_OwnsBaselineCapture()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
+        var contextText = ReadDiagnosticSessionRunContextSource();
         var initialSnapshotText = ReadRepoFile("tools/Common/DiagnosticSessionInitialSnapshot.cs")
             .Replace("\r\n", "\n");
 
@@ -46,10 +47,12 @@ static partial class Program
         AssertContains(initialSnapshotText, "internal DiagnosticSessionInitialSnapshotResult(JsonElement snapshot, bool known)");
         AssertContains(initialSnapshotText, "internal JsonElement Snapshot { get; }");
         AssertContains(initialSnapshotText, "internal bool Known { get; }");
-        AssertContains(runnerText, "var initialSnapshotResult = DiagnosticSessionInitialSnapshot.CreateUnknown();");
-        AssertContains(runnerText, "DiagnosticSessionInitialSnapshot.CaptureAsync(");
-        AssertContains(runnerText, "initialSnapshot = initialSnapshotResult.Snapshot;");
-        AssertContains(runnerText, "initialSnapshotKnown = initialSnapshotResult.Known;");
+        AssertContains(contextText, "var unknownSnapshot = DiagnosticSessionInitialSnapshot.CreateUnknown();");
+        AssertContains(contextText, "internal async Task CaptureInitialSnapshotAsync()");
+        AssertContains(contextText, "DiagnosticSessionInitialSnapshot.CaptureAsync(");
+        AssertContains(contextText, "InitialSnapshot = initialSnapshotResult.Snapshot;");
+        AssertContains(contextText, "InitialSnapshotKnown = initialSnapshotResult.Known;");
+        AssertContains(runnerText, "await runContext.CaptureInitialSnapshotAsync().ConfigureAwait(false);");
         AssertDoesNotContain(runnerText, "CreateEmptyJsonObject()");
         AssertDoesNotContain(runnerText, "var initialResponse = await commandChannel.SendAsync(\"GetSnapshot\", null, null)");
         AssertDoesNotContain(runnerText, "TryGetSnapshot(initialResponse, out var initial)");
@@ -84,6 +87,8 @@ static partial class Program
     private static Task DiagnosticSessionCommandChannel_OwnsSerializedCommandSending()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
+        var executionText = ReadDiagnosticSessionRunExecutionRootSource();
+        var contextText = ReadDiagnosticSessionRunContextSource();
         var channelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
             .Replace("\r\n", "\n");
 
@@ -99,10 +104,11 @@ static partial class Program
         AssertContains(channelText, "internal async Task TryWaitWithTokenAsync(");
         AssertContains(channelText, "\"WaitForCondition\"");
         AssertContains(channelText, "[\"pollMs\"] = 250");
-        AssertContains(runnerText, "using var commandChannel = new DiagnosticSessionCommandChannel(");
-        AssertContains(runnerText, "commandChannel.SendAsync");
-        AssertContains(runnerText, "commandChannel.SendWithTokenAsync");
-        AssertContains(runnerText, "commandChannel.FailureCount");
+        AssertContains(contextText, "CommandChannel = new DiagnosticSessionCommandChannel(");
+        AssertContains(runnerText, "CommandChannel.SendAsync");
+        AssertContains(runnerText, "CommandChannel.SendWithTokenAsync");
+        AssertContains(contextText, "CommandChannel.FailureCount");
+        AssertDoesNotContain(executionText, "new DiagnosticSessionCommandChannel(");
         AssertDoesNotContain(runnerText, "var commandFailureCount = 0;");
         AssertDoesNotContain(runnerText, "var commandSendGate = new SemaphoreSlim(1, 1);");
         AssertDoesNotContain(runnerText, "async Task<JsonElement> SendAsync(");
@@ -114,6 +120,7 @@ static partial class Program
     private static Task DiagnosticSessionRunState_OwnsTerminalState()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
+        var contextText = ReadDiagnosticSessionRunContextSource();
         var stateText = ReadRepoFile("tools/Common/DiagnosticSessionRunState.cs")
             .Replace("\r\n", "\n");
 
@@ -122,7 +129,9 @@ static partial class Program
         AssertContains(stateText, "internal void RecordTerminalException(Exception ex, string stage)");
         AssertContains(stateText, "internal string GetTerminalState()");
         AssertContains(stateText, "internal async Task WriteArtifactBestEffortAsync<T>(");
-        AssertContains(runnerText, "var runState = new DiagnosticSessionRunState(");
+        AssertContains(contextText, "RunState = new DiagnosticSessionRunState(");
+        AssertContains(contextText, "internal void SetStage(string stage)");
+        AssertContains(contextText, "internal void RecordTerminalException(Exception ex, string stage)");
         AssertDoesNotContain(stateText, "internal string LivePath { get; }");
         AssertDoesNotContain(stateText, "internal async Task WriteLiveStateBestEffortAsync(");
         AssertDoesNotContain(stateText, "internal async Task WriteSamplingLiveStateBestEffortAsync(");
@@ -136,6 +145,7 @@ static partial class Program
     private static Task DiagnosticSessionLiveStateWriter_OwnsBreadcrumbFile()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
+        var contextText = ReadDiagnosticSessionRunContextSource();
         var liveStateWriterText = ReadRepoFile("tools/Common/DiagnosticSessionLiveStateWriter.cs")
             .Replace("\r\n", "\n");
 
@@ -148,11 +158,48 @@ static partial class Program
         AssertContains(liveStateWriterText, "LastStage = terminalStateOverride is null ? _runState.LastStage : _runState.GetResultLastStage()");
         AssertContains(liveStateWriterText, "TimeSpan.FromSeconds(5)");
         AssertContains(liveStateWriterText, "The live-state file is diagnostic breadcrumbs only.");
-        AssertContains(runnerText, "var liveStateWriter = new DiagnosticSessionLiveStateWriter(runBootstrap, runState, warnings);");
-        AssertContains(runnerText, "var livePath = liveStateWriter.LivePath;");
-        AssertContains(runnerText, "liveStateWriter.WriteLiveStateBestEffortAsync(");
-        AssertContains(runnerText, "liveStateWriter.WriteSamplingLiveStateBestEffortAsync(");
+        AssertContains(contextText, "_liveStateWriter = new DiagnosticSessionLiveStateWriter(RunBootstrap, RunState, Warnings);");
+        AssertContains(contextText, "LivePath = _liveStateWriter.LivePath;");
+        AssertContains(contextText, "_liveStateWriter.WriteLiveStateBestEffortAsync(");
+        AssertContains(contextText, "_liveStateWriter.WriteSamplingLiveStateBestEffortAsync(");
         AssertDoesNotContain(runnerText, "var livePath = runState.LivePath;");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task DiagnosticSessionRunContext_OwnsMutableRunInfrastructure()
+    {
+        var executionText = ReadDiagnosticSessionRunExecutionRootSource();
+        var contextText = ReadDiagnosticSessionRunContextSource();
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
+            .Replace("\r\n", "\n");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
+            .Replace("\r\n", "\n");
+
+        AssertContains(contextText, "internal sealed class DiagnosticSessionRunContext : IDisposable");
+        AssertContains(contextText, "RunBootstrap = DiagnosticSessionRunBootstrap.Create(options);");
+        AssertContains(contextText, "Actions = [];");
+        AssertContains(contextText, "Warnings = [];");
+        AssertContains(contextText, "Samples = [];");
+        AssertContains(contextText, "ScenarioCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(runCancellationToken);");
+        AssertContains(contextText, "CommandChannel = new DiagnosticSessionCommandChannel(sendCommandAsync, ScenarioCancellationToken, Warnings);");
+        AssertContains(contextText, "InitialSnapshot = unknownSnapshot.Snapshot;");
+        AssertContains(contextText, "internal DiagnosticSessionScenarioPhaseContext CreateScenarioPhaseContext(");
+        AssertContains(contextText, "internal DiagnosticSessionCompletionContext CreateCompletionContext(");
+        AssertContains(contextText, "CommandChannel.Dispose();");
+        AssertContains(contextText, "ScenarioCancellationSource.Dispose();");
+
+        AssertContains(executionText, "using var runContext = new DiagnosticSessionRunContext(options, sendCommandAsync, cancellationToken);");
+        AssertContains(executionText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(runContext.OutputDirectory);");
+        AssertContains(executionText, "await runContext.CaptureInitialSnapshotAsync().ConfigureAwait(false);");
+        AssertContains(executionText, "var scenarioPhaseContext = runContext.CreateScenarioPhaseContext(options, cancellationToken);");
+        AssertContains(executionText, "runContext.CreateCompletionContext(options, scenarioPhase, stoppedRecordingForVerification, cancellationToken)");
+        AssertDoesNotContain(executionText, "new DiagnosticSessionRunState(");
+        AssertDoesNotContain(executionText, "new DiagnosticSessionCommandChannel(");
+        AssertDoesNotContain(executionText, "new DiagnosticSessionLiveStateWriter(");
+
+        AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session mutable run infrastructure");
+        AssertContains(cleanupPlanText, "`DiagnosticSessionRunContext.cs` owns mutable per-run infrastructure");
 
         return Task.CompletedTask;
     }
@@ -160,6 +207,7 @@ static partial class Program
     private static Task DiagnosticSessionRunBootstrap_OwnsNormalizedSessionIdentity()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
+        var contextText = ReadDiagnosticSessionRunContextSource();
         var bootstrapText = ReadRepoFile("tools/Common/DiagnosticSessionRunBootstrap.cs")
             .Replace("\r\n", "\n");
 
@@ -174,9 +222,9 @@ static partial class Program
         AssertContains(bootstrapText, "Path.GetFullPath(options.OutputDirectory)");
         AssertContains(bootstrapText, "Directory.CreateDirectory(outputDirectory);");
         AssertContains(bootstrapText, "Environment.ProcessId");
-        AssertContains(runnerText, "var runBootstrap = DiagnosticSessionRunBootstrap.Create(options);");
-        AssertContains(runnerText, "var scenarioPlan = runBootstrap.ScenarioPlan;");
-        AssertContains(runnerText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(outputDirectory);");
+        AssertContains(contextText, "RunBootstrap = DiagnosticSessionRunBootstrap.Create(options);");
+        AssertContains(contextText, "ScenarioPlan = RunBootstrap.ScenarioPlan;");
+        AssertContains(runnerText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(runContext.OutputDirectory);");
         AssertDoesNotContain(runnerText, "DiagnosticSessionScenarios.Normalize(options.Scenario)");
         AssertDoesNotContain(runnerText, "Math.Clamp(options.DurationSeconds");
         AssertDoesNotContain(runnerText, "Math.Clamp(options.SampleIntervalMs");
@@ -199,7 +247,7 @@ static partial class Program
         AssertContains(lockText, "FileShare.None");
         AssertContains(lockText, "FileOptions.DeleteOnClose");
         AssertContains(lockText, "Another diagnostic session is already running");
-        AssertContains(runnerText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(outputDirectory);");
+        AssertContains(runnerText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(runContext.OutputDirectory);");
         AssertDoesNotContain(runnerText, "sessionLock.Dispose();");
         AssertDoesNotContain(runnerText, "var lockPath = Path.Combine(outputDirectory, \".sussudio-diag.lock\")");
         AssertDoesNotContain(runnerText, "FileShare.None");
@@ -211,6 +259,7 @@ static partial class Program
     private static Task DiagnosticSessionRunExecutionScenario_OwnsScenarioPhase()
     {
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
+        var contextText = ReadDiagnosticSessionRunContextSource();
         var scenarioText = ReadDiagnosticSessionRunExecutionScenarioSource();
 
         AssertContains(scenarioText, "private static Task<DiagnosticSessionScenarioPhaseResult> RunScenarioPhaseAsync(DiagnosticSessionScenarioPhaseContext context)");
@@ -231,7 +280,8 @@ static partial class Program
         AssertContains(scenarioText, "context.RecordTerminalException(ex, context.GetLastStage())");
         AssertContains(scenarioText, "context.ScenarioCancellationSource.Cancel();");
         AssertContains(scenarioText, "backgroundTasks.ObserveAfterFaultAsync(");
-        AssertContains(executionText, "var scenarioPhaseContext = new DiagnosticSessionScenarioPhaseContext");
+        AssertContains(contextText, "new DiagnosticSessionScenarioPhaseContext");
+        AssertContains(executionText, "var scenarioPhaseContext = runContext.CreateScenarioPhaseContext(options, cancellationToken);");
         AssertContains(executionText, "var scenarioPhase = DiagnosticSessionScenarioPhaseResult.Empty;");
         AssertContains(executionText, "scenarioPhase = await RunScenarioPhaseAsync(scenarioPhaseContext)");
         AssertContains(executionText, "scenarioPhase.StartedRecording");
@@ -239,7 +289,7 @@ static partial class Program
         AssertContains(executionText, "scenarioPhase.EnabledFlashback");
         AssertContains(executionText, "scenarioPhase.DisabledFlashback");
         AssertContains(executionText, "scenarioPhase.StartedFlashbackPlayback");
-        AssertContains(executionText, "ScenarioPhase = scenarioPhase");
+        AssertContains(contextText, "ScenarioPhase = scenarioPhase,");
         AssertDoesNotContain(executionText, "new DiagnosticSessionScenarioPhaseState()");
         AssertDoesNotContain(scenarioText, "internal required DiagnosticSessionScenarioPhaseState PhaseState");
         AssertDoesNotContain(executionText, "DiagnosticSessionScenarioSetup.RunAsync(");
@@ -260,6 +310,7 @@ static partial class Program
     private static Task DiagnosticSessionRunExecutionCompletion_OwnsPostCleanupEvidenceAndResult()
     {
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
+        var contextText = ReadDiagnosticSessionRunContextSource();
         var completionText = ReadDiagnosticSessionRunExecutionCompletionSource();
         var recordingChecksText = ReadRepoFile("tools/Common/DiagnosticSessionRecordingChecks.cs")
             .Replace("\r\n", "\n");
@@ -280,7 +331,9 @@ static partial class Program
         AssertContains(completionText, "CreateResultBuildRequest(");
         AssertContains(completionText, "context.ScenarioPhase.PresentMon");
         AssertContains(completionText, "await context.WriteLiveStateBestEffortAsync(result.CompletedUtc, result.TerminalState).ConfigureAwait(false);");
-        AssertContains(executionText, "return await RunCompletionPhaseAsync(new DiagnosticSessionCompletionContext");
+        AssertContains(contextText, "new DiagnosticSessionCompletionContext");
+        AssertContains(executionText, "return await RunCompletionPhaseAsync(");
+        AssertContains(executionText, "runContext.CreateCompletionContext(options, scenarioPhase, stoppedRecordingForVerification, cancellationToken)");
         AssertDoesNotContain(executionText, "DiagnosticSessionRecordingChecks.RunAsync(");
         AssertDoesNotContain(executionText, "DiagnosticSessionPostRunSnapshots.CaptureAsync(");
         AssertDoesNotContain(executionText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
