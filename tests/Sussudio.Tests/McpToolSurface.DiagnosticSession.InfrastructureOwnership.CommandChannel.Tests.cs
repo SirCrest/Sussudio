@@ -71,8 +71,8 @@ static partial class Program
         AssertDoesNotContain(channelText, "\"GetSnapshot\"");
         AssertDoesNotContain(waitConditionsText, "\"WaitForCondition\"");
         AssertContains(contextText, "CommandChannel = new DiagnosticSessionCommandChannel(");
-        AssertContains(runnerText, "CommandChannel.SendAsync");
-        AssertContains(runnerText, "CommandChannel.SendWithTokenAsync");
+        AssertContains(runnerText, "context.CommandChannel,");
+        AssertContains(runnerText, "runContext.CommandChannel,");
         AssertContains(contextText, "CommandChannel.FailureCount");
         AssertDoesNotContain(executionText, "new DiagnosticSessionCommandChannel(");
         AssertDoesNotContain(runnerText, "var commandFailureCount = 0;");

@@ -24,7 +24,7 @@ internal static partial class DiagnosticSessionScenarioPhaseRunner
                         context.InitialSnapshot,
                         context.Actions,
                         context.Warnings,
-                        context.CommandChannel.SendAsync,
+                        context.CommandChannel,
                         context.CommandChannel.TryWaitAsync,
                         context.ScenarioCancellationToken)
                     .ConfigureAwait(false);

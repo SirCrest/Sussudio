@@ -2362,7 +2362,10 @@ permanent failure and connect failed/timeout responses retryable.
 Diagnostic-session command sending now lives in
 `tools/Common/DiagnosticSessionCommandChannel.cs`. It owns serialized command
 execution, connect-retry wrapping, command failure accounting, and enum-backed
-command-name resolution for fixed diagnostic-session commands while the runner
+command-name resolution for fixed diagnostic-session commands. Scenario setup
+and cleanup pass the channel itself for lifecycle mutations so
+`SetFlashbackEnabled`, `SetPreviewEnabled`, `SetRecordingEnabled`, and
+`FlashbackAction` flow through `AutomationCommandKind` overloads; the runner
 keeps phase orchestration and its public string delegate compatibility.
 Diagnostic-session wait command helpers now live in
 `tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs`, which owns
@@ -2433,14 +2436,19 @@ selection while scenario startup keeps scenario task registration.
 Diagnostic-session scenario setup now lives in
 `tools/Common/DiagnosticSessionScenarioSetup.cs`. It owns initial state
 mutations before sampling: Flashback enable/disable for scenario requirements,
-preview start, recording start, and readiness waits.
+preview start, recording start, and readiness waits. Fixed setup mutations
+should use `DiagnosticSessionCommandChannel` typed `AutomationCommandKind`
+sends.
 
 Diagnostic-session cleanup mutations now live in
 `tools/Common/DiagnosticSessionCleanupActions.cs`. The root owns recording stop
-for verification and the public cleanup flow. Flashback playback go-live
+for verification and the public cleanup flow through
+`AutomationCommandKind.SetRecordingEnabled`. Flashback playback go-live
 restore, preview stop, and Flashback enable-state restore live beside it in
-`DiagnosticSessionCleanupActions.StateRestore.cs`. The cleanup result record
-lives in `DiagnosticSessionCleanupActions.Models.cs`, while
+`DiagnosticSessionCleanupActions.StateRestore.cs` through typed
+`AutomationCommandKind.FlashbackAction`, `SetPreviewEnabled`, and
+`SetFlashbackEnabled` sends. The cleanup result record lives in
+`DiagnosticSessionCleanupActions.Models.cs`, while
 `DiagnosticSessionCleanupPolicy.cs` remains the post-cleanup warning validator.
 
 Diagnostic-session recording checks now live in

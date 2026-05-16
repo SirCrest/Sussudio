@@ -70,11 +70,17 @@ static partial class Program
         AssertContains(setupText, "internal static class DiagnosticSessionScenarioSetup");
         AssertContains(setupText, "internal static async Task<DiagnosticSessionScenarioSetupResult> RunAsync(");
         AssertContains(setupText, "internal readonly record struct DiagnosticSessionScenarioSetupResult(");
+        AssertContains(setupText, "using Sussudio.Models;");
         AssertContains(setupText, "DiagnosticSessionScenarios.NeedsFlashback(scenario)");
         AssertContains(setupText, "scenarioPlan.RunFlashbackExportRejected");
         AssertContains(setupText, "DiagnosticSessionScenarios.NeedsPreview(scenario)");
         AssertContains(setupText, "DiagnosticSessionScenarios.NeedsRecording(scenario)");
-        AssertContains(setupText, "WaitForFlashbackStressBufferReadyAsync(sendAsync, cancellationToken)");
+        AssertContains(setupText, "DiagnosticSessionCommandChannel commandChannel,");
+        AssertContains(setupText, "WaitForFlashbackStressBufferReadyAsync(SendByNameAsync, cancellationToken)");
+        AssertContains(setupText, "AutomationCommandKind.SetFlashbackEnabled,");
+        AssertContains(setupText, "AutomationCommandKind.SetPreviewEnabled,");
+        AssertContains(setupText, "AutomationCommandKind.SetRecordingEnabled,");
+        AssertContains(setupText, "commandChannel.SendAsync(");
         AssertContains(setupText, "actions.Add(\"flashback enabled\")");
         AssertContains(setupText, "actions.Add(\"flashback disabled for rejected export\")");
         AssertContains(setupText, "actions.Add(\"preview started\")");
@@ -82,6 +88,7 @@ static partial class Program
         AssertContains(setupText, "actions.Add(\"recording started\")");
         AssertContains(setupText, "await tryWaitAsync(\"RecordingFileGrowing\", 20_000)");
         AssertContains(runnerText, "DiagnosticSessionScenarioSetup.RunAsync(");
+        AssertContains(runnerText, "context.CommandChannel,");
         AssertContains(runnerText, "startedPreview = setupResult.StartedPreview;");
         AssertContains(runnerText, "startedRecording = setupResult.StartedRecording;");
         AssertContains(runnerText, "enabledFlashback = setupResult.EnabledFlashback;");
@@ -90,6 +97,9 @@ static partial class Program
         AssertDoesNotContain(runnerText, "actions.Add(\"preview started\")");
         AssertDoesNotContain(runnerText, "actions.Add(\"recording started\")");
         AssertDoesNotContain(runnerText, "WaitForFlashbackStressBufferReadyAsync(");
+        AssertDoesNotContain(setupText, "sendAsync(\"SetFlashbackEnabled\"");
+        AssertDoesNotContain(setupText, "sendAsync(\"SetPreviewEnabled\"");
+        AssertDoesNotContain(setupText, "sendAsync(\"SetRecordingEnabled\"");
 
         return Task.CompletedTask;
     }
@@ -208,12 +218,21 @@ static partial class Program
         AssertContains(cleanupActionsText, "setStage(\"cleanup-stop-preview\")");
         AssertContains(cleanupActionsText, "setStage(\"cleanup-restore-flashback-off\")");
         AssertContains(cleanupActionsText, "setStage(\"cleanup-restore-flashback-on\")");
+        AssertContains(cleanupActionsText, "using Sussudio.Models;");
+        AssertContains(cleanupActionsText, "DiagnosticSessionCommandChannel commandChannel,");
+        AssertContains(cleanupActionsText, "commandChannel.SendWithTokenAsync(");
+        AssertContains(cleanupActionsText, "AutomationCommandKind.SetRecordingEnabled,");
+        AssertContains(cleanupActionsText, "AutomationCommandKind.FlashbackAction,");
+        AssertContains(cleanupActionsText, "AutomationCommandKind.SetPreviewEnabled,");
+        AssertContains(cleanupActionsText, "AutomationCommandKind.SetFlashbackEnabled,");
+        AssertContains(cleanupActionsText, "AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.SetFlashbackEnabled)");
         AssertContains(cleanupText, "internal static class DiagnosticSessionCleanupPolicy");
         AssertContains(cleanupText, "internal static void ValidateCleanupLifecycleRestored(");
         AssertContains(cleanupText, "cleanup: preview remained active after restore");
         AssertContains(cleanupText, "cleanup: Flashback remained active after restore");
         AssertContains(cleanupText, "cleanup: playback did not return live state={state}");
         AssertContains(runnerText, "DiagnosticSessionCleanupActions.RunAsync(");
+        AssertContains(runnerText, "runContext.CommandChannel,");
         AssertContains(runnerText, "stoppedRecordingForVerification = cleanupResult.StoppedRecordingForVerification;");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;");
         AssertDoesNotContain(runnerText, "setStage(\"cleanup-stop-recording\")");
@@ -221,6 +240,11 @@ static partial class Program
         AssertDoesNotContain(runnerText, "setStage(\"cleanup-stop-preview\")");
         AssertDoesNotContain(runnerText, "setStage(\"cleanup-restore-flashback-off\")");
         AssertDoesNotContain(runnerText, "private static void ValidateCleanupLifecycleRestored(");
+        AssertDoesNotContain(cleanupActionsText, "sendWithTokenAsync(\"SetRecordingEnabled\"");
+        AssertDoesNotContain(cleanupActionsText, "sendWithTokenAsync(\"FlashbackAction\"");
+        AssertDoesNotContain(cleanupActionsText, "sendWithTokenAsync(\"SetPreviewEnabled\"");
+        AssertDoesNotContain(cleanupActionsText, "sendWithTokenAsync(\"SetFlashbackEnabled\"");
+        AssertDoesNotContain(cleanupActionsText, "GetDefaultResponseTimeout(\"SetFlashbackEnabled\")");
 
         return Task.CompletedTask;
     }

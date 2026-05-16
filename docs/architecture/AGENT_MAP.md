@@ -2668,13 +2668,16 @@ Primary owners:
 - `tools/Common/DiagnosticSessionScenarioSetup.cs` owns diagnostic-session
   initial state mutations before sampling: enabling or disabling Flashback for
   scenarios, starting preview, starting recording, and waiting for the
-  associated readiness conditions.
+  associated readiness conditions. Keep fixed setup mutations on
+  `DiagnosticSessionCommandChannel` typed `AutomationCommandKind` sends.
 - `tools/Common/DiagnosticSessionCleanupActions.cs` owns diagnostic-session
-  cleanup flow and recording stop for verification. Keep cleanup stage/action
-  names stable in the cleanup family.
+  cleanup flow and recording stop for verification through
+  `AutomationCommandKind.SetRecordingEnabled`. Keep cleanup stage/action names
+  stable in the cleanup family.
 - `tools/Common/DiagnosticSessionCleanupActions.StateRestore.cs` owns
   Flashback playback go-live restore, preview stop, and Flashback enable-state
-  restore.
+  restore through typed `AutomationCommandKind.FlashbackAction`,
+  `SetPreviewEnabled`, and `SetFlashbackEnabled` sends.
 - `tools/Common/DiagnosticSessionCleanupActions.Models.cs` owns the cleanup
   result handoff record.
 - `tools/Common/DiagnosticSessionRecordingChecks.cs` owns post-cleanup
@@ -2902,8 +2905,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized
   diagnostic-session automation command sending, connect-retry wrapping,
   command failure accounting, and `AutomationCommandKind`-to-catalog
-  command-name resolution for fixed channel-owned commands. Keep the
-  underlying runner delegate string-compatible.
+  command-name resolution for fixed channel-owned commands, including setup and
+  cleanup lifecycle mutations. Keep the underlying runner delegate
+  string-compatible.
 - `tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs` owns
   diagnostic-session wait command helpers, `WaitForCondition` payload shaping,
   and routing that fixed wait command through the channel's

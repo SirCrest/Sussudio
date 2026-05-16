@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Sussudio.Models;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 
 namespace Sussudio.Tools;
@@ -14,7 +15,7 @@ internal static partial class DiagnosticSessionCleanupActions
         bool disabledFlashback,
         bool startedFlashbackPlayback,
         List<string> actions,
-        Func<string, Dictionary<string, object?>?, int?, bool, CancellationToken, Task<JsonElement>> sendWithTokenAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         Func<string, int, CancellationToken, Task> tryWaitWithTokenAsync,
         Action<string> setStage,
         Action<Exception, string> recordTerminalException)
@@ -28,8 +29,8 @@ internal static partial class DiagnosticSessionCleanupActions
                 setStage("cleanup-stop-recording");
                 const int recordingCleanupTimeoutMs = 300_000;
                 using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs));
-                var stopResponse = await sendWithTokenAsync(
-                        "SetRecordingEnabled",
+                var stopResponse = await commandChannel.SendWithTokenAsync(
+                        AutomationCommandKind.SetRecordingEnabled,
                         new Dictionary<string, object?> { ["enabled"] = false },
                         recordingCleanupTimeoutMs,
                         false,
@@ -57,7 +58,7 @@ internal static partial class DiagnosticSessionCleanupActions
             await RestoreLiveFlashbackPlaybackAsync(
                     startedFlashbackPlayback,
                     actions,
-                    sendWithTokenAsync,
+                    commandChannel,
                     setStage,
                     recordTerminalException)
                 .ConfigureAwait(false);
@@ -65,7 +66,7 @@ internal static partial class DiagnosticSessionCleanupActions
                     startedPreview,
                     initialSnapshot,
                     actions,
-                    sendWithTokenAsync,
+                    commandChannel,
                     setStage,
                     recordTerminalException)
                 .ConfigureAwait(false);
@@ -74,7 +75,7 @@ internal static partial class DiagnosticSessionCleanupActions
                     disabledFlashback,
                     initialSnapshot,
                     actions,
-                    sendWithTokenAsync,
+                    commandChannel,
                     setStage,
                     recordTerminalException)
                 .ConfigureAwait(false);

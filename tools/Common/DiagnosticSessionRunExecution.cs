@@ -40,7 +40,7 @@ internal static partial class DiagnosticSessionRunExecution
                     scenarioPhase.DisabledFlashback,
                     scenarioPhase.StartedFlashbackPlayback,
                     runContext.Actions,
-                    runContext.CommandChannel.SendWithTokenAsync,
+                    runContext.CommandChannel,
                     runContext.CommandChannel.TryWaitWithTokenAsync,
                     runContext.SetStage,
                     runContext.RecordTerminalException)
