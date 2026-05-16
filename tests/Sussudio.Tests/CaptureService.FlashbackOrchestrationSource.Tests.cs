@@ -76,6 +76,7 @@ static partial class Program
         AssertContains(audioInputsText, "private async Task EnsureFlashbackAudioInputsAsync(");
         AssertContains(previewBackendText, "private async Task EnsureFlashbackPreviewBackendAsync(");
         AssertContains(disposalText, "private async Task DisposeFlashbackPreviewBackendAsync(");
+        AssertContains(disposalText, "private readonly record struct FlashbackPreviewBackendDisposalRequest(");
         AssertContains(disposalText, "private async Task DisposeFlashbackPreviewBackendCoreAsync(");
         AssertContains(bufferCycleText, "private async Task CycleFlashbackBufferAsync(");
         AssertDoesNotContain(orchestrationText, "private async Task EnsureFlashbackAudioInputsAsync(");

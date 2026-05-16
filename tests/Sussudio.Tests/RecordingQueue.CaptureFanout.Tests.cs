@@ -72,7 +72,13 @@ static partial class Program
         AssertContains(backendSource, "public async Task<FinalizeResult> FinalizeRecordingAsync(");
         AssertContains(backendSource, "private static FinalizeResult PreserveEndArtifactsOnFailure(");
         AssertContains(backendSource, "public FlashbackPlaybackController? TakePlaybackController()");
-        AssertContains(backendSource, "public void DetachProducers(");
+        AssertContains(backendSource, "internal readonly record struct FlashbackProducerDetachRequest(");
+        AssertContains(backendSource, "UnifiedVideoCapture? VideoCapture,");
+        AssertContains(backendSource, "WasapiAudioCapture? AudioCapture,");
+        AssertContains(backendSource, "WasapiAudioCapture? MicrophoneCapture,");
+        AssertContains(backendSource, "string WarningToken,");
+        AssertContains(backendSource, "bool DetachMicrophoneWriter);");
+        AssertContains(backendSource, "public void DetachProducers(FlashbackProducerDetachRequest request)");
         AssertContains(backendSource, "public void ClearSinkAndSettings()");
         AssertContains(backendSource, "public void Clear()");
 

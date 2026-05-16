@@ -64,9 +64,13 @@ static partial class Program
             captureServiceText,
             "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync",
             "    private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+        AssertContains(backendCleanup, "FlashbackBackendArtifactCleanupRequest request,");
         AssertContains(backendCleanup, "bool exportOperationLockAlreadyHeld = false)");
         AssertContains(backendCleanup, "var lockAcquired = exportOperationLockAlreadyHeld;");
         AssertContains(backendCleanup, "if (!exportOperationLockAlreadyHeld)");
+        AssertContains(backendCleanup, "request.Reason");
+        AssertContains(backendCleanup, "request.FlashbackExporter.Dispose();");
+        AssertContains(backendCleanup, "request.BufferManager.PurgeAllSegments();");
         AssertContains(backendCleanup, "FLASHBACK_BACKEND_CLEANUP_LOCK_REUSED");
         AssertContains(backendCleanup, "if (lockAcquired && releaseLockOnExit)");
 
@@ -75,15 +79,17 @@ static partial class Program
             "private async Task DisposeFlashbackPreviewBackendAsync",
             "    private async Task DisposeFlashbackPreviewBackendCoreAsync");
         AssertContains(disposeBackend, "await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(disposeBackend, "exportOperationLockAlreadyHeld: true");
+        AssertContains(disposeBackend, "ExportOperationLockAlreadyHeld: true");
         AssertContains(disposeBackend, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
 
         var disposeBackendCore = ExtractTextBetween(
             captureServiceText,
             "private async Task DisposeFlashbackPreviewBackendCoreAsync",
             "    /// <summary>\n    /// Cycles the flashback encoder sink after recording stops.");
-        AssertContains(disposeBackendCore, "bool exportOperationLockAlreadyHeld = false)");
-        AssertContains(disposeBackendCore, "\"preview_backend_dispose\",\n                exportOperationLockAlreadyHeld)");
+        AssertContains(disposeBackendCore, "FlashbackPreviewBackendDisposalRequest request)");
+        AssertContains(disposeBackendCore, "request.ExportOperationLockAlreadyHeld");
+        AssertContains(disposeBackendCore, "request.PurgeSegments ? \"preview_backend_dispose_purge\" : \"preview_backend_dispose\"");
+        AssertContains(disposeBackendCore, "\"preview_backend_dispose\",\n                request.ExportOperationLockAlreadyHeld)");
 
         return Task.CompletedTask;
     }

@@ -379,7 +379,8 @@ Important entry points:
 - `CaptureService.Coordination.cs` owns transition serialization, steady-state
   resolution, disposal, and best-effort semaphore/eviction cleanup helpers.
 - `CaptureService.DeferredCleanup.cs` owns Flashback backend/export lock release
-  helpers plus deferred Flashback and unified-video cleanup after drains.
+  helpers, Flashback artifact-cleanup request handoff, and deferred Flashback
+  and unified-video cleanup after drains.
 - `CaptureService.Failures.cs` owns fatal capture/recording/Flashback backend
   failure callbacks, last-failure telemetry, and fault cleanup launchers.
 - `CaptureService.FlashbackControls.cs` owns Flashback public state, segment
@@ -576,7 +577,8 @@ Primary current owner: `Sussudio/Services/Flashback/`
 
 Entry points:
 
-- `FlashbackBackendResources.cs` owns backend resource grouping.
+- `FlashbackBackendResources.cs` owns backend resource grouping and
+  producer-detach request shaping.
 - `FlashbackBufferManager.cs` owns buffer live counters, byte/PTS accounting updates, and core state.
 - `FlashbackBufferManager.SegmentMutation.cs` owns active segment path generation, active segment start/abandonment, completion registration, and same-path segment extension.
 - `FlashbackBufferManager.Lifecycle.cs` owns initialization, segment extension setup, recovery-preserve markers, disposal, and disposed-state guards.

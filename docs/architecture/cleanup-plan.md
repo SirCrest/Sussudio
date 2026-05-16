@@ -672,8 +672,8 @@ by the other capture-service partials.
 Deferred capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs`. That file owns
 Flashback backend/export lock release helpers, deferred Flashback artifact
-cleanup after encoder/export drains, deferred unified-video cleanup after LibAv
-drains, and the pending LibAv drain reentry guard.
+cleanup request handoff after encoder/export drains, deferred unified-video
+cleanup after LibAv drains, and the pending LibAv drain reentry guard.
 
 Capture read-only automation probes now live in
 `Sussudio/Services/Capture/CaptureService.Probes.cs`. Video source probing,

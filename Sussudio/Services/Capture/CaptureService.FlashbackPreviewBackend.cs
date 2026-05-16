@@ -129,10 +129,11 @@ public partial class CaptureService
             {
                 ScheduleDeferredFlashbackBackendCleanup(
                     sinkCompletionTask,
-                    bufferManager,
-                    flashbackExporter,
-                    reason: "preview_init_rollback",
-                    purgeSegments: true);
+                    new FlashbackBackendArtifactCleanupRequest(
+                        bufferManager,
+                        flashbackExporter,
+                        "preview_init_rollback",
+                        PurgeSegments: true));
                 bufferManager = null;
                 flashbackExporter = null;
             }

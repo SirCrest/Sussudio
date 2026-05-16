@@ -248,22 +248,24 @@ static partial class Program
             captureServiceSource,
             "private void ScheduleDeferredFlashbackBackendCleanup",
             "private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+        AssertContains(deferredFlashbackBackendCleanup, "FlashbackBackendArtifactCleanupRequest request,");
         AssertContains(deferredFlashbackBackendCleanup, "CleanupFlashbackBackendArtifactsAfterExportAsync(");
         AssertContains(deferredFlashbackBackendCleanup, "if (cleanupCompleted)");
-        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_OK reason='{reason}' attempt={attempt}");
+        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_OK reason='{request.Reason}' attempt={attempt}");
         AssertContains(deferredFlashbackBackendCleanup, "else if (attempt < 3)");
-        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_RETRY reason='{reason}' attempt={attempt} next_attempt={nextAttempt}");
+        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_RETRY reason='{request.Reason}' attempt={attempt} next_attempt={nextAttempt}");
         AssertContains(deferredFlashbackBackendCleanup, "Task.Delay(TimeSpan.FromSeconds(5))");
-        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_GIVE_UP reason='{reason}' attempt={attempt} preserve_segments=true");
+        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_GIVE_UP reason='{request.Reason}' attempt={attempt} preserve_segments=true");
         var flashbackBackendArtifactCleanup = ExtractSourceBlock(
             captureServiceSource,
             "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync",
             "private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+        AssertContains(flashbackBackendArtifactCleanup, "FlashbackBackendArtifactCleanupRequest request,");
         AssertContains(flashbackBackendArtifactCleanup, "WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)");
-        AssertOccursBefore(flashbackBackendArtifactCleanup, "flashbackExporter.Dispose();", "bufferManager.PurgeAllSegments();");
-        AssertOccursBefore(flashbackBackendArtifactCleanup, "flashbackExporter.Dispose();", "bufferManager.Dispose();");
-        AssertOccursBefore(flashbackBackendArtifactCleanup, "WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)", "flashbackExporter.Dispose();");
-        AssertOccursBefore(flashbackBackendArtifactCleanup, "WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)", "bufferManager.PurgeAllSegments();");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "request.FlashbackExporter.Dispose();", "request.BufferManager.PurgeAllSegments();");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "request.FlashbackExporter.Dispose();", "request.BufferManager.Dispose();");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)", "request.FlashbackExporter.Dispose();");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)", "request.BufferManager.PurgeAllSegments();");
         var cycleFlashbackBuffer = ExtractSourceBlock(
             captureServiceSource,
             "private async Task CycleFlashbackBufferAsync",
@@ -305,8 +307,10 @@ static partial class Program
         AssertContains(cycleNewSinkStart, "_flashbackPlaybackController = playbackController;");
         AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_DETACH_WARN");
-        AssertContains(captureServiceSource, "purgeSegments: purgeSegments");
-        AssertContains(captureServiceSource, "purgeSegments: effectivePurgeSegments");
+        AssertContains(captureServiceSource, "request.PurgeSegments");
+        AssertContains(captureServiceSource, "new FlashbackPreviewBackendDisposalRequest(");
+        AssertContains(captureServiceSource, "new FlashbackBackendArtifactCleanupRequest(");
+        AssertContains(captureServiceSource, "effectivePurgeSegments,");
         AssertContains(captureServiceSource, "!activeFlashbackSink.CanBeginRecording");
         AssertContains(captureServiceSource, "_flashbackRecordingStartInProgress");
         AssertContains(captureServiceSource, "_flashbackRecordingFinalizeInProgress");

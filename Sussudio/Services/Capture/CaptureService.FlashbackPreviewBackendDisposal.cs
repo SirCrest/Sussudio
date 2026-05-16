@@ -1,12 +1,18 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
 
 public partial class CaptureService
 {
+    private readonly record struct FlashbackPreviewBackendDisposalRequest(
+        bool PurgeSegments,
+        bool DetachMicrophoneWriter,
+        bool ExportOperationLockAlreadyHeld);
+
     private async Task DisposeFlashbackPreviewBackendAsync(
         CancellationToken cancellationToken,
         bool purgeSegments = true,
@@ -24,9 +30,10 @@ public partial class CaptureService
                 "preview_backend_dispose");
             await DisposeFlashbackPreviewBackendCoreAsync(
                     cancellationToken,
-                    effectivePurgeSegments,
-                    detachMicrophoneWriter,
-                    exportOperationLockAlreadyHeld: true)
+                    new FlashbackPreviewBackendDisposalRequest(
+                        effectivePurgeSegments,
+                        detachMicrophoneWriter,
+                        ExportOperationLockAlreadyHeld: true))
                 .ConfigureAwait(false);
         }
         finally
@@ -38,9 +45,7 @@ public partial class CaptureService
 
     private async Task DisposeFlashbackPreviewBackendCoreAsync(
         CancellationToken cancellationToken,
-        bool purgeSegments = true,
-        bool detachMicrophoneWriter = true,
-        bool exportOperationLockAlreadyHeld = false)
+        FlashbackPreviewBackendDisposalRequest request)
     {
         var flashbackSink = _flashbackSink;
         var flashbackBufferManager = _flashbackBufferManager;
@@ -66,11 +71,12 @@ public partial class CaptureService
 
         // Detach feeds first — stops new frames from entering the sink
         _flashbackBackend.DetachProducers(
-            _unifiedVideoCapture,
-            _wasapiAudioCapture,
-            _microphoneCapture,
-            "FLASHBACK_PREVIEW_DETACH_WARN",
-            detachMicrophoneWriter);
+            new FlashbackProducerDetachRequest(
+                _unifiedVideoCapture,
+                _wasapiAudioCapture,
+                _microphoneCapture,
+                "FLASHBACK_PREVIEW_DETACH_WARN",
+                request.DetachMicrophoneWriter));
 
         Task sinkCompletionTask = Task.CompletedTask;
         if (flashbackSink != null)
@@ -108,39 +114,42 @@ public partial class CaptureService
         {
             ScheduleDeferredFlashbackBackendCleanup(
                 sinkCompletionTask,
-                flashbackBufferManager,
-                flashbackExporter,
-                reason: purgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
-                purgeSegments: purgeSegments);
+                new FlashbackBackendArtifactCleanupRequest(
+                    flashbackBufferManager,
+                    flashbackExporter,
+                    request.PurgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
+                    request.PurgeSegments));
             flashbackBufferManager = null;
             flashbackExporter = null;
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-        if (purgeSegments)
+        if (request.PurgeSegments)
         {
             cancellationToken.ThrowIfCancellationRequested();
         }
 
         var cleanupCompleted = await CleanupFlashbackBackendArtifactsAfterExportAsync(
-                flashbackBufferManager,
-                flashbackExporter,
-                purgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
-                purgeSegments,
+                new FlashbackBackendArtifactCleanupRequest(
+                    flashbackBufferManager,
+                    flashbackExporter,
+                    request.PurgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
+                    request.PurgeSegments),
                 "preview_backend_dispose",
-                exportOperationLockAlreadyHeld)
+                request.ExportOperationLockAlreadyHeld)
             .ConfigureAwait(false);
 
         if (!cleanupCompleted)
         {
             ScheduleDeferredFlashbackBackendCleanup(
                 Task.Delay(TimeSpan.FromSeconds(1)),
-                flashbackBufferManager,
-                flashbackExporter,
-                reason: purgeSegments ? "preview_backend_dispose_purge_retry" : "preview_backend_dispose_retry",
-                purgeSegments: purgeSegments);
+                new FlashbackBackendArtifactCleanupRequest(
+                    flashbackBufferManager,
+                    flashbackExporter,
+                    request.PurgeSegments ? "preview_backend_dispose_purge_retry" : "preview_backend_dispose_retry",
+                    request.PurgeSegments));
         }
 
-        Logger.Log($"FLASHBACK_PREVIEW_DISPOSE_OK purge={purgeSegments}");
+        Logger.Log($"FLASHBACK_PREVIEW_DISPOSE_OK purge={request.PurgeSegments}");
     }
 }

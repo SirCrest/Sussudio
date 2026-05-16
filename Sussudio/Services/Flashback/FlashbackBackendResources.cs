@@ -8,6 +8,13 @@ using Sussudio.Services.Capture;
 
 namespace Sussudio.Services.Flashback;
 
+internal readonly record struct FlashbackProducerDetachRequest(
+    UnifiedVideoCapture? VideoCapture,
+    WasapiAudioCapture? AudioCapture,
+    WasapiAudioCapture? MicrophoneCapture,
+    string WarningToken,
+    bool DetachMicrophoneWriter);
+
 /// <summary>
 /// Authoritative ownership record for the preview-owned Flashback backend.
 /// CaptureService remains the transition coordinator; this aggregate keeps the
@@ -149,24 +156,19 @@ internal sealed class FlashbackBackendResources
         return playbackController;
     }
 
-    public void DetachProducers(
-        UnifiedVideoCapture? videoCapture,
-        WasapiAudioCapture? audioCapture,
-        WasapiAudioCapture? microphoneCapture,
-        string warningToken,
-        bool detachMicrophoneWriter = true)
+    public void DetachProducers(FlashbackProducerDetachRequest request)
     {
-        if (detachMicrophoneWriter)
+        if (request.DetachMicrophoneWriter)
         {
-            try { microphoneCapture?.SetAudioWriter(null); }
-            catch (Exception ex) { Logger.Log($"{warningToken} target=microphone type={ex.GetType().Name} msg={ex.Message}"); }
+            try { request.MicrophoneCapture?.SetAudioWriter(null); }
+            catch (Exception ex) { Logger.Log($"{request.WarningToken} target=microphone type={ex.GetType().Name} msg={ex.Message}"); }
         }
 
-        try { audioCapture?.DetachFlashbackSink(); }
-        catch (Exception ex) { Logger.Log($"{warningToken} target=audio type={ex.GetType().Name} msg={ex.Message}"); }
+        try { request.AudioCapture?.DetachFlashbackSink(); }
+        catch (Exception ex) { Logger.Log($"{request.WarningToken} target=audio type={ex.GetType().Name} msg={ex.Message}"); }
 
-        try { videoCapture?.SetFlashbackSink(null); }
-        catch (Exception ex) { Logger.Log($"{warningToken} target=video type={ex.GetType().Name} msg={ex.Message}"); }
+        try { request.VideoCapture?.SetFlashbackSink(null); }
+        catch (Exception ex) { Logger.Log($"{request.WarningToken} target=video type={ex.GetType().Name} msg={ex.Message}"); }
     }
 
     public void ClearSinkAndSettings()
