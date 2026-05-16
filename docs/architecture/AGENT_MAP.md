@@ -468,8 +468,10 @@ Important entry points:
 - `CaptureService.RecordingRollback.cs` owns transient backend teardown after
   recording-start failures, including best-effort sink, WASAPI, unified-video,
   and deferred LibAv drain cleanup.
-- `CaptureService.RuntimeSnapshots.cs` builds runtime snapshots consumed by UI,
-  automation, and verification.
+- `CaptureService.RuntimeSnapshots.cs` samples runtime snapshot inputs consumed by UI,
+  automation, and verification, then delegates final DTO construction.
+- `CaptureService.RuntimeSnapshotAssembler.cs` owns final `CaptureRuntimeSnapshot` DTO construction
+  from already-sampled field groups.
 - `CaptureService.RuntimeSnapshotIngestAudio.cs` owns runtime snapshot projection
   for video ingest, source-reader health, WASAPI capture, and playback output
   counters.

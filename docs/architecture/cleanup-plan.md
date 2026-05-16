@@ -1380,10 +1380,13 @@ and active snapshot assembly in `NativeXuAtCommandProvider.RollingPoll.cs`, and
 keep rolling command batch dispatch in `NativeXuAtCommandProvider.RollingCommandGroups.cs`.
 
 Runtime capture snapshot projection now lives in
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. That file owns
-the read-only `CaptureRuntimeSnapshot` DTO construction consumed by UI,
-automation, and verification; video ingest, source-reader health, WASAPI
-capture, and playback output counter projection now lives in
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples the
+read-only runtime inputs consumed by UI, automation, and verification, then
+delegates final DTO construction.
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final
+`CaptureRuntimeSnapshot` DTO construction from already-sampled field groups.
+Video ingest, source-reader health, WASAPI capture, and playback output counter
+projection lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs`,
 requested/negotiated reader transport, memory preference, frame-ledger, and
 preview renderer-mode projection now lives in

@@ -57,6 +57,9 @@ static partial class Program
             "CaptureService initialization lives in focused partial",
             CaptureService_InitializationLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "CaptureService runtime snapshot assembler owns DTO mapping",
+            CaptureService_RuntimeSnapshotAssembler_LivesInFocusedPartial);
+        await AddCheckAsync(results,
             "CaptureService runtime ingest audio projection lives in focused partial",
             CaptureService_RuntimeIngestAudioProjection_LivesInFocusedPartial);
         await AddCheckAsync(results,
