@@ -1890,7 +1890,7 @@ start now live in `Sussudio/Controllers/Recording/RecordingButtonActionControlle
 
 Live-signal pill text application, visibility state, show/hide debounce timers,
 and the small scale/fade animation now live in
-`Sussudio/Controllers/LiveSignalInfoController.cs`. `MainWindow.LiveSignalInfo.cs`
+`Sussudio/Controllers/Shell/LiveSignalInfoController.cs`. `MainWindow.LiveSignalInfo.cs`
 is the XAML-facing adapter, while
 `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs` owns label formatting.
 Source telemetry summary, telemetry age, and target-summary display text now
