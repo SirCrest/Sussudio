@@ -1625,8 +1625,10 @@ diagnostic row pooling contract checks now live in
 `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs`. Source telemetry panel
 projection checks live with stats presentation coverage in
 `tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs`.
-Frame-time overlay graph drawing and compact text application now live in
+Frame-time overlay compact text application and graph-line mutation now live in
 `Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs`;
+frame-time canvas sizing, sample projection, and expected-line geometry live in
+`Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs`;
 `Sussudio/MainWindow.FrameTimeOverlay.cs` is the XAML-facing compact overlay
 adapter and owns the presentation-controller composition, while
 `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` keeps the stats dock

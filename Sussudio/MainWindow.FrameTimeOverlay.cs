@@ -3,7 +3,7 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // XAML-facing adapter for the compact frame-time overlay. The presentation
-// controller owns text projection and canvas math.
+// controller owns text application and delegates graph math to the geometry helper.
 public sealed partial class MainWindow
 {
     private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;

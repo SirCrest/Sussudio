@@ -54,5 +54,8 @@ static partial class Program
         await AddCheckAsync(results,
             "Frame-time overlay uses detected-FPS bounded millisecond range",
             FrameTimeOverlay_UsesDetectedFpsBoundedRange);
+        await AddCheckAsync(results,
+            "Frame-time overlay geometry projects graph coordinates",
+            FrameTimeOverlayGeometry_ProjectsGraphCoordinates);
     }
 }

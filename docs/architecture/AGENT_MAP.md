@@ -957,9 +957,11 @@ Primary current owners:
   `StatsDockRowChromeController` owns decode/GPU row pooling/styling while
   `StatsDockRefreshController` owns when decode/GPU rows refresh.
 - `Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs` owns compact
-  frame-time overlay text projection and graph line drawing. Keep frame-time
-  canvas math there, while `Sussudio/MainWindow.FrameTimeOverlay.cs` owns the
-  XAML-facing compact overlay adapter and presentation-controller composition.
+  frame-time overlay text application and graph-line mutation, while
+  `Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs` owns frame-time
+  canvas sizing, sample projection, and expected-line geometry.
+  `Sussudio/MainWindow.FrameTimeOverlay.cs` owns the XAML-facing compact
+  overlay adapter and presentation-controller composition.
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns shared stats
   formatting helpers.
   `Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs` owns stats dock
@@ -1004,7 +1006,7 @@ Primary current owners:
   formatting, `tests/Sussudio.Tests/StatsPresentation.Encoder.Tests.cs` owns
   dock encoder formatting,
   `tests/Sussudio.Tests/StatsPresentation.FrameTime.Tests.cs` owns compact
-  preview summary and frame-time range policy checks,
+  preview summary, frame-time range policy, and frame-time graph geometry checks,
   `tests/Sussudio.Tests/StatsHardwareRowsController.Tests.cs` owns hardware row
   presentation/input behavior checks, and
   `tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs` owns disk

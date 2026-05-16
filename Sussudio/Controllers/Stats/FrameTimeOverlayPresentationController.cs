@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Shapes;
 using Sussudio.ViewModels;
-using Windows.Foundation;
 
 namespace Sussudio.Controllers;
 
@@ -55,26 +54,24 @@ internal sealed class FrameTimeOverlayPresentationController
             return;
         }
 
-        var width = _context.Canvas.ActualWidth > 1 ? _context.Canvas.ActualWidth : 500;
-        var height = _context.Canvas.ActualHeight > 1 ? _context.Canvas.ActualHeight : 92;
+        var canvasSize = FrameTimeOverlayGeometry.ResolveCanvasSize(
+            _context.Canvas.ActualWidth,
+            _context.Canvas.ActualHeight);
         for (var i = 0; i < samples.Count; i++)
         {
-            var x = samples.Count == 1 ? 0 : i * width / (samples.Count - 1);
-            var normalized = Math.Clamp((samples[i] - range.MinMs) / range.SpanMs, 0.0, 1.0);
-            var y = height - normalized * height;
-            line.Points.Add(new Point(x, y));
+            line.Points.Add(FrameTimeOverlayGeometry.ProjectSample(i, samples.Count, samples[i], range, canvasSize));
         }
     }
 
     private void UpdateExpectedLine(StatsFrameTimeRange range)
     {
-        var width = _context.Canvas.ActualWidth > 1 ? _context.Canvas.ActualWidth : 500;
-        var height = _context.Canvas.ActualHeight > 1 ? _context.Canvas.ActualHeight : 92;
-        var normalized = Math.Clamp((range.ExpectedMs - range.MinMs) / range.SpanMs, 0.0, 1.0);
-        var y = height - normalized * height;
-        _context.ExpectedLine.X2 = width;
-        _context.ExpectedLine.Y1 = y;
-        _context.ExpectedLine.Y2 = y;
+        var canvasSize = FrameTimeOverlayGeometry.ResolveCanvasSize(
+            _context.Canvas.ActualWidth,
+            _context.Canvas.ActualHeight);
+        var line = FrameTimeOverlayGeometry.ProjectExpectedLine(range, canvasSize);
+        _context.ExpectedLine.X2 = line.X2;
+        _context.ExpectedLine.Y1 = line.Y;
+        _context.ExpectedLine.Y2 = line.Y;
     }
 
     private static void SetTextIfChanged(TextBlock target, string value)

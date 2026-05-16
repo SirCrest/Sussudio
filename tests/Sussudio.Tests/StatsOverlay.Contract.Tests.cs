@@ -9,6 +9,7 @@ static partial class Program
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.cs").Replace("\r\n", "\n");
         var dockAnimationText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.DockAnimation.cs").Replace("\r\n", "\n");
         var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
+        var frameTimeGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs").Replace("\r\n", "\n");
 
         AssertContains(statsOverlayCompositionText, "private StatsOverlayController _statsOverlayController = null!;");
         AssertContains(statsOverlayCompositionText, "private void InitializeStatsOverlayController()");
@@ -55,6 +56,9 @@ static partial class Program
         AssertContains(dockAnimationText, "EnableDependentAnimation = true");
         AssertContains(frameTimeControllerText, "internal sealed class FrameTimeOverlayPresentationController");
         AssertContains(frameTimeControllerText, "public void Apply(StatsSnapshot snapshot)");
+        AssertContains(frameTimeGeometryText, "internal static class FrameTimeOverlayGeometry");
+        AssertContains(frameTimeGeometryText, "FallbackWidth = 500");
+        AssertContains(frameTimeGeometryText, "FallbackHeight = 92");
         AssertDoesNotContain(statsOverlayText, "private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController");
         AssertDoesNotContain(statsOverlayText, "new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext");
         AssertDoesNotContain(statsOverlayText, "private void StatsPollTimer_Tick(");
