@@ -2066,8 +2066,9 @@ handoff and XAML completion side effects.
 Bottom status-strip projection now lives in
 `Sussudio/Controllers/Shell/StatusStripPresentationController.cs`, while
 `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing adapter and
-owns the status-strip `PropertyChanged` router. Recording-time updates still
-refresh the window title only while recording.
+builds the ViewModel snapshot passed into the controller. The controller owns
+the status-strip `PropertyChanged` router and preserves the recording-only
+window-title refresh on recording-time updates.
 
 Pure recording-state lockout decisions now live in
 `Sussudio/Controllers/Recording/RecordingStatePresentationPolicy.cs`: recording-time

@@ -1,4 +1,6 @@
+using System;
 using Microsoft.UI.Xaml.Controls;
+using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
 
@@ -18,7 +20,10 @@ internal readonly record struct StatusStripPresentationSnapshot(
     string DiskSpaceInfo,
     string RecordingSizeInfo,
     string RecordingBitrateInfo,
-    bool IsDiskWarningActive);
+    string FlashbackBitrateInfo,
+    bool IsDiskWarningActive,
+    bool IsRecording,
+    bool IsFlashbackEnabled);
 
 internal sealed class StatusStripPresentationController
 {
@@ -37,6 +42,47 @@ internal sealed class StatusStripPresentationController
         UpdateRecordingSize(snapshot.RecordingSizeInfo);
         UpdateRecordingBitrate(snapshot.RecordingBitrateInfo);
         UpdateDiskWarning(snapshot.IsDiskWarningActive);
+    }
+
+    public bool TryHandlePropertyChanged(
+        string? propertyName,
+        StatusStripPresentationSnapshot snapshot,
+        Action applyWindowTitle)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.StatusText):
+                UpdateStatusText(snapshot.StatusText);
+                return true;
+
+            case nameof(MainViewModel.RecordingTime):
+                UpdateRecordingTime(snapshot.RecordingTime);
+                if (snapshot.IsRecording)
+                {
+                    applyWindowTitle();
+                }
+
+                return true;
+
+            case nameof(MainViewModel.DiskSpaceInfo):
+                UpdateDiskSpace(snapshot.DiskSpaceInfo);
+                return true;
+
+            case nameof(MainViewModel.RecordingSizeInfo):
+                UpdateRecordingSize(snapshot.RecordingSizeInfo);
+                return true;
+
+            case nameof(MainViewModel.RecordingBitrateInfo):
+                UpdateRecordingBitrate(snapshot.RecordingBitrateInfo);
+                return true;
+
+            case nameof(MainViewModel.IsDiskWarningActive):
+                UpdateDiskWarning(snapshot.IsDiskWarningActive);
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     public void UpdateStatusText(string statusText)

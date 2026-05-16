@@ -871,11 +871,11 @@ Primary current owners:
   changes.
 - `Sussudio/Controllers/Shell/StatusStripPresentationController.cs` owns bottom
   status-strip projection: status text, recording time, disk warning,
-  disk-space text, recording size, recording bitrate, and the Flashback bitrate
-  fallback used while Flashback is enabled and recording is idle.
-  `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing adapter,
-  owns the status-strip `PropertyChanged` router, and preserves the
-  recording-only title refresh on recording-time updates.
+  disk-space text, recording size, recording bitrate, the status-strip
+  `PropertyChanged` router, the recording-only title-refresh callback, and the
+  Flashback bitrate fallback used while Flashback is enabled and recording is
+  idle. `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing
+  adapter and builds the ViewModel snapshot passed into the controller.
 - `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` owns window close
   request flags, completion TCS, cleanup latch, recording-stop handoff flags,
   close-in-progress exception classification, and automation close dispatch
@@ -917,10 +917,10 @@ Primary current owners:
   their feature adapter partials beside the owning controllers.
 - `Sussudio/MainWindow.PropertyChanged.cs` owns only the root ViewModel
   PropertyChanged event envelope, property-name normalization, and route order.
-  Capture-selection and status-strip routers are still considered first through
+  Capture-selection and status-strip adapters are still considered first through
   `MainWindow.CaptureSelectionBindings.cs` and
   `MainWindow.StatusStripPresentation.cs`; broad domain property-name switches
-  live in focused `MainWindow.PropertyChanged*.cs` partials.
+  and status-strip routing logic live in focused controllers/partials.
 - `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs` owns shared
   compositor opacity fade helpers for preview shadow visuals. XAML-facing
   adapters call it without adding state or dispatcher hops.

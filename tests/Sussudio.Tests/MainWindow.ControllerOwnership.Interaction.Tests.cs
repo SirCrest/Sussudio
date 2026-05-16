@@ -92,6 +92,7 @@ static partial class Program
         AssertContains(adapterText, "RecordingSizeTextBlock = RecordingSizeTextBlock,");
         AssertContains(adapterText, "RecordingBitrateTextBlock = RecordingBitrateTextBlock,");
         AssertContains(adapterText, "private void ApplyInitialStatusStripPresentation()");
+        AssertContains(adapterText, "private StatusStripPresentationSnapshot BuildStatusStripPresentationSnapshot()");
         AssertContains(adapterText, "private void UpdateStatusTextPresentation()");
         AssertContains(adapterText, "private void UpdateRecordingTimePresentation()");
         AssertContains(adapterText, "private void UpdateDiskSpacePresentation()");
@@ -100,14 +101,9 @@ static partial class Program
         AssertContains(adapterText, "private void UpdateFlashbackBitratePresentation()");
         AssertContains(adapterText, "private void UpdateDiskWarningPresentation()");
         AssertContains(adapterText, "private bool TryHandleStatusStripPropertyChanged(string? propertyName)");
-        AssertContains(adapterText, "case nameof(MainViewModel.StatusText):");
-        AssertContains(adapterText, "case nameof(MainViewModel.RecordingTime):");
-        AssertContains(adapterText, "case nameof(MainViewModel.DiskSpaceInfo):");
-        AssertContains(adapterText, "case nameof(MainViewModel.RecordingSizeInfo):");
-        AssertContains(adapterText, "case nameof(MainViewModel.RecordingBitrateInfo):");
-        AssertContains(adapterText, "case nameof(MainViewModel.IsDiskWarningActive):");
-        AssertContains(adapterText, "if (ViewModel.IsRecording)");
-        AssertContains(adapterText, "ApplyWindowTitle();");
+        AssertContains(adapterText, "_statusStripPresentationController.TryHandlePropertyChanged(");
+        AssertContains(adapterText, "BuildStatusStripPresentationSnapshot(),");
+        AssertContains(adapterText, "ApplyWindowTitle);");
         AssertContains(mainWindowText, "InitializeStatusStripPresentationController();");
         AssertContains(bindingsText, "ApplyInitialStatusStripPresentation();");
         AssertContains(propertyChangedText, "if (TryHandleStatusStripPropertyChanged(propertyName))");
@@ -115,6 +111,15 @@ static partial class Program
         AssertContains(controllerText, "internal readonly record struct StatusStripPresentationSnapshot");
         AssertContains(controllerText, "internal sealed class StatusStripPresentationController");
         AssertContains(controllerText, "public void ApplyInitial(StatusStripPresentationSnapshot snapshot)");
+        AssertContains(controllerText, "public bool TryHandlePropertyChanged(");
+        AssertContains(controllerText, "case nameof(MainViewModel.StatusText):");
+        AssertContains(controllerText, "case nameof(MainViewModel.RecordingTime):");
+        AssertContains(controllerText, "case nameof(MainViewModel.DiskSpaceInfo):");
+        AssertContains(controllerText, "case nameof(MainViewModel.RecordingSizeInfo):");
+        AssertContains(controllerText, "case nameof(MainViewModel.RecordingBitrateInfo):");
+        AssertContains(controllerText, "case nameof(MainViewModel.IsDiskWarningActive):");
+        AssertContains(controllerText, "if (snapshot.IsRecording)");
+        AssertContains(controllerText, "applyWindowTitle();");
         AssertContains(controllerText, "_context.StatusTextBlock.Text = statusText;");
         AssertContains(controllerText, "_context.RecordingTimeTextBlock.Text = recordingTime;");
         AssertContains(controllerText, "_context.DiskSpaceTextBlock.Text = diskSpaceInfo;");
@@ -147,6 +152,13 @@ static partial class Program
         AssertDoesNotContain(propertyChangedText, "UpdateRecordingBitratePresentation();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.IsDiskWarningActive):");
         AssertDoesNotContain(propertyChangedText, "UpdateDiskWarningPresentation();");
+        AssertDoesNotContain(adapterText, "case nameof(MainViewModel.StatusText):");
+        AssertDoesNotContain(adapterText, "case nameof(MainViewModel.RecordingTime):");
+        AssertDoesNotContain(adapterText, "case nameof(MainViewModel.DiskSpaceInfo):");
+        AssertDoesNotContain(adapterText, "case nameof(MainViewModel.RecordingSizeInfo):");
+        AssertDoesNotContain(adapterText, "case nameof(MainViewModel.RecordingBitrateInfo):");
+        AssertDoesNotContain(adapterText, "case nameof(MainViewModel.IsDiskWarningActive):");
+        AssertDoesNotContain(adapterText, "if (ViewModel.IsRecording)");
         AssertDoesNotContain(flashbackPropertyChangedText, "RecordingBitrateTextBlock.Text = ViewModel.FlashbackBitrateInfo;");
 
         return Task.CompletedTask;

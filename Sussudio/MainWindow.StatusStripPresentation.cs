@@ -23,51 +23,25 @@ public sealed partial class MainWindow
     }
 
     private void ApplyInitialStatusStripPresentation()
-        => _statusStripPresentationController.ApplyInitial(new StatusStripPresentationSnapshot(
+        => _statusStripPresentationController.ApplyInitial(BuildStatusStripPresentationSnapshot());
+
+    private bool TryHandleStatusStripPropertyChanged(string? propertyName)
+        => _statusStripPresentationController.TryHandlePropertyChanged(
+            propertyName,
+            BuildStatusStripPresentationSnapshot(),
+            ApplyWindowTitle);
+
+    private StatusStripPresentationSnapshot BuildStatusStripPresentationSnapshot()
+        => new(
             ViewModel.StatusText,
             ViewModel.RecordingTime,
             ViewModel.DiskSpaceInfo,
             ViewModel.RecordingSizeInfo,
             ViewModel.RecordingBitrateInfo,
-            ViewModel.IsDiskWarningActive));
-
-    private bool TryHandleStatusStripPropertyChanged(string? propertyName)
-    {
-        switch (propertyName)
-        {
-            case nameof(MainViewModel.StatusText):
-                UpdateStatusTextPresentation();
-                return true;
-
-            case nameof(MainViewModel.RecordingTime):
-                UpdateRecordingTimePresentation();
-                if (ViewModel.IsRecording)
-                {
-                    ApplyWindowTitle();
-                }
-
-                return true;
-
-            case nameof(MainViewModel.DiskSpaceInfo):
-                UpdateDiskSpacePresentation();
-                return true;
-
-            case nameof(MainViewModel.RecordingSizeInfo):
-                UpdateRecordingSizePresentation();
-                return true;
-
-            case nameof(MainViewModel.RecordingBitrateInfo):
-                UpdateRecordingBitratePresentation();
-                return true;
-
-            case nameof(MainViewModel.IsDiskWarningActive):
-                UpdateDiskWarningPresentation();
-                return true;
-
-            default:
-                return false;
-        }
-    }
+            ViewModel.FlashbackBitrateInfo,
+            ViewModel.IsDiskWarningActive,
+            ViewModel.IsRecording,
+            ViewModel.IsFlashbackEnabled);
 
     private void UpdateStatusTextPresentation()
         => _statusStripPresentationController.UpdateStatusText(ViewModel.StatusText);
