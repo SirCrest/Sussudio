@@ -44,6 +44,47 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackTimelineTrackLayout_LivesInController()
+    {
+        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
+        var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/FlashbackTimelineController.cs").Replace("\r\n", "\n");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+
+        AssertContains(timelineAdapterText, "FlashbackTrackBackground = FlashbackTrackBackground,");
+        AssertContains(timelineAdapterText, "FlashbackScrubArea = FlashbackScrubArea,");
+        AssertContains(timelineAdapterText, "FlashbackPlayhead = FlashbackPlayhead,");
+        AssertContains(timelineAdapterText, "FlashbackLiveEdge = FlashbackLiveEdge,");
+        AssertContains(controllerText, "public required FrameworkElement FlashbackTrackBackground { get; init; }");
+        AssertContains(controllerText, "public required FrameworkElement FlashbackScrubArea { get; init; }");
+        AssertContains(controllerText, "public required FrameworkElement FlashbackPlayhead { get; init; }");
+        AssertContains(controllerText, "public required FrameworkElement FlashbackLiveEdge { get; init; }");
+        AssertContains(controllerText, "public void ApplyTrackSize(double width, double height)");
+        AssertContains(controllerText, "_context.FlashbackTrackBackground.Width = width;");
+        AssertContains(controllerText, "_context.FlashbackTrackBackground.Height = height;");
+        AssertContains(controllerText, "_context.FlashbackScrubArea.Width = width;");
+        AssertContains(controllerText, "_context.FlashbackScrubArea.Height = height;");
+        AssertContains(controllerText, "_context.FlashbackPlayhead.Height = height;");
+        AssertContains(controllerText, "_context.FlashbackLiveEdge.Height = height;");
+        AssertContains(controllerText, "Canvas.SetLeft(_context.FlashbackLiveEdge, width - 2);");
+        AssertContains(flashbackText, "private void FlashbackTrack_SizeChanged(object sender, SizeChangedEventArgs e)");
+        AssertContains(flashbackText, "_flashbackTimelineController.ApplyTrackSize(w, h);");
+        AssertOccursBefore(flashbackText, "_flashbackTimelineController.ApplyTrackSize(w, h);", "RequestFlashbackPlayheadSnapOnNextUpdate();");
+        AssertOccursBefore(flashbackText, "RequestFlashbackPlayheadSnapOnNextUpdate();", "UpdateFlashbackPositionUI();");
+        AssertOccursBefore(flashbackText, "UpdateFlashbackPositionUI();", "UpdateFlashbackMarkers();");
+        AssertOccursBefore(flashbackText, "UpdateFlashbackMarkers();", "RefreshFlashbackCtiMotion(\"size_changed\");");
+        AssertContains(agentMapText, "timeline track layout sizing");
+        AssertDoesNotContain(flashbackText, "FlashbackTrackBackground.Width =");
+        AssertDoesNotContain(flashbackText, "FlashbackTrackBackground.Height =");
+        AssertDoesNotContain(flashbackText, "FlashbackScrubArea.Width =");
+        AssertDoesNotContain(flashbackText, "FlashbackScrubArea.Height =");
+        AssertDoesNotContain(flashbackText, "FlashbackPlayhead.Height =");
+        AssertDoesNotContain(flashbackText, "FlashbackLiveEdge.Height =");
+        AssertDoesNotContain(flashbackText, "Canvas.SetLeft(FlashbackLiveEdge");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlayheadMotion_LivesInController()
     {
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");

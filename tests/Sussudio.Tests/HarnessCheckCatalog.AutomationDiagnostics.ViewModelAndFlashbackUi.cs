@@ -42,6 +42,9 @@ static partial class Program
             "Flashback polling timers live in controller",
             FlashbackPollingTimers_LiveInController);
         await AddCheckAsync(results,
+            "Flashback timeline track layout lives in controller",
+            FlashbackTimelineTrackLayout_LivesInController);
+        await AddCheckAsync(results,
             "Flashback playhead motion lives in controller",
             FlashbackPlayheadMotion_LivesInController);
         await AddCheckAsync(results,

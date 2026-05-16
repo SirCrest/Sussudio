@@ -12,6 +12,10 @@ internal sealed class FlashbackTimelineControllerContext
     public required MainViewModel ViewModel { get; init; }
     public required ToggleButton FlashbackToggle { get; init; }
     public required FrameworkElement FlashbackTimelinePanel { get; init; }
+    public required FrameworkElement FlashbackTrackBackground { get; init; }
+    public required FrameworkElement FlashbackScrubArea { get; init; }
+    public required FrameworkElement FlashbackPlayhead { get; init; }
+    public required FrameworkElement FlashbackLiveEdge { get; init; }
     public required Action SnapPlayheadOnNextOpen { get; init; }
     public required Action StartStatusPolling { get; init; }
     public required Action StopStatusPolling { get; init; }
@@ -84,6 +88,18 @@ internal sealed class FlashbackTimelineController
         {
             AnimateTimeline(show: false);
         }
+    }
+
+    public void ApplyTrackSize(double width, double height)
+    {
+        _context.FlashbackTrackBackground.Width = width;
+        _context.FlashbackTrackBackground.Height = height;
+        _context.FlashbackScrubArea.Width = width;
+        _context.FlashbackScrubArea.Height = height;
+        _context.FlashbackPlayhead.Height = height;
+        _context.FlashbackLiveEdge.Height = height;
+
+        Canvas.SetLeft(_context.FlashbackLiveEdge, width - 2);
     }
 
     public void ApplyLockout()

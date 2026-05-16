@@ -1577,9 +1577,10 @@ Primary current owners:
   decode/GPU row text projection over presentation inputs, and
   `StatsDockRefreshController` owns when decode/GPU rows refresh.
 - `Sussudio/Controllers/FlashbackTimelineController.cs` owns Flashback
-  timeline visibility, lockout, toggle synchronization, and show/hide
-  animation state. `MainWindow.FlashbackTimeline.cs` is the XAML-facing
-  adapter; command semantics live in `FlashbackCommandController`.
+  timeline visibility, lockout, toggle synchronization, show/hide animation
+  state, and timeline track layout sizing. `MainWindow.FlashbackTimeline.cs`
+  is the XAML-facing adapter; command semantics live in
+  `FlashbackCommandController`.
 - `Sussudio/Controllers/FlashbackScrubInteractionController.cs` owns active
   Flashback pointer-scrub state, scrub throttling, release/cancel/capture-lost
   cleanup, fullscreen scrub termination, lockout clearing, and scrub visual

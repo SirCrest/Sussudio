@@ -1,7 +1,6 @@
 using System;
 using Sussudio.Models;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 
 namespace Sussudio;
 
@@ -15,15 +14,7 @@ public sealed partial class MainWindow
         var w = e.NewSize.Width;
         var h = e.NewSize.Height;
 
-        // Size elements that fill the track.
-        FlashbackTrackBackground.Width = w;
-        FlashbackTrackBackground.Height = h;
-        FlashbackScrubArea.Width = w;
-        FlashbackScrubArea.Height = h;
-        FlashbackPlayhead.Height = h;
-        FlashbackLiveEdge.Height = h;
-
-        Canvas.SetLeft(FlashbackLiveEdge, w - 2);
+        _flashbackTimelineController.ApplyTrackSize(w, h);
 
         // Track resize jumps the playhead to its layout-correct position
         // without sweeping through stale translation from the old width.
