@@ -86,9 +86,12 @@ public sealed partial class MainWindow
         _statsOverlayController = new StatsOverlayController(new StatsOverlayControllerContext
         {
             DispatcherQueue = _dispatcherQueue,
+            StatsToggle = StatsToggle,
             StatsDockPanel = StatsDockPanel,
             FrameTimeOverlay = FrameTimeOverlay,
             FrameTimeOverlayToggle = FrameTimeOverlayToggle,
+            IsWindowClosing = () => _isWindowClosing,
+            SetStatsVisible = visible => ViewModel.IsStatsVisible = visible,
             GetStatsSnapshot = GetStatsSnapshot,
             UpdateStatsDock = _statsDockRefreshController.RefreshDock,
             UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,
@@ -97,20 +100,13 @@ public sealed partial class MainWindow
     }
 
     private void StatsToggle_Checked(object sender, RoutedEventArgs e)
-    {
-        if (_isWindowClosing)
-        {
-            return;
-        }
+        => _statsOverlayController.HandleStatsToggleChecked();
 
-        ViewModel.IsStatsVisible = true;
-    }
     private void StatsToggle_Unchecked(object sender, RoutedEventArgs e)
-    {
-        ViewModel.IsStatsVisible = false;
-    }
+        => _statsOverlayController.HandleStatsToggleUnchecked();
+
     private void ApplyStatsVisibility(bool visible, bool immediate = false)
-        => _statsOverlayController.ApplyStatsVisibility(visible, immediate);
+        => _statsOverlayController.SyncStatsVisibility(visible, immediate);
 
     private void FrameTimeOverlayToggle_Checked(object sender, RoutedEventArgs e)
         => _statsOverlayController.SetFrameTimeOverlayVisible(true);

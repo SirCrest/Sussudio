@@ -10,9 +10,12 @@ namespace Sussudio.Controllers;
 internal sealed class StatsOverlayControllerContext
 {
     public required DispatcherQueue DispatcherQueue { get; init; }
+    public required ToggleButton StatsToggle { get; init; }
     public required Border StatsDockPanel { get; init; }
     public required FrameworkElement FrameTimeOverlay { get; init; }
     public required ToggleButton FrameTimeOverlayToggle { get; init; }
+    public required Func<bool> IsWindowClosing { get; init; }
+    public required Action<bool> SetStatsVisible { get; init; }
     public required Func<StatsSnapshot> GetStatsSnapshot { get; init; }
     public required Action UpdateStatsDock { get; init; }
     public required Action<StatsSnapshot> UpdateFrameTimeOverlay { get; init; }
@@ -31,6 +34,29 @@ internal sealed partial class StatsOverlayController
 
     public bool IsFrameTimeOverlayVisible
         => _context.FrameTimeOverlay.Visibility == Visibility.Visible;
+
+    public void HandleStatsToggleChecked()
+    {
+        if (_context.IsWindowClosing())
+        {
+            return;
+        }
+
+        _context.SetStatsVisible(true);
+    }
+
+    public void HandleStatsToggleUnchecked()
+        => _context.SetStatsVisible(false);
+
+    public void SyncStatsVisibility(bool visible, bool immediate = false)
+    {
+        if (_context.StatsToggle.IsChecked != visible)
+        {
+            _context.StatsToggle.IsChecked = visible;
+        }
+
+        ApplyStatsVisibility(visible, immediate);
+    }
 
     public void ApplyStatsVisibility(bool visible, bool immediate = false)
     {

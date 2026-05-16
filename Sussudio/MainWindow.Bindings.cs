@@ -52,7 +52,6 @@ public sealed partial class MainWindow
         UpdateLiveSignalInfoVisibility();
         ApplyInitialAudioControlBindings();
         ShowAllCaptureOptionsToggle.IsChecked = ViewModel.ShowAllCaptureOptions;
-        StatsToggle.IsChecked = ViewModel.IsStatsVisible;
         ApplyInitialCaptureOptionSelections();
         ApplyInitialAudioMeterPresentation();
         ApplyAudioClipVisibility();
@@ -84,6 +83,6 @@ public sealed partial class MainWindow
         AttachDeviceAudioGainAndMeterBindings();
         SetupResponsiveShellLayoutBindings();
         AttachOutputPathDisplay();
-        ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);
+        _statsOverlayController.SyncStatsVisibility(ViewModel.IsStatsVisible, immediate: true);
     }
 }

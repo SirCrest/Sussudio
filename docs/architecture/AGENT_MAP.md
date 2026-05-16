@@ -813,7 +813,8 @@ Primary current owners:
   `SetupBindings()`. `Sussudio/MainWindow.AudioBindings.cs` is its
   XAML-facing adapter.
 - `Sussudio/Controllers/StatsOverlayController.cs` owns stats dock visibility
-  orchestration, frame-time overlay visibility, and polling lifetime.
+  orchestration, stats toggle checked/unchecked handling, stats toggle-to-view
+  model sync, frame-time overlay visibility, and polling lifetime.
   `Sussudio/Controllers/StatsOverlayController.DockAnimation.cs` owns stats dock
   show/hide storyboard construction, dock visibility mutations, and completion
   state.
@@ -832,8 +833,8 @@ Primary current owners:
   `Sussudio/Controllers/StatsSnapshotProvider.RenderMetrics.cs` owns renderer
   cadence/recent-sample acquisition and null fallback policy.
   `Sussudio/MainWindow.StatsSnapshot.cs` is the XAML-facing adapter.
-  `MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats dock
-  visibility, polling, and refresh controllers.
+  `MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats toggle
+  events, stats dock visibility, polling, and refresh controllers.
 - `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
   contract checks for stats overlay lifecycle wiring, stats section chrome,
   stats dock refresh orchestration, and diagnostic row pooling.

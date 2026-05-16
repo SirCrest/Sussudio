@@ -23,12 +23,5 @@ public sealed partial class MainWindow
     }
 
     private void HandleStatsVisibleChanged()
-    {
-        if (StatsToggle.IsChecked != ViewModel.IsStatsVisible)
-        {
-            StatsToggle.IsChecked = ViewModel.IsStatsVisible;
-        }
-
-        ApplyStatsVisibility(ViewModel.IsStatsVisible);
-    }
+        => _statsOverlayController.SyncStatsVisibility(ViewModel.IsStatsVisible);
 }
