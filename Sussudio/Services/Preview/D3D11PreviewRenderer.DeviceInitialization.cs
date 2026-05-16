@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
@@ -196,47 +195,6 @@ internal sealed partial class D3D11PreviewRenderer
         catch (Exception ex)
         {
             Logger.Log($"D3D11 preview media present duration failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
-        }
-    }
-
-    private bool TryInitializeWithSharedDevice(out FeatureLevel featureLevel)
-    {
-        featureLevel = FeatureLevel.Level_11_0;
-
-        ID3D11Device? sharedDevice = null;
-        lock (_lifecycleLock)
-        {
-            if (_sharedDevice == null || _sharedDevice.NativePointer == IntPtr.Zero)
-            {
-                return false;
-            }
-
-            Marshal.AddRef(_sharedDevice.NativePointer);
-            sharedDevice = new ID3D11Device(_sharedDevice.NativePointer);
-        }
-
-        try
-        {
-            _device = sharedDevice;
-            sharedDevice = null;
-            _deviceContext = _device.ImmediateContext;
-            if (_deviceContext == null)
-            {
-                throw new InvalidOperationException("Shared D3D11 device returned a null immediate context.");
-            }
-
-            featureLevel = _device.FeatureLevel;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            sharedDevice?.Dispose();
-            _deviceContext?.Dispose();
-            _deviceContext = null;
-            _device?.Dispose();
-            _device = null;
-            Logger.Log($"D3D11 shared device init failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}; falling back to renderer-owned device.");
-            return false;
         }
     }
 

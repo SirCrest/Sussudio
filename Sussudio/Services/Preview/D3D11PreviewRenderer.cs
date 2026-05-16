@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -13,7 +12,6 @@ using Sussudio.Services.Capture;
 using Sussudio.Services.Contracts;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
-using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Mathematics;
@@ -174,7 +172,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private int _hdrInputConfiguredWidth;
     private int _hdrInputConfiguredHeight;
     private bool _hdrPlaneViewsUnavailable;
-    private ID3D11Device? _sharedDevice;
 
     // Pre-allocated arrays to avoid per-frame GC pressure (720+ allocs/s at 120fps)
     private readonly VideoProcessorStream[] _vpStreamArray = new VideoProcessorStream[1];
@@ -197,8 +194,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private uint _outputFrameIndex;
     private int _hdrPassthroughEnabled;
     private int _swapChainColorSpaceDirty;
-    private int _sharedDeviceResetPending;
-    private int _sharedDeviceActive;
     private bool _loggedNv12ShaderMissing;
     private bool _loggedDirectUploadFallback;
     private bool _loggedHdrShaderFallback;
@@ -248,54 +243,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Interlocked.Exchange(ref _hdrPassthroughEnabled, enabled ? 1 : 0);
         Interlocked.Exchange(ref _swapChainColorSpaceDirty, 1);
         SignalFrameReady("hdr_passthrough");
-    }
-
-    public void SetSharedDevice(ID3D11Device sharedDevice)
-    {
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(sharedDevice);
-        if (sharedDevice.NativePointer == IntPtr.Zero)
-        {
-            throw new ArgumentException("Shared D3D11 device pointer is null.", nameof(sharedDevice));
-        }
-
-        ID3D11Device? previous;
-        lock (_lifecycleLock)
-        {
-            Marshal.AddRef(sharedDevice.NativePointer);
-            previous = _sharedDevice;
-            _sharedDevice = new ID3D11Device(sharedDevice.NativePointer);
-        }
-
-        previous?.Dispose();
-        Interlocked.Exchange(ref _sharedDeviceActive, 0);
-
-        // The render thread flips _isRendering before its first InitializeD3D().
-        // If the capture service applies the shared device in that startup
-        // window, the initial InitializeD3D() will already consume _sharedDevice;
-        // queuing a reset would immediately unbind/dispose/recreate the freshly
-        // bound swap chain. Only reset once D3D resources actually exist.
-        if (Volatile.Read(ref _isRendering) != 0 &&
-            (_device != null || _swapChain != null))
-        {
-            Interlocked.Exchange(ref _sharedDeviceResetPending, 1);
-            SignalFrameReady("shared_device_reset");
-        }
-    }
-
-    public void RetireSharedDeviceReferenceForReinit()
-    {
-        // Mode reinit retires this renderer after Stop() has already released
-        // the render-thread resources. The remaining shared-device wrapper is a
-        // duplicate COM reference obtained from the capture backend's
-        // SharedD3DDeviceManager. Disposing that wrapper while the old capture
-        // pipeline is also disposing its manager has produced corrupted-state
-        // AccessViolationException crashes in SharpGen/Vortice. Abandon the
-        // duplicate reference for this rare mode-switch path; the active
-        // renderer gets a fresh shared device from the new capture pipeline.
-        _sharedDevice = null;
-        Interlocked.Exchange(ref _sharedDeviceActive, 0);
-        Interlocked.Exchange(ref _sharedDeviceResetPending, 0);
     }
 
     public void OnPanelSizeChanged(double logicalWidth, double logicalHeight, double rasterizationScale)

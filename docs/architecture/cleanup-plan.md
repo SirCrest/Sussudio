@@ -1271,7 +1271,7 @@ shutdown cleanup, and renderer disposal there.
 
 D3D preview renderer render-thread orchestration now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs`. Keep the
-MMCSS registration, frame-ready wait loop, shared-device reset handling,
+MMCSS registration, frame-ready wait loop, shared-device reset consumption,
 composition-transform wake handling, pending-frame consumption, stale-generation
 drops, device-lost handoff, final pending-frame drain, frame-capture failure,
 and render-thread failure telemetry there; keep actual VideoProcessor render
@@ -1332,11 +1332,18 @@ loss classification, device-lost frame drops, stop-guarded cleanup, and
 reinitialize scheduling there; keep generic resource disposal in
 `D3D11PreviewRenderer.Resources.cs`.
 
+D3D preview renderer shared-device handoff now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.SharedDevice.cs`. Keep
+`SetSharedDevice`, `RetireSharedDeviceReferenceForReinit`, shared-device COM
+reference duplication/release policy, reset request scheduling, and
+`TryInitializeWithSharedDevice` there; keep render-thread reset consumption in
+`D3D11PreviewRenderer.RenderThread.cs`.
+
 D3D preview renderer device initialization now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs`. Keep
-shared-device handoff, renderer-owned device fallback, swap-chain creation, HDR
-swap-chain capability probing, media present duration setup, and initial panel
-binding there.
+`InitializeD3D` orchestration, renderer-owned device fallback, swap-chain
+creation, HDR swap-chain capability probing, media present duration setup, and
+initial panel binding there.
 
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep

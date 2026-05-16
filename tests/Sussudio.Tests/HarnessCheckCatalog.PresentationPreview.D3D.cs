@@ -54,6 +54,9 @@ static partial class Program
             "D3D preview panel binding lives in focused partial",
             D3D11PreviewRenderer_PanelBindingLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "D3D preview shared-device handoff lives in focused partial",
+            D3D11PreviewRenderer_SharedDeviceLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "D3D preview frame upload lives in focused partial",
             D3D11PreviewRenderer_FrameUploadLivesInFocusedPartial);
         await AddCheckAsync(results,

@@ -30,7 +30,7 @@ static partial class Program
 
         AssertContains(deviceInitializationText, "private void InitializeD3D()");
         AssertContains(deviceInitializationText, "private void ConfigureMediaPresentDuration()");
-        AssertContains(deviceInitializationText, "private bool TryInitializeWithSharedDevice(out FeatureLevel featureLevel)");
+        AssertContains(deviceInitializationText, "var sharedDeviceActive = TryInitializeWithSharedDevice(out var featureLevel);");
         AssertContains(deviceInitializationText, "private void CreateRendererOwnedDevice(out FeatureLevel featureLevel)");
         AssertContains(deviceInitializationText, "_factory.CreateSwapChainForComposition(device, swapChainDescription, null);");
         AssertContains(resourcesText, "private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)");
@@ -38,7 +38,38 @@ static partial class Program
         AssertContains(resourcesText, "private void CleanupD3DResources()");
         AssertDoesNotContain(resourcesText, "private void InitializeD3D()");
         AssertDoesNotContain(resourcesText, "private bool TryInitializeWithSharedDevice(");
+        AssertDoesNotContain(deviceInitializationText, "private bool TryInitializeWithSharedDevice(");
         AssertDoesNotContain(resourcesText, "private void CreateRendererOwnedDevice(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_SharedDeviceLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
+        var deviceInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs")
+            .Replace("\r\n", "\n");
+        var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
+            .Replace("\r\n", "\n");
+        var sharedDeviceText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.SharedDevice.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sharedDeviceText, "private ID3D11Device? _sharedDevice;");
+        AssertContains(sharedDeviceText, "private int _sharedDeviceResetPending;");
+        AssertContains(sharedDeviceText, "private int _sharedDeviceActive;");
+        AssertContains(sharedDeviceText, "public void SetSharedDevice(ID3D11Device sharedDevice)");
+        AssertContains(sharedDeviceText, "public void RetireSharedDeviceReferenceForReinit()");
+        AssertContains(sharedDeviceText, "private bool TryInitializeWithSharedDevice(out FeatureLevel featureLevel)");
+        AssertContains(sharedDeviceText, "Marshal.AddRef(sharedDevice.NativePointer);");
+        AssertContains(sharedDeviceText, "Interlocked.Exchange(ref _sharedDeviceResetPending, 1);");
+        AssertContains(sharedDeviceText, "SignalFrameReady(\"shared_device_reset\");");
+        AssertContains(sharedDeviceText, "AccessViolationException");
+        AssertContains(deviceInitializationText, "var sharedDeviceActive = TryInitializeWithSharedDevice(out var featureLevel);");
+        AssertContains(renderThreadText, "Interlocked.CompareExchange(ref _sharedDeviceResetPending, 0, 1)");
+        AssertDoesNotContain(rootText, "public void SetSharedDevice(ID3D11Device sharedDevice)");
+        AssertDoesNotContain(rootText, "public void RetireSharedDeviceReferenceForReinit()");
+        AssertDoesNotContain(deviceInitializationText, "private bool TryInitializeWithSharedDevice(out FeatureLevel featureLevel)");
 
         return Task.CompletedTask;
     }
