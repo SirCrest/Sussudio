@@ -10,7 +10,7 @@ namespace Sussudio.ViewModels;
 /// <summary>
 /// Audio endpoint list projection for both startup scans and watcher-driven
 /// refreshes. Video device enumeration and selected-device capability rebuilds
-/// stay in MainViewModel.DeviceManagement.cs.
+/// stay in MainViewModel.DeviceManagement.cs and MainViewModel.DeviceSelection.cs.
 /// </summary>
 public partial class MainViewModel
 {

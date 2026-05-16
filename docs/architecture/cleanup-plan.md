@@ -2826,8 +2826,10 @@ Remaining `tools/Common` ownership:
    `MainViewModel.FrameRateTiming.cs` keeps the stateful wrappers over
    resolution capabilities, runtime snapshots, source telemetry, selected
    formats, and UI selection state;
-   keep device enumeration and selected device capability rebuilds in
-   `MainViewModel.DeviceManagement.cs`, while capture-mode property-change
+   keep device enumeration and collection replacement in
+   `MainViewModel.DeviceManagement.cs`, while selected capture-device reactions,
+   capability projection, source telemetry reset, and device-native audio-control
+   refresh handoff live in `MainViewModel.DeviceSelection.cs`. Capture-mode property-change
    hooks live in `MainViewModel.CaptureModePropertyChanges.cs` and startup
    audio-list and watcher-driven audio endpoint refresh adaptation live in
    `MainViewModel.AudioDeviceDiscovery.cs`. Pure audio-device filtering and

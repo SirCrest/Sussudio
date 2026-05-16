@@ -2130,8 +2130,10 @@ Primary current owners:
   immediate reinitialize scheduling, and settings persistence.
   `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs` owns pure recording
   codec filtering and selected-codec fallback policy shared by UI and automation.
-  Video device enumeration and selected-device capability rebuilds stay in
-  `MainViewModel.DeviceManagement.cs`; capture-mode property-change hooks live
+  Video device enumeration and collection replacement stay in
+  `MainViewModel.DeviceManagement.cs`; selected capture-device reactions,
+  capability projection, source telemetry reset, and device-native audio-control
+  refresh handoff live in `MainViewModel.DeviceSelection.cs`; capture-mode property-change hooks live
   in `MainViewModel.CaptureModePropertyChanges.cs`; startup audio-list and
   watcher-driven audio endpoint refresh adaptation lives in `MainViewModel.AudioDeviceDiscovery.cs`.
   `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs` owns pure capture-card

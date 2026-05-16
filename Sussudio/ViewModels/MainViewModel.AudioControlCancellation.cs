@@ -2,7 +2,7 @@ namespace Sussudio.ViewModels;
 
 /// <summary>
 /// Cancellation cleanup for pending device-native audio control work. Selected
-/// device changes stay in MainViewModel.DeviceManagement.cs.
+/// device reactions stay in MainViewModel.DeviceSelection.cs.
 /// </summary>
 public partial class MainViewModel
 {
