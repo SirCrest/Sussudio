@@ -2604,8 +2604,8 @@ Primary owners:
   artifact writing, frame-ledger extraction, and automation response shape
   helpers.
 - `tools/Common/DiagnosticSessionInitialSnapshot.cs` owns the diagnostic-session
-  baseline `GetSnapshot` capture, unknown-state warning, and initial-snapshot
-  exception recording.
+  baseline snapshot capture via `AutomationCommandKind.GetSnapshot`,
+  unknown-state warning, and initial-snapshot exception recording.
 - `tools/Common/DiagnosticSessionRunState.cs` owns diagnostic-session terminal
   exception state, last-stage tracking, and best-effort artifact write failure
   recording.
@@ -2899,11 +2899,14 @@ Primary owners:
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
   connect retry classification and local failure-response envelopes.
 - `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized
-  diagnostic-session automation command sending, connect-retry wrapping, and
-  command failure accounting.
+  diagnostic-session automation command sending, connect-retry wrapping,
+  command failure accounting, and `AutomationCommandKind`-to-catalog
+  command-name resolution for fixed channel-owned commands. Keep the
+  underlying runner delegate string-compatible.
 - `tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs` owns
-  diagnostic-session wait command helpers and `WaitForCondition` command
-  payload shaping.
+  diagnostic-session wait command helpers, `WaitForCondition` payload shaping,
+  and routing that fixed wait command through the channel's
+  `AutomationCommandKind` overload.
 - `tools/Common/DiagnosticSessionScenarioPlan.cs` owns normalized scenario
   flags and grouped warning/validation policies used by the runner. Keep new
   scenario booleans there instead of adding string comparisons in

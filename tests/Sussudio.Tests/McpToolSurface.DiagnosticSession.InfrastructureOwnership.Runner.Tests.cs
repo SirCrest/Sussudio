@@ -33,12 +33,14 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(initialSnapshotText, "internal static class DiagnosticSessionInitialSnapshot");
+        AssertContains(initialSnapshotText, "using Sussudio.Models;");
         AssertContains(initialSnapshotText, "internal static DiagnosticSessionInitialSnapshotResult CreateUnknown()");
         AssertContains(initialSnapshotText, "internal static async Task<DiagnosticSessionInitialSnapshotResult> CaptureAsync(");
         AssertContains(initialSnapshotText, "CreateEmptyJsonObject()");
         AssertContains(initialSnapshotText, "var unknownSnapshot = CreateUnknown();");
         AssertContains(initialSnapshotText, "setStage(\"initial-snapshot\")");
-        AssertContains(initialSnapshotText, "commandChannel.SendAsync(\"GetSnapshot\", null, null)");
+        AssertContains(initialSnapshotText, "commandChannel.SendAsync(AutomationCommandKind.GetSnapshot, null, null)");
+        AssertDoesNotContain(initialSnapshotText, "commandChannel.SendAsync(\"GetSnapshot\", null, null)");
         AssertContains(initialSnapshotText, "TryGetSnapshot(initialResponse, out var initial)");
         AssertContains(initialSnapshotText, "commandChannel.RecordFailure(\"initial-snapshot: baseline snapshot unavailable; state-mutating scenarios will be skipped\")");
         AssertContains(initialSnapshotText, "recordTerminalException(ex, \"initial-snapshot\")");
@@ -55,6 +57,7 @@ static partial class Program
         AssertContains(runnerText, "await runContext.CaptureInitialSnapshotAsync().ConfigureAwait(false);");
         AssertDoesNotContain(runnerText, "CreateEmptyJsonObject()");
         AssertDoesNotContain(runnerText, "var initialResponse = await commandChannel.SendAsync(\"GetSnapshot\", null, null)");
+        AssertDoesNotContain(runnerText, "var initialResponse = await commandChannel.SendAsync(AutomationCommandKind.GetSnapshot, null, null)");
         AssertDoesNotContain(runnerText, "TryGetSnapshot(initialResponse, out var initial)");
         AssertDoesNotContain(runnerText, "baseline snapshot unavailable; state-mutating scenarios will be skipped");
 

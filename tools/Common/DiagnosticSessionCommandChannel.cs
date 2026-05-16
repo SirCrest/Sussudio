@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Sussudio.Models;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;
 
@@ -24,6 +25,9 @@ internal sealed partial class DiagnosticSessionCommandChannel : IDisposable
 
     internal int FailureCount => _failureCount;
 
+    private static string CommandName(AutomationCommandKind kind)
+        => AutomationCommandCatalog.Get(kind).Name;
+
     internal void RecordFailure(string warning)
     {
         _failureCount++;
@@ -31,10 +35,23 @@ internal sealed partial class DiagnosticSessionCommandChannel : IDisposable
     }
 
     internal async Task<JsonElement> SendRawWithConnectRetryAsync(
+        AutomationCommandKind kind,
+        Dictionary<string, object?>? payload,
+        int? responseTimeoutMs)
+        => await SendRawWithConnectRetryAsync(CommandName(kind), payload, responseTimeoutMs).ConfigureAwait(false);
+
+    internal async Task<JsonElement> SendRawWithConnectRetryAsync(
         string command,
         Dictionary<string, object?>? payload,
         int? responseTimeoutMs)
         => await SendRawWithConnectRetryWithTokenAsync(command, payload, responseTimeoutMs, _defaultCancellationToken).ConfigureAwait(false);
+
+    internal async Task<JsonElement> SendRawWithConnectRetryWithTokenAsync(
+        AutomationCommandKind kind,
+        Dictionary<string, object?>? payload,
+        int? responseTimeoutMs,
+        CancellationToken commandCancellationToken)
+        => await SendRawWithConnectRetryWithTokenAsync(CommandName(kind), payload, responseTimeoutMs, commandCancellationToken).ConfigureAwait(false);
 
     internal async Task<JsonElement> SendRawWithConnectRetryWithTokenAsync(
         string command,
@@ -54,10 +71,23 @@ internal sealed partial class DiagnosticSessionCommandChannel : IDisposable
     }
 
     internal async Task<JsonElement> SendAsync(
+        AutomationCommandKind kind,
+        Dictionary<string, object?>? payload,
+        int? responseTimeoutMs)
+        => await SendAsync(CommandName(kind), payload, responseTimeoutMs).ConfigureAwait(false);
+
+    internal async Task<JsonElement> SendAsync(
         string command,
         Dictionary<string, object?>? payload,
         int? responseTimeoutMs)
         => await SendWithTokenAsync(command, payload, responseTimeoutMs, false, _defaultCancellationToken).ConfigureAwait(false);
+
+    internal async Task<JsonElement> SendAsync(
+        AutomationCommandKind kind,
+        Dictionary<string, object?>? payload,
+        int? responseTimeoutMs,
+        bool allowFailure)
+        => await SendAsync(CommandName(kind), payload, responseTimeoutMs, allowFailure).ConfigureAwait(false);
 
     internal async Task<JsonElement> SendAsync(
         string command,
@@ -65,6 +95,14 @@ internal sealed partial class DiagnosticSessionCommandChannel : IDisposable
         int? responseTimeoutMs,
         bool allowFailure)
         => await SendWithTokenAsync(command, payload, responseTimeoutMs, allowFailure, _defaultCancellationToken).ConfigureAwait(false);
+
+    internal async Task<JsonElement> SendWithTokenAsync(
+        AutomationCommandKind kind,
+        Dictionary<string, object?>? payload,
+        int? responseTimeoutMs,
+        bool allowFailure,
+        CancellationToken commandCancellationToken)
+        => await SendWithTokenAsync(CommandName(kind), payload, responseTimeoutMs, allowFailure, commandCancellationToken).ConfigureAwait(false);
 
     internal async Task<JsonElement> SendWithTokenAsync(
         string command,

@@ -2355,10 +2355,13 @@ permanent failure and connect failed/timeout responses retryable.
 
 Diagnostic-session command sending now lives in
 `tools/Common/DiagnosticSessionCommandChannel.cs`. It owns serialized command
-execution, connect-retry wrapping, and command failure accounting while the
-runner keeps phase orchestration. Diagnostic-session wait command helpers now
-live in `tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs`, which
-owns `WaitForCondition` payload shaping.
+execution, connect-retry wrapping, command failure accounting, and enum-backed
+command-name resolution for fixed diagnostic-session commands while the runner
+keeps phase orchestration and its public string delegate compatibility.
+Diagnostic-session wait command helpers now live in
+`tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs`, which owns
+`WaitForCondition` payload shaping and routes the fixed wait command through
+`AutomationCommandKind.WaitForCondition`.
 
 Diagnostic-session JSON artifact helpers now live in
 `tools/Common/DiagnosticSessionJsonArtifacts.cs`. The runner still owns the
@@ -2367,8 +2370,9 @@ verification response extraction have a smaller home.
 
 Diagnostic-session initial snapshot capture now lives in
 `tools/Common/DiagnosticSessionInitialSnapshot.cs`. It owns the baseline
-`GetSnapshot`, the unknown-state warning, and initial-snapshot exception
-recording while the runner keeps phase ordering.
+snapshot capture through `AutomationCommandKind.GetSnapshot`, the unknown-state
+warning, and initial-snapshot exception recording while the runner keeps phase
+ordering.
 
 Diagnostic-session run context now lives in
 `tools/Common/DiagnosticSessionRunContext.cs`. `DiagnosticSessionRunContext.cs` owns mutable per-run infrastructure: bootstrap, actions, warnings, samples,

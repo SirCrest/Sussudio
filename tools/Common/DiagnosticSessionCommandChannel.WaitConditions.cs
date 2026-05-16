@@ -1,3 +1,4 @@
+using Sussudio.Models;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 
 namespace Sussudio.Tools;
@@ -10,7 +11,7 @@ internal sealed partial class DiagnosticSessionCommandChannel
     internal async Task TryWaitWithTokenAsync(string condition, int timeoutMs, CancellationToken waitCancellationToken)
     {
         var response = await SendWithTokenAsync(
-                "WaitForCondition",
+                AutomationCommandKind.WaitForCondition,
                 new Dictionary<string, object?>
                 {
                     ["condition"] = condition,

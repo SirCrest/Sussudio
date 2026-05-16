@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Sussudio.Models;
 using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 
 namespace Sussudio.Tools;
@@ -23,7 +24,7 @@ internal static class DiagnosticSessionInitialSnapshot
         try
         {
             setStage("initial-snapshot");
-            var initialResponse = await commandChannel.SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            var initialResponse = await commandChannel.SendAsync(AutomationCommandKind.GetSnapshot, null, null).ConfigureAwait(false);
             if (TryGetSnapshot(initialResponse, out var initial))
             {
                 initialSnapshot = initial;
