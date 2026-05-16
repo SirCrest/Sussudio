@@ -1003,11 +1003,14 @@ pooled video buffer leasing, and pooled packet return helpers now live in
 `LibAvRecordingSink.QueueCleanup.cs`. Hot audio/microphone WASAPI write
 adapters, audio queue eviction, audio remaining-buffer cleanup, and
 `AudioSamplePacket` now live in
-`LibAvRecordingSink.AudioQueues.cs`. `LibAvRecordingSink.Startup.cs` owns
-the `IRecordingSink.StartAsync` adapter, FFmpeg/runtime initialization,
-encoder option application, hardware-frame queue selection, queue/context/
-metric reset, encoding-task creation, start logging, and startup rollback
-cleanup. `LibAvRecordingSink.StopLifecycle.cs` owns public and emergency
+`LibAvRecordingSink.AudioQueues.cs`. `LibAvRecordingSink.VideoSession.cs` owns
+per-recording video session setup: hardware-frame queue selection,
+video/GPU/CUDA channel creation, width/height session state, video/GPU/CUDA
+metric reset, and video diagnostics reset before the encoding task starts.
+`LibAvRecordingSink.Startup.cs` owns the `IRecordingSink.StartAsync` adapter,
+FFmpeg/runtime initialization, encoder option application, audio/microphone
+queue setup, startup sequencing, encoding-task creation, start logging, and
+startup rollback cleanup. `LibAvRecordingSink.StopLifecycle.cs` owns public and emergency
 `StopAsync` routing, `_started` clearing, encode-drain deadline selection,
 emergency cancellation/flush fallback, encoding-failure classification, HDR
 validation, stopped-output validation handoff, stop logging, and

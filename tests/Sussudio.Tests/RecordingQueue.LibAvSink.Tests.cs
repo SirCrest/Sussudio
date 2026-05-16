@@ -156,6 +156,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs")
             .Replace("\r\n", "\n");
+        var videoSessionText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.VideoSession.cs")
+            .Replace("\r\n", "\n");
         var stopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.StopLifecycle.cs")
             .Replace("\r\n", "\n");
         var lifetimeText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Lifetime.cs")
@@ -169,9 +171,26 @@ static partial class Program
         AssertContains(diagnosticsText, "public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)");
         AssertContains(startupText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
         AssertContains(startupText, "LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);");
+        AssertContains(startupText, "InitializeVideoSessionQueues();");
+        AssertContains(startupText, "ResetVideoSessionState(context);");
         AssertContains(startupText, "_encodingTask = Task.Factory.StartNew(");
         AssertContains(startupText, "TaskCreationOptions.LongRunning");
         AssertContains(startupText, "LIBAV_SINK_START output='{context.FinalOutputPath}'");
+        AssertContains(videoSessionText, "private void InitializeVideoSessionQueues()");
+        AssertContains(videoSessionText, "_cudaQueue = Channel.CreateBounded<CudaFramePacket>");
+        AssertContains(videoSessionText, "_gpuQueue = Channel.CreateBounded<GpuFramePacket>");
+        AssertContains(videoSessionText, "_videoQueue = Channel.CreateBounded<VideoFramePacket>");
+        AssertContains(videoSessionText, "LIBAV_SINK_CUDA_QUEUE_INIT capacity=");
+        AssertContains(videoSessionText, "LIBAV_SINK_GPU_QUEUE_INIT capacity=");
+        AssertContains(videoSessionText, "private void ResetVideoSessionState(RecordingContext context)");
+        AssertContains(videoSessionText, "_width = checked((int)context.EffectiveWidth);");
+        AssertContains(videoSessionText, "_height = checked((int)context.EffectiveHeight);");
+        AssertContains(videoSessionText, "private void ResetVideoSessionMetrics()");
+        AssertContains(videoSessionText, "Interlocked.Exchange(ref _videoFramesEnqueued, 0);");
+        AssertContains(videoSessionText, "Interlocked.Exchange(ref _gpuFramesEnqueued, 0);");
+        AssertContains(videoSessionText, "Interlocked.Exchange(ref _cudaFramesEnqueued, 0);");
+        AssertContains(videoSessionText, "Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);");
+        AssertContains(videoSessionText, "ResetVideoDiagnostics();");
         AssertContains(stopText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
         AssertContains(stopText, "=> StopCoreAsync(emergency: false, cancellationToken);");
         AssertContains(stopText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
@@ -193,6 +212,12 @@ static partial class Program
         AssertContains(rootText, "SignalWork(\"complete_writer\");");
         AssertDoesNotContain(rootText, "public long DroppedVideoFrames =>");
         AssertDoesNotContain(rootText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(startupText, "Channel.CreateBounded<VideoFramePacket>");
+        AssertDoesNotContain(startupText, "Channel.CreateBounded<GpuFramePacket>");
+        AssertDoesNotContain(startupText, "Channel.CreateBounded<CudaFramePacket>");
+        AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _videoFramesEnqueued, 0);");
+        AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _gpuFramesEnqueued, 0);");
+        AssertDoesNotContain(startupText, "Interlocked.Exchange(ref _cudaFramesEnqueued, 0);");
         AssertDoesNotContain(rootText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "private async Task<FinalizeResult> StopCoreAsync(bool emergency, CancellationToken cancellationToken)");

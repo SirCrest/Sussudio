@@ -30,35 +30,7 @@ public sealed partial class LibAvRecordingSink
             _microphoneEnabled = !string.IsNullOrWhiteSpace(context.MicrophoneDeviceName);
             var options = CreateOptions(context);
             _encoder.Initialize(options);
-            if (_encoder.UseCudaHardwareFrames)
-            {
-                _cudaQueue = Channel.CreateBounded<CudaFramePacket>(new BoundedChannelOptions(CudaQueueCapacity)
-                {
-                    FullMode = BoundedChannelFullMode.Wait,
-                    SingleReader = true,
-                    SingleWriter = true
-                });
-                _cudaEncodingEnabled = true;
-                Logger.Log("LIBAV_SINK_CUDA_QUEUE_INIT capacity=" + CudaQueueCapacity);
-            }
-            else if (_encoder.UseHardwareFrames)
-            {
-                _gpuQueue = Channel.CreateBounded<GpuFramePacket>(new BoundedChannelOptions(GpuQueueCapacity)
-                {
-                    FullMode = BoundedChannelFullMode.Wait,
-                    SingleReader = true,
-                    SingleWriter = true
-                });
-                _gpuEncodingEnabled = true;
-                Logger.Log("LIBAV_SINK_GPU_QUEUE_INIT capacity=" + GpuQueueCapacity);
-            }
-
-            _videoQueue = Channel.CreateBounded<VideoFramePacket>(new BoundedChannelOptions(VideoQueueCapacity)
-            {
-                SingleReader = true,
-                SingleWriter = false,
-                FullMode = BoundedChannelFullMode.Wait
-            });
+            InitializeVideoSessionQueues();
             _audioQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
             {
                 SingleReader = true,
@@ -78,34 +50,14 @@ public sealed partial class LibAvRecordingSink
             _cts = new CancellationTokenSource();
             _context = context;
             _encodingFailure = null;
-            _width = checked((int)context.EffectiveWidth);
-            _height = checked((int)context.EffectiveHeight);
+            ResetVideoSessionState(context);
             _audioEnabled = !string.IsNullOrWhiteSpace(context.AudioDeviceName);
-            Interlocked.Exchange(ref _droppedVideoFrames, 0);
-            Interlocked.Exchange(ref _encodedVideoFrames, 0);
-            Interlocked.Exchange(ref _videoFramesEnqueued, 0);
-            Interlocked.Exchange(ref _videoFramesSubmittedToEncoder, 0);
-            Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
-            Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
             Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
             Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
             Interlocked.Exchange(ref _microphoneDropsQueueSaturated, 0);
             Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
-            Interlocked.Exchange(ref _gpuFramesEnqueued, 0);
-            Interlocked.Exchange(ref _gpuFramesDropped, 0);
-            Interlocked.Exchange(ref _cudaFramesEnqueued, 0);
-            Interlocked.Exchange(ref _cudaFramesDropped, 0);
-            Interlocked.Exchange(ref _videoQueueMaxDepth, 0);
-            Interlocked.Exchange(ref _gpuQueueMaxDepth, 0);
-            Interlocked.Exchange(ref _cudaQueueMaxDepth, 0);
-            Interlocked.Exchange(ref _videoQueueDepth, 0);
             Interlocked.Exchange(ref _audioQueueDepth, 0);
             Interlocked.Exchange(ref _microphoneQueueDepth, 0);
-            Interlocked.Exchange(ref _gpuQueueDepth, 0);
-            Interlocked.Exchange(ref _cudaQueueDepth, 0);
-            Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);
-            Interlocked.Exchange(ref _lastVideoWriteTick, 0);
-            ResetVideoDiagnostics();
             _encodingTask = Task.Factory.StartNew(
                 () => EncodingLoop(_cts.Token),
                 _cts.Token,
