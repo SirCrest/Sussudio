@@ -3,7 +3,7 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // XAML-facing splash phrase adapter. SplashLoadingPhraseController owns phrase
-// loading, pacing, timer state, and two-line text animation.
+// loading, timer state, and two-line text animation.
 public sealed partial class MainWindow
 {
     private SplashLoadingPhraseController _splashLoadingPhraseController = null!;

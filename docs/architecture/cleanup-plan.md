@@ -1865,8 +1865,10 @@ is the XAML-facing adapter.
 
 Splash phrase file lookup, Markdown-ish parsing, cached defaults, and exception
 fallback now live in `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs`.
-Randomized timer pacing and the two-line splash text animation remain in
-`Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs`.
+Randomized interval/mode selection now lives in
+`Sussudio/Controllers/Launch/Splash/SplashLoadingPhrasePacingPolicy.cs`.
+`Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns
+DispatcherTimer lifecycle and the two-line splash text animation.
 `MainWindow.SplashLoading.cs` is the XAML-facing adapter.
 
 Launch entrance ownership is split by phase:

@@ -1033,7 +1033,7 @@ Primary current owners:
   title.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.Tests.cs` owns
   MainWindow startup/launch ownership assertions for splash loading phrases,
-  launch entrance animation, and first-load hosting.
+  splash pacing policy, launch entrance animation, and first-load hosting.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs`
   owns MainWindow preview resize telemetry and preview runtime/snapshot ownership
   assertions.
@@ -1822,9 +1822,11 @@ Primary current owners:
   `MainWindow.SettingsShelf.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs` owns splash phrase
   file lookup, Markdown-ish parsing, cached defaults, and exception fallback.
-  `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns timer pacing and
-  two-line text animation. `MainWindow.SplashLoading.cs` is the XAML-facing
-  adapter.
+  `Sussudio/Controllers/Launch/Splash/SplashLoadingPhrasePacingPolicy.cs` owns
+  randomized splash phrase interval/mode selection.
+  `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns
+  DispatcherTimer lifecycle and two-line text animation.
+  `MainWindow.SplashLoading.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns launch
   entrance context and initial hidden/scaled shell state.
   `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs` owns the

@@ -31,6 +31,9 @@ static partial class Program
             "Splash loading phrase catalog and animation ownership are split",
             SplashLoadingPhrases_LiveInController);
         await AddCheckAsync(results,
+            "Splash loading phrase pacing policy preserves interval bands",
+            SplashLoadingPhrasePacingPolicy_PreservesIntervalBands);
+        await AddCheckAsync(results,
             "Launch entrance animation lives in controller",
             LaunchEntranceAnimation_LivesInController);
         await AddCheckAsync(results,
