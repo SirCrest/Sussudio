@@ -121,9 +121,7 @@ public partial class CaptureService
             if (!_isVideoPreviewActive) await StopTelemetryPollAsync().ConfigureAwait(false);
             _recordingContext = null;
             _activeRecordingSettings = null;
-            _lastFinalizeStatus = fbResult.StatusMessage;
-            _lastFinalizeUtc = DateTimeOffset.UtcNow;
-            _lastPreservedArtifacts = fbResult.PreservedArtifacts;
+            PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);
 
             // Restart mic monitoring if preview is still active
             try
@@ -434,10 +432,7 @@ public partial class CaptureService
             Logger.Log("Mic monitor restart failed (non-fatal): " + micEx.Message);
         }
 
-        _lastOutputPath = result.OutputPath;
-        _lastFinalizeStatus = result.StatusMessage;
-        _lastFinalizeUtc = DateTimeOffset.UtcNow;
-        _lastPreservedArtifacts = result.PreservedArtifacts;
+        PublishRecordingFinalizedOutcome(result, updateOutputPath: true);
 
         if (cancellationException != null)
         {

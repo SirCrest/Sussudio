@@ -14,7 +14,8 @@ static partial class Program
     private static readonly string[] CaptureServiceRecordingFinalizationFiles =
     {
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs",
-        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs"
+        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs",
+        "Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs"
     };
 
     private static readonly string[] CaptureServiceAudioFiles =
@@ -153,14 +154,20 @@ static partial class Program
     {
         var recordFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs");
         var flashbackFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs");
+        var outcomeStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs");
 
         AssertContains(recordFinalizationText, "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(");
         AssertContains(flashbackFinalizationText, "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync(");
         AssertContains(flashbackFinalizationText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertContains(flashbackFinalizationText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
         AssertContains(flashbackFinalizationText, "private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)");
+        AssertContains(outcomeStateText, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
+        AssertContains(outcomeStateText, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
         AssertDoesNotContain(recordFinalizationText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertDoesNotContain(recordFinalizationText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
+        AssertDoesNotContain(recordFinalizationText, "_lastOutputPath = result.OutputPath;");
+        AssertDoesNotContain(recordFinalizationText, "_lastFinalizeStatus = result.StatusMessage;");
+        AssertDoesNotContain(recordFinalizationText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
 
         return Task.CompletedTask;
     }

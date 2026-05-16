@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -107,14 +106,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private UnifiedVideoCapture? _unifiedVideoCapture;
     private RecordingContext? _recordingContext;
 
-    // Recording finalization state is intentionally retained after stop so the
-    // UI, automation, and verifier can explain what happened to the last file
-    // even after capture resources have been torn down.
     private readonly Stopwatch _recordingStopwatch = new();
-    private string? _lastOutputPath;
-    private string _lastFinalizeStatus = "None";
-    private DateTimeOffset? _lastFinalizeUtc;
-    private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();
     private RecordingIntegritySummary _lastRecordingIntegrity = RecordingIntegritySummary.NotStarted;
     private RecordingIntegrityCounterSnapshot? _recordingIntegrityCounterBaseline;
     private RecordingAudioIntegrityCounterSnapshot? _recordingIntegrityAudioBaseline;

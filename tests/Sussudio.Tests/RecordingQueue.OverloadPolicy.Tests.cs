@@ -172,7 +172,7 @@ static partial class Program
             "_recordingStopwatch.Stop();");
         AssertOccursBefore(
             stopRecordingBackend,
-            "_lastPreservedArtifacts = fbResult.PreservedArtifacts;",
+            "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);",
             "throw flashbackCancellationException;");
         var postFinalizeCycle = ExtractSourceBlock(
             stopRecordingBackend,
@@ -216,10 +216,16 @@ static partial class Program
         AssertContains(captureServiceSource, "private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)");
         AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback export cancelled.\", StringComparison.Ordinal)");
         AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback recording finalize cancelled.\", StringComparison.Ordinal)");
+        AssertContains(captureServiceSource, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
+        AssertContains(captureServiceSource, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
+        AssertContains(captureServiceSource, "PublishRecordingStartedOutcome(fbRecordingContext.FinalOutputPath);");
+        AssertContains(captureServiceSource, "PublishRecordingStartedOutcome(recordingContext.FinalOutputPath);");
+        AssertContains(captureServiceSource, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
+        AssertContains(captureServiceSource, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
         var standardMicMonitorRestart = ExtractSourceBlock(
             stopRecordingBackend,
             "var wasapiAudioCaptureFaulted = Volatile.Read(ref _wasapiAudioCaptureFaulted);",
-            "_lastOutputPath = result.OutputPath;");
+            "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
         AssertContains(standardMicMonitorRestart, "await RestartMicrophoneMonitorAfterRecordingAsync(");
         AssertContains(standardMicMonitorRestart, "OnlyWhenMissing: false,");
         AssertContains(standardMicMonitorRestart, "FlashbackAttachReason: \"mic_monitor_restart\",");

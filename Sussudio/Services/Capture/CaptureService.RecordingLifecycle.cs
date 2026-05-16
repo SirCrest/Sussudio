@@ -192,10 +192,7 @@ public partial class CaptureService
                         ClearLastRecordingFailure();
                         _isRecording = true;
                         _flashbackRecordingStartBytes = _flashbackBufferManager?.TotalBytesWritten ?? 0;
-                        _lastOutputPath = fbRecordingContext.FinalOutputPath;
-                        _lastFinalizeStatus = "Recording";
-                        _lastFinalizeUtc = null;
-                        _lastPreservedArtifacts = Array.Empty<string>();
+                        PublishRecordingStartedOutcome(fbRecordingContext.FinalOutputPath);
                         _recordingStopwatch.Restart();
                         StatusChanged?.Invoke(this, "Recording");
                         Logger.Log($"FLASHBACK_UNIFIED_RECORDING_START output='{fbRecordingContext.FinalOutputPath}'");
@@ -420,10 +417,7 @@ public partial class CaptureService
                 Interlocked.Exchange(ref _videoFramesDropped, 0);
                 ResetObservedPixelTelemetry();
                 RecordObservedPixelFormat(recordingContext.HdrPipelineActive ? "P010" : "NV12", incrementAsFrame: false);
-                _lastOutputPath = recordingContext.FinalOutputPath;
-                _lastFinalizeStatus = "Recording";
-                _lastFinalizeUtc = null;
-                _lastPreservedArtifacts = Array.Empty<string>();
+                PublishRecordingStartedOutcome(recordingContext.FinalOutputPath);
                 _lastUsePostMuxAudio = recordingContext.UsePostMuxAudio;
                 _recordingStopwatch.Restart();
                 StatusChanged?.Invoke(this, "Recording");

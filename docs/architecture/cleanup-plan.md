@@ -733,8 +733,15 @@ stop lifecycle now lives in
 normal stop routing and the emergency stop overload that feeds finalization.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs` owns
 backend stop/finalize routing and shared post-stop state cleanup while
-delegating post-recording microphone monitor restart mechanics to
+delegating recording outcome field publication to
+`Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs` and
+post-recording microphone monitor restart mechanics to
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.
+`Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs` owns the
+helper boundary that publishes recording-start and recording-finalize outcome
+fields (`_lastOutputPath`, `_lastFinalizeStatus`, `_lastFinalizeUtc`, and
+`_lastPreservedArtifacts`) without leaving direct write blocks in lifecycle or
+finalization partials.
 
 Transient recording-start rollback cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingRollback.cs`. That file owns

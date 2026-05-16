@@ -15,6 +15,9 @@ static partial class Program
             "Capture service recording rollback lives in focused partial",
             CaptureService_RecordingRollbackLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "Capture service recording outcome state lives in focused partial",
+            CaptureService_RecordingOutcomeStateLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "Capture service audio ownership lives in focused partials",
             CaptureService_AudioOwnershipLivesInFocusedPartials);
         await AddCheckAsync(results,

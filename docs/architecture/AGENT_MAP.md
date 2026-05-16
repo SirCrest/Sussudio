@@ -468,8 +468,12 @@ Important entry points:
   owns normal and emergency recording stop transition routing.
 - `CaptureService.RecordingFinalizeRecord.cs` owns recording stop/finalize
   routing for active Flashback and LibAv backends plus shared post-stop state
-  cleanup; microphone monitor restart mechanics are delegated to
-  `CaptureService.MicrophoneMonitor.cs`.
+  cleanup; recording outcome field publication is delegated to
+  `CaptureService.RecordingOutcomeState.cs`, and microphone monitor restart
+  mechanics are delegated to `CaptureService.MicrophoneMonitor.cs`.
+- `CaptureService.RecordingOutcomeState.cs` owns publication of the last
+  recording output path, finalize status, finalize timestamp, and preserved
+  artifact fields for both recording-start and recording-finalize outcomes.
 - `CaptureService.RecordingFinalizeFlashback.cs` owns Flashback recording
   export finalization, live-edge boundary snapshots, and cancellation-result
   classification.
@@ -1165,7 +1169,8 @@ Primary current owners:
   `RecordingQueue.OverloadPolicy.Telemetry.cs` owns unified capture, health
   snapshot, and automation formatter telemetry assertions.
   `CaptureService.RecordingOwnership.Tests.cs` owns
-  CaptureService recording lifecycle and rollback file-ownership assertions.
+  CaptureService recording lifecycle, rollback, and recording outcome-state
+  file-ownership assertions.
 - `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Tests.cs` owns LibAv recording
   sink output validation, try-enqueue, queue-cleanup, drain-loop, encoding-loop,
   and lifecycle ownership assertions.
@@ -1177,7 +1182,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/CaptureService.FlashbackOrchestrationSource.Tests.cs`
   owns the source family helper for Flashback backend orchestration partials
   and recording finalization partials plus the focused-partial ownership
-  contracts, including post-recording microphone monitor restart ownership.
+  contracts, including post-recording microphone monitor restart and recording
+  outcome-state ownership.
 - `tests/Sussudio.Tests/CaptureCadence.Tests.cs` owns packet-hash duplicate
   cadence and visual-cadence crop sampling assertions.
 - `tests/Sussudio.Tests/UnifiedVideoCapture.Runtime.Tests.cs` owns
