@@ -1906,15 +1906,18 @@ Primary current owners:
   and analog gain property handlers.
   `MainViewModel.Dispatching.cs` owns shared
   dispatcher enqueue/invoke helpers and preview event fan-out for the partial
-  family. `MainViewModel.Runtime.cs` owns timer refreshes, disk-space
-  projection, and power-resume callbacks. `MainViewModel.CaptureRuntimeEvents.cs`
+  family. `MainViewModel.Runtime.cs` owns periodic timer refresh orchestration.
+  `MainViewModel.DiskSpacePresentation.cs` owns output drive free-space
+  projection. `MainViewModel.PowerResume.cs` owns system-resume preview rebind
+  handling. `MainViewModel.CaptureRuntimeEvents.cs`
   owns capture status/error fan-out, capture pre-cleanup renderer stop fan-out,
   and frame-captured callbacks. `MainViewModel.RecordingRuntime.cs` owns
   recording size/bitrate projection and recording-state reset reactions.
   `MainViewModel.LiveSignalPresentation.cs` owns live-capture info projection
   from `CaptureRuntimeSnapshot`, including audio-preview activity and
-  live-resolution/frame-rate/pixel-format assignment, and delegates label
-  formatting to `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`.
+  live-resolution/frame-rate/pixel-format assignment, preview-stop live-info
+  reset, and delegates label formatting to
+  `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`.
   `MainViewModel.CaptureSettings.cs` owns capture settings projection from UI
   selection and observed runtime/source state.
   `MainViewModel.Capture.cs` owns device initialization, preview start/stop,

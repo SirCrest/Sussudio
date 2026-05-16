@@ -28,4 +28,12 @@ public partial class MainViewModel
         LiveFrameRate = LiveInfoUnavailable;
         LivePixelFormat = LiveInfoUnavailable;
     }
+
+    partial void OnIsPreviewingChanged(bool value)
+    {
+        if (!value && !IsRecording)
+        {
+            ResetLiveCaptureInfo();
+        }
+    }
 }

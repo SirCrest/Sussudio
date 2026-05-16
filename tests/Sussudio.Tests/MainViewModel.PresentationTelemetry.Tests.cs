@@ -131,6 +131,8 @@ static partial class Program
         AssertContains(liveSignalPresentationText, "LiveFrameRate = liveSignalText.FrameRate;");
         AssertContains(liveSignalPresentationText, "LivePixelFormat = liveSignalText.PixelFormat;");
         AssertContains(liveSignalPresentationText, "private void ResetLiveCaptureInfo()");
+        AssertContains(liveSignalPresentationText, "partial void OnIsPreviewingChanged(bool value)");
+        AssertContains(liveSignalPresentationText, "if (!value && !IsRecording)");
         AssertContains(liveSignalPresentationText, "IsAudioPreviewActive = false;");
         AssertContains(liveSignalPresentationText, "LiveResolution = LiveInfoUnavailable;");
         AssertContains(liveSignalPresentationText, "LiveFrameRate = LiveInfoUnavailable;");

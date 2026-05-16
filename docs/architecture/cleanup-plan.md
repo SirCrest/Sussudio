@@ -2645,15 +2645,17 @@ Remaining `tools/Common` ownership:
    device-native audio mode/gain handlers live in
    `MainViewModel.DeviceAudioPropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
-   timer/disk-space/power-resume handling now lives in
-   `MainViewModel.Runtime.cs`, capture status/error and pre-cleanup callbacks
+   periodic timer refresh orchestration now lives in `MainViewModel.Runtime.cs`,
+   output drive free-space projection now lives in
+   `MainViewModel.DiskSpacePresentation.cs`, system-resume preview rebind
+   handling now lives in `MainViewModel.PowerResume.cs`, capture status/error and pre-cleanup callbacks
    now live in `MainViewModel.CaptureRuntimeEvents.cs`, recording size/bitrate
    projection and recording-state reset reactions now live in
    `MainViewModel.RecordingRuntime.cs`, and
    live-capture info projection from runtime snapshots now lives in
    `MainViewModel.LiveSignalPresentation.cs`, including audio-preview activity
-   and live resolution/frame-rate/pixel-format assignment; live-signal label
-   formatting now lives in
+   and live resolution/frame-rate/pixel-format assignment plus preview-stop
+   live-info reset; live-signal label formatting now lives in
    `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`. Capture
    settings projection from UI/runtime state now lives in
    `MainViewModel.CaptureSettings.cs`, leaving `MainViewModel.Capture.cs`
