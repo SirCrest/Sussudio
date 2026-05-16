@@ -2750,9 +2750,13 @@ Remaining `tools/Common` ownership:
    `ShowAllCaptureOptions` unlock policy live in
    `MainViewModel.FrameRateSourceFilterPolicy.cs`, while `ShowAllCaptureOptions`
    change handling and deferred rebuild behavior live in
-   `MainViewModel.CaptureOptionVisibility.cs`. Shared frame-rate timing family,
-   resolution timing-variant projection, rational parsing, source-rate fallback,
-   and preferred-format ranking now live in `MainViewModel.FrameRateTiming.cs`;
+   `MainViewModel.CaptureOptionVisibility.cs`. Pure frame-rate timing family,
+   timing-variant projection, rational parsing, friendly/exact frame-rate
+   matching, and preferred-format ranking now live in
+   `Sussudio/ViewModels/FrameRateTimingPolicy.cs`, while
+   `MainViewModel.FrameRateTiming.cs` keeps the stateful wrappers over
+   resolution capabilities, runtime snapshots, source telemetry, selected
+   formats, and UI selection state;
    keep device enumeration and selected device capability rebuilds in
    `MainViewModel.DeviceManagement.cs`, while capture-mode property-change
    hooks live in `MainViewModel.CaptureModePropertyChanges.cs` and startup

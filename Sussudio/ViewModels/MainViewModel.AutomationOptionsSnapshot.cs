@@ -52,7 +52,7 @@ public partial class MainViewModel
                         ExactValueArg = option.Rational,
                         IsEnabled = option.IsEnabled,
                         DisableReason = option.DisableReason,
-                        IsSelected = IsFrameRateMatch(option.Value, selectedFrameRate)
+                        IsSelected = FrameRateTimingPolicy.IsFrameRateMatch(option.Value, selectedFrameRate)
                     })
                     .ToArray(),
                 RecordingFormats = AvailableRecordingFormats.ToArray(),

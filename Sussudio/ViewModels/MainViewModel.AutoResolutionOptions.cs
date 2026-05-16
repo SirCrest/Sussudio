@@ -53,7 +53,7 @@ public partial class MainViewModel
             : null;
         var friendlyBuckets = eligibleOptions
             .SelectMany(GetAutoEligibleFormats)
-            .Select(format => GetFriendlyFrameRateBucket(format.FrameRateExact))
+            .Select(format => FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact))
             .Distinct()
             .OrderByDescending(bucket => bucket)
             .ToList();
@@ -85,7 +85,7 @@ public partial class MainViewModel
         var preferredFormat = SelectPreferredAutoFrameRateFormat(chosenResolution.Value, bestFriendlyBucket);
         return new AutoCaptureSelection(
             chosenResolution,
-            GetFriendlyFrameRateBucket(preferredFormat.FrameRateExact),
+            FrameRateTimingPolicy.GetFriendlyFrameRateBucket(preferredFormat.FrameRateExact),
             preferredFormat.FrameRateExact);
     }
 
@@ -101,7 +101,7 @@ public partial class MainViewModel
         var preferredFormat = SelectPreferredAutoFrameRateFormat(fallback.Value, preferredBucket);
         return new AutoCaptureSelection(
             fallback,
-            GetFriendlyFrameRateBucket(preferredFormat.FrameRateExact),
+            FrameRateTimingPolicy.GetFriendlyFrameRateBucket(preferredFormat.FrameRateExact),
             preferredFormat.FrameRateExact);
     }
 
@@ -154,7 +154,7 @@ public partial class MainViewModel
 
         var timingFamily = FrameRateTimingFamily.Unknown;
         if (_latestSourceTelemetry.HasFrameRate &&
-            TryInferFrameRateTimingFamily(_latestSourceTelemetry.FrameRateArg, _latestSourceTelemetry.FrameRateExact, out var sourceFamily))
+            FrameRateTimingPolicy.TryInferFrameRateTimingFamily(_latestSourceTelemetry.FrameRateArg, _latestSourceTelemetry.FrameRateExact, out var sourceFamily))
         {
             timingFamily = sourceFamily;
         }
@@ -162,21 +162,21 @@ public partial class MainViewModel
         var selectionPool = formats
             .Where(format =>
                 (IsHdrEnabled ? IsHdrModeCandidate(format) : !IsHdrModeCandidate(format)) &&
-                GetFriendlyFrameRateBucket(format.FrameRateExact) == preferredFriendlyBucket)
+                FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact) == preferredFriendlyBucket)
             .ToList();
         if (selectionPool.Count == 0)
         {
             selectionPool = formats
-                .Where(format => GetFriendlyFrameRateBucket(format.FrameRateExact) == preferredFriendlyBucket)
+                .Where(format => FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact) == preferredFriendlyBucket)
                 .ToList();
         }
         if (selectionPool.Count == 0)
         {
             selectionPool = formats.ToList();
-            preferredFriendlyBucket = GetFriendlyFrameRateBucket(selectionPool.Max(format => format.FrameRateExact));
+            preferredFriendlyBucket = FrameRateTimingPolicy.GetFriendlyFrameRateBucket(selectionPool.Max(format => format.FrameRateExact));
         }
 
-        return SelectPreferredFrameRateFormat(selectionPool, preferredFriendlyBucket, timingFamily);
+        return FrameRateTimingPolicy.SelectPreferredFrameRateFormat(selectionPool, preferredFriendlyBucket, timingFamily);
     }
 
     private int GetMaxFrameRateFriendlyBucket(string resolutionKey)
@@ -195,7 +195,7 @@ public partial class MainViewModel
         }
 
         return filtered
-            .Select(format => GetFriendlyFrameRateBucket(format.FrameRateExact))
+            .Select(format => FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact))
             .DefaultIfEmpty()
             .Max();
     }

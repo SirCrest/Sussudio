@@ -63,7 +63,7 @@ public partial class MainViewModel
 
             return options.FirstOrDefault(option =>
                 option.IsEnabled &&
-                IsFriendlyFrameRateMatch(
+                FrameRateTimingPolicy.IsFriendlyFrameRateMatch(
                     option.FriendlyValue,
                     request.PendingSdrAutoFriendlyFrameRateBucket.Value));
         }
@@ -82,7 +82,7 @@ public partial class MainViewModel
                 .OrderBy(option => Math.Abs(option.Value - source.Rate.Value))
                 .ThenBy(option =>
                     source.TimingFamilyKnown &&
-                    TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily) &&
+                    FrameRateTimingPolicy.TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily) &&
                     optionFamily == source.TimingFamily
                         ? 0
                         : 1)
@@ -97,13 +97,13 @@ public partial class MainViewModel
             IReadOnlyList<FrameRateOption> options,
             double previousRate)
             => options.FirstOrDefault(option =>
-                    option.IsEnabled && IsFrameRateMatch(option.Value, previousRate))
+                    option.IsEnabled && FrameRateTimingPolicy.IsFrameRateMatch(option.Value, previousRate))
                ?? options.FirstOrDefault(option =>
-                    option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, previousRate))
+                    option.IsEnabled && FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, previousRate))
                ?? options.FirstOrDefault(option =>
-                    option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, 60))
+                    option.IsEnabled && FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, 60))
                ?? options.FirstOrDefault(option =>
-                    option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, 30))
+                    option.IsEnabled && FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, 30))
                ?? options.FirstOrDefault(option => option.IsEnabled)
                ?? options.FirstOrDefault();
     }

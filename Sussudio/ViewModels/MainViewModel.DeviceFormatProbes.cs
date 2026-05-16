@@ -78,10 +78,10 @@ public partial class MainViewModel
             {
                 _suppressFormatChangeReinitialize = false;
             }
-            Logger.Log($"Format probe rebuild done: SelectedRes={SelectedResolution} SelectedFormat={SelectedFormat?.Width}x{SelectedFormat?.Height}@{SelectedFormat?.FrameRate:0.###} modeChanged={!string.Equals(previousResolution, SelectedResolution, StringComparison.OrdinalIgnoreCase) || !IsFrameRateMatch(previousFrameRate, SelectedFrameRate)}");
+            Logger.Log($"Format probe rebuild done: SelectedRes={SelectedResolution} SelectedFormat={SelectedFormat?.Width}x{SelectedFormat?.Height}@{SelectedFormat?.FrameRate:0.###} modeChanged={!string.Equals(previousResolution, SelectedResolution, StringComparison.OrdinalIgnoreCase) || !FrameRateTimingPolicy.IsFrameRateMatch(previousFrameRate, SelectedFrameRate)}");
 
             var modeChanged = !string.Equals(previousResolution, SelectedResolution, StringComparison.OrdinalIgnoreCase) ||
-                              !IsFrameRateMatch(previousFrameRate, SelectedFrameRate);
+                              !FrameRateTimingPolicy.IsFrameRateMatch(previousFrameRate, SelectedFrameRate);
 
             if (TryApplyDeviceFormatProbeRetarget(
                 target,

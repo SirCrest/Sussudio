@@ -2022,10 +2022,13 @@ Primary current owners:
   `MainViewModel.FrameRateSourceFilterPolicy.cs` owns source-rate filtering and
   `ShowAllCaptureOptions` unlock policy. `MainViewModel.CaptureOptionVisibility.cs`
   owns `ShowAllCaptureOptions` change handling and deferred rebuild behavior.
-  `MainViewModel.FrameRateTiming.cs` owns shared frame-rate timing family,
-  resolution timing-variant projection, rational parsing, source-rate fallback,
-  and preferred-format ranking helpers used by frame-rate, resolution,
-  capture-settings, and automation projections.
+  `Sussudio/ViewModels/FrameRateTimingPolicy.cs` owns pure frame-rate timing
+  family and variant models, rational parsing, friendly/exact frame-rate
+  matching, timing-family ranking, and preferred-format ranking helpers used by
+  frame-rate, resolution, capture-settings, and automation projections.
+  `MainViewModel.FrameRateTiming.cs` owns the stateful wrappers that resolve
+  timing variants and source/preferred timing from resolution capabilities,
+  runtime snapshots, selected formats, source telemetry, and UI selection state.
   `MainViewModel.FormatSelection.cs` owns pixel-format option building,
   recording-format policy application to observable state, and selected
   capture-format selection policy. `MainViewModel.HdrModeChanges.cs` owns

@@ -21,7 +21,7 @@ public partial class MainViewModel
             IReadOnlyCollection<FrameRateTimingVariant> resolutionTimingVariants,
             bool showAllCaptureOptions)
         {
-            var sourceTimingFamilyKnown = TryInferFrameRateTimingFamily(sourceRateArg, sourceRate, out var sourceTimingFamily);
+            var sourceTimingFamilyKnown = FrameRateTimingPolicy.TryInferFrameRateTimingFamily(sourceRateArg, sourceRate, out var sourceTimingFamily);
             var sourceFriendlyRate = sourceRate.HasValue
                 ? Math.Round(sourceRate.Value, MidpointRounding.AwayFromZero)
                 : (double?)null;
@@ -76,12 +76,12 @@ public partial class MainViewModel
                 }
                 else if (sourceTimingFamilyKnown &&
                          sourceRate.HasValue &&
-                         TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily) &&
+                         FrameRateTimingPolicy.TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily) &&
                          optionFamily != FrameRateTimingFamily.Unknown &&
                          sourceTimingFamily != FrameRateTimingFamily.Unknown &&
                          optionFamily != sourceTimingFamily &&
                          HasTimingFamilyVariant(resolutionTimingVariants, option.FriendlyValue, sourceTimingFamily) &&
-                         IsFriendlyFrameRateMatch(option.FriendlyValue, sourceFriendlyRate.Value) &&
+                         FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, sourceFriendlyRate.Value) &&
                          option.Value > sourceRate.Value + 0.03)
                 {
                     enabled = false;

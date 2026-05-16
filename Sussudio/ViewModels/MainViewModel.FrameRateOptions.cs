@@ -12,7 +12,7 @@ public partial class MainViewModel
 {
     partial void OnSelectedFrameRateChanged(double value)
     {
-        if (IsAutoFrameRateValue(value))
+        if (FrameRateTimingPolicy.IsAutoFrameRateValue(value))
         {
             SelectAutoFrameRate(rebuildOptions: !IsRecording && !_isRebuildingModeOptions && !_isApplyingAutomaticFrameRateSelection);
             return;
@@ -27,8 +27,8 @@ public partial class MainViewModel
         }
 
         var selected = AvailableFrameRates
-            .FirstOrDefault(option => IsFrameRateMatch(option.Value, value))
-            ?? AvailableFrameRates.FirstOrDefault(option => IsFriendlyFrameRateMatch(option.FriendlyValue, value));
+            .FirstOrDefault(option => FrameRateTimingPolicy.IsFrameRateMatch(option.Value, value))
+            ?? AvailableFrameRates.FirstOrDefault(option => FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, value));
         SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(value, MidpointRounding.AwayFromZero);
         SelectedExactFrameRate = selected?.Value ?? value;
         SelectedExactFrameRateArg = selected?.Rational;
@@ -59,11 +59,11 @@ public partial class MainViewModel
         }
 
         var currentOptions = AvailableFrameRates
-            .Where(option => !IsAutoFrameRateValue(option.FriendlyValue))
+            .Where(option => !FrameRateTimingPolicy.IsAutoFrameRateValue(option.FriendlyValue))
             .ToList();
         var selectedResolutionKey = GetEffectiveResolutionKey(SelectedResolution);
         var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, currentOptions, SelectedFrameRate);
-        var sourceTimingFamilyKnown = TryInferFrameRateTimingFamily(sourceRate.Arg, sourceRate.Rate, out var sourceTimingFamily);
+        var sourceTimingFamilyKnown = FrameRateTimingPolicy.TryInferFrameRateTimingFamily(sourceRate.Arg, sourceRate.Rate, out var sourceTimingFamily);
         var selection = FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(
             currentOptions,
             AutoFrameRateOptionAvailable: false,
@@ -88,7 +88,7 @@ public partial class MainViewModel
         var selectedResolutionKey = GetEffectiveResolutionKey(SelectedResolution);
         var timingFamily = ResolvePreferredTimingFamily(selectedResolutionKey, previousRate);
         if (_latestSourceTelemetry.HasFrameRate &&
-            TryInferFrameRateTimingFamily(_latestSourceTelemetry.FrameRateArg, _latestSourceTelemetry.FrameRateExact, out var sourceFamilyHint))
+            FrameRateTimingPolicy.TryInferFrameRateTimingFamily(_latestSourceTelemetry.FrameRateArg, _latestSourceTelemetry.FrameRateExact, out var sourceFamilyHint))
         {
             timingFamily = sourceFamilyHint;
         }
@@ -97,7 +97,7 @@ public partial class MainViewModel
             _resolutionToFormats.TryGetValue(selectedResolutionKey, out var formats))
         {
             options = formats
-                .GroupBy(format => GetFriendlyFrameRateBucket(format.FrameRateExact))
+                .GroupBy(format => FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact))
                 .Select(group =>
                 {
                     var allFormats = group.ToList();
@@ -115,7 +115,7 @@ public partial class MainViewModel
                         selectionPool = sdrFormats;
                     else
                         selectionPool = allFormats;
-                    var preferred = SelectPreferredFrameRateFormat(selectionPool, group.Key, timingFamily);
+                    var preferred = FrameRateTimingPolicy.SelectPreferredFrameRateFormat(selectionPool, group.Key, timingFamily);
                     var numerator = preferred.FrameRateNumerator > 0 ? preferred.FrameRateNumerator : (uint?)null;
                     var denominator = preferred.FrameRateDenominator > 0 ? preferred.FrameRateDenominator : (uint?)null;
                     return new FrameRateOption

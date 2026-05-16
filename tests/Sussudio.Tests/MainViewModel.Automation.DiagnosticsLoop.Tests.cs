@@ -17,7 +17,7 @@ static partial class Program
         AssertContains(automationOptionsText, "GetAutomationOptionsSnapshotAsync");
         AssertContains(automationOptionsText, "InvokeOnUiThreadAsync(() =>");
         AssertContains(automationOptionsText, "AvailableFrameRates");
-        AssertContains(automationOptionsText, "IsFrameRateMatch(option.Value, selectedFrameRate)");
+        AssertContains(automationOptionsText, "FrameRateTimingPolicy.IsFrameRateMatch(option.Value, selectedFrameRate)");
         AssertContains(automationOptionsText, "AutomationOptionsSnapshotBuilder.Build(input)");
         AssertNoRegex(
             automationOptionsText,

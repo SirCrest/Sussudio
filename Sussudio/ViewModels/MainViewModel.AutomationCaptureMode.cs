@@ -50,9 +50,9 @@ public partial class MainViewModel
                 throw new InvalidOperationException("No enabled frame rates are available for the current selection.");
             }
 
-            if (IsAutoFrameRateValue(frameRate))
+            if (FrameRateTimingPolicy.IsAutoFrameRateValue(frameRate))
             {
-                var autoRate = enabledRates.FirstOrDefault(rate => IsAutoFrameRateValue(rate.Value));
+                var autoRate = enabledRates.FirstOrDefault(rate => FrameRateTimingPolicy.IsAutoFrameRateValue(rate.Value));
                 if (autoRate == null)
                 {
                     throw new InvalidOperationException("Auto frame rate is not available for the current selection.");
@@ -73,7 +73,7 @@ public partial class MainViewModel
                 .OrderBy(rate => Math.Abs(rate.Value - frameRate))
                 .First();
 
-            if (friendlyMatches.Count == 0 && !IsFrameRateMatch(matched.Value, frameRate))
+            if (friendlyMatches.Count == 0 && !FrameRateTimingPolicy.IsFrameRateMatch(matched.Value, frameRate))
             {
                 throw new InvalidOperationException(
                     $"Frame rate '{frameRate:0.###}' is not available for {SelectedResolution ?? "the current resolution"}.");

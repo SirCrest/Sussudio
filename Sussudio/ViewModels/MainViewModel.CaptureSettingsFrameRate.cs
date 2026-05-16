@@ -24,8 +24,8 @@ public partial class MainViewModel
     private CaptureSettingsFrameRateProjection ProjectCaptureSettingsFrameRate(CaptureSettingsFrameRateRequest request)
     {
         var selectedFrameRateOption = AvailableFrameRates
-            .FirstOrDefault(option => IsFrameRateMatch(option.Value, SelectedFrameRate))
-            ?? AvailableFrameRates.FirstOrDefault(option => IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
+            .FirstOrDefault(option => FrameRateTimingPolicy.IsFrameRateMatch(option.Value, SelectedFrameRate))
+            ?? AvailableFrameRates.FirstOrDefault(option => FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
 
         var requestedFrameRateArg = selectedFrameRateOption?.Rational;
         var requestedFrameRateNumerator = selectedFrameRateOption?.Numerator;
@@ -51,7 +51,7 @@ public partial class MainViewModel
         if (runtimeMatchesResolution &&
             runtimeRate.HasValue &&
             runtimeRate.Value > 0 &&
-            IsFriendlyFrameRateMatch(selectedFriendlyRate, runtimeRate.Value))
+            FrameRateTimingPolicy.IsFriendlyFrameRateMatch(selectedFriendlyRate, runtimeRate.Value))
         {
             if (!string.IsNullOrWhiteSpace(runtimeRateArg))
             {
@@ -65,7 +65,7 @@ public partial class MainViewModel
                 requestedFrameRateNumerator = request.Runtime.NegotiatedFrameRateNumerator;
                 requestedFrameRateDenominator = request.Runtime.NegotiatedFrameRateDenominator;
             }
-            else if (TryParseFrameRateRational(runtimeRateArg, out var runtimeNumerator, out var runtimeDenominator))
+            else if (FrameRateTimingPolicy.TryParseFrameRateRational(runtimeRateArg, out var runtimeNumerator, out var runtimeDenominator))
             {
                 requestedFrameRateNumerator = runtimeNumerator;
                 requestedFrameRateDenominator = runtimeDenominator;
@@ -73,14 +73,14 @@ public partial class MainViewModel
         }
 
         if (request.SourceTelemetry.HasFrameRate &&
-            IsFriendlyFrameRateMatch(selectedFriendlyRate, request.SourceTelemetry.FrameRateExact ?? 0))
+            FrameRateTimingPolicy.IsFriendlyFrameRateMatch(selectedFriendlyRate, request.SourceTelemetry.FrameRateExact ?? 0))
         {
             if (!string.IsNullOrWhiteSpace(request.SourceTelemetry.FrameRateArg))
             {
                 requestedFrameRateArg = request.SourceTelemetry.FrameRateArg;
             }
 
-            if (TryParseFrameRateRational(request.SourceTelemetry.FrameRateArg, out var sourceNumerator, out var sourceDenominator))
+            if (FrameRateTimingPolicy.TryParseFrameRateRational(request.SourceTelemetry.FrameRateArg, out var sourceNumerator, out var sourceDenominator))
             {
                 requestedFrameRateNumerator = sourceNumerator;
                 requestedFrameRateDenominator = sourceDenominator;
@@ -88,7 +88,7 @@ public partial class MainViewModel
         }
 
         if ((requestedFrameRateNumerator == null || requestedFrameRateDenominator == null) &&
-            TryParseFrameRateRational(requestedFrameRateArg, out var parsedNumerator, out var parsedDenominator))
+            FrameRateTimingPolicy.TryParseFrameRateRational(requestedFrameRateArg, out var parsedNumerator, out var parsedDenominator))
         {
             requestedFrameRateNumerator = parsedNumerator;
             requestedFrameRateDenominator = parsedDenominator;

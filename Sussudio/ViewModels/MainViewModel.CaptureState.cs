@@ -58,12 +58,6 @@ public partial class MainViewModel
     // Resolution capability matrix keyed by "{width}x{height}".
     private readonly Dictionary<string, List<MediaFormat>> _resolutionToFormats =
         new(StringComparer.OrdinalIgnoreCase);
-    private enum FrameRateTimingFamily
-    {
-        Unknown,
-        Integer,
-        Ntsc1001
-    }
     private bool _isRebuildingModeOptions;
     private bool _isApplyingAutomaticFrameRateSelection;
     private bool _isApplyingAutomaticResolutionSelection;

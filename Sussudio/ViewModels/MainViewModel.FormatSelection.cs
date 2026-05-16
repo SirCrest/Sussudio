@@ -43,21 +43,21 @@ public partial class MainViewModel
         }
 
         var selectedRateOption = AvailableFrameRates
-            .FirstOrDefault(option => IsFrameRateMatch(option.Value, SelectedFrameRate))
-            ?? AvailableFrameRates.FirstOrDefault(option => IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
+            .FirstOrDefault(option => FrameRateTimingPolicy.IsFrameRateMatch(option.Value, SelectedFrameRate))
+            ?? AvailableFrameRates.FirstOrDefault(option => FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
         var friendlyBucket = selectedRateOption != null
             ? (int)Math.Round(selectedRateOption.FriendlyValue, MidpointRounding.AwayFromZero)
-            : GetFriendlyFrameRateBucket(SelectedFrameRate);
+            : FrameRateTimingPolicy.GetFriendlyFrameRateBucket(SelectedFrameRate);
 
         var timingFamily = ResolvePreferredTimingFamily(resolutionKey, SelectedFrameRate);
         if (selectedRateOption != null &&
-            TryInferFrameRateTimingFamily(selectedRateOption.Rational, selectedRateOption.Value, out var optionFamily))
+            FrameRateTimingPolicy.TryInferFrameRateTimingFamily(selectedRateOption.Rational, selectedRateOption.Value, out var optionFamily))
         {
             timingFamily = optionFamily;
         }
 
         var rateCandidates = candidates
-            .Where(format => GetFriendlyFrameRateBucket(format.FrameRateExact) == friendlyBucket)
+            .Where(format => FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact) == friendlyBucket)
             .ToList();
         if (rateCandidates.Count == 0)
         {
@@ -77,7 +77,7 @@ public partial class MainViewModel
             }
         }
 
-        SelectedFormat = SelectPreferredFrameRateFormat(rateCandidates, friendlyBucket, timingFamily);
+        SelectedFormat = FrameRateTimingPolicy.SelectPreferredFrameRateFormat(rateCandidates, friendlyBucket, timingFamily);
     }
 
     private void RebuildVideoFormatOptions()
@@ -120,17 +120,17 @@ public partial class MainViewModel
         // select the exact rational later, but format availability should follow the same
         // bucket the user sees in the frame-rate picker.
         var selectedRateOption = AvailableFrameRates
-            .FirstOrDefault(option => IsFrameRateMatch(option.Value, SelectedFrameRate))
-            ?? AvailableFrameRates.FirstOrDefault(option => IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
+            .FirstOrDefault(option => FrameRateTimingPolicy.IsFrameRateMatch(option.Value, SelectedFrameRate))
+            ?? AvailableFrameRates.FirstOrDefault(option => FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
         var friendlyBucket = selectedRateOption != null
             ? (int)Math.Round(selectedRateOption.FriendlyValue, MidpointRounding.AwayFromZero)
-            : GetFriendlyFrameRateBucket(SelectedFrameRate);
+            : FrameRateTimingPolicy.GetFriendlyFrameRateBucket(SelectedFrameRate);
 
         return AvailableFormats
             .Where(format =>
                 format.Width == width &&
                 format.Height == height &&
-                GetFriendlyFrameRateBucket(format.FrameRateExact) == friendlyBucket &&
+                FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact) == friendlyBucket &&
                 (IsHdrEnabled ? IsHdrModeCandidate(format) : !IsHdrModeCandidate(format)))
             .ToList();
     }

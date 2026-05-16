@@ -83,12 +83,12 @@ static partial class Program
         AssertContains(autoSelectionPolicyText, "request.PendingSdrAutoSelectionForDeviceChange");
         AssertContains(autoSelectionPolicyText, "request.PendingSdrAutoFriendlyFrameRateBucket.Value");
         AssertContains(autoSelectionPolicyText, ".OrderBy(option => Math.Abs(option.Value - source.Rate.Value))");
-        AssertContains(autoSelectionPolicyText, "TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily)");
+        AssertContains(autoSelectionPolicyText, "FrameRateTimingPolicy.TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily)");
         AssertContains(autoSelectionPolicyText, "optionFamily == source.TimingFamily");
-        AssertContains(autoSelectionPolicyText, "IsFrameRateMatch(option.Value, previousRate)");
-        AssertContains(autoSelectionPolicyText, "IsFriendlyFrameRateMatch(option.FriendlyValue, previousRate)");
-        AssertContains(autoSelectionPolicyText, "IsFriendlyFrameRateMatch(option.FriendlyValue, 60)");
-        AssertContains(autoSelectionPolicyText, "IsFriendlyFrameRateMatch(option.FriendlyValue, 30)");
+        AssertContains(autoSelectionPolicyText, "FrameRateTimingPolicy.IsFrameRateMatch(option.Value, previousRate)");
+        AssertContains(autoSelectionPolicyText, "FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, previousRate)");
+        AssertContains(autoSelectionPolicyText, "FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, 60)");
+        AssertContains(autoSelectionPolicyText, "FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, 30)");
         AssertDoesNotContain(autoSelectionPolicyText, "AvailableFrameRates.Clear();");
         AssertDoesNotContain(autoSelectionPolicyText, "ApplyResolvedFrameRateSelection(");
         AssertDoesNotContain(autoSelectionPolicyText, "SelectedFrameRate =");
@@ -656,7 +656,7 @@ static partial class Program
         var sourceType = RequireType("Sussudio.ViewModels.MainViewModel+FrameRateAutoSelectionSource");
         var requestType = RequireType("Sussudio.ViewModels.MainViewModel+FrameRateAutoSelectionRequest");
         var policyType = RequireType("Sussudio.ViewModels.MainViewModel+FrameRateAutoSelectionPolicy");
-        var timingFamily = ParseEnum("Sussudio.ViewModels.MainViewModel+FrameRateTimingFamily", sourceTimingFamilyName);
+        var timingFamily = ParseEnum("Sussudio.ViewModels.FrameRateTimingFamily", sourceTimingFamilyName);
         var sourceConstructor = FindConstructor(sourceType, parameterCount: 3);
         var source = sourceConstructor.Invoke(new object?[]
         {
@@ -756,6 +756,7 @@ static partial class Program
         var formatSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FormatSelection.cs").Replace("\r\n", "\n");
         var hdrModeChangesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.HdrModeChanges.cs").Replace("\r\n", "\n");
         var timingText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateTiming.cs").Replace("\r\n", "\n");
+        var timingPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(formatSelectionText, "private void UpdateSelectedFormat()");
         AssertContains(formatSelectionText, "private void RebuildVideoFormatOptions()");
@@ -764,15 +765,117 @@ static partial class Program
         AssertContains(hdrModeChangesText, "partial void OnIsHdrEnabledChanged(bool value)");
         AssertDoesNotContain(formatSelectionText, "private FrameRateTimingFamily ResolvePreferredTimingFamily(");
         AssertDoesNotContain(formatSelectionText, "private static bool TryInferFrameRateTimingFamily(");
+        AssertContains(formatSelectionText, "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
         AssertContains(timingText, "private FrameRateTimingFamily ResolvePreferredTimingFamily(");
-        AssertContains(timingText, "private static MediaFormat SelectPreferredFrameRateFormat(");
         AssertContains(timingText, "private (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(");
-        AssertContains(timingText, "private readonly record struct FrameRateTimingVariant(int FriendlyBucket, FrameRateTimingFamily Family);");
         AssertContains(timingText, "private IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
-        AssertContains(timingText, "private static bool TryInferFrameRateTimingFamily(");
-        AssertContains(timingText, "private static bool TryParseFrameRateRational(");
+        AssertContains(timingText, "FrameRateTimingPolicy.BuildTimingVariants(formats)");
+        AssertContains(timingText, "FrameRateTimingPolicy.TryInferFrameRateTimingFamily(");
+        AssertDoesNotContain(timingText, "private readonly record struct FrameRateTimingVariant(");
+        AssertDoesNotContain(timingText, "private static MediaFormat SelectPreferredFrameRateFormat(");
+        AssertDoesNotContain(timingText, "private static bool TryInferFrameRateTimingFamily(");
+        AssertDoesNotContain(timingText, "private static bool TryParseFrameRateRational(");
+        AssertDoesNotContain(timingText, "private static int GetFriendlyFrameRateBucket(");
+        AssertContains(timingPolicyText, "internal enum FrameRateTimingFamily");
+        AssertContains(timingPolicyText, "internal readonly record struct FrameRateTimingVariant(int FriendlyBucket, FrameRateTimingFamily Family);");
+        AssertContains(timingPolicyText, "internal static IReadOnlyList<FrameRateTimingVariant> BuildTimingVariants(IEnumerable<MediaFormat> formats)");
+        AssertContains(timingPolicyText, "internal static MediaFormat SelectPreferredFrameRateFormat(");
+        AssertContains(timingPolicyText, "internal static bool TryInferFrameRateTimingFamily(");
+        AssertContains(timingPolicyText, "internal static bool TryParseFrameRateRational(");
 
         return Task.CompletedTask;
+    }
+
+    private static Task FrameRateTimingPolicy_PreservesPureTimingBehavior()
+    {
+        var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
+        var policyType = RequireType("Sussudio.ViewModels.FrameRateTimingPolicy");
+        var ntscFamily = ParseEnum("Sussudio.ViewModels.FrameRateTimingFamily", "Ntsc1001");
+        var integerFamily = ParseEnum("Sussudio.ViewModels.FrameRateTimingFamily", "Integer");
+
+        var integer60 = CreateFrameRateTimingFormat(mediaFormatType, 1920, 1080, 60, 60, 1, "NV12", isHdr: false);
+        var ntsc60 = CreateFrameRateTimingFormat(mediaFormatType, 1920, 1080, 60000d / 1001d, 60000, 1001, "NV12", isHdr: false);
+        var selectPreferred = policyType.GetMethod("SelectPreferredFrameRateFormat", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FrameRateTimingPolicy.SelectPreferredFrameRateFormat missing.");
+
+        var ntscSelected = selectPreferred.Invoke(null, new[]
+            {
+                CreateMediaFormatList(mediaFormatType, integer60, ntsc60),
+                60,
+                ntscFamily
+            })
+            ?? throw new InvalidOperationException("NTSC preferred selection returned null.");
+        AssertEqual(60000u, (uint)GetPropertyValue(ntscSelected, "FrameRateNumerator")!, "NTSC timing-family rank numerator");
+
+        var integerSelected = selectPreferred.Invoke(null, new[]
+            {
+                CreateMediaFormatList(mediaFormatType, ntsc60, integer60),
+                60,
+                integerFamily
+            })
+            ?? throw new InvalidOperationException("Integer preferred selection returned null.");
+        AssertEqual(1u, (uint)GetPropertyValue(integerSelected, "FrameRateDenominator")!, "Integer timing-family rank denominator");
+
+        var hfrMjpg = CreateFrameRateTimingFormat(mediaFormatType, 3840, 2160, 120, 120, 1, "MJPG", isHdr: false);
+        var hfrNv12 = CreateFrameRateTimingFormat(mediaFormatType, 3840, 2160, 120, 120, 1, "NV12", isHdr: false);
+        var hfrSelected = selectPreferred.Invoke(null, new[]
+            {
+                CreateMediaFormatList(mediaFormatType, hfrMjpg, hfrNv12),
+                120,
+                integerFamily
+            })
+            ?? throw new InvalidOperationException("4K HFR preferred selection returned null.");
+        AssertEqual("MJPG", GetStringProperty(hfrSelected, "PixelFormat"), "4K HFR MJPG keeps top pixel-format priority");
+        var hfrSourceOrderSelected = selectPreferred.Invoke(null, new[]
+            {
+                CreateMediaFormatList(mediaFormatType, hfrNv12, hfrMjpg),
+                120,
+                integerFamily
+            })
+            ?? throw new InvalidOperationException("4K HFR source-order selection returned null.");
+        AssertEqual("NV12", GetStringProperty(hfrSourceOrderSelected, "PixelFormat"), "4K HFR top priority preserves source order tie");
+
+        var buildTimingVariants = policyType.GetMethod("BuildTimingVariants", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FrameRateTimingPolicy.BuildTimingVariants missing.");
+        var variants = ((IEnumerable)buildTimingVariants.Invoke(null, new[]
+            {
+                CreateMediaFormatList(mediaFormatType, ntsc60, integer60)
+            })!)
+            .Cast<object>()
+            .ToArray();
+        AssertEqual(2, variants.Length, "Friendly bucket timing variant count");
+        AssertEqual(60, Convert.ToInt32(GetPropertyValue(variants[0], "FriendlyBucket")), "NTSC friendly bucket");
+        AssertEqual("Ntsc1001", GetPropertyValue(variants[0], "Family")?.ToString(), "NTSC family variant");
+        AssertEqual(60, Convert.ToInt32(GetPropertyValue(variants[1], "FriendlyBucket")), "Integer friendly bucket");
+        AssertEqual("Integer", GetPropertyValue(variants[1], "Family")?.ToString(), "Integer family variant");
+
+        var inferFamily = policyType.GetMethod("TryInferFrameRateTimingFamily", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FrameRateTimingPolicy.TryInferFrameRateTimingFamily missing.");
+        var inferArgs = new object?[] { "not/rational", 60000d / 1001d, null };
+        AssertEqual(true, (bool)inferFamily.Invoke(null, inferArgs)!, "Timing-family rational parse fallback return");
+        AssertEqual("Ntsc1001", inferArgs[2]?.ToString(), "Timing-family rational parse fallback value");
+
+        var friendlyMatch = policyType.GetMethod("IsFriendlyFrameRateMatch", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FrameRateTimingPolicy.IsFriendlyFrameRateMatch missing.");
+        AssertEqual(true, (bool)friendlyMatch.Invoke(null, new object[] { 60d, 60000d / 1001d })!, "Friendly bucket grouping");
+
+        return Task.CompletedTask;
+    }
+
+    private static object CreateFrameRateTimingFormat(
+        Type mediaFormatType,
+        uint width,
+        uint height,
+        double frameRate,
+        uint numerator,
+        uint denominator,
+        string pixelFormat,
+        bool isHdr)
+    {
+        var format = CreateTestMediaFormat(mediaFormatType, width, height, frameRate, pixelFormat, isHdr);
+        SetPropertyOrBackingField(format, "FrameRateNumerator", numerator);
+        SetPropertyOrBackingField(format, "FrameRateDenominator", denominator);
+        return format;
     }
 
     private static Task RecordingFormatSelectionPolicy_LivesInFocusedHelper()
