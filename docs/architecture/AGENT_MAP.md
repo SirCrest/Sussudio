@@ -1971,12 +1971,13 @@ Primary current owners:
   `Sussudio/Controllers/CaptureOptionBindingController.Context.cs` owns the
   XAML/view-model adapter context, `CaptureOptionBindingController.Initialization.cs`
   owns video-format collection binding plus initial capture/recording selection
-  projection, and `CaptureOptionBindingController.SelectionHandlers.cs` owns
+  projection, `CaptureOptionBindingController.SelectionHandlers.cs` owns
   resolution/frame-rate selection handlers plus video-format/custom-bitrate/HDR
   event bindings during `SetupBindings()` and custom-bitrate property-change
-  value projection, reusing `CaptureComboBoxSelectionNormalizer` for shared
-  frame-rate auto/exact matching. Recording format, quality, preset, and
-  split-encode string
+  value projection, and `CaptureOptionBindingController.ShowAll.cs` owns
+  `ShowAllCaptureOptionsToggle` click binding and ViewModel-to-control sync,
+  reusing `CaptureComboBoxSelectionNormalizer` for shared frame-rate auto/exact
+  matching. Recording format, quality, preset, and split-encode string
   selection handlers live with
   `CaptureSelectionBindingController`.
   `MainWindow.CaptureOptionBindings.cs` and

@@ -80,12 +80,4 @@ public sealed partial class MainWindow
 
         _previewRendererHostController.SetHdrPassthroughEnabled(ViewModel.IsTrueHdrPreviewEnabled);
     }
-
-    private void HandleShowAllCaptureOptionsChanged()
-    {
-        if ((ShowAllCaptureOptionsToggle.IsChecked == true) != ViewModel.ShowAllCaptureOptions)
-        {
-            ShowAllCaptureOptionsToggle.IsChecked = ViewModel.ShowAllCaptureOptions;
-        }
-    }
 }

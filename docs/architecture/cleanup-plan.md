@@ -2029,13 +2029,15 @@ Capture option binding setup now lives in the
 `CaptureOptionBindingController.cs` is the controller shell,
 `CaptureOptionBindingController.Context.cs` owns the XAML/view-model adapter
 context, `CaptureOptionBindingController.Initialization.cs` owns video-format
-collection setup and initial capture/recording option projection, and
+collection setup and initial capture/recording option projection,
 `CaptureOptionBindingController.SelectionHandlers.cs` owns resolution/frame-rate
 selection handlers, video-format/custom-bitrate event bindings, and click-based
 HDR/true-HDR toggle bindings plus custom-bitrate property-change value
-projection while reusing `CaptureComboBoxSelectionNormalizer` for shared
-frame-rate auto/exact matching. The controller delegates presentation
-affordances back through the capture-option presentation adapter and delegates recording
+projection, and `CaptureOptionBindingController.ShowAll.cs` owns
+`ShowAllCaptureOptionsToggle` click binding and ViewModel-to-control sync while
+reusing `CaptureComboBoxSelectionNormalizer` for shared frame-rate auto/exact
+matching. The controller delegates presentation affordances back through the
+capture-option presentation adapter and delegates recording
 format/quality/preset/split-encode string selection to
 `CaptureSelectionBindingController`. `MainWindow.CaptureOptionBindings.cs` and
 `MainWindow.RecordingOptionBindings.cs` keep only the old method names used by

@@ -51,7 +51,6 @@ public sealed partial class MainWindow
         ApplyInitialStatusStripPresentation();
         UpdateLiveSignalInfoVisibility();
         ApplyInitialAudioControlBindings();
-        ShowAllCaptureOptionsToggle.IsChecked = ViewModel.ShowAllCaptureOptions;
         ApplyInitialCaptureOptionSelections();
         ApplyInitialAudioMeterPresentation();
         ApplyAudioClipVisibility();
@@ -78,7 +77,7 @@ public sealed partial class MainWindow
         FrameTimeOverlayToggle.Checked += FrameTimeOverlayToggle_Checked;
         FrameTimeOverlayToggle.Unchecked += FrameTimeOverlayToggle_Unchecked;
         AttachAudioInputToggleBindings();
-        ShowAllCaptureOptionsToggle.Click += (s, e) => ViewModel.ShowAllCaptureOptions = ShowAllCaptureOptionsToggle.IsChecked == true;
+        AttachShowAllCaptureOptionsBinding();
         AttachFlashbackSettingsBindings();
         AttachDeviceAudioGainAndMeterBindings();
         SetupResponsiveShellLayoutBindings();

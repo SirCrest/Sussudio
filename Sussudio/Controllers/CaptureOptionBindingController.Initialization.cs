@@ -24,6 +24,7 @@ internal sealed partial class CaptureOptionBindingController
         _context.ApplyBitrateVisibility();
         _context.HdrToggle.IsChecked = _context.ViewModel.IsHdrEnabled;
         _context.TrueHdrPreviewToggle.IsChecked = _context.ViewModel.IsTrueHdrPreviewEnabled;
+        _context.ShowAllCaptureOptionsToggle.IsChecked = _context.ViewModel.ShowAllCaptureOptions;
         _context.ApplyHdrToggleEnabledState();
     }
 
