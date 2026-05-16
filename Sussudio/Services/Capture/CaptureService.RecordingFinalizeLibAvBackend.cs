@@ -231,58 +231,9 @@ public partial class CaptureService
         _activeRecordingSettings = null;
         _mfConvertersDisabled = false;
 
-        if (_pendingFlashbackEnableAfterRecording)
-        {
-            _pendingFlashbackEnableAfterRecording = false;
-            if (_flashbackEnabled && _isVideoPreviewActive && _unifiedVideoCapture != null && _currentSettings != null)
-            {
-                try
-                {
-                    await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    cancellationException ??= new OperationCanceledException(cancellationToken);
-                    _flashbackEnabled = false;
-                    _pendingFlashbackEnableAfterRecording = false;
-                    if (_flashbackBackend.HasAnyResource)
-                    {
-                        await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true).ConfigureAwait(false);
-                    }
-                    Logger.Log("FLASHBACK_ENABLE_AFTER_RECORDING_CANCELLED");
-                }
-                catch (Exception ex)
-                {
-                    _flashbackEnabled = false;
-                    _pendingFlashbackEnableAfterRecording = false;
-                    if (_flashbackBackend.HasAnyResource)
-                    {
-                        await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true).ConfigureAwait(false);
-                    }
-                    Logger.Log($"FLASHBACK_ENABLE_AFTER_RECORDING_FAIL type={ex.GetType().Name} error='{ex.Message}'");
-                }
-            }
-        }
-
-        // Restart mic monitoring if preview is still active
-        try
-        {
-            await RestartMicrophoneMonitorAfterRecordingAsync(
-                new MicrophoneMonitorRestartOptions(
-                    OnlyWhenMissing: false,
-                    FlashbackAttachReason: "mic_monitor_restart",
-                    RestartLogEvent: "MIC_MONITOR_RESTART",
-                    DisposeWarningEvent: "MIC_MONITOR_RESTART_DISPOSE_WARN"),
-                cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            cancellationException ??= new OperationCanceledException(cancellationToken);
-        }
-        catch (Exception micEx)
-        {
-            Logger.Log("Mic monitor restart failed (non-fatal): " + micEx.Message);
-        }
+        cancellationException = await RestoreLibAvPreviewFeaturesAfterRecordingAsync(
+            cancellationException,
+            cancellationToken).ConfigureAwait(false);
 
         PublishRecordingFinalizedOutcome(result, updateOutputPath: true);
 

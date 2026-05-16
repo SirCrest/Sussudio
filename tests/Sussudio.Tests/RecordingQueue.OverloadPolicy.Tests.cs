@@ -156,6 +156,8 @@ static partial class Program
             "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync");
         var microphoneMonitorText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs")
             .Replace("\r\n", "\n");
+        var libAvPreviewRestoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs")
+            .Replace("\r\n", "\n");
         AssertContains(stopRecordingBackendRouter, "IsFlashbackRecordingBackendActive()");
         AssertContains(stopRecordingBackendRouter, "StopAndDisposeFlashbackRecordingBackendAsync(cancellationToken)");
         AssertContains(stopRecordingBackendRouter, "StopAndDisposeLibAvRecordingBackendAsync(fallbackStatusMessage, emergency, cancellationToken)");
@@ -175,9 +177,13 @@ static partial class Program
         AssertContains(libAvStopRecordingBackend, "var sink = _recordingSink;");
         AssertContains(libAvStopRecordingBackend, "await unifiedVideoCapture.StopRecordingAsync()");
         AssertContains(libAvStopRecordingBackend, "? await libAvSink.StopAsync(emergency, cancellationToken).ConfigureAwait(false)");
-        AssertContains(libAvStopRecordingBackend, "if (_pendingFlashbackEnableAfterRecording)");
+        AssertContains(libAvStopRecordingBackend, "RestoreLibAvPreviewFeaturesAfterRecordingAsync(");
         AssertContains(libAvStopRecordingBackend, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
         AssertDoesNotContain(libAvStopRecordingBackend, "FinalizeFlashbackRecordingAsync(");
+        AssertOccursBefore(
+            libAvStopRecordingBackend,
+            "RestoreLibAvPreviewFeaturesAfterRecordingAsync(",
+            "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
         AssertOccursBefore(
             flashbackStopRecordingBackend,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
@@ -242,10 +248,16 @@ static partial class Program
         AssertContains(captureServiceSource, "PublishRecordingStartedOutcome(rollback.RecordingContext.FinalOutputPath);");
         AssertContains(captureServiceSource, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
         AssertContains(captureServiceSource, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
+        AssertContains(libAvPreviewRestoreText, "private async Task<OperationCanceledException?> RestorePendingFlashbackEnableAfterLibAvRecordingAsync(");
+        AssertContains(libAvPreviewRestoreText, "if (!_pendingFlashbackEnableAfterRecording)");
+        AssertContains(libAvPreviewRestoreText, "_pendingFlashbackEnableAfterRecording = false;");
+        AssertContains(libAvPreviewRestoreText, "await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, cancellationToken)");
+        AssertContains(libAvPreviewRestoreText, "FLASHBACK_ENABLE_AFTER_RECORDING_CANCELLED");
+        AssertContains(libAvPreviewRestoreText, "FLASHBACK_ENABLE_AFTER_RECORDING_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         var standardMicMonitorRestart = ExtractSourceBlock(
-            libAvStopRecordingBackend,
-            "var wasapiAudioCaptureFaulted = Volatile.Read(ref _wasapiAudioCaptureFaulted);",
-            "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
+            libAvPreviewRestoreText,
+            "private async Task<OperationCanceledException?> RestartStandardMicrophoneMonitorAfterLibAvRecordingAsync",
+            "        return cancellationException;");
         AssertContains(standardMicMonitorRestart, "await RestartMicrophoneMonitorAfterRecordingAsync(");
         AssertContains(standardMicMonitorRestart, "OnlyWhenMissing: false,");
         AssertContains(standardMicMonitorRestart, "FlashbackAttachReason: \"mic_monitor_restart\",");

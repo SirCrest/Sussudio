@@ -80,6 +80,10 @@ static partial class Program
             captureServiceText,
             "private async Task<FinalizeResult> StopAndDisposeLibAvRecordingBackendAsync",
             "private async Task DisposeTransientRecordingBackendAsync");
+        var libAvPreviewRestore = ExtractTextBetween(
+            captureServiceText,
+            "private async Task<OperationCanceledException?> RestoreLibAvPreviewFeaturesAfterRecordingAsync",
+            "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync");
 
         AssertContains(setFlashbackEnabled, "_pendingFlashbackEnableAfterRecording = false;");
         AssertContains(setFlashbackEnabled, "if (_flashbackEnabled == enabled)");
@@ -111,24 +115,33 @@ static partial class Program
         AssertContains(immediateEnableBranch, "FLASHBACK_ENABLE_IMMEDIATE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(immediateEnableBranch, "throw;");
 
-        AssertContains(stopAndDisposeRecordingBackend, "if (_pendingFlashbackEnableAfterRecording)");
-        AssertContains(stopAndDisposeRecordingBackend, "_pendingFlashbackEnableAfterRecording = false;");
-        AssertContains(
+        AssertContains(stopAndDisposeRecordingBackend, "RestoreLibAvPreviewFeaturesAfterRecordingAsync(");
+        AssertOccursBefore(
             stopAndDisposeRecordingBackend,
+            "_mfConvertersDisabled = false;",
+            "RestoreLibAvPreviewFeaturesAfterRecordingAsync(");
+        AssertOccursBefore(
+            stopAndDisposeRecordingBackend,
+            "RestoreLibAvPreviewFeaturesAfterRecordingAsync(",
+            "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
+        AssertContains(libAvPreviewRestore, "if (!_pendingFlashbackEnableAfterRecording)");
+        AssertContains(libAvPreviewRestore, "_pendingFlashbackEnableAfterRecording = false;");
+        AssertContains(
+            libAvPreviewRestore,
             "if (_flashbackEnabled && _isVideoPreviewActive && _unifiedVideoCapture != null && _currentSettings != null)");
         AssertContains(
-            stopAndDisposeRecordingBackend,
+            libAvPreviewRestore,
             "await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, cancellationToken)");
         AssertContains(
-            stopAndDisposeRecordingBackend,
+            libAvPreviewRestore,
             "FLASHBACK_ENABLE_AFTER_RECORDING_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(
-            stopAndDisposeRecordingBackend,
-            "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n                {\n                    cancellationException ??= new OperationCanceledException(cancellationToken);");
-        AssertContains(stopAndDisposeRecordingBackend, "FLASHBACK_ENABLE_AFTER_RECORDING_CANCELLED");
+            libAvPreviewRestore,
+            "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n            {\n                cancellationException ??= new OperationCanceledException(cancellationToken);");
+        AssertContains(libAvPreviewRestore, "FLASHBACK_ENABLE_AFTER_RECORDING_CANCELLED");
         var deferredEnableFailureBranch = ExtractTextBetween(
-            stopAndDisposeRecordingBackend,
-            "catch (Exception ex)\n                {",
+            libAvPreviewRestore,
+            "catch (Exception ex)\n            {",
             "Logger.Log($\"FLASHBACK_ENABLE_AFTER_RECORDING_FAIL");
         AssertContains(deferredEnableFailureBranch, "_flashbackEnabled = false;");
         AssertContains(deferredEnableFailureBranch, "_pendingFlashbackEnableAfterRecording = false;");

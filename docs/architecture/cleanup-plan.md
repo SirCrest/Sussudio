@@ -828,8 +828,13 @@ Flashback-specific microphone monitor restart.
 owns standard LibAv recording finalization: unified-video recording stop and
 optional teardown, WASAPI recording detach/disposal, LibAv sink normal/emergency
 stop and drain tracking, encoder/runtime and recording-integrity summaries,
-pending Flashback enable after recording, and standard post-recording microphone
-monitor restart. Recording outcome field publication is delegated to
+and the visible final outcome publication before delayed cancellation throws.
+`Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs`
+owns standard LibAv live-preview restoration after recording: pending Flashback
+enable-after-recording detection, guarded Flashback preview backend restore,
+failed-restore rollback and purge, standard post-recording microphone monitor
+restart, and the `FLASHBACK_ENABLE_AFTER_RECORDING_*` breadcrumbs. Recording
+outcome field publication is delegated to
 `Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs` and
 post-recording microphone monitor restart mechanics to
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.
