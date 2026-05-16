@@ -6,7 +6,7 @@ static partial class Program
 {
     private static Task ControlBarHoverAnimations_LiveInController()
     {
-        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
+        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBarAnimations.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ControlBarAnimationController.cs").Replace("\r\n", "\n");
@@ -59,7 +59,7 @@ static partial class Program
 
     private static Task PreviewTransitionAnimations_LiveInController()
     {
-        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
+        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");

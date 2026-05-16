@@ -81,7 +81,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs")
             .Replace("\r\n", "\n");
-        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Shell.cs")
+        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs")
             .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
             .Replace("\r\n", "\n");

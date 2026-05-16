@@ -4,11 +4,11 @@ static partial class Program
 {
     private static Task SplashLoadingPhrases_LiveInController()
     {
-        var launchEntranceSplashText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Splash.cs").Replace("\r\n", "\n");
+        var launchEntranceSplashText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var splashAdapterText = ReadRepoFile("Sussudio/MainWindow.SplashLoading.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/SplashLoadingPhraseController.cs").Replace("\r\n", "\n");
-        var catalogText = ReadRepoFile("Sussudio/Controllers/Launch/SplashLoadingPhraseCatalog.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs").Replace("\r\n", "\n");
+        var catalogText = ReadRepoFile("Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs").Replace("\r\n", "\n");
 
         AssertContains(splashAdapterText, "private SplashLoadingPhraseController _splashLoadingPhraseController = null!;");
         AssertContains(splashAdapterText, "private void InitializeSplashLoadingPhraseController()");
@@ -46,9 +46,9 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.LaunchEntrance.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
-        var splashText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Splash.cs").Replace("\r\n", "\n");
-        var shellText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs").Replace("\r\n", "\n");
+        var splashText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs").Replace("\r\n", "\n");
+        var shellText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -86,10 +86,10 @@ static partial class Program
         AssertContains(shellText, "LAUNCH_PREVIEW_REVEAL_DEFERRED");
         AssertContains(shellText, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
         AssertContains(shellText, "_context.FadeInControlBarShadow();");
-        AssertContains(agentMapText, "Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Splash.cs");
-        AssertContains(agentMapText, "Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Shell.cs");
-        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Splash.cs");
-        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Shell.cs");
+        AssertContains(agentMapText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs");
+        AssertContains(agentMapText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs");
+        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs");
+        AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs");
         AssertDoesNotContain(mainWindowText, "private bool _entranceAnimationPlayed;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _entranceStoryboard;");
         AssertDoesNotContain(mainWindowText, "ControlBarBorder.Opacity = 0;");

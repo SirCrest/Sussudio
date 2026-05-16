@@ -1840,18 +1840,18 @@ construction now live in
 is the XAML-facing adapter.
 
 Splash phrase file lookup, Markdown-ish parsing, cached defaults, and exception
-fallback now live in `Sussudio/Controllers/Launch/SplashLoadingPhraseCatalog.cs`.
+fallback now live in `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs`.
 Randomized timer pacing and the two-line splash text animation remain in
-`Sussudio/Controllers/Launch/SplashLoadingPhraseController.cs`.
+`Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs`.
 `MainWindow.SplashLoading.cs` is the XAML-facing adapter.
 
 Launch entrance ownership is split by phase:
-`Sussudio/Controllers/Launch/LaunchEntranceAnimationController.cs` owns context and
+`Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns context and
 initial hidden/scaled shell state,
-`Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Splash.cs` owns splash
+`Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs` owns splash
 fade, loading-phrase start/stop ordering, one-shot splash playback state, and
 handoff into shell entrance, and
-`Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Shell.cs` owns shell
+`Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs` owns shell
 chrome/button/stats entrance choreography, deferred preview reveal logging,
 active-storyboard cleanup, and control-bar shadow fade. `MainWindow.LaunchEntrance.cs`
 is the XAML-facing adapter.
