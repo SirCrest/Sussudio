@@ -18,7 +18,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
             .Replace("\r\n", "\n");
-        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/WindowUiDispatchController.cs")
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(fullScreenSource, "public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => InvokeOnUiThreadAsync(\n            () => _fullScreenController.SetEnabledAsync(enabled),");
@@ -58,13 +58,13 @@ static partial class Program
             .Replace("\r\n", "\n");
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
             .Replace("\r\n", "\n");
-        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/WindowUiDispatchController.cs")
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
             .Replace("\r\n", "\n");
         var adapterSource = ReadRepoFile("Sussudio/MainWindow.WindowAutomation.cs")
             .Replace("\r\n", "\n");
-        var controllerSource = ReadRepoFile("Sussudio/Controllers/WindowAutomationController.cs")
+        var controllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationController.cs")
             .Replace("\r\n", "\n");
-        var snapPolicySource = ReadRepoFile("Sussudio/Controllers/WindowSnapRegionLayoutPolicy.cs")
+        var snapPolicySource = ReadRepoFile("Sussudio/Controllers/Window/WindowSnapRegionLayoutPolicy.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(adapterSource, "private WindowAutomationController _windowAutomationController = null!;");

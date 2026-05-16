@@ -523,9 +523,9 @@ capture pixel statistics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotEncoding.cs`.
 
 Window geometry automation and the recordings-folder command now live in
-`Sussudio/Controllers/WindowAutomationController.cs`. Display-area/AppWindow
+`Sussudio/Controllers/Window/WindowAutomationController.cs`. Display-area/AppWindow
 access, UI-thread dispatch, presenter restore, and side effects stay there, while
-`Sussudio/Controllers/WindowSnapRegionLayoutPolicy.cs` owns the pure snap-region
+`Sussudio/Controllers/Window/WindowSnapRegionLayoutPolicy.cs` owns the pure snap-region
 rectangle math for window actions.
 `MainWindow.WindowAutomation.cs` is the `IAutomationWindowControl` adapter.
 Close lifecycle state remains separate from geometry automation; see the
@@ -533,7 +533,7 @@ explicit window close lifecycle section below for the close-state and recording
 finalization owners.
 
 UI-thread dispatching helpers and guarded async event-handler execution now
-live in `Sussudio/Controllers/WindowUiDispatchController.cs`.
+live in `Sussudio/Controllers/Window/WindowUiDispatchController.cs`.
 `Sussudio/MainWindow.Dispatching.cs` keeps the stable private MainWindow adapter
 names for callers. Window close completion, close-request dispatch, and
 recording finalization are covered by the explicit window close lifecycle
@@ -553,11 +553,11 @@ First-load startup, first-frame uncloak scheduling, initial ViewModel/device
 refresh, automation startup timing, and the launch entrance trigger now live in
 `Sussudio/MainWindow.Startup.cs`. Automation host composition, once-only
 startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
-in `Sussudio/Controllers/WindowAutomationHostLifecycleController.cs`, with
+in `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs`, with
 `Sussudio/MainWindow.AutomationHost.cs` kept as the shell adapter. Window close
-completion lives in `Sussudio/Controllers/WindowCloseLifecycleController.cs`;
+completion lives in `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`;
 recording-aware close finalization now lives in
-`Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs`.
+`Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`.
 
 Top-level shell resize telemetry throttling for preview compositor transforms
 now lives in `Sussudio/Controllers/PreviewResizeTelemetryController.cs`.
@@ -590,14 +590,14 @@ Close routing/finalization handling remains in the explicit window close
 lifecycle owners below.
 
 Window title base/build-stamp formatting and the recording-time suffix now live
-in `Sussudio/Controllers/WindowTitleController.cs`; `MainWindow.WindowTitle.cs`
+in `Sussudio/Controllers/Window/WindowTitleController.cs`; `MainWindow.WindowTitle.cs`
 keeps only the XAML-facing initialization and title assignment hook.
 
 Window close lifecycle and native window helpers are now explicit:
-`Sussudio/Controllers/WindowCloseLifecycleController.cs` owns close request
+`Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` owns close request
 flags, completion TCS, cleanup latch, close-in-progress classification, and
 automation close dispatch orchestration.
-`Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs` owns the
+`Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs` owns the
 recording finalization side effects during pre-close and post-close cleanup:
 the 120-second stop budget, `StopRecordingAndWaitAsync` wait race, timeout/
 failure breadcrumbs, status text, and shutdown-content dim/restore policy.
@@ -608,7 +608,7 @@ shutdown cleanup: timer stops, event detaches, preview shutdown, automation
 diagnostics disposal, NVML disposal, and ViewModel disposal.
 Native `AppWindow` lookup, ViewModel window handle handoff, minimum-size
 subclassing, DWM cloak/dark-mode setup, initial shell size, icon, and uncloaking
-now live in `Sussudio/Controllers/NativeWindowBootstrapController.cs`.
+now live in `Sussudio/Controllers/Window/NativeWindowBootstrapController.cs`.
 `Sussudio/MainWindow.NativeWindow.cs` is the XAML-facing adapter and keeps the
 `_hwnd` field consumed by screenshot and window automation paths.
 MainWindow shell ownership tests mirror these runtime owners through focused

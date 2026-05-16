@@ -90,9 +90,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
             .Replace("\r\n", "\n");
-        var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseLifecycleController.cs")
+        var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs")
             .Replace("\r\n", "\n");
-        var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs")
+        var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(windowCtorText, "RegisterCloseLifecycle(appWindow);");

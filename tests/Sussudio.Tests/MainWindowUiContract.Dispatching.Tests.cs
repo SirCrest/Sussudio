@@ -4,7 +4,7 @@ static partial class Program
     {
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
             .Replace("\r\n", "\n");
-        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/WindowUiDispatchController.cs")
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
             .Replace("\r\n", "\n");
         var closeLifecycleSource = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
             .Replace("\r\n", "\n");

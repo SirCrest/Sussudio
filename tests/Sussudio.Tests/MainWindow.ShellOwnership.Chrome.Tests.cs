@@ -39,7 +39,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var titleText = ReadRepoFile("Sussudio/MainWindow.WindowTitle.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/WindowTitleController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowTitleController.cs").Replace("\r\n", "\n");
 
         AssertContains(titleText, "private WindowTitleController _windowTitleController = null!;");
         AssertContains(titleText, "private void InitializeWindowTitleController()");

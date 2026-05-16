@@ -143,7 +143,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var automationHostAdapterText = ReadRepoFile("Sussudio/MainWindow.AutomationHost.cs")
             .Replace("\r\n", "\n");
-        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/WindowAutomationHostLifecycleController.cs")
+        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs")
             .Replace("\r\n", "\n");

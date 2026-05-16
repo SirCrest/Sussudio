@@ -9,11 +9,11 @@ static partial class Program
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var nativeWindowText = ReadRepoFile("Sussudio/MainWindow.NativeWindow.cs").Replace("\r\n", "\n");
-        var nativeWindowControllerText = ReadRepoFile("Sussudio/Controllers/NativeWindowBootstrapController.cs").Replace("\r\n", "\n");
+        var nativeWindowControllerText = ReadRepoFile("Sussudio/Controllers/Window/NativeWindowBootstrapController.cs").Replace("\r\n", "\n");
         var automationHostAdapterText = ReadRepoFile("Sussudio/MainWindow.AutomationHost.cs").Replace("\r\n", "\n");
-        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
-        var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
-        var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs").Replace("\r\n", "\n");
+        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
+        var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
+        var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
         var stopBeforeCloseMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task<bool> StopBeforeCloseAsync(");
@@ -48,12 +48,12 @@ static partial class Program
         var waitForStopMethodText = closeRecordingFinalizationControllerText.Substring(waitForStopMethodOffset);
         var documentedOwners = new[]
         {
-            "Sussudio/Controllers/WindowCloseLifecycleController.cs",
-            "Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs",
-            "Sussudio/Controllers/WindowAutomationHostLifecycleController.cs",
+            "Sussudio/Controllers/Window/WindowCloseLifecycleController.cs",
+            "Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs",
+            "Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs",
             "Sussudio/MainWindow.CloseLifecycle.cs",
             "Sussudio/MainWindow.ShutdownCleanup.cs",
-            "Sussudio/Controllers/NativeWindowBootstrapController.cs",
+            "Sussudio/Controllers/Window/NativeWindowBootstrapController.cs",
         };
 
         foreach (var owner in documentedOwners)
