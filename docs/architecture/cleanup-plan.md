@@ -1282,7 +1282,8 @@ output context setup, stream count validation, and output header writing live in
 `Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`. Stream-template copying
 and segment stream-layout compatibility checks live in
 `Sussudio/Services/Flashback/FlashbackExporter.StreamTemplates.cs`. Temp output
-validation, atomic replacement, overwrite policy, and invalid final-output cleanup live in
+validation, active output trailer/IO close finalization, atomic replacement,
+overwrite policy, and invalid final-output cleanup live in
 `Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs`.
 Temp output cleanup, stale temp preparation, and orphan `.mp4.tmp` cleanup live
 in `Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs`.

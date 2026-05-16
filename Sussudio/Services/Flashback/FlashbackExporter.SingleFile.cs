@@ -305,15 +305,10 @@ internal sealed unsafe partial class FlashbackExporter
                 return FinalizeResult.Failure(outputPath, message);
             }
 
-            ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer");
-            CloseOutputIo();
-
-            if (!TryFinalizeTempOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))
+            if (!TryFinalizeActiveOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))
             {
-                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'");
                 return FinalizeResult.Failure(outputPath, outputFailure);
             }
-            _activeTempPath = null;
 
             Logger.Log(
                 $"FLASHBACK_EXPORT_OK output='{outputPath}' packets={totalPackets} bytes={outputBytes}");

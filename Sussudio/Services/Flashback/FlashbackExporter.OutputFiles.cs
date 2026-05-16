@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using FFmpeg.AutoGen;
 
 namespace Sussudio.Services.Flashback;
 
@@ -45,6 +46,26 @@ internal sealed unsafe partial class FlashbackExporter
             out outputBytes,
             out failureMessage,
             TryValidateCompletedOutputFile);
+
+    private bool TryFinalizeActiveOutputFile(
+        string tmpPath,
+        string outputPath,
+        bool allowOverwrite,
+        out long outputBytes,
+        out string failureMessage)
+    {
+        ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer");
+        CloseOutputIo();
+
+        if (!TryFinalizeTempOutputFile(tmpPath, outputPath, allowOverwrite, out outputBytes, out failureMessage))
+        {
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'");
+            return false;
+        }
+
+        _activeTempPath = null;
+        return true;
+    }
 
     private static bool TryFinalizeTempOutputFileCore(
         string tmpPath,

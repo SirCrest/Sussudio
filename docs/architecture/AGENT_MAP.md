@@ -751,8 +751,9 @@ Entry points:
   stream count validation, and output header writing.
 - `FlashbackExporter.StreamTemplates.cs` owns stream-template copying and
   segment stream-layout compatibility checks.
-- `FlashbackExporter.OutputFiles.cs` owns temp-output validation, atomic
-  destination replacement, overwrite policy, and invalid final-output cleanup.
+- `FlashbackExporter.OutputFiles.cs` owns active output trailer/IO close
+  finalization, temp-output validation, atomic destination replacement,
+  overwrite policy, and invalid final-output cleanup.
 - `FlashbackExporter.Progress.cs` owns progress normalization/reporting and
   heartbeat cadence.
 - `FlashbackExporter.WriterPacing.cs` owns export writer adaptive throttling,

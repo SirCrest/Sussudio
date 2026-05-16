@@ -30,6 +30,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var tempFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs")
             .Replace("\r\n", "\n");
+        var outputFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputFiles.cs")
+            .Replace("\r\n", "\n");
         var exportLockText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.ExportLock.cs")
             .Replace("\r\n", "\n");
         var resultsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Results.cs")
@@ -112,6 +114,18 @@ static partial class Program
         AssertContains(tempFilesText, "private static void DeleteTempFileIfPresent(string tmpPath)");
         AssertContains(tempFilesText, "private static bool TryPrepareTempOutputFile(string tmpPath, string outputPath, out string failureMessage)");
         AssertContains(tempFilesText, "internal static void CleanupOrphanedTempFiles(string directory)");
+        AssertContains(outputFilesText, "private bool TryFinalizeActiveOutputFile(");
+        AssertContains(outputFilesText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\");");
+        AssertContains(outputFilesText, "CloseOutputIo();");
+        AssertContains(outputFilesText, "TryFinalizeTempOutputFile(tmpPath, outputPath, allowOverwrite, out outputBytes, out failureMessage)");
+        AssertContains(outputFilesText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
+        AssertContains(outputFilesText, "_activeTempPath = null;");
+        AssertDoesNotContain(singleFileText, "av_write_trailer(_activeOutputContext)");
+        AssertDoesNotContain(singleFileText, "CloseOutputIo();\n\n            if (!TryFinalizeTempOutputFile");
+        AssertContains(singleFileText, "if (!TryFinalizeActiveOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
+        AssertDoesNotContain(segmentsText, "av_write_trailer(_activeOutputContext)");
+        AssertDoesNotContain(segmentsText, "CloseOutputIo();\n\n            if (!TryFinalizeTempOutputFile");
+        AssertContains(segmentsText, "if (!TryFinalizeActiveOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
         AssertContains(exportLockText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)");
         AssertContains(exportLockText, "private void ReleaseExportLockBestEffort(string operation)");
         AssertContains(exportLockText, "private void DisposeExportLockBestEffort()");

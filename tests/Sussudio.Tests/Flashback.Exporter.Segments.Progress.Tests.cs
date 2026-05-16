@@ -20,8 +20,10 @@ static partial class Program
         AssertContains(segmentExportLoopBlock, "ReportProgress(");
         AssertContains(segmentExportLoopBlock, "\"segment_heartbeat\");");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(1, 1, 100.0), \"single_complete\")");
-        AssertContains(sourceText, "if (!TryFinalizeTempOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
-        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'\");");
+        AssertContains(sourceText, "if (!TryFinalizeActiveOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
+        AssertContains(sourceText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\");");
+        AssertContains(sourceText, "CloseOutputIo();");
         AssertContains(sourceText, "return FinalizeResult.Failure(outputPath, outputFailure);");
         AssertContains(sourceText, "ReportProgress(\n                        progress,\n                        new ExportProgress(\n                            segIdx + 1,\n                            segments.Count,");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), \"segments_complete\")");
@@ -40,6 +42,7 @@ static partial class Program
         AssertContains(sourceText, "Flashback export failed: output file is empty");
         AssertContains(sourceText, "Flashback export failed: output file length unavailable");
         AssertContains(sourceText, "private static bool TryFinalizeTempOutputFile(");
+        AssertContains(sourceText, "private bool TryFinalizeActiveOutputFile(");
         AssertContains(sourceText, "Flashback export failed: temporary output file is empty before replacing");
         AssertContains(sourceText, "AtomicMoveTempFile(tmpPath, outputPath, allowOverwrite);");
         AssertContains(sourceText, "FLASHBACK_EXPORT_REFUSED_DESTINATION_EXISTS");
