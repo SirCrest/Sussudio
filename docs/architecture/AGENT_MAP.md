@@ -1775,6 +1775,12 @@ Primary current owners:
 - `Sussudio/Controllers/PreviewAudioFadeController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
   save suppression. `MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
+- `Sussudio/Controllers/PreviewReinitTransitionController.cs` owns preview
+  reinit animation active state, first-visual transition clears, startup-reset
+  preservation, completion presentation decisions, and the
+  `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
+  `MainWindow.PreviewReinit.cs` remains the XAML/MainWindow adapter for
+  renderer-stop-before-teardown and reinit completion side effects.
 - `Sussudio/Controllers/PreviewStartupSessionController.cs` owns preview
   startup attempt/state bookkeeping, timestamps, cached failure/missing-signal
   details, and first-visual confirmation state. `Sussudio/MainWindow.PreviewStartup.cs`
@@ -1801,8 +1807,11 @@ Primary current owners:
   preview start/stop/reinit state. `MainWindow.PropertyChangedPreview.cs` is the
   XAML/MainWindow-facing adapter that preserves event handler signatures and
   delegates into the controller.
-  `MainWindow.PreviewReinit.cs` owns preview reinit animation state,
-  renderer-stop-before-teardown handoff, and reinit completion presentation.
+  `Sussudio/Controllers/PreviewReinitTransitionController.cs` owns preview
+  reinit animation active state, first-visual transition clears, startup-reset
+  preservation, completion presentation decisions, and reinit transition logs.
+  `MainWindow.PreviewReinit.cs` keeps the renderer-stop-before-teardown handoff
+  and XAML presentation side effects.
   Keep preview startup fields out of the composition root.
 - `Sussudio/Controllers/PreviewFadeInController.cs` owns delayed preview
   reveal after first visual: rendered-frame threshold, fade-in timer, renderer

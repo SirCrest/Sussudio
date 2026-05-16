@@ -84,6 +84,9 @@ static partial class Program
             "Preview startup session controller preserves attempt state contracts",
             PreviewStartupSessionController_PreservesAttemptStateContracts);
         await AddCheckAsync(results,
+            "Preview reinit transition controller preserves transition state contracts",
+            PreviewReinitTransitionController_PreservesTransitionStateContracts);
+        await AddCheckAsync(results,
             "Preview startup signal formatter preserves string contracts",
             PreviewStartupSignalFormatter_PreservesSignalStrings);
         await AddCheckAsync(results,

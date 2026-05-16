@@ -106,12 +106,9 @@ public sealed partial class MainWindow
         // Wait for a few rendered frames before fading in — the first frame
         // from the source reader may be black or stale while the signal settles.
         SchedulePreviewFadeIn();
-        if (_isPreviewReinitAnimating)
-        {
-            Logger.Log($"PREVIEW_REINIT_ANIMATE_IN attempt={PreviewStartupAttemptLabel}");
-            _isPreviewReinitAnimating = false;
-            Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(ConfirmPreviewFirstVisual)}");
-        }
+        _previewReinitTransitionController.CompleteFirstVisualTransition(
+            PreviewStartupAttemptLabel,
+            nameof(ConfirmPreviewFirstVisual));
         PreviewStartupMissingSignals = string.Empty;
         var elapsedMs = _previewStartupSessionController.GetElapsedMilliseconds(DateTimeOffset.UtcNow);
         Logger.Log(
@@ -124,11 +121,9 @@ public sealed partial class MainWindow
         StopPreviewStartupWatchdog();
         StopPreviewStartupOverlay();
         StopPreviewFadeInTimer();
-        if (!preserveReinitAnimation)
-        {
-            _isPreviewReinitAnimating = false;
-            Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(ResetPreviewStartupTracking)}");
-        }
+        _previewReinitTransitionController.ClearForStartupReset(
+            preserveReinitAnimation,
+            nameof(ResetPreviewStartupTracking));
         ResetPreviewSignalState();
         ResetPreviewStartupFailureStopSchedule();
 

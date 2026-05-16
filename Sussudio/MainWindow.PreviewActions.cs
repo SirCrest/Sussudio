@@ -21,8 +21,7 @@ public sealed partial class MainWindow
             AnimatePreviewOutAsync = AnimatePreviewOutAsync,
             ClearPreviewReinitAnimation = operationName =>
             {
-                _isPreviewReinitAnimating = false;
-                Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={operationName}", operationName);
+                _previewReinitTransitionController.Clear(operationName, operationName: operationName);
             },
             ResetPreviewContentTransform = ResetPreviewContentTransform,
             RevealPreviewUnavailablePlaceholder = RevealPreviewUnavailablePlaceholder,

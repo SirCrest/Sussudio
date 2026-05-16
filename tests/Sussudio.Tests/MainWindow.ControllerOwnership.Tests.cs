@@ -8,6 +8,7 @@ static partial class Program
         var previewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs").Replace("\r\n", "\n");
+        var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewReinitTransitionController.cs").Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
         var outputText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedOutput.cs").Replace("\r\n", "\n");
         var captureOptionText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedCaptureOptions.cs").Replace("\r\n", "\n");
@@ -68,10 +69,19 @@ static partial class Program
         AssertDoesNotContain(previewText, "private void HandlePreviewReinitializingChanged()");
         AssertDoesNotContain(previewText, "case nameof(MainViewModel.IsPreviewing):");
         AssertDoesNotContain(previewText, "await HandlePreviewingChangedAsync();");
-        AssertContains(previewReinitText, "private bool _isPreviewReinitAnimating;");
+        AssertContains(previewReinitText, "private PreviewReinitTransitionController _previewReinitTransitionController = null!;");
+        AssertContains(previewReinitText, "private bool IsPreviewReinitAnimating");
         AssertContains(previewReinitText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
         AssertContains(previewReinitText, "private Task ViewModel_PreviewRendererStopRequested()");
         AssertContains(previewReinitText, "private void HandlePreviewReinitializingChanged()");
+        AssertContains(previewReinitTransitionControllerText, "internal sealed class PreviewReinitTransitionController");
+        AssertContains(previewReinitTransitionControllerText, "internal enum PreviewReinitCompletionPresentation");
+        AssertContains(previewReinitTransitionControllerText, "D3D11_RENDERER_REINIT_FLAG flag=true");
+        AssertContains(previewReinitTransitionControllerText, "PREVIEW_REINIT_ANIMATE_OUT");
+        AssertContains(previewReinitTransitionControllerText, "PREVIEW_REINIT_ANIMATE_IN");
+        AssertContains(previewReinitTransitionControllerText, "PREVIEW_REINIT_ANIMATE_RESET");
+        AssertContains(previewReinitTransitionControllerText, "D3D11_RENDERER_REINIT_FLAG flag=false");
+        AssertDoesNotContain(previewReinitText, "private bool _isPreviewReinitAnimating;");
         var rendererStop = ExtractMemberCode(previewReinitText, "ViewModel_PreviewRendererStopRequested");
         AssertContains(rendererStop, "DisposeD3DPreviewRendererForReinit();");
         AssertContains(rendererStop, "catch (TimeoutException ex)");

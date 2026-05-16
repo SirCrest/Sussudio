@@ -1858,6 +1858,13 @@ restore behavior, and property-to-session volume forwarding. Monitoring
 enable/disable orchestration, audio input retargeting, and coordinator
 sequencing remain in `Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs`.
 
+Preview reinit animation active state, first-visual transition clears,
+startup-reset preservation, completion presentation decisions, and
+`D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs now live in
+`Sussudio/Controllers/PreviewReinitTransitionController.cs`.
+`MainWindow.PreviewReinit.cs` remains the XAML/MainWindow adapter for
+renderer-stop-before-teardown and reinit completion side effects.
+
 Preview startup attempt/state bookkeeping, timestamps, cached failure/
 missing-signal details, and first-visual confirmation state now live in
 `Sussudio/Controllers/PreviewStartupSessionController.cs` instead of a
@@ -1901,9 +1908,10 @@ now live in `Sussudio/Controllers/PreviewLifecycleEventController.cs`.
 adapter that preserves event handler signatures and delegates into the
 controller. The broad `MainWindow.PropertyChanged.cs` dispatcher now owns only
 the `PropertyChanged` event envelope, property-name normalization, and visible
-route order. Preview reinit animation state, renderer-stop-before-teardown
-handoff, and reinit completion presentation now live in
-`Sussudio/MainWindow.PreviewReinit.cs`.
+route order. Preview reinit transition state and log ownership now live in
+`Sussudio/Controllers/PreviewReinitTransitionController.cs`, while
+`Sussudio/MainWindow.PreviewReinit.cs` keeps the renderer-stop-before-teardown
+handoff and XAML completion side effects.
 
 Bottom status-strip projection now lives in
 `Sussudio/Controllers/StatusStripPresentationController.cs`, while

@@ -17,7 +17,7 @@ public sealed partial class MainWindow
             ShouldBeginPreviewStartupAttempt = () => ShouldBeginPreviewStartupAttempt,
             BeginPreviewStartupAttempt = BeginPreviewStartupAttempt,
             PrimePreviewAudioFadeIn = PrimePreviewAudioFadeIn,
-            IsPreviewReinitAnimating = () => _isPreviewReinitAnimating,
+            IsPreviewReinitAnimating = () => IsPreviewReinitAnimating,
             PreparePreviewStartupPresentation = PreparePreviewStartupPresentation,
             StopPreviewStartupWatchdog = StopPreviewStartupWatchdog,
             StartPreviewStartupWatchdog = StartPreviewStartupWatchdog,

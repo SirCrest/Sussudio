@@ -30,6 +30,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ViewModel,
             GetPreviewRuntimeSnapshotAsync,
             this);
+        InitializePreviewReinitTransitionController();
         InitializePreviewRendererHostController();
         InitializeStatsSnapshotProvider();
         InitializeStatsOverlayController();

@@ -267,6 +267,7 @@ static partial class Program
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewButtonPresentation.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonPresentationController.cs").Replace("\r\n", "\n");
         var actionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonActionController.cs").Replace("\r\n", "\n");
+        var reinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewReinitTransitionController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewButtonPresentationController _previewButtonPresentationController = null!;");
         AssertContains(adapterText, "private void InitializePreviewButtonPresentationController()");
@@ -297,7 +298,8 @@ static partial class Program
         AssertContains(actionControllerText, "public async Task TogglePreviewAsync(string operationName)");
         AssertContains(actionControllerText, "viewModel.CancelPendingPreviewRestart();");
         AssertContains(actionControllerText, "Logger.Log($\"PREVIEW_REINIT_CANCEL_REQUESTED attempt={_context.GetPreviewStartupAttemptId() ?? \"none\"}\", operationName);");
-        AssertContains(previewActionsText, "Logger.Log($\"D3D11_RENDERER_REINIT_FLAG flag=false caller={operationName}\", operationName);");
+        AssertContains(previewActionsText, "_previewReinitTransitionController.Clear(operationName, operationName: operationName);");
+        AssertContains(reinitTransitionControllerText, "Logger.Log(message, operationName);");
         AssertContains(actionControllerText, "var audioFadeOutTask = _context.StartPreviewAudioFadeOutAsync();");
         AssertContains(actionControllerText, "var previewFadeOutTask = _context.AnimatePreviewOutAsync();");
         AssertContains(actionControllerText, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);");

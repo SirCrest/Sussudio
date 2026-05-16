@@ -114,7 +114,7 @@ static partial class Program
         AssertContains(adapterText, "FadeInElement = FadeInElement,");
         AssertContains(adapterText, "FadeOutElement = FadeOutElement,");
         AssertContains(adapterText, "=> _previewStartupOverlayController.Start();");
-        AssertContains(adapterText, "=> _previewStartupOverlayController.Stop(_isPreviewReinitAnimating);");
+        AssertContains(adapterText, "=> _previewStartupOverlayController.Stop(IsPreviewReinitAnimating);");
         AssertContains(mainWindowText, "InitializePreviewStartupOverlayController();");
         AssertContains(controllerText, "internal sealed class PreviewStartupOverlayController");
         AssertContains(controllerText, "public void Start()");

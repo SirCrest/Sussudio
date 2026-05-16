@@ -22,11 +22,10 @@ public sealed partial class MainWindow
             PreviewImage = PreviewImage,
             PreviewContentGridSizeChangedHandler = OnPreviewContentGridSizeChanged,
             PreviewSwapChainPanelSizeChangedHandler = OnPreviewSwapChainPanelSizeChanged,
-            IsPreviewReinitAnimating = () => _isPreviewReinitAnimating,
+            IsPreviewReinitAnimating = () => IsPreviewReinitAnimating,
             ClearPreviewReinitAnimatingForShutdown = () =>
             {
-                _isPreviewReinitAnimating = false;
-                Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(StopPreviewForShutdown)}");
+                _previewReinitTransitionController.Clear(nameof(StopPreviewForShutdown));
             },
             GetPreviewStartupAttemptLabel = () => PreviewStartupAttemptLabel,
             IsPreviewFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,

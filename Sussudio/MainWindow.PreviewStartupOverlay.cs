@@ -23,5 +23,5 @@ public sealed partial class MainWindow
         => _previewStartupOverlayController.Start();
 
     private void StopPreviewStartupOverlay()
-        => _previewStartupOverlayController.Stop(_isPreviewReinitAnimating);
+        => _previewStartupOverlayController.Stop(IsPreviewReinitAnimating);
 }

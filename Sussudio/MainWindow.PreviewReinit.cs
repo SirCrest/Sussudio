@@ -1,13 +1,21 @@
 using System;
 using System.Threading.Tasks;
+using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// Preview reinitialization owns the UI animation flag and renderer-stop handoff
-// used while capture restarts underneath an existing preview session.
+// Preview reinitialization adapter. PreviewReinitTransitionController owns the
+// animation/first-visual transition state while MainWindow keeps renderer-stop
+// and XAML presentation side effects in the original order.
 public sealed partial class MainWindow
 {
-    private bool _isPreviewReinitAnimating;
+    private PreviewReinitTransitionController _previewReinitTransitionController = null!;
+
+    private void InitializePreviewReinitTransitionController()
+        => _previewReinitTransitionController = new PreviewReinitTransitionController();
+
+    private bool IsPreviewReinitAnimating
+        => _previewReinitTransitionController.IsAnimating;
 
     private async Task ViewModel_PreviewReinitRequested(string reason)
     {
@@ -16,9 +24,7 @@ public sealed partial class MainWindow
             return;
         }
 
-        _isPreviewReinitAnimating = true;
-        Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=true caller={nameof(ViewModel_PreviewReinitRequested)}");
-        Logger.Log($"PREVIEW_REINIT_ANIMATE_OUT reason={reason}");
+        _previewReinitTransitionController.BeginAnimateOut(reason, nameof(ViewModel_PreviewReinitRequested));
         await AnimatePreviewOutAsync();
     }
 
@@ -57,26 +63,28 @@ public sealed partial class MainWindow
     private void HandlePreviewReinitializingChanged()
     {
         UpdateDeviceApplyButtonState();
-        if (!ViewModel.IsPreviewReinitializing && _isPreviewReinitAnimating)
+        switch (_previewReinitTransitionController.GetCompletionPresentation(
+            ViewModel.IsPreviewReinitializing,
+            ViewModel.IsPreviewing,
+            IsPreviewFirstVisualConfirmed))
         {
-            if (!ViewModel.IsPreviewing)
-            {
-                _isPreviewReinitAnimating = false;
-                Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(HandleViewModelPropertyChangedAsync)}");
+            case PreviewReinitCompletionPresentation.RevealUnavailablePlaceholder:
+                _previewReinitTransitionController.Clear(nameof(HandleViewModelPropertyChangedAsync), logWhenInactive: false);
                 RevealPreviewUnavailablePlaceholder();
-            }
-            else if (IsPreviewFirstVisualConfirmed)
-            {
-                Logger.Log($"PREVIEW_REINIT_ANIMATE_RESET attempt={PreviewStartupAttemptLabel} reason=reinit-stop-failed");
-                _isPreviewReinitAnimating = false;
-                Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(HandleViewModelPropertyChangedAsync)}");
+                break;
+
+            case PreviewReinitCompletionPresentation.ResetConfirmedVisual:
+                _previewReinitTransitionController.ResetConfirmedVisualTransition(
+                    PreviewStartupAttemptLabel,
+                    "reinit-stop-failed",
+                    nameof(HandleViewModelPropertyChangedAsync));
                 StopPreviewStartupOverlay();
                 ResetPreviewContentTransform();
-            }
-        }
-        else if (!ViewModel.IsPreviewReinitializing && !ViewModel.IsPreviewing)
-        {
-            ShowStartPreviewButtonPresentation();
+                break;
+
+            case PreviewReinitCompletionPresentation.ShowStartPreviewButton:
+                ShowStartPreviewButtonPresentation();
+                break;
         }
     }
 }
