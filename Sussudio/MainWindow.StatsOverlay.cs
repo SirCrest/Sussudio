@@ -3,7 +3,8 @@ using Microsoft.UI.Xaml;
 namespace Sussudio;
 
 // XAML-facing stats dock presentation and visibility adapter. Controller
-// composition lives in MainWindow.StatsOverlayComposition.cs.
+// composition lives in MainWindow.StatsOverlayComposition.cs and
+// MainWindow.StatsDockComposition.cs.
 public sealed partial class MainWindow
 {
     private void StatsToggle_Checked(object sender, RoutedEventArgs e)

@@ -1502,11 +1502,13 @@ A/V sync snapshot policy now lives in
 source/audio drift calculations and encoder drift/correction projection there.
 
 Stats dock, stats toggle, and frame-time overlay lifecycle now live in
-`Sussudio/Controllers/StatsOverlayController.cs`. Controller graph construction
-and XAML dependency wiring now live in
-`Sussudio/MainWindow.StatsOverlayComposition.cs`; `MainWindow.StatsOverlay.cs`
-is now the XAML-facing adapter for stats toggle events, stats dock visibility,
-and polling commands. Stats toggle checked/unchecked behavior,
+`Sussudio/Controllers/StatsOverlayController.cs`. Stats overlay controller graph
+construction now lives in `Sussudio/MainWindow.StatsOverlayComposition.cs`, and
+stats dock presentation/diagnostic/hardware/refresh controller graph wiring now
+lives in `Sussudio/MainWindow.StatsDockComposition.cs`;
+`MainWindow.StatsOverlay.cs` is now the XAML-facing adapter for stats toggle
+events, stats dock visibility, and polling commands. Stats toggle
+checked/unchecked behavior,
 initial/property-changed visibility sync, polling, visibility state, dock
 refresh ordering, dynamic diagnostic row pools, dock metric value/brush
 application, and dock animations are out of the event adapter.
