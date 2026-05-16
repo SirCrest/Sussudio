@@ -9,10 +9,10 @@ static partial class Program
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlPresentationController.cs").Replace("\r\n", "\n");
         var audioMeterText = ReadRepoFile("Sussudio/MainWindow.AudioMeter.cs").Replace("\r\n", "\n");
-        var audioMeterControllerRootText = ReadRepoFile("Sussudio/Controllers/Audio/AudioMeterController.cs").Replace("\r\n", "\n");
-        var audioMeterContextText = ReadRepoFile("Sussudio/Controllers/Audio/AudioMeterController.Context.cs").Replace("\r\n", "\n");
-        var audioMeterStateText = ReadRepoFile("Sussudio/Controllers/Audio/AudioMeterController.MeterState.cs").Replace("\r\n", "\n");
-        var audioMeterAnimationsText = ReadRepoFile("Sussudio/Controllers/Audio/AudioMeterController.PresentationAnimations.cs").Replace("\r\n", "\n");
+        var audioMeterControllerRootText = ReadRepoFile("Sussudio/Controllers/Audio/Meter/AudioMeterController.cs").Replace("\r\n", "\n");
+        var audioMeterContextText = ReadRepoFile("Sussudio/Controllers/Audio/Meter/AudioMeterController.Context.cs").Replace("\r\n", "\n");
+        var audioMeterStateText = ReadRepoFile("Sussudio/Controllers/Audio/Meter/AudioMeterController.MeterState.cs").Replace("\r\n", "\n");
+        var audioMeterAnimationsText = ReadRepoFile("Sussudio/Controllers/Audio/Meter/AudioMeterController.PresentationAnimations.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelStateText, "IsAudioPreviewActive");

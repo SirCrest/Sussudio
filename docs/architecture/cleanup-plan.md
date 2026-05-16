@@ -616,7 +616,7 @@ MainWindow shell ownership tests mirror these runtime owners through focused
 runtime, and window lifecycle contracts.
 
 Audio and microphone meter rendering now lives in the
-`Sussudio/Controllers/Audio/AudioMeterController*.cs` family: the root
+`Sussudio/Controllers/Audio/Meter/AudioMeterController*.cs` family: the root
 controller owns setup, `AudioMeterController.Context.cs` owns XAML/view-model
 dependencies, `AudioMeterController.MeterState.cs` owns smoothing, markers,
 resets, timer lifetime, and `TranslateMarker`, and
