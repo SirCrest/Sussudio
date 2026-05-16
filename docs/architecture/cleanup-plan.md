@@ -653,8 +653,9 @@ monitoring lives in
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`, and WASAPI
 playback attach/detach ordering lives in
 `Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs`. These files
-preserve the root service transition lock while keeping mic cleanup and
-playback routing from collapsing back into the general audio partial.
+preserve the root service transition lock while keeping mic cleanup,
+post-recording mic monitor restart, and playback routing from collapsing back
+into the general audio partial.
 
 Explicit capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.Cleanup.cs`. That file owns the
@@ -703,6 +704,10 @@ reuse, standard LibAv recording startup, and start-rollback ordering. Recording
 stop lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs`, including
 normal stop routing and the emergency stop overload that feeds finalization.
+`Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs` owns
+backend stop/finalize routing and shared post-stop state cleanup while
+delegating post-recording microphone monitor restart mechanics to
+`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.
 
 Transient recording-start rollback cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingRollback.cs`. That file owns

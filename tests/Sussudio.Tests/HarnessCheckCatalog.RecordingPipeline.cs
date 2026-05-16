@@ -18,6 +18,9 @@ static partial class Program
             "Capture service audio ownership lives in focused partials",
             CaptureService_AudioOwnershipLivesInFocusedPartials);
         await AddCheckAsync(results,
+            "Capture service microphone restart after recording lives in microphone monitor partial",
+            CaptureService_MicrophoneRestartAfterRecordingLivesInMicrophoneMonitorPartial);
+        await AddCheckAsync(results,
             "LibAv recording stop validates final output",
             LibAvRecordingSink_StopValidatesFinalOutput);
         await AddCheckAsync(results,

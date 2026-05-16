@@ -370,7 +370,8 @@ Important entry points:
 - `CaptureService.Audio.cs` owns audio preview, capture-failure handling, and
   live audio input switching.
 - `CaptureService.MicrophoneMonitor.cs` owns microphone monitoring, mic-level
-  event projection, preview-time mic writer attachment, and mic capture cleanup.
+  event projection, preview-time mic writer attachment, post-recording mic
+  monitor restart, and mic capture cleanup.
 - `CaptureService.WasapiPlayback.cs` owns WASAPI playback startup/shutdown,
   audio-monitor attach/detach order, and playback best-effort cleanup helpers.
 - `CaptureService.Cleanup.cs` owns explicit cleanup transitions, app shutdown
@@ -453,7 +454,8 @@ Important entry points:
   owns normal and emergency recording stop transition routing.
 - `CaptureService.RecordingFinalizeRecord.cs` owns recording stop/finalize
   routing for active Flashback and LibAv backends plus shared post-stop state
-  cleanup.
+  cleanup; microphone monitor restart mechanics are delegated to
+  `CaptureService.MicrophoneMonitor.cs`.
 - `CaptureService.RecordingFinalizeFlashback.cs` owns Flashback recording
   export finalization, live-edge boundary snapshots, and cancellation-result
   classification.
@@ -1119,7 +1121,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/CaptureService.FlashbackOrchestrationSource.Tests.cs`
   owns the source family helper for Flashback backend orchestration partials
   and recording finalization partials plus the focused-partial ownership
-  contracts.
+  contracts, including post-recording microphone monitor restart ownership.
 - `tests/Sussudio.Tests/CaptureCadence.Tests.cs` owns packet-hash duplicate
   cadence and visual-cadence crop sampling assertions.
 - `tests/Sussudio.Tests/UnifiedVideoCapture.Runtime.Tests.cs` owns

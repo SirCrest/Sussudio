@@ -146,6 +146,8 @@ static partial class Program
             captureServiceSource,
             "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync",
             "private async Task DisposeTransientRecordingBackendAsync");
+        var microphoneMonitorText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs")
+            .Replace("\r\n", "\n");
         AssertContains(stopRecordingBackend, "OperationCanceledException? flashbackCancellationException = null;");
         AssertContains(stopRecordingBackend, "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");");
         AssertContains(stopRecordingBackend, "if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))");
@@ -193,15 +195,24 @@ static partial class Program
             stopRecordingBackend,
             "// Restart mic monitoring if preview is still active",
             "if (fbResult.Succeeded)");
-        AssertContains(flashbackMicMonitorRestart, "WasapiAudioCapture? micCapture = null;");
+        AssertContains(flashbackMicMonitorRestart, "await RestartMicrophoneMonitorAfterRecordingAsync(");
+        AssertContains(flashbackMicMonitorRestart, "OnlyWhenMissing: true,");
+        AssertContains(flashbackMicMonitorRestart, "FlashbackAttachReason: null,");
+        AssertContains(flashbackMicMonitorRestart, "RestartLogEvent: null,");
+        AssertContains(flashbackMicMonitorRestart, "DisposeWarningEvent: \"FLASHBACK_MIC_RESTART_DISPOSE_WARN\"");
         AssertContains(flashbackMicMonitorRestart, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
         AssertContains(flashbackMicMonitorRestart, "flashbackCancellationException ??= new OperationCanceledException(cancellationToken);");
-        AssertContains(flashbackMicMonitorRestart, "FLASHBACK_MIC_RESTART_DISPOSE_WARN");
+        AssertContains(flashbackMicMonitorRestart, "FLASHBACK_MIC_RESTART_WARN type={ex.GetType().Name} error='{ex.Message}'");
+        AssertDoesNotContain(flashbackMicMonitorRestart, "WasapiAudioCapture? micCapture = null;");
+        AssertDoesNotContain(flashbackMicMonitorRestart, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
+        AssertContains(microphoneMonitorText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
+        AssertContains(microphoneMonitorText, "if (options.OnlyWhenMissing && _microphoneCapture != null)");
+        AssertContains(microphoneMonitorText, "FLASHBACK_MIC_ATTACH_OK reason='{options.FlashbackAttachReason}'");
+        AssertContains(microphoneMonitorText, "Logger.Log($\"{options.DisposeWarningEvent} type={disposeEx.GetType().Name} msg={disposeEx.Message}\");");
         AssertOccursBefore(
-            flashbackMicMonitorRestart,
+            microphoneMonitorText,
             "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));",
             "_microphoneCapture = micCapture;");
-        AssertContains(flashbackMicMonitorRestart, "_microphoneCapture = micCapture;\n                        micCapture = null;");
         AssertContains(captureServiceSource, "private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)");
         AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback export cancelled.\", StringComparison.Ordinal)");
         AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback recording finalize cancelled.\", StringComparison.Ordinal)");
@@ -209,15 +220,16 @@ static partial class Program
             stopRecordingBackend,
             "var wasapiAudioCaptureFaulted = Volatile.Read(ref _wasapiAudioCaptureFaulted);",
             "_lastOutputPath = result.OutputPath;");
-        AssertContains(standardMicMonitorRestart, "WasapiAudioCapture? micCapture = null;");
+        AssertContains(standardMicMonitorRestart, "await RestartMicrophoneMonitorAfterRecordingAsync(");
+        AssertContains(standardMicMonitorRestart, "OnlyWhenMissing: false,");
+        AssertContains(standardMicMonitorRestart, "FlashbackAttachReason: \"mic_monitor_restart\",");
+        AssertContains(standardMicMonitorRestart, "RestartLogEvent: \"MIC_MONITOR_RESTART\",");
+        AssertContains(standardMicMonitorRestart, "DisposeWarningEvent: \"MIC_MONITOR_RESTART_DISPOSE_WARN\"");
         AssertContains(standardMicMonitorRestart, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
         AssertContains(standardMicMonitorRestart, "cancellationException ??= new OperationCanceledException(cancellationToken);");
-        AssertContains(standardMicMonitorRestart, "MIC_MONITOR_RESTART_DISPOSE_WARN");
-        AssertOccursBefore(
-            standardMicMonitorRestart,
-            "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));",
-            "_microphoneCapture = micCapture;");
-        AssertContains(standardMicMonitorRestart, "_microphoneCapture = micCapture;\n                micCapture = null;");
+        AssertContains(standardMicMonitorRestart, "Mic monitor restart failed (non-fatal): ");
+        AssertDoesNotContain(standardMicMonitorRestart, "WasapiAudioCapture? micCapture = null;");
+        AssertContains(microphoneMonitorText, "Logger.Log($\"{options.RestartLogEvent} device='\" + (_micMonitorDeviceName ?? \"?\") + \"'\");");
         var disposeFlashbackPreviewBackendCore = ExtractSourceBlock(
             captureServiceSource,
             "private async Task DisposeFlashbackPreviewBackendCoreAsync",

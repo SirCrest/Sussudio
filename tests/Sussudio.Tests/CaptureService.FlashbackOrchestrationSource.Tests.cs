@@ -101,12 +101,49 @@ static partial class Program
         AssertContains(microphoneText, "public Task UpdateMicrophoneMonitorAsync(");
         AssertContains(microphoneText, "private async Task DisposeMicrophoneCaptureAsync()");
         AssertContains(microphoneText, "private void OnMicrophoneAudioLevelUpdated(");
+        AssertContains(microphoneText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
+        AssertContains(microphoneText, "private readonly record struct MicrophoneMonitorRestartOptions(");
 
         AssertContains(playbackText, "private async Task StartWasapiPlaybackAsync(");
         AssertContains(playbackText, "private void StopWasapiPlayback()");
         AssertContains(playbackText, "private void DetachWasapiAudioCapture(");
         AssertContains(playbackText, "private static void SafeClearWasapiCapturePlayback(");
         AssertContains(playbackText, "private static void DisposeWasapiPlaybackBestEffort(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_MicrophoneRestartAfterRecordingLivesInMicrophoneMonitorPartial()
+    {
+        var finalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
+            .Replace("\r\n", "\n");
+        var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(microphoneText, "private readonly record struct MicrophoneMonitorRestartOptions(");
+        AssertContains(microphoneText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
+        AssertContains(microphoneText, "new WasapiAudioCapture()");
+        AssertContains(microphoneText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
+        AssertContains(microphoneText, "micCapture.CaptureFailed += OnWasapiCaptureFailed;");
+        AssertContains(microphoneText, "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));");
+        AssertContains(microphoneText, "FLASHBACK_MIC_ATTACH_OK reason='{options.FlashbackAttachReason}'");
+        AssertContains(microphoneText, "Logger.Log($\"{options.RestartLogEvent} device='\" + (_micMonitorDeviceName ?? \"?\") + \"'\");");
+        AssertContains(microphoneText, "Logger.Log($\"{options.DisposeWarningEvent} type={disposeEx.GetType().Name} msg={disposeEx.Message}\");");
+        AssertOccursBefore(
+            microphoneText,
+            "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));",
+            "_microphoneCapture = micCapture;");
+
+        AssertContains(finalizationText, "await RestartMicrophoneMonitorAfterRecordingAsync(");
+        AssertContains(finalizationText, "OnlyWhenMissing: true,");
+        AssertContains(finalizationText, "DisposeWarningEvent: \"FLASHBACK_MIC_RESTART_DISPOSE_WARN\"");
+        AssertContains(finalizationText, "OnlyWhenMissing: false,");
+        AssertContains(finalizationText, "FlashbackAttachReason: \"mic_monitor_restart\",");
+        AssertContains(finalizationText, "RestartLogEvent: \"MIC_MONITOR_RESTART\",");
+        AssertContains(finalizationText, "DisposeWarningEvent: \"MIC_MONITOR_RESTART_DISPOSE_WARN\"");
+        AssertDoesNotContain(finalizationText, "WasapiAudioCapture? micCapture = null;");
+        AssertDoesNotContain(finalizationText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
+        AssertDoesNotContain(finalizationText, "micCapture.CaptureFailed += OnWasapiCaptureFailed;");
 
         return Task.CompletedTask;
     }

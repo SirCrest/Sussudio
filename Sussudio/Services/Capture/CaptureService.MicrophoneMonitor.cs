@@ -9,6 +9,12 @@ namespace Sussudio.Services.Capture;
 // Microphone monitoring and preview-time microphone writer attachment.
 public partial class CaptureService
 {
+    private readonly record struct MicrophoneMonitorRestartOptions(
+        bool OnlyWhenMissing,
+        string? FlashbackAttachReason,
+        string? RestartLogEvent,
+        string DisposeWarningEvent);
+
     private void OnMicrophoneAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
     {
         MicrophoneAudioLevelUpdated?.Invoke(this, e);
@@ -116,4 +122,54 @@ public partial class CaptureService
                 throw;
             }
         }, cancellationToken);
+
+    private async Task RestartMicrophoneMonitorAfterRecordingAsync(
+        MicrophoneMonitorRestartOptions options,
+        CancellationToken cancellationToken)
+    {
+        if (!_isVideoPreviewActive || !_micMonitorEnabled || string.IsNullOrWhiteSpace(_micMonitorDeviceId))
+        {
+            return;
+        }
+
+        if (options.OnlyWhenMissing && _microphoneCapture != null)
+        {
+            return;
+        }
+
+        WasapiAudioCapture? micCapture = null;
+        try
+        {
+            micCapture = new WasapiAudioCapture();
+            await micCapture.InitializeAsync(_micMonitorDeviceId, cancellationToken).ConfigureAwait(false);
+            micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
+            micCapture.CaptureFailed += OnWasapiCaptureFailed;
+            micCapture.Start();
+            if (_flashbackSink is { MicrophoneEnabled: true } fbSink)
+            {
+                micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
+                if (!string.IsNullOrWhiteSpace(options.FlashbackAttachReason))
+                {
+                    Logger.Log($"FLASHBACK_MIC_ATTACH_OK reason='{options.FlashbackAttachReason}'");
+                }
+            }
+
+            _microphoneCapture = micCapture;
+            micCapture = null;
+            if (!string.IsNullOrWhiteSpace(options.RestartLogEvent))
+            {
+                Logger.Log($"{options.RestartLogEvent} device='" + (_micMonitorDeviceName ?? "?") + "'");
+            }
+        }
+        finally
+        {
+            if (micCapture != null)
+            {
+                micCapture.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
+                micCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                try { await micCapture.DisposeAsync().ConfigureAwait(false); }
+                catch (Exception disposeEx) { Logger.Log($"{options.DisposeWarningEvent} type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
+            }
+        }
+    }
 }
