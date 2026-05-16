@@ -565,16 +565,16 @@ now lives in `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
 surface sizing, GPU panel visibility, and video/control-bar composition shadows
 now live in `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs`,
 while `Sussudio/MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
-`Sussudio/Controllers/PreviewRenderer/PreviewRendererStartupPlanBuilder.cs` owns renderer
+`Sussudio/Controllers/Preview/Renderer/PreviewRendererStartupPlanBuilder.cs` owns renderer
 startup dimension/fps/HDR/min-present-interval planning.
-`Sussudio/Controllers/PreviewRenderer/PreviewRendererHostController.cs` owns hosted preview
+`Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview
 renderer context, public runtime state, counters, and simple renderer surface
-methods. `Sussudio/Controllers/PreviewRenderer/PreviewRendererHostController.Lifecycle.cs` owns
+methods. `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Lifecycle.cs` owns
 start/stop/shutdown flow, renderer startup planning, and cleanup.
-`Sussudio/Controllers/PreviewRenderer/PreviewRendererHostController.D3D.cs` owns D3D renderer
+`Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.D3D.cs` owns D3D renderer
 startup and event/failure handling.
-`Sussudio/Controllers/PreviewRenderer/PreviewRendererHostController.Cpu.cs` owns CPU preview
-fallback attachment. `Sussudio/Controllers/PreviewRenderer/PreviewRendererHostController.Reinit.cs`
+`Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Cpu.cs` owns CPU preview
+fallback attachment. `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Reinit.cs`
 owns D3D reinit disposal, unsafe-window telemetry, stop tick accounting, fresh
 SwapChainPanel replacement, and retired-renderer handoff during D3D renderer
 mode switches. `MainWindow.PreviewRenderer.cs` is the XAML-facing host adapter,
@@ -584,7 +584,7 @@ adapter surface.
 dispatcher/retry wrapper for automation preview snapshot callers.
 `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns UI-thread-only preview
 state sampling. Read-only preview runtime snapshot construction now lives in
-`Sussudio/Controllers/PreviewRenderer/PreviewRuntimeSnapshotController.cs`, which owns renderer
+`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`, which owns renderer
 metrics, blank/stall suspicion, cadence projection, and D3D diagnostic fields.
 Close routing/finalization handling remains in the explicit window close
 lifecycle owners below.
