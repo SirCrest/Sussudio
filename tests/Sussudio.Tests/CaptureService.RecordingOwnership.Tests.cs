@@ -84,7 +84,8 @@ static partial class Program
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackendReconcile.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs"),
-                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs")
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBoundary.cs")
             }).Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
@@ -130,7 +131,8 @@ static partial class Program
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackendReconcile.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs"),
-                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs")
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBoundary.cs")
             }).Replace("\r\n", "\n");
         var routerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs")
             .Replace("\r\n", "\n");

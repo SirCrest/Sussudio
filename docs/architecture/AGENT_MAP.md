@@ -508,9 +508,9 @@ Important entry points:
   flag, cancellation-token handoff, and shared result routing.
 - `CaptureService.RecordingFinalizeFlashbackBackend.cs` owns active Flashback
   recording backend finalization: live-edge finalize/export handoff,
-  finalize-in-progress choreography, boundary snapshots, Flashback recording
-  integrity summaries, cancellation-result classification, outcome publication,
-  and Flashback-specific microphone monitor restart.
+  finalize-in-progress choreography, Flashback recording integrity summaries,
+  cancellation-result classification, outcome publication, and Flashback-
+  specific microphone monitor restart.
 - `CaptureService.RecordingFinalizeFlashbackBackendReconcile.cs` owns
   post-finalize Flashback backend reconciliation: failed-finalize recovery
   preservation, deferred settings apply, buffer cycling, buffer-cycle failure
@@ -529,8 +529,11 @@ Important entry points:
   recording output path, finalize status, finalize timestamp, and preserved
   artifact fields for both recording-start and recording-finalize outcomes.
 - `CaptureService.RecordingFinalizeFlashback.cs` owns Flashback recording
-  export finalization, live-edge boundary snapshots, and cancellation-result
-  classification.
+  export finalization and cancellation-result classification.
+- `CaptureService.RecordingFinalizeFlashbackBoundary.cs` owns Flashback
+  recording live-edge boundary snapshots, including idempotent
+  `EndFlashbackRecordingAccounting()` calls, source-frame counters, recording
+  integrity counters, and audio integrity counters.
 - `CaptureService.RecordingRollback.cs` owns transient backend teardown after
   recording-start failures, including the failure log/last-failure update,
   Flashback rollback accounting, rollback artifact cleanup, best-effort sink,
