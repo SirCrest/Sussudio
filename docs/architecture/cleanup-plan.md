@@ -623,7 +623,7 @@ resets, timer lifetime, and `TranslateMarker`, and
 `AudioMeterController.PresentationAnimations.cs` owns monitoring/disabled
 animations and rounded clips. Audio/microphone initial control projection and
 event hookup now live in the
-`Sussudio/Controllers/AudioControlBindingController*.cs` family: the root owns
+`Sussudio/Controllers/Audio/AudioControlBindingController*.cs` family: the root owns
 the controller shell and context lifetime, `.Context.cs` owns the XAML control
 dependency bag, `.InitialState.cs` owns initial audio/microphone projection plus
 preview-volume binding and priming, `.Selections.cs` owns

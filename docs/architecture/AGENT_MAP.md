@@ -888,9 +888,9 @@ Primary current owners:
   `Sussudio/Controllers/Audio/AudioMeterController.PresentationAnimations.cs` owns
   monitoring/disabled animations plus rounded content clips.
   `Sussudio/MainWindow.AudioMeter.cs` is its XAML-facing adapter.
-  `Sussudio/Controllers/AudioControlBindingController.cs` owns the audio-control
+  `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns the audio-control
   binding controller shell and context lifetime.
-  `Sussudio/Controllers/AudioControlBindingController.Context.cs` owns the XAML
+  `Sussudio/Controllers/Audio/AudioControlBindingController.Context.cs` owns the XAML
   control dependency bag, `AudioControlBindingController.InitialState.cs` owns
   initial audio/microphone projection plus preview-volume binding and priming,
   `AudioControlBindingController.Selections.cs` owns audio/microphone/device
@@ -1962,9 +1962,9 @@ Primary current owners:
   `Sussudio/Controllers/CaptureSelectionBindingController.PropertyChanges.cs`
   owns the capture-selection `PropertyChanged` router.
   `MainWindow.CaptureSelectionBindings.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/AudioControlBindingController.cs` owns the audio-control
+- `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns the audio-control
   binding controller shell and context lifetime.
-  `Sussudio/Controllers/AudioControlBindingController.Context.cs` owns the XAML
+  `Sussudio/Controllers/Audio/AudioControlBindingController.Context.cs` owns the XAML
   control dependency bag, `AudioControlBindingController.InitialState.cs` owns
   initial audio/microphone projection plus preview-volume binding and priming,
   `AudioControlBindingController.Selections.cs` owns audio/microphone/device
