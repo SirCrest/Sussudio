@@ -16,7 +16,6 @@ static partial class Program
         var deviceAudioText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs").Replace("\r\n", "\n");
         var propertyChangesText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.PropertyChanges.cs").Replace("\r\n", "\n");
         var selectionSyncText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.SelectionSync.cs").Replace("\r\n", "\n");
-        var selectionStateText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.SelectionState.cs").Replace("\r\n", "\n");
         var deviceSelectionText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.DeviceSelection.cs").Replace("\r\n", "\n");
         var audioSelectionText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.AudioSelection.cs").Replace("\r\n", "\n");
         var captureModeSelectionText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.CaptureModeSelection.cs").Replace("\r\n", "\n");
@@ -90,7 +89,10 @@ static partial class Program
         AssertContains(controllerText, "internal sealed partial class CaptureSelectionBindingController");
         AssertContains(contextText, "internal sealed class CaptureSelectionBindingControllerContext");
         AssertContains(selectionSyncText, "private readonly int[] _selectionSyncQueued = new int[9];");
-        AssertContains(selectionStateText, "internal sealed partial class CaptureSelectionBindingController");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "CaptureSelectionBindingController.SelectionState.cs")),
+            "empty selection-state marker partial should stay removed");
         AssertContains(deviceSelectionText, "internal sealed partial class CaptureSelectionBindingController");
         AssertContains(audioSelectionText, "internal sealed partial class CaptureSelectionBindingController");
         AssertContains(captureModeSelectionText, "internal sealed partial class CaptureSelectionBindingController");
@@ -170,16 +172,6 @@ static partial class Program
         AssertOccursBefore(recordingSelectionText, "public void EnsureFormatSelection()", "public void EnsureQualitySelection()");
         AssertOccursBefore(recordingSelectionText, "public void EnsureQualitySelection()", "public void EnsurePresetSelection()");
         AssertOccursBefore(recordingSelectionText, "public void EnsurePresetSelection()", "public void EnsureSplitEncodeModeSelection()");
-        AssertDoesNotContain(selectionStateText, "public void EnsureDeviceSelection()");
-        AssertDoesNotContain(selectionStateText, "public void HandleSelectedDevicePropertyChanged()");
-        AssertDoesNotContain(selectionStateText, "public void EnsureAudioInputSelection()");
-        AssertDoesNotContain(selectionStateText, "public void EnsureMicrophoneSelection()");
-        AssertDoesNotContain(selectionStateText, "public void EnsureResolutionSelection()");
-        AssertDoesNotContain(selectionStateText, "public void EnsureFrameRateSelection()");
-        AssertDoesNotContain(selectionStateText, "public void EnsureFormatSelection()");
-        AssertDoesNotContain(selectionStateText, "public void EnsureQualitySelection()");
-        AssertDoesNotContain(selectionStateText, "public void EnsurePresetSelection()");
-        AssertDoesNotContain(selectionStateText, "public void EnsureSplitEncodeModeSelection()");
         AssertDoesNotContain(selectionFamilyText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
         AssertDoesNotContain(selectionFamilyText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
         AssertDoesNotContain(selectionFamilyText, "private static void EnsureStringComboBoxSelection(");

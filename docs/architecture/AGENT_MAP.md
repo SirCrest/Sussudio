@@ -1922,8 +1922,6 @@ Primary current owners:
   `Sussudio/Controllers/CaptureSelectionBindingController.SelectionSync.cs` owns
   collection-change debounce/queued sync plus available-option property-change
   rebinding,
-  `Sussudio/Controllers/CaptureSelectionBindingController.SelectionState.cs`
-  is the selection-state family marker,
   `Sussudio/Controllers/CaptureSelectionBindingController.DeviceSelection.cs`
   owns capture-device ComboBox/ViewModel synchronization and selected-device
   property-change mismatch logging,
