@@ -1,9 +1,12 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
+using Xunit;
 
-static partial class Program
+public sealed class CaptureServiceHealthSnapshotOwnershipTests
 {
-    private static Task CaptureService_HealthSnapshotAssemblyLivesInFocusedPartial()
+    [Fact]
+    public void CaptureService_HealthSnapshotAssemblyLivesInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -17,10 +20,10 @@ static partial class Program
         AssertContains(healthSnapshotAssemblerText, "TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(snapshotUtcUnixMs),");
         AssertDoesNotContain(healthSnapshotText, "return new CaptureHealthSnapshot");
 
-        return Task.CompletedTask;
     }
 
-    private static Task CaptureService_HealthSnapshotFlashbackExportFields_LiveInFocusedPartial()
+    [Fact]
+    public void CaptureService_HealthSnapshotFlashbackExportFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -49,10 +52,10 @@ static partial class Program
         AssertContains(flashbackExportText, "ThroughputBytesPerSec = throughputBytesPerSec");
         AssertContains(flashbackExportText, "FinalizeResult? LastResult");
 
-        return Task.CompletedTask;
     }
 
-    private static Task CaptureService_HealthSnapshotFlashbackBufferFields_LiveInFocusedPartial()
+    [Fact]
+    public void CaptureService_HealthSnapshotFlashbackBufferFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -75,10 +78,10 @@ static partial class Program
         AssertContains(flashbackBufferText, "fbSink?.EncoderFrameRateDenominator");
         AssertContains(flashbackBufferText, "private readonly record struct FlashbackBufferHealthSnapshotFields");
 
-        return Task.CompletedTask;
     }
 
-    private static Task CaptureService_HealthSnapshotRecordingFields_LiveInFocusedPartial()
+    [Fact]
+    public void CaptureService_HealthSnapshotRecordingFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -99,10 +102,10 @@ static partial class Program
         AssertContains(recordingText, "Interlocked.Read(ref _videoFramesDropped)");
         AssertContains(recordingText, "private readonly record struct RecordingHealthSnapshotFields");
 
-        return Task.CompletedTask;
     }
 
-    private static Task CaptureService_HealthSnapshotFlashbackQueueFields_LiveInFocusedPartial()
+    [Fact]
+    public void CaptureService_HealthSnapshotFlashbackQueueFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -126,10 +129,10 @@ static partial class Program
         AssertContains(flashbackQueueText, "fbSink?.LastGpuQueueRejectReason ?? string.Empty");
         AssertContains(flashbackQueueText, "private readonly record struct FlashbackQueueHealthSnapshotFields");
 
-        return Task.CompletedTask;
     }
 
-    private static Task CaptureService_HealthSnapshotFlashbackPlaybackFields_LiveInFocusedPartial()
+    [Fact]
+    public void CaptureService_HealthSnapshotFlashbackPlaybackFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -151,10 +154,10 @@ static partial class Program
         AssertContains(flashbackPlaybackText, "fbPlayback?.GetPlaybackDecodeMetrics() ?? default");
         AssertContains(flashbackPlaybackText, "private readonly record struct FlashbackPlaybackHealthSnapshotFields");
 
-        return Task.CompletedTask;
     }
 
-    private static Task CaptureService_HealthSnapshotSourceTelemetryFields_LiveInFocusedPartial()
+    [Fact]
+    public void CaptureService_HealthSnapshotSourceTelemetryFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -176,10 +179,10 @@ static partial class Program
         AssertContains(sourceTelemetryText, "ResolveSourceTelemetryCircuitState(telemetry.Availability, suppressed)");
         AssertContains(sourceTelemetryText, "private readonly record struct SourceTelemetryHealthSnapshotFields");
 
-        return Task.CompletedTask;
     }
 
-    private static Task CaptureService_HealthSnapshotCaptureCadenceFields_LiveInFocusedPartial()
+    [Fact]
+    public void CaptureService_HealthSnapshotCaptureCadenceFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -199,10 +202,10 @@ static partial class Program
         AssertContains(captureCadenceText, "default(MfSourceReaderVideoCapture.SourceCadenceMetrics)");
         AssertContains(captureCadenceText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
 
-        return Task.CompletedTask;
     }
 
-    private static Task CaptureService_HealthSnapshotMjpegFields_LiveInFocusedPartial()
+    [Fact]
+    public void CaptureService_HealthSnapshotMjpegFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -229,10 +232,10 @@ static partial class Program
         AssertContains(mjpegText, "new MjpegDecoderHealthSnapshot(");
         AssertContains(mjpegText, "private readonly record struct MjpegHealthSnapshotFields");
 
-        return Task.CompletedTask;
     }
 
-    private static Task CaptureService_HealthSnapshotAvSyncFields_LiveInFocusedPartial()
+    [Fact]
+    public void CaptureService_HealthSnapshotAvSyncFields_LiveInFocusedPartial()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -253,8 +256,39 @@ static partial class Program
         AssertContains(avSyncText, "var (encoderDriftMs, encoderCorrectionSamples) = GetEncoderAvSyncDrift();");
         AssertContains(avSyncText, "private readonly record struct AvSyncHealthSnapshotFields");
 
-        return Task.CompletedTask;
     }
+
+    private static void AssertContains(string text, string expected)
+        => Assert.Contains(expected, text);
+
+    private static void AssertDoesNotContain(string text, string expected)
+        => Assert.DoesNotContain(expected, text);
+
+    private static string ReadRepoFile(string relativePath)
+    {
+        var path = Path.Combine(FindRepoRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar));
+        return File.ReadAllText(path);
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(Environment.CurrentDirectory);
+        while (dir != null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "Sussudio.slnx")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException("Could not find Sussudio repo root.");
+    }
+}
+
+static partial class Program
+{
 
     private static async Task CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails()
     {

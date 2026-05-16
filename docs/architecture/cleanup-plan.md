@@ -2523,7 +2523,9 @@ Remaining `tools/Common` ownership:
    in `MainViewModel.Disposal.cs`. Automation-facing capture runtime, health,
    recording, and probe snapshot projection now lives in
    `MainViewModel.AutomationSnapshots.cs`; automation-facing view-model runtime
-   snapshot projection now lives in `MainViewModel.ViewModelRuntimeSnapshot.cs`;
+   snapshot UI-thread capture now lives in
+   `MainViewModel.ViewModelRuntimeSnapshot.cs`; pure view-model runtime snapshot DTO
+   construction lives in `ViewModelRuntimeSnapshotBuilder.cs`;
    automation options UI-thread snapshot capture now lives in
    `MainViewModel.AutomationOptionsSnapshot.cs`; pure selected-control-state DTO
    construction lives in `AutomationOptionsSnapshotBuilder.cs`.

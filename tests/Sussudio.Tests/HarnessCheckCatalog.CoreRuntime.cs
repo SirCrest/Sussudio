@@ -42,27 +42,6 @@ static partial class Program
             "Health snapshot propagates structured source telemetry details",
             CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails);
         await AddCheckAsync(results,
-            "Health snapshot assembly lives in focused partial",
-            CaptureService_HealthSnapshotAssemblyLivesInFocusedPartial);
-        await AddCheckAsync(results,
-            "Health snapshot Flashback export fields live in focused partial",
-            CaptureService_HealthSnapshotFlashbackExportFields_LiveInFocusedPartial);
-        await AddCheckAsync(results,
-            "Health snapshot Flashback buffer fields live in focused partial",
-            CaptureService_HealthSnapshotFlashbackBufferFields_LiveInFocusedPartial);
-        await AddCheckAsync(results,
-            "Health snapshot recording fields live in focused partial",
-            CaptureService_HealthSnapshotRecordingFields_LiveInFocusedPartial);
-        await AddCheckAsync(results,
-            "Health snapshot Flashback queue fields live in focused partial",
-            CaptureService_HealthSnapshotFlashbackQueueFields_LiveInFocusedPartial);
-        await AddCheckAsync(results,
-            "Health snapshot Flashback playback fields live in focused partial",
-            CaptureService_HealthSnapshotFlashbackPlaybackFields_LiveInFocusedPartial);
-        await AddCheckAsync(results,
-            "Health snapshot AV-sync fields live in focused partial",
-            CaptureService_HealthSnapshotAvSyncFields_LiveInFocusedPartial);
-        await AddCheckAsync(results,
             "Automation snapshots expose high-confidence source telemetry fields",
             AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields);
         await AddCheckAsync(results,
