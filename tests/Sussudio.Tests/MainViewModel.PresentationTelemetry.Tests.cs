@@ -77,12 +77,14 @@ static partial class Program
     private static Task SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
     {
         var telemetryText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Telemetry.cs").Replace("\r\n", "\n");
+        var autoResolutionPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionPresentation.cs").Replace("\r\n", "\n");
         var builderText = ReadRepoFile("Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs").Replace("\r\n", "\n");
 
         AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(_latestSourceTelemetry, DateTimeOffset.UtcNow);");
         AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(snapshot, DateTimeOffset.UtcNow);");
         AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildTargetSummary(");
         AssertContains(telemetryText, "GetSelectedResolutionDisplayText(),");
+        AssertContains(autoResolutionPresentationText, "private string GetSelectedResolutionDisplayText()");
         AssertDoesNotContain(telemetryText, "private static string BuildSourceTelemetrySummaryText(");
         AssertDoesNotContain(telemetryText, "private static string BuildTelemetryAgeText(");
         AssertDoesNotContain(telemetryText, "Source: waiting for signal telemetry");

@@ -2219,8 +2219,9 @@ Primary current owners:
   MJPG HFR preservation, session mismatch, and active-capture restore.
   `MainViewModel.AutoResolutionOptions.cs` owns automatic resolution ranking
   and source-aware auto-selection. `MainViewModel.AutoResolutionState.cs` owns
-  effective Source resolution state, display text, auto-value detection, and
-  effective resolution query helpers.
+  effective Source resolution state, auto-value detection, and effective
+  resolution query helpers. `MainViewModel.AutoResolutionPresentation.cs` owns
+  auto-resolution display text used by status and telemetry presentation.
   `Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs` owns the pure
   resolution selection facade. `CaptureResolutionSelectionPolicy.Support.cs`
   owns parsing and frame-rate support checks. `CaptureResolutionSelectionPolicy.Ranking.cs`

@@ -21,32 +21,6 @@ public partial class MainViewModel
         AutoResolvedFrameRate = null;
     }
 
-    private string GetSelectedResolutionDisplayText()
-    {
-        if (string.IsNullOrWhiteSpace(SelectedResolution))
-        {
-            return "?";
-        }
-
-        if (!IsAutoResolutionValue(SelectedResolution))
-        {
-            return SelectedResolution;
-        }
-
-        var friendlyRate = SelectedFriendlyFrameRate
-            ?? (AutoResolvedFrameRate.HasValue
-                ? Math.Round(AutoResolvedFrameRate.Value, MidpointRounding.AwayFromZero)
-                : (double?)null);
-        if (AutoResolvedWidth.HasValue &&
-            AutoResolvedHeight.HasValue &&
-            friendlyRate.HasValue)
-        {
-            return $"{AutoResolutionValue} ({GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value)} @ {friendlyRate.Value:0} fps)";
-        }
-
-        return AutoResolutionValue;
-    }
-
     private static bool IsAutoResolutionValue(string? resolutionValue)
         => string.Equals(resolutionValue, AutoResolutionValue, StringComparison.OrdinalIgnoreCase);
 
