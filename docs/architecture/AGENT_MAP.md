@@ -1434,6 +1434,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` is the architecture-doc test
   family marker shell. `ArchitectureDocs.AgentMapReferences.Tests.cs` owns
   AGENT_MAP file/folder reference drift checks;
+  `ArchitectureDocs.SourceReferencePaths.Tests.cs` owns literal `ReadRepoFile`
+  source-shape path drift checks;
   `ArchitectureDocs.AgentMapOwnershipPaths.Tests.cs` owns test-owner code-span
   coverage; `ArchitectureDocs.AgentMapAutomation.Tests.cs` owns README
   automation consumer checklist coverage; `ArchitectureDocs.AgentMapPresentation.Tests.cs`

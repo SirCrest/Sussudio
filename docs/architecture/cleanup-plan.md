@@ -459,9 +459,10 @@ labels and wire IDs catalog-backed, with the dynamic diagnostic-session runner
 channel intentionally remaining string-based.
 `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` is now only the
 architecture-doc test family marker shell. AGENT_MAP reference resolution,
-test-owner code-span coverage, automation consumer checklist coverage,
-UI/presentation ownership coverage, shared tool automation path coverage, and
-AGENT_MAP token/consumer helper logic live in focused
+literal `ReadRepoFile` source-shape path resolution, test-owner code-span
+coverage, automation consumer checklist coverage, UI/presentation ownership
+coverage, shared tool automation path coverage, and AGENT_MAP token/consumer
+helper logic live in focused
 `ArchitectureDocs.AgentMap*.cs` owners.
 Shared tool assembly loading and stale-build detection now live in
 `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` so the legacy harness body
