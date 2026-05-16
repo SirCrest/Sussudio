@@ -539,8 +539,9 @@ Close lifecycle state remains separate from geometry automation; see the
 explicit window close lifecycle section below for the close-state and recording
 finalization owners.
 
-UI-thread dispatching helpers and guarded async event-handler execution now
-live in `Sussudio/Controllers/Window/WindowUiDispatchController.cs`.
+UI-thread dispatching helpers, preview-snapshot-style result dispatch with
+three-attempt enqueue retry, and guarded async event-handler execution now live
+in `Sussudio/Controllers/Window/WindowUiDispatchController.cs`.
 `Sussudio/MainWindow.Dispatching.cs` keeps the stable private MainWindow adapter
 names for callers. Window close completion, close-request dispatch, and
 recording finalization are covered by the explicit window close lifecycle
@@ -587,8 +588,8 @@ SwapChainPanel replacement, and retired-renderer handoff during D3D renderer
 mode switches. `MainWindow.PreviewRenderer.cs` is the XAML-facing host adapter,
 and `Sussudio/MainWindow.PreviewRendererReinit.cs` keeps the small public/reinit
 adapter surface.
-`Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs` owns the async
-dispatcher/retry wrapper for automation preview snapshot callers.
+`Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs` is the stable automation
+preview snapshot adapter over MainWindow UI dispatching.
 `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns UI-thread-only preview
 state sampling. Read-only preview runtime snapshot construction now lives in
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`, which owns renderer
@@ -2723,10 +2724,10 @@ Remaining `tools/Common` ownership:
 
 3. Continue converting MainWindow partial concerns into controllers.
 
-   `FullScreen`, automation `Screenshot`, MainWindow UI dispatching, audio
-   meter rendering, preview startup, Flashback playback/export presentation,
-   and stats overlay/row/snapshot projection are extracted behind named
-   controllers or builders.
+   `FullScreen`, automation `Screenshot`, MainWindow UI dispatching, preview
+   runtime snapshot dispatch/sampling, audio meter rendering, preview startup,
+   Flashback playback/export presentation, and stats overlay/row/snapshot
+   projection are extracted behind named controllers or builders.
    Start the next UI cleanup from remaining broad adapters not already covered
    by controller ownership tests. Keep XAML bindings stable.
 

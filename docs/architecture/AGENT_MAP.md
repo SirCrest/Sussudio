@@ -815,8 +815,8 @@ Primary current owners:
   `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs` owns preview
   surface sizing, GPU panel visibility, and video/control-bar composition
   shadows. `MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
-- `Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs` owns the async
-  dispatcher/retry wrapper for automation preview snapshot callers.
+- `Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs` is the stable
+  automation preview snapshot adapter over MainWindow UI dispatching.
   `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns UI-thread-only preview
   state sampling. `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`
   owns the read-only preview runtime snapshot construction, including renderer
@@ -860,7 +860,8 @@ Primary current owners:
   the `_hwnd` field consumed by screenshot and window automation paths.
 - `Sussudio/Controllers/Window/WindowUiDispatchController.cs` owns MainWindow
   UI-thread direct execution, dispatcher enqueue/cancellation/error wrapping,
-  and guarded async event-handler status updates used by automation adapters and
+  preview-snapshot-style result dispatch with three-attempt enqueue retry, and
+  guarded async event-handler status updates used by automation adapters and
   XAML event handlers. `Sussudio/MainWindow.Dispatching.cs` keeps the stable
   private MainWindow adapter names for callers.
 - `Sussudio/MainWindow.Bindings.cs` owns the root `SetupBindings()`
@@ -2202,7 +2203,8 @@ Refactor direction:
 
 - Keep `MainWindow.xaml.cs` as a shell/composition root over time.
 - Keep `MainWindow.*` partials thin as XAML adapters over named controllers.
-  Preview startup, stats projection, and Flashback playback/export presentation
+  Preview startup, preview runtime snapshot dispatch/sampling, MainWindow UI
+  dispatching, stats projection, and Flashback playback/export presentation
   already have named owners; start the next UI cleanup from remaining broad
   adapters not covered by controller ownership tests.
 - Keep `MainViewModel` as a compatibility facade while moving feature state to

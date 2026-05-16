@@ -136,6 +136,82 @@ internal sealed class WindowUiDispatchController
         return completion.Task;
     }
 
+    public async Task<TResult> InvokeWithRetryAsync<TResult>(
+        Func<TResult> action,
+        string enqueueFailureMessage,
+        CancellationToken cancellationToken = default)
+    {
+        if (action == null)
+        {
+            throw new ArgumentNullException(nameof(action));
+        }
+
+        if (enqueueFailureMessage == null)
+        {
+            throw new ArgumentNullException(nameof(enqueueFailureMessage));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_context.DispatcherQueue.HasThreadAccess)
+        {
+            return action();
+        }
+
+        const int maxAttempts = 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var completion = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            CancellationTokenRegistration registration = default;
+            if (cancellationToken.CanBeCanceled)
+            {
+                registration = cancellationToken.Register(() =>
+                {
+                    completion.TrySetCanceled(cancellationToken);
+                });
+            }
+
+            var enqueued = _context.DispatcherQueue.TryEnqueue(() =>
+            {
+                try
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        completion.TrySetCanceled(cancellationToken);
+                        return;
+                    }
+
+                    completion.TrySetResult(action());
+                }
+                catch (Exception ex)
+                {
+                    completion.TrySetException(ex);
+                }
+                finally
+                {
+                    registration.Dispose();
+                }
+            });
+
+            if (enqueued)
+            {
+                return await completion.Task.ConfigureAwait(false);
+            }
+
+            registration.Dispose();
+            if (attempt >= maxAttempts)
+            {
+                break;
+            }
+
+            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+        }
+
+        throw new InvalidOperationException(enqueueFailureMessage);
+    }
+
     public async Task RunUiEventHandlerAsync(Func<Task> operation, string operationName)
     {
         try

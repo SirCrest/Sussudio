@@ -26,9 +26,14 @@ static partial class Program
         AssertContains(dispatchControllerSource, "internal sealed class WindowUiDispatchController");
         AssertContains(dispatchControllerSource, "public Task InvokeAsync(Action action, CancellationToken cancellationToken = default)");
         AssertContains(dispatchControllerSource, "public Task InvokeAsync(Func<Task> action, CancellationToken cancellationToken = default)");
+        AssertContains(dispatchControllerSource, "public async Task<TResult> InvokeWithRetryAsync<TResult>(");
         AssertContains(dispatchControllerSource, "public async Task RunUiEventHandlerAsync(Func<Task> operation, string operationName)");
         AssertContains(dispatchControllerSource, "if (_context.DispatcherQueue.HasThreadAccess)\n        {\n            action();\n            return Task.CompletedTask;\n        }");
         AssertContains(dispatchControllerSource, "if (_context.DispatcherQueue.HasThreadAccess)\n        {\n            return action();\n        }");
+        AssertContains(dispatchControllerSource, "const int maxAttempts = 3;");
+        AssertContains(dispatchControllerSource, "completion.TrySetResult(action());");
+        AssertContains(dispatchControllerSource, "await Task.Delay(50, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatchControllerSource, "throw new InvalidOperationException(enqueueFailureMessage);");
         AssertContains(dispatchControllerSource, "_context.CompleteWindowCloseRequest(new OperationCanceledException(cancellationToken));");
         AssertContains(dispatchControllerSource, "await action().ConfigureAwait(true);");
         AssertContains(dispatchControllerSource, "completion.TrySetException(new InvalidOperationException(\"Failed to enqueue window action on the UI thread.\"));");
