@@ -146,12 +146,14 @@ static partial class Program
         var commonDirectory = Path.Combine(repoRoot, "tools", "Common");
         var familyPrefixes = new[]
         {
+            "AutomationPipeClient",
+            "AutomationResponseState",
             "AutomationSnapshotFormatter",
             "DiagnosticSessionFlashbackExportScenarios",
             "DiagnosticSessionFlashbackMetrics",
         };
 
-        return EnumerateSourceFiles(commonDirectory, SearchOption.TopDirectoryOnly)
+        return EnumerateSourceFiles(commonDirectory, SearchOption.AllDirectories)
             .Select(file => NormalizeRepoRelativePath(repoRoot, file))
             .Where(file => familyPrefixes.Any(prefix =>
                 GetRepoFileName(file).StartsWith(prefix, StringComparison.Ordinal)))

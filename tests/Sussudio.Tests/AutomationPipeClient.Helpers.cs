@@ -3,11 +3,11 @@ static partial class Program
     private static string ReadAutomationPipeClientSource()
         => string.Join(
                 "\n",
-                ReadRepoFile("tools/Common/AutomationPipeClient.cs"),
-                ReadRepoFile("tools/Common/AutomationPipeClient.Transport.cs"),
-                ReadRepoFile("tools/Common/AutomationPipeClient.ConnectErrors.cs"),
-                ReadRepoFile("tools/Common/AutomationPipeClient.Commands.cs"),
-                ReadRepoFile("tools/Common/AutomationPipeClient.ResponseState.cs"),
-                ReadRepoFile("tools/Common/AutomationPipeClient.Models.cs"))
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.cs"),
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs"),
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs"),
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs"),
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs"),
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs"))
             .Replace("\r\n", "\n");
 }

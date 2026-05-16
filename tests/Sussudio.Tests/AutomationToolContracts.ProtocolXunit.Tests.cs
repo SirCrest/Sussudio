@@ -105,9 +105,9 @@ public sealed class AutomationToolContractsProtocolXunitTests
     public void AutomationPipeConnectFailures_AreClassifiedForCliAndMcp()
     {
         var sharedClientText = ReadAutomationPipeClientSource();
-        var pipeClientTransportText = RuntimeContractSource.ReadRepoFile("tools/Common/AutomationPipeClient.Transport.cs")
+        var pipeClientTransportText = RuntimeContractSource.ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var pipeClientConnectErrorsText = RuntimeContractSource.ReadRepoFile("tools/Common/AutomationPipeClient.ConnectErrors.cs")
+        var pipeClientConnectErrorsText = RuntimeContractSource.ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var ssctlPipeText = RuntimeContractSource.ReadRepoFile("tools/ssctl/PipeTransport.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
@@ -205,12 +205,12 @@ public sealed class AutomationToolContractsProtocolXunitTests
             "\n",
             new[]
             {
-                "tools/Common/AutomationPipeClient.cs",
-                "tools/Common/AutomationPipeClient.Transport.cs",
-                "tools/Common/AutomationPipeClient.ConnectErrors.cs",
-                "tools/Common/AutomationPipeClient.Commands.cs",
-                "tools/Common/AutomationPipeClient.ResponseState.cs",
-                "tools/Common/AutomationPipeClient.Models.cs"
+                "tools/Common/AutomationPipeClient/AutomationPipeClient.cs",
+                "tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs",
+                "tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs",
+                "tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs",
+                "tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs",
+                "tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs"
             }.Select(file => RuntimeContractSource.ReadRepoFile(file).Replace("\r\n", "\n", StringComparison.Ordinal)));
 
     private static string ReadDiagnosticSessionRunnerSource()

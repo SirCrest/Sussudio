@@ -2165,18 +2165,23 @@ Primary owners:
   pipe client, snapshot formatting, diagnostic sessions, diagnostic scenario
   cataloging, diagnostic-session pipe retry policy, PresentMon probing, and
   shared JSON options.
-- `tools/Common/AutomationPipeClient.cs` is the shared automation pipe client
-  marker shell used by ssctl, MCP, diagnostic sessions, and smoke tools.
-- `tools/Common/AutomationPipeClient.Transport.cs` owns named-pipe connect
-  orchestration, request/response framing, and response timeout.
-- `tools/Common/AutomationPipeClient.ConnectErrors.cs` owns pipe connect
-  failure classification and exact CLI/MCP diagnostic error codes.
-- `tools/Common/AutomationPipeClient.Commands.cs` owns command envelope sending
-  and `not_ready` retry behavior.
-- `tools/Common/AutomationPipeClient.ResponseState.cs` owns tolerant response
-  state parsing.
-- `tools/Common/AutomationPipeClient.Models.cs` owns pipe command result and
-  exception types.
+- `tools/Common/AutomationPipeClient/` owns the shared pipe-client helper family
+  used by ssctl, MCP, diagnostic sessions, and smoke tools.
+- `tools/Common/AutomationPipeClient/AutomationPipeClient.cs` is the marker
+  shell for the shared automation pipe client.
+- `tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs` owns
+  named-pipe connect orchestration, request/response framing, and response
+  timeout.
+- `tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs` owns
+  pipe connect failure classification and exact CLI/MCP diagnostic error codes.
+- `tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs` owns
+  command envelope sending and `not_ready` retry behavior.
+- `tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs` owns
+  tolerant response state parsing.
+- `tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs` owns pipe
+  command result and exception types.
+- `tools/Common/AutomationPipeClient/AutomationResponseState.cs` owns tolerant
+  response-state DTOs shared by the pipe client and tool surfaces.
 - `tools/AutomationClient/Program.cs` owns the low-level pipe client entry
   flow, cancellation handling, shared-protocol command resolution, timeout
   selection, response printing, and the local options DTO for scripts and ad

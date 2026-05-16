@@ -257,25 +257,29 @@ public sealed class ToolFormatterContractsTests
 internal static class ToolFormatterTestAssembly
 {
     private static readonly Dictionary<string, Assembly> Cache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object CacheLock = new();
 
     public static Assembly Load(string relativeAssemblyPath)
     {
         var repoRoot = FindRepoRoot();
         var fullPath = Path.GetFullPath(Path.Combine(repoRoot, relativeAssemblyPath));
-        if (Cache.TryGetValue(fullPath, out var cached))
+        lock (CacheLock)
         {
-            return cached;
-        }
+            if (Cache.TryGetValue(fullPath, out var cached))
+            {
+                return cached;
+            }
 
-        if (!File.Exists(fullPath))
-        {
-            throw new InvalidOperationException($"Required tool assembly was not found: {relativeAssemblyPath}.");
-        }
+            if (!File.Exists(fullPath))
+            {
+                throw new InvalidOperationException($"Required tool assembly was not found: {relativeAssemblyPath}.");
+            }
 
-        var loadContext = new ToolFormatterTestAssemblyLoadContext(fullPath);
-        var assembly = loadContext.LoadFromAssemblyPath(fullPath);
-        Cache[fullPath] = assembly;
-        return assembly;
+            var loadContext = new ToolFormatterTestAssemblyLoadContext(fullPath);
+            var assembly = loadContext.LoadFromAssemblyPath(fullPath);
+            Cache[fullPath] = assembly;
+            return assembly;
+        }
     }
 
     private static string FindRepoRoot()

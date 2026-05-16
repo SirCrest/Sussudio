@@ -2426,14 +2426,16 @@ health-observation classifiers, sparse cadence tolerances, and tolerated warning
 classification while the runner still owns scenario execution and warning emission.
 
 Shared automation pipe client ownership is split from a single helper into a
-focused partial family. `tools/Common/AutomationPipeClient.cs` is the public
-client marker shell, `AutomationPipeClient.Transport.cs` owns named-pipe
-connect orchestration, write/read framing, and response timeout,
-`AutomationPipeClient.ConnectErrors.cs` owns pipe connect failure
-classification and exact CLI/MCP diagnostic error codes, `AutomationPipeClient.Commands.cs`
-owns command envelope sending and `not_ready` retry policy,
-`AutomationPipeClient.ResponseState.cs` owns tolerant response-state parsing,
-and `AutomationPipeClient.Models.cs` owns command result and exception types.
+focused partial family under `tools/Common/AutomationPipeClient/`.
+`AutomationPipeClient.cs` is the public client marker shell,
+`AutomationPipeClient.Transport.cs` owns named-pipe connect orchestration,
+write/read framing, and response timeout, `AutomationPipeClient.ConnectErrors.cs`
+owns pipe connect failure classification and exact CLI/MCP diagnostic error
+codes, `AutomationPipeClient.Commands.cs` owns command envelope sending and
+`not_ready` retry policy, `AutomationPipeClient.ResponseState.cs` owns tolerant
+response-state parsing, `AutomationPipeClient.Models.cs` owns command result
+and exception types, and `AutomationResponseState.cs` owns tolerant
+response-state DTOs shared by the pipe client and tool surfaces.
 
 PresentMon model and text ownership is split from the probe runner.
 `tools/Common/PresentMonProbe.Models.cs` owns PresentMon options, result,
@@ -2462,12 +2464,13 @@ cleanup.
 
 Remaining `tools/Common` ownership:
 
-- `AutomationPipeClient.cs`
-- `AutomationPipeClient.Transport.cs`
-- `AutomationPipeClient.ConnectErrors.cs`
-- `AutomationPipeClient.Commands.cs`
-- `AutomationPipeClient.ResponseState.cs`
-- `AutomationPipeClient.Models.cs`
+- `AutomationPipeClient/AutomationPipeClient.cs`
+- `AutomationPipeClient/AutomationPipeClient.Transport.cs`
+- `AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs`
+- `AutomationPipeClient/AutomationPipeClient.Commands.cs`
+- `AutomationPipeClient/AutomationPipeClient.ResponseState.cs`
+- `AutomationPipeClient/AutomationPipeClient.Models.cs`
+- `AutomationPipeClient/AutomationResponseState.cs`
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionBackgroundTasks.FaultDrain.cs`
 - `DiagnosticSessionBackgroundTasks.Models.cs`
@@ -2600,7 +2603,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunExecution.Scenario.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionRunExecution.ResultRequest.cs`
-- `AutomationResponseState.cs`
 - `JsonOptions.cs`
 - `PresentMonProbe.cs`
 - `PresentMonProbe.Paths.cs`
