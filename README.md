@@ -116,7 +116,7 @@ The automation smoke test requires the app to be running.
 | `tests/Sussudio.Tests/` | Legacy console regression harness plus xUnit and source-shape architecture contract tests |
 | `tests/Sussudio.HdrLab/` | HDR ingest/validation lab |
 | `tests/Sussudio.FfmpegEncodeLab/` | FFmpeg/libav encode lab |
-| `tools/Common/` | Shared automation client, formatting, and diagnostic-session helpers |
+| `tools/Common/` | Shared automation client, formatting, and diagnostic-session helpers; protocol/catalog/security contracts belong in `Sussudio.Automation.Contracts/` |
 | `tools/ssctl/` | Preferred command-line automation client |
 | `tools/McpServer/` | MCP bridge over the app automation pipe |
 | `tools/AutomationClient/` | Lower-level named-pipe automation client |
@@ -137,6 +137,9 @@ SussudioAutomation
 
 The shared command IDs, protocol constants, manifest/catalog, and pipe security
 policy live in `Sussudio.Automation.Contracts/`.
+`tools/Common/` remains helper-only for shared clients, formatters, diagnostic
+sessions, and probes; do not put protocol/catalog/security contract sources
+there.
 When adding automation commands, treat `Sussudio.Automation.Contracts/` as the
 source of truth for command IDs, protocol constants, command metadata, payload
 shape, readiness gating, timeouts, path policy, CLI help, and MCP descriptions.

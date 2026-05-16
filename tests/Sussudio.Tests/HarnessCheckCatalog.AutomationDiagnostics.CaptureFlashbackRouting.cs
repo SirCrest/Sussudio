@@ -100,7 +100,7 @@ static partial class Program
             CaptureDiscoverySourceOwnership_LivesInFocusedPartials);
         await AddCheckAsync(results,
             "AutomationCommandKind source ownership is contract-aligned",
-            AutomationCommandKind_SourceOwnership_IsModelAligned);
+            AutomationContracts_SourceOwnership_IsModelAligned);
         await AddCheckAsync(results,
             "Diagnostics snapshot refresh is serialized for recording responses",
             DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses);

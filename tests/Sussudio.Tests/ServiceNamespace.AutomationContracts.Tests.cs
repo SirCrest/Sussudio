@@ -3,18 +3,35 @@ using System.Threading.Tasks;
 // Tests that prevent app service code from drifting into stale namespaces.
 static partial class Program
 {
-    private static Task AutomationCommandKind_SourceOwnership_IsModelAligned()
+    private static Task AutomationContracts_SourceOwnership_IsModelAligned()
     {
         var repoRoot = GetRepoRoot();
         var automationContractsProject = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "Sussudio.Automation.Contracts.csproj");
-        var automationKindPath = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "AutomationCommandKind.cs");
         AssertEqual(true, File.Exists(automationContractsProject), "Automation contracts project exists");
-        AssertEqual(true, File.Exists(automationKindPath), "AutomationCommandKind contract source exists");
-        AssertContains(File.ReadAllText(automationKindPath), "namespace Sussudio.Models;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Models", "Automation", "AutomationCommandKind.cs")),
-            "app project no longer owns AutomationCommandKind");
+
+        foreach (var contractFile in new[]
+        {
+            "AutomationCommandKind.cs",
+            "AutomationCommandCatalog.cs",
+            "AutomationPipeProtocol.cs",
+            "AutomationPipeSecurityPolicy.cs"
+        })
+        {
+            var contractPath = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", contractFile);
+            AssertEqual(true, File.Exists(contractPath), $"{contractFile} contract source exists");
+            var expectedNamespace = string.Equals(contractFile, "AutomationCommandKind.cs", StringComparison.Ordinal)
+                ? "namespace Sussudio.Models;"
+                : "namespace Sussudio.Tools;";
+            AssertContains(File.ReadAllText(contractPath), expectedNamespace);
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(repoRoot, "tools", "Common", contractFile)),
+                $"tools/Common must not own {contractFile}");
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(repoRoot, "Sussudio", "Models", "Automation", contractFile)),
+                $"app project must not own {contractFile}");
+        }
 
         var appIncludes = ReadCompileIncludes(Path.Combine(repoRoot, "Sussudio", "Sussudio.csproj"));
         var appReferences = ReadProjectReferences(Path.Combine(repoRoot, "Sussudio", "Sussudio.csproj"));
@@ -26,6 +43,14 @@ static partial class Program
             0,
             CountCompileInclude(appIncludes, @"..\tools\Common\AutomationCommandCatalog.cs"),
             "app project must not link AutomationCommandCatalog from tools/Common");
+        AssertEqual(
+            0,
+            CountCompileInclude(appIncludes, @"..\tools\Common\AutomationPipeProtocol.cs"),
+            "app project must not link AutomationPipeProtocol from tools/Common");
+        AssertEqual(
+            0,
+            CountCompileInclude(appIncludes, @"..\tools\Common\AutomationPipeSecurityPolicy.cs"),
+            "app project must not link AutomationPipeSecurityPolicy from tools/Common");
         AssertEqual(
             1,
             CountProjectReference(appReferences, @"..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj"),
@@ -44,6 +69,22 @@ static partial class Program
                 0,
                 CountCompileInclude(includes, @"..\..\Sussudio\Models\Automation\AutomationCommandKind.cs"),
                 $"{Path.GetFileName(toolProject)} must not link app-owned AutomationCommandKind source");
+            AssertEqual(
+                0,
+                CountCompileInclude(includes, @"..\Common\AutomationCommandKind.cs"),
+                $"{Path.GetFileName(toolProject)} must not link AutomationCommandKind from tools/Common");
+            AssertEqual(
+                0,
+                CountCompileInclude(includes, @"..\Common\AutomationCommandCatalog.cs"),
+                $"{Path.GetFileName(toolProject)} must not link AutomationCommandCatalog from tools/Common");
+            AssertEqual(
+                0,
+                CountCompileInclude(includes, @"..\Common\AutomationPipeProtocol.cs"),
+                $"{Path.GetFileName(toolProject)} must not link AutomationPipeProtocol from tools/Common");
+            AssertEqual(
+                0,
+                CountCompileInclude(includes, @"..\Common\AutomationPipeSecurityPolicy.cs"),
+                $"{Path.GetFileName(toolProject)} must not link AutomationPipeSecurityPolicy from tools/Common");
             AssertEqual(
                 1,
                 CountProjectReference(references, @"..\..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj"),
