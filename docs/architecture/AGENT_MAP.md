@@ -1952,8 +1952,10 @@ Primary current owners:
   `MainViewModel.Dispatching.cs` owns shared
   dispatcher enqueue/invoke helpers and preview event fan-out for the partial
   family. `MainViewModel.Runtime.cs` owns periodic timer refresh orchestration.
-  `MainViewModel.DiskSpacePresentation.cs` owns output drive free-space
-  projection. `MainViewModel.PowerResume.cs` owns system-resume preview rebind
+  `MainViewModel.DiskSpacePresentation.cs` owns the DiskSpaceInfo assignment bridge,
+  while `Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs` owns output drive probing,
+  fallback, formatting, and suppressed-warning logging.
+  `MainViewModel.PowerResume.cs` owns system-resume preview rebind
   handling. `MainViewModel.CaptureRuntimeEvents.cs`
   owns capture status/error fan-out, capture pre-cleanup renderer stop fan-out,
   and frame-captured callbacks. `MainViewModel.RecordingRuntime.cs` owns

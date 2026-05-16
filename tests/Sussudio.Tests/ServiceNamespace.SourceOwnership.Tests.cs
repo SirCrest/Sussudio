@@ -126,6 +126,7 @@ static partial class Program
         var mainViewModelDispatchingText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs"));
         var mainViewModelRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Runtime.cs"));
         var mainViewModelDiskSpacePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DiskSpacePresentation.cs"));
+        var outputDriveSpacePresentationBuilderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "OutputDriveSpacePresentationBuilder.cs"));
         var mainViewModelPowerResumeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.PowerResume.cs"));
         var mainViewModelLiveSignalPresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.LiveSignalPresentation.cs"));
         var mainViewModelCaptureRuntimeEventsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureRuntimeEvents.cs"));
@@ -155,8 +156,10 @@ static partial class Program
         AssertContains(mainViewModelRuntimeText, "private void SetupTimer()");
         AssertContains(mainViewModelRuntimeText, "UpdateDiskSpace();");
         AssertContains(mainViewModelDiskSpacePresentationText, "private void UpdateDiskSpace()");
-        AssertContains(mainViewModelDiskSpacePresentationText, "DiskSpaceInfo = $\"Free: {freeGb:F1} GB\";");
-        AssertContains(mainViewModelDiskSpacePresentationText, "Suppressed exception in MainViewModel.RefreshDiskSpace");
+        AssertContains(mainViewModelDiskSpacePresentationText, "DiskSpaceInfo = OutputDriveSpacePresentationBuilder.Build(OutputPath);");
+        AssertContains(outputDriveSpacePresentationBuilderText, "new DriveInfo(Path.GetPathRoot(outputPath) ?? \"C:\");");
+        AssertContains(outputDriveSpacePresentationBuilderText, "return $\"Free: {freeGb:F1} GB\";");
+        AssertContains(outputDriveSpacePresentationBuilderText, "Suppressed exception in MainViewModel.RefreshDiskSpace");
         AssertContains(mainViewModelPowerResumeText, "private void OnSystemPowerModeChanged");
         AssertContains(mainViewModelPowerResumeText, "e.Mode != PowerModes.Resume");
         AssertContains(mainViewModelPowerResumeText, "ReinitializeDeviceAsync(\"system resume\")");
@@ -166,6 +169,9 @@ static partial class Program
         AssertDoesNotContain(mainViewModelRuntimeText, "private void OnSystemPowerModeChanged");
         AssertDoesNotContain(mainViewModelRuntimeText, "partial void OnIsPreviewingChanged(bool value)");
         AssertDoesNotContain(mainViewModelDiskSpacePresentationText, "OnSystemPowerModeChanged");
+        AssertDoesNotContain(mainViewModelDiskSpacePresentationText, "new DriveInfo(");
+        AssertDoesNotContain(mainViewModelDiskSpacePresentationText, "Path.GetPathRoot(");
+        AssertDoesNotContain(mainViewModelDiskSpacePresentationText, "Trace.TraceWarning(");
         AssertDoesNotContain(mainViewModelPowerResumeText, "private void UpdateDiskSpace()");
         AssertContains(mainViewModelCaptureRuntimeEventsText, "private void OnCaptureStatusChanged(object? sender, string status)");
         AssertContains(mainViewModelCaptureRuntimeEventsText, "private void OnCaptureError(object? sender, Exception ex)");

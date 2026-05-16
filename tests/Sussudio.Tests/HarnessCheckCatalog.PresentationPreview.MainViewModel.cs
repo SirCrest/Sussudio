@@ -34,6 +34,12 @@ static partial class Program
             "MainViewModel output path selection lives in focused partial",
             MainViewModelOutputPathSelection_LivesInFocusedPartial);
         await AddCheckAsync(results,
+            "Output drive free-space presentation builder handles invalid paths",
+            OutputDriveSpacePresentationBuilder_InvalidPathReturnsEmpty);
+        await AddCheckAsync(results,
+            "Output drive free-space presentation lives in focused helper",
+            OutputDriveSpacePresentationBuilder_LivesInFocusedHelper);
+        await AddCheckAsync(results,
             "MainViewModel preview reinitialization lives in focused partial",
             MainViewModelPreviewReinitialization_LivesInFocusedPartial);
         await AddCheckAsync(results,

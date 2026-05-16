@@ -2681,8 +2681,10 @@ Remaining `tools/Common` ownership:
    handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
    periodic timer refresh orchestration now lives in `MainViewModel.Runtime.cs`,
-   output drive free-space projection now lives in
-   `MainViewModel.DiskSpacePresentation.cs`, system-resume preview rebind
+   output drive free-space assignment now lives in
+   `MainViewModel.DiskSpacePresentation.cs`, while output drive probing,
+   fallback, formatting, and suppressed-warning logging now live in
+   `OutputDriveSpacePresentationBuilder.cs`, system-resume preview rebind
    handling now lives in `MainViewModel.PowerResume.cs`, capture status/error and pre-cleanup callbacks
    now live in `MainViewModel.CaptureRuntimeEvents.cs`, recording size/bitrate
    projection and recording-state reset reactions now live in
