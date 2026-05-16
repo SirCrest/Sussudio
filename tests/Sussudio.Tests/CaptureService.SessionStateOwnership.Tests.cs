@@ -27,8 +27,9 @@ static partial class Program
         var expectedWriterCounts = new Dictionary<string, int>(StringComparer.Ordinal)
         {
             ["CaptureService.cs"] = 1,
-            ["CaptureService.Coordination.cs"] = 7,
+            ["CaptureService.Coordination.cs"] = 4,
             ["CaptureService.Cleanup.cs"] = 1,
+            ["CaptureService.DisposalLifecycle.cs"] = 3,
             ["CaptureService.FailureCleanup.cs"] = 2
         };
 
@@ -58,6 +59,7 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
         var coordinationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Coordination.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
+        var disposalLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.DisposalLifecycle.cs").Replace("\r\n", "\n");
         var flashbackBackendFailureCleanupPath = "Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs";
         AssertEqual(
             true,
@@ -70,12 +72,21 @@ static partial class Program
         AssertContains(coordinationText, "_sessionState = transitionState;");
         AssertContains(coordinationText, "_sessionState = ResolveSteadyState();");
         AssertContains(coordinationText, "_sessionState = CaptureSessionState.Faulted;");
-        AssertContains(coordinationText, "_sessionState = CaptureSessionState.CleaningUp;");
-        AssertContains(coordinationText, "_sessionState = CaptureSessionState.Disposed;");
+        AssertDoesNotContain(coordinationText, "CleanupForDisposalAsync");
+        AssertDoesNotContain(coordinationText, "public void Dispose()");
+        AssertDoesNotContain(coordinationText, "public async ValueTask DisposeAsync()");
         AssertOccursBefore(
             coordinationText,
             "CaptureSessionTransitionPolicy.ThrowIfDisallowed(_sessionState, transitionState);",
             "_sessionState = transitionState;");
+        AssertContains(disposalLifecycleText, "private async Task CleanupForDisposalAsync()");
+        AssertContains(disposalLifecycleText, "_sessionState = CaptureSessionState.CleaningUp;");
+        AssertContains(disposalLifecycleText, "await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);");
+        AssertContains(disposalLifecycleText, "public void Dispose()");
+        AssertContains(disposalLifecycleText, "public async ValueTask DisposeAsync()");
+        AssertContains(disposalLifecycleText, "private void DisposeCoordinationLocksBestEffort()");
+        AssertContains(disposalLifecycleText, "private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
+        AssertContains(disposalLifecycleText, "_sessionState = CaptureSessionState.Disposed;");
         AssertContains(
             cleanupText,
             "_sessionState = _isDisposed != 0 ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;");

@@ -744,12 +744,14 @@ public cleanup transition, shutdown teardown order, failed Flashback recording
 segment preservation, deferred LibAv/unified-video cleanup handoff, WASAPI
 capture disposal, mic teardown, telemetry stop, and final session-state reset.
 
-Capture transition coordination and disposal now live in
+Capture transition coordination now lives in
 `Sussudio/Services/Capture/CaptureService.Coordination.cs`. That file owns
 `RunTransitionAsync`, normal `_sessionState` transition writes, steady-state
-resolution, initialization/disposal guards, async disposal cleanup, and
-best-effort semaphore/eviction cleanup helpers used by the other
-capture-service partials.
+resolution, initialization/disposal guards, and best-effort semaphore release /
+eviction cleanup helpers used by the other capture-service partials.
+Disposal-triggered cleanup, final disposed-state writes, and best-effort
+coordination lock disposal now live in
+`Sussudio/Services/Capture/CaptureService.DisposalLifecycle.cs`.
 
 Deferred capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs`. That file owns
