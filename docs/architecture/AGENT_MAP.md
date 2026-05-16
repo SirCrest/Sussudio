@@ -773,9 +773,10 @@ Primary current owners:
   `Sussudio/Controllers/PreviewSurfacePresentationController.cs` owns preview
   surface sizing, GPU panel visibility, and video/control-bar composition
   shadows. `MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
-- `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
-  preview snapshot provider that dispatches to the renderer/startup snapshot
-  adapter and gathers UI-thread-only state. `Sussudio/Controllers/PreviewRuntimeSnapshotController.cs`
+- `Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs` owns the async
+  dispatcher/retry wrapper for automation preview snapshot callers.
+  `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns UI-thread-only preview
+  state sampling. `Sussudio/Controllers/PreviewRuntimeSnapshotController.cs`
   owns the read-only preview runtime snapshot construction, including renderer
   metrics, blank/stall suspicion, cadence projection, and D3D diagnostic fields.
   Close/finalize behavior stays with `MainWindow.CloseLifecycle.cs`.

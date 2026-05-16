@@ -62,6 +62,7 @@ static partial class Program
         var previewSurfaceText = ReadRepoFile("Sussudio/MainWindow.PreviewSurface.cs").Replace("\r\n", "\n");
         var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/PreviewSurfacePresentationController.cs").Replace("\r\n", "\n");
         var previewRendererStartupPlanBuilderText = ReadRepoFile("Sussudio/Controllers/PreviewRendererStartupPlanBuilder.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotDispatchText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
         var statsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsSnapshot.cs").Replace("\r\n", "\n");
@@ -181,9 +182,11 @@ static partial class Program
         AssertContains(previewRendererStartupPlanBuilderText, "var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : settingsWidth;");
         AssertContains(previewRendererStartupPlanBuilderText, "var rendererFps = negotiatedFps > 0 ? negotiatedFps : settingsFps;");
 
-        AssertContains(previewRuntimeSnapshotText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
-        AssertContains(previewRuntimeSnapshotText, "return GetPreviewRuntimeSnapshot();");
-        AssertContains(previewRuntimeSnapshotText, "completion.TrySetResult(GetPreviewRuntimeSnapshot());");
+        AssertContains(previewRuntimeSnapshotDispatchText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
+        AssertContains(previewRuntimeSnapshotDispatchText, "return GetPreviewRuntimeSnapshot();");
+        AssertContains(previewRuntimeSnapshotDispatchText, "const int maxAttempts = 3;");
+        AssertContains(previewRuntimeSnapshotDispatchText, "completion.TrySetResult(GetPreviewRuntimeSnapshot());");
+        AssertContains(previewRuntimeSnapshotDispatchText, "await Task.Delay(50, cancellationToken).ConfigureAwait(false);");
         AssertContains(previewRuntimeSnapshotText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
         AssertContains(previewRuntimeSnapshotText, "return PreviewRuntimeSnapshotController.Build(new PreviewRuntimeSnapshotInput");
         AssertContains(previewRuntimeSnapshotText, "D3DRenderer = _previewRendererHostController.Renderer,");
@@ -210,6 +213,8 @@ static partial class Program
         AssertDoesNotContain(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
         AssertDoesNotContain(previewRendererText, "var negotiatedWidth = sourceProbe.SessionActive ? sourceProbe.CurrentWidth : 0;");
         AssertDoesNotContain(previewRendererText, "var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : width;");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "TaskCompletionSource<PreviewRuntimeSnapshot>");
         AssertDoesNotContain(previewRuntimeSnapshotText, "return new PreviewRuntimeSnapshot");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetRenderCpuTimingMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetFrameOwnershipMetrics()");

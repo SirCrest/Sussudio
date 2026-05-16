@@ -551,9 +551,10 @@ SwapChainPanel replacement, and retired-renderer handoff during D3D renderer
 mode switches. `MainWindow.PreviewRenderer.cs` is the XAML-facing host adapter,
 and `Sussudio/MainWindow.PreviewRendererReinit.cs` keeps the small public/reinit
 adapter surface.
-`Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the UI-thread automation
-preview snapshot provider and gathers UI-thread-only state. Read-only preview
-runtime snapshot construction now lives in
+`Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs` owns the async
+dispatcher/retry wrapper for automation preview snapshot callers.
+`Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns UI-thread-only preview
+state sampling. Read-only preview runtime snapshot construction now lives in
 `Sussudio/Controllers/PreviewRuntimeSnapshotController.cs`, which owns renderer
 metrics, blank/stall suspicion, cadence projection, and D3D diagnostic fields.
 Close/finalize handling remains in
