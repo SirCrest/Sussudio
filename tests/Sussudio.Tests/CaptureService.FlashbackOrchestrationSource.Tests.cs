@@ -21,6 +21,8 @@ static partial class Program
     private static readonly string[] CaptureServiceAudioFiles =
     {
         "Sussudio/Services/Capture/CaptureService.Audio.cs",
+        "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
+        "Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs",
         "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs",
         "Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs"
     };
@@ -91,14 +93,34 @@ static partial class Program
     private static Task CaptureService_AudioOwnershipLivesInFocusedPartials()
     {
         var audioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs");
+        var audioPreviewText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs");
+        var audioInputSwitchingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs");
         var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs");
         var playbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs");
 
-        AssertContains(audioText, "public Task StartAudioPreviewAsync(");
-        AssertContains(audioText, "public Task UpdateAudioInputAsync(");
+        AssertContains(audioText, "public void SetPreviewVolume(");
+        AssertContains(audioText, "public void SetMonitoringMuted(");
+        AssertContains(audioText, "private void OnWasapiAudioLevelUpdated(");
         AssertContains(audioText, "private void OnWasapiCaptureFailed(");
+        AssertDoesNotContain(audioText, "public Task StartAudioPreviewAsync(");
+        AssertDoesNotContain(audioText, "public Task UpdateAudioInputAsync(");
         AssertDoesNotContain(audioText, "public Task UpdateMicrophoneMonitorAsync(");
         AssertDoesNotContain(audioText, "private async Task StartWasapiPlaybackAsync(");
+
+        AssertContains(audioPreviewText, "public Task StartAudioPreviewAsync(");
+        AssertContains(audioPreviewText, "public Task StopAudioPreviewAsync(");
+        AssertContains(audioPreviewText, "public Task StopAudioPreviewWithTeardownAsync(");
+        AssertContains(audioPreviewText, "private Task StopAudioPreviewCoreAsync(");
+        AssertDoesNotContain(audioPreviewText, "public Task UpdateAudioInputAsync(");
+        AssertDoesNotContain(audioPreviewText, "public Task UpdateMicrophoneMonitorAsync(");
+        AssertDoesNotContain(audioPreviewText, "private async Task StartWasapiPlaybackAsync(");
+
+        AssertContains(audioInputSwitchingText, "public Task UpdateAudioInputAsync(");
+        AssertContains(audioInputSwitchingText, "Logger.Log($\"Live audio input switch:");
+        AssertContains(audioInputSwitchingText, "Logger.Log(\"AUDIO_INPUT_SWITCH_CANCEL_DEFERRED\");");
+        AssertDoesNotContain(audioInputSwitchingText, "public Task StartAudioPreviewAsync(");
+        AssertDoesNotContain(audioInputSwitchingText, "public Task UpdateMicrophoneMonitorAsync(");
+        AssertDoesNotContain(audioInputSwitchingText, "private async Task StartWasapiPlaybackAsync(");
 
         AssertContains(microphoneText, "public Task UpdateMicrophoneMonitorAsync(");
         AssertContains(microphoneText, "private async Task DisposeMicrophoneCaptureAsync()");

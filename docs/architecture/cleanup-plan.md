@@ -674,15 +674,19 @@ negotiated-format seeding, the initial observed-pixel telemetry reset call,
 fallback source telemetry, source telemetry refresh, NTSC frame-rate correction,
 and initialized status event.
 
-Capture audio preview and live input switching now live in
-`Sussudio/Services/Capture/CaptureService.Audio.cs`. Preview-time microphone
-monitoring lives in
+Capture preview volume/mute and WASAPI audio-level/failure event projection now
+live in `Sussudio/Services/Capture/CaptureService.Audio.cs`. Audio-preview
+start/stop lifecycle lives in
+`Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs`, and live
+audio input switching lives in
+`Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs`. Preview-time
+microphone monitoring lives in
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`, and WASAPI
 playback attach/detach ordering lives in
 `Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs`. These files
-preserve the root service transition lock while keeping mic cleanup,
-post-recording mic monitor restart, and playback routing from collapsing back
-into the general audio partial.
+preserve the root service transition lock while keeping preview lifecycle,
+input switching, mic cleanup, post-recording mic monitor restart, and playback
+routing from collapsing back into a general audio partial.
 
 Explicit capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.Cleanup.cs`. That file owns the
