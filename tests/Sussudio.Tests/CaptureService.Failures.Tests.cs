@@ -44,6 +44,22 @@ public sealed class CaptureServiceFailureOwnershipTests
         AssertContains(failuresText, "GetLastFailureTelemetry()");
     }
 
+    [Fact]
+    public void CaptureService_FlashbackBackendFailureCleanup_LivesInFocusedPartialWithoutSessionStateWrites()
+    {
+        var failureCleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FailureCleanup.cs")
+            .Replace("\r\n", "\n");
+        var flashbackBackendFailureCleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(failureCleanupText, "private void BeginFatalCaptureCleanup(Exception ex)");
+        AssertDoesNotContain(failureCleanupText, "BeginFlashbackBackendCleanup(");
+        AssertDoesNotContain(failureCleanupText, "IsGpuDeviceLost(");
+        AssertContains(flashbackBackendFailureCleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");
+        AssertContains(flashbackBackendFailureCleanupText, "private static bool IsGpuDeviceLost(Exception ex)");
+        AssertDoesNotContain(flashbackBackendFailureCleanupText, "_sessionState =");
+    }
+
     private static void AssertContains(string text, string expected)
         => Assert.Contains(expected, text);
 

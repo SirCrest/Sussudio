@@ -29,6 +29,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FailureCleanup.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs")
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()

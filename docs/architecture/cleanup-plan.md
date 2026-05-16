@@ -715,9 +715,13 @@ fields, lock, mutation helpers, clear helpers, and snapshot reads.
 
 Fatal failure cleanup launch now lives in
 `Sussudio/Services/Capture/CaptureService.FailureCleanup.cs`. That file owns
-GPU device-lost classification, the async cleanup launchers, generation-stale
-guards, and the session-state writes that move the service into
-cleaning-up/faulted states.
+the fatal capture cleanup launcher, generation-stale guards, and the
+session-state writes that move the service into cleaning-up/faulted states.
+Flashback backend failure cleanup now lives in
+`Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs`.
+That file owns the Flashback backend cleanup launcher, GPU device-lost
+classification, recovery segment preservation, and generation-stale guards, and
+must not write `_sessionState`.
 
 Flashback-facing capture controls now live in
 `Sussudio/Services/Capture/CaptureService.FlashbackControls.cs`. That file owns

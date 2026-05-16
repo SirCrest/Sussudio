@@ -58,7 +58,13 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
         var coordinationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Coordination.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
+        var flashbackBackendFailureCleanupPath = "Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs";
+        AssertEqual(
+            true,
+            File.Exists(Path.Combine(GetRepoRoot(), flashbackBackendFailureCleanupPath.Replace('/', Path.DirectorySeparatorChar))),
+            "CaptureService Flashback backend failure cleanup partial exists");
         var failureCleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FailureCleanup.cs").Replace("\r\n", "\n");
+        var flashbackBackendFailureCleanupText = ReadRepoFile(flashbackBackendFailureCleanupPath).Replace("\r\n", "\n");
 
         AssertContains(rootText, "private CaptureSessionState _sessionState = CaptureSessionState.Uninitialized;");
         AssertContains(coordinationText, "_sessionState = transitionState;");
@@ -75,10 +81,13 @@ static partial class Program
             "_sessionState = _isDisposed != 0 ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;");
 
         var fatalCleanupText = ExtractMemberCode(failureCleanupText, "BeginFatalCaptureCleanup");
-        var flashbackBackendCleanupText = ExtractMemberCode(failureCleanupText, "BeginFlashbackBackendCleanup");
         AssertContains(fatalCleanupText, "_sessionState = CaptureSessionState.CleaningUp;");
         AssertContains(fatalCleanupText, "_sessionState = CaptureSessionState.Faulted;");
-        AssertDoesNotContain(flashbackBackendCleanupText, "_sessionState =");
+        AssertDoesNotContain(failureCleanupText, "BeginFlashbackBackendCleanup(");
+        AssertDoesNotContain(failureCleanupText, "IsGpuDeviceLost(");
+        AssertContains(flashbackBackendFailureCleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");
+        AssertContains(flashbackBackendFailureCleanupText, "private static bool IsGpuDeviceLost(Exception ex)");
+        AssertDoesNotContain(flashbackBackendFailureCleanupText, "_sessionState =");
 
         return Task.CompletedTask;
     }
