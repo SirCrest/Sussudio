@@ -1683,9 +1683,11 @@ Pure capture option construction lives in
 
 Dynamic stats dock row chrome now lives in
 `Sussudio/Controllers/Stats/StatsDockRowChromeController.cs`. It owns decode/GPU row
-reuse and simple row style updates. `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs`
+reuse. `Sussudio/Controllers/Stats/StatsDockRowChromePresenter.cs` owns shared
+stats dock row creation, text mutation, visibility toggles, and row style
+application. `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs`
 owns diagnostic row presentation, telemetry diagnostics empty state, group
-headers, diagnostic row pooling, and diagnostic row style updates, while
+headers, and diagnostic row pooling, while
 `Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs` owns live
 MJPEG/NVML input acquisition and `Sussudio/Controllers/Stats/StatsHardwareRowsController.cs`
 owns hardware row availability, text-row presentation building, and minimum
