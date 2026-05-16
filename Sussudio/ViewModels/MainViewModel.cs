@@ -107,7 +107,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Recording lifecycle: MainViewModel.RecordingLifecycle.cs
     // Recording state: MainViewModel.RecordingState.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs
-    // Automation / flashback: MainViewModel.Automation.cs
+    // Flashback automation: MainViewModel.AutomationFlashback.cs
+    // Recording lifecycle automation: MainViewModel.AutomationRecordingLifecycle.cs
     // Audio automation: MainViewModel.AutomationAudio.cs
     // HDR automation: MainViewModel.AutomationHdr.cs
     // Automation options projection: MainViewModel.AutomationOptionsSnapshot.cs

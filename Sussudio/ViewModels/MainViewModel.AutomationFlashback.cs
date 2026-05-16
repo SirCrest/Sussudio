@@ -4,8 +4,7 @@ using System.Threading.Tasks;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Core automation mutators.
-/// Implements IAutomationViewModel members consumed by the automation layer.
+/// Automation Flashback enablement and restart mutators.
 /// </summary>
 public partial class MainViewModel
 {
@@ -23,10 +22,5 @@ public partial class MainViewModel
                 return true;
             },
             cancellationToken).ConfigureAwait(false);
-    }
-
-    public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
-    {
-        return SetRecordingDesiredStateAsync(enabled, cancellationToken);
     }
 }

@@ -45,11 +45,11 @@ static partial class Program
         var viewModelCaptureStateText = viewModelFiles["MainViewModel.CaptureState.cs"];
         var viewModelAudioStateText = viewModelFiles["MainViewModel.AudioState.cs"];
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var automationText = viewModelFiles["MainViewModel.Automation.cs"];
+        var automationFlashbackText = viewModelFiles["MainViewModel.AutomationFlashback.cs"];
         var automationRecordingSettingsText = viewModelFiles["MainViewModel.AutomationRecordingSettings.cs"];
         var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var flashbackPlaybackText = viewModelFiles["MainViewModel.FlashbackPlayback.cs"];
-        var flashbackAutomationText = automationText + "\n" + flashbackExportText + "\n" + flashbackPlaybackText;
+        var flashbackAutomationText = automationFlashbackText + "\n" + flashbackExportText + "\n" + flashbackPlaybackText;
         var disposalText = viewModelFiles["MainViewModel.Disposal.cs"];
         var audioPropertyChangesText = viewModelFiles["MainViewModel.AudioPropertyChanges.cs"];
         var rawViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
@@ -57,8 +57,6 @@ static partial class Program
         var rawAudioPropertyChangesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs")
             .Replace("\r\n", "\n");
         var rawDisposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs")
-            .Replace("\r\n", "\n");
-        var rawAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
             .Replace("\r\n", "\n");
         var rawFlashbackExportText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
             .Replace("\r\n", "\n");
@@ -170,9 +168,9 @@ static partial class Program
         AssertContains(rawFlashbackExportText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_inline_cleanup\");");
         AssertDoesNotContain(flashbackExportText, "exportCts.Dispose();");
         AssertMemberContains(flashbackExportText, "GetFlashbackSegments", "_sessionCoordinator.GetFlashbackSegments()");
-        AssertMemberContains(automationText, "SetFlashbackEnabledAsync", "_sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken)");
-        AssertMemberContains(automationText, "RestartFlashbackAsync", "InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken)");
-        AssertMemberContains(automationText, "RestartFlashbackAsync", "_sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken)");
+        AssertMemberContains(automationFlashbackText, "SetFlashbackEnabledAsync", "_sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken)");
+        AssertMemberContains(automationFlashbackText, "RestartFlashbackAsync", "InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken)");
+        AssertMemberContains(automationFlashbackText, "RestartFlashbackAsync", "_sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken)");
 
         AssertMemberContains(flashbackSettingsText, "OnSelectedRecordingFormatChanged", "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),");
         AssertMemberContains(flashbackSettingsText, "OnSelectedRecordingFormatChanged", "_suppressFlashbackFormatCycle is false");
@@ -181,7 +179,7 @@ static partial class Program
         AssertMemberContains(automationRecordingSettingsText, "SetRecordingFormatAsync", "_suppressFlashbackFormatCycle = true;");
         AssertMemberContains(automationRecordingSettingsText, "SetRecordingFormatAsync", "RecordingFormat.Av1Mp4");
         AssertMemberContains(automationRecordingSettingsText, "SetRecordingFormatAsync", "await _sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
-        AssertDoesNotContain(automationText, "public async Task SetRecordingFormatAsync");
+        AssertDoesNotContain(automationFlashbackText, "public async Task SetRecordingFormatAsync");
         AssertMemberContains(flashbackSettingsText, "OnCustomBitrateMbpsChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(flashbackSettingsText, "OnFlashbackBufferMinutesChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
         AssertMemberContains(flashbackSettingsText, "OnFlashbackGpuDecodeChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");

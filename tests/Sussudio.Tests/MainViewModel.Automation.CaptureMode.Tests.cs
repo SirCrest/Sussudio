@@ -5,7 +5,6 @@ static partial class Program
     private static Task AutomationCaptureModeChanges_AwaitReinitialization()
     {
         var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
-        var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs").Replace("\r\n", "\n");
         var captureModeAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCaptureMode.cs").Replace("\r\n", "\n");
 
         AssertContains(viewModelStateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
@@ -20,14 +19,12 @@ static partial class Program
         AssertContains(captureModeAutomationText, "return SetAutomationCaptureModeAsync(\"frame rate\"");
         AssertContains(captureModeAutomationText, "return SetAutomationCaptureModeAsync(\"video format\"");
         AssertContains(captureModeAutomationText, "return SetAutomationCaptureModeAsync(\"mjpeg decoder count\"");
-        AssertDoesNotContain(automationText, "private async Task SetAutomationCaptureModeAsync(");
 
         return Task.CompletedTask;
     }
 
     private static Task AutomationDeviceSelection_RoutesThroughApplyReinit()
     {
-        var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs").Replace("\r\n", "\n");
         var deviceSelectionAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs").Replace("\r\n", "\n");
         var selectDevice = ExtractTextBetween(
             deviceSelectionAutomationText,
@@ -48,12 +45,6 @@ static partial class Program
         AssertContains(selectDevice, "await ApplySelectedDeviceAsync(target, cancellationToken).ConfigureAwait(true);");
         AssertDoesNotContain(selectDevice, "SelectedDevice = target;");
         AssertContains(selectAudioDevice, "SelectedAudioInputDevice = target;");
-        AssertDoesNotContain(automationText, "public Task RefreshDevicesForAutomationAsync");
-        AssertDoesNotContain(automationText, "public Task SelectDeviceAsync");
-        AssertDoesNotContain(automationText, "public Task SelectAudioInputDeviceAsync");
-        AssertDoesNotContain(automationText, "public Task SetCustomAudioInputEnabledAsync");
-        AssertDoesNotContain(automationText, "private CaptureDevice? ResolveDevice");
-        AssertDoesNotContain(automationText, "private AudioInputDevice? ResolveAudioDevice");
 
         return Task.CompletedTask;
     }

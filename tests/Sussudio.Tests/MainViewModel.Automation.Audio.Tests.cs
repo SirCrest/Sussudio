@@ -7,8 +7,6 @@ static partial class Program
     {
         var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
             .Replace("\r\n", "\n");
-        var automationRootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
-            .Replace("\r\n", "\n");
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationUi.cs")
             .Replace("\r\n", "\n");
 
@@ -25,12 +23,6 @@ static partial class Program
         AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);");
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = clampedGain);");
-        AssertDoesNotContain(automationRootText, "public Task SetAudioEnabledAsync");
-        AssertDoesNotContain(automationRootText, "public Task SetAudioPreviewEnabledAsync");
-        AssertDoesNotContain(automationRootText, "public Task SetPreviewVolumeAsync");
-        AssertDoesNotContain(automationRootText, "public Task SetDeviceAudioModeAsync");
-        AssertDoesNotContain(automationRootText, "public Task SetAnalogAudioGainAsync");
-        AssertDoesNotContain(automationRootText, "public Task SetMicrophoneEnabledAsync");
         AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
 
         var microphoneUpdateIndex = automationAudioText.IndexOf(

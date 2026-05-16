@@ -1023,7 +1023,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Tests.cs` is the
   Flashback routing test family marker shell.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`
-  owns MainViewModel Flashback coordinator-routing assertions.
+  owns MainViewModel Flashback coordinator-routing assertions, including the
+  automation Flashback enable/restart entry-point owner.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Scrub.Tests.cs`
   owns Flashback scrub, release/cancel/capture-lost, and fullscreen Flashback
   bridge assertions: shortcut gating, timeline visibility, and scrub-end
@@ -1871,6 +1872,8 @@ Primary current owners:
   preview enable/disable idempotence, pending-reinit cancellation, and
   start/stop routing. `MainViewModel.AutomationHdr.cs` owns automation HDR and
   true-HDR preview recording-time guard enforcement and availability checks.
+  `MainViewModel.AutomationFlashback.cs` owns automation Flashback
+  enable/restart routing through the capture session coordinator.
   `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh,
   capture-device selection, audio-input selection, and custom audio-input
   enablement.
@@ -1879,10 +1882,10 @@ Primary current owners:
   reinitialization gate used after active capture-mode changes.
   `MainViewModel.AutomationRecordingSettings.cs` owns recording format,
   encoder preset/quality/split-mode/custom-bitrate, and output-path automation
-  mutators. `MainViewModel.RecordingCapabilityRefresh.cs` owns startup FFmpeg
-  capability probes for recording formats and split-encode modes.
-  Remaining automation command mutation code for Flashback enable/restart and
-  recording desired state stays in `MainViewModel.Automation.cs`.
+  mutators. `MainViewModel.AutomationRecordingLifecycle.cs` owns the automation
+  recording desired-state bridge into the shared recording transition gate.
+  `MainViewModel.RecordingCapabilityRefresh.cs` owns startup FFmpeg capability
+  probes for recording formats and split-encode modes.
 
 Refactor direction:
 

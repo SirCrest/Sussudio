@@ -2576,19 +2576,22 @@ Remaining `tools/Common` ownership:
    `MainViewModel.AutomationPreview.cs`.
    Automation HDR and true-HDR preview recording-time guard enforcement and HDR
    availability checks now live in `MainViewModel.AutomationHdr.cs`.
+   Automation Flashback enable/restart routing through the capture session
+   coordinator now lives in `MainViewModel.AutomationFlashback.cs`.
    Automation device refresh, capture-device selection, audio-input selection,
    and custom audio-input enablement now live in
    `MainViewModel.AutomationDeviceSelection.cs`.
    Recording format, encoder preset/quality/split-mode/custom-bitrate, and
    output-path automation mutators now live in
    `MainViewModel.AutomationRecordingSettings.cs`.
+   The automation recording desired-state bridge into the shared recording
+   transition gate now lives in `MainViewModel.AutomationRecordingLifecycle.cs`.
    Capture-mode automation mutators for resolution, frame rate, video format,
    and MJPEG decoder count now live in
    `MainViewModel.AutomationCaptureMode.cs`.
    Startup FFmpeg capability probes for recording formats and split-encode modes
    now live in `MainViewModel.RecordingCapabilityRefresh.cs`.
-   Keep the remaining Flashback/recording command mutation code in
-   `MainViewModel.Automation.cs`.
+   The old `MainViewModel.Automation.cs` catch-all has been retired.
 
 5. Extract capture resource owners behind the transition policy.
 

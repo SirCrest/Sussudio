@@ -1,10 +1,14 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
 {
     private static Task MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate()
     {
-        var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
+        var automationRecordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingLifecycle.cs")
+            .Replace("\r\n", "\n");
+        var automationText = automationRecordingLifecycleText
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationFlashback.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
                 .Replace("\r\n", "\n")
@@ -30,6 +34,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Automation.cs")),
+            "MainViewModel automation catch-all partial");
+        AssertContains(automationRecordingLifecycleText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(recordingLifecycleText, "internal Task SetRecordingDesiredStateAsync");
         AssertContains(recordingLifecycleText, "public Task ToggleRecordingAsync()\n        => SetRecordingDesiredStateAsync(!IsRecording);");
         AssertContains(recordingLifecycleText, "Recording transition already in progress.");
