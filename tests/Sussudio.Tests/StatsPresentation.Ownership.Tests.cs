@@ -21,6 +21,7 @@ static partial class Program
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
         var statsWindowPresentationControllerText = ReadRepoFile("Sussudio/Controllers/StatsWindowPresentationController.cs").Replace("\r\n", "\n");
+        var statsWindowTelemetryDetailsControllerText = ReadRepoFile("Sussudio/Controllers/StatsWindowTelemetryDetailsController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsPresentationText, "internal static partial class StatsPresentationBuilder");
         AssertContains(statsPresentationDockText, "internal static partial class StatsPresentationBuilder");
@@ -106,7 +107,20 @@ static partial class Program
         AssertContains(statsWindowText, "_presentationController.Apply(presentation);");
         AssertContains(statsWindowPresentationControllerText, "internal sealed class StatsWindowPresentationController");
         AssertContains(statsWindowPresentationControllerText, "public void Apply(StatsWindowPresentation presentation)");
-        AssertContains(statsWindowPresentationControllerText, "private void UpdateTelemetryDetails(StatsWindowTelemetryDetailsPresentation presentation)");
+        AssertContains(statsWindowPresentationControllerText, "private readonly StatsWindowTelemetryDetailsController _telemetryDetailsController;");
+        AssertContains(statsWindowPresentationControllerText, "_telemetryDetailsController.Apply(presentation.TelemetryDetails);");
+        AssertDoesNotContain(statsWindowPresentationControllerText, "private void UpdateTelemetryDetails(StatsWindowTelemetryDetailsPresentation presentation)");
+        AssertDoesNotContain(statsWindowPresentationControllerText, "private Grid CreateTelemetryDetailRow(");
+        AssertContains(statsWindowTelemetryDetailsControllerText, "internal sealed class StatsWindowTelemetryDetailsController");
+        AssertContains(statsWindowTelemetryDetailsControllerText, "public void Apply(StatsWindowTelemetryDetailsPresentation presentation)");
+        AssertContains(statsWindowTelemetryDetailsControllerText, "_context.TelemetryDetailsContent.Children.Clear();");
+        AssertContains(statsWindowTelemetryDetailsControllerText, "Text = presentation.EmptyText,");
+        AssertContains(statsWindowTelemetryDetailsControllerText, "Margin = new Thickness(0, 8, 0, 2),");
+        AssertContains(statsWindowTelemetryDetailsControllerText, "grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });");
+        AssertContains(statsWindowTelemetryDetailsControllerText, "grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });");
+        AssertContains(statsWindowTelemetryDetailsControllerText, "HorizontalAlignment = HorizontalAlignment.Right,");
+        AssertContains(statsWindowTelemetryDetailsControllerText, "TextWrapping = TextWrapping.Wrap");
+        AssertContains(statsWindowText, "var telemetryDetailsController = new StatsWindowTelemetryDetailsController(new StatsWindowTelemetryDetailsControllerContext");
         AssertDoesNotContain(statsWindowText, "private static string FormatFps(");
         AssertDoesNotContain(statsWindowText, "private static string FormatMs(");
         AssertDoesNotContain(statsWindowText, "private static string FormatPercent(");

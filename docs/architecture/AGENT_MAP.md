@@ -897,7 +897,8 @@ Primary current owners:
   owns stats dock section expand/collapse chrome and automation-visible section
   visibility application, and `Sussudio/MainWindow.StatsSections.cs` is its
   XAML/automation adapter. `Sussudio/Controllers/StatsWindowPresentationController.cs`
-  owns detached stats-window metric text and telemetry-detail row rendering.
+  owns detached stats-window metric text and delegates dynamic telemetry detail
+  rendering to `Sussudio/Controllers/StatsWindowTelemetryDetailsController.cs`.
   `Sussudio/Controllers/StatsSnapshotProvider.cs` owns shell stats snapshot
   orchestration from capture-health, renderer metrics, and view state.
   `Sussudio/Controllers/StatsSnapshotProvider.RenderMetrics.cs` owns renderer

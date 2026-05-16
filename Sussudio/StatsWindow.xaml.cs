@@ -46,37 +46,43 @@ public sealed partial class StatsWindow : Window
 
     private StatsWindowPresentationController CreatePresentationController()
     {
-        return new StatsWindowPresentationController(new StatsWindowPresentationControllerContext
+        var telemetryDetailsController = new StatsWindowTelemetryDetailsController(new StatsWindowTelemetryDetailsControllerContext
         {
             ResourceOwner = RootGrid,
-            SessionStateValue = SessionStateValue,
-            DiagnosticStatusValue = DiagnosticStatusValue,
-            DiagnosticStageValue = DiagnosticStageValue,
-            DiagnosticEvidenceValue = DiagnosticEvidenceValue,
-            SourceResolutionValue = SourceResolutionValue,
-            SourceFrameRateValue = SourceFrameRateValue,
-            SourceHdrValue = SourceHdrValue,
-            SourceFormatValue = SourceFormatValue,
-            TelemetryOriginValue = TelemetryOriginValue,
-            SourceFpsValue = SourceFpsValue,
-            SourceExpectedFpsValue = SourceExpectedFpsValue,
-            SourceAvgValue = SourceAvgValue,
-            SourceP95Value = SourceP95Value,
-            SourceJitterValue = SourceJitterValue,
-            SourceGapsValue = SourceGapsValue,
-            SourceDropsValue = SourceDropsValue,
-            PreviewFpsValue = PreviewFpsValue,
-            PreviewAvgValue = PreviewAvgValue,
-            PreviewP95Value = PreviewP95Value,
-            PreviewSlowValue = PreviewSlowValue,
-            PipelineLatencyValue = PipelineLatencyValue,
-            SourceDeliveredValue = SourceDeliveredValue,
-            SourceDroppedValue = SourceDroppedValue,
-            RendererRenderedValue = RendererRenderedValue,
-            RendererDroppedValue = RendererDroppedValue,
-            PerfScoreValue = PerfScoreValue,
             TelemetryDetailsContent = TelemetryDetailsContent
         });
+
+        return new StatsWindowPresentationController(
+            new StatsWindowPresentationControllerContext
+            {
+                SessionStateValue = SessionStateValue,
+                DiagnosticStatusValue = DiagnosticStatusValue,
+                DiagnosticStageValue = DiagnosticStageValue,
+                DiagnosticEvidenceValue = DiagnosticEvidenceValue,
+                SourceResolutionValue = SourceResolutionValue,
+                SourceFrameRateValue = SourceFrameRateValue,
+                SourceHdrValue = SourceHdrValue,
+                SourceFormatValue = SourceFormatValue,
+                TelemetryOriginValue = TelemetryOriginValue,
+                SourceFpsValue = SourceFpsValue,
+                SourceExpectedFpsValue = SourceExpectedFpsValue,
+                SourceAvgValue = SourceAvgValue,
+                SourceP95Value = SourceP95Value,
+                SourceJitterValue = SourceJitterValue,
+                SourceGapsValue = SourceGapsValue,
+                SourceDropsValue = SourceDropsValue,
+                PreviewFpsValue = PreviewFpsValue,
+                PreviewAvgValue = PreviewAvgValue,
+                PreviewP95Value = PreviewP95Value,
+                PreviewSlowValue = PreviewSlowValue,
+                PipelineLatencyValue = PipelineLatencyValue,
+                SourceDeliveredValue = SourceDeliveredValue,
+                SourceDroppedValue = SourceDroppedValue,
+                RendererRenderedValue = RendererRenderedValue,
+                RendererDroppedValue = RendererDroppedValue,
+                PerfScoreValue = PerfScoreValue
+            },
+            telemetryDetailsController);
     }
 
     private const int MinWidth = 340;

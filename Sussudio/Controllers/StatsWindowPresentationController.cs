@@ -1,5 +1,4 @@
 using System;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Sussudio.ViewModels;
 
@@ -7,7 +6,6 @@ namespace Sussudio.Controllers;
 
 internal sealed class StatsWindowPresentationControllerContext
 {
-    public required FrameworkElement ResourceOwner { get; init; }
     public required TextBlock SessionStateValue { get; init; }
     public required TextBlock DiagnosticStatusValue { get; init; }
     public required TextBlock DiagnosticStageValue { get; init; }
@@ -34,16 +32,19 @@ internal sealed class StatsWindowPresentationControllerContext
     public required TextBlock RendererRenderedValue { get; init; }
     public required TextBlock RendererDroppedValue { get; init; }
     public required TextBlock PerfScoreValue { get; init; }
-    public required StackPanel TelemetryDetailsContent { get; init; }
 }
 
 internal sealed class StatsWindowPresentationController
 {
     private readonly StatsWindowPresentationControllerContext _context;
+    private readonly StatsWindowTelemetryDetailsController _telemetryDetailsController;
 
-    public StatsWindowPresentationController(StatsWindowPresentationControllerContext context)
+    public StatsWindowPresentationController(
+        StatsWindowPresentationControllerContext context,
+        StatsWindowTelemetryDetailsController telemetryDetailsController)
     {
         _context = context;
+        _telemetryDetailsController = telemetryDetailsController;
     }
 
     public void Apply(StatsWindowPresentation presentation)
@@ -74,66 +75,8 @@ internal sealed class StatsWindowPresentationController
         SetTextIfChanged(_context.RendererRenderedValue, presentation.RendererRendered);
         SetTextIfChanged(_context.RendererDroppedValue, presentation.RendererDropped);
         SetTextIfChanged(_context.PerfScoreValue, presentation.PerformanceScore);
-        UpdateTelemetryDetails(presentation.TelemetryDetails);
+        _telemetryDetailsController.Apply(presentation.TelemetryDetails);
     }
-
-    private void UpdateTelemetryDetails(StatsWindowTelemetryDetailsPresentation presentation)
-    {
-        _context.TelemetryDetailsContent.Children.Clear();
-
-        if (presentation.IsEmpty)
-        {
-            _context.TelemetryDetailsContent.Children.Add(new TextBlock
-            {
-                Text = presentation.EmptyText,
-                Style = GetStyle("StatsLabelStyle"),
-                TextWrapping = TextWrapping.Wrap
-            });
-            return;
-        }
-
-        foreach (var row in presentation.Rows)
-        {
-            if (row.GroupHeader != null)
-            {
-                _context.TelemetryDetailsContent.Children.Add(new TextBlock
-                {
-                    Text = row.GroupHeader,
-                    Margin = new Thickness(0, 8, 0, 2),
-                    Style = GetStyle("StatsSectionHeaderStyle")
-                });
-            }
-
-            _context.TelemetryDetailsContent.Children.Add(CreateTelemetryDetailRow(row.Label, row.Value));
-        }
-    }
-
-    private Grid CreateTelemetryDetailRow(string label, string value)
-    {
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-        var labelBlock = new TextBlock
-        {
-            Text = label,
-            Style = GetStyle("StatsLabelStyle")
-        };
-        var valueBlock = new TextBlock
-        {
-            Text = value,
-            Style = GetStyle("StatsValueStyle"),
-            HorizontalAlignment = HorizontalAlignment.Right,
-            TextWrapping = TextWrapping.Wrap
-        };
-        Grid.SetColumn(valueBlock, 1);
-
-        grid.Children.Add(labelBlock);
-        grid.Children.Add(valueBlock);
-        return grid;
-    }
-
-    private Style GetStyle(string key) => (Style)_context.ResourceOwner.Resources[key];
 
     private static void SetTextIfChanged(TextBlock target, string value)
     {

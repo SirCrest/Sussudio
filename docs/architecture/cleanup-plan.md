@@ -1564,10 +1564,12 @@ Stats dock metric value, visibility, and status brush application now live in
 Stats section expand/collapse chrome and automation-visible section application
 now live in `Sussudio/Controllers/StatsSectionChromeController.cs`.
 `Sussudio/MainWindow.StatsSections.cs` is the XAML/automation adapter.
-Detached stats-window metric text and telemetry-detail row rendering now live
-in `Sussudio/Controllers/StatsWindowPresentationController.cs`, with
-`Sussudio/StatsWindow.xaml.cs` kept to lifecycle, sizing, polling, and
-always-on-top behavior.
+Detached stats-window metric text now lives in
+`Sussudio/Controllers/StatsWindowPresentationController.cs`, while dynamic
+telemetry-detail clearing, empty state, group headers, and row rendering live
+in `Sussudio/Controllers/StatsWindowTelemetryDetailsController.cs`, with
+`Sussudio/StatsWindow.xaml.cs` kept to lifecycle, sizing, polling, controller
+composition, and always-on-top behavior.
 Stats overlay lifecycle, stats dock refresh, stats section chrome, and
 diagnostic row pooling contract checks now live in
 `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs`. Source telemetry panel
