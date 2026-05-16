@@ -19,6 +19,9 @@ static partial class Program
             "MainViewModel automation preview enablement lives in focused partial",
             MainViewModelAutomation_PreviewEnablementLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "MainViewModel automation HDR enablement lives in focused partial",
+            MainViewModelAutomation_HdrEnablementLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "MainViewModel capture routes audio monitoring through coordinator",
             MainViewModelCapture_RoutesAudioMonitoringThroughCoordinator);
         await AddCheckAsync(results,

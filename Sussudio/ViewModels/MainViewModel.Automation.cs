@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,39 +23,6 @@ public partial class MainViewModel
                 return true;
             },
             cancellationToken).ConfigureAwait(false);
-    }
-
-    public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
-    {
-        return InvokeOnUiThreadAsync(() =>
-        {
-            if (IsRecording)
-            {
-                throw new InvalidOperationException(HdrToggleBlockedWhileRecordingMessage);
-            }
-
-            if (enabled && !IsHdrAvailable)
-            {
-                throw new InvalidOperationException("HDR is not available on the selected device.");
-            }
-
-            IsHdrEnabled = enabled;
-            return Task.CompletedTask;
-        }, cancellationToken);
-    }
-
-    public Task SetTrueHdrPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
-    {
-        return InvokeOnUiThreadAsync(() =>
-        {
-            if (IsRecording)
-            {
-                throw new InvalidOperationException("True HDR preview cannot be changed while recording.");
-            }
-
-            IsTrueHdrPreviewEnabled = enabled;
-            return Task.CompletedTask;
-        }, cancellationToken);
     }
 
     public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)

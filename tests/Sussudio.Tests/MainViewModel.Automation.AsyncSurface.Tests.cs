@@ -14,6 +14,8 @@ static partial class Program
             automationInterfaceType.GetProperty("IsMicrophoneEnabled") != null,
             "IAutomationViewModel sync microphone setter");
         AssertTaskReturningMethod(automationInterfaceType, "SetMicrophoneEnabledAsync", resultType: null);
+        AssertTaskReturningMethod(automationInterfaceType, "SetHdrEnabledAsync", resultType: null);
+        AssertTaskReturningMethod(automationInterfaceType, "SetTrueHdrPreviewEnabledAsync", resultType: null);
         AssertTaskReturningMethod(automationInterfaceType, "SetFlashbackEnabledAsync", resultType: null);
         AssertTaskReturningMethod(automationInterfaceType, "ExecuteFlashbackActionAsync", typeof(bool));
         AssertTaskReturningMethod(
@@ -38,11 +40,14 @@ static partial class Program
             .Replace("\r\n", "\n");
         var automationPreviewText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationPreview.cs")
             .Replace("\r\n", "\n");
+        var automationHdrText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationHdr.cs")
+            .Replace("\r\n", "\n");
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationUi.cs")
             .Replace("\r\n", "\n");
         var automationText = automationRootText
             + "\n" + automationAudioText
             + "\n" + automationPreviewText
+            + "\n" + automationHdrText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
@@ -118,6 +123,8 @@ static partial class Program
         AssertContains(dispatcherText, "await _viewModel.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "await _viewModel.ProbePreviewColorAsync(cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "await _viewModel.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false)");
+        AssertContains(dispatcherText, "vm.SetHdrEnabledAsync(v, ct)");
+        AssertContains(dispatcherText, "vm.SetTrueHdrPreviewEnabledAsync(v, ct)");
         AssertDoesNotContain(dispatcherText, "_viewModel.IsMicrophoneEnabled =");
         AssertContains(automationText, "public Task<bool> ExecuteFlashbackActionAsync(");
         AssertContains(automationText, "public void ReportFlashbackPlaybackRejection(string action, string logToken)");
@@ -147,6 +154,8 @@ static partial class Program
         AssertContains(automationText, "FLASHBACK_EXPORT_PROGRESS_UI_ENQUEUE_FAILED source=automation percent={p.Percent:0.###}");
         AssertContains(automationText, "FLASHBACK_EXPORT_PROGRESS_UI_ENQUEUE_FAILED source=ui percent={p.Percent:0.###}");
         AssertContains(automationText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(automationText, "public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(automationText, "public Task SetTrueHdrPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationText, "InvokeOnUiThreadAsync(() => ExecuteFlashbackAction(action, position), cancellationToken)");
         AssertContains(automationText, "=> FromSynchronousSnapshot(ProbeVideoSource, cancellationToken);");
         AssertContains(automationText, "=> FromSynchronousSnapshot(ProbePreviewColor, cancellationToken);");
@@ -167,6 +176,8 @@ static partial class Program
         AssertDoesNotContain(automationRootText, "public Task SetDeviceAudioModeAsync");
         AssertDoesNotContain(automationRootText, "public Task SetAnalogAudioGainAsync");
         AssertDoesNotContain(automationRootText, "public Task SetMicrophoneEnabledAsync");
+        AssertDoesNotContain(automationRootText, "public Task SetHdrEnabledAsync");
+        AssertDoesNotContain(automationRootText, "public Task SetTrueHdrPreviewEnabledAsync");
         AssertDoesNotContain(automationRootText, "public Task SetPreviewEnabledAsync");
         AssertDoesNotContain(automationRootText, "public Task SetPreviewVolumeAsync");
         AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");

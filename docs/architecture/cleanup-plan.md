@@ -2574,6 +2574,8 @@ Remaining `tools/Common` ownership:
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
    `MainViewModel.AutomationPreview.cs`.
+   Automation HDR and true-HDR preview recording-time guard enforcement and HDR
+   availability checks now live in `MainViewModel.AutomationHdr.cs`.
    Automation device refresh, capture-device selection, audio-input selection,
    and custom audio-input enablement now live in
    `MainViewModel.AutomationDeviceSelection.cs`.
@@ -2585,7 +2587,7 @@ Remaining `tools/Common` ownership:
    `MainViewModel.AutomationCaptureMode.cs`.
    Startup FFmpeg capability probes for recording formats and split-encode modes
    now live in `MainViewModel.RecordingCapabilityRefresh.cs`.
-   Keep the remaining Flashback/HDR/recording command mutation code in
+   Keep the remaining Flashback/recording command mutation code in
    `MainViewModel.Automation.cs`.
 
 5. Extract capture resource owners behind the transition policy.
