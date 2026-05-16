@@ -1791,17 +1791,17 @@ Primary current owners:
 - `Sussudio/Controllers/SettingsShelfController.cs` owns settings shelf
   visibility, the animation gate, and show/hide storyboard construction.
   `MainWindow.SettingsShelf.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/SplashLoadingPhraseCatalog.cs` owns splash phrase
+- `Sussudio/Controllers/Launch/SplashLoadingPhraseCatalog.cs` owns splash phrase
   file lookup, Markdown-ish parsing, cached defaults, and exception fallback.
-  `Sussudio/Controllers/SplashLoadingPhraseController.cs` owns timer pacing and
+  `Sussudio/Controllers/Launch/SplashLoadingPhraseController.cs` owns timer pacing and
   two-line text animation. `MainWindow.SplashLoading.cs` is the XAML-facing
   adapter.
-- `Sussudio/Controllers/LaunchEntranceAnimationController.cs` owns launch
+- `Sussudio/Controllers/Launch/LaunchEntranceAnimationController.cs` owns launch
   entrance context and initial hidden/scaled shell state.
-  `Sussudio/Controllers/LaunchEntranceAnimationController.Splash.cs` owns the
+  `Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Splash.cs` owns the
   splash fade, one-shot splash playback state, loading-phrase start/stop
   ordering, and handoff into shell entrance.
-  `Sussudio/Controllers/LaunchEntranceAnimationController.Shell.cs` owns shell
+  `Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Shell.cs` owns shell
   chrome/button/stats entrance choreography, deferred preview reveal logging,
   active-storyboard cleanup, and the delayed control-bar shadow fade routed
   through `CompositionShadowFadeAnimator`. `MainWindow.LaunchEntrance.cs` is
