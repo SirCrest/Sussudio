@@ -484,9 +484,10 @@ source, MJPEG, recording, system resources and A/V sync, preview, and Flashback
 owner files.
 
 Fullscreen transition mechanics now live under the
-`Sussudio/Controllers/FullScreenController.*.cs` family. Keep the root controller
-to the public toggle/state surface, `FullScreenController.Transitions.cs` to
-enter/exit orchestration, `FullScreenController.Animation.cs` to rect animation,
+`Sussudio/Controllers/FullScreen/FullScreenController.*.cs` family. Keep the
+root controller to the public toggle/state surface,
+`FullScreenController.Transitions.cs` to enter/exit orchestration,
+`FullScreenController.Animation.cs` to rect animation,
 `FullScreenController.Chrome.cs` to chrome/material state, and
 `FullScreenController.Controls.cs` to overlay pointer/auto-hide behavior.
 `MainWindow.FullScreen.cs` remains the XAML event adapter.

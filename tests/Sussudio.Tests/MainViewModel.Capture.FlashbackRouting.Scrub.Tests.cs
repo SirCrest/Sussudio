@@ -30,8 +30,8 @@ static partial class Program
         var fullScreenFlashbackBridgeText = ReadRepoFile("Sussudio/MainWindow.FullScreenFlashbackBridge.cs")
             .Replace("\r\n", "\n");
         var fullScreenControllerText = (
-            ReadRepoFile("Sussudio/Controllers/FullScreenController.cs")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreenController.Transitions.cs"))
+            ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Transitions.cs"))
             .Replace("\r\n", "\n");
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
             .Replace("\r\n", "\n");

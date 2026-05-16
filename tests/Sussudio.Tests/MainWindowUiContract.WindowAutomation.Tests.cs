@@ -4,15 +4,15 @@ static partial class Program
     {
         var fullScreenSource = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs")
             .Replace("\r\n", "\n");
-        var fullScreenControllerRootSource = ReadRepoFile("Sussudio/Controllers/FullScreenController.cs")
+        var fullScreenControllerRootSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
             .Replace("\r\n", "\n");
-        var fullScreenControllerTransitionSource = ReadRepoFile("Sussudio/Controllers/FullScreenController.Transitions.cs")
+        var fullScreenControllerTransitionSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Transitions.cs")
             .Replace("\r\n", "\n");
-        var fullScreenControllerAnimationSource = ReadRepoFile("Sussudio/Controllers/FullScreenController.Animation.cs")
+        var fullScreenControllerAnimationSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Animation.cs")
             .Replace("\r\n", "\n");
-        var fullScreenControllerChromeSource = ReadRepoFile("Sussudio/Controllers/FullScreenController.Chrome.cs")
+        var fullScreenControllerChromeSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Chrome.cs")
             .Replace("\r\n", "\n");
-        var fullScreenControllerControlsSource = ReadRepoFile("Sussudio/Controllers/FullScreenController.Controls.cs")
+        var fullScreenControllerControlsSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.Controls.cs")
             .Replace("\r\n", "\n");
         var closeLifecycleSource = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
             .Replace("\r\n", "\n");
