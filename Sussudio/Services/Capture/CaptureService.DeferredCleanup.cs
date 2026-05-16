@@ -15,28 +15,6 @@ public partial class CaptureService
         string Reason,
         bool PurgeSegments);
 
-    private void ReleaseFlashbackBackendLeaseIfHeld(ref bool backendLeaseHeld)
-    {
-        if (!backendLeaseHeld)
-        {
-            return;
-        }
-
-        backendLeaseHeld = false;
-        ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_backend_lease");
-    }
-
-    private void ReleaseFlashbackExportOperationLockIfHeld(ref bool exportOperationLockHeld)
-    {
-        if (!exportOperationLockHeld)
-        {
-            return;
-        }
-
-        exportOperationLockHeld = false;
-        ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, "flashback_export_operation");
-    }
-
     private void ScheduleDeferredFlashbackBackendCleanup(
         Task sinkCompletionTask,
         FlashbackBackendArtifactCleanupRequest request,

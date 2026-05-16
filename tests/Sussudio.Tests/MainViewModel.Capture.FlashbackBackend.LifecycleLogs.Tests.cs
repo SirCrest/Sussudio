@@ -21,6 +21,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.ResourceRelease.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
@@ -72,7 +74,7 @@ static partial class Program
         var encoderSettingsChange = ExtractTextBetween(
             captureServiceText,
             "public Task CycleFlashbackEncoderSettingsAsync",
-            "private void ReleaseFlashbackBackendLeaseIfHeld");
+            "private void DisposeCoordinationLocksBestEffort");
         AssertContains(encoderSettingsChange, "var cycleFailed = false;");
         AssertContains(encoderSettingsChange, "var previousSettings = CloneCaptureSettings(_currentSettings);");
         AssertContains(encoderSettingsChange, "cycleFailed = true;");

@@ -2,13 +2,11 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Sussudio.Services.Flashback;
 
 namespace Sussudio.Services.Capture;
 
-// Transition serialization and best-effort release helpers for the capture
-// service. Feature partials call these helpers instead of owning their own
-// session-state mutation policy.
+// Transition serialization for the capture service. Feature partials call this
+// helper instead of owning their own session-state mutation policy.
 public partial class CaptureService
 {
     private async Task RunTransitionAsync(
@@ -71,32 +69,4 @@ public partial class CaptureService
         }
     }
 
-    private static void ReleaseSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)
-    {
-        try
-        {
-            semaphore.Release();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"CAPTURE_SERVICE_SEMAPHORE_RELEASE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
-        }
-    }
-
-    private static void ResumeFlashbackEvictionBestEffort(FlashbackBufferManager? bufferManager, string operation)
-    {
-        if (bufferManager == null)
-        {
-            return;
-        }
-
-        try
-        {
-            bufferManager.ResumeEviction();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_EVICTION_RESUME_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
-        }
-    }
 }

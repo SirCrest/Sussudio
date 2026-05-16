@@ -750,17 +750,26 @@ capture disposal, mic teardown, telemetry stop, and final session-state reset.
 Capture transition coordination now lives in
 `Sussudio/Services/Capture/CaptureService.Coordination.cs`. That file owns
 `RunTransitionAsync`, normal `_sessionState` transition writes, steady-state
-resolution, initialization/disposal guards, and best-effort semaphore release /
-eviction cleanup helpers used by the other capture-service partials.
-Disposal-triggered cleanup, final disposed-state writes, and best-effort
-coordination lock disposal now live in
-`Sussudio/Services/Capture/CaptureService.DisposalLifecycle.cs`.
+resolution, and initialization/disposal guards. Best-effort resource release
+helpers are delegated to
+`Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`.
+
+Disposal-triggered cleanup and final disposed-state writes now live in
+`Sussudio/Services/Capture/CaptureService.DisposalLifecycle.cs`. Coordination
+lock disposal is delegated to
+`Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`.
+
+Capture resource release helpers now live in
+`Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`. That file owns
+best-effort semaphore release/disposal, coordination-lock disposal, Flashback
+backend/export held-lock release helpers, and Flashback eviction resume warnings
+used by lifecycle/export/cleanup partials.
 
 Deferred capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs`. That file owns
-Flashback backend/export lock release helpers, deferred Flashback artifact
-cleanup request handoff after encoder/export drains, deferred unified-video
-cleanup after LibAv drains, and the pending LibAv drain reentry guard.
+deferred Flashback artifact cleanup request handoff after encoder/export drains,
+deferred unified-video cleanup after LibAv drains, and the pending LibAv drain
+reentry guard.
 
 Capture read-only automation probes now live in
 `Sussudio/Services/Capture/CaptureService.Probes.cs`. Video source probing,

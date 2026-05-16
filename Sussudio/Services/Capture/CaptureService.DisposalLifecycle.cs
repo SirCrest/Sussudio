@@ -55,22 +55,4 @@ public partial class CaptureService
         _sessionState = CaptureSessionState.Disposed;
     }
 
-    private void DisposeCoordinationLocksBestEffort()
-    {
-        DisposeSemaphoreBestEffort(_sessionTransitionLock, "session_transition");
-        DisposeSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_backend_lease");
-        DisposeSemaphoreBestEffort(_flashbackExportOperationLock, "flashback_export_operation");
-    }
-
-    private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)
-    {
-        try
-        {
-            semaphore.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"CAPTURE_SERVICE_SEMAPHORE_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
-        }
-    }
 }

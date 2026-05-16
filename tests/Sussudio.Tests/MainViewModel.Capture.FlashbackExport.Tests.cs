@@ -14,6 +14,8 @@ static partial class Program
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.ResourceRelease.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
                 .Replace("\r\n", "\n");
 
@@ -33,7 +35,7 @@ static partial class Program
         var lastNExport = ExtractTextBetween(
             captureServiceText,
             "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
-            "    private void ReleaseFlashbackBackendLeaseIfHeld");
+            "    private FinalizeResult FailFlashbackExport");
         AssertContains(lastNExport, "FlashbackExporter? flashbackExporter;");
         AssertContains(lastNExport, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
         AssertContains(lastNExport, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);\n            exportOperationLockHeld = true;");
