@@ -7,6 +7,14 @@ namespace Sussudio.Services.Capture;
 // CaptureService.FailureCleanup.cs.
 public partial class CaptureService
 {
+    private readonly object _recordingFailureTelemetryLock = new();
+    private bool _lastRecordingEncodingFailed;
+    private string? _lastRecordingEncodingFailureType;
+    private string? _lastRecordingEncodingFailureMessage;
+    private bool _lastFlashbackEncodingFailed;
+    private string? _lastFlashbackEncodingFailureType;
+    private string? _lastFlashbackEncodingFailureMessage;
+
     private void OnUnifiedVideoCaptureFatalError(object? sender, Exception ex)
     {
         Logger.Log($"UNIFIED_VIDEO_CAPTURE_FATAL type={ex.GetType().Name} msg={ex.Message}");

@@ -710,7 +710,8 @@ runtime lifecycle mutation code.
 
 Fatal capture and backend failure handling now lives in
 `Sussudio/Services/Capture/CaptureService.Failures.cs`. That file owns fatal
-error callbacks and last-failure telemetry.
+error callbacks and the recording/Flashback last-failure telemetry state
+fields, lock, mutation helpers, clear helpers, and snapshot reads.
 
 Fatal failure cleanup launch now lives in
 `Sussudio/Services/Capture/CaptureService.FailureCleanup.cs`. That file owns

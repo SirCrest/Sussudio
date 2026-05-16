@@ -390,7 +390,8 @@ Important entry points:
   helpers, Flashback artifact-cleanup request handoff, and deferred Flashback
   and unified-video cleanup after drains.
 - `CaptureService.Failures.cs` owns fatal capture/recording/Flashback backend
-  failure callbacks and last-failure telemetry.
+  failure callbacks plus last-failure telemetry state fields, lock, mutation
+  helpers, clear helpers, and snapshot reads.
 - `CaptureService.FailureCleanup.cs` owns fatal capture/Flashback backend
   cleanup launch, GPU device-lost classification, generation-stale guards,
   and fatal cleanup `_sessionState` writes into cleaning-up/faulted states.
@@ -1199,8 +1200,9 @@ Primary current owners:
   contracts.
 - `tests/Sussudio.Tests/CaptureService.InitializationOwnership.Tests.cs` owns
   the CaptureService initialization focused-partial ownership contract.
-- `tests/Sussudio.Tests/CaptureService.Failures.Tests.cs` owns capture fatal
-  cleanup and faulted-session state assertions.
+- `tests/Sussudio.Tests/CaptureService.Failures.Tests.cs` owns CaptureService
+  last-failure telemetry source placement, capture fatal cleanup, and
+  faulted-session state assertions.
 - `tests/Sussudio.Tests/CaptureService.SessionStateOwnership.Tests.cs` owns
   CaptureService `_sessionState` writer-file and writer-count ownership
   assertions.

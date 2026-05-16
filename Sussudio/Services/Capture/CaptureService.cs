@@ -94,13 +94,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private int _flashbackCleanupInProgress;
     private int _flashbackRecordingStartInProgress;
     private int _flashbackRecordingFinalizeInProgress;
-    private readonly object _recordingFailureTelemetryLock = new();
-    private bool _lastRecordingEncodingFailed;
-    private string? _lastRecordingEncodingFailureType;
-    private string? _lastRecordingEncodingFailureMessage;
-    private bool _lastFlashbackEncodingFailed;
-    private string? _lastFlashbackEncodingFailureType;
-    private string? _lastFlashbackEncodingFailureMessage;
     private long _sessionGeneration;
     private Task? _pendingLibAvDrainTask;
     private UnifiedVideoCapture? _unifiedVideoCapture;

@@ -1,5 +1,77 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
+using Xunit;
+
+public sealed class CaptureServiceFailureOwnershipTests
+{
+    [Fact]
+    public void CaptureService_LastFailureTelemetryState_LivesInFailuresPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
+        var failuresText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs")
+            .Replace("\r\n", "\n");
+
+        var fieldNames = new[]
+        {
+            "_recordingFailureTelemetryLock",
+            "_lastRecordingEncodingFailed",
+            "_lastRecordingEncodingFailureType",
+            "_lastRecordingEncodingFailureMessage",
+            "_lastFlashbackEncodingFailed",
+            "_lastFlashbackEncodingFailureType",
+            "_lastFlashbackEncodingFailureMessage",
+        };
+
+        foreach (var fieldName in fieldNames)
+        {
+            AssertDoesNotContain(rootText, fieldName);
+            AssertContains(failuresText, fieldName);
+        }
+
+        AssertContains(failuresText, "private readonly object _recordingFailureTelemetryLock = new();");
+        AssertContains(failuresText, "private bool _lastRecordingEncodingFailed;");
+        AssertContains(failuresText, "private string? _lastRecordingEncodingFailureType;");
+        AssertContains(failuresText, "private string? _lastRecordingEncodingFailureMessage;");
+        AssertContains(failuresText, "private bool _lastFlashbackEncodingFailed;");
+        AssertContains(failuresText, "private string? _lastFlashbackEncodingFailureType;");
+        AssertContains(failuresText, "private string? _lastFlashbackEncodingFailureMessage;");
+        AssertContains(failuresText, "private void RecordLastRecordingFailure(Exception ex)");
+        AssertContains(failuresText, "private void RecordLastFlashbackFailure(Exception ex)");
+        AssertContains(failuresText, "private void ClearLastRecordingFailure()");
+        AssertContains(failuresText, "private void ClearLastFlashbackFailure()");
+        AssertContains(failuresText, "GetLastFailureTelemetry()");
+    }
+
+    private static void AssertContains(string text, string expected)
+        => Assert.Contains(expected, text);
+
+    private static void AssertDoesNotContain(string text, string expected)
+        => Assert.DoesNotContain(expected, text);
+
+    private static string ReadRepoFile(string relativePath)
+    {
+        var path = Path.Combine(FindRepoRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar));
+        return File.ReadAllText(path);
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(Environment.CurrentDirectory);
+        while (dir != null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "Sussudio.slnx")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        throw new InvalidOperationException("Could not find Sussudio repo root.");
+    }
+}
 
 static partial class Program
 {
