@@ -1851,26 +1851,26 @@ Primary current owners:
   `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
   `MainWindow.PreviewReinit.cs` remains the XAML/MainWindow adapter for
   renderer-stop-before-teardown and reinit completion side effects.
-- `Sussudio/Controllers/PreviewStartupSessionController.cs` owns preview
+- `Sussudio/Controllers/PreviewStartup/PreviewStartupSessionController.cs` owns preview
   startup attempt/state bookkeeping, timestamps, cached failure/missing-signal
   details, and first-visual confirmation state. `Sussudio/MainWindow.PreviewStartup.cs`
   is the XAML/MainWindow-facing adapter that preserves logging and UI side
-  effects. `Sussudio/Controllers/PreviewStartupWatchdogController.cs` owns
+  effects. `Sussudio/Controllers/PreviewStartup/PreviewStartupWatchdogController.cs` owns
   watchdog/telemetry timers, timeout configuration, timeout recovery, and
   failure-stop scheduling. `Sussudio/MainWindow.PreviewStartupWatchdog.cs` wires
   the MainWindow/XAML-facing adapter and timeout diagnostic payload.
-  `Sussudio/Controllers/PreviewStartupSignalCoordinator.cs` owns readiness-
+  `Sussudio/Controllers/PreviewStartup/PreviewStartupSignalCoordinator.cs` owns readiness-
   signal coordination: readiness-signal state handoff, missing-signal updates,
   playback-progress diagnostics, startup signal log strings, GPU position
   counter state, and first-visual confirmation decisions. `MainWindow.PreviewStartupSignals.cs`
   is the XAML/MainWindow-facing adapter that supplies live preview state,
   renderer visibility details, logging, and confirmation callbacks.
-  `Sussudio/Controllers/PreviewStartupReadinessSignalController.cs` owns
+  `Sussudio/Controllers/PreviewStartup/PreviewStartupReadinessSignalController.cs` owns
   readiness-signal required/received state, missing-signal calculation,
   playback-advance threshold checks, and readiness result snapshots.
-  `Sussudio/Controllers/PreviewStartupSignalFormatter.cs` owns missing-signal
+  `Sussudio/Controllers/PreviewStartup/PreviewStartupSignalFormatter.cs` owns missing-signal
   and signal-list string formatting.
-  `Sussudio/Controllers/PreviewStartupFailureTextFormatter.cs` owns preview
+  `Sussudio/Controllers/PreviewStartup/PreviewStartupFailureTextFormatter.cs` owns preview
   startup timeout reason, timeout status, and failure-stop status text.
   `Sussudio/Controllers/PreviewLifecycleEventController.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for
@@ -1888,7 +1888,7 @@ Primary current owners:
   replacement fallback, and preview-audio fade start ordering.
   `MainWindow.PreviewFadeIn.cs` is the XAML-facing adapter. Keep
   timeout/watchdog recovery in `PreviewStartupWatchdogController`.
-- `Sussudio/Controllers/PreviewStartupOverlayController.cs` owns preview-
+- `Sussudio/Controllers/PreviewStartup/PreviewStartupOverlayController.cs` owns preview-
   startup loading overlay presentation while the app waits for visual
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
   reinit-collapse opacity reset. `MainWindow.PreviewStartupOverlay.cs` is the

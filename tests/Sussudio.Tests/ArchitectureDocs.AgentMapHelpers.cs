@@ -222,7 +222,8 @@ static partial class Program
                  string.Equals(fileName, "LiveSignalTextPresentationBuilder.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "RecordingFormatSelectionPolicy.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "SourceTelemetryPresentationBuilder.cs", StringComparison.Ordinal))) ||
-            (string.Equals(directory, "Sussudio/Controllers", StringComparison.OrdinalIgnoreCase) &&
+            ((string.Equals(directory, "Sussudio/Controllers", StringComparison.OrdinalIgnoreCase) ||
+              directory.StartsWith("Sussudio/Controllers/", StringComparison.OrdinalIgnoreCase)) &&
                 fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase));
     }
 
