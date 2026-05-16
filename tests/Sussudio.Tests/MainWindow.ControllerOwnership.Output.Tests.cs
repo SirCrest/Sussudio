@@ -10,8 +10,8 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var outputPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedOutput.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.OutputPathDisplay.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Output/OutputPathDisplayController.cs").Replace("\r\n", "\n");
-        var formatterText = ReadRepoFile("Sussudio/Controllers/Output/OutputPathDisplayTextFormatter.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Output/OutputPathDisplayController.cs").Replace("\r\n", "\n");
+        var formatterText = ReadRepoFile("Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private OutputPathDisplayController _outputPathDisplayController = null!;");
         AssertContains(adapterText, "private void InitializeOutputPathDisplayController()");
@@ -89,7 +89,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.OutputPathActions.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Output/OutputPathActionController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Output/OutputPathActionController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private OutputPathActionController _outputPathActionController = null!;");
         AssertContains(adapterText, "private void InitializeOutputPathActionController()");

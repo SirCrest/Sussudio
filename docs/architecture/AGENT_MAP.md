@@ -2006,12 +2006,12 @@ Primary current owners:
   matching.
   `MainWindow.CaptureOptionBindings.cs` and
   `MainWindow.RecordingOptionBindings.cs` are XAML-facing adapters.
-- `Sussudio/Controllers/Output/OutputPathDisplayController.cs` owns recording output-
+- `Sussudio/Controllers/Recording/Output/OutputPathDisplayController.cs` owns recording output-
   path textbox, tooltip, and resize-event updates.
-  `Sussudio/Controllers/Output/OutputPathDisplayTextFormatter.cs` owns pure output-
+  `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs` owns pure output-
   path truncation text policy. `MainWindow.OutputPathDisplay.cs` is the
   XAML-facing adapter used by binding setup and property changes.
-- `Sussudio/Controllers/Output/OutputPathActionController.cs` owns recording output-
+- `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs` owns recording output-
   path browse/open-recordings button workflows. `MainWindow.OutputPathActions.cs`
   is the XAML-facing adapter.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and

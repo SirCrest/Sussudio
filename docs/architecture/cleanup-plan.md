@@ -2074,13 +2074,13 @@ capture-option presentation adapter. `MainWindow.CaptureOptionBindings.cs` and
 `SetupBindings()`.
 
 Recording output-path textbox, tooltip, and resize-event updates now live in
-`Sussudio/Controllers/Output/OutputPathDisplayController.cs`; pure truncation text
-policy now lives in `Sussudio/Controllers/Output/OutputPathDisplayTextFormatter.cs`.
+`Sussudio/Controllers/Recording/Output/OutputPathDisplayController.cs`; pure truncation text
+policy now lives in `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs`.
 `MainWindow.OutputPathDisplay.cs` is the XAML-facing adapter used by binding
 setup and property changes.
 
 Recording output-path browse/open-recordings button workflows now live in
-`Sussudio/Controllers/Output/OutputPathActionController.cs`.
+`Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`.
 `MainWindow.OutputPathActions.cs` is the XAML-facing adapter.
 
 Diagnostic session DTOs now live in focused model files:
@@ -2775,7 +2775,7 @@ Remaining `tools/Common` ownership:
    Debounced preview reinitialization, Flashback-cycle wait-before-reinit,
    renderer-stop handoff, teardown restart, and gate release now live in
    `MainViewModel.PreviewReinitialization.cs`. Output folder browse/open-recordings button workflows now live in
-   `Sussudio/Controllers/Output/OutputPathActionController.cs`. Recording toggle serialization, graceful stop, emergency stop,
+   `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`. Recording toggle serialization, graceful stop, emergency stop,
    and start/stop recording transitions now live in
    `MainViewModel.RecordingLifecycle.cs`. Recording option selections, output
    path, counters, and transition flags now live in
