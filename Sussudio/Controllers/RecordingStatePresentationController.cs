@@ -2,7 +2,6 @@ using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
-using Sussudio.Models;
 using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
@@ -45,6 +44,7 @@ internal sealed class RecordingStatePresentationController
     {
         var viewModel = _context.ViewModel;
         var isRecording = viewModel.IsRecording;
+        var state = BuildPresentationState();
 
         if (isRecording)
         {
@@ -83,15 +83,13 @@ internal sealed class RecordingStatePresentationController
             });
         }
 
-        _context.AudioRecordToggle.IsEnabled = !isRecording;
-        _context.CustomAudioToggle.IsEnabled = !isRecording;
-        _context.MicrophoneToggle.IsEnabled = !isRecording;
-        _context.AudioInputComboBox.IsEnabled = viewModel.IsCustomAudioInputEnabled && !isRecording;
-        _context.MicrophoneComboBox.IsEnabled = viewModel.IsMicrophoneEnabled && !isRecording;
-        _context.DeviceAudioModeToggle.IsEnabled = viewModel.IsDeviceAudioControlSupported && !isRecording;
-        _context.AnalogAudioGainSlider.IsEnabled = viewModel.IsDeviceAudioControlSupported &&
-                                                   string.Equals(viewModel.SelectedDeviceAudioMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase) &&
-                                                   !isRecording;
+        _context.AudioRecordToggle.IsEnabled = state.AudioRecordToggleEnabled;
+        _context.CustomAudioToggle.IsEnabled = state.CustomAudioToggleEnabled;
+        _context.MicrophoneToggle.IsEnabled = state.MicrophoneToggleEnabled;
+        _context.AudioInputComboBox.IsEnabled = state.AudioInputComboBoxEnabled;
+        _context.MicrophoneComboBox.IsEnabled = state.MicrophoneComboBoxEnabled;
+        _context.DeviceAudioModeToggle.IsEnabled = state.DeviceAudioModeToggleEnabled;
+        _context.AnalogAudioGainSlider.IsEnabled = state.AnalogAudioGainSliderEnabled;
         _context.ApplyHdrToggleEnabledState();
         _context.RefreshHdrHintText();
         _context.UpdateDeviceApplyButtonState();
@@ -110,7 +108,8 @@ internal sealed class RecordingStatePresentationController
     public void HandleRecordingTransitioningChanged()
     {
         var viewModel = _context.ViewModel;
-        _context.RecordButton.IsEnabled = !viewModel.IsRecordingTransitioning;
+        var state = BuildPresentationState();
+        _context.RecordButton.IsEnabled = state.TransitionRecordButtonEnabled;
         if (viewModel.IsRecordingTransitioning)
         {
             if (viewModel.IsRecording)
@@ -123,21 +122,37 @@ internal sealed class RecordingStatePresentationController
                 _context.RecordButtonNormalContent.Visibility = Visibility.Collapsed;
             }
 
-            _context.RecordButtonStartingContent.IsActive = true;
+            _context.RecordButtonStartingContent.IsActive = state.TransitionStartingContentActive;
             _context.RecordButtonStartingContent.Visibility = Visibility.Visible;
         }
         else
         {
             _context.RecordButtonStartingContent.IsActive = false;
             _context.RecordButtonStartingContent.Visibility = Visibility.Collapsed;
-            _context.RecordButtonNormalContent.Visibility = viewModel.IsRecording ? Visibility.Collapsed : Visibility.Visible;
-            _context.RecordButtonRecordingContent.Visibility = viewModel.IsRecording ? Visibility.Visible : Visibility.Collapsed;
+            _context.RecordButtonNormalContent.Visibility = ToVisibility(state.SettledNormalContentVisible);
+            _context.RecordButtonRecordingContent.Visibility = ToVisibility(state.SettledRecordingContentVisible);
         }
     }
 
     public void HandleFfmpegMissingChanged()
     {
-        _context.RecordButton.IsEnabled = !_context.ViewModel.IsFfmpegMissing &&
-                                          !_context.ViewModel.IsRecordingTransitioning;
+        var state = BuildPresentationState();
+        _context.RecordButton.IsEnabled = state.FfmpegRecordButtonEnabled;
     }
+
+    private RecordingStatePresentationState BuildPresentationState()
+    {
+        var viewModel = _context.ViewModel;
+        return RecordingStatePresentationPolicy.Build(new RecordingStatePresentationInput(
+            IsRecording: viewModel.IsRecording,
+            IsRecordingTransitioning: viewModel.IsRecordingTransitioning,
+            IsFfmpegMissing: viewModel.IsFfmpegMissing,
+            IsCustomAudioInputEnabled: viewModel.IsCustomAudioInputEnabled,
+            IsMicrophoneEnabled: viewModel.IsMicrophoneEnabled,
+            IsDeviceAudioControlSupported: viewModel.IsDeviceAudioControlSupported,
+            SelectedDeviceAudioMode: viewModel.SelectedDeviceAudioMode));
+    }
+
+    private static Visibility ToVisibility(bool isVisible)
+        => isVisible ? Visibility.Visible : Visibility.Collapsed;
 }

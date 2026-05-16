@@ -1846,10 +1846,14 @@ Bottom status-strip projection now lives in
 owns the status-strip `PropertyChanged` router. Recording-time updates still
 refresh the window title only while recording.
 
-Recording-state UI projection now lives in
+Pure recording-state lockout decisions now live in
+`Sussudio/Controllers/RecordingStatePresentationPolicy.cs`: recording-time
+capture/audio control enablement, analog gain enablement, transition button
+enablement, FFmpeg button enablement, and settled record-button content
+visibility. Recording-state UI projection now lives in
 `Sussudio/Controllers/RecordingStatePresentationController.cs`: record-button
-content, recording glow, recording pulse, FFmpeg/transition button enablement,
-and the recording-time lockout state for capture/audio controls.
+content application, recording glow/pulse storyboards, width animation handoff,
+and recording-time side effects.
 `MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter and
 recording property-name router, while
 `Sussudio/Controllers/RecordButtonAnimationController.cs` still owns only the

@@ -1689,11 +1689,14 @@ Primary current owners:
 - `Sussudio/Controllers/RecordButtonAnimationController.cs` owns the recording
   button circle/pill width morph used by recording state changes.
   `MainWindow.RecordButtonAnimations.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/RecordingStatePresentationController.cs` owns
-  recording-state UI projection: record-button content, recording glow,
-  recording pulse, FFmpeg/transition button enablement, and recording-time
-  control lockouts. `MainWindow.PropertyChangedRecording.cs` is the
-  XAML-facing adapter.
+- `Sussudio/Controllers/RecordingStatePresentationPolicy.cs` owns pure
+  recording-state lockout decisions: recording-time capture/audio control
+  enablement, analog gain enablement, transition button enablement, FFmpeg
+  button enablement, and settled record-button content visibility.
+  `Sussudio/Controllers/RecordingStatePresentationController.cs` owns
+  record-button content application, recording glow/pulse storyboards, width
+  animation handoff, and recording-time side effects.
+  `MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/RecordingButtonActionController.cs` owns the recording
   button command workflow and preview-state logging after a start.
   `MainWindow.RecordingActions.cs` is the XAML-facing adapter.
@@ -1747,8 +1750,8 @@ Primary current owners:
   lives in `PreviewSurfacePresentationController`.
 - `Sussudio/MainWindow.PropertyChangedRecording.cs` owns only the
   recording-specific property-change router and adapter surface, delegating
-  record-button, glow, pulse, and recording-time lockout projection to
-  `RecordingStatePresentationController`.
+  record-button, glow, pulse, and recording-time lockout projection through
+  `RecordingStatePresentationController` and `RecordingStatePresentationPolicy`.
 - `Sussudio/MainWindow.PropertyChangedOutput.cs` owns the output-path
   property-change router and delegates display updates to
   `OutputPathDisplayController`.

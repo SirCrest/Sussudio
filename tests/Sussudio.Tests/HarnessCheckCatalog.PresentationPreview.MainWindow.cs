@@ -79,6 +79,9 @@ static partial class Program
             "Recording state presentation lives in controller",
             RecordingStatePresentation_LivesInController);
         await AddCheckAsync(results,
+            "Recording state presentation policy preserves lockout rules",
+            RecordingStatePresentationPolicy_PreservesLockoutRules);
+        await AddCheckAsync(results,
             "Recording button action lives in controller",
             RecordingButtonAction_LivesInController);
         await AddCheckAsync(results,
