@@ -11,6 +11,7 @@ static partial class Program
     private static Task MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy()
     {
         var source = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FrameIngress.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Queue.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.EmitLoop.cs")
@@ -63,9 +64,25 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs")
             .Replace("\r\n", "\n");
+        var frameIngressText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FrameIngress.cs")
+            .Replace("\r\n", "\n");
         var emitLoopText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.EmitLoop.cs")
             .Replace("\r\n", "\n");
+        var queueText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Queue.cs")
+            .Replace("\r\n", "\n");
+        var adaptiveText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Adaptive.cs")
+            .Replace("\r\n", "\n");
+        var metricsText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs")
+            .Replace("\r\n", "\n");
 
+        AssertContains(frameIngressText, "private sealed class BufferedFrame : IDisposable");
+        AssertContains(frameIngressText, "public void Enqueue(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)");
+        AssertContains(frameIngressText, "public void Enqueue(PooledVideoFrameLease frame)");
+        AssertContains(frameIngressText, "private void EnqueueBufferedFrame(BufferedFrame frame)");
+        AssertDoesNotContain(rootText, "private sealed class BufferedFrame : IDisposable");
+        AssertDoesNotContain(rootText, "public void Enqueue(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)");
+        AssertDoesNotContain(rootText, "public void Enqueue(PooledVideoFrameLease frame)");
+        AssertDoesNotContain(rootText, "private void EnqueueBufferedFrame(BufferedFrame frame)");
         AssertContains(emitLoopText, "private void EmitLoop()");
         AssertContains(emitLoopText, "private long AlignDueTickToDisplayClock(IPreviewFrameSink? sink, long currentDueTick, long nowTick)");
         AssertContains(emitLoopText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
@@ -76,6 +93,15 @@ static partial class Program
         AssertDoesNotContain(rootText, "private void EmitLoop()");
         AssertDoesNotContain(rootText, "private long AlignDueTickToDisplayClock(");
         AssertDoesNotContain(rootText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
+        AssertContains(queueText, "private bool AddFrameInOrder(BufferedFrame frame)");
+        AssertContains(queueText, "private BufferedFrame RemoveOldestFrame()");
+        AssertContains(queueText, "private bool TryRecordResumeReprimeMiss(long nowTick)");
+        AssertContains(adaptiveText, "private void DropDeadlineExpiredFrames(long nowTick)");
+        AssertContains(adaptiveText, "private void IncreaseTargetDepth(long nowTick)");
+        AssertContains(adaptiveText, "private bool HasLatencyPressure(long nowTick)");
+        AssertContains(metricsText, "public Metrics GetMetrics()");
+        AssertContains(metricsText, "private void RecordInputInterval(long nowTick)");
+        AssertContains(metricsText, "private void RecordDroppedFrame(long sourceSequenceNumber, string reason)");
 
         return Task.CompletedTask;
     }

@@ -462,9 +462,9 @@ Flashback DTO contracts, and recording pipeline option contracts.
 
 `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` now keeps only shared
 pooled-frame and jitter-buffer helpers. Pooled-frame coverage is split into
-lease lifecycle/fan-out contracts, MJPEG jitter adaptive policy, MJPEG jitter
-queue/drop/reprime behavior, and queued lease release contracts for D3D,
-recording, and Flashback paths.
+lease lifecycle/fan-out contracts, MJPEG jitter frame-ingress/adaptive policy,
+MJPEG jitter queue/drop/reprime behavior, and queued lease release contracts
+for D3D, recording, and Flashback paths.
 
 `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
 is now only the automation diagnostics projection test family marker shell.
@@ -1348,14 +1348,17 @@ deadline drops, adaptive target depth, and emit-loop pacing in their focused
 owners.
 
 MJPEG preview jitter-buffer queueing and adaptive deadline policy now have
-their own owners. `MjpegPreviewJitterBuffer.Queue.cs` owns queue depth, ordered
+their own owners. `MjpegPreviewJitterBuffer.FrameIngress.cs` owns decoded
+preview-frame ingress, the nested buffered payload type, ArrayPool/lease
+ownership transfer, input-interval recording, queue-full admission drops, and
+enqueue signaling. `MjpegPreviewJitterBuffer.Queue.cs` owns queue depth, ordered
 frame insertion/dequeue, missing-sequence recovery, clear behavior, and resume
 reprime accounting. `MjpegPreviewJitterBuffer.Adaptive.cs` owns hard/soft
 deadline drops, adjusted output cadence, target-depth increase/decrease, and
 latency-pressure classification. `MjpegPreviewJitterBuffer.EmitLoop.cs` owns
 the paced emit loop, display-clock alignment, frame submission to the preview
 sink, tick waits, timer-resolution P/Invoke, and MMCSS registration. Keep the
-root file focused on construction, public enqueue/suppression lifecycle, and
+root file focused on construction, suppression/reprime lifecycle, and
 dispose-time queue teardown.
 
 Parallel MJPEG decode pipeline timing now lives in
