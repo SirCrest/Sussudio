@@ -2572,9 +2572,10 @@ Remaining `tools/Common` ownership:
    `MainViewModel.FrameRateSourceFilterPolicy.cs`, while `ShowAllCaptureOptions`
    change handling and deferred rebuild behavior live in
    `MainViewModel.CaptureOptionVisibility.cs`. Shared frame-rate timing family,
-   rational parsing, source-rate fallback, and preferred-format ranking now live
-   in `MainViewModel.FrameRateTiming.cs`; keep device enumeration and selected
-   device capability rebuilds in `MainViewModel.DeviceManagement.cs`, while
+   resolution timing-variant projection, rational parsing, source-rate fallback,
+   and preferred-format ranking now live in `MainViewModel.FrameRateTiming.cs`;
+   keep device enumeration and selected device capability rebuilds in
+   `MainViewModel.DeviceManagement.cs`, while
    startup audio-list and watcher-driven audio endpoint refresh adaptation live
    in `MainViewModel.AudioDeviceDiscovery.cs`. Pure audio-device filtering and
    previous/saved/default audio and microphone selection fallback policy now

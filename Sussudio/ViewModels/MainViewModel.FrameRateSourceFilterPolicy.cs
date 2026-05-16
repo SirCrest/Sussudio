@@ -7,8 +7,6 @@ namespace Sussudio.ViewModels;
 
 public partial class MainViewModel
 {
-    private readonly record struct FrameRateTimingVariant(int FriendlyBucket, FrameRateTimingFamily Family);
-
     private sealed record FrameRateSourceFilterResult(
         IReadOnlyList<FrameRateOption> Options,
         bool SourceTimingFamilyKnown,
@@ -140,22 +138,5 @@ public partial class MainViewModel
                (disableReason.IndexOf("higher capture fps", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 disableReason.IndexOf("duplicate variant", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 disableReason.IndexOf("not a clean divisor", StringComparison.OrdinalIgnoreCase) >= 0);
-    }
-
-    private IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)
-    {
-        if (string.IsNullOrWhiteSpace(resolutionKey) ||
-            !_resolutionToFormats.TryGetValue(resolutionKey, out var formats))
-        {
-            return Array.Empty<FrameRateTimingVariant>();
-        }
-
-        return formats
-            .Select(format => TryInferFrameRateTimingFamily(format.FrameRateRational, format.FrameRateExact, out var family)
-                ? new FrameRateTimingVariant(GetFriendlyFrameRateBucket(format.FrameRateExact), family)
-                : (FrameRateTimingVariant?)null)
-            .Where(variant => variant.HasValue)
-            .Select(variant => variant!.Value)
-            .ToList();
     }
 }

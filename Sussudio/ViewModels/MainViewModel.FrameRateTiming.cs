@@ -12,8 +12,27 @@ namespace Sussudio.ViewModels;
 /// </summary>
 public partial class MainViewModel
 {
+    private readonly record struct FrameRateTimingVariant(int FriendlyBucket, FrameRateTimingFamily Family);
+
     private static string FormatFriendlyFrameRate(double frameRate)
         => $"{Math.Round(frameRate):0}";
+
+    private IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)
+    {
+        if (string.IsNullOrWhiteSpace(resolutionKey) ||
+            !_resolutionToFormats.TryGetValue(resolutionKey, out var formats))
+        {
+            return Array.Empty<FrameRateTimingVariant>();
+        }
+
+        return formats
+            .Select(format => TryInferFrameRateTimingFamily(format.FrameRateRational, format.FrameRateExact, out var family)
+                ? new FrameRateTimingVariant(GetFriendlyFrameRateBucket(format.FrameRateExact), family)
+                : (FrameRateTimingVariant?)null)
+            .Where(variant => variant.HasValue)
+            .Select(variant => variant!.Value)
+            .ToList();
+    }
 
     private FrameRateTimingFamily ResolvePreferredTimingFamily(string? resolutionKey, double previousRate)
     {

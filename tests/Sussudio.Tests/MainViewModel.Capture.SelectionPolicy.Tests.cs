@@ -52,7 +52,8 @@ static partial class Program
         AssertContains(sourceFilterPolicyText, "higher capture fps duplicates frames");
         AssertContains(sourceFilterPolicyText, "duplicate variant is hidden");
         AssertContains(sourceFilterPolicyText, "not a clean divisor");
-        AssertContains(sourceFilterPolicyText, "private IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
+        AssertDoesNotContain(sourceFilterPolicyText, "private readonly record struct FrameRateTimingVariant(");
+        AssertDoesNotContain(sourceFilterPolicyText, "private IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
         AssertDoesNotContain(sourceFilterPolicyText, "AvailableFrameRates.Clear();");
         AssertDoesNotContain(sourceFilterPolicyText, "ApplyResolvedFrameRateSelection(");
         AssertDoesNotContain(sourceFilterPolicyText, "DetectedSourceFrameRate =");
@@ -738,6 +739,8 @@ static partial class Program
         AssertContains(timingText, "private FrameRateTimingFamily ResolvePreferredTimingFamily(");
         AssertContains(timingText, "private static MediaFormat SelectPreferredFrameRateFormat(");
         AssertContains(timingText, "private (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(");
+        AssertContains(timingText, "private readonly record struct FrameRateTimingVariant(int FriendlyBucket, FrameRateTimingFamily Family);");
+        AssertContains(timingText, "private IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
         AssertContains(timingText, "private static bool TryInferFrameRateTimingFamily(");
         AssertContains(timingText, "private static bool TryParseFrameRateRational(");
 

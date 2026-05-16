@@ -1869,8 +1869,9 @@ Primary current owners:
   `ShowAllCaptureOptions` unlock policy. `MainViewModel.CaptureOptionVisibility.cs`
   owns `ShowAllCaptureOptions` change handling and deferred rebuild behavior.
   `MainViewModel.FrameRateTiming.cs` owns shared frame-rate timing family,
-  rational parsing, source-rate fallback, and preferred-format ranking helpers
-  used by frame-rate, resolution, capture-settings, and automation projections.
+  resolution timing-variant projection, rational parsing, source-rate fallback,
+  and preferred-format ranking helpers used by frame-rate, resolution,
+  capture-settings, and automation projections.
   `MainViewModel.FormatSelection.cs` owns pixel-format option building,
   recording-format policy application to observable state, HDR toggle side
   effects, and selected capture-format selection policy.
