@@ -2364,7 +2364,8 @@ Primary owners:
   row projection; `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs`
   owns the private row model.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs` owns timeline
-  table, trend, Flashback command, export, and target-summary text rendering.
+  table text rendering. `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.Trend.cs`
+  owns first-vs-last trend text and target-summary orchestration.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs` owns compact
   cell, byte, D3D bottleneck, cleanup, export, and optional-value formatting.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Summaries.cs` owns 1%-low

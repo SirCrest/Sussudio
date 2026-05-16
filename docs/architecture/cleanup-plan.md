@@ -2204,7 +2204,9 @@ MCP performance timeline projection is split across the
 tool entry point and command response handling in the root file, JSON-to-row
 projection in `PerformanceTimelineTools.Rows.cs`, the private row model in
 `PerformanceTimelineTools.Rows.Model.cs`,
-timeline table/trend text rendering in `PerformanceTimelineTools.Rendering.cs`,
+timeline table text rendering in `PerformanceTimelineTools.Rendering.cs`,
+first-vs-last trend text and target-summary orchestration in
+`PerformanceTimelineTools.Rendering.Trend.cs`,
 compact value/byte/export/D3D formatting helpers in
 `PerformanceTimelineTools.Formatting.cs`, and target/pressure summaries in
 `PerformanceTimelineTools.Summaries.cs`.
