@@ -2,194 +2,76 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using FFmpeg.AutoGen;
-using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Recording;
 
 internal sealed unsafe partial class LibAvEncoder
 {
-    private void CloseCurrentOutputIo()
+    public void FlushAndClose()
     {
-        if (_formatCtx == null || _formatCtx->pb == null)
+        if (!_isOpen && _formatCtx == null && _videoCodecCtx == null && _audio.CodecCtx == null && _mic.CodecCtx == null)
         {
             return;
         }
 
-        ThrowIfError(ffmpeg.avio_closep(&_formatCtx->pb), "avio_closep(rotate)");
-    }
-
-    private void FreeCurrentOutputContext()
-    {
-        if (_formatCtx == null)
-        {
-            return;
-        }
-
-        ffmpeg.avformat_free_context(_formatCtx);
-        _formatCtx = null;
-        _videoStream = null;
-        _audio.Stream = null;
-        _mic.Stream = null;
-        _headerWritten = false;
-    }
-
-    private void ReinitializeOutputContext(string outputPath)
-    {
-        var containerFormat = _options?.ContainerFormat ?? "mp4";
-        AVFormatContext* formatCtx = null;
-        ThrowIfError(
-            ffmpeg.avformat_alloc_output_context2(&formatCtx, null, containerFormat, outputPath),
-            "avformat_alloc_output_context2(rotate)");
-        if (formatCtx == null)
-        {
-            throw CreateLibAvException(
-                "LIBAV_ENCODER_ERROR operation=avformat_alloc_output_context2(rotate) msg=Output context allocation returned null.");
-        }
-
-        _formatCtx = formatCtx;
-        ReinitializeVideoStream();
-        ReinitializeAudioStream();
-        ReinitializeMicrophoneStream();
-        ReinitializeVideoBitstreamFilter();
-
-        ThrowIfError(ffmpeg.avio_open2(&_formatCtx->pb, outputPath, ffmpeg.AVIO_FLAG_WRITE, null, null), "avio_open2(rotate)");
-
-        AVDictionary* muxerOptions = null;
         try
         {
-            ApplyMp4MuxerOptions(containerFormat, _options?.FragmentedMp4 ?? false, &muxerOptions, "rotate");
-            ThrowIfError(ffmpeg.avformat_write_header(_formatCtx, &muxerOptions), "avformat_write_header(rotate)");
-            _headerWritten = true;
+            if (_isOpen && !_flushSent)
+            {
+                try
+                {
+                    var flushResult = ffmpeg.avcodec_send_frame(_videoCodecCtx, null);
+                    if (flushResult != ffmpeg.AVERROR_EOF)
+                    {
+                        ThrowIfError(flushResult, "avcodec_send_frame(flush)");
+                        _flushSent = true;
+                    }
+
+                    DrainEncoderPackets();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"LIBAV_ENCODER_WARNING video_flush_error msg='{ex.Message}'");
+                }
+            }
+
+            if (_audio.CodecCtx != null)
+            {
+                FlushPendingStreamSamples(ref _audio, "audio_flush",
+                    trackDriftCorrection: true, DriftCorrectionThresholdMs);
+
+                var flushResult = ffmpeg.avcodec_send_frame(_audio.CodecCtx, null);
+                if (flushResult != ffmpeg.AVERROR_EOF)
+                {
+                    ThrowIfError(flushResult, "avcodec_send_frame(audio_flush)");
+                }
+
+                DrainStreamEncoderPackets(ref _audio);
+            }
+
+            if (_mic.CodecCtx != null)
+            {
+                FlushPendingStreamSamples(ref _mic, "mic_flush",
+                    trackDriftCorrection: false, MicDriftCorrectionThresholdMs);
+
+                var flushResult = ffmpeg.avcodec_send_frame(_mic.CodecCtx, null);
+                if (flushResult != ffmpeg.AVERROR_EOF)
+                {
+                    ThrowIfError(flushResult, "avcodec_send_frame(mic_flush)");
+                }
+
+                DrainStreamEncoderPackets(ref _mic);
+            }
         }
         finally
         {
-            ffmpeg.av_dict_free(&muxerOptions);
+            CleanupResources(writeTrailer: true);
         }
     }
 
-    private static unsafe void ApplyMp4MuxerOptions(
-        string containerFormat,
-        bool fragmentedMp4,
-        AVDictionary** muxerOptions,
-        string operation)
+    public void Dispose()
     {
-        if (containerFormat != "mp4")
-        {
-            return;
-        }
-
-        var movflags = fragmentedMp4
-            ? "frag_keyframe+empty_moov"
-            : "+faststart";
-        ThrowIfError(ffmpeg.av_dict_set(muxerOptions, "movflags", movflags, 0), $"av_dict_set(movflags,{operation})");
-
-        if (fragmentedMp4)
-        {
-            // Keep active Flashback playback A/V interleaving tight. Keyframe-only
-            // fragmentation can batch about a GOP of video before matching audio.
-            ThrowIfError(ffmpeg.av_dict_set(muxerOptions, "frag_duration", "100000", 0), $"av_dict_set(frag_duration,{operation})");
-            ThrowIfError(ffmpeg.av_dict_set(muxerOptions, "flush_packets", "1", 0), $"av_dict_set(flush_packets,{operation})");
-        }
-    }
-
-    private void ReinitializeVideoStream()
-    {
-        if (_formatCtx == null || _videoCodecCtx == null)
-        {
-            throw new InvalidOperationException("Video rotation state is not initialized.");
-        }
-
-        _videoStream = ffmpeg.avformat_new_stream(_formatCtx, null);
-        if (_videoStream == null)
-        {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avformat_new_stream(rotate_video) msg=Stream allocation returned null.");
-        }
-
-        ThrowIfError(
-            ffmpeg.avcodec_parameters_from_context(_videoStream->codecpar, _videoCodecCtx),
-            "avcodec_parameters_from_context(rotate_video)");
-        _videoStream->time_base = _videoCodecCtx->time_base;
-        _videoStream->avg_frame_rate = _videoCodecCtx->framerate;
-        _videoStream->r_frame_rate = _videoCodecCtx->framerate;
-    }
-
-    private void ReinitializeAudioStream()
-    {
-        if (_formatCtx == null || _audio.CodecCtx == null)
-        {
-            return;
-        }
-
-        _audio.Stream = ffmpeg.avformat_new_stream(_formatCtx, null);
-        if (_audio.Stream == null)
-        {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avformat_new_stream(rotate_audio) msg=Stream allocation returned null.");
-        }
-
-        ThrowIfError(
-            ffmpeg.avcodec_parameters_from_context(_audio.Stream->codecpar, _audio.CodecCtx),
-            "avcodec_parameters_from_context(rotate_audio)");
-        _audio.Stream->time_base = _audio.CodecCtx->time_base;
-    }
-
-    private void ReinitializeMicrophoneStream()
-    {
-        if (_formatCtx == null || _mic.CodecCtx == null)
-        {
-            return;
-        }
-
-        _mic.Stream = ffmpeg.avformat_new_stream(_formatCtx, null);
-        if (_mic.Stream == null)
-        {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avformat_new_stream(rotate_mic) msg=Stream allocation returned null.");
-        }
-
-        ThrowIfError(
-            ffmpeg.avcodec_parameters_from_context(_mic.Stream->codecpar, _mic.CodecCtx),
-            "avcodec_parameters_from_context(rotate_mic)");
-        _mic.Stream->time_base = _mic.CodecCtx->time_base;
-    }
-
-    private void ReinitializeVideoBitstreamFilter()
-    {
-        if (_bsfCtx != null)
-        {
-            var existingBsf = _bsfCtx;
-            ffmpeg.av_bsf_free(&existingBsf);
-            _bsfCtx = null;
-        }
-
-        var options = _options;
-        if (options != null)
-        {
-            InitializeVideoBitstreamFilterIfNeeded(options);
-        }
-    }
-
-    private void ResetSegmentRuntimeState()
-    {
-        // CRITICAL: Do NOT reset _nextVideoPts, _audio.NextPts, _mic.NextPts.
-        // NVENC has 1+ frame pipeline latency. After RotateOutput, the first
-        // packet received from the encoder still carries the PREVIOUS segment's
-        // PTS. If we reset to 0, the second packet (PTS=0) arrives AFTER that
-        // old-PTS packet, causing av_interleaved_write_frame to fail with
-        // EINVAL (non-monotonic PTS). Keeping PTS continuous across segments
-        // is safe — FlashbackExporter remaps PTS per segment during concat.
-        //
-        // Also do NOT reset audio accumulators — the AAC encoder's internal
-        // frame accumulator carries partial frames across segment boundaries.
-        // Resetting would lose those samples and break A/V sync.
-        _forceNextKeyframe = true;
-        _encodedFrameCount = 0;
-        _droppedFrameCount = 0;
-        _audioSamplesReceived = 0;
-        _micSamplesReceived = 0;
-        _lastSyncLogVideoFrame = 0;
-        _driftCorrectionAppliedSamples = 0;
-        _lastDriftCorrectionVideoFrame = 0;
-        _totalBytesWritten = 0;
-        _flushSent = false;
+        FlushAndClose();
     }
 
     private void CleanupResources(bool writeTrailer)
@@ -260,9 +142,6 @@ internal sealed unsafe partial class LibAvEncoder
             _useHardwareFrames = false;
             _useCudaHardwareFrames = false;
 
-            // Release our individual pool textures. Since initial_pool_size=0,
-            // FFmpeg's frames context has no texture pool of its own. We own
-            // all 8 textures and must Release each one.
             if (!useCudaHardwareFrames && _hwPoolTextures != null)
             {
                 for (var i = 0; i < _hwPoolTextures.Length; i++)
@@ -273,6 +152,7 @@ internal sealed unsafe partial class LibAvEncoder
                         _hwPoolTextures[i] = IntPtr.Zero;
                     }
                 }
+
                 _hwPoolTextures = null;
             }
 

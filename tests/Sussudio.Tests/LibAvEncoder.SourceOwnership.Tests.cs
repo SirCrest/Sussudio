@@ -121,4 +121,39 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task LibAvEncoder_OutputLifecycleLivesInFocusedPartials()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
+            .Replace("\r\n", "\n");
+        var rotationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OutputRotation.cs")
+            .Replace("\r\n", "\n");
+        var muxerOptionsText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.MuxerOptions.cs")
+            .Replace("\r\n", "\n");
+        var resourceCleanupText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.ResourceCleanup.cs")
+            .Replace("\r\n", "\n");
+
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.OutputLifecycle.cs")),
+            "LibAvEncoder.OutputLifecycle.cs has been replaced by focused output partials");
+        AssertContains(rotationText, "public RotateOutputResult RotateOutput(string newPath)");
+        AssertContains(rotationText, "private void CloseCurrentOutputIo()");
+        AssertContains(rotationText, "private void ReinitializeOutputContext(string outputPath)");
+        AssertContains(rotationText, "private void ReinitializeVideoStream()");
+        AssertContains(rotationText, "private void ResetSegmentRuntimeState()");
+        AssertContains(muxerOptionsText, "private static unsafe void ApplyMp4MuxerOptions(");
+        AssertContains(muxerOptionsText, "frag_keyframe+empty_moov");
+        AssertContains(resourceCleanupText, "public void FlushAndClose()");
+        AssertContains(resourceCleanupText, "public void Dispose()");
+        AssertContains(resourceCleanupText, "private void CleanupResources(bool writeTrailer)");
+        AssertContains(resourceCleanupText, "Marshal.Release(_hwPoolTextures[i]);");
+        AssertDoesNotContain(rootText, "public RotateOutputResult RotateOutput(string newPath)");
+        AssertDoesNotContain(rootText, "public void FlushAndClose()");
+        AssertDoesNotContain(rootText, "public void Dispose()");
+        AssertDoesNotContain(rotationText, "private void CleanupResources(bool writeTrailer)");
+        AssertDoesNotContain(resourceCleanupText, "private static unsafe void ApplyMp4MuxerOptions(");
+
+        return Task.CompletedTask;
+    }
 }

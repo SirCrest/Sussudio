@@ -900,11 +900,13 @@ frame submission, D3D11 texture submission, CUDA frame submission, forced
 keyframe handling, per-frame HDR side-data attachment/removal, and video packet
 drains there.
 
-LibAv encoder output lifecycle now lives in
-`Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs`. Keep rotation IO
-close/reopen, stream reinitialization, MP4 muxer option application, segment
-runtime resets, and native cleanup/freeing there; keep generic error helpers in
-`LibAvEncoder.Diagnostics.cs`.
+LibAv encoder output lifecycle is split across focused partials.
+`Sussudio/Services/Recording/LibAvEncoder.MuxerOptions.cs` owns MP4 muxer
+option policy for open and rotated outputs. `LibAvEncoder.OutputRotation.cs`
+owns rotation IO close/reopen, stream reinitialization, bitstream-filter reset,
+and segment runtime resets. `LibAvEncoder.ResourceCleanup.cs` owns
+flush/final close, dispose, trailer writing, and native cleanup/freeing; keep
+generic error helpers in `LibAvEncoder.Diagnostics.cs`.
 
 LibAv recording sink queue ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`. Keep public
