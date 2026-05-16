@@ -7,7 +7,7 @@ using Sussudio.Services.Capture;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Automatic resolution ranking, display state, and source-aware auto-selection helpers.
+/// Automatic resolution ranking and source-aware auto-selection helpers.
 /// </summary>
 public partial class MainViewModel
 {
@@ -202,19 +202,5 @@ public partial class MainViewModel
 
     private string BuildAutoResolutionDisplayText()
         => AutoResolutionValue;
-
-    private void UpdateAutoResolutionState(AutoCaptureSelection? selection)
-    {
-        AutoResolvedWidth = selection?.Resolution.Width;
-        AutoResolvedHeight = selection?.Resolution.Height;
-        AutoResolvedFrameRate = selection?.ExactFrameRate;
-    }
-
-    private void ClearAutoResolutionState()
-    {
-        AutoResolvedWidth = null;
-        AutoResolvedHeight = null;
-        AutoResolvedFrameRate = null;
-    }
 
 }

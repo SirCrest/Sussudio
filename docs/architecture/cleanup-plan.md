@@ -2756,8 +2756,10 @@ Remaining `tools/Common` ownership:
    application now lives in `MainViewModel.DeviceFormatProbeRetarget.cs`, while
    pure late-probe retarget decisions live in
    `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
-   Automatic resolution ranking, source-aware auto-selection, and auto-resolved
-   dimension/frame-rate state now live in `MainViewModel.AutoResolutionOptions.cs`.
+   Automatic resolution ranking and source-aware auto-selection now live in
+   `MainViewModel.AutoResolutionOptions.cs`; effective Source resolution state,
+   display text, auto-value detection, and effective resolution query helpers
+   live in `MainViewModel.AutoResolutionState.cs`.
    Pure resolution selection policy now lives in the
    `Sussudio/ViewModels/CaptureResolutionSelectionPolicy*.cs` family:
    `CaptureResolutionSelectionPolicy.cs` owns the facade,
@@ -2771,8 +2773,8 @@ Remaining `tools/Common` ownership:
    request/result records.
    `MainViewModel.ResolutionSelectionPolicy.cs` only keeps state-backed
    delegates for callers that still live across the partial family; keep
-   dropdown rebuild, collection mutation, property notifications, and effective
-   resolution display in `MainViewModel.ResolutionOptions.cs`.
+   dropdown rebuild, collection mutation, and property notifications in
+   `MainViewModel.ResolutionOptions.cs`.
    Source telemetry summary, telemetry age, and target-summary display text now
    live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`; keep
    snapshot application and source-aware auto-retargeting in

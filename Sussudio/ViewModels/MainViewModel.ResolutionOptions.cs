@@ -5,7 +5,7 @@ using Sussudio.Models;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Resolution option building and effective resolution query helpers.
+/// Resolution option building and dropdown mutation.
 /// </summary>
 public partial class MainViewModel
 {
@@ -165,89 +165,6 @@ public partial class MainViewModel
         }
 
         RebuildFrameRateOptions();
-    }
-
-    private string GetSelectedResolutionDisplayText()
-    {
-        if (string.IsNullOrWhiteSpace(SelectedResolution))
-        {
-            return "?";
-        }
-
-        if (!IsAutoResolutionValue(SelectedResolution))
-        {
-            return SelectedResolution;
-        }
-
-        var friendlyRate = SelectedFriendlyFrameRate
-            ?? (AutoResolvedFrameRate.HasValue
-                ? Math.Round(AutoResolvedFrameRate.Value, MidpointRounding.AwayFromZero)
-                : (double?)null);
-        if (AutoResolvedWidth.HasValue &&
-            AutoResolvedHeight.HasValue &&
-            friendlyRate.HasValue)
-        {
-            return $"{AutoResolutionValue} ({GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value)} @ {friendlyRate.Value:0} fps)";
-        }
-
-        return AutoResolutionValue;
-    }
-
-    private static bool IsAutoResolutionValue(string? resolutionValue)
-        => string.Equals(resolutionValue, AutoResolutionValue, StringComparison.OrdinalIgnoreCase);
-
-    private bool TryResolveResolutionKey(string? resolutionValue, out string resolutionKey)
-    {
-        resolutionKey = string.Empty;
-        if (string.IsNullOrWhiteSpace(resolutionValue))
-        {
-            return false;
-        }
-
-        if (IsAutoResolutionValue(resolutionValue))
-        {
-            if (AutoResolvedWidth.HasValue &&
-                AutoResolvedHeight.HasValue &&
-                AutoResolvedWidth.Value > 0 &&
-                AutoResolvedHeight.Value > 0)
-            {
-                resolutionKey = GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value);
-                return true;
-            }
-
-            return false;
-        }
-
-        if (!TryParseResolutionKey(resolutionValue, out var width, out var height))
-        {
-            return false;
-        }
-
-        resolutionKey = GetResolutionKey(width, height);
-        return true;
-    }
-
-    private string? GetEffectiveResolutionKey(string? resolutionValue)
-        => TryResolveResolutionKey(resolutionValue, out var resolutionKey)
-            ? resolutionKey
-            : null;
-
-    private bool TryGetEffectiveResolutionSelection(out string resolutionKey, out uint width, out uint height)
-    {
-        resolutionKey = string.Empty;
-        width = 0;
-        height = 0;
-
-        if (!TryResolveResolutionKey(SelectedResolution, out resolutionKey) ||
-            !TryParseResolutionKey(resolutionKey, out width, out height))
-        {
-            resolutionKey = string.Empty;
-            width = 0;
-            height = 0;
-            return false;
-        }
-
-        return true;
     }
 
 }
