@@ -12,6 +12,7 @@ static partial class Program
         var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/FlashbackPollingController.cs").Replace("\r\n", "\n");
+        var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
 
         AssertContains(pollingAdapterText, "private FlashbackPollingController _flashbackPollingController = null!;");
         AssertContains(pollingAdapterText, "private void InitializeFlashbackPollingController()");
@@ -24,8 +25,10 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
         AssertContains(timelineAdapterText, "StartStatusPolling = StartFlashbackStatusPolling,");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
-        AssertContains(flashbackText, "StartFlashbackPlaybackPolling();");
-        AssertContains(flashbackText, "StopFlashbackPlaybackPolling();");
+        AssertContains(flashbackText, "StartPlaybackPolling = StartFlashbackPlaybackPolling,");
+        AssertContains(flashbackText, "StopPlaybackPolling = StopFlashbackPlaybackPolling,");
+        AssertContains(playbackCoordinatorText, "_context.StartPlaybackPolling();");
+        AssertContains(playbackCoordinatorText, "_context.StopPlaybackPolling();");
         AssertContains(controllerText, "internal sealed class FlashbackPollingController");
         AssertContains(controllerText, "private DispatcherQueueTimer? _statusTimer;");
         AssertContains(controllerText, "private DispatcherQueueTimer? _playbackTimer;");
@@ -49,6 +52,7 @@ static partial class Program
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/FlashbackTimelineController.cs").Replace("\r\n", "\n");
+        var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
         AssertContains(timelineAdapterText, "FlashbackTrackBackground = FlashbackTrackBackground,");
@@ -68,11 +72,13 @@ static partial class Program
         AssertContains(controllerText, "_context.FlashbackLiveEdge.Height = height;");
         AssertContains(controllerText, "Canvas.SetLeft(_context.FlashbackLiveEdge, width - 2);");
         AssertContains(flashbackText, "private void FlashbackTrack_SizeChanged(object sender, SizeChangedEventArgs e)");
-        AssertContains(flashbackText, "_flashbackTimelineController.ApplyTrackSize(w, h);");
-        AssertOccursBefore(flashbackText, "_flashbackTimelineController.ApplyTrackSize(w, h);", "RequestFlashbackPlayheadSnapOnNextUpdate();");
-        AssertOccursBefore(flashbackText, "RequestFlashbackPlayheadSnapOnNextUpdate();", "UpdateFlashbackPositionUI();");
-        AssertOccursBefore(flashbackText, "UpdateFlashbackPositionUI();", "UpdateFlashbackMarkers();");
-        AssertOccursBefore(flashbackText, "UpdateFlashbackMarkers();", "RefreshFlashbackCtiMotion(\"size_changed\");");
+        AssertContains(flashbackText, "=> _flashbackPlaybackUiCoordinator.HandleTrackSizeChanged(e.NewSize.Width, e.NewSize.Height);");
+        AssertContains(playbackCoordinatorText, "public void HandleTrackSizeChanged(double width, double height)");
+        AssertContains(playbackCoordinatorText, "_context.ApplyTrackSize(width, height);");
+        AssertOccursBefore(playbackCoordinatorText, "_context.ApplyTrackSize(width, height);", "_context.RequestPlayheadSnapOnNextUpdate();");
+        AssertOccursBefore(playbackCoordinatorText, "_context.RequestPlayheadSnapOnNextUpdate();", "UpdatePosition();");
+        AssertOccursBefore(playbackCoordinatorText, "UpdatePosition();", "_context.UpdateMarkers();");
+        AssertOccursBefore(playbackCoordinatorText, "_context.UpdateMarkers();", "_context.RefreshCtiMotion(\"size_changed\");");
         AssertContains(agentMapText, "timeline track layout sizing");
         AssertDoesNotContain(flashbackText, "FlashbackTrackBackground.Width =");
         AssertDoesNotContain(flashbackText, "FlashbackTrackBackground.Height =");
@@ -95,6 +101,7 @@ static partial class Program
         var ctiMotionText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs").Replace("\r\n", "\n");
         var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPolling.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/FlashbackPlayheadMotionController.cs").Replace("\r\n", "\n");
+        var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
 
         AssertContains(playheadText, "XAML-facing Flashback playhead motion adapter");
         AssertContains(playheadText, "private FlashbackPlayheadMotionController _flashbackPlayheadMotionController = null!;");
@@ -126,9 +133,9 @@ static partial class Program
         AssertContains(controllerText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
         AssertContains(scrubText, "PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,");
         AssertContains(scrubControllerText, "_context.PositionMagneticPlayhead(x, width);");
-        AssertContains(flashbackText, "RefreshFlashbackCtiMotion(\"state_change\");");
+        AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"state_change\");");
         AssertContains(pollingAdapterText, "StopFlashbackCtiAnchorTimer();");
-        AssertContains(flashbackText, "RequestFlashbackPlayheadSnapOnNextUpdate();");
+        AssertContains(playbackCoordinatorText, "_context.RequestPlayheadSnapOnNextUpdate();");
         AssertDoesNotContain(playheadText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
         AssertDoesNotContain(playheadText, "private void RefreshFlashbackCtiMotion(string reason)");
         AssertDoesNotContain(playheadText, "private void StartLinearPlayheadExtrapolation(");
@@ -150,6 +157,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackMarkers.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/FlashbackMarkerPresentationController.cs").Replace("\r\n", "\n");
+        var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
 
@@ -171,7 +179,8 @@ static partial class Program
         AssertContains(controllerText, "_context.OutPointMarker.Visibility = Visibility.Visible;");
         AssertContains(controllerText, "_context.SelectionRegion.Visibility = Visibility.Visible;");
         AssertContains(controllerText, "Canvas.SetLeft(_context.SelectionRegion, selLeft);");
-        AssertContains(flashbackText, "UpdateFlashbackMarkers();");
+        AssertContains(flashbackText, "UpdateMarkers = UpdateFlashbackMarkers,");
+        AssertContains(playbackCoordinatorText, "_context.UpdateMarkers();");
         AssertContains(propertyChangedText, "TryHandleFlashbackPropertyChanged(propertyName)");
         AssertContains(flashbackPropertyChangedText, "HandleFlashbackRangeChanged();");
         AssertContains(flashbackPropertyChangedText, "Flashback-specific ViewModel property projections");
@@ -192,6 +201,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlaybackPresentation.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/FlashbackPlaybackPresentationController.cs").Replace("\r\n", "\n");
+        var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private FlashbackPlaybackPresentationController _flashbackPlaybackPresentationController = null!;");
         AssertContains(adapterText, "private void InitializeFlashbackPlaybackPresentationController()");
@@ -208,13 +218,23 @@ static partial class Program
         AssertContains(controllerText, "\"\\uE768\"");
         AssertContains(controllerText, "return \"LIVE\";");
         AssertContains(controllerText, "return $\"-{FlashbackMarkerPresentationController.FormatDuration(gapFromLive)} / {totalText}\";");
-        AssertContains(flashbackText, "_flashbackPlaybackPresentationController.UpdateState(state);");
-        AssertContains(flashbackText, "StartFlashbackPlaybackPolling();");
-        AssertContains(flashbackText, "StopFlashbackPlaybackPolling();");
-        AssertContains(flashbackText, "RefreshFlashbackCtiMotion(\"state_change\");");
-        AssertContains(flashbackText, "_flashbackPlaybackPresentationController.UpdateBufferFill(duration);");
-        AssertContains(flashbackText, "_flashbackPlaybackPresentationController.UpdatePosition(");
-        AssertContains(flashbackText, "RefreshFlashbackCtiMotion(\"position_change\");");
+        AssertContains(flashbackText, "private FlashbackPlaybackUiCoordinator _flashbackPlaybackUiCoordinator = null!;");
+        AssertContains(flashbackText, "private void InitializeFlashbackPlaybackUiCoordinator()");
+        AssertContains(mainWindowText, "InitializeFlashbackPlaybackUiCoordinator();");
+        AssertOccursBefore(mainWindowText, "InitializeFlashbackPlaybackPresentationController();", "InitializeFlashbackPlaybackUiCoordinator();");
+        AssertOccursBefore(mainWindowText, "InitializeFlashbackPlaybackUiCoordinator();", "InitializeFlashbackExportProgressPresentationController();");
+        AssertContains(playbackCoordinatorText, "internal sealed class FlashbackPlaybackUiCoordinatorContext");
+        AssertContains(playbackCoordinatorText, "internal sealed class FlashbackPlaybackUiCoordinator");
+        AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdateState(state);");
+        AssertContains(playbackCoordinatorText, "_context.StartPlaybackPolling();");
+        AssertContains(playbackCoordinatorText, "_context.StopPlaybackPolling();");
+        AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"state_change\");");
+        AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdateBufferFill(duration);");
+        AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdatePosition(");
+        AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"position_change\");");
+        AssertDoesNotContain(flashbackText, "_flashbackPlaybackPresentationController.UpdateState(state);");
+        AssertDoesNotContain(flashbackText, "if (state == FlashbackPlaybackState.Playing)");
+        AssertDoesNotContain(flashbackText, "RefreshFlashbackCtiMotion(\"position_change\");");
         AssertDoesNotContain(flashbackText, "FlashbackPlayPauseIcon.Glyph =");
         AssertDoesNotContain(flashbackText, "FlashbackGoLiveButton.IsEnabled =");
         AssertDoesNotContain(flashbackText, "FlashbackBufferDurationText.Text =");

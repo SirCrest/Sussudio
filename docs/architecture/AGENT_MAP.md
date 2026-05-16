@@ -1642,8 +1642,11 @@ Primary current owners:
 - `Sussudio/Controllers/FlashbackPlaybackPresentationController.cs` owns
   Flashback play/pause glyph policy, Go Live enabled state, buffer-duration
   text, and floating playhead label text. `MainWindow.FlashbackPlaybackPresentation.cs`
-  wires the XAML controls; `MainWindow.Flashback.cs` owns playback-polling
-  start/stop and routes CTI re-anchor calls to `FlashbackPlayheadMotionController`.
+  wires the XAML controls.
+- `Sussudio/Controllers/FlashbackPlaybackUiCoordinator.cs` owns Flashback
+  playback UI sequencing: track-resize snap/position/marker/CTI refresh order,
+  playback state polling start/stop, buffer-fill presentation, and position-label
+  updates with CTI re-anchor gating. `MainWindow.Flashback.cs` is the adapter.
 - `Sussudio/Controllers/FlashbackCommandController.cs` owns Flashback command
   semantics for in/out points, clear, play/pause, Go Live, export, save-last-5m,
   enable-toggle rollback, and apply/restart. `MainWindow.FlashbackCommands.cs`
