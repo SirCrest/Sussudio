@@ -2702,8 +2702,8 @@ Remaining `tools/Common` ownership:
    device initialization, preview start/stop, and selected-device apply.
    Debounced preview reinitialization, Flashback-cycle wait-before-reinit,
    renderer-stop handoff, teardown restart, and gate release now live in
-   `MainViewModel.PreviewReinitialization.cs`. Output folder selection now lives in
-   `MainViewModel.OutputPathSelection.cs`. Recording toggle serialization, graceful stop, emergency stop,
+   `MainViewModel.PreviewReinitialization.cs`. Output folder browse/open-recordings button workflows now live in
+   `OutputPathActionController.cs`. Recording toggle serialization, graceful stop, emergency stop,
    and start/stop recording transitions now live in
    `MainViewModel.RecordingLifecycle.cs`. Recording option selections, output
    path, counters, and transition flags now live in

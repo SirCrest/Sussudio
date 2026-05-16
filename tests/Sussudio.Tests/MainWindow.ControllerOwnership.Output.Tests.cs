@@ -93,7 +93,10 @@ static partial class Program
 
         AssertContains(adapterText, "private OutputPathActionController _outputPathActionController = null!;");
         AssertContains(adapterText, "private void InitializeOutputPathActionController()");
-        AssertContains(adapterText, "ViewModel = ViewModel,");
+        AssertContains(adapterText, "GetWindowHandle = () => _hwnd,");
+        AssertContains(adapterText, "GetOutputPath = () => ViewModel.OutputPath,");
+        AssertContains(adapterText, "SetOutputPath = path => ViewModel.OutputPath = path,");
+        AssertContains(adapterText, "SetStatusText = text => ViewModel.StatusText = text,");
         AssertContains(adapterText, "OpenRecordingsFolderAsync = () => OpenRecordingsFolderAsync()");
         AssertContains(adapterText, "private Task BrowseOutputPathFromButtonAsync()");
         AssertContains(adapterText, "=> _outputPathActionController.BrowseAsync();");
@@ -105,13 +108,22 @@ static partial class Program
         AssertContains(adapterText, "_ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));");
         AssertContains(mainWindowText, "InitializeOutputPathActionController();");
         AssertContains(controllerText, "internal sealed class OutputPathActionController");
-        AssertContains(controllerText, "public Task BrowseAsync()");
-        AssertContains(controllerText, "=> _context.ViewModel.BrowseOutputPathAsync();");
+        AssertContains(controllerText, "public async Task BrowseAsync()");
+        AssertContains(controllerText, "var picker = new FolderPicker();");
+        AssertContains(controllerText, "picker.SuggestedStartLocation = PickerLocationId.VideosLibrary;");
+        AssertContains(controllerText, "picker.FileTypeFilter.Add(\"*\");");
+        AssertContains(controllerText, "WinRT.Interop.InitializeWithWindow.Initialize(picker, _context.GetWindowHandle());");
+        AssertContains(controllerText, "await picker.PickSingleFolderAsync();");
+        AssertContains(controllerText, "_context.SetOutputPath(folder.Path);");
+        AssertContains(controllerText, "_context.SetStatusText($\"Error selecting folder: {ex.Message}\");");
         AssertContains(controllerText, "public Task OpenRecordingsFolderIfAvailableAsync()");
+        AssertContains(controllerText, "var path = _context.GetOutputPath();");
         AssertContains(controllerText, "string.IsNullOrWhiteSpace(path) || !Directory.Exists(path)");
         AssertContains(controllerText, "return _context.OpenRecordingsFolderAsync();");
         AssertDoesNotContain(adapterText, "ViewModel.BrowseOutputPathAsync()");
         AssertDoesNotContain(adapterText, "System.IO.Directory.Exists(path)");
+        AssertDoesNotContain(controllerText, "Sussudio.ViewModels");
+        AssertDoesNotContain(controllerText, "MainViewModel");
 
         return Task.CompletedTask;
     }

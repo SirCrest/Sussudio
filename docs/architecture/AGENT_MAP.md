@@ -1097,7 +1097,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.AudioMonitoring.Tests.cs` owns
   capture audio-monitoring coordinator surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.OutputPath.Tests.cs` owns
-  output folder picker ownership assertions.
+  assertions that output folder picker ownership stays out of `MainViewModel`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
   MainViewModel source-inspection helpers for capture-facing tests.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` owns
@@ -1974,7 +1974,6 @@ Primary current owners:
   and selected-device apply. `MainViewModel.PreviewReinitialization.cs` owns
   debounced preview reinitialization, Flashback-cycle wait-before-reinit,
   renderer-stop handoff, teardown restart, and reinit gate release.
-  `MainViewModel.OutputPathSelection.cs` owns output folder picker and path assignment.
   `MainViewModel.RecordingLifecycle.cs` owns recording toggle serialization,
   graceful stop, emergency stop, and start/stop recording transitions.
   `MainViewModel.RecordingState.cs` owns recording option selections, output

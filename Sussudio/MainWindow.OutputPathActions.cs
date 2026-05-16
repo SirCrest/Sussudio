@@ -13,7 +13,10 @@ public sealed partial class MainWindow
     {
         _outputPathActionController = new OutputPathActionController(new OutputPathActionControllerContext
         {
-            ViewModel = ViewModel,
+            GetWindowHandle = () => _hwnd,
+            GetOutputPath = () => ViewModel.OutputPath,
+            SetOutputPath = path => ViewModel.OutputPath = path,
+            SetStatusText = text => ViewModel.StatusText = text,
             OpenRecordingsFolderAsync = () => OpenRecordingsFolderAsync()
         });
     }
