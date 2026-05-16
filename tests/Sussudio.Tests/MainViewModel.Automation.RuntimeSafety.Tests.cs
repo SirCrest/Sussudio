@@ -34,8 +34,11 @@ static partial class Program
         var protocolType = RequireType("Sussudio.Tools.AutomationPipeProtocol");
         var getDefaultResponseTimeout = protocolType.GetMethod(
             "GetDefaultResponseTimeout",
-            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("AutomationPipeProtocol.GetDefaultResponseTimeout not found.");
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            types: new[] { typeof(string) },
+            modifiers: null)
+            ?? throw new InvalidOperationException("AutomationPipeProtocol.GetDefaultResponseTimeout(string) not found.");
 
         foreach (var acceptedName in new[] { "SetRecordingEnabled", "setrecordingenabled", "set-recording-enabled", "17" })
         {

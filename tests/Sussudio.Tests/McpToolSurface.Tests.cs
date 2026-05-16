@@ -51,6 +51,7 @@ static partial class Program
         var recordingToolsText = ReadRepoFile("tools/McpServer/Tools/RecordingTools.cs");
         var previewFrameCaptureToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.cs");
         var windowScreenshotToolsText = ReadRepoFile("tools/McpServer/Tools/WindowScreenshotTools.cs");
+        var waitToolsText = ReadRepoFile("tools/McpServer/Tools/WaitTools.cs");
 
         foreach (var commandName in new[]
         {
@@ -98,5 +99,9 @@ static partial class Program
         AssertDoesNotContain(previewFrameCaptureToolsText, "SendCommandAsync(\"CapturePreviewFrame\", payload)");
         AssertContains(windowScreenshotToolsText, "SendCommandAsync(AutomationCommandKind.CaptureWindowScreenshot, payload)");
         AssertDoesNotContain(windowScreenshotToolsText, "SendCommandAsync(\"CaptureWindowScreenshot\", payload)");
+        AssertContains(waitToolsText, "SendCommandAsync(AutomationCommandKind.WaitForCondition, payload, responseTimeoutMs)");
+        AssertContains(waitToolsText, "AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition)");
+        AssertDoesNotContain(waitToolsText, "WaitForConditionCommandName");
+        AssertDoesNotContain(waitToolsText, "SendCommandAsync(\"WaitForCondition\"");
     }
 }

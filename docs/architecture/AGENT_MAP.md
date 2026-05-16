@@ -1619,9 +1619,9 @@ Primary current owners:
   D3D pending-frame and recording/Flashback queued lease return tests.
 - `tests/Sussudio.Tests/McpToolSurface.Tests.cs` owns MCP surface compatibility
   checks that span raw app state, capture options, capture settings, and UI
-  settings tools. It also owns source guards that capture/pipeline-facing MCP
-  tools route through `AutomationCommandKind` enum overloads while preserving
-  existing command labels and wire IDs.
+  settings tools. It also owns source guards that fixed-command MCP automation
+  routes call `AutomationCommandKind` enum overloads at the pipe seam while
+  preserving existing command labels and wire IDs.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` is now the
   MCP command-routing test family marker shell. Keep route/formatter assertions
   in the focused `CommandRouting.Capture`, `CommandRouting.Host`,
@@ -2266,6 +2266,11 @@ Primary owners:
   tolerant response state parsing.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs` owns pipe
   command result and exception types.
+- Fixed MCP routes that already have `AutomationCommandKind` entries should call
+  the typed MCP `PipeClient.SendCommandAsync(AutomationCommandKind, ...)`
+  overload. `WaitTools.cs` owns the typed condition-wait route and catalog-backed
+  response-timeout policy; dynamic diagnostic-session command callbacks remain
+  the string-command exception.
 - `tools/Common/AutomationPipeClient/AutomationResponseState.cs` owns tolerant
   response-state DTOs shared by the pipe client and tool surfaces.
 - `tools/AutomationClient/Program.cs` owns the low-level pipe client entry
@@ -2895,6 +2900,10 @@ Invariants:
 
 - Do not add new automation metadata to tool-specific files if it belongs in
   `Sussudio.Automation.Contracts`.
+- Fixed CLI/MCP automation routes should use `AutomationCommandKind` overloads
+  at the pipe seam; keep string command names only for operator-facing labels,
+  catalog/manifest-backed dynamic batches, and diagnostic-session runner
+  command-channel delegates.
 - Long-running Flashback operations must use catalog timeouts, not hard-coded
   shorter client defaults.
 - Diagnostic sessions are evidence surfaces; preserve summary JSON stability

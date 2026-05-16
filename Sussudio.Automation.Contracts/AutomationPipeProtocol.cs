@@ -60,6 +60,9 @@ public static class AutomationPipeProtocol
             : DefaultResponseTimeoutMs;
     }
 
+    public static int GetDefaultResponseTimeout(AutomationCommandKind kind)
+        => AutomationCommandCatalog.Get(kind).ResponseTimeoutMs;
+
     private static string ResolveCanonicalCommandName(string commandName)
     {
         if (int.TryParse(commandName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numericCommand) &&

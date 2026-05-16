@@ -5,7 +5,10 @@ static partial class Program
     private static Task McpWaitTools_UsesCatalogResponseTimeoutForConditionWaits()
     {
         var waitToolsSource = ReadRepoFile("tools/McpServer/Tools/WaitTools.cs");
-        AssertContains(waitToolsSource, "AutomationPipeProtocol.GetDefaultResponseTimeout(WaitForConditionCommandName)");
+        AssertContains(waitToolsSource, "AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition)");
+        AssertContains(waitToolsSource, "SendCommandAsync(AutomationCommandKind.WaitForCondition, payload, responseTimeoutMs)");
+        AssertDoesNotContain(waitToolsSource, "WaitForConditionCommandName");
+        AssertDoesNotContain(waitToolsSource, "SendCommandAsync(\"WaitForCondition\"");
         AssertDoesNotContain(waitToolsSource, "AutomationPipeProtocol.DefaultResponseTimeoutMs");
 
         var waitTools = RequireMcpType("McpServer.Tools.WaitTools");

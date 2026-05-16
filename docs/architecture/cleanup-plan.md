@@ -558,9 +558,11 @@ split into capture, host/pipe, recording, formatter batching, device, pipeline,
 UI, and verification owner files. Captured `request.command` ID assertions now
 flow through `AssertAutomationCommandId`, which reads the golden command table
 instead of duplicating numeric IDs in routing tests. Cross-tool source guards
-in `McpToolSurface.Tests.cs` require capture/pipeline-facing MCP call sites to
-use `AutomationCommandKind` enum overloads while preserving existing labels
-and wire IDs.
+in `McpToolSurface.Tests.cs` require fixed-command MCP automation routes to use
+`AutomationCommandKind` enum overloads at the pipe seam while preserving existing
+labels and wire IDs. Catalog/manifest-backed dynamic batches and
+diagnostic-session runner command-channel delegates intentionally remain
+string-based.
 
 First-load startup, initial ViewModel/device refresh, automation startup timing,
 and the launch entrance trigger now live in `Sussudio/MainWindow.Startup.cs`.
@@ -2442,6 +2444,13 @@ metrics also own force-rotate fallback total, delta, and last fallback segment
 count, derived outside export-observed relevance gating. These helpers remain
 snapshot-only projections and must not send automation commands.
 
+MCP fixed command routes should use `AutomationCommandKind` overloads when the
+command is part of the shared catalog. `tools/McpServer/Tools/WaitTools.cs` now
+routes condition waits through `AutomationCommandKind.WaitForCondition` and uses
+the typed catalog response-timeout policy, leaving string command names only for
+dynamic diagnostic-session command callbacks and older tool surfaces that have
+their own focused compatibility coverage.
+
 Diagnostic-session Flashback preview-cycle scenarios now live in a focused
 partial family. `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 is the marker shell and preview-cycle predicate owner. `.Registrations.cs` owns
@@ -2956,6 +2965,9 @@ Remaining `tools/Common` ownership:
 ## Guardrails
 
 - Preserve public automation command names and numeric IDs.
+- Use `AutomationCommandKind` overloads for fixed CLI/MCP automation routes;
+  keep string command names only for labels, catalog-backed dynamic batches,
+  and diagnostic-session runner command-channel delegates.
 - Preserve manifest revision rules in `AutomationCommandKind`.
 - Preserve XAML binding names until a focused binding migration changes them.
 - Preserve Flashback disable lockout behavior.

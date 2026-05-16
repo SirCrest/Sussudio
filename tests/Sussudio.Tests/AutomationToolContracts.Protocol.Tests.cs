@@ -50,7 +50,13 @@ static partial class Program
             Environment.SetEnvironmentVariable("SUSSUDIO_AUTOMATION_TOKEN", "   ");
             AssertEqual(null, getAuth.Invoke(null, new object?[] { null }), "GetConfiguredAuthToken whitespace env");
 
-            var defaultTimeout = RequireNonPublicStaticMethod(protocolType, "GetDefaultResponseTimeout");
+            var defaultTimeout = protocolType.GetMethod(
+                "GetDefaultResponseTimeout",
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                types: new[] { typeof(string) },
+                modifiers: null)
+                ?? throw new InvalidOperationException("AutomationPipeProtocol.GetDefaultResponseTimeout(string) not found.");
             AssertEqual(15000, (int)defaultTimeout.Invoke(null, new object[] { "GetSnapshot" })!, "GetDefaultResponseTimeout default command");
             AssertEqual(305000, (int)defaultTimeout.Invoke(null, new object[] { "FlashbackExport" })!, "GetDefaultResponseTimeout flashback export command");
             AssertEqual(305000, (int)defaultTimeout.Invoke(null, new object[] { "SetFlashbackEnabled" })!, "GetDefaultResponseTimeout flashback command");
@@ -58,6 +64,17 @@ static partial class Program
             AssertEqual(150000, (int)defaultTimeout.Invoke(null, new object[] { "SetRecordingEnabled" })!, "GetDefaultResponseTimeout recording command");
             AssertEqual(150000, (int)defaultTimeout.Invoke(null, new object[] { "set-recording-enabled" })!, "GetDefaultResponseTimeout normalized recording command");
             AssertEqual(150000, (int)defaultTimeout.Invoke(null, new object[] { "17" })!, "GetDefaultResponseTimeout numeric recording command");
+
+            var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
+            var typedDefaultTimeout = protocolType.GetMethod(
+                "GetDefaultResponseTimeout",
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                types: new[] { enumType },
+                modifiers: null)
+                ?? throw new InvalidOperationException("AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind) not found.");
+            var waitForCondition = Enum.Parse(enumType, "WaitForCondition");
+            AssertEqual(60000, (int)typedDefaultTimeout.Invoke(null, new[] { waitForCondition })!, "GetDefaultResponseTimeout typed wait command");
 
             var createEnvelope = RequireNonPublicStaticMethod(protocolType, "CreateRequestEnvelope");
             Environment.SetEnvironmentVariable("SUSSUDIO_AUTOMATION_TOKEN", "env-token");

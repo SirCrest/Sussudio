@@ -80,6 +80,7 @@ public sealed class AutomationContractsProtocolXunitTests
                 Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetRecordingEnabled"));
                 Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("set-recording-enabled"));
                 Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("17"));
+                Assert.Equal(60000, AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition));
 
                 Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar, "env-token");
                 var payload = new Dictionary<string, object?> { ["enabled"] = true };
