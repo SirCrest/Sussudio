@@ -124,6 +124,7 @@ static partial class Program
         var mainViewModelDeviceAudioPropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioPropertyChanges.cs"));
         var mainViewModelDispatchingText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs"));
         var mainViewModelRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Runtime.cs"));
+        var mainViewModelCaptureRuntimeEventsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureRuntimeEvents.cs"));
         AssertContains(mainViewModelDispatchingText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelDispatchingText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing");
         AssertContains(mainViewModelDispatchingText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing_after_enqueue");
@@ -142,8 +143,15 @@ static partial class Program
         AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedDeviceAudioModeChanged");
         AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
         AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedAudioInputDeviceChanged");
-        AssertContains(mainViewModelRuntimeText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
-        AssertContains(mainViewModelRuntimeText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
+        AssertContains(mainViewModelRuntimeText, "private void SetupTimer()");
+        AssertContains(mainViewModelRuntimeText, "private void OnSystemPowerModeChanged");
+        AssertContains(mainViewModelCaptureRuntimeEventsText, "private void OnCaptureStatusChanged(object? sender, string status)");
+        AssertContains(mainViewModelCaptureRuntimeEventsText, "private void OnCaptureError(object? sender, Exception ex)");
+        AssertContains(mainViewModelCaptureRuntimeEventsText, "private void OnCapturePreCleanupRequested()");
+        AssertContains(mainViewModelCaptureRuntimeEventsText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
+        AssertContains(mainViewModelCaptureRuntimeEventsText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
+        AssertDoesNotContain(mainViewModelRuntimeText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
+        AssertDoesNotContain(mainViewModelRuntimeText, "private void OnCaptureError(object? sender, Exception ex)");
         AssertDoesNotContain(mainViewModelText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
         var deviceManagementText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs"));
         var audioControlCancellationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioControlCancellation.cs"));

@@ -1887,9 +1887,11 @@ Primary current owners:
   and analog gain property handlers.
   `MainViewModel.Dispatching.cs` owns shared
   dispatcher enqueue/invoke helpers and preview event fan-out for the partial
-  family. `MainViewModel.Runtime.cs` owns timer refreshes, capture status/error
-  fan-out, and resume cleanup callbacks. `MainViewModel.RecordingRuntime.cs`
-  owns recording size/bitrate projection and recording-state reset reactions.
+  family. `MainViewModel.Runtime.cs` owns timer refreshes, disk-space
+  projection, and power-resume callbacks. `MainViewModel.CaptureRuntimeEvents.cs`
+  owns capture status/error fan-out, capture pre-cleanup renderer stop fan-out,
+  and frame-captured callbacks. `MainViewModel.RecordingRuntime.cs` owns
+  recording size/bitrate projection and recording-state reset reactions.
   `MainViewModel.LiveSignalPresentation.cs` owns live-capture info projection
   from `CaptureRuntimeSnapshot`, including audio-preview activity and
   live-resolution/frame-rate/pixel-format assignment, and delegates label
@@ -2583,8 +2585,11 @@ Primary owners:
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
   connect retry classification and local failure-response envelopes.
 - `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized
-  diagnostic-session automation command sending, connect-retry wrapping,
-  command failure accounting, and `WaitForCondition` command payload shaping.
+  diagnostic-session automation command sending, connect-retry wrapping, and
+  command failure accounting.
+- `tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs` owns
+  diagnostic-session wait command helpers and `WaitForCondition` command
+  payload shaping.
 - `tools/Common/DiagnosticSessionScenarioPlan.cs` owns normalized scenario
   flags and grouped warning/validation policies used by the runner. Keep new
   scenario booleans there instead of adding string comparisons in

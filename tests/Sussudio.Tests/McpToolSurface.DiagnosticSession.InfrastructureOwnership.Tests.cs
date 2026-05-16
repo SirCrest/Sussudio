@@ -66,6 +66,8 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var channelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
             .Replace("\r\n", "\n");
+        var waitConditionsText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs")
+            .Replace("\r\n", "\n");
         var retryText = ReadRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
             .Replace("\r\n", "\n");
 
@@ -76,6 +78,7 @@ static partial class Program
         AssertContains(retryText, "\"pipe-access-denied\"");
         AssertContains(channelText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
         AssertContains(channelText, "SendCommandWithConnectRetryAsync(");
+        AssertDoesNotContain(waitConditionsText, "SendCommandWithConnectRetryAsync(");
         AssertDoesNotContain(runnerText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
         AssertDoesNotContain(runnerText, "private static bool IsSyntheticPipeConnectFailure(");
         AssertDoesNotContain(runnerText, "private static bool IsPermanentPipeConnectFailure(");
@@ -91,8 +94,10 @@ static partial class Program
         var contextText = ReadDiagnosticSessionRunContextSource();
         var channelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
             .Replace("\r\n", "\n");
+        var waitConditionsText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs")
+            .Replace("\r\n", "\n");
 
-        AssertContains(channelText, "internal sealed class DiagnosticSessionCommandChannel : IDisposable");
+        AssertContains(channelText, "internal sealed partial class DiagnosticSessionCommandChannel : IDisposable");
         AssertContains(channelText, "private readonly SemaphoreSlim _sendGate = new(1, 1);");
         AssertContains(channelText, "internal int FailureCount => _failureCount;");
         AssertContains(channelText, "internal void RecordFailure(string warning)");
@@ -101,9 +106,17 @@ static partial class Program
         AssertContains(channelText, "BuildLocalFailureResponse(command, \"no response after connect retry\")");
         AssertContains(channelText, "RecordFailure($\"{command}:");
         AssertContains(channelText, "Get(response, \"Message\", \"command failed\")");
-        AssertContains(channelText, "internal async Task TryWaitWithTokenAsync(");
-        AssertContains(channelText, "\"WaitForCondition\"");
-        AssertContains(channelText, "[\"pollMs\"] = 250");
+        AssertContains(waitConditionsText, "internal sealed partial class DiagnosticSessionCommandChannel");
+        AssertContains(waitConditionsText, "internal async Task TryWaitAsync(string condition, int timeoutMs)");
+        AssertContains(waitConditionsText, "internal async Task TryWaitWithTokenAsync(");
+        AssertContains(waitConditionsText, "\"WaitForCondition\"");
+        AssertContains(waitConditionsText, "[\"condition\"] = condition");
+        AssertContains(waitConditionsText, "[\"timeoutMs\"] = timeoutMs");
+        AssertContains(waitConditionsText, "[\"pollMs\"] = 250");
+        AssertContains(waitConditionsText, "timeoutMs + 2_000");
+        AssertContains(waitConditionsText, "$\"wait {condition}: {Get(response, \"Message\", \"not met\")}\"");
+        AssertDoesNotContain(channelText, "internal async Task TryWaitWithTokenAsync(");
+        AssertDoesNotContain(channelText, "\"WaitForCondition\"");
         AssertContains(contextText, "CommandChannel = new DiagnosticSessionCommandChannel(");
         AssertContains(runnerText, "CommandChannel.SendAsync");
         AssertContains(runnerText, "CommandChannel.SendWithTokenAsync");

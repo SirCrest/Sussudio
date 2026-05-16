@@ -2126,8 +2126,10 @@ permanent failure and connect failed/timeout responses retryable.
 
 Diagnostic-session command sending now lives in
 `tools/Common/DiagnosticSessionCommandChannel.cs`. It owns serialized command
-execution, connect-retry wrapping, command failure accounting, and
-`WaitForCondition` payload shaping while the runner keeps phase orchestration.
+execution, connect-retry wrapping, and command failure accounting while the
+runner keeps phase orchestration. Diagnostic-session wait command helpers now
+live in `tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs`, which
+owns `WaitForCondition` payload shaping.
 
 Diagnostic-session JSON artifact helpers now live in
 `tools/Common/DiagnosticSessionJsonArtifacts.cs`. The runner still owns the
@@ -2615,9 +2617,11 @@ Remaining `tools/Common` ownership:
    device-native audio mode/gain handlers live in
    `MainViewModel.DeviceAudioPropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
-   timer/status/error handling now lives in `MainViewModel.Runtime.cs`,
-   recording size/bitrate projection and recording-state reset reactions now
-   live in `MainViewModel.RecordingRuntime.cs`, and
+   timer/disk-space/power-resume handling now lives in
+   `MainViewModel.Runtime.cs`, capture status/error and pre-cleanup callbacks
+   now live in `MainViewModel.CaptureRuntimeEvents.cs`, recording size/bitrate
+   projection and recording-state reset reactions now live in
+   `MainViewModel.RecordingRuntime.cs`, and
    live-capture info projection from runtime snapshots now lives in
    `MainViewModel.LiveSignalPresentation.cs`, including audio-preview activity
    and live resolution/frame-rate/pixel-format assignment; live-signal label

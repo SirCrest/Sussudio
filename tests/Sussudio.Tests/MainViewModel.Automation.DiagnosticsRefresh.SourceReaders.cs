@@ -101,6 +101,7 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionMetricsSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionPipeRetryPolicy.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
+                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs")
                 + "\n" + ReadDiagnosticSessionResultFormatterSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionSampler.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
