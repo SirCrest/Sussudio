@@ -8,6 +8,8 @@ static partial class Program
     {
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
+        var recordingStatsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotRecordingStats.cs")
+            .Replace("\r\n", "\n");
         var formatText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotRecordingFormat.cs")
             .Replace("\r\n", "\n");
         var observedText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotObservedFrames.cs")
@@ -20,6 +22,14 @@ static partial class Program
         AssertContains(snapshotsText, "public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()");
         AssertContains(snapshotsText, "return GetHealthSnapshot();");
         AssertContains(snapshotsText, "private static long ComputeTickAge(long tick)");
+        AssertContains(recordingStatsText, "public RecordingStats GetRecordingStats()");
+        AssertContains(recordingStatsText, "return new RecordingStats(_libavSink.OutputBytes, 0);");
+        AssertContains(recordingStatsText, "IsFlashbackRecordingBackendActive()");
+        AssertContains(recordingStatsText, "bufferManager.TotalBytesWritten - _flashbackRecordingStartBytes");
+        AssertContains(recordingStatsText, "isFlashbackEstimate: true");
+        AssertContains(recordingStatsText, "new FileInfo(path).Length");
+        AssertContains(recordingStatsText, "catch (FileNotFoundException)");
+        AssertContains(recordingStatsText, "isFailure: true");
 
         AssertContains(formatText, "private static string? ResolveEncoderCodecName(");
         AssertContains(formatText, "MediaFormat.MapNvencCodecName(settings.Format)");
@@ -49,6 +59,8 @@ static partial class Program
         AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportElapsedMs(");
         AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
         AssertDoesNotContain(snapshotsText, "private static long GetFileLengthOrZero(string? path)");
+        AssertDoesNotContain(snapshotsText, "public RecordingStats GetRecordingStats()");
+        AssertDoesNotContain(snapshotsText, "new FileInfo(path).Length");
 
         return Task.CompletedTask;
     }

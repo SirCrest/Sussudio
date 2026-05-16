@@ -1633,6 +1633,12 @@ backend-staleness reason policy now stays with the buffer health partial, while
 export elapsed/progress-age/file-length helpers stay with the export health
 partial.
 
+Recording byte-count snapshot policy now lives in
+`Sussudio/Services/Capture/CaptureService.SnapshotRecordingStats.cs`. Keep
+active LibAv byte polling, active Flashback buffer estimates, finalized-output
+file fallback, and failure flagging there without adding transition-lock waits
+or state mutation.
+
 Recording-format snapshot policy now lives in
 `Sussudio/Services/Capture/CaptureService.SnapshotRecordingFormat.cs`. Keep
 encoder codec labels, output pixel-format/profile labels, and requested
