@@ -1,10 +1,16 @@
-﻿using System;
+using System;
 using System.Reflection;
-using System.Threading.Tasks;
+using Xunit;
 
-static partial class Program
+namespace Sussudio.Tests;
+
+public sealed class PreviewPacingClassifierTests
 {
-    private static Task PreviewPacingClassifier_RequiresStableSampleUnlessHardSignal()
+    private const string InputTypeName = "Sussudio.Services.Automation.PreviewPacingClassificationInput";
+    private const string ClassifierTypeName = "Sussudio.Services.Automation.PreviewPacingSlowStageClassifier";
+
+    [Fact(DisplayName = "Preview pacing classifier rejects weak samples")]
+    public void PreviewPacingClassifier_RequiresStableSampleUnlessHardSignal()
     {
         var input = CreateBaselinePreviewPacingInput();
         SetPropertyOrBackingField(input, "PreviewCadenceSampleCount", 240);
@@ -12,13 +18,13 @@ static partial class Program
 
         var result = ClassifyPreviewPacing(input);
 
-        AssertEqual("InsufficientSample", GetStringProperty(result, "LikelySlowStage"), "Preview pacing weak sample stage");
-        AssertEqual("Low", GetStringProperty(result, "Confidence"), "Preview pacing weak sample confidence");
-        AssertContains(GetStringProperty(result, "Evidence"), "requiredDurationMs=30000");
-        return Task.CompletedTask;
+        Assert.Equal("InsufficientSample", GetStringProperty(result, "LikelySlowStage"));
+        Assert.Equal("Low", GetStringProperty(result, "Confidence"));
+        Assert.Contains("requiredDurationMs=30000", GetStringProperty(result, "Evidence"));
     }
 
-    private static Task PreviewPacingClassifier_ClassifiesSourceCaptureBeforePreviewTail()
+    [Fact(DisplayName = "Preview pacing classifier prefers source capture when source drops")]
+    public void PreviewPacingClassifier_ClassifiesSourceCaptureBeforePreviewTail()
     {
         var input = CreateBaselinePreviewPacingInput();
         SetPropertyOrBackingField(input, "CaptureCadenceSampleCount", 3600);
@@ -29,13 +35,13 @@ static partial class Program
 
         var result = ClassifyPreviewPacing(input);
 
-        AssertEqual("SourceCapture", GetStringProperty(result, "LikelySlowStage"), "Preview pacing source capture stage");
-        AssertEqual("High", GetStringProperty(result, "Confidence"), "Preview pacing source capture confidence");
-        AssertContains(GetStringProperty(result, "Evidence"), "drops=3");
-        return Task.CompletedTask;
+        Assert.Equal("SourceCapture", GetStringProperty(result, "LikelySlowStage"));
+        Assert.Equal("High", GetStringProperty(result, "Confidence"));
+        Assert.Contains("drops=3", GetStringProperty(result, "Evidence"));
     }
 
-    private static Task PreviewPacingClassifier_ClassifiesCompositorMissBeforePresentBlocked()
+    [Fact(DisplayName = "Preview pacing classifier flags compositor misses first")]
+    public void PreviewPacingClassifier_ClassifiesCompositorMissBeforePresentBlocked()
     {
         var input = CreateBaselinePreviewPacingInput();
         SetPropertyOrBackingField(input, "PreviewD3DPresentCallP99Ms", 6d);
@@ -43,13 +49,13 @@ static partial class Program
 
         var result = ClassifyPreviewPacing(input);
 
-        AssertEqual("CompositorMiss", GetStringProperty(result, "LikelySlowStage"), "Preview pacing compositor stage");
-        AssertEqual("High", GetStringProperty(result, "Confidence"), "Preview pacing compositor confidence");
-        AssertContains(GetStringProperty(result, "Evidence"), "dxgiRecentMissed=2");
-        return Task.CompletedTask;
+        Assert.Equal("CompositorMiss", GetStringProperty(result, "LikelySlowStage"));
+        Assert.Equal("High", GetStringProperty(result, "Confidence"));
+        Assert.Contains("dxgiRecentMissed=2", GetStringProperty(result, "Evidence"));
     }
 
-    private static Task PreviewPacingClassifier_ClassifiesDominantRenderUpload()
+    [Fact(DisplayName = "Preview pacing classifier flags dominant render upload")]
+    public void PreviewPacingClassifier_ClassifiesDominantRenderUpload()
     {
         var input = CreateBaselinePreviewPacingInput();
         SetPropertyOrBackingField(input, "PreviewD3DInputUploadCpuP99Ms", 5d);
@@ -59,13 +65,13 @@ static partial class Program
 
         var result = ClassifyPreviewPacing(input);
 
-        AssertEqual("RenderUpload", GetStringProperty(result, "LikelySlowStage"), "Preview pacing render upload stage");
-        AssertEqual("Medium", GetStringProperty(result, "Confidence"), "Preview pacing render upload confidence");
-        AssertContains(GetStringProperty(result, "Evidence"), "input=5");
-        return Task.CompletedTask;
+        Assert.Equal("RenderUpload", GetStringProperty(result, "LikelySlowStage"));
+        Assert.Equal("Medium", GetStringProperty(result, "Confidence"));
+        Assert.Contains("input=5", GetStringProperty(result, "Evidence"));
     }
 
-    private static Task PreviewPacingClassifier_ClassifiesFrameLatencyWaitTimeout()
+    [Fact(DisplayName = "Preview pacing classifier flags frame latency wait timeout")]
+    public void PreviewPacingClassifier_ClassifiesFrameLatencyWaitTimeout()
     {
         var input = CreateBaselinePreviewPacingInput();
         SetPropertyOrBackingField(input, "PreviewD3DFrameLatencyWaitTimeoutCount", 1L);
@@ -73,13 +79,13 @@ static partial class Program
 
         var result = ClassifyPreviewPacing(input);
 
-        AssertEqual("PresentBlocked", GetStringProperty(result, "LikelySlowStage"), "Preview pacing wait timeout stage");
-        AssertEqual("Medium", GetStringProperty(result, "Confidence"), "Preview pacing wait timeout confidence");
-        AssertContains(GetStringProperty(result, "Evidence"), "waitP95");
-        return Task.CompletedTask;
+        Assert.Equal("PresentBlocked", GetStringProperty(result, "LikelySlowStage"));
+        Assert.Equal("Medium", GetStringProperty(result, "Confidence"));
+        Assert.Contains("waitP95", GetStringProperty(result, "Evidence"));
     }
 
-    private static Task PreviewPacingClassifier_IgnoresStaleLifetimeSignalsWithoutRecentDeltas()
+    [Fact(DisplayName = "Preview pacing classifier ignores stale lifetime signals")]
+    public void PreviewPacingClassifier_IgnoresStaleLifetimeSignalsWithoutRecentDeltas()
     {
         var input = CreateBaselinePreviewPacingInput();
         SetPropertyOrBackingField(input, "MjpegPreviewJitterEnabled", true);
@@ -91,12 +97,12 @@ static partial class Program
 
         var result = ClassifyPreviewPacing(input);
 
-        AssertEqual("Unknown", GetStringProperty(result, "LikelySlowStage"), "Preview pacing stale lifetime signals stage");
-        AssertEqual("Low", GetStringProperty(result, "Confidence"), "Preview pacing stale lifetime signals confidence");
-        return Task.CompletedTask;
+        Assert.Equal("Unknown", GetStringProperty(result, "LikelySlowStage"));
+        Assert.Equal("Low", GetStringProperty(result, "Confidence"));
     }
 
-    private static Task PreviewPacingClassifier_ClassifiesRecentJitterScheduleLate()
+    [Fact(DisplayName = "Preview pacing classifier flags recent jitter schedule-late")]
+    public void PreviewPacingClassifier_ClassifiesRecentJitterScheduleLate()
     {
         var input = CreateBaselinePreviewPacingInput();
         SetPropertyOrBackingField(input, "MjpegPreviewJitterEnabled", true);
@@ -107,15 +113,14 @@ static partial class Program
 
         var result = ClassifyPreviewPacing(input);
 
-        AssertEqual("PreviewJitterScheduler", GetStringProperty(result, "LikelySlowStage"), "Preview pacing recent jitter schedule-late stage");
-        AssertEqual("Medium", GetStringProperty(result, "Confidence"), "Preview pacing recent jitter schedule-late confidence");
-        AssertContains(GetStringProperty(result, "Evidence"), "recentScheduleLate=1/5");
-        return Task.CompletedTask;
+        Assert.Equal("PreviewJitterScheduler", GetStringProperty(result, "LikelySlowStage"));
+        Assert.Equal("Medium", GetStringProperty(result, "Confidence"));
+        Assert.Contains("recentScheduleLate=1/5", GetStringProperty(result, "Evidence"));
     }
 
     private static object CreateBaselinePreviewPacingInput()
     {
-        var input = CreateInstance("Sussudio.Services.Automation.PreviewPacingClassificationInput");
+        var input = CreateInstance(InputTypeName);
         SetPropertyOrBackingField(input, "IsPreviewing", true);
         SetPropertyOrBackingField(input, "TargetFrameRate", 120d);
         SetPropertyOrBackingField(input, "PreviewCadenceSampleCount", 3600);
@@ -128,12 +133,46 @@ static partial class Program
         return input;
     }
 
+    private static object CreateInstance(string typeName)
+    {
+        var type = SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+        return Activator.CreateInstance(type)
+               ?? throw new InvalidOperationException($"Failed to create instance of '{typeName}'.");
+    }
+
     private static object ClassifyPreviewPacing(object input)
     {
-        var classifierType = RequireType("Sussudio.Services.Automation.PreviewPacingSlowStageClassifier");
+        var classifierType = SussudioAssembly.Load().GetType(ClassifierTypeName, throwOnError: true)!;
         var classify = classifierType.GetMethod("Classify", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("PreviewPacingSlowStageClassifier.Classify was not found.");
         return classify.Invoke(null, new[] { input })
                ?? throw new InvalidOperationException("Preview pacing classifier returned null.");
+    }
+
+    private static void SetPropertyOrBackingField(object instance, string propertyName, object? value)
+    {
+        var property = instance.GetType().GetProperty(propertyName, ReflectionFlags.Instance);
+        if (property?.SetMethod != null)
+        {
+            property.SetValue(instance, value);
+            return;
+        }
+
+        var backingField = instance.GetType().GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (backingField != null)
+        {
+            backingField.SetValue(instance, value);
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"Property '{propertyName}' is not writable and backing field was not found on '{instance.GetType().Name}'.");
+    }
+
+    private static string GetStringProperty(object instance, string propertyName)
+    {
+        var property = instance.GetType().GetProperty(propertyName, ReflectionFlags.Instance)
+            ?? throw new InvalidOperationException($"Property '{propertyName}' not found on '{instance.GetType().Name}'.");
+        return property.GetValue(instance)?.ToString() ?? string.Empty;
     }
 }
