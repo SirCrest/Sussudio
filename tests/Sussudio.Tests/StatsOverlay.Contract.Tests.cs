@@ -84,7 +84,8 @@ static partial class Program
         AssertContains(statsDockCompositionText, "_statsDockRefreshController = new StatsDockRefreshController(new StatsDockRefreshControllerContext");
         AssertOccursBefore(statsOverlayCompositionText, "InitializeFrameTimeOverlayPresentationController();", "InitializeStatsDockRefreshController();");
         AssertOccursBefore(statsOverlayCompositionText, "InitializeStatsDockRefreshController();", "_statsOverlayController = new StatsOverlayController");
-        AssertOccursBefore(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController", "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
+        AssertOccursBefore(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController", "var statsDockRowChromeController = new StatsDockRowChromeController");
+        AssertOccursBefore(statsDockCompositionText, "var statsDockRowChromeController = new StatsDockRowChromeController", "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
         AssertOccursBefore(statsDockCompositionText, "var statsDiagnosticRowsController = new StatsDiagnosticRowsController", "var statsHardwareRowsController = new StatsHardwareRowsController");
         AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsController = new StatsHardwareRowsController", "_statsDockRefreshController = new StatsDockRefreshController");
         AssertDoesNotContain(statsOverlayCompositionText, "var statsDockPresentationController = new StatsDockPresentationController");
@@ -156,12 +157,13 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task StatsDiagnosticRowPooling_LivesInController()
+    private static Task StatsDockRowChrome_LivesInFocusedController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsDockCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsDockComposition.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
+        var rowChromeControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRowChromeController.cs").Replace("\r\n", "\n");
         var hardwareRowsControllerText = ReadRepoFile("Sussudio/Controllers/StatsHardwareRowsController.cs").Replace("\r\n", "\n");
         var hardwareRowsInputBuilderText = ReadRepoFile("Sussudio/Controllers/StatsHardwareRowsInputBuilder.cs").Replace("\r\n", "\n");
         var hardwareRowsBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs").Replace("\r\n", "\n");
@@ -169,9 +171,11 @@ static partial class Program
         var refreshControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsDockCompositionText, "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
+        AssertContains(statsDockCompositionText, "var statsDockRowChromeController = new StatsDockRowChromeController(new StatsDockRowChromeControllerContext");
         AssertContains(statsDockCompositionText, "var statsHardwareRowsController = new StatsHardwareRowsController(new StatsHardwareRowsControllerContext");
         AssertContains(statsDockCompositionText, "ResourceOwner = StatsDockPanel,");
         AssertContains(statsDockCompositionText, "DiagnosticsContent = Diagnostics_Content");
+        AssertContains(statsDockCompositionText, "RowChromeController = statsDockRowChromeController");
         AssertContains(statsDockCompositionText, "GetDecodeRowsInput = () =>");
         AssertContains(statsDockCompositionText, "var mjpegMetrics = ViewModel.GetMjpegPipelineTimingDetails();");
         AssertContains(statsDockCompositionText, "StatsHardwareRowsInputBuilder.BuildDecodeRowsInput(");
@@ -182,6 +186,8 @@ static partial class Program
         AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateGpuSection();");
         AssertContains(hardwareRowsControllerText, "internal sealed class StatsHardwareRowsControllerContext");
         AssertContains(hardwareRowsControllerText, "internal sealed class StatsHardwareRowsController");
+        AssertContains(hardwareRowsControllerText, "private const int MaxExpectedDecodeRowCount = 14;");
+        AssertContains(hardwareRowsControllerText, "private const int FixedGpuRowCount = 10;");
         AssertContains(hardwareRowsControllerText, "public void UpdateDecodeSection()");
         AssertContains(hardwareRowsControllerText, "public void UpdateGpuSection()");
         AssertContains(hardwareRowsControllerText, "StatsPresentationBuilder.BuildHardwareDecodeRows(");
@@ -205,9 +211,10 @@ static partial class Program
         AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareRowPresentation(string Label, string Value);");
         AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareDecodeRowsInput(");
         AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareGpuRowsInput(");
-        AssertContains(hardwareRowsControllerText, "_context.DiagnosticRowsController.CollapseDecodeRows(_context.DecodeContent);");
-        AssertContains(hardwareRowsControllerText, "_context.DiagnosticRowsController.UpdateDecodeRows(_context.DecodeContent, rows);");
-        AssertContains(hardwareRowsControllerText, "_context.DiagnosticRowsController.UpdateGpuRows(_context.GpuContent, rows);");
+        AssertContains(hardwareRowsControllerText, "_context.RowChromeController.CollapseSimpleRows(StatsDockSimpleRowPool.Decode);");
+        AssertContains(hardwareRowsControllerText, "_context.RowChromeController.UpdateSimpleRows(");
+        AssertContains(hardwareRowsControllerText, "StatsDockSimpleRowPool.Decode,");
+        AssertContains(hardwareRowsControllerText, "StatsDockSimpleRowPool.Gpu,");
         AssertDoesNotContain(hardwareRowsControllerText, "private static StatsHardwareDecodeRowsInput CreateDecodeRowsInput(");
         AssertDoesNotContain(hardwareRowsControllerText, "private static StatsHardwareGpuRowsInput? CreateGpuRowsInput(");
         AssertDoesNotContain(hardwareRowsControllerText, "new StatsHardwareDecodeRowsInput(");
@@ -217,16 +224,28 @@ static partial class Program
         AssertDoesNotContain(hardwareRowsControllerText, "GetPendingPreviewFrameCount");
         AssertDoesNotContain(hardwareRowsControllerText, "GetNvmlSnapshot");
         AssertContains(controllerText, "internal sealed class StatsDiagnosticRowsController");
-        AssertContains(controllerText, "private const int MaxExpectedDecodeRowCount = 14;");
-        AssertContains(controllerText, "private const int FixedGpuRowCount = 10;");
-        AssertContains(controllerText, "private readonly List<DiagnosticRowSlot> _decodeRowPool = new();");
-        AssertContains(controllerText, "private TextBlock? _diagnosticsEmptyStateTextBlock;");
-        AssertContains(controllerText, "public void UpdateDecodeRows(StackPanel container, IReadOnlyList<StatsHardwareRowPresentation> rows)");
-        AssertContains(controllerText, "public void UpdateGpuRows(StackPanel container, IReadOnlyList<StatsHardwareRowPresentation> rows)");
+        AssertContains(controllerText, "public required StatsDockRowChromeController RowChromeController { get; init; }");
         AssertContains(controllerText, "public void UpdateDiagnostics(StatsDiagnosticRowsPresentation presentation)");
-        AssertContains(controllerText, "private Border CreateDiagnosticRow(string label, string value, bool alt)");
+        AssertContains(controllerText, "_context.RowChromeController.UpdateDiagnosticsRows(presentation);");
+        AssertContains(rowChromeControllerText, "internal sealed class StatsDockRowChromeControllerContext");
+        AssertContains(rowChromeControllerText, "internal sealed class StatsDockRowChromeController");
+        AssertContains(rowChromeControllerText, "internal enum StatsDockSimpleRowPool");
+        AssertContains(rowChromeControllerText, "private readonly List<RowSlot> _decodeRowPool = new();");
+        AssertContains(rowChromeControllerText, "private readonly List<RowSlot> _gpuRowPool = new();");
+        AssertContains(rowChromeControllerText, "private readonly List<DiagnosticsPoolSlot> _diagnosticsRowPool = new();");
+        AssertContains(rowChromeControllerText, "private TextBlock? _diagnosticsEmptyStateTextBlock;");
+        AssertContains(rowChromeControllerText, "public void CollapseSimpleRows(StatsDockSimpleRowPool poolKind)");
+        AssertContains(rowChromeControllerText, "public void UpdateSimpleRows(");
+        AssertContains(rowChromeControllerText, "public void UpdateDiagnosticsRows(StatsDiagnosticRowsPresentation presentation)");
+        AssertContains(rowChromeControllerText, "Text = \"No diagnostics available\",");
+        AssertContains(rowChromeControllerText, "private Border CreateRow(string label, string value, bool alt)");
+        AssertContains(rowChromeControllerText, "Style = GetStyle(alt ? \"DockStatsRowAltStyle\" : \"DockStatsRowStyle\"),");
         AssertDoesNotContain(hardwareRowsControllerText, "new List<StatsHardwareRowPresentation>");
         AssertDoesNotContain(hardwareRowsControllerText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(");
+        AssertDoesNotContain(hardwareRowsControllerText, "StatsDiagnosticRowsController");
+        AssertDoesNotContain(controllerText, "private readonly List<");
+        AssertDoesNotContain(controllerText, "private Border CreateDiagnosticRow(");
+        AssertDoesNotContain(controllerText, "private Border CreateRow(");
         AssertDoesNotContain(mainWindowText, "_decodeRowPool");
         AssertDoesNotContain(mainWindowText, "_diagnosticsRowPool");
         AssertDoesNotContain(statsOverlayText, "private sealed record DiagnosticRowSlot(");

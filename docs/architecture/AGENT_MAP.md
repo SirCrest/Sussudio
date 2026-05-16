@@ -908,11 +908,13 @@ Primary current owners:
   events, stats dock visibility, polling, and refresh controllers.
 - `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
   contract checks for stats overlay lifecycle wiring, stats section chrome,
-  stats dock refresh orchestration, and diagnostic row pooling.
-- `Sussudio/Controllers/StatsDiagnosticRowsController.cs` owns dynamic
-  decode/GPU/diagnostic row pools, empty-state rows, group headers, and
-  diagnostic row style updates. `Sussudio/Controllers/StatsDockRefreshController.cs`
-  delegates diagnostic row presentation to it.
+  stats dock refresh orchestration, diagnostic row update delegation, and row
+  chrome pooling.
+- `Sussudio/Controllers/StatsDiagnosticRowsController.cs` owns diagnostic row
+  presentation handoff. `Sussudio/Controllers/StatsDockRowChromeController.cs`
+  owns dynamic decode/GPU/diagnostic row pools, empty-state rows, group headers,
+  and dock row style updates. `Sussudio/Controllers/StatsDockRefreshController.cs`
+  delegates diagnostic row presentation to `StatsDiagnosticRowsController`.
 - `Sussudio/Controllers/FrameTimeOverlayPresentationController.cs` owns compact
   frame-time overlay text projection and graph line drawing. Keep frame-time
   canvas math there, while `Sussudio/MainWindow.FrameTimeOverlay.cs` owns the
@@ -1668,11 +1670,13 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
   support/logging contract tests.
 - `Sussudio/Controllers/StatsHardwareRowsController.cs` owns hardware row
-  refresh, availability, and row-pool delegation over presentation inputs;
+  refresh, availability, presentation-input row building, and decode/GPU
+  minimum pool sizing before delegating row chrome;
   `Sussudio/Controllers/StatsHardwareRowsInputBuilder.cs` owns MJPEG/NVML
   telemetry projection into the hardware-row presentation input DTOs;
   `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs` owns pure
   decode/GPU row text projection over presentation inputs, and
+  `StatsDockRowChromeController` owns decode/GPU row pooling/styling while
   `StatsDockRefreshController` owns when decode/GPU rows refresh.
 - `Sussudio/Controllers/FlashbackTimelineController.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, show/hide animation

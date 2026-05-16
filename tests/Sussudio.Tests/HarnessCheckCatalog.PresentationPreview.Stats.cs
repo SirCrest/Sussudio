@@ -15,8 +15,8 @@ static partial class Program
             "Stats section chrome lives in focused partial",
             StatsSectionChrome_LivesInFocusedPartial);
         await AddCheckAsync(results,
-            "Stats diagnostic row pooling lives in controller",
-            StatsDiagnosticRowPooling_LivesInController);
+            "Stats dock row chrome lives in focused controller",
+            StatsDockRowChrome_LivesInFocusedController);
         await AddCheckAsync(results,
             "Stats hardware row presentation formats decode and GPU rows",
             StatsHardwareRowsBuilder_FormatsDecodeAndGpuRows);

@@ -54,17 +54,21 @@ public sealed partial class MainWindow
             EncoderFrameRateValue = Stats_EncoderFrameRateValue,
             EncoderBitrateValue = Stats_EncoderBitrateValue
         });
-        var statsDiagnosticRowsController = new StatsDiagnosticRowsController(new StatsDiagnosticRowsControllerContext
+        var statsDockRowChromeController = new StatsDockRowChromeController(new StatsDockRowChromeControllerContext
         {
             ResourceOwner = StatsDockPanel,
             DiagnosticsContent = Diagnostics_Content
+        });
+        var statsDiagnosticRowsController = new StatsDiagnosticRowsController(new StatsDiagnosticRowsControllerContext
+        {
+            RowChromeController = statsDockRowChromeController
         });
         var statsHardwareRowsController = new StatsHardwareRowsController(new StatsHardwareRowsControllerContext
         {
             DecodeSection = DecodeSection,
             DecodeContent = Decode_Content,
             GpuContent = GPU_Content,
-            DiagnosticRowsController = statsDiagnosticRowsController,
+            RowChromeController = statsDockRowChromeController,
             GetDecodeRowsInput = () =>
             {
                 var mjpegMetrics = ViewModel.GetMjpegPipelineTimingDetails();

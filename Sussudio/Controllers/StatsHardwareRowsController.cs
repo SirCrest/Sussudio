@@ -10,13 +10,16 @@ internal sealed class StatsHardwareRowsControllerContext
     public required UIElement DecodeSection { get; init; }
     public required StackPanel DecodeContent { get; init; }
     public required StackPanel GpuContent { get; init; }
-    public required StatsDiagnosticRowsController DiagnosticRowsController { get; init; }
+    public required StatsDockRowChromeController RowChromeController { get; init; }
     public required Func<StatsHardwareDecodeRowsInput?> GetDecodeRowsInput { get; init; }
     public required Func<StatsHardwareGpuRowsInput?> GetGpuRowsInput { get; init; }
 }
 
 internal sealed class StatsHardwareRowsController
 {
+    private const int MaxExpectedDecodeRowCount = 14;
+    private const int FixedGpuRowCount = 10;
+
     private readonly StatsHardwareRowsControllerContext _context;
 
     public StatsHardwareRowsController(StatsHardwareRowsControllerContext context)
@@ -30,18 +33,26 @@ internal sealed class StatsHardwareRowsController
         if (!input.HasValue || input.Value.DecoderCount <= 0)
         {
             _context.DecodeSection.Visibility = Visibility.Collapsed;
-            _context.DiagnosticRowsController.CollapseDecodeRows(_context.DecodeContent);
+            _context.RowChromeController.CollapseSimpleRows(StatsDockSimpleRowPool.Decode);
             return;
         }
 
         _context.DecodeSection.Visibility = Visibility.Visible;
         var rows = StatsPresentationBuilder.BuildHardwareDecodeRows(input.Value);
-        _context.DiagnosticRowsController.UpdateDecodeRows(_context.DecodeContent, rows);
+        _context.RowChromeController.UpdateSimpleRows(
+            StatsDockSimpleRowPool.Decode,
+            _context.DecodeContent,
+            rows,
+            MaxExpectedDecodeRowCount);
     }
 
     public void UpdateGpuSection()
     {
         var rows = StatsPresentationBuilder.BuildHardwareGpuRows(_context.GetGpuRowsInput());
-        _context.DiagnosticRowsController.UpdateGpuRows(_context.GpuContent, rows);
+        _context.RowChromeController.UpdateSimpleRows(
+            StatsDockSimpleRowPool.Gpu,
+            _context.GpuContent,
+            rows,
+            FixedGpuRowCount);
     }
 }
