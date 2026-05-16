@@ -163,7 +163,12 @@ static partial class Program
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewAudioFade.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewAudioFadeController.cs").Replace("\r\n", "\n");
-        var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.cs").Replace("\r\n", "\n");
+        var audioControlBindingControllerRootText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.cs").Replace("\r\n", "\n");
+        var audioControlBindingControllerContextText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.Context.cs").Replace("\r\n", "\n");
+        var audioControlBindingControllerInitialStateText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.InitialState.cs").Replace("\r\n", "\n");
+        var audioControlBindingControllerMetersText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.Meters.cs").Replace("\r\n", "\n");
+        var audioControlBindingControllerSelectionsText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.Selections.cs").Replace("\r\n", "\n");
+        var audioControlBindingControllerTogglesText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.Toggles.cs").Replace("\r\n", "\n");
         var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(audioBindingsText, "private AudioControlBindingController _audioControlBindingController = null!;");
@@ -182,9 +187,22 @@ static partial class Program
         AssertContains(mainWindowText, "InitializePreviewAudioFadeController();");
         AssertContains(mainWindowText, "InitializeAudioControlBindingController();");
         AssertContains(bindingsText, "ApplyInitialAudioControlBindings();");
-        AssertContains(audioControlBindingControllerText, "_context.IsPreviewAudioFadeInActive() || _context.IsPreviewAudioFadeAnimationActive()");
-        AssertContains(audioControlBindingControllerText, "_context.PreviewVolumeSlider.ValueChanged +=");
-        AssertContains(audioControlBindingControllerText, "_context.CancelPreviewAudioFadeInForUser();");
+        AssertContains(audioControlBindingControllerRootText, "internal sealed partial class AudioControlBindingController");
+        AssertContains(audioControlBindingControllerContextText, "internal sealed class AudioControlBindingControllerContext");
+        AssertContains(audioControlBindingControllerInitialStateText, "public void ApplyInitialAudioControlBindings()");
+        AssertContains(audioControlBindingControllerInitialStateText, "_context.IsPreviewAudioFadeInActive() || _context.IsPreviewAudioFadeAnimationActive()");
+        AssertContains(audioControlBindingControllerInitialStateText, "_context.PreviewVolumeSlider.ValueChanged +=");
+        AssertContains(audioControlBindingControllerInitialStateText, "_context.CancelPreviewAudioFadeInForUser();");
+        AssertContains(audioControlBindingControllerMetersText, "public void AttachAudioMeterActivationBindings()");
+        AssertContains(audioControlBindingControllerMetersText, "public void ApplyInitialAudioMeterPresentation()");
+        AssertContains(audioControlBindingControllerMetersText, "public void AttachDeviceAudioGainAndMeterBindings()");
+        AssertContains(audioControlBindingControllerSelectionsText, "public void EnsureAudioControlSelections()");
+        AssertContains(audioControlBindingControllerSelectionsText, "public void AttachAudioSelectionBindings()");
+        AssertContains(audioControlBindingControllerTogglesText, "public void AttachAudioRecordPreviewToggleBindings()");
+        AssertContains(audioControlBindingControllerTogglesText, "public void AttachAudioInputToggleBindings()");
+        AssertDoesNotContain(audioControlBindingControllerRootText, "public void ApplyInitialAudioControlBindings()");
+        AssertDoesNotContain(audioControlBindingControllerRootText, "public void AttachAudioSelectionBindings()");
+        AssertDoesNotContain(audioControlBindingControllerRootText, "public void AttachDeviceAudioGainAndMeterBindings()");
         AssertContains(propertyChangedText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
         AssertContains(propertyChangedText, "TryHandleAudioPropertyChanged(propertyName)");
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
@@ -330,7 +348,7 @@ static partial class Program
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/MicrophoneControlsController.cs").Replace("\r\n", "\n");
-        var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.cs").Replace("\r\n", "\n");
+        var audioControlBindingControllerInitialStateText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.InitialState.cs").Replace("\r\n", "\n");
         var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlPresentationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private MicrophoneControlsController _microphoneControlsController = null!;");
@@ -344,8 +362,8 @@ static partial class Program
         AssertContains(bindingsText, "ApplyInitialAudioControlBindings();");
         AssertContains(audioBindingsText, "SetupMicrophoneVolumeBindings = SetupMicrophoneVolumeBindings,");
         AssertContains(audioBindingsText, "ApplyInitialMicrophoneControlsVisibility = ApplyInitialMicrophoneControlsVisibility,");
-        AssertContains(audioControlBindingControllerText, "_context.SetupMicrophoneVolumeBindings();");
-        AssertContains(audioControlBindingControllerText, "_context.ApplyInitialMicrophoneControlsVisibility();");
+        AssertContains(audioControlBindingControllerInitialStateText, "_context.SetupMicrophoneVolumeBindings();");
+        AssertContains(audioControlBindingControllerInitialStateText, "_context.ApplyInitialMicrophoneControlsVisibility();");
         AssertContains(propertyChangedText, "TryHandleAudioPropertyChanged(propertyName)");
         AssertContains(audioPropertyChangedText, "HandleMicrophoneEnabledChanged();");
         AssertContains(audioPropertyChangedText, "HandleMicrophoneVolumeChanged();");

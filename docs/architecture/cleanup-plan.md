@@ -608,9 +608,15 @@ setup, `AudioMeterController.Context.cs` owns XAML/view-model dependencies,
 lifetime, and `TranslateMarker`, and
 `AudioMeterController.PresentationAnimations.cs` owns monitoring/disabled
 animations and rounded clips. Audio/microphone initial control projection and
-event hookup now live in
-`Sussudio/Controllers/AudioControlBindingController.cs`, with
-`Sussudio/MainWindow.AudioBindings.cs` left as the XAML-facing adapter;
+event hookup now live in the
+`Sussudio/Controllers/AudioControlBindingController*.cs` family: the root owns
+the controller shell and context lifetime, `.Context.cs` owns the XAML control
+dependency bag, `.InitialState.cs` owns initial audio/microphone projection plus
+preview-volume binding and priming, `.Selections.cs` owns
+audio/microphone/device-audio selection handlers, `.Toggles.cs` owns
+record/preview/custom-audio/microphone toggle handlers, and `.Meters.cs` owns
+audio-meter activation, initial meter presentation, and device-audio gain/meter
+resize hooks. `Sussudio/MainWindow.AudioBindings.cs` is the XAML-facing adapter;
 video-format collection setup, initial capture/recording option projection, and
 code-attached resolution/frame-rate handlers now live in the
 `Sussudio/Controllers/CaptureOptionBindingController*.cs` family, with
