@@ -215,6 +215,8 @@ static partial class Program
 
         AssertContains(assemblerText, "private static class CaptureRuntimeSnapshotAssembler");
         AssertContains(assemblerText, "public static CaptureRuntimeSnapshot Build(CaptureRuntimeSnapshotAssemblyFields fields)");
+        AssertContains(assemblerText, "public ObservedFrameSnapshotFields ObservedTelemetry { get; init; }");
+        AssertDoesNotContain(assemblerText, "bool? ObservedP010Likely8BitUpscaled) ObservedTelemetry");
         AssertContains(assemblerText, "return new CaptureRuntimeSnapshot");
         AssertContains(assemblerText, "TimestampUtc = fields.TimestampUtc,");
         AssertContains(assemblerText, "HdrWarmupObservedP010Frames = (int)Math.Min(int.MaxValue, observedP010FrameCount),");

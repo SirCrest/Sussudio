@@ -251,16 +251,7 @@ public partial class CaptureService
         public RuntimeReaderTransportSnapshotFields ReaderTransport { get; init; } = new();
         public RuntimeHdrPipelineSnapshotFields HdrPipeline { get; init; } = new();
         public RuntimeSourceTelemetrySnapshotFields SourceTelemetry { get; init; } = new();
-        public (
-            string? FirstObservedFramePixelFormat,
-            string? LatestObservedFramePixelFormat,
-            string? LatestObservedSurfaceFormat,
-            long ObservedP010FrameCount,
-            long ObservedNv12FrameCount,
-            long ObservedOtherFrameCount,
-            long ObservedP010BitDepthSampleCount,
-            double ObservedP010Low2BitNonZeroPercent,
-            bool? ObservedP010Likely8BitUpscaled) ObservedTelemetry { get; init; }
+        public ObservedFrameSnapshotFields ObservedTelemetry { get; init; }
         public RuntimeRecordingIntegritySnapshotFields RecordingIntegrity { get; init; } = new();
         public string? CurrentDeviceId { get; init; }
         public string? CurrentDeviceName { get; init; }

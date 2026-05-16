@@ -41,7 +41,9 @@ static partial class Program
         AssertContains(formatText, "RequestedFrameRateNumerator is uint numerator");
         AssertContains(formatText, "RequestedFrameRateDenominator is uint denominator");
 
-        AssertContains(observedText, "ResolveObservedFrameTelemetry()");
+        AssertContains(observedText, "private ObservedFrameSnapshotFields ResolveObservedFrameTelemetry()");
+        AssertContains(observedText, "private readonly record struct ObservedFrameSnapshotFields(");
+        AssertContains(observedText, "return new ObservedFrameSnapshotFields(");
         AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedP010FrameCount))");
         AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount))");
         AssertContains(observedText, "Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount))");

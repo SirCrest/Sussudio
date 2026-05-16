@@ -562,7 +562,8 @@ Important entry points:
 - `CaptureService.SnapshotRecordingFormat.cs` owns encoder codec, output pixel
   format, video profile, and requested frame-rate argument projection.
 - `CaptureService.SnapshotObservedFrames.cs` owns observed frame-format
-  telemetry projection from explicit counters.
+  telemetry projection from explicit counters and the private
+  `ObservedFrameSnapshotFields` owner shared by runtime/health assemblers.
 - `CaptureService.SnapshotAvSync.cs` owns A/V sync drift snapshot helpers for
   live source/audio drift and encoder correction telemetry.
 - `CaptureService.SnapshotTelemetry.cs` owns source telemetry snapshot

@@ -7,7 +7,26 @@ namespace Sussudio.Services.Capture;
 // this path must not infer fake frame counts from requested settings.
 public partial class CaptureService
 {
-    private (
+    private ObservedFrameSnapshotFields ResolveObservedFrameTelemetry()
+    {
+        var expectedFormat = _recordingContext?.HdrPipelineActive == true ? "P010" : _recordingContext != null ? "NV12" : null;
+        var firstObserved = _firstObservedFramePixelFormat ?? expectedFormat;
+        var latestObserved = _latestObservedFramePixelFormat ?? expectedFormat;
+        var latestSurface = _latestObservedSurfaceFormat ?? latestObserved;
+
+        return new ObservedFrameSnapshotFields(
+            FirstObservedFramePixelFormat: firstObserved,
+            LatestObservedFramePixelFormat: latestObserved,
+            LatestObservedSurfaceFormat: latestSurface,
+            ObservedP010FrameCount: Math.Max(0, Interlocked.Read(ref _observedP010FrameCount)),
+            ObservedNv12FrameCount: Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount)),
+            ObservedOtherFrameCount: Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount)),
+            ObservedP010BitDepthSampleCount: 0,
+            ObservedP010Low2BitNonZeroPercent: 0,
+            ObservedP010Likely8BitUpscaled: null);
+    }
+
+    private readonly record struct ObservedFrameSnapshotFields(
         string? FirstObservedFramePixelFormat,
         string? LatestObservedFramePixelFormat,
         string? LatestObservedSurfaceFormat,
@@ -16,23 +35,5 @@ public partial class CaptureService
         long ObservedOtherFrameCount,
         long ObservedP010BitDepthSampleCount,
         double ObservedP010Low2BitNonZeroPercent,
-        bool? ObservedP010Likely8BitUpscaled)
-        ResolveObservedFrameTelemetry()
-    {
-        var expectedFormat = _recordingContext?.HdrPipelineActive == true ? "P010" : _recordingContext != null ? "NV12" : null;
-        var firstObserved = _firstObservedFramePixelFormat ?? expectedFormat;
-        var latestObserved = _latestObservedFramePixelFormat ?? expectedFormat;
-        var latestSurface = _latestObservedSurfaceFormat ?? latestObserved;
-
-        return (
-            firstObserved,
-            latestObserved,
-            latestSurface,
-            Math.Max(0, Interlocked.Read(ref _observedP010FrameCount)),
-            Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount)),
-            Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount)),
-            0,
-            0,
-            null);
-    }
+        bool? ObservedP010Likely8BitUpscaled);
 }

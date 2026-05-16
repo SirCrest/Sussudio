@@ -1661,8 +1661,9 @@ frame-rate argument projection there.
 
 Observed frame-format snapshot policy now lives in
 `Sussudio/Services/Capture/CaptureService.SnapshotObservedFrames.cs`. Keep the
-explicit `Interlocked.Read` counter projection there; do not infer fake P010 or
-NV12 frame counts from requested settings.
+explicit `Interlocked.Read` counter projection and private
+`ObservedFrameSnapshotFields` owner there; do not infer fake P010 or NV12 frame
+counts from requested settings.
 
 Source telemetry snapshot policy now lives in
 `Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs`. Keep telemetry
