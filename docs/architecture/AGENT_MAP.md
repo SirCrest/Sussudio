@@ -1910,8 +1910,18 @@ Primary current owners:
   collection-change debounce/queued sync plus available-option property-change
   rebinding,
   `Sussudio/Controllers/CaptureSelectionBindingController.SelectionState.cs`
-  owns selected-item UI/ViewModel application and selected-device
-  property-change reconciliation,
+  is the selection-state family marker,
+  `Sussudio/Controllers/CaptureSelectionBindingController.DeviceSelection.cs`
+  owns capture-device ComboBox/ViewModel synchronization and selected-device
+  property-change mismatch logging,
+  `Sussudio/Controllers/CaptureSelectionBindingController.AudioSelection.cs`
+  owns audio-input and microphone ComboBox/ViewModel synchronization,
+  `Sussudio/Controllers/CaptureSelectionBindingController.CaptureModeSelection.cs`
+  owns resolution and frame-rate ComboBox/ViewModel synchronization,
+  `Sussudio/Controllers/CaptureSelectionBindingController.RecordingSelection.cs`
+  owns recording format/quality/preset/split-encode ComboBox synchronization,
+  `Sussudio/Controllers/CaptureSelectionBindingController.StringSelection.cs`
+  owns shared string ComboBox selection application,
   `Sussudio/Controllers/CaptureComboBoxSelectionNormalizer.cs` owns pure
   capture/audio/microphone/resolution/frame-rate/string ComboBox
   selection and fallback matching, and

@@ -1986,8 +1986,12 @@ root controller owns collection wiring, recording string-selection event
 handlers, and pending-device apply state,
 `.Context.cs` owns the XAML control dependency bag, `.SelectionSync.cs` owns
 collection-change debounce/queued sync plus available-option property-change
-rebinding, `.SelectionState.cs` owns selected-item UI/ViewModel application and
-selected-device property-change reconciliation,
+rebinding, `.SelectionState.cs` is the family marker, `.DeviceSelection.cs` owns
+capture-device selection and mismatch logging, `.AudioSelection.cs` owns audio
+input and microphone selection, `.CaptureModeSelection.cs` owns resolution and
+frame-rate selection, `.RecordingSelection.cs` owns recording format/quality/
+preset/split-encode selection, `.StringSelection.cs` owns shared string
+ComboBox selection application,
 `CaptureComboBoxSelectionNormalizer.cs` owns pure capture/audio/microphone/
 resolution/frame-rate/string ComboBox selection and fallback matching, and
 `.DeviceAudio.cs` owns device-audio mode/gain projection. `.PropertyChanges.cs`
