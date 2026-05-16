@@ -1052,9 +1052,22 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs` owns
   MainWindow responsive shell layout controller-adapter and breakpoint/placement
   policy assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs` owns
-  MainWindow capture selection, capture device action, capture option
-  presentation, and capture option binding setup ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs` is the
+  MainWindow capture ownership test family marker shell.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
+  owns capture selection binding/sync controller-adapter ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs`
+  owns capture ComboBox selection normalizer fallback-policy assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.DeviceActions.Tests.cs`
+  owns capture refresh/apply button controller-adapter ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionPresentation.Tests.cs`
+  owns capture option presentation controller-adapter ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionPresentationPolicy.Tests.cs`
+  owns capture option presentation affordance-policy assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionBindings.Tests.cs`
+  owns capture/recording option binding controller-adapter ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionTooltipFormatter.Tests.cs`
+  owns capture option HDR/FPS tooltip text-policy assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs` owns
   MainWindow output path display/actions and preview screenshot workflow
   ownership assertions.

@@ -2097,6 +2097,14 @@ capture-option presentation adapter. `MainWindow.CaptureOptionBindings.cs` and
 `MainWindow.RecordingOptionBindings.cs` keep only the old method names used by
 `SetupBindings()`.
 
+MainWindow capture ownership tests now mirror these runtime owners instead of
+living in one capture test grab-bag. `MainWindow.ControllerOwnership.Capture.Tests.cs`
+is only the marker shell; selection bindings, selection normalizer policy,
+device actions, option presentation, option affordance policy, option bindings,
+and option tooltip formatting each have a focused
+`MainWindow.ControllerOwnership.Capture.*.Tests.cs` file registered with the
+presentation-preview harness coverage check.
+
 Recording output-path textbox, tooltip, and resize-event updates now live in
 `Sussudio/Controllers/Recording/Output/OutputPathDisplayController.cs`; pure truncation text
 policy now lives in `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs`.
