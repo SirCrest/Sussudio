@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Sussudio.Models;
-using Sussudio.Services.Audio;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Recording;
 
@@ -152,46 +151,17 @@ public partial class CaptureService
         _actualPixelFormat = unifiedVideoCapture.NativeInputFormat ?? (unifiedVideoCapture.IsP010 ? "P010" : "NV12");
         TryCorrectFrameRateFromTelemetry();
 
-        if (_wasapiAudioCapture == null && settings.AudioEnabled)
-        {
-            var resolvedAudioDeviceId = audioDeviceId
-                ?? throw new InvalidOperationException("Recording requires an audio capture device.");
-            rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();
-            await rollback.OwnedWasapiAudioCapture.InitializeAsync(resolvedAudioDeviceId, transitionToken).ConfigureAwait(false);
-            rollback.OwnedWasapiAudioCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-            rollback.OwnedWasapiAudioCapture.CaptureFailed += OnWasapiCaptureFailed;
-            rollback.OwnedWasapiAudioCapture.Start();
-            _wasapiAudioCapture = rollback.OwnedWasapiAudioCapture;
-        }
-
-        if (_wasapiAudioCapture != null && settings.AudioEnabled)
-        {
-            _wasapiAudioCapture.AttachRecordingSink(rollback.RecordingSink);
-            rollback.SinkAttachedForAudioOnly = true;
-            if (_isAudioPreviewActive)
-            {
-                await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
-            }
-        }
-
+        var activeRecordingSink = rollback.RecordingSink
+            ?? throw new InvalidOperationException("Recording requires an active sink.");
         var activeLibAvSink = rollback.LibAvSink
             ?? throw new InvalidOperationException("Recording requires an active LibAv sink.");
-
-        // Dispose preview-time mic monitor - recording creates its own with sink
-        await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
-
-        if (settings.MicrophoneEnabled && !string.IsNullOrWhiteSpace(settings.MicrophoneDeviceId))
-        {
-            var micSink = activeLibAvSink; // capture stable reference - LibAv sink is nulled on success path
-            var micCapture = new WasapiAudioCapture();
-            await micCapture.InitializeAsync(settings.MicrophoneDeviceId, transitionToken).ConfigureAwait(false);
-            micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
-            micCapture.CaptureFailed += OnWasapiCaptureFailed;
-            micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));
-            micCapture.Start();
-            _microphoneCapture = micCapture;
-            Logger.Log("MICROPHONE_CAPTURE_START device='" + settings.MicrophoneDeviceName + "'");
-        }
+        await StartLibAvRecordingAudioInputsAsync(
+            settings,
+            transitionToken,
+            rollback,
+            activeLibAvSink,
+            activeRecordingSink,
+            audioDeviceId).ConfigureAwait(false);
 
         IGpuVideoFrameEncoder? gpuEncoder =
             (!isMjpegMode && activeLibAvSink.GpuEncodingEnabled)

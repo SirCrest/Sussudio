@@ -14,6 +14,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
             .Replace("\r\n", "\n");
+        var libAvAudioInputsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.AudioInputs.cs")
+            .Replace("\r\n", "\n");
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs")
             .Replace("\r\n", "\n");
 
@@ -45,6 +47,22 @@ static partial class Program
         AssertContains(libAvStartText, "await RefreshSourceTelemetryAsync(transitionToken)");
         AssertContains(libAvStartText, "HDR_NEGOTIATION");
         AssertContains(libAvStartText, "await rollback.RecordingSink.StartAsync(rollback.RecordingContext, transitionToken)");
+        AssertContains(libAvStartText, "await StartLibAvRecordingAudioInputsAsync(");
+        AssertOccursBefore(libAvStartText, "await rollback.RecordingSink.StartAsync(rollback.RecordingContext, transitionToken)", "await StartLibAvRecordingAudioInputsAsync(");
+        AssertOccursBefore(libAvStartText, "await StartLibAvRecordingAudioInputsAsync(", "_recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(");
+        AssertOccursBefore(libAvStartText, "await StartLibAvRecordingAudioInputsAsync(", "await unifiedVideoCapture.StartRecordingAsync(");
+        AssertContains(libAvAudioInputsText, "private async Task StartLibAvRecordingAudioInputsAsync(");
+        AssertContains(libAvAudioInputsText, "rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();");
+        AssertContains(libAvAudioInputsText, "_wasapiAudioCapture.AttachRecordingSink(recordingSink);");
+        AssertContains(libAvAudioInputsText, "rollback.SinkAttachedForAudioOnly = true;");
+        AssertContains(libAvAudioInputsText, "await StartWasapiPlaybackAsync(transitionToken)");
+        AssertContains(libAvAudioInputsText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);");
+        AssertContains(libAvAudioInputsText, "micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));");
+        AssertContains(libAvAudioInputsText, "MICROPHONE_CAPTURE_START");
+        AssertDoesNotContain(libAvStartText, "rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();");
+        AssertDoesNotContain(libAvStartText, "_wasapiAudioCapture.AttachRecordingSink(recordingSink);");
+        AssertDoesNotContain(libAvStartText, "micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));");
+        AssertDoesNotContain(libAvStartText, "MICROPHONE_CAPTURE_START");
         AssertDoesNotContain(libAvStartText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertDoesNotContain(lifecycleText, "public Task StopRecordingAsync(");
         AssertDoesNotContain(lifecycleText, "internal Task StopRecordingAsync(bool emergency");

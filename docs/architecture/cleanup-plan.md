@@ -811,6 +811,9 @@ delegation to the recording-start rollback owner.
 `CaptureService.RecordingStartFlashback.cs` owns Flashback recording fast-path
 reuse and backend startup, and
 `CaptureService.RecordingStartLibAv.cs` owns standard LibAv recording startup.
+`CaptureService.RecordingStartLibAv.AudioInputs.cs` owns standard LibAv
+recording audio-input startup, including WASAPI sink attachment, preview
+playback preservation, and recording microphone capture wiring.
 Recording
 stop lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs`, including
