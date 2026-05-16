@@ -29,7 +29,7 @@ static partial class Program
             ["CaptureService.cs"] = 1,
             ["CaptureService.Coordination.cs"] = 7,
             ["CaptureService.Cleanup.cs"] = 1,
-            ["CaptureService.Failures.cs"] = 2
+            ["CaptureService.FailureCleanup.cs"] = 2
         };
 
         var actualWriterFiles = writerCounts
@@ -58,7 +58,7 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
         var coordinationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Coordination.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
-        var failuresText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs").Replace("\r\n", "\n");
+        var failureCleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FailureCleanup.cs").Replace("\r\n", "\n");
 
         AssertContains(rootText, "private CaptureSessionState _sessionState = CaptureSessionState.Uninitialized;");
         AssertContains(coordinationText, "_sessionState = transitionState;");
@@ -74,8 +74,8 @@ static partial class Program
             cleanupText,
             "_sessionState = _isDisposed != 0 ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;");
 
-        var fatalCleanupText = ExtractMemberCode(failuresText, "BeginFatalCaptureCleanup");
-        var flashbackBackendCleanupText = ExtractMemberCode(failuresText, "BeginFlashbackBackendCleanup");
+        var fatalCleanupText = ExtractMemberCode(failureCleanupText, "BeginFatalCaptureCleanup");
+        var flashbackBackendCleanupText = ExtractMemberCode(failureCleanupText, "BeginFlashbackBackendCleanup");
         AssertContains(fatalCleanupText, "_sessionState = CaptureSessionState.CleaningUp;");
         AssertContains(fatalCleanupText, "_sessionState = CaptureSessionState.Faulted;");
         AssertDoesNotContain(flashbackBackendCleanupText, "_sessionState =");
