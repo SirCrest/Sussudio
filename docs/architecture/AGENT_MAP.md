@@ -2095,8 +2095,16 @@ Primary current owners:
   nudge, marker, and automation action command routing plus rejection status
   projection. `MainViewModel.FlashbackPlayback.cs` owns read-only Flashback
   playback snapshot access plus buffer, bitrate, playback-state, in/out marker,
-  and gap-from-live UI projection. `MainViewModel.FlashbackExport.cs` owns Flashback UI/automation
-  export flow, progress/cancellation state, and segment projection.
+  and gap-from-live UI projection. `MainViewModel.FlashbackExport.cs` owns
+  Flashback UI export commands, save-picker flow, active-export guard, and
+  user-facing export result/status handling.
+  `MainViewModel.FlashbackExportOperation.cs` owns shared Flashback export
+  operation lifecycle: outcome classification, core export execution,
+  current-operation checks, progress/cancellation handoff, and CTS cleanup.
+  `MainViewModel.FlashbackExportAutomation.cs` owns automation-facing Flashback
+  export command execution, linked cancellation, and dispatcher cleanup.
+  `MainViewModel.FlashbackSegments.cs` owns read-only Flashback segment
+  projection for UI, CLI, and MCP callers.
   `MainViewModel.FrameRateOptions.cs` owns frame-rate option rebuilding and
   observable collection mutation. `MainViewModel.FrameRateAutoSelectionPolicy.cs`
   owns pure frame-rate option choice: pending SDR bucket preference,

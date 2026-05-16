@@ -2796,9 +2796,18 @@ Remaining `tools/Common` ownership:
    plus rejection status projection now live in
    `MainViewModel.FlashbackPlaybackCommands.cs`; read-only Flashback playback
    snapshot access plus buffer, bitrate, playback-state, in/out marker, and
-   gap-from-live UI projection live in `MainViewModel.FlashbackPlayback.cs`. Flashback UI/automation export
-   flow, progress/cancellation state, and segment projection now live in
-   `MainViewModel.FlashbackExport.cs`. Frame-rate option rebuilding, observable
+   gap-from-live UI projection live in `MainViewModel.FlashbackPlayback.cs`.
+   Flashback UI export commands, save-picker flow, active-export guard, and
+   user-facing export result/status handling now live in
+   `MainViewModel.FlashbackExport.cs`. Shared Flashback export operation
+   lifecycle, including outcome classification, core export execution,
+   current-operation checks, progress/cancellation handoff, and CTS cleanup,
+   now lives in `MainViewModel.FlashbackExportOperation.cs`.
+   Automation-facing Flashback export command execution, linked cancellation,
+   and dispatcher cleanup now live in
+   `MainViewModel.FlashbackExportAutomation.cs`. Read-only Flashback segment
+   projection for UI, CLI, and MCP callers now lives in
+   `MainViewModel.FlashbackSegments.cs`. Frame-rate option rebuilding, observable
    collection mutation now live in `MainViewModel.FrameRateOptions.cs`. Pure
    frame-rate option choice, including pending SDR bucket preference,
    Source-rate nearest match with timing-family tie-break, generic auto fallback,
