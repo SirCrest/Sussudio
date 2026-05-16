@@ -220,7 +220,7 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PATH_COMPARE_WARN");
         AssertContains(sourceText, "&& IsSamePlaybackPath(path, _bufferManager.ActiveFilePath)");
         AssertContains(sourceText, "if (fileOpen && decoder.IsOpen && IsSamePlaybackPath(filePath, _currentOpenFilePath))\n            return;");
-        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Paused &&\n                            IsSamePlaybackPath(prevFile, _currentOpenFilePath) &&\n                            !requireExactResumeSeek)");
+        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Paused &&\n            IsSamePlaybackPath(prevFile, _currentOpenFilePath) &&\n            !requireExactResumeSeek)");
         AssertContains(sourceText, "fileOpen = false;\n            _currentOpenFilePath = null;\n            return false;");
         AssertContains(sourceText, "private bool TrySeekWithActiveFmp4Reopen(");
         AssertContains(sourceText, "if (SeekToWithCapTelemetry(decoder, seekTarget, reason, cancellationToken))\n        {\n            return true;\n        }");

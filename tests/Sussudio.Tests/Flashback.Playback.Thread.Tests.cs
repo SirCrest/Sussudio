@@ -18,11 +18,29 @@ static partial class Program
             .Replace("\r\n", "\n");
         var threadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs")
             .Replace("\r\n", "\n");
+        var threadCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(threadShellText, "PlaybackThreadEntry lives in FlashbackPlaybackController.ThreadLoop.cs.");
         AssertDoesNotContain(threadShellText, "private void PlaybackThreadEntry(");
         AssertContains(threadLoopText, "private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)");
         AssertContains(threadLoopText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_ENTER\");");
+        AssertContains(threadCommandsText, "private void HandleSeekCommand(");
+        AssertContains(threadCommandsText, "private void HandleBeginScrubCommand(");
+        AssertContains(threadCommandsText, "private void HandleUpdateScrubCommand(");
+        AssertContains(threadCommandsText, "private void HandleEndScrubCommand(");
+        AssertContains(threadCommandsText, "private void HandlePlayCommand(");
+        AssertContains(threadCommandsText, "private void HandlePauseCommand(");
+        AssertContains(threadCommandsText, "private void HandleGoLiveCommand(");
+        AssertContains(threadCommandsText, "private void HandleNudgeCommand(");
+        AssertContains(threadCommandsText, "cmd = ResolveSeekCommandPosition(cmd);");
+        AssertContains(threadCommandsText, "SafeSuppressPreviewSubmission(\"begin_scrub\")");
+        AssertContains(threadCommandsText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");");
+        AssertContains(threadLoopText, "HandleSeekCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);");
+        AssertContains(threadLoopText, "HandleGoLiveCommand(ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref pendingExactResumeTarget);");
+        AssertDoesNotContain(threadLoopText, "cmd = ResolveSeekCommandPosition(cmd);");
+        AssertDoesNotContain(threadLoopText, "SafeSuppressPreviewSubmission(\"begin_scrub\")");
+        AssertDoesNotContain(threadLoopText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");");
         AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n            {\n                SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n            }");
         AssertContains(sourceText, "case CommandKind.Stop:\n                            isPlaying = false;\n                            isScrubbing = false;\n                            pendingExactResumeTarget = null;\n                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"thread_stop\");");
         AssertContains(sourceText, "private void RestoreLiveForPlaybackThreadExit(");
@@ -61,7 +79,7 @@ static partial class Program
         AssertContains(sourceText, "DisposePlaybackCtsBestEffort(_playCts, \"thread_start_fail\");");
         AssertContains(sourceText, "_playbackThread = null;\n            Interlocked.Exchange(ref _playbackThreadStarted, 0);");
         AssertContains(sourceText, "return RejectCommand(\n                commandKind,\n                $\"thread_start_failed:{ex.GetType().Name}:{ex.Message}\",\n                $\"thread_start_failed type={ex.GetType().Name}\",\n                false);");
-        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");\n                        break;");
+        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");\n        return;");
         AssertContains(sourceText, "var commandChannel = _commandChannel;");
         AssertContains(sourceText, "_playbackThread = new Thread(() => PlaybackThreadEntry(threadCts, commandChannel))");
         AssertContains(sourceText, "private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)");

@@ -151,19 +151,19 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         // All three scrub-related command paths must clamp via the eviction-aware
         // overload so a long-held scrub doesn't resolve to evicted file PTS.
-        const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);";
-        const string scrubClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));";
+        const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n        var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);";
+        const string scrubClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n        decoder ??= CreateDecoder();\n        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));";
 
         AssertContains(sourceText, seekClampBeforeOpen);
-        AssertContains(sourceText, "if (ShouldYieldSeekToQueuedPlay(commandChannel))\n                        {\n                            PlaybackPosition = cmd.Position;\n                            pendingExactResumeTarget = seekResumeTarget;");
-        AssertContains(sourceText, "decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, seekResumeTarget);");
+        AssertContains(sourceText, "if (ShouldYieldSeekToQueuedPlay(commandChannel))\n        {\n            PlaybackPosition = cmd.Position;\n            pendingExactResumeTarget = seekResumeTarget;");
+        AssertContains(sourceText, "decoder ??= CreateDecoder();\n        EnsureFileOpen(decoder, ref fileOpen, seekResumeTarget);");
         AssertEqual(1, sourceText.Split(scrubClampBeforeOpen, StringSplitOptions.None).Length - 1, "BeginScrub clamps before file lookup with frozen reference");
         var updateScrubBlock = ExtractTextBetween(
             sourceText,
-            "case CommandKind.UpdateScrub:",
-            "                    case CommandKind.EndScrub:");
-        AssertContains(updateScrubBlock, "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        if (ShouldYieldScrubUpdateToQueuedControl(commandChannel))");
-        AssertContains(updateScrubBlock, "decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));");
+            "private void HandleUpdateScrubCommand(",
+            "    private void HandleEndScrubCommand(");
+        AssertContains(updateScrubBlock, "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n        if (ShouldYieldScrubUpdateToQueuedControl(commandChannel))");
+        AssertContains(updateScrubBlock, "decoder ??= CreateDecoder();\n        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));");
 
         return Task.CompletedTask;
     }
@@ -286,7 +286,7 @@ static partial class Program
         var pauseFromLiveBlock = ExtractTextBetween(
             sourceText,
             "else if (State == FlashbackPlaybackState.Live)",
-            "                        break;\n\n                    case CommandKind.GoLive:");
+            "    private void HandleGoLiveCommand(");
 
         AssertContains(publicPauseBlock, "return SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });");
         AssertDoesNotContain(publicPauseBlock, "SeekAndDisplay");
@@ -318,8 +318,8 @@ static partial class Program
 
         var nudgeBlock = ExtractTextBetween(
             sourceText,
-            "case CommandKind.Nudge:",
-            "                        break;\n                    }\n                }\n                finally");
+            "private void HandleNudgeCommand(",
+            "\n}");
 
         AssertContains(nudgeBlock, "decoder ??= CreateDecoder();");
         AssertContains(nudgeBlock, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));");

@@ -11,10 +11,10 @@ static partial class Program
 
         var seekBlock = ExtractTextBetween(
             sourceText,
-            "case CommandKind.Seek:",
-            "                    case CommandKind.BeginScrub:");
+            "private void HandleSeekCommand(",
+            "    private void HandleBeginScrubCommand(");
 
-        AssertContains(seekBlock, "commandChannel.Reader.TryPeek(out var newerSeek) &&\n                               newerSeek.Kind == CommandKind.Seek");
+        AssertContains(seekBlock, "commandChannel.Reader.TryPeek(out var newerSeek) &&\n               newerSeek.Kind == CommandKind.Seek");
         AssertContains(seekBlock, "TrackCommandDequeued(newerSeek);");
         AssertContains(seekBlock, "cmd = ResolveSeekCommandPosition(cmd);");
         AssertContains(seekBlock, "newerSeek = ResolveSeekCommandPosition(newerSeek);");
@@ -30,8 +30,8 @@ static partial class Program
             "    private bool SendUpdateScrubCommand");
         var updateScrubBlock = ExtractTextBetween(
             sourceText,
-            "case CommandKind.UpdateScrub:",
-            "                    case CommandKind.EndScrub:");
+            "private void HandleUpdateScrubCommand(",
+            "    private void HandleEndScrubCommand(");
         var updateScrubMethod = ExtractTextBetween(
             sourceText,
             "public bool UpdateScrub(TimeSpan position)",
@@ -94,7 +94,7 @@ static partial class Program
         AssertContains(updateScrubMethod, "if (!PlaybackThreadAlive) return RejectCommand(CommandKind.UpdateScrub, \"thread_not_running\", \"thread_not_running\", false, position);");
         AssertContains(sourceText, "TrackCoalescedScrubUpdate();");
         AssertContains(updateScrubBlock, "cmd = ResolveScrubUpdateCommandPosition(cmd);");
-        AssertContains(updateScrubBlock, "commandChannel.Reader.TryPeek(out var newer) &&\n                               newer.Kind == CommandKind.UpdateScrub");
+        AssertContains(updateScrubBlock, "commandChannel.Reader.TryPeek(out var newer) &&\n               newer.Kind == CommandKind.UpdateScrub");
         AssertContains(updateScrubBlock, "if (!commandChannel.Reader.TryRead(out newer))");
         AssertContains(updateScrubBlock, "TrackCommandDequeued(newer);");
         AssertContains(updateScrubBlock, "newer = ResolveScrubUpdateCommandPosition(newer);");
@@ -115,8 +115,8 @@ static partial class Program
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.EndScrub, \"live_thread_not_running\", position);\n            return false;\n        }");
         var endScrubBlock = ExtractTextBetween(
             sourceText,
-            "                    case CommandKind.EndScrub:",
-            "                    case CommandKind.Play:");
+            "private void HandleEndScrubCommand(",
+            "    private void HandlePlayCommand(");
         AssertContains(endScrubBlock, "var endScrubPosition = ClampPosition(cmd.Position, frozenValidStart);");
         AssertContains(endScrubBlock, "PlaybackPosition = endScrubPosition;");
         AssertDoesNotContain(endScrubBlock, "TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks))");
