@@ -684,13 +684,13 @@ struct declarations in `.Interop.cs`. `tools/NativeXuAudioProbe` links this
 whole partial family explicitly, so update its project file with every new
 partial.
 
-Native device enumeration ownership is split across `MfDeviceEnumerator.*.cs`.
-Keep shared Media Foundation constants, GUIDs, and P/Invoke declarations in
-`MfDeviceEnumerator.cs`, MF video-device enumeration in
-`MfDeviceEnumerator.VideoDevices.cs`, WASAPI capture endpoint enumeration and
-friendly-name reads in `MfDeviceEnumerator.AudioEndpoints.cs`, and native video
-format probing/source fallback/subtype naming in
-`MfDeviceEnumerator.FormatProbe.cs`.
+Native device enumeration ownership is grouped under
+`Sussudio/Services/Capture/DeviceDiscovery/`. Keep shared Media Foundation
+constants, GUIDs, and P/Invoke declarations in `MfDeviceEnumerator.cs`, MF
+video-device enumeration in `MfDeviceEnumerator.VideoDevices.cs`, WASAPI capture
+endpoint enumeration and friendly-name reads in
+`MfDeviceEnumerator.AudioEndpoints.cs`, and native video format probing/source
+fallback/subtype naming in `MfDeviceEnumerator.FormatProbe.cs`.
 
 Capture service source telemetry polling, fallback merging, and NTSC frame-rate
 correction now live in

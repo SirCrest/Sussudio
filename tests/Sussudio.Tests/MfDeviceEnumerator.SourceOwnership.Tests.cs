@@ -4,10 +4,10 @@ static partial class Program
 {
     private static Task MfDeviceEnumerator_SourceOwnershipLivesInFocusedPartials()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/MfDeviceEnumerator.cs");
-        var videoDevicesText = ReadRepoFile("Sussudio/Services/Capture/MfDeviceEnumerator.VideoDevices.cs");
-        var audioEndpointsText = ReadRepoFile("Sussudio/Services/Capture/MfDeviceEnumerator.AudioEndpoints.cs");
-        var formatProbeText = ReadRepoFile("Sussudio/Services/Capture/MfDeviceEnumerator.FormatProbe.cs");
+        var rootText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.cs");
+        var videoDevicesText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.VideoDevices.cs");
+        var audioEndpointsText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.AudioEndpoints.cs");
+        var formatProbeText = ReadMfDeviceEnumeratorFile("MfDeviceEnumerator.FormatProbe.cs");
 
         AssertContains(rootText, "internal static partial class MfDeviceEnumerator");
         AssertContains(rootText, "private static extern int MFCreateAttributes(");
@@ -33,4 +33,7 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static string ReadMfDeviceEnumeratorFile(string fileName) =>
+        ReadRepoFile($"Sussudio/Services/Capture/DeviceDiscovery/{fileName}");
 }
