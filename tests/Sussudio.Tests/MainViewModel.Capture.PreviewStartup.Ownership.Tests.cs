@@ -21,7 +21,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewFadeInText = ReadRepoFile("Sussudio/MainWindow.PreviewFadeIn.cs")
             .Replace("\r\n", "\n");
-        var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/PreviewFadeInController.cs")
+        var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewFadeInController.cs")
             .Replace("\r\n", "\n");
         var previewStartupSignalsText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupSignals.cs")
             .Replace("\r\n", "\n");
@@ -39,11 +39,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
             .Replace("\r\n", "\n");
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/PreviewLifecycleEventController.cs")
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs")
             .Replace("\r\n", "\n");
         var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs")
             .Replace("\r\n", "\n");
-        var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewReinitTransitionController.cs")
+        var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupSessionController();");

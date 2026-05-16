@@ -6,7 +6,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var windowSizingText = ReadRepoFile("Sussudio/MainWindow.WindowSizing.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewResizeTelemetryController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs").Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
@@ -60,7 +60,7 @@ static partial class Program
         var previewRendererHostCpuText = ReadRepoFile("Sussudio/Controllers/PreviewRenderer/PreviewRendererHostController.Cpu.cs").Replace("\r\n", "\n");
         var previewRendererHostReinitText = ReadRepoFile("Sussudio/Controllers/PreviewRenderer/PreviewRendererHostController.Reinit.cs").Replace("\r\n", "\n");
         var previewSurfaceText = ReadRepoFile("Sussudio/MainWindow.PreviewSurface.cs").Replace("\r\n", "\n");
-        var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/PreviewSurfacePresentationController.cs").Replace("\r\n", "\n");
+        var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs").Replace("\r\n", "\n");
         var previewRendererStartupPlanBuilderText = ReadRepoFile("Sussudio/Controllers/PreviewRenderer/PreviewRendererStartupPlanBuilder.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotDispatchText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");

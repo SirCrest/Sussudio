@@ -71,7 +71,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewFadeInText = ReadRepoFile("Sussudio/MainWindow.PreviewFadeIn.cs")
             .Replace("\r\n", "\n");
-        var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/PreviewFadeInController.cs")
+        var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewFadeInController.cs")
             .Replace("\r\n", "\n");
         var previewAudioFadeText = ReadRepoFile("Sussudio/MainWindow.PreviewAudioFade.cs")
             .Replace("\r\n", "\n");
@@ -79,7 +79,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewTransitionText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");
-        var previewTransitionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewTransitionAnimationController.cs")
+        var previewTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs")
             .Replace("\r\n", "\n");
         var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Shell.cs")
             .Replace("\r\n", "\n");
@@ -87,7 +87,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
             .Replace("\r\n", "\n");
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/PreviewLifecycleEventController.cs")
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs")
             .Replace("\r\n", "\n");
@@ -159,7 +159,7 @@ static partial class Program
 
         var previewButtonClick = ExtractMemberCode(previewActionsText, "PreviewButton_Click");
         AssertContains(previewButtonClick, "RunUiEventHandlerAsync(() => TogglePreviewFromButtonAsync(), nameof(PreviewButton_Click))");
-        var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonActionController.cs")
+        var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewButtonActionController.cs")
             .Replace("\r\n", "\n");
         var togglePreviewAsync = ExtractMemberCode(previewButtonActionControllerText, "TogglePreviewAsync");
         AssertContains(togglePreviewAsync, "if (!viewModel.IsPreviewing)\n        {\n            _context.RevealPreviewUnavailablePlaceholder();\n        }");
@@ -190,7 +190,7 @@ static partial class Program
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
 
-        var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonActionController.cs")
+        var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewButtonActionController.cs")
             .Replace("\r\n", "\n");
         var previewButtonClick = ExtractMemberCode(previewButtonActionControllerText, "TogglePreviewAsync");
         AssertContains(previewButtonClick, "var audioFadeOutTask = _context.StartPreviewAudioFadeOutAsync();");

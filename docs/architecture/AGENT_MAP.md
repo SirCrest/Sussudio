@@ -793,7 +793,7 @@ Primary current owners:
   `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`,
   `Sussudio/MainWindow.CloseLifecycle.cs`, and
   `Sussudio/MainWindow.ShutdownCleanup.cs`.
-- `Sussudio/Controllers/PreviewResizeTelemetryController.cs` owns top-level
+- `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
   transforms. `MainWindow.WindowSizing.cs` is the `SizeChanged` adapter.
   `Sussudio/Controllers/PreviewRenderer/PreviewRendererStartupPlanBuilder.cs` owns renderer
@@ -811,7 +811,7 @@ Primary current owners:
   host adapter, while
   `MainWindow.PreviewRendererReinit.cs` keeps the small public/reinit adapter
   surface.
-  `Sussudio/Controllers/PreviewSurfacePresentationController.cs` owns preview
+  `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs` owns preview
   surface sizing, GPU panel visibility, and video/control-bar composition
   shadows. `MainWindow.PreviewSurface.cs` is the XAML-facing adapter.
 - `Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs` owns the async
@@ -1812,15 +1812,15 @@ Primary current owners:
 - `Sussudio/Controllers/Shell/ShellElevationController.cs` owns static shell
   ThemeShadow and translation setup for the control bar and record button.
   `MainWindow.ShellElevation.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/PreviewTransitionAnimationController.cs` owns preview
+- `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   shell/content fade and scale transitions, unavailable-placeholder fades, and
   startup/unavailable presentation prep. `MainWindow.PreviewTransitions.cs` is
   the XAML-facing adapter; shared video-shadow fades route through
   `CompositionShadowFadeAnimator`.
-- `Sussudio/Controllers/PreviewButtonPresentationController.cs` owns preview
+- `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs` owns preview
   button glyph and tooltip presentation for Start Preview and Stop Preview.
   `MainWindow.PreviewButtonPresentation.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/PreviewButtonActionController.cs` owns preview button
+- `Sussudio/Controllers/Preview/PreviewButtonActionController.cs` owns preview button
   command choreography: pending-reinit cancel, user stop intent, audio/visual
   fade-out ordering, preview start/stop calls, reinit animation reset, and
   unavailable-placeholder reveal. `MainWindow.PreviewActions.cs` keeps the XAML
@@ -1849,7 +1849,7 @@ Primary current owners:
 - `Sussudio/Controllers/PreviewAudioFadeController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
   save suppression. `MainWindow.PreviewAudioFade.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/PreviewReinitTransitionController.cs` owns preview
+- `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the
   `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
@@ -1876,18 +1876,18 @@ Primary current owners:
   and signal-list string formatting.
   `Sussudio/Controllers/PreviewStartup/PreviewStartupFailureTextFormatter.cs` owns preview
   startup timeout reason, timeout status, and failure-stop status text.
-  `Sussudio/Controllers/PreviewLifecycleEventController.cs` owns preview-
+  `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for
   preview start/stop/reinit state. `MainWindow.PropertyChangedPreview.cs` is the
   XAML/MainWindow-facing adapter that preserves event handler signatures and
   delegates into the controller.
-  `Sussudio/Controllers/PreviewReinitTransitionController.cs` owns preview
+  `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and reinit transition logs.
   `MainWindow.PreviewReinit.cs` keeps the renderer-stop-before-teardown handoff
   and XAML presentation side effects.
   Keep preview startup fields out of the composition root.
-- `Sussudio/Controllers/PreviewFadeInController.cs` owns delayed preview
+- `Sussudio/Controllers/Preview/PreviewFadeInController.cs` owns delayed preview
   reveal after first visual: rendered-frame threshold, fade-in timer, renderer
   replacement fallback, and preview-audio fade start ordering.
   `MainWindow.PreviewFadeIn.cs` is the XAML-facing adapter. Keep
@@ -1897,7 +1897,7 @@ Primary current owners:
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
   reinit-collapse opacity reset. `MainWindow.PreviewStartupOverlay.cs` is the
   XAML-facing adapter.
-- `Sussudio/Controllers/PreviewResizeTelemetryController.cs` owns top-level
+- `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
   preview resize log throttling and reset state. `MainWindow.WindowSizing.cs`
   is the XAML-facing adapter for `SizeChanged`; preview surface presentation
   lives in `PreviewSurfacePresentationController`.

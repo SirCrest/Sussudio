@@ -62,7 +62,7 @@ static partial class Program
         var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
         var shadowAnimatorText = ReadRepoFile("Sussudio/Controllers/CompositionShadowFadeAnimator.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;");
@@ -136,7 +136,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewFadeIn.cs").Replace("\r\n", "\n");
         var previewTransitionText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewFadeInController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewFadeInController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewFadeInController _previewFadeInController = null!;");
         AssertContains(adapterText, "private void InitializePreviewFadeInController()");
