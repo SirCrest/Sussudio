@@ -1114,7 +1114,8 @@ snapshots, recent sample copies, and timing summaries there. Render-loop metric
 window updates, expected-frame-rate window resizing, and metric reset logic now
 live in `D3D11PreviewRenderer.MetricsTracking.cs`. Keep slow-frame diagnostic
 ring/write logic in `D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, lifecycle in
-`D3D11PreviewRenderer.Lifecycle.cs`, queueing in
+`D3D11PreviewRenderer.Lifecycle.cs`, render-thread orchestration in
+`D3D11PreviewRenderer.RenderThread.cs`, queueing in
 `D3D11PreviewRenderer.PendingFrames.cs`, VideoProcessor/present work in
 `D3D11PreviewRenderer.Rendering.cs`, and shader drawing in
 `D3D11PreviewRenderer.ShaderRendering.cs`.
@@ -1145,6 +1146,14 @@ D3D preview renderer lifecycle now lives in
 render-thread start/stop, reinit stop, native-call drain fencing, pending-frame
 shutdown cleanup, and renderer disposal there.
 
+D3D preview renderer render-thread orchestration now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs`. Keep the
+MMCSS registration, frame-ready wait loop, shared-device reset handling,
+composition-transform wake handling, pending-frame consumption, stale-generation
+drops, device-lost handoff, final pending-frame drain, frame-capture failure,
+and render-thread failure telemetry there; keep actual render/present paths in
+`D3D11PreviewRenderer.Rendering.cs` and `D3D11PreviewRenderer.ShaderRendering.cs`.
+
 D3D preview renderer frame upload now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs`. Keep
 video-processor input view resolution, external texture input-view creation,
@@ -1154,8 +1163,9 @@ tracking in `D3D11PreviewRenderer.Rendering.cs`.
 D3D preview renderer shader drawing now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep NV12
 plane shader rendering, HDR tonemap/passthrough shader rendering, reusable
-shader class-instance arrays, and NV12 SRV caching there; keep the render loop,
-VideoProcessor path, present accounting, and slow-frame diagnostic call sites in
+shader class-instance arrays, and NV12 SRV caching there; keep render-thread
+orchestration in `D3D11PreviewRenderer.RenderThread.cs`, and keep VideoProcessor
+path, present accounting, and slow-frame diagnostic call sites in
 `D3D11PreviewRenderer.Rendering.cs`.
 
 D3D preview renderer slow-frame diagnostics now live in
@@ -1211,8 +1221,9 @@ Raw-frame and HDR shader input texture allocation now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.InputResources.cs`. Keep
 NV12/P010 input textures, staging textures, input views, and HDR plane SRV
 creation there. Device-lost recovery has its own focused owner; keep render
-loop and present paths in `D3D11PreviewRenderer.Rendering.cs`, and shader draw
-paths in `D3D11PreviewRenderer.ShaderRendering.cs`.
+loop consumption in `D3D11PreviewRenderer.RenderThread.cs`, present paths in
+`D3D11PreviewRenderer.Rendering.cs`, and shader draw paths in
+`D3D11PreviewRenderer.ShaderRendering.cs`.
 
 D3D preview renderer swap-chain panel binding now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs`. Keep
@@ -1224,7 +1235,7 @@ D3D preview pending-frame queue ownership now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs`. Keep
 enqueue, backlog trimming, frame-ready signal/reset wrappers, explicit pending
 drains, and pending-count accounting there; keep render-loop consumption in
-`D3D11PreviewRenderer.Rendering.cs` and frame ownership metrics in
+`D3D11PreviewRenderer.RenderThread.cs` and frame ownership metrics in
 `D3D11PreviewRenderer.FrameOwnership.cs`.
 
 Media Foundation source-reader negotiation now lives in

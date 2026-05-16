@@ -72,6 +72,9 @@ static partial class Program
             "D3D preview frame-latency wait lives in focused partial",
             D3D11PreviewRenderer_FrameLatencyLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "D3D preview render thread lives in focused partial",
+            D3D11PreviewRenderer_RenderThreadLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "D3D preview input resources live in focused partial",
             D3D11PreviewRenderer_InputResourcesLiveInFocusedPartial);
         await AddCheckAsync(results,
