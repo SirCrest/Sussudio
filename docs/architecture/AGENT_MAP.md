@@ -2360,7 +2360,8 @@ Primary owners:
 - `tools/McpServer/Tools/PerformanceTimelineTools.cs` owns the public MCP
   tool entry point and command response handling.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs` owns timeline JSON
-  row projection and the private row model.
+  row projection; `tools/McpServer/Tools/PerformanceTimelineTools.Rows.Model.cs`
+  owns the private row model.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs` owns timeline
   table, trend, Flashback command, export, and target-summary text rendering.
 - `tools/McpServer/Tools/PerformanceTimelineTools.Formatting.cs` owns compact

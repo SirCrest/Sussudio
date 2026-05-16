@@ -2201,7 +2201,8 @@ validation policy files.
 MCP performance timeline projection is split across the
 `tools/McpServer/Tools/PerformanceTimelineTools.*.cs` family. Keep the public
 tool entry point and command response handling in the root file, JSON-to-row
-projection and the private row model in `PerformanceTimelineTools.Rows.cs`,
+projection in `PerformanceTimelineTools.Rows.cs`, the private row model in
+`PerformanceTimelineTools.Rows.Model.cs`,
 timeline table/trend text rendering in `PerformanceTimelineTools.Rendering.cs`,
 compact value/byte/export/D3D formatting helpers in
 `PerformanceTimelineTools.Formatting.cs`, and target/pressure summaries in
