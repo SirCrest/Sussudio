@@ -381,14 +381,17 @@ Important entry points:
 - `CaptureService.WasapiPlayback.cs` owns WASAPI playback startup/shutdown,
   audio-monitor attach/detach order, and playback best-effort cleanup helpers.
 - `CaptureService.Cleanup.cs` owns explicit cleanup transitions, app shutdown
-  teardown, and Flashback segment preservation when cleanup finalization fails.
+  teardown, Flashback segment preservation when cleanup finalization fails, and
+  the final cleanup session-state reset.
 - `CaptureService.Coordination.cs` owns transition serialization, steady-state
-  resolution, disposal, and best-effort semaphore/eviction cleanup helpers.
+  resolution, normal `_sessionState` transition writes, disposal, and
+  best-effort semaphore/eviction cleanup helpers.
 - `CaptureService.DeferredCleanup.cs` owns Flashback backend/export lock release
   helpers, Flashback artifact-cleanup request handoff, and deferred Flashback
   and unified-video cleanup after drains.
 - `CaptureService.Failures.cs` owns fatal capture/recording/Flashback backend
-  failure callbacks, last-failure telemetry, and fault cleanup launchers.
+  failure callbacks, last-failure telemetry, GPU device-lost classification,
+  and fatal cleanup `_sessionState` writes into cleaning-up/faulted states.
 - `CaptureService.FlashbackControls.cs` owns Flashback public state, segment
   access, enable/settings mutations, restarts, format changes, and encoder
   setting cycles.
@@ -1162,6 +1165,9 @@ Primary current owners:
   the CaptureService initialization focused-partial ownership contract.
 - `tests/Sussudio.Tests/CaptureService.Failures.Tests.cs` owns capture fatal
   cleanup and faulted-session state assertions.
+- `tests/Sussudio.Tests/CaptureService.SessionStateOwnership.Tests.cs` owns
+  CaptureService `_sessionState` writer-file and writer-count ownership
+  assertions.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.Tests.cs` owns
   CaptureService health/diagnostics snapshot behavior scenarios for structured
   source telemetry and health field ownership for capture cadence, source

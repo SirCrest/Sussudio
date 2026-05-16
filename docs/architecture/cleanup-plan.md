@@ -677,9 +677,10 @@ capture disposal, mic teardown, telemetry stop, and final session-state reset.
 
 Capture transition coordination and disposal now live in
 `Sussudio/Services/Capture/CaptureService.Coordination.cs`. That file owns
-`RunTransitionAsync`, steady-state resolution, initialization/disposal guards,
-async disposal cleanup, and best-effort semaphore/eviction cleanup helpers used
-by the other capture-service partials.
+`RunTransitionAsync`, normal `_sessionState` transition writes, steady-state
+resolution, initialization/disposal guards, async disposal cleanup, and
+best-effort semaphore/eviction cleanup helpers used by the other
+capture-service partials.
 
 Deferred capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs`. That file owns
@@ -695,7 +696,8 @@ runtime lifecycle mutation code.
 Fatal capture and backend failure handling now lives in
 `Sussudio/Services/Capture/CaptureService.Failures.cs`. That file owns fatal
 error callbacks, last-failure telemetry, GPU device-lost classification, and
-the async cleanup launchers that move the service into faulted states.
+the async cleanup launchers that move the service into cleaning-up/faulted
+states.
 
 Flashback-facing capture controls now live in
 `Sussudio/Services/Capture/CaptureService.FlashbackControls.cs`. That file owns
