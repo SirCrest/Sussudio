@@ -14,7 +14,7 @@ public sealed partial class MainWindow
         _previewButtonActionController = new PreviewButtonActionController(new PreviewButtonActionControllerContext
         {
             ViewModel = ViewModel,
-            SetPreviewStopRequestedByUser = value => _previewStopRequestedByUser = value,
+            SetPreviewStopRequestedByUser = SetPreviewStopRequestedByUser,
             GetPreviewStartupAttemptId = () => PreviewStartupAttemptId,
             StopPreviewFadeInTimer = StopPreviewFadeInTimer,
             StartPreviewAudioFadeOutAsync = () => StartPreviewAudioFadeOutAsync(),

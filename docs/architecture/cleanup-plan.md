@@ -1886,13 +1886,15 @@ Top-level preview resize telemetry throttling now lives in
 `MainWindow.WindowSizing.cs` remains the `SizeChanged` adapter; preview surface
 presentation lives with `PreviewSurfacePresentationController`.
 
-Preview-specific ViewModel events and property-change projections now live in
-`Sussudio/MainWindow.PropertyChangedPreview.cs`. The broad
-`MainWindow.PropertyChanged.cs` dispatcher now owns only the `PropertyChanged`
-event envelope, property-name normalization, and visible route order; preview
-start/stop/reinit property-name routing has a named owner. Preview reinit
-animation state, renderer-stop-before-teardown handoff, and reinit completion
-presentation now live in `Sussudio/MainWindow.PreviewReinit.cs`.
+Preview-specific ViewModel event lifecycle and preview property-change routing
+now live in `Sussudio/Controllers/PreviewLifecycleEventController.cs`.
+`Sussudio/MainWindow.PropertyChangedPreview.cs` is the XAML/MainWindow-facing
+adapter that preserves event handler signatures and delegates into the
+controller. The broad `MainWindow.PropertyChanged.cs` dispatcher now owns only
+the `PropertyChanged` event envelope, property-name normalization, and visible
+route order. Preview reinit animation state, renderer-stop-before-teardown
+handoff, and reinit completion presentation now live in
+`Sussudio/MainWindow.PreviewReinit.cs`.
 
 Bottom status-strip projection now lives in
 `Sussudio/Controllers/StatusStripPresentationController.cs`, while

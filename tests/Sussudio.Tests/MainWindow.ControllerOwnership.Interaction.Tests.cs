@@ -160,6 +160,7 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewAudioFade.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewAudioFadeController.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/AudioControlBindingController.cs").Replace("\r\n", "\n");
@@ -186,11 +187,12 @@ static partial class Program
         AssertContains(audioControlBindingControllerText, "_context.CancelPreviewAudioFadeInForUser();");
         AssertContains(propertyChangedText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
         AssertContains(propertyChangedText, "TryHandleAudioPropertyChanged(propertyName)");
-        AssertContains(previewPropertyChangedText, "await HandlePreviewingChangedAsync();");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
+        AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
         AssertContains(audioPropertyChangedText, "HandlePreviewVolumeChanged();");
         AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandlePreviewVolumeChanged();");
         AssertContains(audioControlPresentationControllerText, "if (_context.IsPreviewAudioFadeInActive())");
-        AssertContains(previewPropertyChangedText, "PrimePreviewAudioFadeIn();");
+        AssertContains(previewLifecycleControllerText, "_context.PrimePreviewAudioFadeIn();");
         AssertContains(controllerText, "internal sealed class PreviewAudioFadeController");
         AssertContains(controllerText, "private double _savedPreviewVolume;");
         AssertContains(controllerText, "private Storyboard? _volumeFadeStoryboard;");
@@ -260,6 +262,7 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewActions.cs").Replace("\r\n", "\n");
         var propertyChangedPreviewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewButtonPresentation.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewButtonPresentationController.cs").Replace("\r\n", "\n");
@@ -274,8 +277,8 @@ static partial class Program
         AssertContains(adapterText, "private void ShowStartPreviewButtonPresentation()");
         AssertContains(adapterText, "=> _previewButtonPresentationController.ShowStartPreview();");
         AssertContains(mainWindowText, "InitializePreviewButtonPresentationController();");
-        AssertContains(propertyChangedPreviewText, "ShowStopPreviewButtonPresentation();");
-        AssertContains(propertyChangedPreviewText, "ShowStartPreviewButtonPresentation();");
+        AssertContains(previewLifecycleControllerText, "_context.ShowStopPreviewButtonPresentation();");
+        AssertContains(previewLifecycleControllerText, "_context.ShowStartPreviewButtonPresentation();");
         AssertContains(previewReinitText, "ShowStartPreviewButtonPresentation();");
         AssertContains(controllerText, "internal sealed class PreviewButtonPresentationController");
         AssertContains(controllerText, "private const string StopPreviewGlyph = \"\\uE71A\";");

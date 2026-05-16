@@ -20,7 +20,7 @@ public sealed partial class MainWindow
             IsWaitingForFirstVisual = () => CurrentPreviewStartupState == PreviewStartupState.WaitingForFirstVisual,
             IsSignalWindowActive = IsPreviewStartupSignalWindowActive,
             IsWindowClosing = () => _isWindowClosing,
-            IsPreviewStopRequestedByUser = () => _previewStopRequestedByUser,
+            IsPreviewStopRequestedByUser = () => IsPreviewStopRequestedByUser,
             IsPreviewing = () => ViewModel.IsPreviewing,
             GetElapsedMilliseconds = () => _previewStartupSessionController.GetElapsedMilliseconds(DateTimeOffset.UtcNow),
             GetAttemptLabel = () => PreviewStartupAttemptLabel,

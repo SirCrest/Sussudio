@@ -11,7 +11,6 @@ namespace Sussudio;
 public sealed partial class MainWindow
 {
     private PreviewStartupSessionController _previewStartupSessionController = null!;
-    private bool _previewStopRequestedByUser;
 
     private void InitializePreviewStartupSessionController()
         => _previewStartupSessionController = new PreviewStartupSessionController();
@@ -91,7 +90,7 @@ public sealed partial class MainWindow
             return;
         }
 
-        if (_previewStopRequestedByUser)
+        if (IsPreviewStopRequestedByUser)
         {
             Logger.Log(
                 $"PREVIEW_FIRST_VISUAL_IGNORED attempt={PreviewStartupAttemptLabel} " +

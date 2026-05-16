@@ -89,10 +89,13 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
             .Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/PreviewLifecycleEventController.cs")
+            .Replace("\r\n", "\n");
         var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupSessionController();");
+        AssertContains(mainWindowText, "InitializePreviewLifecycleEventController();");
         AssertContains(mainWindowText, "InitializePreviewStartupSignalCoordinator();");
         AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");
         AssertContains(previewStartupText, "private PreviewStartupSessionController _previewStartupSessionController = null!;");
@@ -219,11 +222,20 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotText, "StartupState = CurrentPreviewStartupState.ToString(),");
         AssertDoesNotContain(previewRendererText, "_previewStartupState.ToString()");
         AssertContains(propertyChangedText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
-        AssertContains(previewPropertyChangedText, "await HandlePreviewingChangedAsync();");
-        AssertContains(previewPropertyChangedText, "HandlePreviewReinitializingChanged();");
-        AssertContains(previewPropertyChangedText, "Preview-specific ViewModel events and property projections");
-        AssertContains(previewPropertyChangedText, "if (ShouldBeginPreviewStartupAttempt)");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStartRequested();");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStopRequested();");
+        AssertContains(previewPropertyChangedText, "Preview-specific ViewModel event adapter");
+        AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
+        AssertContains(previewLifecycleControllerText, "_context.HandlePreviewReinitializingChanged();");
+        AssertContains(previewLifecycleControllerText, "if (_context.ShouldBeginPreviewStartupAttempt())");
+        AssertContains(previewLifecycleControllerText, "_stopRequestedByUser = _stopRequestedByUser || !_context.ViewModel.IsPreviewReinitializing;");
+        AssertContains(previewLifecycleControllerText, "_context.StartPreviewStartupWatchdog();");
+        AssertContains(previewLifecycleControllerText, "_context.ShowStopPreviewButtonPresentation();");
+        AssertContains(previewLifecycleControllerText, "_context.ShowStartPreviewButtonPresentation();");
+        AssertContains(previewLifecycleControllerText, "_context.ApplyHdrToggleEnabledState();");
         AssertDoesNotContain(previewStartupText, "private bool _isPreviewReinitAnimating;");
+        AssertDoesNotContain(previewStartupText, "private bool _previewStopRequestedByUser;");
         AssertDoesNotContain(previewPropertyChangedText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
         AssertDoesNotContain(previewPropertyChangedText, "private Task ViewModel_PreviewRendererStopRequested()");
         AssertDoesNotContain(previewPropertyChangedText, "private void HandlePreviewReinitializingChanged()");
@@ -648,19 +660,22 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
             .Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/PreviewLifecycleEventController.cs")
+            .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs")
             .Replace("\r\n", "\n");
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
             .Replace("\r\n", "\n");
 
         AssertContains(propertyChangedText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
-        AssertContains(previewPropertyChangedText, "await HandlePreviewingChangedAsync();");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
+        AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
 
-        var previewStartRequested = ExtractMemberCode(previewPropertyChangedText, "ViewModel_PreviewStartRequested");
-        AssertContains(previewStartRequested, "BeginPreviewStartupAttempt();");
-        AssertContains(previewStartRequested, "PrimePreviewAudioFadeIn();");
-        AssertContains(previewStartRequested, "PreparePreviewStartupPresentation();");
-        AssertOccursBefore(previewStartRequested, "PrimePreviewAudioFadeIn();", "PreparePreviewStartupPresentation();");
+        var previewStartRequested = ExtractMemberCode(previewLifecycleControllerText, "HandlePreviewStartRequested");
+        AssertContains(previewStartRequested, "_context.BeginPreviewStartupAttempt();");
+        AssertContains(previewStartRequested, "_context.PrimePreviewAudioFadeIn();");
+        AssertContains(previewStartRequested, "_context.PreparePreviewStartupPresentation();");
+        AssertOccursBefore(previewStartRequested, "_context.PrimePreviewAudioFadeIn();", "_context.PreparePreviewStartupPresentation();");
 
         var playEntranceAnimation = ExtractMemberCode(launchEntranceShellText, "PlayEntranceAnimation");
         AssertContains(playEntranceAnimation, "LAUNCH_PREVIEW_REVEAL_DEFERRED");

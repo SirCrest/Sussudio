@@ -6,6 +6,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var previewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs").Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
         var outputText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedOutput.cs").Replace("\r\n", "\n");
@@ -43,18 +44,30 @@ static partial class Program
         AssertDoesNotContain(rootText, "HandleFlashbackTimelineVisibleChanged();");
         AssertDoesNotContain(rootText, "HandleAudioPreviewActiveChanged();");
 
-        AssertContains(previewText, "private async Task<bool> TryHandlePreviewPropertyChangedAsync(string propertyName)");
-        AssertContains(previewText, "case nameof(MainViewModel.IsPreviewing):");
-        AssertContains(previewText, "await HandlePreviewingChangedAsync();");
-        AssertContains(previewText, "case nameof(MainViewModel.IsPreviewReinitializing):");
-        AssertContains(previewText, "HandlePreviewReinitializingChanged();");
-        AssertContains(previewText, "private void ViewModel_PreviewStartRequested(object? sender, EventArgs e)");
-        AssertContains(previewText, "private void ViewModel_PreviewStopRequested(object? sender, EventArgs e)");
-        AssertContains(previewText, "private async Task HandlePreviewingChangedAsync()");
+        AssertContains(previewText, "private PreviewLifecycleEventController _previewLifecycleEventController = null!;");
+        AssertContains(previewText, "private void InitializePreviewLifecycleEventController()");
+        AssertContains(previewText, "=> _previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
+        AssertContains(previewText, "=> _previewLifecycleEventController.HandlePreviewStartRequested();");
+        AssertContains(previewText, "=> _previewLifecycleEventController.HandlePreviewStopRequested();");
+        AssertContains(previewText, "private void ViewModel_PreviewStartRequested(object? sender, System.EventArgs e)");
+        AssertContains(previewText, "private void ViewModel_PreviewStopRequested(object? sender, System.EventArgs e)");
+        AssertContains(previewLifecycleControllerText, "internal sealed class PreviewLifecycleEventController");
+        AssertContains(previewLifecycleControllerText, "private bool _stopRequestedByUser;");
+        AssertContains(previewLifecycleControllerText, "public bool StopRequestedByUser => _stopRequestedByUser;");
+        AssertContains(previewLifecycleControllerText, "public void SetStopRequestedByUser(bool value)");
+        AssertContains(previewLifecycleControllerText, "case nameof(MainViewModel.IsPreviewing):");
+        AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
+        AssertContains(previewLifecycleControllerText, "case nameof(MainViewModel.IsPreviewReinitializing):");
+        AssertContains(previewLifecycleControllerText, "_context.HandlePreviewReinitializingChanged();");
+        AssertContains(previewLifecycleControllerText, "public void HandlePreviewStartRequested()");
+        AssertContains(previewLifecycleControllerText, "public void HandlePreviewStopRequested()");
+        AssertContains(previewLifecycleControllerText, "private async Task HandlePreviewingChangedAsync()");
         AssertDoesNotContain(previewText, "private bool _isPreviewReinitAnimating;");
         AssertDoesNotContain(previewText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
         AssertDoesNotContain(previewText, "private Task ViewModel_PreviewRendererStopRequested()");
         AssertDoesNotContain(previewText, "private void HandlePreviewReinitializingChanged()");
+        AssertDoesNotContain(previewText, "case nameof(MainViewModel.IsPreviewing):");
+        AssertDoesNotContain(previewText, "await HandlePreviewingChangedAsync();");
         AssertContains(previewReinitText, "private bool _isPreviewReinitAnimating;");
         AssertContains(previewReinitText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
         AssertContains(previewReinitText, "private Task ViewModel_PreviewRendererStopRequested()");

@@ -1789,8 +1789,11 @@ Primary current owners:
   and signal-list string formatting.
   `Sussudio/Controllers/PreviewStartupFailureTextFormatter.cs` owns preview
   startup timeout reason, timeout status, and failure-stop status text.
-  `MainWindow.PropertyChangedPreview.cs` owns preview-specific ViewModel events
-  and the preview property-change router for preview start/stop/reinit state.
+  `Sussudio/Controllers/PreviewLifecycleEventController.cs` owns preview-
+  specific ViewModel event lifecycle and the preview property-change router for
+  preview start/stop/reinit state. `MainWindow.PropertyChangedPreview.cs` is the
+  XAML/MainWindow-facing adapter that preserves event handler signatures and
+  delegates into the controller.
   `MainWindow.PreviewReinit.cs` owns preview reinit animation state,
   renderer-stop-before-teardown handoff, and reinit completion presentation.
   Keep preview startup fields out of the composition root.
