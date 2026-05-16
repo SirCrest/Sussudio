@@ -1888,12 +1888,13 @@ XAML-facing adapter. Responsive layout ownership checks live in
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
 the `Sussudio/Controllers/CaptureSelectionBindingController*.cs` family. The
-root controller owns selection reconciliation, selected-device property-change
-reconciliation, recording string-selection event handlers, and pending-device
-apply state,
+root controller owns collection wiring, recording string-selection event
+handlers, and pending-device apply state,
 `.Context.cs` owns the XAML control dependency bag, `.SelectionSync.cs` owns
 collection-change debounce/queued sync plus available-option property-change
-rebinding, and `.DeviceAudio.cs` owns device-audio mode/gain projection while
+rebinding, `.SelectionState.cs` owns selected-item normalization and
+selected-device property-change reconciliation, and `.DeviceAudio.cs` owns
+device-audio mode/gain projection while
 `MainWindow.CaptureSelectionBindings.cs` keeps the old method names for binding
 setup and owns the capture-selection `PropertyChanged` router.
 

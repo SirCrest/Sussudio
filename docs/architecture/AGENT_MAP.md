@@ -1775,14 +1775,16 @@ Primary current owners:
   the breakpoint and narrow/wide placement policy. `MainWindow.ResponsiveShellLayout.cs`
   is the XAML-facing adapter.
 - `Sussudio/Controllers/CaptureSelectionBindingController.cs` owns
-  capture/audio/microphone/encoder selection synchronization, selected-device
-  property-change reconciliation, recording string selection handlers, and
-  pending-device apply state.
+  capture/audio/microphone/encoder selection collection wiring, recording string
+  selection handlers, and pending-device apply state.
   `Sussudio/Controllers/CaptureSelectionBindingController.Context.cs`
   owns the XAML control dependency bag,
   `Sussudio/Controllers/CaptureSelectionBindingController.SelectionSync.cs` owns
   collection-change debounce/queued sync plus available-option property-change
-  rebinding, and
+  rebinding,
+  `Sussudio/Controllers/CaptureSelectionBindingController.SelectionState.cs`
+  owns selected-item normalization and selected-device property-change
+  reconciliation, and
   `Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs` owns
   device-audio mode/gain control projection. `MainWindow.CaptureSelectionBindings.cs`
   is the XAML-facing adapter and owns the capture-selection `PropertyChanged`
