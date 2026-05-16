@@ -6,8 +6,7 @@ using Xunit;
 
 namespace Sussudio.Tests;
 
-// xUnit slice for no-hardware runtime contracts that are still mirrored by the
-// legacy runner during the migration.
+// xUnit slice for no-hardware runtime contracts ported from the legacy runner.
 public sealed class RuntimeContractsTests
 {
     [Fact]
