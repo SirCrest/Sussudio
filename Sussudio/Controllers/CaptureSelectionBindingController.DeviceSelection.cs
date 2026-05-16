@@ -46,4 +46,30 @@ internal sealed partial class CaptureSelectionBindingController
         EnsureDeviceSelection();
         UpdateDeviceApplyButtonState();
     }
+
+    public bool HasPendingDeviceSelection()
+    {
+        if (_context.DeviceComboBox.SelectedItem is not CaptureDevice selectedDevice)
+        {
+            return false;
+        }
+
+        return !string.Equals(
+            selectedDevice.Id,
+            _context.ViewModel.SelectedDevice?.Id,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    public void UpdateDeviceApplyButtonState()
+    {
+        if (_context.ApplyDeviceButton == null)
+        {
+            return;
+        }
+
+        _context.ApplyDeviceButton.IsEnabled =
+            HasPendingDeviceSelection() &&
+            !_context.ViewModel.IsRecording &&
+            !_context.ViewModel.IsPreviewReinitializing;
+    }
 }

@@ -13,6 +13,7 @@ static partial class Program
         var adapterText = ReadRepoFile("Sussudio/MainWindow.CaptureSelectionBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
         var contextText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.Context.cs").Replace("\r\n", "\n");
+        var collectionBindingsText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.CollectionBindings.cs").Replace("\r\n", "\n");
         var deviceAudioText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs").Replace("\r\n", "\n");
         var propertyChangesText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.PropertyChanges.cs").Replace("\r\n", "\n");
         var selectionSyncText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.SelectionSync.cs").Replace("\r\n", "\n");
@@ -32,6 +33,7 @@ static partial class Program
             "\n",
             controllerText,
             contextText,
+            collectionBindingsText,
             deviceAudioText,
             propertyChangesText,
             selectionSyncText,
@@ -93,7 +95,10 @@ static partial class Program
         AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
         AssertContains(propertyChangedText, "if (TryHandleCaptureSelectionPropertyChanged(propertyName))");
         AssertContains(controllerText, "internal sealed partial class CaptureSelectionBindingController");
+        AssertContains(controllerText, "private readonly CaptureSelectionBindingControllerContext _context;");
+        AssertContains(controllerText, "public CaptureSelectionBindingController(CaptureSelectionBindingControllerContext context)");
         AssertContains(contextText, "internal sealed class CaptureSelectionBindingControllerContext");
+        AssertContains(collectionBindingsText, "public void AttachCollectionBindings()");
         AssertContains(selectionSyncText, "private readonly int[] _selectionSyncQueued = new int[9];");
         AssertEqual(
             false,
@@ -120,9 +125,11 @@ static partial class Program
         AssertOccursBefore(selectionSyncText, "_context.FrameRateComboBox.ItemsSource = _context.ViewModel.AvailableFrameRates;", "EnsureFrameRateSelection();");
         AssertOccursBefore(selectionSyncText, "_context.PresetComboBox.ItemsSource = _context.ViewModel.AvailablePresets;", "EnsurePresetSelection();");
         AssertOccursBefore(selectionSyncText, "_context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;", "EnsureSplitEncodeModeSelection();");
-        AssertContains(controllerText, "public void AttachCollectionBindings()");
-        AssertContains(controllerText, "_context.DeviceComboBox.ItemsSource = _context.ViewModel.Devices;");
-        AssertContains(controllerText, "AttachCollectionSync(_context.ViewModel.AvailableFrameRates, QueueFrameRateSelectionSync);");
+        AssertContains(collectionBindingsText, "_context.DeviceComboBox.ItemsSource = _context.ViewModel.Devices;");
+        AssertContains(collectionBindingsText, "AttachCollectionSync(_context.ViewModel.AvailableFrameRates, QueueFrameRateSelectionSync);");
+        AssertDoesNotContain(controllerText, "public void AttachCollectionBindings()");
+        AssertDoesNotContain(controllerText, "_context.DeviceComboBox.ItemsSource = _context.ViewModel.Devices;");
+        AssertDoesNotContain(controllerText, "AttachCollectionSync(");
         AssertDoesNotContain(adapterText, "private void AttachRecordingStringSelectionBindings()");
         AssertDoesNotContain(adapterText, "_captureSelectionBindingController.AttachRecordingStringSelectionBindings()");
         AssertDoesNotContain(selectionControllerFamilyText, "public void AttachRecordingStringSelectionBindings()");
@@ -154,6 +161,10 @@ static partial class Program
         AssertContains(deviceSelectionText, "DEVICE_SELECTION_SYNC");
         AssertContains(deviceSelectionText, "EnsureDeviceSelection();");
         AssertContains(deviceSelectionText, "UpdateDeviceApplyButtonState();");
+        AssertContains(deviceSelectionText, "public bool HasPendingDeviceSelection()");
+        AssertContains(deviceSelectionText, "public void UpdateDeviceApplyButtonState()");
+        AssertDoesNotContain(controllerText, "public bool HasPendingDeviceSelection()");
+        AssertDoesNotContain(controllerText, "public void UpdateDeviceApplyButtonState()");
         AssertContains(propertyChangesText, "HandleSelectedDevicePropertyChanged();");
         AssertContains(propertyChangesText, "EnsureResolutionSelection();");
         AssertContains(propertyChangesText, "EnsureFrameRateSelection();");
@@ -186,7 +197,7 @@ static partial class Program
         AssertDoesNotContain(selectionFamilyText, "AvailableFrameRates.FirstOrDefault(option =>");
         AssertContains(deviceAudioText, "public void ApplyDeviceAudioControlState()");
         AssertContains(deviceAudioText, "public void EnsureDeviceAudioModeSelection()");
-        AssertContains(controllerText, "public bool HasPendingDeviceSelection()");
+        AssertContains(deviceSelectionText, "public bool HasPendingDeviceSelection()");
         AssertContains(selectionSyncText, "private void QueueSelectionSync(int syncIndex, Action ensureMethod)");
         AssertDoesNotContain(controllerText, "public void EnsureDeviceSelection()");
         AssertDoesNotContain(controllerText, "public void HandleSelectedDevicePropertyChanged()");

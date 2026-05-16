@@ -1,6 +1,3 @@
-using System;
-using Sussudio.Models;
-
 namespace Sussudio.Controllers;
 
 internal sealed partial class CaptureSelectionBindingController
@@ -11,54 +8,4 @@ internal sealed partial class CaptureSelectionBindingController
     {
         _context = context;
     }
-
-    public void AttachCollectionBindings()
-    {
-        _context.DeviceComboBox.ItemsSource = _context.ViewModel.Devices;
-        _context.AudioInputComboBox.ItemsSource = _context.ViewModel.AudioInputDevices;
-        _context.MicrophoneComboBox.ItemsSource = _context.ViewModel.MicrophoneDevices;
-        _context.ResolutionComboBox.ItemsSource = _context.ViewModel.AvailableResolutions;
-        _context.FrameRateComboBox.ItemsSource = _context.ViewModel.AvailableFrameRates;
-        _context.FormatComboBox.ItemsSource = _context.ViewModel.AvailableRecordingFormats;
-        _context.QualityComboBox.ItemsSource = _context.ViewModel.AvailableQualities;
-        _context.PresetComboBox.ItemsSource = _context.ViewModel.AvailablePresets;
-        _context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;
-
-        AttachCollectionSync(_context.ViewModel.Devices, QueueDeviceSelectionSync);
-        AttachCollectionSync(_context.ViewModel.AudioInputDevices, QueueAudioSelectionSync);
-        AttachCollectionSync(_context.ViewModel.MicrophoneDevices, QueueMicrophoneSelectionSync);
-        AttachCollectionSync(_context.ViewModel.AvailableResolutions, QueueResolutionSelectionSync);
-        AttachCollectionSync(_context.ViewModel.AvailableFrameRates, QueueFrameRateSelectionSync);
-        AttachCollectionSync(_context.ViewModel.AvailableRecordingFormats, QueueFormatSelectionSync);
-        AttachCollectionSync(_context.ViewModel.AvailableQualities, QueueQualitySelectionSync);
-        AttachCollectionSync(_context.ViewModel.AvailablePresets, QueuePresetSelectionSync);
-        AttachCollectionSync(_context.ViewModel.AvailableSplitEncodeModes, QueueSplitEncodeModeSelectionSync);
-    }
-
-    public bool HasPendingDeviceSelection()
-    {
-        if (_context.DeviceComboBox.SelectedItem is not CaptureDevice selectedDevice)
-        {
-            return false;
-        }
-
-        return !string.Equals(
-            selectedDevice.Id,
-            _context.ViewModel.SelectedDevice?.Id,
-            StringComparison.OrdinalIgnoreCase);
-    }
-
-    public void UpdateDeviceApplyButtonState()
-    {
-        if (_context.ApplyDeviceButton == null)
-        {
-            return;
-        }
-
-        _context.ApplyDeviceButton.IsEnabled =
-            HasPendingDeviceSelection() &&
-            !_context.ViewModel.IsRecording &&
-            !_context.ViewModel.IsPreviewReinitializing;
-    }
-
 }
