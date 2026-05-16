@@ -1916,14 +1916,14 @@ renderer-stop-before-teardown and reinit completion side effects.
 
 Preview startup attempt/state bookkeeping, timestamps, cached failure/
 missing-signal details, and first-visual confirmation state now live in
-`Sussudio/Controllers/PreviewStartup/PreviewStartupSessionController.cs` instead of a
+`Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` instead of a
 MainWindow field bundle. `Sussudio/MainWindow.PreviewStartup.cs` is the
 XAML/MainWindow-facing adapter that preserves logging and UI side effects.
 Watchdog/telemetry timers, timeout configuration, timeout recovery, and failure-stop scheduling live in
-`Sussudio/Controllers/PreviewStartup/PreviewStartupWatchdogController.cs`;
+`Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`;
 `Sussudio/MainWindow.PreviewStartupWatchdog.cs` wires the MainWindow/XAML-facing
 adapter and timeout diagnostic payload. Readiness-signal coordination now lives
-in `Sussudio/Controllers/PreviewStartup/PreviewStartupSignalCoordinator.cs`: missing-signal
+in `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs`: missing-signal
 updates, playback-progress diagnostics, startup signal log strings, GPU
 position counter state, and first-visual confirmation decisions. The
 `Sussudio/MainWindow.PreviewStartupSignals.cs` partial is the XAML/MainWindow
@@ -1931,21 +1931,21 @@ adapter that supplies live preview state, renderer visibility details, logging,
 and confirmation callbacks. Readiness-signal required/received state,
 missing-signal calculation, playback-advance threshold checks, and readiness
 result snapshots live in
-`Sussudio/Controllers/PreviewStartup/PreviewStartupReadinessSignalController.cs`. Missing-signal
+`Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs`. Missing-signal
 and signal-list string formatting lives in
-`Sussudio/Controllers/PreviewStartup/PreviewStartupSignalFormatter.cs`. Timeout reason,
+`Sussudio/Controllers/Preview/Startup/PreviewStartupSignalFormatter.cs`. Timeout reason,
 timeout status, and failure-stop status text live in
-`Sussudio/Controllers/PreviewStartup/PreviewStartupFailureTextFormatter.cs`. This keeps the
+`Sussudio/Controllers/Preview/Startup/PreviewStartupFailureTextFormatter.cs`. This keeps the
 root shell focused on wiring while leaving the existing startup state machine
 behavior unchanged.
 Delayed preview reveal after first visual now lives in
 `Sussudio/Controllers/Preview/PreviewFadeInController.cs`; the adapter remains
 `Sussudio/MainWindow.PreviewFadeIn.cs`. Watchdog/timeout recovery remains in
-`Sussudio/Controllers/PreviewStartup/PreviewStartupWatchdogController.cs`.
+`Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Preview startup loading overlay presentation now lives in
-`Sussudio/Controllers/PreviewStartup/PreviewStartupOverlayController.cs`.
+`Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs`.
 `MainWindow.PreviewStartupOverlay.cs` is the XAML-facing adapter; watchdog and
-timeout recovery stay in `Sussudio/Controllers/PreviewStartup/PreviewStartupWatchdogController.cs`.
+timeout recovery stay in `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Top-level preview resize telemetry throttling now lives in
 `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
 `MainWindow.WindowSizing.cs` remains the `SizeChanged` adapter; preview surface

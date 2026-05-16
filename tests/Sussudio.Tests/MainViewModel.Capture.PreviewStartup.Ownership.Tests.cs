@@ -13,11 +13,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
             .Replace("\r\n", "\n");
-        var previewStartupSessionControllerText = ReadRepoFile("Sussudio/Controllers/PreviewStartup/PreviewStartupSessionController.cs")
+        var previewStartupSessionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs")
             .Replace("\r\n", "\n");
         var previewStartupWatchdogText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupWatchdog.cs")
             .Replace("\r\n", "\n");
-        var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/PreviewStartup/PreviewStartupWatchdogController.cs")
+        var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs")
             .Replace("\r\n", "\n");
         var previewFadeInText = ReadRepoFile("Sussudio/MainWindow.PreviewFadeIn.cs")
             .Replace("\r\n", "\n");
@@ -25,11 +25,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupSignalsText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupSignals.cs")
             .Replace("\r\n", "\n");
-        var previewStartupReadinessSignalControllerText = ReadRepoFile("Sussudio/Controllers/PreviewStartup/PreviewStartupReadinessSignalController.cs")
+        var previewStartupReadinessSignalControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs")
             .Replace("\r\n", "\n");
-        var previewStartupSignalCoordinatorText = ReadRepoFile("Sussudio/Controllers/PreviewStartup/PreviewStartupSignalCoordinator.cs")
+        var previewStartupSignalCoordinatorText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs")
             .Replace("\r\n", "\n");
-        var previewStartupFailureText = ReadRepoFile("Sussudio/Controllers/PreviewStartup/PreviewStartupFailureTextFormatter.cs")
+        var previewStartupFailureText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupFailureTextFormatter.cs")
             .Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs")
             .Replace("\r\n", "\n");

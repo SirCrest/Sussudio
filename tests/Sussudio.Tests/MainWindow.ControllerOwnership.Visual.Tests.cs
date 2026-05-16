@@ -106,7 +106,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupOverlay.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/PreviewStartup/PreviewStartupOverlayController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewStartupOverlayController _previewStartupOverlayController = null!;");
         AssertContains(adapterText, "private void InitializePreviewStartupOverlayController()");
