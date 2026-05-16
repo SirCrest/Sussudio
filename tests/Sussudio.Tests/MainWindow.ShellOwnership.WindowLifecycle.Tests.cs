@@ -16,18 +16,36 @@ static partial class Program
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
+        var stopBeforeCloseMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task<bool> StopBeforeCloseAsync(");
         var stopAfterClosedMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task StopAfterClosedBestEffortAsync(");
+        var waitForStopMethodOffset = closeRecordingFinalizationControllerText.IndexOf("private static async Task<RecordingStopWaitResult> WaitForRecordingStopAsync(");
         var oldWindowManagementPath = Path.Combine(
             GetRepoRoot(),
             "Sussudio",
             "MainWindow.WindowManagement.cs");
+
+        if (stopBeforeCloseMethodOffset < 0)
+        {
+            throw new InvalidOperationException("Window close recording finalization controller must expose pre-close recording stop.");
+        }
 
         if (stopAfterClosedMethodOffset < 0)
         {
             throw new InvalidOperationException("Window close recording finalization controller must expose post-close best-effort stop.");
         }
 
-        var stopAfterClosedMethodText = closeRecordingFinalizationControllerText.Substring(stopAfterClosedMethodOffset);
+        if (waitForStopMethodOffset < 0)
+        {
+            throw new InvalidOperationException("Window close recording finalization controller must keep recording-stop wait mechanics in a helper.");
+        }
+
+        var stopBeforeCloseMethodText = closeRecordingFinalizationControllerText.Substring(
+            stopBeforeCloseMethodOffset,
+            stopAfterClosedMethodOffset - stopBeforeCloseMethodOffset);
+        var stopAfterClosedMethodText = closeRecordingFinalizationControllerText.Substring(
+            stopAfterClosedMethodOffset,
+            waitForStopMethodOffset - stopAfterClosedMethodOffset);
+        var waitForStopMethodText = closeRecordingFinalizationControllerText.Substring(waitForStopMethodOffset);
         var documentedOwners = new[]
         {
             "Sussudio/Controllers/WindowCloseLifecycleController.cs",
@@ -94,8 +112,14 @@ static partial class Program
         AssertContains(closeRecordingFinalizationControllerText, "private const int StopBudgetMs = 120_000;");
         AssertContains(closeRecordingFinalizationControllerText, "public async Task<bool> StopBeforeCloseAsync(");
         AssertContains(closeRecordingFinalizationControllerText, "public async Task StopAfterClosedBestEffortAsync(");
-        AssertContains(closeRecordingFinalizationControllerText, "var stopTask = viewModel.StopRecordingAndWaitAsync();");
-        AssertContains(closeRecordingFinalizationControllerText, "var completed = await Task.WhenAny(stopTask, Task.Delay(StopBudgetMs));");
+        AssertContains(closeRecordingFinalizationControllerText, "private enum RecordingStopWaitResult");
+        AssertContains(closeRecordingFinalizationControllerText, "private static async Task<RecordingStopWaitResult> WaitForRecordingStopAsync(MainViewModel viewModel)");
+        AssertContains(stopBeforeCloseMethodText, "var stopResult = await WaitForRecordingStopAsync(viewModel);");
+        AssertContains(stopAfterClosedMethodText, "var stopResult = await WaitForRecordingStopAsync(viewModel);");
+        AssertDoesNotContain(stopBeforeCloseMethodText, "var stopTask = viewModel.StopRecordingAndWaitAsync();");
+        AssertDoesNotContain(stopAfterClosedMethodText, "var stopTask = viewModel.StopRecordingAndWaitAsync();");
+        AssertContains(waitForStopMethodText, "var stopTask = viewModel.StopRecordingAndWaitAsync();");
+        AssertContains(waitForStopMethodText, "var completed = await Task.WhenAny(stopTask, Task.Delay(StopBudgetMs));");
         AssertContains(closeRecordingFinalizationControllerText, "shutdownContent.IsHitTestVisible = false;");
         AssertContains(closeRecordingFinalizationControllerText, "shutdownContent.Opacity = 0.5;");
         AssertContains(closeRecordingFinalizationControllerText, "if (shutdownContent != null &&");

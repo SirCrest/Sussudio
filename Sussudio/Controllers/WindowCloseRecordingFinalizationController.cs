@@ -9,6 +9,12 @@ internal sealed class WindowCloseRecordingFinalizationController
 {
     private const int StopBudgetMs = 120_000;
 
+    private enum RecordingStopWaitResult
+    {
+        Completed,
+        TimedOut,
+    }
+
     public async Task<bool> StopBeforeCloseAsync(
         MainViewModel viewModel,
         FrameworkElement? shutdownContent,
@@ -28,11 +34,9 @@ internal sealed class WindowCloseRecordingFinalizationController
 
         try
         {
-            var stopTask = viewModel.StopRecordingAndWaitAsync();
-            var completed = await Task.WhenAny(stopTask, Task.Delay(StopBudgetMs));
-            if (completed == stopTask)
+            var stopResult = await WaitForRecordingStopAsync(viewModel);
+            if (stopResult == RecordingStopWaitResult.Completed)
             {
-                await stopTask;
                 Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording stopped cleanly.");
                 return true;
             }
@@ -82,11 +86,9 @@ internal sealed class WindowCloseRecordingFinalizationController
 
         try
         {
-            var stopTask = viewModel.StopRecordingAndWaitAsync();
-            var completed = await Task.WhenAny(stopTask, Task.Delay(StopBudgetMs));
-            if (completed == stopTask)
+            var stopResult = await WaitForRecordingStopAsync(viewModel);
+            if (stopResult == RecordingStopWaitResult.Completed)
             {
-                await stopTask;
                 Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording stopped cleanly.");
             }
             else
@@ -101,5 +103,18 @@ internal sealed class WindowCloseRecordingFinalizationController
             Logger.LogFatalBreadcrumb("RECORDING_FINALIZE_FAILED_AFTER_CLOSE "
                 + $"window already closed; continuing shutdown cleanup. error='{ex.Message}'");
         }
+    }
+
+    private static async Task<RecordingStopWaitResult> WaitForRecordingStopAsync(MainViewModel viewModel)
+    {
+        var stopTask = viewModel.StopRecordingAndWaitAsync();
+        var completed = await Task.WhenAny(stopTask, Task.Delay(StopBudgetMs));
+        if (completed == stopTask)
+        {
+            await stopTask;
+            return RecordingStopWaitResult.Completed;
+        }
+
+        return RecordingStopWaitResult.TimedOut;
     }
 }
