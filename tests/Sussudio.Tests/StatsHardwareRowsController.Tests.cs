@@ -18,6 +18,9 @@ static partial class Program
                                   ?? throw new InvalidOperationException("StatsPresentationBuilder.BuildHardwareDecodeRows not found.");
             var buildGpuRows = builderType.GetMethod("BuildHardwareGpuRows", BindingFlags.Static | BindingFlags.Public)
                                ?? throw new InvalidOperationException("StatsPresentationBuilder.BuildHardwareGpuRows not found.");
+            var inputBuilderType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputBuilder");
+            var buildGpuInput = inputBuilderType.GetMethod("BuildGpuRowsInput", BindingFlags.Static | BindingFlags.Public)
+                                ?? throw new InvalidOperationException("StatsHardwareRowsInputBuilder.BuildGpuRowsInput not found.");
 
             var decodeRows = StatsHardwareRowsToMap(buildDecodeRows.Invoke(null, new object?[]
             {
@@ -36,6 +39,7 @@ static partial class Program
             var unavailableGpuRows = StatsHardwareRowsToMap(buildGpuRows.Invoke(null, new object?[] { null })
                                      ?? throw new InvalidOperationException("BuildHardwareGpuRows returned null for unavailable snapshot."));
             AssertEqual("NVML not available", unavailableGpuRows["Status"], "unavailable GPU status row");
+            AssertEqual(null, buildGpuInput.Invoke(null, new object?[] { null }), "null NVML snapshot projects to null input");
 
             var gpuRows = StatsHardwareRowsToMap(buildGpuRows.Invoke(null, new[]
             {
@@ -74,52 +78,96 @@ static partial class Program
 
     private static object CreateStatsHardwareMjpegMetrics()
     {
-        var metricsType = RequireType("Sussudio.ViewModels.StatsHardwareDecodeRowsInput");
-        var perDecoderType = RequireType("Sussudio.ViewModels.StatsHardwareDecodeWorkerRowInput");
+        var inputBuilderType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputBuilder");
+        var buildDecodeInput = inputBuilderType.GetMethod("BuildDecodeRowsInput", BindingFlags.Static | BindingFlags.Public)
+                               ?? throw new InvalidOperationException("StatsHardwareRowsInputBuilder.BuildDecodeRowsInput not found.");
+
+        return buildDecodeInput.Invoke(null, new object?[] { CreateStatsHardwarePipelineTimingMetrics(), (int?)3 })
+               ?? throw new InvalidOperationException("BuildDecodeRowsInput returned null.");
+    }
+
+    private static object CreateStatsHardwarePipelineTimingMetrics()
+    {
+        var metricsType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
+        var perDecoderType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics");
         var perDecoder = Array.CreateInstance(perDecoderType, 2);
-        perDecoder.SetValue(InvokeStatsHardwareConstructor(perDecoderType, 0, 4.5d, 7.75d), 0);
-        perDecoder.SetValue(InvokeStatsHardwareConstructor(perDecoderType, 1, 5.25d, 8.5d), 1);
+        perDecoder.SetValue(InvokeStatsHardwareConstructor(perDecoderType, 0, 5, 4.5d, 7.75d, 9.5d), 0);
+        perDecoder.SetValue(InvokeStatsHardwareConstructor(perDecoderType, 1, 4, 5.25d, 8.5d, 10.25d), 1);
 
         return InvokeStatsHardwareConstructor(
             metricsType,
             2,
+            9,
             8.0d,
             12.25d,
+            14.0d,
+            7,
             0.75d,
             1.5d,
+            2.25d,
+            11,
             9.25d,
             15.5d,
+            20.0d,
+            1500L,
             1234L,
             56L,
+            1240L,
+            1234L,
+            1L,
+            2L,
+            3L,
+            4L,
+            5L,
+            6L,
             4,
             5L * 1024L * 1024L,
             10L * 1024L * 1024L,
-            6,
             2L,
-            (int?)3,
+            6,
             perDecoder);
     }
 
     private static object CreateStatsHardwareNvmlSnapshot()
+    {
+        var inputBuilderType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputBuilder");
+        var buildGpuInput = inputBuilderType.GetMethod("BuildGpuRowsInput", BindingFlags.Static | BindingFlags.Public)
+                            ?? throw new InvalidOperationException("StatsHardwareRowsInputBuilder.BuildGpuRowsInput not found.");
+
+        return buildGpuInput.Invoke(null, new[] { CreateStatsHardwareNvmlTelemetrySnapshot() })
+               ?? throw new InvalidOperationException("BuildGpuRowsInput returned null.");
+    }
+
+    private static object CreateStatsHardwareNvmlTelemetrySnapshot()
         => InvokeStatsHardwareConstructor(
-            RequireType("Sussudio.ViewModels.StatsHardwareGpuRowsInput"),
+            RequireType("Sussudio.Services.Gpu.NvmlSnapshot"),
             "RTX Test",
             (uint?)41,
             (uint?)52,
             (uint?)13,
             (uint?)17,
-            (double?)1.5d,
-            (double?)2.0d,
-            (ulong?)3UL,
-            (ulong?)12UL,
+            (uint?)1536,
+            (uint?)2048,
+            (ulong?)(3UL * 1024UL * 1024UL),
+            (ulong?)(12UL * 1024UL * 1024UL),
             (uint?)66,
-            (double?)123.456d,
+            (uint?)123456,
             (uint?)2500,
             (uint?)7000);
 
     private static object CreateStatsHardwareNvmlSnapshotWithFallbacks()
+    {
+        var inputBuilderType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputBuilder");
+        var buildGpuInput = inputBuilderType.GetMethod("BuildGpuRowsInput", BindingFlags.Static | BindingFlags.Public)
+                            ?? throw new InvalidOperationException("StatsHardwareRowsInputBuilder.BuildGpuRowsInput not found.");
+
+        return buildGpuInput.Invoke(null, new[] { CreateStatsHardwareNvmlTelemetrySnapshotWithFallbacks() })
+               ?? throw new InvalidOperationException("BuildGpuRowsInput returned null for fallback snapshot.");
+    }
+
+    private static object CreateStatsHardwareNvmlTelemetrySnapshotWithFallbacks()
         => InvokeStatsHardwareConstructor(
-            RequireType("Sussudio.ViewModels.StatsHardwareGpuRowsInput"),
+            RequireType("Sussudio.Services.Gpu.NvmlSnapshot"),
             " ",
             null,
             null,

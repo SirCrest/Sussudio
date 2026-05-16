@@ -1579,8 +1579,10 @@ Frame-time overlay graph drawing and compact text application now live in
 adapter and owns the presentation-controller composition, while
 `Sussudio/Controllers/StatsDockRefreshController.cs` keeps the stats dock
 projection refresh adapter.
-Decode and GPU hardware stats row refresh/application now lives in
-`Sussudio/Controllers/StatsHardwareRowsController.cs`; pure row text
+Decode and GPU hardware stats row refresh/application over presentation inputs
+now lives in `Sussudio/Controllers/StatsHardwareRowsController.cs`;
+MJPEG/NVML telemetry-to-presentation-input projection lives in
+`Sussudio/Controllers/StatsHardwareRowsInputBuilder.cs`; pure row text
 projection over presentation inputs lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs`;
 row element pooling still belongs to `StatsDiagnosticRowsController`, and

@@ -65,9 +65,19 @@ public sealed partial class MainWindow
             DecodeContent = Decode_Content,
             GpuContent = GPU_Content,
             DiagnosticRowsController = statsDiagnosticRowsController,
-            GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,
-            GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,
-            GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot()
+            GetDecodeRowsInput = () =>
+            {
+                var mjpegMetrics = ViewModel.GetMjpegPipelineTimingDetails();
+                if (!mjpegMetrics.HasValue || mjpegMetrics.Value.DecoderCount <= 0)
+                {
+                    return null;
+                }
+
+                return StatsHardwareRowsInputBuilder.BuildDecodeRowsInput(
+                    mjpegMetrics.Value,
+                    _previewRendererHostController.PendingFrameCount);
+            },
+            GetGpuRowsInput = () => StatsHardwareRowsInputBuilder.BuildGpuRowsInput(_nvmlMonitor?.GetLatestSnapshot())
         });
         _statsDockRefreshController = new StatsDockRefreshController(new StatsDockRefreshControllerContext
         {
