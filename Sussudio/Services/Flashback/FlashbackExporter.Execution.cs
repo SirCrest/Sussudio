@@ -81,40 +81,6 @@ internal sealed unsafe partial class FlashbackExporter
         });
     }
 
-    private void SetNextAdaptiveThrottleDelayProvider(Func<int>? adaptiveThrottleDelayMsProvider)
-    {
-        lock (_adaptiveThrottleSync)
-        {
-            _nextAdaptiveThrottleDelayMsProvider = adaptiveThrottleDelayMsProvider;
-        }
-    }
-
-    private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()
-    {
-        lock (_adaptiveThrottleSync)
-        {
-            var provider = _nextAdaptiveThrottleDelayMsProvider;
-            _nextAdaptiveThrottleDelayMsProvider = null;
-            return provider;
-        }
-    }
-
-    private static FinalizeResult RunWithAdaptiveThrottle(
-        Func<int>? adaptiveThrottleDelayMsProvider,
-        Func<FinalizeResult> exportWork)
-    {
-        var previousProvider = s_adaptiveThrottleDelayMsProvider;
-        try
-        {
-            s_adaptiveThrottleDelayMsProvider = adaptiveThrottleDelayMsProvider;
-            return exportWork();
-        }
-        finally
-        {
-            s_adaptiveThrottleDelayMsProvider = previousProvider;
-        }
-    }
-
     private static FinalizeResult RunWithBackgroundPriority(Func<FinalizeResult> exportWork, Action cleanup)
     {
         var thread = Thread.CurrentThread;

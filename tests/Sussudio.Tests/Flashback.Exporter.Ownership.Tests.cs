@@ -26,6 +26,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var progressText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Progress.cs")
             .Replace("\r\n", "\n");
+        var writerPacingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.WriterPacing.cs")
+            .Replace("\r\n", "\n");
         var tempFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.TempFiles.cs")
             .Replace("\r\n", "\n");
         var exportLockText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.ExportLock.cs")
@@ -94,7 +96,19 @@ static partial class Program
         AssertDoesNotContain(segmentsText, "FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN");
         AssertContains(progressText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)");
         AssertContains(progressText, "private static bool ShouldReportProgressHeartbeat(ref long lastHeartbeatTick)");
-        AssertContains(progressText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
+        AssertDoesNotContain(progressText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
+        AssertContains(writerPacingText, "private const int ExportWriterYieldPacketInterval = 256;");
+        AssertContains(writerPacingText, "private const int ExportWriterThrottlePacketInterval = 4096;");
+        AssertContains(writerPacingText, "private const int ExportWriterThrottleSleepMs = 1;");
+        AssertContains(writerPacingText, "private const int ExportWriterAdaptiveThrottlePacketInterval = 4;");
+        AssertContains(writerPacingText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
+        AssertContains(writerPacingText, "private readonly object _adaptiveThrottleSync = new();");
+        AssertContains(writerPacingText, "private void SetNextAdaptiveThrottleDelayProvider(Func<int>? adaptiveThrottleDelayMsProvider)");
+        AssertContains(writerPacingText, "private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()");
+        AssertContains(writerPacingText, "private static FinalizeResult RunWithAdaptiveThrottle(");
+        AssertContains(writerPacingText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
+        AssertDoesNotContain(rootText, "ExportWriterYieldPacketInterval");
+        AssertDoesNotContain(rootText, "_adaptiveThrottleSync");
         AssertContains(tempFilesText, "private static void DeleteTempFileIfPresent(string tmpPath)");
         AssertContains(tempFilesText, "private static bool TryPrepareTempOutputFile(string tmpPath, string outputPath, out string failureMessage)");
         AssertContains(tempFilesText, "internal static void CleanupOrphanedTempFiles(string directory)");

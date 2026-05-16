@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Threading;
 using Sussudio.Models;
 
 namespace Sussudio.Services.Flashback;
@@ -61,37 +60,4 @@ internal sealed unsafe partial class FlashbackExporter
         return true;
     }
 
-    private static void ThrottleExportWriterIfNeeded(long packetsWritten)
-    {
-        if (packetsWritten <= 0)
-        {
-            return;
-        }
-
-        var adaptiveThrottleDelayMsProvider = s_adaptiveThrottleDelayMsProvider;
-        if (adaptiveThrottleDelayMsProvider != null &&
-            packetsWritten % ExportWriterAdaptiveThrottlePacketInterval == 0)
-        {
-            var adaptiveDelayMs = Math.Clamp(
-                adaptiveThrottleDelayMsProvider(),
-                0,
-                ExportWriterMaxAdaptiveThrottleSleepMs);
-            if (adaptiveDelayMs > 0)
-            {
-                Thread.Sleep(adaptiveDelayMs);
-                return;
-            }
-        }
-
-        if (packetsWritten % ExportWriterThrottlePacketInterval == 0)
-        {
-            Thread.Sleep(ExportWriterThrottleSleepMs);
-            return;
-        }
-
-        if (packetsWritten % ExportWriterYieldPacketInterval == 0)
-        {
-            Thread.Yield();
-        }
-    }
 }
