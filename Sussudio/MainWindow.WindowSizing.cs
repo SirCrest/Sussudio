@@ -4,8 +4,8 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // XAML-facing adapter for top-level window resize telemetry. Preview surface
-// sizing stays with MainWindow.PreviewSurface.cs; close/finalize handling stays
-// in MainWindow.CloseLifecycle.cs.
+// sizing stays with MainWindow.PreviewSurface.cs; close routing/finalization
+// lives with the close lifecycle and recording finalization controllers.
 public sealed partial class MainWindow
 {
     private PreviewResizeTelemetryController _previewResizeTelemetryController = null!;

@@ -4,8 +4,8 @@ using Microsoft.UI.Xaml;
 
 namespace Sussudio;
 
-// First-load startup and automation hosting for the shell. Close/finalize
-// handling stays in MainWindow.CloseLifecycle.cs.
+// First-load startup and automation hosting for the shell. Close routing stays
+// in MainWindow.CloseLifecycle.cs; recording finalization lives in its controller.
 public sealed partial class MainWindow
 {
     private int _automationServicesStarted;

@@ -6,12 +6,12 @@ using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// Window close lifecycle and automation close completion. Recording finalization
-// protection lives here because close is the last chance to avoid truncating an
-// in-progress recording.
+// Window close lifecycle and automation close completion. Recording
+// finalization side effects live in WindowCloseRecordingFinalizationController.
 public sealed partial class MainWindow
 {
     private readonly WindowCloseLifecycleController _windowCloseLifecycleController = new();
+    private readonly WindowCloseRecordingFinalizationController _windowCloseRecordingFinalizationController = new();
     private bool _isWindowClosing => _windowCloseLifecycleController.IsClosing;
 
     private void RegisterCloseLifecycle(Microsoft.UI.Windowing.AppWindow appWindow)
@@ -76,53 +76,11 @@ public sealed partial class MainWindow
         }
     }
 
-    private async Task<bool> TryStopRecordingBeforeCloseAsync()
-    {
-        const int StopBudgetMs = 120_000;
-        Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording active, awaiting graceful stop...");
-        ViewModel.StatusText = "Stopping recording - please wait...";
-
-        FrameworkElement? shutdownContent = null;
-        if (this.Content is FrameworkElement content)
-        {
-            shutdownContent = content;
-            shutdownContent.IsHitTestVisible = false;
-            shutdownContent.Opacity = 0.5;
-        }
-
-        try
-        {
-            var stopTask = ViewModel.StopRecordingAndWaitAsync();
-            var completed = await Task.WhenAny(stopTask, Task.Delay(StopBudgetMs));
-            if (completed == stopTask)
-            {
-                await stopTask;
-                Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording stopped cleanly.");
-                return true;
-            }
-
-            Logger.LogFatalBreadcrumb("RECORDING_FINALIZE_TIMEOUT "
-                + $"budget_ms={StopBudgetMs}; close cancelled to protect recording.");
-            ViewModel.StatusText = "Still saving recording. Close cancelled.";
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogException(ex);
-            Logger.Log($"WINDOW_CLOSE_RECORDING_STOP: stop failed: {ex.Message}");
-            ViewModel.StatusText = $"Close cancelled: recording stop failed ({ex.Message})";
-            return false;
-        }
-        finally
-        {
-            if (shutdownContent != null &&
-                !_windowCloseLifecycleController.IsAllowedAfterRecordingStop)
-            {
-                shutdownContent.IsHitTestVisible = true;
-                shutdownContent.Opacity = 1;
-            }
-        }
-    }
+    private Task<bool> TryStopRecordingBeforeCloseAsync()
+        => _windowCloseRecordingFinalizationController.StopBeforeCloseAsync(
+            ViewModel,
+            Content as FrameworkElement,
+            () => _windowCloseLifecycleController.IsAllowedAfterRecordingStop);
 
     public Task CloseAsync(CancellationToken cancellationToken = default)
         => _windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken);

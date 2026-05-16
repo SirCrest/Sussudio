@@ -11,10 +11,35 @@ static partial class Program
         var nativeWindowText = ReadRepoFile("Sussudio/MainWindow.NativeWindow.cs").Replace("\r\n", "\n");
         var nativeWindowControllerText = ReadRepoFile("Sussudio/Controllers/NativeWindowBootstrapController.cs").Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
+        var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs").Replace("\r\n", "\n");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
+        var stopAfterClosedMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task StopAfterClosedBestEffortAsync(");
         var oldWindowManagementPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
+            GetRepoRoot(),
             "Sussudio",
             "MainWindow.WindowManagement.cs");
+
+        if (stopAfterClosedMethodOffset < 0)
+        {
+            throw new InvalidOperationException("Window close recording finalization controller must expose post-close best-effort stop.");
+        }
+
+        var stopAfterClosedMethodText = closeRecordingFinalizationControllerText.Substring(stopAfterClosedMethodOffset);
+        var documentedOwners = new[]
+        {
+            "Sussudio/Controllers/WindowCloseLifecycleController.cs",
+            "Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs",
+            "Sussudio/MainWindow.CloseLifecycle.cs",
+            "Sussudio/MainWindow.ShutdownCleanup.cs",
+            "Sussudio/Controllers/NativeWindowBootstrapController.cs",
+        };
+
+        foreach (var owner in documentedOwners)
+        {
+            AssertContains(agentMapText, owner);
+            AssertContains(cleanupPlanText, owner);
+        }
 
         if (File.Exists(oldWindowManagementPath))
         {
@@ -22,13 +47,21 @@ static partial class Program
         }
 
         AssertContains(closeLifecycleText, "private readonly WindowCloseLifecycleController _windowCloseLifecycleController = new();");
+        AssertContains(closeLifecycleText, "private readonly WindowCloseRecordingFinalizationController _windowCloseRecordingFinalizationController = new();");
         AssertContains(closeLifecycleText, "private bool _isWindowClosing => _windowCloseLifecycleController.IsClosing;");
         AssertContains(closeLifecycleText, "private void RegisterCloseLifecycle(Microsoft.UI.Windowing.AppWindow appWindow)");
         AssertContains(closeLifecycleText, "=> appWindow.Closing += MainWindow_Closing;");
         AssertContains(closeLifecycleText, "private async void MainWindow_Closing(");
-        AssertContains(closeLifecycleText, "private async Task<bool> TryStopRecordingBeforeCloseAsync()");
+        AssertContains(closeLifecycleText, "args.Cancel = true;");
+        AssertContains(closeLifecycleText, "if (!ViewModel.IsRecording && !ViewModel.IsRecordingTransitioning)");
+        AssertContains(closeLifecycleText, "private Task<bool> TryStopRecordingBeforeCloseAsync()");
+        AssertContains(closeLifecycleText, "=> _windowCloseRecordingFinalizationController.StopBeforeCloseAsync(");
+        AssertContains(closeLifecycleText, "CompleteWindowCloseRequest(new InvalidOperationException(ViewModel.StatusText));");
+        AssertContains(closeLifecycleText, "RequestWindowClose();");
         AssertContains(shutdownCleanupText, "Post-close shutdown cleanup");
         AssertContains(shutdownCleanupText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");
+        AssertContains(shutdownCleanupText, "await _windowCloseRecordingFinalizationController.StopAfterClosedBestEffortAsync(");
+        AssertOccursBefore(shutdownCleanupText, "CompleteWindowCloseRequest();", "_windowCloseLifecycleController.MarkClosing();");
         AssertContains(closeLifecycleText, "public Task CloseAsync(CancellationToken cancellationToken = default)");
         AssertContains(closeLifecycleText, "=> _windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken);");
         AssertContains(closeLifecycleText, "private void RequestWindowClose()");
@@ -44,6 +77,25 @@ static partial class Program
         AssertContains(closeLifecycleControllerText, "public Task CloseAsync(");
         AssertContains(closeLifecycleControllerText, "private Task GetCompletionTask(CancellationToken cancellationToken)");
         AssertContains(closeLifecycleControllerText, "public static bool IsCloseAlreadyInProgressException(Exception ex)");
+        AssertContains(closeRecordingFinalizationControllerText, "internal sealed class WindowCloseRecordingFinalizationController");
+        AssertContains(closeRecordingFinalizationControllerText, "private const int StopBudgetMs = 120_000;");
+        AssertContains(closeRecordingFinalizationControllerText, "public async Task<bool> StopBeforeCloseAsync(");
+        AssertContains(closeRecordingFinalizationControllerText, "public async Task StopAfterClosedBestEffortAsync(");
+        AssertContains(closeRecordingFinalizationControllerText, "var stopTask = viewModel.StopRecordingAndWaitAsync();");
+        AssertContains(closeRecordingFinalizationControllerText, "var completed = await Task.WhenAny(stopTask, Task.Delay(StopBudgetMs));");
+        AssertContains(closeRecordingFinalizationControllerText, "shutdownContent.IsHitTestVisible = false;");
+        AssertContains(closeRecordingFinalizationControllerText, "shutdownContent.Opacity = 0.5;");
+        AssertContains(closeRecordingFinalizationControllerText, "if (shutdownContent != null &&");
+        AssertContains(closeRecordingFinalizationControllerText, "!isAllowedAfterRecordingStop())");
+        AssertContains(closeRecordingFinalizationControllerText, "shutdownContent.IsHitTestVisible = true;");
+        AssertContains(closeRecordingFinalizationControllerText, "shutdownContent.Opacity = 1;");
+        AssertDoesNotContain(stopAfterClosedMethodText, "shutdownContent.IsHitTestVisible = true;");
+        AssertDoesNotContain(stopAfterClosedMethodText, "shutdownContent.Opacity = 1;");
+        AssertContains(closeRecordingFinalizationControllerText, "RECORDING_FINALIZE_TIMEOUT ");
+        AssertContains(closeRecordingFinalizationControllerText, "close cancelled to protect recording.");
+        AssertContains(closeRecordingFinalizationControllerText, "Still saving recording. Close cancelled.");
+        AssertContains(closeRecordingFinalizationControllerText, "window already closed; continuing shutdown cleanup.");
+        AssertContains(closeRecordingFinalizationControllerText, "RECORDING_FINALIZE_FAILED_AFTER_CLOSE ");
         AssertContains(shutdownCleanupText, "StopLiveSignalInfoTimers();");
         AssertContains(shutdownCleanupText, "StopMicMeterRowAnimation();");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
@@ -91,6 +143,12 @@ static partial class Program
         AssertDoesNotContain(closeLifecycleText, "private TaskCompletionSource<object?>? _windowCloseCompletion;");
         AssertDoesNotContain(closeLifecycleText, "private Task GetWindowCloseCompletionTask(CancellationToken cancellationToken)");
         AssertDoesNotContain(closeLifecycleText, "private static bool IsCloseAlreadyInProgressException(Exception ex)");
+        AssertDoesNotContain(closeLifecycleText, "Task.WhenAny(");
+        AssertDoesNotContain(closeLifecycleText, "StopBudgetMs");
+        AssertDoesNotContain(closeLifecycleText, "StopRecordingAndWaitAsync");
+        AssertDoesNotContain(shutdownCleanupText, "Task.WhenAny(");
+        AssertDoesNotContain(shutdownCleanupText, "StopBudgetMs");
+        AssertDoesNotContain(shutdownCleanupText, "StopRecordingAndWaitAsync");
         AssertDoesNotContain(closeLifecycleText, "private Microsoft.UI.Windowing.AppWindow GetAppWindow()");
         AssertDoesNotContain(closeLifecycleText, "DwmSetWindowAttribute(");
         AssertDoesNotContain(closeLifecycleText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");

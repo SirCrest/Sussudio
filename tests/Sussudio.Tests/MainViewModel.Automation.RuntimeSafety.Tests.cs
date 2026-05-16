@@ -92,19 +92,29 @@ static partial class Program
             .Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseLifecycleController.cs")
             .Replace("\r\n", "\n");
+        var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(windowCtorText, "RegisterCloseLifecycle(appWindow);");
         AssertContains(closeLifecycleText, "appWindow.Closing += MainWindow_Closing;");
         AssertContains(closeLifecycleText, "args.Cancel = true;");
         AssertContains(closeLifecycleText, "TryStopRecordingBeforeCloseAsync");
-        AssertContains(closeLifecycleText, "const int StopBudgetMs = 120_000;");
-        AssertContains(closeLifecycleText, "close cancelled to protect recording");
+        AssertContains(closeLifecycleText, "if (!ViewModel.IsRecording && !ViewModel.IsRecordingTransitioning)");
+        AssertContains(closeLifecycleText, "=> _windowCloseRecordingFinalizationController.StopBeforeCloseAsync(");
         AssertContains(closeLifecycleText, "RequestWindowClose();");
         AssertContains(closeLifecycleText, "_windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken)");
         AssertContains(closeLifecycleText, "CompleteWindowCloseRequest(new InvalidOperationException(ViewModel.StatusText));");
         AssertContains(closeLifecycleText, "CompleteWindowCloseRequest();");
         AssertContains(closeLifecycleControllerText, "private Task GetCompletionTask(CancellationToken cancellationToken)");
         AssertContains(closeLifecycleControllerText, "var enqueueFailure = new InvalidOperationException(\"Failed to enqueue window close action on the UI thread.\");");
+        AssertContains(closeRecordingFinalizationControllerText, "private const int StopBudgetMs = 120_000;");
+        AssertContains(closeRecordingFinalizationControllerText, "var stopTask = viewModel.StopRecordingAndWaitAsync();");
+        AssertContains(closeRecordingFinalizationControllerText, "var completed = await Task.WhenAny(stopTask, Task.Delay(StopBudgetMs));");
+        AssertContains(closeRecordingFinalizationControllerText, "close cancelled to protect recording");
+        AssertContains(closeRecordingFinalizationControllerText, "Still saving recording. Close cancelled.");
+        AssertContains(closeRecordingFinalizationControllerText, "RECORDING_FINALIZE_FAILED_AFTER_CLOSE ");
+        AssertDoesNotContain(closeLifecycleText, "Task.WhenAny(");
+        AssertDoesNotContain(closeLifecycleText, "StopRecordingAndWaitAsync");
         AssertDoesNotContain(closeLifecycleText, "MP4 may be truncated.");
 
         return Task.CompletedTask;

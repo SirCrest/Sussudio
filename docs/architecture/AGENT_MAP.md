@@ -761,14 +761,18 @@ Primary current owners:
 - `Sussudio/Controllers/WindowAutomationController.cs` owns window geometry
   automation plus the recordings-folder command. `MainWindow.WindowAutomation.cs`
   is the `IAutomationWindowControl` adapter; recording-aware close handling
-  stays with the close lifecycle owner.
+  stays with the close lifecycle/finalization owners.
 - `Sussudio/MainWindow.AutomationHost.cs` owns shell automation composition:
   automation token/pipe-name resolution, diagnostics hub construction,
   command dispatcher construction, and named-pipe server construction.
 - `Sussudio/MainWindow.Startup.cs` owns first-load startup, first-frame
   uncloak scheduling, initial ViewModel/device refresh, automation pipe hosting,
-  and the launch entrance trigger. Close/finalize behavior stays in
-  `MainWindow.CloseLifecycle.cs`.
+  and the launch entrance trigger. Window close routing/finalization ownership
+  is detailed in the window close section below:
+  `Sussudio/Controllers/WindowCloseLifecycleController.cs`,
+  `Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs`,
+  `Sussudio/MainWindow.CloseLifecycle.cs`, and
+  `Sussudio/MainWindow.ShutdownCleanup.cs`.
 - `Sussudio/Controllers/PreviewResizeTelemetryController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
   transforms. `MainWindow.WindowSizing.cs` is the `SizeChanged` adapter.
@@ -796,7 +800,12 @@ Primary current owners:
   state sampling. `Sussudio/Controllers/PreviewRuntimeSnapshotController.cs`
   owns the read-only preview runtime snapshot construction, including renderer
   metrics, blank/stall suspicion, cadence projection, and D3D diagnostic fields.
-  Close/finalize behavior stays with `MainWindow.CloseLifecycle.cs`.
+  Window close routing/finalization ownership is detailed in the window close
+  section below:
+  `Sussudio/Controllers/WindowCloseLifecycleController.cs`,
+  `Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs`,
+  `Sussudio/MainWindow.CloseLifecycle.cs`, and
+  `Sussudio/MainWindow.ShutdownCleanup.cs`.
 - `Sussudio/MainWindow.WindowTitle.cs` keeps the XAML-facing title update hook;
   `Sussudio/Controllers/WindowTitleController.cs` owns window title
   base/build-stamp formatting and the recording-time suffix used by property
@@ -812,9 +821,13 @@ Primary current owners:
   request flags, completion TCS, cleanup latch, recording-stop handoff flags,
   close-in-progress exception classification, and automation close dispatch
   orchestration.
+- `Sussudio/Controllers/WindowCloseRecordingFinalizationController.cs` owns
+  recording finalization side effects during pre-close and post-close cleanup:
+  the 120-second stop budget, `StopRecordingAndWaitAsync` wait race, timeout/
+  failure breadcrumbs, status text, and shutdown-content dim/restore policy.
 - `Sussudio/MainWindow.CloseLifecycle.cs` owns the XAML/AppWindow close adapter:
-  `AppWindow.Closing`, recording-aware pre-close protection, input dimming/
-  restoration while recording stops, and the actual `Close()`/Exit fallback.
+  `AppWindow.Closing`, recording-aware pre-close cancellation/completion
+  choreography, and the actual `Close()`/Exit fallback.
 - `Sussudio/MainWindow.ShutdownCleanup.cs` owns `Closed` shutdown cleanup:
   timer stops, event detaches, preview shutdown, automation diagnostics disposal,
   NVML disposal, and ViewModel disposal.
