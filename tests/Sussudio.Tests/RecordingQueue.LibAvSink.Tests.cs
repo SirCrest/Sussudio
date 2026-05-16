@@ -148,6 +148,36 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task LibAvRecordingSink_VideoQueueSubmissionLivesInFocusedPartial()
+    {
+        var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs")
+            .Replace("\r\n", "\n");
+        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.VideoQueueSubmission.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(queueText, "public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)");
+        AssertContains(queueText, "public unsafe void EnqueueCudaVideoFrame(AVFrame* cudaFrame)");
+        AssertContains(queueText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
+        AssertContains(queueText, "bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)");
+        AssertContains(videoSubmissionText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertContains(videoSubmissionText, "private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertContains(videoSubmissionText, "private unsafe VideoEnqueueResult TryEnqueueCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)");
+        AssertContains(videoSubmissionText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertContains(videoSubmissionText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertContains(videoSubmissionText, "private bool TryWriteCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)");
+        AssertContains(videoSubmissionText, "private readonly record struct VideoFramePacket");
+        AssertContains(videoSubmissionText, "private enum VideoEnqueueResult");
+        AssertContains(videoSubmissionText, "private readonly record struct GpuFramePacket");
+        AssertContains(videoSubmissionText, "private readonly record struct CudaFramePacket");
+        AssertDoesNotContain(queueText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertDoesNotContain(queueText, "private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertDoesNotContain(queueText, "private unsafe VideoEnqueueResult TryEnqueueCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)");
+        AssertDoesNotContain(queueText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertDoesNotContain(queueText, "private readonly record struct VideoFramePacket");
+
+        return Task.CompletedTask;
+    }
+
     private static Task LibAvRecordingSink_LifecycleHelpersLiveInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
