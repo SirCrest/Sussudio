@@ -1507,6 +1507,9 @@ Primary current owners:
   coverage; `ArchitectureDocs.AgentMapAutomation.Tests.cs` owns README
   automation consumer checklist coverage; `ArchitectureDocs.AgentMapPresentation.Tests.cs`
   owns UI presentation ownership code-span coverage;
+  `ArchitectureDocs.CleanupPlanReferences.Tests.cs` owns cleanup-plan
+  file/folder reference drift checks; `ArchitectureDocs.AgentMapCaptureRuntime.Tests.cs`
+  owns CaptureService ownership-file coverage;
   `ArchitectureDocs.AgentMapToolAutomation.Tests.cs` owns exact-path coverage
   for shared tool automation partial families; and
   `ArchitectureDocs.AgentMapHelpers.cs` owns the shared AGENT_MAP token,

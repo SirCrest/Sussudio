@@ -38,4 +38,22 @@ static partial class Program
 
         return ArchitectureAgentMap_FileReferencesResolve();
     }
+
+    private static Task ArchitectureAgentMap_CoversArchitectureDocsTestFamily()
+    {
+        var repoRoot = GetRepoRoot();
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
+        var missing = EnumerateArchitectureDocsTestFiles(repoRoot)
+            .Where(file => !AgentMapContainsExactCodeSpan(agentMapText, file))
+            .ToArray();
+
+        if (missing.Length > 0)
+        {
+            throw new InvalidOperationException(
+                "AGENT_MAP.md is missing ArchitectureDocs test-family owner entries: " +
+                string.Join(", ", missing));
+        }
+
+        return Task.CompletedTask;
+    }
 }

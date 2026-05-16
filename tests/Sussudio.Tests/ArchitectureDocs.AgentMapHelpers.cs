@@ -169,6 +169,15 @@ static partial class Program
             .OrderBy(file => file, StringComparer.OrdinalIgnoreCase);
     }
 
+    private static IEnumerable<string> EnumerateArchitectureDocsTestFiles(string repoRoot)
+    {
+        var testsDirectory = Path.Combine(repoRoot, "tests", "Sussudio.Tests");
+        return EnumerateSourceFiles(testsDirectory, SearchOption.TopDirectoryOnly)
+            .Select(file => NormalizeRepoRelativePath(repoRoot, file))
+            .Where(file => GetRepoFileName(file).StartsWith("ArchitectureDocs", StringComparison.Ordinal))
+            .OrderBy(file => file, StringComparer.OrdinalIgnoreCase);
+    }
+
     private static bool AgentMapContainsExactCodeSpan(string agentMapText, string relativePath)
     {
         var normalizedPath = NormalizeProjectInclude(relativePath);
