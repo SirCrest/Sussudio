@@ -1133,8 +1133,9 @@ rotation-failure recovery there.
 
 Flashback encoder export force-rotation now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs`. Keep
-`ForceRotateForExport`, request timeout/cancellation handling, pending-request
-cleanup, and force-rotate drain abort classification there.
+`ForceRotateForExport`, the `ForceRotateRequest` state machine, request
+timeout/cancellation handling, pending-request cleanup, and force-rotate drain
+abort classification there.
 
 Flashback encoder producer entry points now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs`. Keep raw/lease/GPU

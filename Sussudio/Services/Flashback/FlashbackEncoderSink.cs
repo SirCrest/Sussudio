@@ -1,6 +1,5 @@
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -32,7 +31,6 @@ internal sealed partial class FlashbackEncoderSink : IRecordingSink, IRawVideoFr
     private const double ForceRotateQueueGuardRatio = 0.65;
     private const int StopTimeoutMs = 30_000;
     private const int DisposeTimeoutMs = 1_000;
-    private const int ForceRotateCommittedGraceMs = 1_000;
     private const int VideoQueueLatencyWindowSize = 256;
     private const int AudioInputBlockAlignBytes = 2 * sizeof(float);
     private const int MaxAudioPacketBytes = 4 * 1024 * 1024;
@@ -111,67 +109,6 @@ internal sealed partial class FlashbackEncoderSink : IRecordingSink, IRawVideoFr
     private TimeSpan _segmentStartPts;
     private TimeSpan _segmentDuration;
     private TimeSpan _ptsBaseOffset;
-
-    private sealed class ForceRotateRequest
-    {
-        private const int StatePending = 0;
-        private const int StateCommitting = 1;
-        private const int StateCompleted = 2;
-        private const int StateCanceled = 3;
-
-        private int _state = StatePending;
-
-        private readonly TaskCompletionSource<IReadOnlyList<string>> _completion =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public Task<IReadOnlyList<string>> Task => _completion.Task;
-
-        public bool IsCompleted
-        {
-            get
-            {
-                var state = Volatile.Read(ref _state);
-                return state == StateCompleted ||
-                       state == StateCanceled ||
-                       _completion.Task.IsCompleted;
-            }
-        }
-
-        public bool TryBeginCommit()
-            => Interlocked.CompareExchange(ref _state, StateCommitting, StatePending) == StatePending;
-
-        public bool TryCancel()
-        {
-            if (Interlocked.CompareExchange(ref _state, StateCanceled, StatePending) != StatePending)
-            {
-                return false;
-            }
-
-            _completion.TrySetResult(Array.Empty<string>());
-            return true;
-        }
-
-        public void Complete(IReadOnlyList<string> paths)
-        {
-            while (true)
-            {
-                var state = Volatile.Read(ref _state);
-                if (state == StateCompleted || state == StateCanceled)
-                {
-                    return;
-                }
-
-                if (Interlocked.CompareExchange(ref _state, StateCompleted, state) == state)
-                {
-                    _completion.TrySetResult(paths);
-                    return;
-                }
-            }
-        }
-
-        public void CompleteEmpty()
-            => Complete(Array.Empty<string>());
-    }
 
     public FlashbackEncoderSink(FlashbackBufferOptions? options = null)
     {

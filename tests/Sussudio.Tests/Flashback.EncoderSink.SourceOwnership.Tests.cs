@@ -75,4 +75,22 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackEncoderSink_ForceRotateRequestLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+        var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(forceRotateText, "public FlashbackForceRotateResult ForceRotateForExport(");
+        AssertContains(forceRotateText, "private sealed class ForceRotateRequest");
+        AssertContains(forceRotateText, "private const int ForceRotateCommittedGraceMs = 1_000;");
+        AssertContains(forceRotateText, "private static bool ShouldAbortForceRotateDrain(");
+        AssertDoesNotContain(rootText, "public FlashbackForceRotateResult ForceRotateForExport(");
+        AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
+        AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
+
+        return Task.CompletedTask;
+    }
 }

@@ -99,6 +99,8 @@ static partial class Program
     private static Task FlashbackEncoderSink_ForceRotateSkipsCompletedPendingRequest()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n");
+        var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs").Replace("\r\n", "\n");
 
         var loopBlock = ExtractTextBetween(
             sourceText,
@@ -106,9 +108,13 @@ static partial class Program
             "                    madeProgress = true;\n                }");
 
         AssertContains(sourceText, "private sealed class ForceRotateRequest");
-        AssertContains(sourceText, "public bool TryBeginCommit()\n            => Interlocked.CompareExchange(ref _state, StateCommitting, StatePending) == StatePending;");
-        AssertContains(sourceText, "public bool TryCancel()");
-        AssertContains(sourceText, "public void Complete(IReadOnlyList<string> paths)");
+        AssertContains(forceRotateText, "private sealed class ForceRotateRequest");
+        AssertContains(forceRotateText, "private const int ForceRotateCommittedGraceMs = 1_000;");
+        AssertContains(forceRotateText, "public bool TryBeginCommit()\n            => Interlocked.CompareExchange(ref _state, StateCommitting, StatePending) == StatePending;");
+        AssertContains(forceRotateText, "public bool TryCancel()");
+        AssertContains(forceRotateText, "public void Complete(IReadOnlyList<string> paths)");
+        AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
+        AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
         AssertContains(loopBlock, "localRequest = _forceRotateRequest;\n                        _forceRotateRequest = null;");
         AssertContains(loopBlock, "if (localRequest == null)\n                        {\n                            Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request\");\n                            madeProgress = true;\n                            continue;\n                        }");
         AssertOccursBefore(loopBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request", "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");

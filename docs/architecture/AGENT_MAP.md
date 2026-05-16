@@ -719,7 +719,7 @@ Entry points:
 - `FlashbackEncoderSink.EncodingLoop.cs` owns the background encode loop, drain ordering, force-rotate drain orchestration, cancellation handling, fatal cleanup, and final segment registration.
 - `FlashbackEncoderSink.PacketDrain.cs` owns bounded video/GPU/audio/microphone packet drains, encoder PTS resolution, latest-PTS and disk-byte refresh, and frame-encoded event dispatch.
 - `FlashbackEncoderSink.SegmentRotation.cs` owns rolling segment rotation, active-segment registration, disk-byte refresh after rotation, and rotation-failure recovery.
-- `FlashbackEncoderSink.ForceRotate.cs` owns export force-rotate requests, timeout/cancellation classification, pending-request cleanup, and force-rotate drain abort policy.
+- `FlashbackEncoderSink.ForceRotate.cs` owns export force-rotate requests, the `ForceRotateRequest` state machine, timeout/cancellation classification, pending-request cleanup, and force-rotate drain abort policy.
 - `FlashbackEncoderSink.Inputs.cs` owns raw/lease/GPU video enqueue entry points, audio/microphone enqueue entry points, and hot WASAPI writer adapters.
 - `FlashbackEncoderSink.Lifetime.cs` owns `StopAsync`, `Dispose`/`DisposeAsync`, deferred cleanup, cancellation/disposal helpers, and stop-drain timeout classification.
 - `FlashbackEncoderSink.Recording.cs` owns the `IRecordingSink.StartAsync` adapter, retroactive recording begin/cancel/end lifecycle, recording PTS boundaries, and recording availability checks.
