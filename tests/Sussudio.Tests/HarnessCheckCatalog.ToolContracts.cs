@@ -36,6 +36,9 @@ static partial class Program
             "Architecture source-shape ReadRepoFile paths resolve",
             ArchitectureDocs_ReadRepoFileLiteralPathsResolve);
         await AddCheckAsync(results,
+            "Architecture cleanup plan references existing repo files",
+            ArchitectureCleanupPlan_FileReferencesResolve);
+        await AddCheckAsync(results,
             "Architecture agent map test-owner paths use resolving code spans",
             ArchitectureAgentMap_TestOwnerPathsUseCodeSpansAndResolve);
         await AddCheckAsync(results,

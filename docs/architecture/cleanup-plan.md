@@ -407,11 +407,13 @@ command guards, UI settings, capture-mode routing, and Flashback cleanup
 ownership partials. Keep new automation tests in the closest owner file instead
 of regrowing the root catch-all.
 
-`tests/Sussudio.Tests/MainViewModel.Capture.Tests.cs` is now only the
-capture-facing MainViewModel surface and shared source-inspection helper shell.
-Capture regression coverage is split into preview startup, Flashback export
-locking, Flashback coordinator/UI routing, Flashback backend lifecycle, and
-Flashback frame-rate/enable-disable owner files.
+`tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
+capture-facing MainViewModel source-inspection helpers. Capture regression
+coverage is split across the `tests/Sussudio.Tests/MainViewModel.Capture.*.cs`
+family, including preview startup, Flashback export locking, Flashback
+coordinator/UI routing, Flashback backend lifecycle, capture selection policy,
+output path, audio monitoring, reinitialization, and Flashback
+frame-rate/enable-disable owner files.
 
 `tests/Sussudio.Tests/SnapshotModels.Tests.cs` is now the shared snapshot-model
 reflection/spec helper shell. Snapshot model contract coverage is split into
