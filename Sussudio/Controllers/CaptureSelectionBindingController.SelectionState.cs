@@ -1,6 +1,5 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Linq;
 using Microsoft.UI.Xaml.Controls;
 using Sussudio.Models;
 
@@ -16,11 +15,9 @@ internal sealed partial class CaptureSelectionBindingController
             return;
         }
 
-        var matchingDevice = _context.ViewModel.SelectedDevice != null
-            ? _context.ViewModel.Devices.FirstOrDefault(device =>
-                string.Equals(device.Id, _context.ViewModel.SelectedDevice.Id, StringComparison.OrdinalIgnoreCase))
-            : null;
-        matchingDevice ??= _context.ViewModel.Devices.FirstOrDefault();
+        var matchingDevice = CaptureComboBoxSelectionNormalizer.ResolveCaptureDeviceSelection(
+            _context.ViewModel.Devices,
+            _context.ViewModel.SelectedDevice);
         if (matchingDevice == null)
         {
             return;
@@ -60,11 +57,9 @@ internal sealed partial class CaptureSelectionBindingController
             return;
         }
 
-        var matchingDevice = _context.ViewModel.SelectedAudioInputDevice != null
-            ? _context.ViewModel.AudioInputDevices.FirstOrDefault(device =>
-                string.Equals(device.Id, _context.ViewModel.SelectedAudioInputDevice.Id, StringComparison.OrdinalIgnoreCase))
-            : null;
-        matchingDevice ??= _context.ViewModel.AudioInputDevices.FirstOrDefault();
+        var matchingDevice = CaptureComboBoxSelectionNormalizer.ResolveAudioInputDeviceSelection(
+            _context.ViewModel.AudioInputDevices,
+            _context.ViewModel.SelectedAudioInputDevice);
         if (matchingDevice == null)
         {
             return;
@@ -89,11 +84,9 @@ internal sealed partial class CaptureSelectionBindingController
             return;
         }
 
-        var matchingDevice = _context.ViewModel.SelectedMicrophoneDevice != null
-            ? _context.ViewModel.MicrophoneDevices.FirstOrDefault(device =>
-                string.Equals(device.Id, _context.ViewModel.SelectedMicrophoneDevice.Id, StringComparison.OrdinalIgnoreCase))
-            : null;
-        matchingDevice ??= _context.ViewModel.MicrophoneDevices.FirstOrDefault();
+        var matchingDevice = CaptureComboBoxSelectionNormalizer.ResolveAudioInputDeviceSelection(
+            _context.ViewModel.MicrophoneDevices,
+            _context.ViewModel.SelectedMicrophoneDevice);
         if (matchingDevice == null)
         {
             return;
@@ -122,10 +115,9 @@ internal sealed partial class CaptureSelectionBindingController
             return;
         }
 
-        var matchingResolution = _context.ViewModel.AvailableResolutions.FirstOrDefault(option =>
-            string.Equals(option.Value, _context.ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase))
-            ?? _context.ViewModel.AvailableResolutions.FirstOrDefault(option => option.IsEnabled)
-            ?? _context.ViewModel.AvailableResolutions.FirstOrDefault();
+        var matchingResolution = CaptureComboBoxSelectionNormalizer.ResolveResolutionSelection(
+            _context.ViewModel.AvailableResolutions,
+            _context.ViewModel.SelectedResolution);
         if (matchingResolution == null)
         {
             return;
@@ -157,9 +149,11 @@ internal sealed partial class CaptureSelectionBindingController
 
         if (_context.ViewModel.IsAutoFrameRateSelected)
         {
-            var autoOption = _context.ViewModel.AvailableFrameRates
-                .FirstOrDefault(IsAutoFrameRateOption);
-            if (autoOption != null)
+            var autoOption = CaptureComboBoxSelectionNormalizer.ResolveFrameRateSelection(
+                _context.ViewModel.AvailableFrameRates,
+                _context.ViewModel.SelectedFrameRate,
+                isAutoFrameRateSelected: true);
+            if (autoOption != null && CaptureComboBoxSelectionNormalizer.IsAutoFrameRateOption(autoOption))
             {
                 if (!ReferenceEquals(_context.FrameRateComboBox.SelectedItem, autoOption))
                 {
@@ -170,22 +164,22 @@ internal sealed partial class CaptureSelectionBindingController
             }
         }
 
-        var matchingRate = _context.ViewModel.AvailableFrameRates
-            .FirstOrDefault(option => IsFrameRateMatch(option.Value, _context.ViewModel.SelectedFrameRate))
-            ?? _context.ViewModel.AvailableFrameRates.FirstOrDefault(option => option.IsEnabled)
-            ?? _context.ViewModel.AvailableFrameRates.FirstOrDefault();
+        var matchingRate = CaptureComboBoxSelectionNormalizer.ResolveFrameRateSelection(
+            _context.ViewModel.AvailableFrameRates,
+            _context.ViewModel.SelectedFrameRate,
+            isAutoFrameRateSelected: false);
         if (matchingRate == null)
         {
             return;
         }
 
-        if (!IsFrameRateMatch(matchingRate.Value, _context.ViewModel.SelectedFrameRate))
+        if (!CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(matchingRate.Value, _context.ViewModel.SelectedFrameRate))
         {
             _context.ViewModel.SelectedFrameRate = matchingRate.Value;
         }
 
         if (_context.FrameRateComboBox.SelectedItem is not FrameRateOption currentFps ||
-            !IsFrameRateMatch(currentFps.Value, matchingRate.Value))
+            !CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(currentFps.Value, matchingRate.Value))
         {
             _context.FrameRateComboBox.SelectedItem = matchingRate;
         }
@@ -203,7 +197,7 @@ internal sealed partial class CaptureSelectionBindingController
             return;
         }
 
-        EnsureStringComboBoxSelection(
+        ApplyStringComboBoxSelection(
             _context.FormatComboBox,
             _context.ViewModel.AvailableRecordingFormats,
             () => _context.ViewModel.SelectedRecordingFormat,
@@ -211,27 +205,27 @@ internal sealed partial class CaptureSelectionBindingController
     }
 
     public void EnsureQualitySelection() =>
-        EnsureStringComboBoxSelection(
+        ApplyStringComboBoxSelection(
             _context.QualityComboBox,
             _context.ViewModel.AvailableQualities,
             () => _context.ViewModel.SelectedQuality,
             value => _context.ViewModel.SelectedQuality = value);
 
     public void EnsurePresetSelection() =>
-        EnsureStringComboBoxSelection(
+        ApplyStringComboBoxSelection(
             _context.PresetComboBox,
             _context.ViewModel.AvailablePresets,
             () => _context.ViewModel.SelectedPreset,
             value => _context.ViewModel.SelectedPreset = value);
 
     public void EnsureSplitEncodeModeSelection() =>
-        EnsureStringComboBoxSelection(
+        ApplyStringComboBoxSelection(
             _context.SplitEncodeComboBox,
             _context.ViewModel.AvailableSplitEncodeModes,
             () => _context.ViewModel.SelectedSplitEncodeMode,
             value => _context.ViewModel.SelectedSplitEncodeMode = value);
 
-    private static void EnsureStringComboBoxSelection(
+    private static void ApplyStringComboBoxSelection(
         ComboBox comboBox,
         ObservableCollection<string> items,
         Func<string?> getVmProp,
@@ -244,9 +238,8 @@ internal sealed partial class CaptureSelectionBindingController
         }
 
         var vmValue = getVmProp();
-        var match = items.FirstOrDefault(item => string.Equals(item, vmValue, StringComparison.OrdinalIgnoreCase))
-            ?? items.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(match))
+        var match = CaptureComboBoxSelectionNormalizer.ResolveStringSelection(items, vmValue);
+        if (match == null)
         {
             return;
         }
@@ -261,10 +254,4 @@ internal sealed partial class CaptureSelectionBindingController
             comboBox.SelectedItem = match;
         }
     }
-
-    private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
-        => Math.Abs(a - b) < tolerance;
-
-    private static bool IsAutoFrameRateOption(FrameRateOption option)
-        => option.Value <= 0 || option.FriendlyValue <= 0;
 }

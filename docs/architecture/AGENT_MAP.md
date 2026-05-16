@@ -1881,8 +1881,11 @@ Primary current owners:
   collection-change debounce/queued sync plus available-option property-change
   rebinding,
   `Sussudio/Controllers/CaptureSelectionBindingController.SelectionState.cs`
-  owns selected-item normalization and selected-device property-change
-  reconciliation, and
+  owns selected-item UI/ViewModel application and selected-device
+  property-change reconciliation,
+  `Sussudio/Controllers/CaptureComboBoxSelectionNormalizer.cs` owns pure
+  capture/audio/microphone/resolution/frame-rate/string ComboBox
+  selection and fallback matching, and
   `Sussudio/Controllers/CaptureSelectionBindingController.DeviceAudio.cs` owns
   device-audio mode/gain control projection.
   `Sussudio/Controllers/CaptureSelectionBindingController.PropertyChanges.cs`
@@ -1914,7 +1917,9 @@ Primary current owners:
   projection, and `CaptureOptionBindingController.SelectionHandlers.cs` owns
   resolution/frame-rate selection handlers plus video-format/custom-bitrate/HDR
   event bindings during `SetupBindings()` and custom-bitrate property-change
-  value projection. Recording format, quality, preset, and split-encode string
+  value projection, reusing `CaptureComboBoxSelectionNormalizer` for shared
+  frame-rate auto/exact matching. Recording format, quality, preset, and
+  split-encode string
   selection handlers live with
   `CaptureSelectionBindingController`.
   `MainWindow.CaptureOptionBindings.cs` and

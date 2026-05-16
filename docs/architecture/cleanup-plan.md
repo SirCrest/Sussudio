@@ -1983,10 +1983,12 @@ root controller owns collection wiring, recording string-selection event
 handlers, and pending-device apply state,
 `.Context.cs` owns the XAML control dependency bag, `.SelectionSync.cs` owns
 collection-change debounce/queued sync plus available-option property-change
-rebinding, `.SelectionState.cs` owns selected-item normalization and
-selected-device property-change reconciliation, and `.DeviceAudio.cs` owns
-device-audio mode/gain projection. `.PropertyChanges.cs` owns the
-capture-selection `PropertyChanged` router, while
+rebinding, `.SelectionState.cs` owns selected-item UI/ViewModel application and
+selected-device property-change reconciliation,
+`CaptureComboBoxSelectionNormalizer.cs` owns pure capture/audio/microphone/
+resolution/frame-rate/string ComboBox selection and fallback matching, and
+`.DeviceAudio.cs` owns device-audio mode/gain projection. `.PropertyChanges.cs`
+owns the capture-selection `PropertyChanged` router, while
 `MainWindow.CaptureSelectionBindings.cs` keeps the old method names as the
 XAML-facing adapter for binding setup and cross-controller calls.
 
@@ -2016,8 +2018,9 @@ collection setup and initial capture/recording option projection, and
 `CaptureOptionBindingController.SelectionHandlers.cs` owns resolution/frame-rate
 selection handlers, video-format/custom-bitrate event bindings, and click-based
 HDR/true-HDR toggle bindings plus custom-bitrate property-change value
-projection. The controller delegates presentation affordances back through the
-capture-option presentation adapter and delegates recording
+projection while reusing `CaptureComboBoxSelectionNormalizer` for shared
+frame-rate auto/exact matching. The controller delegates presentation
+affordances back through the capture-option presentation adapter and delegates recording
 format/quality/preset/split-encode string selection to
 `CaptureSelectionBindingController`. `MainWindow.CaptureOptionBindings.cs` and
 `MainWindow.RecordingOptionBindings.cs` keep only the old method names used by

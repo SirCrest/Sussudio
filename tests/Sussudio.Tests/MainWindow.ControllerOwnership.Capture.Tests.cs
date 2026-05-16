@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Reflection;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ static partial class Program
         var propertyChangesText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.PropertyChanges.cs").Replace("\r\n", "\n");
         var selectionSyncText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.SelectionSync.cs").Replace("\r\n", "\n");
         var selectionStateText = ReadRepoFile("Sussudio/Controllers/CaptureSelectionBindingController.SelectionState.cs").Replace("\r\n", "\n");
+        var selectionNormalizerText = ReadRepoFile("Sussudio/Controllers/CaptureComboBoxSelectionNormalizer.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private CaptureSelectionBindingController _captureSelectionBindingController = null!;");
         AssertContains(adapterText, "private void InitializeCaptureSelectionBindingController()");
@@ -111,9 +113,19 @@ static partial class Program
         AssertContains(selectionStateText, "public void EnsureQualitySelection()");
         AssertContains(selectionStateText, "public void EnsurePresetSelection()");
         AssertContains(selectionStateText, "public void EnsureSplitEncodeModeSelection()");
-        AssertContains(selectionStateText, "private static void EnsureStringComboBoxSelection(");
-        AssertContains(selectionStateText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
-        AssertContains(selectionStateText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
+        AssertContains(selectionStateText, "CaptureComboBoxSelectionNormalizer.ResolveCaptureDeviceSelection(");
+        AssertContains(selectionStateText, "CaptureComboBoxSelectionNormalizer.ResolveAudioInputDeviceSelection(");
+        AssertContains(selectionStateText, "CaptureComboBoxSelectionNormalizer.ResolveResolutionSelection(");
+        AssertContains(selectionStateText, "CaptureComboBoxSelectionNormalizer.ResolveFrameRateSelection(");
+        AssertContains(selectionStateText, "CaptureComboBoxSelectionNormalizer.ResolveStringSelection(items, vmValue);");
+        AssertContains(selectionNormalizerText, "internal static class CaptureComboBoxSelectionNormalizer");
+        AssertContains(selectionNormalizerText, "public static CaptureDevice? ResolveCaptureDeviceSelection(");
+        AssertContains(selectionNormalizerText, "public static AudioInputDevice? ResolveAudioInputDeviceSelection(");
+        AssertContains(selectionNormalizerText, "public static ResolutionOption? ResolveResolutionSelection(");
+        AssertContains(selectionNormalizerText, "public static FrameRateOption? ResolveFrameRateSelection(");
+        AssertContains(selectionNormalizerText, "public static string? ResolveStringSelection(");
+        AssertContains(selectionNormalizerText, "public static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
+        AssertContains(selectionNormalizerText, "public static bool IsAutoFrameRateOption(FrameRateOption option)");
         AssertContains(selectionStateText, "DEVICE_SELECTION_SYNC");
         AssertContains(selectionStateText, "EnsureDeviceSelection();");
         AssertContains(selectionStateText, "UpdateDeviceApplyButtonState();");
@@ -144,7 +156,12 @@ static partial class Program
         AssertOccursBefore(selectionStateText, "public void EnsureFormatSelection()", "public void EnsureQualitySelection()");
         AssertOccursBefore(selectionStateText, "public void EnsureQualitySelection()", "public void EnsurePresetSelection()");
         AssertOccursBefore(selectionStateText, "public void EnsurePresetSelection()", "public void EnsureSplitEncodeModeSelection()");
-        AssertOccursBefore(selectionStateText, "public void EnsureSplitEncodeModeSelection()", "private static void EnsureStringComboBoxSelection(");
+        AssertDoesNotContain(selectionStateText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
+        AssertDoesNotContain(selectionStateText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
+        AssertDoesNotContain(selectionStateText, "private static void EnsureStringComboBoxSelection(");
+        AssertDoesNotContain(selectionStateText, "items.FirstOrDefault(item => string.Equals(item, vmValue, StringComparison.OrdinalIgnoreCase))");
+        AssertDoesNotContain(selectionStateText, "AvailableResolutions.FirstOrDefault(option =>");
+        AssertDoesNotContain(selectionStateText, "AvailableFrameRates.FirstOrDefault(option =>");
         AssertContains(deviceAudioText, "public void ApplyDeviceAudioControlState()");
         AssertContains(deviceAudioText, "public void EnsureDeviceAudioModeSelection()");
         AssertContains(controllerText, "public bool HasPendingDeviceSelection()");
@@ -196,6 +213,103 @@ static partial class Program
         AssertDoesNotContain(propertyChangedText, "HandleAvailableSplitEncodeModesPropertyChanged();");
 
         return Task.CompletedTask;
+    }
+
+    private static Task CaptureComboBoxSelectionNormalizer_PreservesSelectionFallbacks()
+    {
+        var normalizerType = RequireType("Sussudio.Controllers.CaptureComboBoxSelectionNormalizer");
+        var captureDeviceType = RequireType("Sussudio.Models.CaptureDevice");
+        var audioInputDeviceType = RequireType("Sussudio.Models.AudioInputDevice");
+        var resolutionType = RequireType("Sussudio.Models.ResolutionOption");
+        var frameRateType = RequireType("Sussudio.Models.FrameRateOption");
+        var resolveCaptureDevice = RequireNormalizerMethod(normalizerType, "ResolveCaptureDeviceSelection");
+        var resolveAudioInputDevice = RequireNormalizerMethod(normalizerType, "ResolveAudioInputDeviceSelection");
+        var resolveResolution = RequireNormalizerMethod(normalizerType, "ResolveResolutionSelection");
+        var resolveFrameRate = RequireNormalizerMethod(normalizerType, "ResolveFrameRateSelection");
+        var resolveString = RequireNormalizerMethod(normalizerType, "ResolveStringSelection");
+
+        var staleCaptureDevice = CreateNormalizerDevice(captureDeviceType, "DEVICE-A", "old device");
+        var firstCaptureDevice = CreateNormalizerDevice(captureDeviceType, "device-b", "first device");
+        var liveCaptureDevice = CreateNormalizerDevice(captureDeviceType, "device-a", "live device");
+        var captureDevices = CreateNormalizerList(captureDeviceType, firstCaptureDevice, liveCaptureDevice);
+        AssertEqual(
+            liveCaptureDevice,
+            resolveCaptureDevice.Invoke(null, new[] { captureDevices, staleCaptureDevice }),
+            "capture-device matching returns live collection instance by case-insensitive id");
+
+        var staleAudioDevice = CreateNormalizerDevice(audioInputDeviceType, "MIC-1", "old mic");
+        var firstAudioDevice = CreateNormalizerDevice(audioInputDeviceType, "line-1", "first input");
+        var liveAudioDevice = CreateNormalizerDevice(audioInputDeviceType, "mic-1", "live mic");
+        var audioDevices = CreateNormalizerList(audioInputDeviceType, firstAudioDevice, liveAudioDevice);
+        AssertEqual(
+            liveAudioDevice,
+            resolveAudioInputDevice.Invoke(null, new[] { audioDevices, staleAudioDevice }),
+            "audio-device matching returns live collection instance by case-insensitive id");
+
+        var disabledExactResolution = CreateResolutionOption(resolutionType, "3840x2160", 3840, 2160, isEnabled: false);
+        var enabledFallbackResolution = CreateResolutionOption(resolutionType, "1920x1080", 1920, 1080, isEnabled: true);
+        var resolutionOptions = CreateResolutionOptionList(resolutionType, disabledExactResolution, enabledFallbackResolution);
+        AssertEqual(
+            disabledExactResolution,
+            resolveResolution.Invoke(null, new[] { resolutionOptions, "3840X2160" }),
+            "resolution exact selected value wins before enabled fallback");
+        AssertEqual(
+            enabledFallbackResolution,
+            resolveResolution.Invoke(null, new[] { resolutionOptions, "1280x720" }),
+            "resolution falls back to first enabled value");
+
+        var disabledExactFrameRate = CreateFrameRateOption(frameRateType, 60d, 59.94d, "60000/1001", isEnabled: false);
+        var autoFrameRate = CreateFrameRateOption(frameRateType, 0d, 0d, string.Empty, isEnabled: true);
+        var enabledFrameRate = CreateFrameRateOption(frameRateType, 120d, 120d, "120/1", isEnabled: true);
+        var frameRateOptions = CreateFrameRateOptionList(frameRateType, disabledExactFrameRate, autoFrameRate, enabledFrameRate);
+        AssertEqual(
+            autoFrameRate,
+            resolveFrameRate.Invoke(null, new object[] { frameRateOptions, 59.94d, true }),
+            "auto frame-rate item wins when auto frame-rate is selected");
+        AssertEqual(
+            disabledExactFrameRate,
+            resolveFrameRate.Invoke(null, new object[] { frameRateOptions, 59.94d, false }),
+            "frame-rate exact selected value wins before enabled fallback");
+        AssertEqual(
+            autoFrameRate,
+            resolveFrameRate.Invoke(null, new object[] { frameRateOptions, 30d, false }),
+            "frame-rate fallback preserves first enabled item ordering");
+
+        AssertEqual(
+            "Quality",
+            resolveString.Invoke(null, new object[] { new[] { "Quality", "Preset" }, "quality" }),
+            "string fallback is case-insensitive");
+        AssertEqual(
+            "Quality",
+            resolveString.Invoke(null, new object[] { new[] { "Quality", "Preset" }, "Missing" }),
+            "string fallback uses the first item when no case-insensitive match exists");
+
+        return Task.CompletedTask;
+    }
+
+    private static MethodInfo RequireNormalizerMethod(Type normalizerType, string methodName)
+        => normalizerType.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+           ?? throw new InvalidOperationException($"CaptureComboBoxSelectionNormalizer.{methodName} was not found.");
+
+    private static object CreateNormalizerDevice(Type deviceType, string id, string name)
+    {
+        var device = Activator.CreateInstance(deviceType)
+            ?? throw new InvalidOperationException($"Failed to create {deviceType.Name}.");
+        SetPropertyOrBackingField(device, "Id", id);
+        SetPropertyOrBackingField(device, "Name", name);
+        return device;
+    }
+
+    private static object CreateNormalizerList(Type elementType, params object[] items)
+    {
+        var list = (IList)(Activator.CreateInstance(typeof(System.Collections.Generic.List<>).MakeGenericType(elementType))
+                           ?? throw new InvalidOperationException($"Failed to create list for {elementType.Name}."));
+        foreach (var item in items)
+        {
+            list.Add(item);
+        }
+
+        return list;
     }
 
     private static Task CaptureDeviceButtonActions_LiveInController()
@@ -496,12 +610,12 @@ static partial class Program
         AssertContains(controllerText, "_context.ResolutionComboBox.SelectionChanged +=");
         AssertContains(controllerText, "_context.FrameRateComboBox.SelectionChanged +=");
         AssertContains(controllerText, "!string.Equals(resolution.Value, _context.ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase)");
-        AssertContains(controllerText, "if (IsAutoFrameRateOption(frameRate))");
+        AssertContains(controllerText, "if (CaptureComboBoxSelectionNormalizer.IsAutoFrameRateOption(frameRate))");
         AssertContains(controllerText, "if (!_context.ViewModel.IsAutoFrameRateSelected)");
-        AssertContains(controllerText, "else if (!IsFrameRateMatch(frameRate.Value, _context.ViewModel.SelectedFrameRate))");
-        AssertContains(controllerText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
-        AssertContains(controllerText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
-        AssertContains(controllerText, "=> option.Value <= 0 || option.FriendlyValue <= 0;");
+        AssertContains(controllerText, "else if (!CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(frameRate.Value, _context.ViewModel.SelectedFrameRate))");
+        AssertDoesNotContain(controllerSelectionHandlersText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
+        AssertDoesNotContain(controllerSelectionHandlersText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
+        AssertDoesNotContain(controllerSelectionHandlersText, "=> option.Value <= 0 || option.FriendlyValue <= 0;");
         AssertContains(controllerText, "public void AttachRecordingOptionBindings()");
         AssertContains(controllerText, "_context.AttachRecordingStringSelectionBindings();");
         AssertContains(controllerText, "_context.VideoFormatComboBox.SelectionChanged +=");

@@ -22,14 +22,14 @@ internal sealed partial class CaptureOptionBindingController
             if (_context.FrameRateComboBox.SelectedItem is FrameRateOption frameRate &&
                 frameRate.IsEnabled)
             {
-                if (IsAutoFrameRateOption(frameRate))
+                if (CaptureComboBoxSelectionNormalizer.IsAutoFrameRateOption(frameRate))
                 {
                     if (!_context.ViewModel.IsAutoFrameRateSelected)
                     {
                         _context.ViewModel.SelectedFrameRate = frameRate.Value;
                     }
                 }
-                else if (!IsFrameRateMatch(frameRate.Value, _context.ViewModel.SelectedFrameRate))
+                else if (!CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(frameRate.Value, _context.ViewModel.SelectedFrameRate))
                 {
                     _context.ViewModel.SelectedFrameRate = frameRate.Value;
                 }
@@ -74,9 +74,4 @@ internal sealed partial class CaptureOptionBindingController
         }
     }
 
-    private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
-        => Math.Abs(a - b) < tolerance;
-
-    private static bool IsAutoFrameRateOption(FrameRateOption option)
-        => option.Value <= 0 || option.FriendlyValue <= 0;
 }

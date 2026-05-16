@@ -112,6 +112,9 @@ static partial class Program
             "Capture selection binding sync lives in controller",
             CaptureSelectionBindingSync_LivesInController);
         await AddCheckAsync(results,
+            "Capture combo-box selection normalizer preserves fallback rules",
+            CaptureComboBoxSelectionNormalizer_PreservesSelectionFallbacks);
+        await AddCheckAsync(results,
             "Capture device button actions live in controller",
             CaptureDeviceButtonActions_LiveInController);
         await AddCheckAsync(results,
