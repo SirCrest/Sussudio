@@ -4,8 +4,6 @@ namespace Sussudio.ViewModels;
 
 internal static partial class StatsPresentationBuilder
 {
-    private const double VisualRepeatTolerancePercent = 0.25;
-
     private static StatsMetricStatus ResolveDropStatus(double dropPercent)
         => dropPercent <= 0.01 ? StatsMetricStatus.Good :
            dropPercent <= 0.25 ? StatsMetricStatus.Warning :
@@ -121,29 +119,4 @@ internal static partial class StatsPresentationBuilder
            latencyMs <= 100 ? StatsMetricStatus.Good :
            latencyMs <= 150 ? StatsMetricStatus.Warning :
            StatsMetricStatus.Bad;
-
-    private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)
-    {
-        if (snapshot.VisualCadenceSamples <= 0)
-        {
-            return false;
-        }
-
-        var expectedRepeatPercent = GetExpectedVisualRepeatPercent(snapshot);
-        var allowedRepeatPercent = expectedRepeatPercent + VisualRepeatTolerancePercent;
-        return snapshot.VisualCadenceLongestRepeatRun <= 1 &&
-               snapshot.VisualCadenceRepeatPercent <= allowedRepeatPercent;
-    }
-
-    private static double GetExpectedVisualRepeatPercent(StatsSnapshot snapshot)
-    {
-        var sourceFps = Sanitize(snapshot.SourceFrameRateExact ?? snapshot.SourceExpectedFps);
-        var outputFps = Sanitize(snapshot.VisualCadenceOutputFps);
-        if (sourceFps <= 0 || outputFps <= sourceFps)
-        {
-            return 0;
-        }
-
-        return Math.Clamp((outputFps - sourceFps) / outputFps * 100.0, 0.0, 100.0);
-    }
 }

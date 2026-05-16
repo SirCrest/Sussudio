@@ -1544,8 +1544,8 @@ diagnostic health summary classification now lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticSummary.cs`; frame-time
 overlay presentation/range/sample text policy now lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs`; visual-cadence
-FPS/repeat/motion text formatting now lives in
-`Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs`; encoder dock
+FPS/repeat/motion text formatting and expected visual-repeat drift helpers now
+live in `Sussudio/ViewModels/StatsPresentationBuilder.Visual.cs`; encoder dock
 visibility, codec label, bitrate, and encoder drift text formatting now lives
 in `Sussudio/ViewModels/StatsPresentationBuilder.Encoder.cs`; detached
 stats-window text and telemetry-detail presentation now lives in
@@ -1554,8 +1554,9 @@ construction and HDMI/capture/preview resolution text now lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs`; keep
 `Sussudio/ViewModels/StatsPresentationBuilder.cs` focused on shared
 formatting helpers.
-Stats lane status classification and visual-repeat drift policy now live in
-`Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`.
+Stats lane status classification now lives in
+`Sussudio/ViewModels/StatsPresentationBuilder.Status.cs`, which consumes the
+visual-repeat drift result.
 Stats presentation DTO records/enums now live in
 `Sussudio/ViewModels/StatsPresentationModels.cs`.
 The UI stats snapshot contract lives in `Sussudio/ViewModels/StatsSnapshot.cs`;

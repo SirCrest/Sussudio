@@ -37,6 +37,9 @@ static partial class Program
             "Stats dock encoder presentation formats codec and bitrate",
             StatsDockEncoderPresentation_FormatsCodecAndBitrate);
         await AddCheckAsync(results,
+            "Stats visual presentation treats expected display repeat as good",
+            StatsVisualPresentation_TreatsExpectedDisplayRepeatAsGood);
+        await AddCheckAsync(results,
             "Stats snapshot construction lives in focused builder",
             StatsSnapshotConstruction_LivesInFocusedBuilder);
         await AddCheckAsync(results,

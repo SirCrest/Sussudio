@@ -34,6 +34,9 @@ static partial class Program
         AssertContains(statsPresentationVisualText, "private static string FormatVisualCadenceSummary(StatsSnapshot snapshot)");
         AssertContains(statsPresentationVisualText, "private static string FormatVisualMotionSummary(StatsSnapshot snapshot)");
         AssertContains(statsPresentationVisualText, "private static string FormatHz(double value)");
+        AssertContains(statsPresentationVisualText, "private const double VisualRepeatTolerancePercent = 0.25;");
+        AssertContains(statsPresentationVisualText, "private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)");
+        AssertContains(statsPresentationVisualText, "private static double GetExpectedVisualRepeatPercent(StatsSnapshot snapshot)");
         AssertContains(statsPresentationEncoderText, "internal static partial class StatsPresentationBuilder");
         AssertContains(statsPresentationEncoderText, "private static StatsEncoderPresentation BuildEncoderPresentation(StatsSnapshot snapshot)");
         AssertContains(statsPresentationEncoderText, "private static string FormatEncoderCodecName(string codecName)");
@@ -57,7 +60,9 @@ static partial class Program
         AssertContains(statsPresentationStatusText, "internal static partial class StatsPresentationBuilder");
         AssertContains(statsPresentationStatusText, "private static StatsMetricStatus ResolveFrameLaneStatus(");
         AssertContains(statsPresentationStatusText, "private static StatsMetricStatus ResolveDecodedVisualStatus(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationStatusText, "private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)");
+        AssertDoesNotContain(statsPresentationStatusText, "private const double VisualRepeatTolerancePercent = 0.25;");
+        AssertDoesNotContain(statsPresentationStatusText, "private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)");
+        AssertDoesNotContain(statsPresentationStatusText, "private static double GetExpectedVisualRepeatPercent(StatsSnapshot snapshot)");
         AssertContains(statsPresentationWindowText, "internal static partial class StatsPresentationBuilder");
         AssertContains(statsPresentationWindowText, "public static StatsWindowPresentation BuildStatsWindowPresentation(StatsSnapshot snapshot)");
         AssertContains(statsPresentationWindowText, "private static StatsWindowTelemetryDetailsPresentation BuildStatsWindowTelemetryDetails(");
