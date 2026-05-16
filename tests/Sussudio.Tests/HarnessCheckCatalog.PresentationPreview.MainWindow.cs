@@ -40,8 +40,8 @@ static partial class Program
             "Preview resize telemetry lives in controller",
             PreviewResizeTelemetry_LivesInController);
         await AddCheckAsync(results,
-            "Preview renderer runtime state lives in renderer partial",
-            PreviewRendererRuntimeState_LivesInRendererPartial);
+            "Preview renderer runtime state lives in host controller",
+            PreviewRendererHostController_OwnsRuntimeState);
         await AddCheckAsync(results,
             "Preview renderer startup plan builder preserves fallback policy",
             PreviewRendererStartupPlanBuilder_PreservesFallbackPolicy);

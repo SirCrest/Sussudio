@@ -15,8 +15,8 @@ public sealed partial class MainWindow
         {
             ViewModel = ViewModel,
             GetPreviewActivitySnapshot = () => new RecordingPreviewActivitySnapshot(
-                _d3dRenderer != null && PreviewSwapChainPanel.Visibility == Visibility.Visible,
-                _previewSource != null && PreviewImage.Visibility == Visibility.Visible,
+                _previewRendererHostController.HasD3DRenderer && PreviewSwapChainPanel.Visibility == Visibility.Visible,
+                _previewRendererHostController.IsCpuPreviewSourceAttached && PreviewImage.Visibility == Visibility.Visible,
                 NoDevicePlaceholder.Visibility == Visibility.Visible)
         });
     }

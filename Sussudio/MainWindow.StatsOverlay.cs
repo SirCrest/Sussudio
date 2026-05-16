@@ -70,7 +70,7 @@ public sealed partial class MainWindow
             GpuContent = GPU_Content,
             DiagnosticRowsController = statsDiagnosticRowsController,
             GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,
-            GetPendingPreviewFrameCount = () => _d3dRenderer?.PendingFrameCount,
+            GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,
             GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot()
         });
         _statsDockRefreshController = new StatsDockRefreshController(new StatsDockRefreshControllerContext

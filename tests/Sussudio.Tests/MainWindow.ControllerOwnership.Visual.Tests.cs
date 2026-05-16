@@ -139,7 +139,7 @@ static partial class Program
         AssertContains(adapterText, "private PreviewFadeInController _previewFadeInController = null!;");
         AssertContains(adapterText, "private void InitializePreviewFadeInController()");
         AssertContains(adapterText, "DispatcherQueue = _dispatcherQueue,");
-        AssertContains(adapterText, "GetRenderer = () => _d3dRenderer,");
+        AssertContains(adapterText, "GetRenderer = () => _previewRendererHostController.Renderer,");
         AssertContains(adapterText, "AnimatePreviewInAsync = AnimatePreviewInAsync,");
         AssertContains(adapterText, "StartPreviewAudioFadeIn = () => StartPreviewAudioFadeIn(),");
         AssertContains(adapterText, "=> _previewFadeInController.Schedule();");

@@ -23,8 +23,8 @@ static partial class Program
         AssertContains(mainWindowStatsSnapshotText, "private StatsSnapshot GetStatsSnapshot()");
         AssertContains(mainWindowStatsSnapshotText, "private StatsSnapshotProvider _statsSnapshotProvider = null!;");
         AssertContains(mainWindowStatsSnapshotText, "GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,");
-        AssertContains(mainWindowStatsSnapshotText, "GetRenderer = () => _d3dRenderer,");
-        AssertContains(mainWindowStatsSnapshotText, "GetPreviewMinPresentationIntervalMs = () => _previewMinPresentationIntervalMs");
+        AssertContains(mainWindowStatsSnapshotText, "GetRenderer = () => _previewRendererHostController.Renderer,");
+        AssertContains(mainWindowStatsSnapshotText, "GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs");
         AssertContains(mainWindowStatsSnapshotText, "IsPreviewing = () => ViewModel.IsPreviewing,");
         AssertContains(mainWindowStatsSnapshotText, "IsRecording = () => ViewModel.IsRecording");
         AssertContains(mainWindowStatsSnapshotText, "=> _statsSnapshotProvider.GetSnapshot();");

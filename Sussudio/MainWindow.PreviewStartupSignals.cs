@@ -153,7 +153,7 @@ public sealed partial class MainWindow
 
     private void LogPreviewStartupPlaybackSnapshot(string reason)
     {
-        var renderer = _d3dRenderer;
+        var renderer = _previewRendererHostController.Renderer;
         if (renderer == null)
         {
             Logger.Log(

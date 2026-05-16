@@ -12,8 +12,8 @@ static partial class Program
         AssertContains(adapterText, "private void InitializeRecordingButtonActionController()");
         AssertContains(adapterText, "ViewModel = ViewModel,");
         AssertContains(adapterText, "GetPreviewActivitySnapshot = () => new RecordingPreviewActivitySnapshot(");
-        AssertContains(adapterText, "_d3dRenderer != null && PreviewSwapChainPanel.Visibility == Visibility.Visible");
-        AssertContains(adapterText, "_previewSource != null && PreviewImage.Visibility == Visibility.Visible");
+        AssertContains(adapterText, "_previewRendererHostController.HasD3DRenderer && PreviewSwapChainPanel.Visibility == Visibility.Visible");
+        AssertContains(adapterText, "_previewRendererHostController.IsCpuPreviewSourceAttached && PreviewImage.Visibility == Visibility.Visible");
         AssertContains(adapterText, "NoDevicePlaceholder.Visibility == Visibility.Visible");
         AssertContains(adapterText, "private Task ToggleRecordingFromButtonAsync()");
         AssertContains(adapterText, "=> _recordingButtonActionController.ToggleRecordingAsync();");

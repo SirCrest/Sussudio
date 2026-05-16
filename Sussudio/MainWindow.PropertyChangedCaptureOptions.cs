@@ -78,7 +78,7 @@ public sealed partial class MainWindow
             TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
         }
 
-        _d3dRenderer?.SetHdrPassthroughEnabled(ViewModel.IsTrueHdrPreviewEnabled);
+        _previewRendererHostController.SetHdrPassthroughEnabled(ViewModel.IsTrueHdrPreviewEnabled);
     }
 
     private void HandleShowAllCaptureOptionsChanged()

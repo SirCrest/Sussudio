@@ -14,8 +14,8 @@ public sealed partial class MainWindow
         _statsSnapshotProvider = new StatsSnapshotProvider(new StatsSnapshotProviderContext
         {
             GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,
-            GetRenderer = () => _d3dRenderer,
-            GetPreviewMinPresentationIntervalMs = () => _previewMinPresentationIntervalMs,
+            GetRenderer = () => _previewRendererHostController.Renderer,
+            GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs,
             IsPreviewing = () => ViewModel.IsPreviewing,
             IsRecording = () => ViewModel.IsRecording
         });

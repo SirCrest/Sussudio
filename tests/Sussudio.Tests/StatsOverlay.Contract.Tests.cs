@@ -139,7 +139,7 @@ static partial class Program
         AssertContains(statsOverlayText, "ResourceOwner = StatsDockPanel,");
         AssertContains(statsOverlayText, "DiagnosticsContent = Diagnostics_Content");
         AssertContains(statsOverlayText, "GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,");
-        AssertContains(statsOverlayText, "GetPendingPreviewFrameCount = () => _d3dRenderer?.PendingFrameCount,");
+        AssertContains(statsOverlayText, "GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,");
         AssertContains(statsOverlayText, "GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot()");
         AssertContains(refreshControllerText, "_context.DiagnosticRowsController.UpdateDiagnostics(presentation);");
         AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateDecodeSection();");

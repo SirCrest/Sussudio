@@ -16,14 +16,14 @@ static partial class Program
         AssertContains(windowSizingText, "private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)");
         AssertContains(windowSizingText, "_previewResizeTelemetryController.HandleSizeChanged(");
         AssertContains(windowSizingText, "ViewModel.IsPreviewing,");
-        AssertContains(windowSizingText, "_d3dRenderer != null,");
+        AssertContains(windowSizingText, "_previewRendererHostController.HasD3DRenderer,");
         AssertContains(windowSizingText, "PreviewSwapChainPanel.Visibility);");
         AssertContains(windowSizingText, "private void ResetPreviewResizeTelemetry()");
         AssertContains(windowSizingText, "=> _previewResizeTelemetryController.Reset();");
         AssertContains(mainWindowText, "InitializePreviewResizeTelemetryController();");
         AssertContains(mainWindowText, "mainContent.SizeChanged += MainWindow_SizeChanged;");
         AssertContains(shutdownCleanupText, "mainContent.SizeChanged -= MainWindow_SizeChanged;");
-        AssertContains(previewRendererText, "ResetPreviewResizeTelemetry();");
+        AssertContains(previewRendererText, "ResetPreviewResizeTelemetry = ResetPreviewResizeTelemetry,");
         AssertContains(controllerText, "internal sealed class PreviewResizeTelemetryController");
         AssertContains(controllerText, "private long _previewLastResizeLogTick;");
         AssertContains(controllerText, "public void HandleSizeChanged(bool isPreviewing, bool hasD3dRenderer, Visibility previewVisibility)");
@@ -44,11 +44,17 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task PreviewRendererRuntimeState_LivesInRendererPartial()
+    private static Task PreviewRendererHostController_OwnsRuntimeState()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowFamilyText = string.Join(
+                "\n",
+                Directory.GetFiles(Path.Combine(GetRepoRoot(), "Sussudio"), "MainWindow*.cs")
+                    .Select(File.ReadAllText))
+            .Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
         var previewRendererReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewRendererReinit.cs").Replace("\r\n", "\n");
+        var previewRendererHostControllerText = ReadRepoFile("Sussudio/Controllers/PreviewRendererHostController.cs").Replace("\r\n", "\n");
         var previewSurfaceText = ReadRepoFile("Sussudio/MainWindow.PreviewSurface.cs").Replace("\r\n", "\n");
         var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/PreviewSurfacePresentationController.cs").Replace("\r\n", "\n");
         var previewRendererStartupPlanBuilderText = ReadRepoFile("Sussudio/Controllers/PreviewRendererStartupPlanBuilder.cs").Replace("\r\n", "\n");
@@ -58,8 +64,24 @@ static partial class Program
         var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/StatsSnapshotProvider.cs").Replace("\r\n", "\n");
         var statsSnapshotProviderRenderMetricsText = ReadRepoFile("Sussudio/Controllers/StatsSnapshotProvider.RenderMetrics.cs").Replace("\r\n", "\n");
 
-        AssertContains(previewRendererText, "private SoftwareBitmapSource? _previewSource;");
-        AssertContains(previewRendererText, "private D3D11PreviewRenderer? _d3dRenderer;");
+        AssertContains(previewRendererText, "private PreviewRendererHostController _previewRendererHostController = null!;");
+        AssertContains(previewRendererText, "private void InitializePreviewRendererHostController()");
+        AssertContains(previewRendererText, "GetPreviewSwapChainPanel = () => PreviewSwapChainPanel,");
+        AssertContains(previewRendererText, "SetPreviewSwapChainPanel = panel => PreviewSwapChainPanel = panel,");
+        AssertContains(previewRendererText, "PreviewContentGridSizeChangedHandler = OnPreviewContentGridSizeChanged,");
+        AssertContains(previewRendererText, "PreviewSwapChainPanelSizeChangedHandler = OnPreviewSwapChainPanelSizeChanged,");
+        AssertContains(previewRendererText, "ClearPreviewReinitAnimatingForShutdown = () =>");
+        AssertContains(previewRendererText, "ConfirmPreviewFirstVisual = ConfirmPreviewFirstVisual,");
+        AssertContains(previewRendererText, "MarkStartupFailed = reason => SetPreviewStartupState(PreviewStartupState.Failed, reason),");
+        AssertContains(previewRendererText, "ConfigurePreviewStartupSignals = ConfigurePreviewStartupSignals,");
+        AssertContains(previewRendererText, "private Task StartPreviewRendererAsync()");
+        AssertContains(previewRendererText, "=> _previewRendererHostController.StartAsync();");
+        AssertContains(previewRendererText, "private Task StopPreviewRendererAsync()");
+        AssertContains(previewRendererText, "=> _previewRendererHostController.StopAsync();");
+        AssertContains(previewRendererText, "private void StopPreviewForShutdown()");
+        AssertContains(previewRendererText, "=> _previewRendererHostController.StopForShutdown();");
+        AssertContains(mainWindowText, "InitializePreviewRendererHostController();");
+
         AssertContains(previewSurfaceText, "XAML-facing preview surface adapter");
         AssertContains(previewSurfaceText, "private PreviewSurfacePresentationController _previewSurfacePresentationController = null!;");
         AssertContains(previewSurfaceText, "private void InitializePreviewSurfacePresentationController()");
@@ -72,7 +94,7 @@ static partial class Program
         AssertContains(previewSurfaceControllerText, "private SpriteVisual? _videoShadowVisual;");
         AssertContains(previewSurfaceControllerText, "private SpriteVisual? _controlBarShadowVisual;");
         AssertContains(previewSurfaceText, "var scale = PreviewSwapChainPanel.XamlRoot?.RasterizationScale ?? 1.0;");
-        AssertContains(previewSurfaceText, "_d3dRenderer?.OnPanelSizeChanged(e.NewSize.Width, e.NewSize.Height, scale);");
+        AssertContains(previewSurfaceText, "_previewRendererHostController.OnPanelSizeChanged(e.NewSize.Width, e.NewSize.Height, scale);");
         AssertContains(previewSurfaceControllerText, "public required Func<SwapChainPanel> GetPreviewSwapChainPanel { get; init; }");
         AssertContains(previewSurfaceControllerText, "var previewSwapChainPanel = _context.GetPreviewSwapChainPanel();");
         AssertContains(previewSurfaceControllerText, "public void UpdateVideoContentOverlays(int? sourceWidth, int? sourceHeight)");
@@ -81,27 +103,47 @@ static partial class Program
         AssertContains(previewSurfaceControllerText, "public void ClearVideoFrameShadow()");
         AssertContains(previewSurfaceControllerText, "public void FadeInVideoFrameShadow(int delayMs, int durationMs)");
         AssertContains(previewSurfaceControllerText, "public void FadeInControlBarShadow(int delayMs, int durationMs)");
-        AssertContains(previewRendererText, "private long _previewFramesArrived;");
-        AssertContains(previewRendererText, "private long _previewFramesDisplayed;");
-        AssertContains(previewRendererText, "private long _previewFramesDropped;");
-        AssertContains(previewRendererText, "private long _previewLastPresentedTick;");
-        AssertContains(previewRendererText, "private double _previewMinPresentationIntervalMs;");
-        AssertContains(previewRendererReinitText, "private long _lastRendererStopTick;");
-        AssertContains(previewRendererReinitText, "private long _rendererReinitUnsafeWindows;");
-        AssertContains(previewRendererReinitText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
-        AssertContains(previewRendererReinitText, "private void RecordPreviewRendererReinitUnsafeWindow(D3D11PreviewRenderer? previousRenderer, bool reinitAnimating)");
-        AssertContains(previewRendererReinitText, "private void MarkPreviewRendererStopped()");
-        AssertContains(previewRendererReinitText, "private void DisposeD3DPreviewRendererForReinit()");
-        AssertContains(previewRendererReinitText, "renderer.RetireSharedDeviceReferenceForReinit();");
-        AssertContains(previewRendererReinitText, "private void ReplacePreviewSwapChainPanelSurface()");
-        AssertContains(previewRendererReinitText, "D3D11_RENDERER_REINIT_UNSAFE_WINDOW");
-        AssertContains(previewRendererReinitText, "PREVIEW_REINIT_SWAPCHAIN_PANEL_REPLACED");
-        AssertContains(previewRendererText, "RecordPreviewRendererReinitUnsafeWindow(_d3dRenderer, _isPreviewReinitAnimating);");
-        AssertContains(previewRendererText, "MarkPreviewRendererStopped();");
-        AssertContains(previewRendererText, "private PreviewRendererStartupPlan BuildPreviewRendererStartupPlan()");
-        AssertContains(previewRendererText, "PreviewRendererStartupPlanBuilder.Build(");
-        AssertContains(previewRendererText, "var startupPlan = BuildPreviewRendererStartupPlan();");
-        AssertContains(previewRendererText, "_previewMinPresentationIntervalMs = startupPlan.PreviewMinPresentationIntervalMs;");
+
+        AssertContains(previewRendererHostControllerText, "internal sealed class PreviewRendererHostControllerContext");
+        AssertContains(previewRendererHostControllerText, "internal sealed class PreviewRendererHostController");
+        AssertContains(previewRendererHostControllerText, "private SoftwareBitmapSource? _previewSource;");
+        AssertContains(previewRendererHostControllerText, "private D3D11PreviewRenderer? _d3dRenderer;");
+        AssertContains(previewRendererHostControllerText, "private long _previewFramesArrived;");
+        AssertContains(previewRendererHostControllerText, "private long _previewFramesDisplayed;");
+        AssertContains(previewRendererHostControllerText, "private long _previewFramesDropped;");
+        AssertContains(previewRendererHostControllerText, "private long _previewLastPresentedTick;");
+        AssertContains(previewRendererHostControllerText, "private double _previewMinPresentationIntervalMs;");
+        AssertContains(previewRendererHostControllerText, "private long _lastRendererStopTick;");
+        AssertContains(previewRendererHostControllerText, "private long _rendererReinitUnsafeWindows;");
+        AssertContains(previewRendererHostControllerText, "public D3D11PreviewRenderer? Renderer => _d3dRenderer;");
+        AssertContains(previewRendererHostControllerText, "public bool HasD3DRenderer => _d3dRenderer != null;");
+        AssertContains(previewRendererHostControllerText, "public bool IsCpuPreviewSourceAttached => _previewSource != null;");
+        AssertContains(previewRendererHostControllerText, "public double PreviewMinPresentationIntervalMs => _previewMinPresentationIntervalMs;");
+        AssertContains(previewRendererHostControllerText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
+        AssertContains(previewRendererHostControllerText, "public int? PendingFrameCount => _d3dRenderer?.PendingFrameCount;");
+        AssertContains(previewRendererHostControllerText, "private PreviewRendererStartupPlan BuildPreviewRendererStartupPlan()");
+        AssertContains(previewRendererHostControllerText, "PreviewRendererStartupPlanBuilder.Build(");
+        AssertContains(previewRendererHostControllerText, "var startupPlan = BuildPreviewRendererStartupPlan();");
+        AssertContains(previewRendererHostControllerText, "_previewMinPresentationIntervalMs = startupPlan.PreviewMinPresentationIntervalMs;");
+        AssertContains(previewRendererHostControllerText, "private void StartD3DRenderer(PreviewRendererStartupPlan startupPlan)");
+        AssertContains(previewRendererHostControllerText, "renderer.SetExpectedFrameRate(rendererFps);");
+        AssertContains(previewRendererHostControllerText, "renderer.Start(rendererWidth, rendererHeight, rendererFps, isHdr);");
+        AssertContains(previewRendererHostControllerText, "_context.ViewModel.SetPreviewFrameSink(_d3dRenderer);");
+        AssertContains(previewRendererHostControllerText, "PreviewStartupStrategy.D3D11VideoProcessor");
+        AssertContains(previewRendererHostControllerText, "_context.MarkPreviewRendererAttached();");
+        AssertContains(previewRendererHostControllerText, "private void StartCpuRenderer()");
+        AssertContains(previewRendererHostControllerText, "_context.ViewModel.SetPreviewFrameSink(null);");
+        AssertContains(previewRendererHostControllerText, "_previewSource = new SoftwareBitmapSource();");
+        AssertContains(previewRendererHostControllerText, "private void RecordPreviewRendererReinitUnsafeWindow(D3D11PreviewRenderer? previousRenderer, bool reinitAnimating)");
+        AssertContains(previewRendererHostControllerText, "private void MarkPreviewRendererStopped()");
+        AssertContains(previewRendererHostControllerText, "public void DisposeD3DPreviewRendererForReinit()");
+        AssertContains(previewRendererHostControllerText, "renderer.RetireSharedDeviceReferenceForReinit();");
+        AssertContains(previewRendererHostControllerText, "private void ReplacePreviewSwapChainPanelSurface()");
+        AssertContains(previewRendererHostControllerText, "D3D11_RENDERER_REINIT_UNSAFE_WINDOW");
+        AssertContains(previewRendererHostControllerText, "PREVIEW_REINIT_SWAPCHAIN_PANEL_REPLACED");
+        AssertContains(previewRendererReinitText, "=> _previewRendererHostController.RendererReinitUnsafeWindows;");
+        AssertContains(previewRendererReinitText, "=> _previewRendererHostController.DisposeD3DPreviewRendererForReinit();");
+
         AssertContains(previewRendererStartupPlanBuilderText, "internal sealed record PreviewRendererStartupPlan(");
         AssertContains(previewRendererStartupPlanBuilderText, "internal static class PreviewRendererStartupPlanBuilder");
         AssertContains(previewRendererStartupPlanBuilderText, "private const int DefaultWidth = 1920;");
@@ -112,13 +154,17 @@ static partial class Program
         AssertContains(previewRendererStartupPlanBuilderText, "var negotiatedWidth = sourceProbe?.SessionActive == true ? sourceProbe.CurrentWidth : 0;");
         AssertContains(previewRendererStartupPlanBuilderText, "var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : settingsWidth;");
         AssertContains(previewRendererStartupPlanBuilderText, "var rendererFps = negotiatedFps > 0 ? negotiatedFps : settingsFps;");
+
         AssertContains(previewRuntimeSnapshotText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
         AssertContains(previewRuntimeSnapshotText, "return GetPreviewRuntimeSnapshot();");
         AssertContains(previewRuntimeSnapshotText, "completion.TrySetResult(GetPreviewRuntimeSnapshot());");
         AssertContains(previewRuntimeSnapshotText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
         AssertContains(previewRuntimeSnapshotText, "return PreviewRuntimeSnapshotController.Build(new PreviewRuntimeSnapshotInput");
-        AssertContains(previewRuntimeSnapshotText, "D3DRenderer = _d3dRenderer,");
+        AssertContains(previewRuntimeSnapshotText, "D3DRenderer = _previewRendererHostController.Renderer,");
+        AssertContains(previewRuntimeSnapshotText, "PreviewSourceAttached = _previewRendererHostController.IsCpuPreviewSourceAttached,");
         AssertContains(previewRuntimeSnapshotText, "GpuElementVisible = PreviewSwapChainPanel.Visibility == Visibility.Visible,");
+        AssertContains(previewRuntimeSnapshotText, "FramesArrived = _previewRendererHostController.FramesArrived,");
+        AssertContains(previewRuntimeSnapshotText, "PreviewMinPresentationIntervalMs = _previewRendererHostController.PreviewMinPresentationIntervalMs,");
         AssertContains(previewRuntimeSnapshotText, "StartupState = CurrentPreviewStartupState.ToString(),");
         AssertContains(previewRuntimeSnapshotText, "GpuPositionEventCount = Interlocked.Read(ref _previewStartupPositionEventCount)");
         AssertContains(previewRuntimeSnapshotControllerText, "internal sealed class PreviewRuntimeSnapshotInput");
@@ -129,34 +175,39 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotControllerText, "return new PreviewRuntimeSnapshot");
         AssertContains(previewRuntimeSnapshotControllerText, "BlankSuspected = blankSuspected,");
         AssertContains(previewRuntimeSnapshotControllerText, "StallSuspected = stallSuspected,");
+
+        AssertContains(statsSnapshotText, "GetRenderer = () => _previewRendererHostController.Renderer,");
+        AssertContains(statsSnapshotText, "GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs");
+        AssertContains(statsSnapshotProviderText, "BuildRenderMetrics(_context.GetRenderer(), _context.GetPreviewMinPresentationIntervalMs())");
+        AssertContains(statsSnapshotProviderRenderMetricsText, "GetPresentCadenceMetrics(previewMinPresentationIntervalMs)");
+
         AssertDoesNotContain(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
         AssertDoesNotContain(previewRendererText, "var negotiatedWidth = sourceProbe.SessionActive ? sourceProbe.CurrentWidth : 0;");
         AssertDoesNotContain(previewRendererText, "var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : width;");
-        AssertContains(statsSnapshotText, "GetPreviewMinPresentationIntervalMs = () => _previewMinPresentationIntervalMs");
-        AssertContains(statsSnapshotProviderText, "BuildRenderMetrics(_context.GetRenderer(), _context.GetPreviewMinPresentationIntervalMs())");
-        AssertContains(statsSnapshotProviderRenderMetricsText, "GetPresentCadenceMetrics(previewMinPresentationIntervalMs)");
         AssertDoesNotContain(previewRuntimeSnapshotText, "return new PreviewRuntimeSnapshot");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetRenderCpuTimingMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetFrameOwnershipMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetDxgiFrameStatisticsMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetFrameLatencyWaitMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetPipelineLatencyMetrics()");
-        AssertDoesNotContain(mainWindowText, "private SoftwareBitmapSource? _previewSource;");
-        AssertDoesNotContain(mainWindowText, "private D3D11PreviewRenderer? _d3dRenderer;");
+        AssertDoesNotContain(mainWindowFamilyText, "private SoftwareBitmapSource? _previewSource;");
+        AssertDoesNotContain(mainWindowFamilyText, "private D3D11PreviewRenderer? _d3dRenderer;");
         AssertDoesNotContain(mainWindowText, "private SpriteVisual? _videoShadowVisual;");
         AssertDoesNotContain(mainWindowText, "private SpriteVisual? _controlBarShadowVisual;");
         AssertDoesNotContain(previewSurfaceText, "private SpriteVisual? _videoShadowVisual;");
         AssertDoesNotContain(previewSurfaceText, "private SpriteVisual? _controlBarShadowVisual;");
         AssertDoesNotContain(previewRendererText, "private SpriteVisual? _videoShadowVisual;");
         AssertDoesNotContain(previewRendererText, "private SpriteVisual? _controlBarShadowVisual;");
-        AssertDoesNotContain(mainWindowText, "private long _previewFramesArrived;");
-        AssertDoesNotContain(mainWindowText, "private long _previewFramesDisplayed;");
-        AssertDoesNotContain(mainWindowText, "private long _previewFramesDropped;");
-        AssertDoesNotContain(mainWindowText, "private long _previewLastPresentedTick;");
-        AssertDoesNotContain(mainWindowText, "private long _lastRendererStopTick;");
-        AssertDoesNotContain(mainWindowText, "private long _rendererReinitUnsafeWindows;");
-        AssertDoesNotContain(mainWindowText, "private double _previewMinPresentationIntervalMs;");
-        AssertDoesNotContain(mainWindowText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _previewFramesArrived;");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _previewFramesDisplayed;");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _previewFramesDropped;");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _previewLastPresentedTick;");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _lastRendererStopTick;");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _rendererReinitUnsafeWindows;");
+        AssertDoesNotContain(mainWindowFamilyText, "private double _previewMinPresentationIntervalMs;");
+        AssertDoesNotContain(mainWindowFamilyText, "new D3D11PreviewRenderer(");
+        AssertDoesNotContain(mainWindowFamilyText, "RetireSharedDeviceReferenceForReinit();");
+        AssertDoesNotContain(mainWindowText, "PreviewRendererStartupPlanBuilder.ResolveExpectedIntervalMs");
         AssertDoesNotContain(mainWindowText, "private double ResolvePreviewExpectedIntervalMs()");
         AssertDoesNotContain(previewRendererText, "private long _lastRendererStopTick;");
         AssertDoesNotContain(previewRendererText, "private long _rendererReinitUnsafeWindows;");

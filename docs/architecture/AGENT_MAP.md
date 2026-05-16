@@ -720,10 +720,13 @@ Primary current owners:
   transforms. `MainWindow.WindowSizing.cs` is the `SizeChanged` adapter.
   `Sussudio/Controllers/PreviewRendererStartupPlanBuilder.cs` owns renderer
   startup dimension/fps/HDR/min-present-interval planning.
-  `MainWindow.PreviewRenderer.cs` owns preview renderer instances, frame
-  counters, and renderer cadence state.
-  `MainWindow.PreviewRendererReinit.cs` owns preview renderer reinit safety
+  `Sussudio/Controllers/PreviewRendererHostController.cs` owns the hosted
+  preview renderer state: D3D renderer instance, CPU fallback source, frame
+  counters, renderer cadence interval, D3D/CPU start-stop flow, reinit safety
   telemetry, fresh SwapChainPanel replacement, and retired-renderer handoff.
+  `MainWindow.PreviewRenderer.cs` is the XAML-facing host adapter, while
+  `MainWindow.PreviewRendererReinit.cs` keeps the small public/reinit adapter
+  surface.
   `Sussudio/Controllers/PreviewSurfacePresentationController.cs` owns preview
   surface sizing, GPU panel visibility, and video/control-bar composition
   shadows. `MainWindow.PreviewSurface.cs` is the XAML-facing adapter.

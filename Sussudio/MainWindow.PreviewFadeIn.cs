@@ -12,7 +12,7 @@ public sealed partial class MainWindow
         _previewFadeInController = new PreviewFadeInController(new PreviewFadeInControllerContext
         {
             DispatcherQueue = _dispatcherQueue,
-            GetRenderer = () => _d3dRenderer,
+            GetRenderer = () => _previewRendererHostController.Renderer,
             AnimatePreviewInAsync = AnimatePreviewInAsync,
             StartPreviewAudioFadeIn = () => StartPreviewAudioFadeIn(),
         });

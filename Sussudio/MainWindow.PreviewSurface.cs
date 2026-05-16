@@ -27,7 +27,7 @@ public sealed partial class MainWindow
     {
         // Composition transform only - overlay sizing is driven by the container.
         var scale = PreviewSwapChainPanel.XamlRoot?.RasterizationScale ?? 1.0;
-        _d3dRenderer?.OnPanelSizeChanged(e.NewSize.Width, e.NewSize.Height, scale);
+        _previewRendererHostController.OnPanelSizeChanged(e.NewSize.Width, e.NewSize.Height, scale);
     }
 
     private void OnPreviewContentGridSizeChanged(object sender, SizeChangedEventArgs e)

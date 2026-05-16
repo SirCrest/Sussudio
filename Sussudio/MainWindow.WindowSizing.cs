@@ -19,7 +19,7 @@ public sealed partial class MainWindow
     {
         _previewResizeTelemetryController.HandleSizeChanged(
             ViewModel.IsPreviewing,
-            _d3dRenderer != null,
+            _previewRendererHostController.HasD3DRenderer,
             PreviewSwapChainPanel.Visibility);
     }
 

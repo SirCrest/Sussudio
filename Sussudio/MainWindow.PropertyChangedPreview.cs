@@ -65,7 +65,7 @@ public sealed partial class MainWindow
         // changes because WinUI can keep native DXGI state behind a panel even
         // after SetSwapChain(null). Replacing the surface happens after capture
         // teardown so the old renderer is no longer receiving frames.
-        var renderer = _d3dRenderer;
+        var renderer = _previewRendererHostController.Renderer;
         if (renderer != null)
         {
             Logger.Log("PREVIEW_REINIT_RENDERER_STOP: stopping render thread before pipeline teardown");
