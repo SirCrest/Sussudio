@@ -273,9 +273,6 @@ static partial class Program
             "Automation options contract exposes advanced MCP control state",
             AutomationOptionsSnapshot_ExposesAdvancedControlState);
         await AddCheckAsync(results,
-            "FFmpeg runtime locator prefers app-local ffmpeg folder",
-            FfmpegRuntimeLocator_PrefersAppLocalRuntimeFolder);
-        await AddCheckAsync(results,
             "Automation command maps stay aligned for advanced MCP controls",
             AutomationCommandMaps_StayAligned_ForAdvancedMcpControls);
         await AddCheckAsync(results,

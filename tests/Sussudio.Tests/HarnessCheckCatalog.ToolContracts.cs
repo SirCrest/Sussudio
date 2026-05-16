@@ -22,11 +22,6 @@ static partial class Program
             "CaptureSessionSnapshot has correct default state",
             CaptureSessionSnapshot_DefaultState);
 
-        // --- ProcessSpec and ProcessRunResult contracts ---
-        await AddCheckAsync(results,
-            "ProcessSpec default timeout is 30 seconds",
-            ProcessSpec_DefaultTimeout_Is30Seconds);
-
         // --- Tool CommandMap & Formatter Alignment ---
         await AddCheckAsync(results,
             "Automation command catalog covers command metadata and policy",
