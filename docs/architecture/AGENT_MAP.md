@@ -735,9 +735,11 @@ Primary current owners:
   screenshot result shaping. `Sussudio/Controllers/WindowScreenshotImageEncoder.cs`
   owns the pure PNG/BMP byte-stream encoding helpers. Keep
   `MainWindow.Screenshot.cs` as the `IAutomationWindowControl` adapter.
-- `Sussudio/Controllers/PreviewScreenshotController.cs` owns the XAML preview-
-  frame screenshot button workflow: output directory fallback, file naming,
-  preview-frame capture, status text, logging, and button enable/disable state.
+- `Sussudio/Controllers/PreviewScreenshotPlanPolicy.cs` owns the pure preview-
+  frame screenshot output-directory fallback, file naming, status text, and log
+  text policy. `Sussudio/Controllers/PreviewScreenshotController.cs` owns the
+  XAML preview-frame screenshot button workflow: directory creation,
+  preview-frame capture, logging side effects, and button enable/disable state.
   `MainWindow.PreviewScreenshot.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/WindowAutomationController.cs` owns window geometry
   automation plus the recordings-folder command. `MainWindow.WindowAutomation.cs`

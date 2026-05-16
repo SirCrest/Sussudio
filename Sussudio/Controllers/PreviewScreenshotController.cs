@@ -25,33 +25,29 @@ internal sealed class PreviewScreenshotController
     {
         if (!_context.ViewModel.IsPreviewing)
         {
-            _context.ViewModel.StatusText = "Start preview before capturing a screenshot";
+            _context.ViewModel.StatusText = PreviewScreenshotPlanPolicy.PreviewRequiredStatusText;
             return;
         }
 
-        var outputDir = _context.ViewModel.OutputPath;
-        if (string.IsNullOrWhiteSpace(outputDir))
-        {
-            outputDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Sussudio");
-        }
-
-        Directory.CreateDirectory(outputDir);
-        var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-        var filePath = Path.Combine(outputDir, $"Screenshot_{timestamp}.png");
+        var plan = PreviewScreenshotPlanPolicy.Create(
+            _context.ViewModel.OutputPath,
+            Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+            DateTime.Now);
+        Directory.CreateDirectory(plan.OutputDirectory);
 
         _context.ScreenshotButton.IsEnabled = false;
         try
         {
-            var result = await _context.ViewModel.CapturePreviewFrameAsync(filePath);
+            var result = await _context.ViewModel.CapturePreviewFrameAsync(plan.FilePath);
             if (result.Succeeded)
             {
-                _context.ViewModel.StatusText = $"Screenshot saved: {Path.GetFileName(filePath)}";
-                Logger.Log($"SCREENSHOT_SAVED path={filePath} width={result.CapturedWidth} height={result.CapturedHeight}");
+                _context.ViewModel.StatusText = PreviewScreenshotPlanPolicy.FormatSavedStatus(plan.FilePath);
+                Logger.Log(PreviewScreenshotPlanPolicy.FormatSavedLog(plan.FilePath, result.CapturedWidth, result.CapturedHeight));
             }
             else
             {
-                _context.ViewModel.StatusText = $"Screenshot failed: {result.Message}";
-                Logger.Log($"SCREENSHOT_FAILED reason={result.Message}");
+                _context.ViewModel.StatusText = PreviewScreenshotPlanPolicy.FormatFailedStatus(result.Message);
+                Logger.Log(PreviewScreenshotPlanPolicy.FormatFailedLog(result.Message));
             }
         }
         finally

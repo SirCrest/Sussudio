@@ -493,9 +493,11 @@ is only the automation adapter.
 
 Preview-frame screenshot button behavior now lives in
 `Sussudio/Controllers/PreviewScreenshotController.cs`.
-`MainWindow.PreviewScreenshot.cs` is the XAML-facing adapter for output
-directory fallback, file naming, preview-frame capture, status text, logging,
-and button enable/disable state.
+`Sussudio/Controllers/PreviewScreenshotPlanPolicy.cs` owns the pure output
+directory fallback, file naming, status text, and log text policy.
+`MainWindow.PreviewScreenshot.cs` is the XAML-facing adapter; the controller
+keeps directory creation, preview-frame capture, logging side effects, and
+button enable/disable state.
 Renderer-level preview frame capture request state and timeout/cancellation
 handling now live with the capture implementation in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs`.
