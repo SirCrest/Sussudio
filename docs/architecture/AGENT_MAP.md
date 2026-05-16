@@ -2350,7 +2350,8 @@ Primary owners:
 - `tools/ssctl/Formatters.Timeline.cs` owns performance timeline response
   validation and top-level orchestration.
 - `tools/ssctl/Formatters.Timeline.Rows.cs` owns performance timeline JSON row
-  projection and the private row model.
+  projection; `tools/ssctl/Formatters.Timeline.Rows.Model.cs` owns the private
+  row model.
 - `tools/ssctl/Formatters.Timeline.Rendering.cs` owns performance timeline
   table output.
 - `tools/ssctl/Formatters.Timeline.Summaries.cs` owns first-vs-last trend

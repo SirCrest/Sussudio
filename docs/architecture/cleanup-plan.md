@@ -325,7 +325,8 @@ text in
 `Formatters.Snapshot.Source.cs`, diagnostic-event text in
 `Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
 performance timeline orchestration in `Formatters.Timeline.cs`, timeline row
-projection in `Formatters.Timeline.Rows.cs`, table output in
+projection in `Formatters.Timeline.Rows.cs`, the private row model in
+`Formatters.Timeline.Rows.Model.cs`, table output in
 `Formatters.Timeline.Rendering.cs`, trend summaries in
 `Formatters.Timeline.Summaries.cs`, standalone memory/GC summaries in
 `Formatters.Memory.cs`, and shared JSON/result helpers in

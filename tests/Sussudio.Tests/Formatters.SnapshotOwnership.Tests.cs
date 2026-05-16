@@ -150,6 +150,7 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/Formatters.Options.cs"), "public static string FormatOptions");
         var ssctlTimelineRootSource = ReadRepoFile("tools/ssctl/Formatters.Timeline.cs");
         var ssctlTimelineRowsSource = ReadRepoFile("tools/ssctl/Formatters.Timeline.Rows.cs");
+        var ssctlTimelineRowsModelSource = ReadRepoFile("tools/ssctl/Formatters.Timeline.Rows.Model.cs");
         var ssctlTimelineRenderingSource = ReadRepoFile("tools/ssctl/Formatters.Timeline.Rendering.cs");
         var ssctlTimelineSummariesSource = ReadRepoFile("tools/ssctl/Formatters.Timeline.Summaries.cs");
         AssertContains(ssctlTimelineRootSource, "public static string FormatTimeline");
@@ -158,7 +159,8 @@ static partial class Program
         AssertDoesNotContain(ssctlTimelineRootSource, "private sealed class TimelineRow");
         AssertDoesNotContain(ssctlTimelineRootSource, "new StringBuilder()");
         AssertDoesNotContain(ssctlTimelineRootSource, "== Trend Summary");
-        AssertContains(ssctlTimelineRowsSource, "private sealed class TimelineRow");
+        AssertDoesNotContain(ssctlTimelineRowsSource, "private sealed class TimelineRow");
+        AssertContains(ssctlTimelineRowsModelSource, "private sealed class TimelineRow");
         AssertContains(ssctlTimelineRowsSource, "AutomationSnapshotFormatter.GetDouble(item, \"CaptureFps\")");
         AssertContains(ssctlTimelineRenderingSource, "private static string RenderTimeline(IReadOnlyList<TimelineRow> entries)");
         AssertContains(ssctlTimelineRenderingSource, "Performance Timeline ({entries.Count} samples)");
