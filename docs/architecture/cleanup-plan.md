@@ -1836,7 +1836,7 @@ lives in `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`.
 
 Settings shelf visibility, the animation gate, and show/hide storyboard
 construction now live in
-`Sussudio/Controllers/SettingsShelfController.cs`. `MainWindow.SettingsShelf.cs`
+`Sussudio/Controllers/Shell/SettingsShelfController.cs`. `MainWindow.SettingsShelf.cs`
 is the XAML-facing adapter.
 
 Splash phrase file lookup, Markdown-ish parsing, cached defaults, and exception
@@ -1857,11 +1857,11 @@ active-storyboard cleanup, and control-bar shadow fade. `MainWindow.LaunchEntran
 is the XAML-facing adapter.
 
 Control-bar button ownership and hover/press/release scale behavior now live in
-`Sussudio/Controllers/ControlBarAnimationController.cs`.
+`Sussudio/Controllers/Shell/ControlBarAnimationController.cs`.
 `MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter.
 
 Static shell ThemeShadow and translation setup for the control bar and record
-button now live in `Sussudio/Controllers/ShellElevationController.cs`.
+button now live in `Sussudio/Controllers/Shell/ShellElevationController.cs`.
 `MainWindow.ShellElevation.cs` is the XAML-facing adapter.
 
 Preview shell/content fade and scale transitions plus unavailable-placeholder
@@ -1963,7 +1963,7 @@ route order. Preview reinit transition state and log ownership now live in
 handoff and XAML completion side effects.
 
 Bottom status-strip projection now lives in
-`Sussudio/Controllers/StatusStripPresentationController.cs`, while
+`Sussudio/Controllers/Shell/StatusStripPresentationController.cs`, while
 `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing adapter and
 owns the status-strip `PropertyChanged` router. Recording-time updates still
 refresh the window title only while recording.
@@ -2005,11 +2005,11 @@ mic-meter row animation state now live in
 `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.
 
 Responsive shell layout is split between
-`Sussudio/Controllers/ResponsiveShellLayoutPolicy.cs`, which owns the
+`Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs`, which owns the
 control-bar label breakpoint and capture-settings narrow/wide grid-slot policy,
-`Sussudio/Controllers/ControlBarLabelVisibilityController.cs`, which applies
+`Sussudio/Controllers/Shell/ControlBarLabelVisibilityController.cs`, which applies
 that policy to the complete control-bar label set, and
-`Sussudio/Controllers/ResponsiveShellLayoutController.cs`, which applies
+`Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs`, which applies
 capture-settings grid placement to XAML elements.
 `MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
 Responsive layout ownership checks live in

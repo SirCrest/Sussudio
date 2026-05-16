@@ -830,7 +830,7 @@ Primary current owners:
   `Sussudio/Controllers/Window/WindowTitleController.cs` owns window title
   base/build-stamp formatting and the recording-time suffix used by property
   changes.
-- `Sussudio/Controllers/StatusStripPresentationController.cs` owns bottom
+- `Sussudio/Controllers/Shell/StatusStripPresentationController.cs` owns bottom
   status-strip projection: status text, recording time, disk warning,
   disk-space text, recording size, recording bitrate, and the Flashback bitrate
   fallback used while Flashback is enabled and recording is idle.
@@ -1788,7 +1788,7 @@ Primary current owners:
   and playback-position polling timers. `MainWindow.FlashbackPolling.cs` is the
   XAML-facing adapter; CTI anchor timing lives in
   `FlashbackPlayheadMotionController`.
-- `Sussudio/Controllers/SettingsShelfController.cs` owns settings shelf
+- `Sussudio/Controllers/Shell/SettingsShelfController.cs` owns settings shelf
   visibility, the animation gate, and show/hide storyboard construction.
   `MainWindow.SettingsShelf.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Launch/SplashLoadingPhraseCatalog.cs` owns splash phrase
@@ -1806,10 +1806,10 @@ Primary current owners:
   active-storyboard cleanup, and the delayed control-bar shadow fade routed
   through `CompositionShadowFadeAnimator`. `MainWindow.LaunchEntrance.cs` is
   the XAML-facing adapter.
-- `Sussudio/Controllers/ControlBarAnimationController.cs` owns the control-bar
+- `Sussudio/Controllers/Shell/ControlBarAnimationController.cs` owns the control-bar
   button list used by launch entrance animation plus hover/press/release scale
   behavior. `MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/ShellElevationController.cs` owns static shell
+- `Sussudio/Controllers/Shell/ShellElevationController.cs` owns static shell
   ThemeShadow and translation setup for the control bar and record button.
   `MainWindow.ShellElevation.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/PreviewTransitionAnimationController.cs` owns preview
@@ -1927,11 +1927,11 @@ Primary current owners:
 - `Sussudio/Controllers/MicrophoneControlsController.cs` owns microphone volume
   slider synchronization, save triggers, shelf enablement, and mic-meter row
   animation state. `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/ControlBarLabelVisibilityController.cs` owns applying
+- `Sussudio/Controllers/Shell/ControlBarLabelVisibilityController.cs` owns applying
   responsive visibility for the complete control-bar label set.
-  `Sussudio/Controllers/ResponsiveShellLayoutController.cs` owns applying
+  `Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs` owns applying
   capture-settings grid placement to XAML elements.
-  `Sussudio/Controllers/ResponsiveShellLayoutPolicy.cs` owns
+  `Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs` owns
   the control-bar label breakpoint and narrow/wide placement policy.
   `MainWindow.ResponsiveShellLayout.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns

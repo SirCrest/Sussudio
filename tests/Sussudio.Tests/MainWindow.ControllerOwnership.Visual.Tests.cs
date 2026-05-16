@@ -9,7 +9,7 @@ static partial class Program
         var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchEntranceAnimationController.Shell.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBarAnimations.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/ControlBarAnimationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ControlBarAnimationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private ControlBarAnimationController _controlBarAnimationController = null!;");
         AssertContains(adapterText, "private void InitializeControlBarAnimationController()");
@@ -33,7 +33,7 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellElevation.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/ShellElevationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellElevationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private ShellElevationController _shellElevationController = null!;");
         AssertContains(adapterText, "private void InitializeShellElevationController()");

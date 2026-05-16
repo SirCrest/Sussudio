@@ -9,9 +9,9 @@ static partial class Program
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ResponsiveShellLayout.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/ResponsiveShellLayoutController.cs").Replace("\r\n", "\n");
-        var labelControllerText = ReadRepoFile("Sussudio/Controllers/ControlBarLabelVisibilityController.cs").Replace("\r\n", "\n");
-        var policyText = ReadRepoFile("Sussudio/Controllers/ResponsiveShellLayoutPolicy.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs").Replace("\r\n", "\n");
+        var labelControllerText = ReadRepoFile("Sussudio/Controllers/Shell/ControlBarLabelVisibilityController.cs").Replace("\r\n", "\n");
+        var policyText = ReadRepoFile("Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
