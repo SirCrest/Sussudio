@@ -38,6 +38,10 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "RecordingVideoQueueLatencyP99Ms = recordingHealth.VideoQueueLatencyMetrics.P99Ms");
         AssertContains(captureSnapshotsSource, "RecordingVideoQueueOldestFrameAgeMs = recordingHealth.VideoQueueOldestFrameAgeMs");
         AssertContains(captureSnapshotsSource, "RecordingVideoBackpressureWaitMs = recordingHealth.VideoBackpressureWaitMs");
+        AssertContains(captureSnapshotsSource, "RecordingCudaQueueDepth = recordingHealth.CudaQueueDepth");
+        AssertContains(captureSnapshotsSource, "RecordingCudaFramesDropped = recordingHealth.CudaFramesDropped");
+        AssertContains(captureSnapshotsSource, "sink?.CudaQueueCount ?? 0");
+        AssertContains(captureSnapshotsSource, "sink?.CudaFramesDropped ?? 0");
         AssertContains(captureSnapshotsSource, "fbSink?.VideoEncoderPacketsWritten ?? 0");
         AssertContains(captureSnapshotsSource, "fbSink?.VideoSequenceGaps ?? 0");
         AssertContains(captureSnapshotsSource, "fbSink?.VideoQueueOldestFrameAgeMs ?? 0");

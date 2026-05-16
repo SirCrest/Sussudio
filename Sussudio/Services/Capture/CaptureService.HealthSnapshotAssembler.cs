@@ -1,6 +1,5 @@
 using System;
 using Sussudio.Models;
-using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Capture;
 
@@ -10,7 +9,6 @@ public partial class CaptureService
     private CaptureHealthSnapshot AssembleCaptureHealthSnapshot(
         CaptureHealthSnapshotAssemblyFields fields)
     {
-        var sink = fields.Sink;
         var unifiedVideoCapture = fields.UnifiedVideoCapture;
         var fatalCleanupInProgress = fields.FatalCleanupInProgress;
         var flashbackCleanupInProgress = fields.FlashbackCleanupInProgress;
@@ -261,11 +259,11 @@ public partial class CaptureService
             RecordingGpuQueueMaxDepth = recordingHealth.GpuQueueMaxDepth,
             RecordingGpuFramesEnqueued = recordingHealth.GpuFramesEnqueued,
             RecordingGpuFramesDropped = recordingHealth.GpuFramesDropped,
-            RecordingCudaQueueDepth = sink?.CudaQueueCount ?? 0,
-            RecordingCudaQueueCapacity = sink?.CudaQueueCapacityFrames ?? 0,
-            RecordingCudaQueueMaxDepth = sink?.CudaQueueMaxDepth ?? 0,
-            RecordingCudaFramesEnqueued = sink?.CudaFramesEnqueued ?? 0,
-            RecordingCudaFramesDropped = sink?.CudaFramesDropped ?? 0,
+            RecordingCudaQueueDepth = recordingHealth.CudaQueueDepth,
+            RecordingCudaQueueCapacity = recordingHealth.CudaQueueCapacity,
+            RecordingCudaQueueMaxDepth = recordingHealth.CudaQueueMaxDepth,
+            RecordingCudaFramesEnqueued = recordingHealth.CudaFramesEnqueued,
+            RecordingCudaFramesDropped = recordingHealth.CudaFramesDropped,
             FlashbackEncodingFailed = recordingHealth.FlashbackEncodingFailed,
             FlashbackEncodingFailureType = recordingHealth.FlashbackFailureType,
             FlashbackEncodingFailureMessage = recordingHealth.FlashbackFailureMessage,
@@ -448,10 +446,10 @@ public partial class CaptureService
             AvSyncCaptureDriftRateMsPerSec = avSyncHealth.CaptureDriftRateMsPerSec,
             AvSyncEncoderDriftMs = avSyncHealth.EncoderDriftMs,
             AvSyncEncoderCorrectionSamples = avSyncHealth.EncoderCorrectionSamples
-        };    }
+        };
+    }
 
     private readonly record struct CaptureHealthSnapshotAssemblyFields(
-        LibAvRecordingSink? Sink,
         UnifiedVideoCapture? UnifiedVideoCapture,
         bool FatalCleanupInProgress,
         bool FlashbackCleanupInProgress,

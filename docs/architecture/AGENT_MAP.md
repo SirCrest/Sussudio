@@ -465,7 +465,8 @@ Important entry points:
   state, cadence, decode, audio-master, and command-queue field projection for
   health snapshots.
 - `CaptureService.HealthSnapshotRecording.cs` owns recording health snapshot
-  orchestration and the `RecordingHealthSnapshotFields` handoff.
+  orchestration, LibAv-only CUDA queue projection, and the
+  `RecordingHealthSnapshotFields` handoff.
 - `CaptureService.HealthSnapshotRecordingActiveBackend.cs` owns active
   recording backend selection, LibAv-vs-Flashback sink fallback, failure
   precedence, and backend-specific queue/counter normalization for health

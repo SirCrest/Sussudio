@@ -39,7 +39,6 @@ public partial class CaptureService
 
         return AssembleCaptureHealthSnapshot(
             new CaptureHealthSnapshotAssemblyFields(
-                sink,
                 unifiedVideoCapture,
                 fatalCleanupInProgress,
                 flashbackCleanupInProgress,

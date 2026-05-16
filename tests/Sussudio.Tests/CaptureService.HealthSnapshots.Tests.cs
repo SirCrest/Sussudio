@@ -17,6 +17,8 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotText, "new CaptureHealthSnapshotAssemblyFields(");
         AssertContains(healthSnapshotAssemblerText, "private CaptureHealthSnapshot AssembleCaptureHealthSnapshot(");
         AssertContains(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields(");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "LibAvRecordingSink? Sink");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "var sink = fields.Sink;");
         AssertContains(healthSnapshotAssemblerText, "TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(snapshotUtcUnixMs),");
         AssertDoesNotContain(healthSnapshotText, "return new CaptureHealthSnapshot");
 
@@ -95,6 +97,13 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotText, "var recordingHealth = CaptureRecordingHealthSnapshotFields(sink, fbSink);");
         AssertContains(healthSnapshotAssemblerText, "RecordingEncodingFailed = recordingHealth.EncodingFailed,");
         AssertContains(healthSnapshotAssemblerText, "RecordingVideoQueueLatencyP95Ms = recordingHealth.VideoQueueLatencyMetrics.P95Ms,");
+        AssertContains(healthSnapshotAssemblerText, "RecordingCudaQueueDepth = recordingHealth.CudaQueueDepth,");
+        AssertContains(healthSnapshotAssemblerText, "RecordingCudaQueueCapacity = recordingHealth.CudaQueueCapacity,");
+        AssertContains(healthSnapshotAssemblerText, "RecordingCudaQueueMaxDepth = recordingHealth.CudaQueueMaxDepth,");
+        AssertContains(healthSnapshotAssemblerText, "RecordingCudaFramesEnqueued = recordingHealth.CudaFramesEnqueued,");
+        AssertContains(healthSnapshotAssemblerText, "RecordingCudaFramesDropped = recordingHealth.CudaFramesDropped,");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "RecordingCudaQueueDepth = sink?.CudaQueueCount ?? 0,");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "RecordingCudaFramesDropped = sink?.CudaFramesDropped ?? 0,");
         AssertDoesNotContain(healthSnapshotText, "var activeRecordingVideoQueueLatencyMetrics");
         AssertDoesNotContain(healthSnapshotText, "var flashbackIsRecordingBackend = IsFlashbackRecordingBackendOwnedByRecording();");
 
@@ -103,6 +112,13 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(recordingText, "IsFlashbackRecordingBackendOwnedByRecording()");
         AssertContains(recordingText, "CaptureActiveRecordingBackendHealthSnapshotFields(");
         AssertContains(recordingText, "activeRecording.FlashbackVideoQueueLatencyMetrics");
+        AssertContains(recordingText, "sink?.CudaQueueCount ?? 0");
+        AssertContains(recordingText, "sink?.CudaQueueCapacityFrames ?? 0");
+        AssertContains(recordingText, "sink?.CudaQueueMaxDepth ?? 0");
+        AssertContains(recordingText, "sink?.CudaFramesEnqueued ?? 0");
+        AssertContains(recordingText, "sink?.CudaFramesDropped ?? 0");
+        AssertContains(recordingText, "int CudaQueueDepth");
+        AssertContains(recordingText, "long CudaFramesDropped");
         AssertContains(recordingText, "private readonly record struct RecordingHealthSnapshotFields");
         AssertDoesNotContain(recordingText, "var flashbackVideoQueueLatencyMetrics");
         AssertDoesNotContain(recordingText, "sink?.VideoQueueLatencyMetrics ??");
