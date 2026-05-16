@@ -258,6 +258,9 @@ static partial class Program
             "LibAv encoder video submission lives in focused partial",
             LibAvEncoder_VideoSubmissionLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "LibAv encoder initialization lives in focused partial",
+            LibAvEncoder_InitializationLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "LibAv encoder diagnostics helpers live in focused partial",
             LibAvEncoder_DiagnosticsHelpersLiveInFocusedPartial);
         await AddCheckAsync(results,

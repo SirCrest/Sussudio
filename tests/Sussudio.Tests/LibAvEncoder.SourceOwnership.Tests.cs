@@ -56,6 +56,24 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task LibAvEncoder_InitializationLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
+            .Replace("\r\n", "\n");
+        var initializationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Initialization.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(initializationText, "public static void InitializeFFmpeg(bool requireNativeRuntime = false)");
+        AssertContains(initializationText, "public void Initialize(LibAvEncoderOptions options)");
+        AssertContains(initializationText, "ThrowIfError(ffmpeg.avcodec_open2(_videoCodecCtx, codec, null), \"avcodec_open2\");");
+        AssertContains(initializationText, "ApplyMp4MuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, \"open\");");
+        AssertContains(initializationText, "CleanupResources(writeTrailer: false);");
+        AssertDoesNotContain(rootText, "public static void InitializeFFmpeg(bool requireNativeRuntime = false)");
+        AssertDoesNotContain(rootText, "public void Initialize(LibAvEncoderOptions options)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task LibAvEncoder_SetupAndModelsLiveInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")

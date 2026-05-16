@@ -783,7 +783,13 @@ leave live send/drain/finalize paths in the owner partials.
 LibAv encoder A/V sync diagnostics now live in
 `Sussudio/Services/Recording/LibAvEncoder.AvSync.cs`. Keep drift-correction
 thresholds, sync counters, current-drift reporting, and sync warning logs there
-so the root encoder stays focused on initialization, lifecycle, and teardown.
+so the root encoder stays focused on rotation lifecycle and teardown.
+
+LibAv encoder initialization now lives in
+`Sussudio/Services/Recording/LibAvEncoder.Initialization.cs`. Keep FFmpeg
+runtime initialization forwarding and the public encoder open/setup sequence
+there, including native allocation order, hardware-frame fallback behavior,
+muxer-option lifetime, open-state timing, and startup failure cleanup.
 
 LibAv encoder packet writing now lives in
 `Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs`. Keep video encoder
@@ -803,8 +809,8 @@ D3D11 device-removed checks there.
 LibAv encoder audio stream handling now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone
 stream state, public status properties, packet writing, pending-sample flush,
-and sample queue/drain helpers there; leave encoder initialization, rotation,
-and finalization in `LibAvEncoder.cs`.
+and sample queue/drain helpers there; leave rotation and finalization in
+`LibAvEncoder.cs`.
 
 LibAv encoder audio submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs`. Keep the public
