@@ -34,17 +34,6 @@ internal static partial class CommandHandlers
         return parsed;
     }
 
-    private static double ParseFlashbackPositionMs(string value)
-    {
-        var parsed = ParseDouble(value);
-        if (!double.IsFinite(parsed) || parsed < 0 || parsed > TimeSpan.MaxValue.TotalMilliseconds)
-        {
-            throw new UsageException("Flashback position must be finite, non-negative, and within TimeSpan range.");
-        }
-
-        return parsed;
-    }
-
     private static double ParseFlashbackExportSeconds(string value)
     {
         var parsed = ParseDouble(value);

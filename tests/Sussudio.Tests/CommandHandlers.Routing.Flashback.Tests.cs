@@ -46,5 +46,46 @@ static partial class Program
             true,
             Directory.Exists(Path.GetDirectoryName(flashbackExportOutputPath) ?? "."),
             "flashback export parent directory created");
+
+        var flashbackSeekPipeName = $"ssctl-flashback-seek-{Guid.NewGuid():N}";
+        var (flashbackSeekExitCode, flashbackSeekRequest) = await CaptureSsctlRequestAsync(
+                context,
+                flashbackSeekPipeName,
+                new List<string> { "flashback", "seek", "1234.5" })
+            .ConfigureAwait(false);
+
+        AssertEqual(0, flashbackSeekExitCode, "flashback seek exit code");
+        AssertSsctlCommandRequest(
+            flashbackSeekRequest,
+            "FlashbackAction",
+            ("action", "seek"),
+            ("positionMs", 1234.5d));
+
+        var flashbackScrubPipeName = $"ssctl-flashback-scrub-{Guid.NewGuid():N}";
+        var (flashbackScrubExitCode, flashbackScrubRequest) = await CaptureSsctlRequestAsync(
+                context,
+                flashbackScrubPipeName,
+                new List<string> { "flashback", "begin-scrub", "250" })
+            .ConfigureAwait(false);
+
+        AssertEqual(0, flashbackScrubExitCode, "flashback begin-scrub exit code");
+        AssertSsctlCommandRequest(
+            flashbackScrubRequest,
+            "FlashbackAction",
+            ("action", "begin-scrub"),
+            ("positionMs", 250d));
+
+        var flashbackClearRangePipeName = $"ssctl-flashback-clear-range-{Guid.NewGuid():N}";
+        var (flashbackClearRangeExitCode, flashbackClearRangeRequest) = await CaptureSsctlRequestAsync(
+                context,
+                flashbackClearRangePipeName,
+                new List<string> { "flashback", "clear-range" })
+            .ConfigureAwait(false);
+
+        AssertEqual(0, flashbackClearRangeExitCode, "flashback clear-range exit code");
+        AssertSsctlCommandRequest(
+            flashbackClearRangeRequest,
+            "FlashbackAction",
+            ("action", "clear-in-out-points"));
     }
 }

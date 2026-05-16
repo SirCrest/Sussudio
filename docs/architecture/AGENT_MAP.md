@@ -2286,7 +2286,9 @@ Primary owners:
 - `tools/ssctl/CommandHandlers.Verification.cs` owns recording/file
   verification commands.
 - `tools/ssctl/CommandHandlers.Flashback.cs` owns Flashback enablement,
-  playback, scrub, marker, segment, and restart commands.
+  timeline, segment, restart, and top-level Flashback command routing.
+  `tools/ssctl/CommandHandlers.Flashback.Actions.cs` owns Flashback playback,
+  scrub, marker/range, position parsing, and `FlashbackAction` payload shaping.
   `tools/ssctl/CommandHandlers.Flashback.Export.cs` owns Flashback export CLI
   flag parsing, output-path defaulting, parent-directory creation, and
   `FlashbackExport` payload shaping.

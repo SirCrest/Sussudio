@@ -292,10 +292,13 @@ recordings-folder CLI command. `CommandHandlers.AutomationFlow.cs` owns
 wait/assert/probe scripting flow commands. `CommandHandlers.UiVisibility.cs`
 owns stats, settings, and frame-time visibility commands.
 `CommandHandlers.Verification.cs` owns recording/file verification commands.
-`CommandHandlers.Flashback.cs` owns Flashback enablement/playback/scrub/marker/
-segment/restart CLI commands. `CommandHandlers.Flashback.Export.cs` owns
-Flashback export flags, output path defaulting, directory creation, and payload
-shape. Support partials remain: `CommandHandlers.Context.cs` owns
+`CommandHandlers.Flashback.cs` owns Flashback enablement, timeline, segment,
+restart, and top-level Flashback command routing.
+`CommandHandlers.Flashback.Actions.cs` owns Flashback playback/scrub/marker/
+range CLI actions, position parsing, and `FlashbackAction` payload shaping.
+`CommandHandlers.Flashback.Export.cs` owns Flashback export flags, output path
+defaulting, directory creation, and payload shape. Support partials remain:
+`CommandHandlers.Context.cs` owns
 per-invocation command context,
 `CommandHandlers.Flags.cs` owns flag consumption and optional flag values,
 `CommandHandlers.Arguments.cs` owns usage validation and argument joining,

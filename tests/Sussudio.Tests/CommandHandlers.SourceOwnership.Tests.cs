@@ -54,7 +54,16 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "ConsumeFlag(context.Rest, \"--json\")");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Verification.cs"), "ParseOptionalStringFlag(context.Rest, \"--verification-profile\")");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "HandleFlashbackAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "return HandleFlashbackActionAsync(context, subcommand);");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "return HandleFlashbackExportAsync(context);");
+        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "[\"action\"] = \"begin-scrub\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "private static Task<int> HandleFlashbackActionAsync(CommandContext context, string subcommand)");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "[\"action\"] = \"begin-scrub\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "[\"action\"] = \"clear-in-out-points\"");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "private static double ParseFlashbackPositionMs(string value)");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Actions.cs"), "Flashback position must be finite, non-negative, and within TimeSpan range.");
+        AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Values.cs"), "private static double ParseFlashbackPositionMs(string value)");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.cs"), "ParseFlashbackExportSeconds(context.Rest[1])");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "private static Task<int> HandleFlashbackExportAsync(CommandContext context)");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Flashback.Export.cs"), "ConsumeFlag(context.Rest, \"--range\")");
