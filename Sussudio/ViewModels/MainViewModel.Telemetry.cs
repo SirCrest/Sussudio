@@ -29,14 +29,6 @@ public partial class MainViewModel
     private SourceTelemetryOrigin _lastAppliedFrameRateOrigin = SourceTelemetryOrigin.Unknown;
     private bool _hasAppliedTelemetryEnums;
 
-    private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)
-    {
-        var runtime = runtimeSnapshot ?? _captureService.GetRuntimeSnapshot();
-        HdrRuntimeState = runtime.HdrRuntimeState;
-        HdrReadinessReason = runtime.HdrReadinessReason;
-        UpdateTargetSummary();
-    }
-
     private void RefreshSourceTelemetrySummaryAge()
     {
         var ageSeconds = TelemetryAgeHelper.ComputeAgeSeconds(SourceTelemetryTimestampUtc, DateTimeOffset.UtcNow);

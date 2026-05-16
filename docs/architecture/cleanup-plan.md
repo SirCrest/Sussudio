@@ -2002,7 +2002,9 @@ is the XAML-facing adapter, while
 Source telemetry summary, telemetry age, and target-summary display text
 formatting now live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`.
 Target-summary property application lives in
-`Sussudio/ViewModels/MainViewModel.TargetSummaryPresentation.cs`.
+`Sussudio/ViewModels/MainViewModel.TargetSummaryPresentation.cs`. HDR runtime
+state/readiness projection from capture runtime snapshots lives in
+`Sussudio/ViewModels/MainViewModel.HdrRuntimePresentation.cs`.
 
 Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
 and volume save suppression now live in
@@ -3020,8 +3022,9 @@ Remaining `tools/Common` ownership:
    Source telemetry summary, telemetry age, and target-summary display text
    formatting now live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`;
    target-summary property application lives in
-   `MainViewModel.TargetSummaryPresentation.cs`; keep snapshot application and
-   source-aware auto-retargeting in `MainViewModel.Telemetry.cs`.
+   `MainViewModel.TargetSummaryPresentation.cs`; HDR runtime state/readiness
+   projection lives in `MainViewModel.HdrRuntimePresentation.cs`; keep snapshot
+   application and source-aware auto-retargeting in `MainViewModel.Telemetry.cs`.
    Settings persistence and load/save option restoration stay in
    `MainViewModel.Settings.cs`; active Flashback reactions to recording format,
    encoder quality/preset/split/bitrate, and buffer/GPU decode changes now live

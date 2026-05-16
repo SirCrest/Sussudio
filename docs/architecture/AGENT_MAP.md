@@ -2241,8 +2241,10 @@ Primary current owners:
   capability queries to that helper. `MainViewModel.ResolutionOptions.cs` owns
   resolution dropdown mutation.
   `MainViewModel.Telemetry.cs` owns source telemetry projection and
-  source-aware auto-retargeting hints. `MainViewModel.TargetSummaryPresentation.cs`
-  owns target-summary property application. `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
+  source-aware auto-retargeting hints. `MainViewModel.HdrRuntimePresentation.cs`
+  owns HDR runtime state/readiness projection from capture runtime snapshots.
+  `MainViewModel.TargetSummaryPresentation.cs` owns target-summary property application.
+  `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
   owns source telemetry summary, telemetry age, and target-summary display text formatting.
   `MainViewModel.Settings.cs` owns settings load/save and simple
   persistence reactions. `MainViewModel.FlashbackSettings.cs` owns active

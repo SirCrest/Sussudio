@@ -77,6 +77,7 @@ static partial class Program
     private static Task SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
     {
         var telemetryText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Telemetry.cs").Replace("\r\n", "\n");
+        var hdrRuntimePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.HdrRuntimePresentation.cs").Replace("\r\n", "\n");
         var targetSummaryPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.TargetSummaryPresentation.cs").Replace("\r\n", "\n");
         var autoResolutionPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionPresentation.cs").Replace("\r\n", "\n");
         var builderText = ReadRepoFile("Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs").Replace("\r\n", "\n");
@@ -84,6 +85,11 @@ static partial class Program
         AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(_latestSourceTelemetry, DateTimeOffset.UtcNow);");
         AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(snapshot, DateTimeOffset.UtcNow);");
         AssertContains(telemetryText, "UpdateTargetSummary();");
+        AssertDoesNotContain(telemetryText, "private void UpdateHdrRuntimeStatusFromCapture(");
+        AssertContains(hdrRuntimePresentationText, "private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
+        AssertContains(hdrRuntimePresentationText, "HdrRuntimeState = runtime.HdrRuntimeState;");
+        AssertContains(hdrRuntimePresentationText, "HdrReadinessReason = runtime.HdrReadinessReason;");
+        AssertContains(hdrRuntimePresentationText, "UpdateTargetSummary();");
         AssertDoesNotContain(telemetryText, "private void UpdateTargetSummary()");
         AssertDoesNotContain(telemetryText, "SourceTelemetryPresentationBuilder.BuildTargetSummary(");
         AssertContains(targetSummaryPresentationText, "private void UpdateTargetSummary()");
