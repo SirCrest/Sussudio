@@ -1619,7 +1619,9 @@ adapter and owns the presentation-controller composition, while
 projection refresh adapter.
 Decode and GPU hardware stats row refresh/application over presentation inputs
 now lives in `Sussudio/Controllers/Stats/StatsHardwareRowsController.cs`;
-MJPEG/NVML telemetry-to-presentation-input projection lives in
+live MJPEG/NVML sampling and decode availability policy live in
+`Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs`;
+pure MJPEG/NVML telemetry-to-presentation-input projection lives in
 `Sussudio/Controllers/Stats/StatsHardwareRowsInputBuilder.cs`; pure row text
 projection over presentation inputs lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.HardwareRows.cs`;
@@ -1668,9 +1670,10 @@ Dynamic stats dock row chrome now lives in
 reuse and simple row style updates. `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs`
 owns diagnostic row presentation, telemetry diagnostics empty state, group
 headers, diagnostic row pooling, and diagnostic row style updates, while
-`Sussudio/Controllers/Stats/StatsHardwareRowsController.cs` owns hardware row
-availability, text-row presentation building, and minimum pool sizing before
-delegating row chrome.
+`Sussudio/Controllers/Stats/StatsHardwareRowsInputProvider.cs` owns live
+MJPEG/NVML input acquisition and `Sussudio/Controllers/Stats/StatsHardwareRowsController.cs`
+owns hardware row availability, text-row presentation building, and minimum
+pool sizing before delegating row chrome.
 
 Flashback timeline visibility, lockout, toggle synchronization, and show/hide
 animation state now live in

@@ -63,25 +63,19 @@ public sealed partial class MainWindow
             ResourceOwner = StatsDockPanel,
             DiagnosticsContent = Diagnostics_Content
         });
+        var statsHardwareRowsInputProvider = new StatsHardwareRowsInputProvider(new StatsHardwareRowsInputProviderContext
+        {
+            GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,
+            GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,
+            GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot()
+        });
         var statsHardwareRowsController = new StatsHardwareRowsController(new StatsHardwareRowsControllerContext
         {
             DecodeSection = DecodeSection,
             DecodeContent = Decode_Content,
             GpuContent = GPU_Content,
             RowChromeController = statsDockRowChromeController,
-            GetDecodeRowsInput = () =>
-            {
-                var mjpegMetrics = ViewModel.GetMjpegPipelineTimingDetails();
-                if (!mjpegMetrics.HasValue || mjpegMetrics.Value.DecoderCount <= 0)
-                {
-                    return null;
-                }
-
-                return StatsHardwareRowsInputBuilder.BuildDecodeRowsInput(
-                    mjpegMetrics.Value,
-                    _previewRendererHostController.PendingFrameCount);
-            },
-            GetGpuRowsInput = () => StatsHardwareRowsInputBuilder.BuildGpuRowsInput(_nvmlMonitor?.GetLatestSnapshot())
+            InputProvider = statsHardwareRowsInputProvider
         });
         _statsDockRefreshController = new StatsDockRefreshController(new StatsDockRefreshControllerContext
         {

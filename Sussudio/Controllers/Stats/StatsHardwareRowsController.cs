@@ -1,4 +1,3 @@
-using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Sussudio.ViewModels;
@@ -11,8 +10,7 @@ internal sealed class StatsHardwareRowsControllerContext
     public required StackPanel DecodeContent { get; init; }
     public required StackPanel GpuContent { get; init; }
     public required StatsDockRowChromeController RowChromeController { get; init; }
-    public required Func<StatsHardwareDecodeRowsInput?> GetDecodeRowsInput { get; init; }
-    public required Func<StatsHardwareGpuRowsInput?> GetGpuRowsInput { get; init; }
+    public required StatsHardwareRowsInputProvider InputProvider { get; init; }
 }
 
 internal sealed class StatsHardwareRowsController
@@ -29,7 +27,7 @@ internal sealed class StatsHardwareRowsController
 
     public void UpdateDecodeSection()
     {
-        var input = _context.GetDecodeRowsInput();
+        var input = _context.InputProvider.GetDecodeRowsInput();
         if (!input.HasValue || input.Value.DecoderCount <= 0)
         {
             _context.DecodeSection.Visibility = Visibility.Collapsed;
@@ -48,7 +46,7 @@ internal sealed class StatsHardwareRowsController
 
     public void UpdateGpuSection()
     {
-        var rows = StatsPresentationBuilder.BuildHardwareGpuRows(_context.GetGpuRowsInput());
+        var rows = StatsPresentationBuilder.BuildHardwareGpuRows(_context.InputProvider.GetGpuRowsInput());
         _context.RowChromeController.UpdateSimpleRows(
             StatsDockSimpleRowPool.Gpu,
             _context.GpuContent,

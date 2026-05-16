@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Reflection;
 
 static partial class Program
@@ -76,6 +77,47 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task StatsHardwareRowsInputProvider_PreservesSamplingPolicy()
+    {
+        var providerType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputProvider");
+        var getDecodeRowsInput = providerType.GetMethod("GetDecodeRowsInput", BindingFlags.Instance | BindingFlags.Public)
+                                 ?? throw new InvalidOperationException("StatsHardwareRowsInputProvider.GetDecodeRowsInput not found.");
+        var getGpuRowsInput = providerType.GetMethod("GetGpuRowsInput", BindingFlags.Instance | BindingFlags.Public)
+                              ?? throw new InvalidOperationException("StatsHardwareRowsInputProvider.GetGpuRowsInput not found.");
+
+        var nullMetricsProvider = CreateStatsHardwareRowsInputProvider(null, 3, null);
+        AssertEqual<object?>(
+            null,
+            getDecodeRowsInput.Invoke(nullMetricsProvider, null),
+            "null MJPEG metrics return null decode input");
+
+        var zeroDecoderProvider = CreateStatsHardwareRowsInputProvider(
+            CreateStatsHardwarePipelineTimingMetrics(decoderCount: 0),
+            3,
+            null);
+        AssertEqual<object?>(
+            null,
+            getDecodeRowsInput.Invoke(zeroDecoderProvider, null),
+            "zero decoder metrics return null decode input");
+
+        var validProvider = CreateStatsHardwareRowsInputProvider(
+            CreateStatsHardwarePipelineTimingMetrics(),
+            7,
+            null);
+        var decodeInput = getDecodeRowsInput.Invoke(validProvider, null)
+                          ?? throw new InvalidOperationException("Provider returned null decode input for valid metrics.");
+        AssertEqual(
+            7,
+            Convert.ToInt32(GetPropertyValue(decodeInput, "PendingPreviewFrameCount")),
+            "pending preview frame count");
+        AssertEqual<object?>(
+            null,
+            getGpuRowsInput.Invoke(validProvider, null),
+            "null NVML snapshot returns null GPU input");
+
+        return Task.CompletedTask;
+    }
+
     private static object CreateStatsHardwareMjpegMetrics()
     {
         var inputBuilderType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputBuilder");
@@ -86,17 +128,24 @@ static partial class Program
                ?? throw new InvalidOperationException("BuildDecodeRowsInput returned null.");
     }
 
-    private static object CreateStatsHardwarePipelineTimingMetrics()
+    private static object CreateStatsHardwarePipelineTimingMetrics(int decoderCount = 2)
     {
         var metricsType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
         var perDecoderType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics");
-        var perDecoder = Array.CreateInstance(perDecoderType, 2);
-        perDecoder.SetValue(InvokeStatsHardwareConstructor(perDecoderType, 0, 5, 4.5d, 7.75d, 9.5d), 0);
-        perDecoder.SetValue(InvokeStatsHardwareConstructor(perDecoderType, 1, 4, 5.25d, 8.5d, 10.25d), 1);
+        var perDecoder = Array.CreateInstance(perDecoderType, decoderCount);
+        if (decoderCount > 0)
+        {
+            perDecoder.SetValue(InvokeStatsHardwareConstructor(perDecoderType, 0, 5, 4.5d, 7.75d, 9.5d), 0);
+        }
+
+        if (decoderCount > 1)
+        {
+            perDecoder.SetValue(InvokeStatsHardwareConstructor(perDecoderType, 1, 4, 5.25d, 8.5d, 10.25d), 1);
+        }
 
         return InvokeStatsHardwareConstructor(
             metricsType,
-            2,
+            decoderCount,
             9,
             8.0d,
             12.25d,
@@ -126,6 +175,49 @@ static partial class Program
             2L,
             6,
             perDecoder);
+    }
+
+    private static object CreateStatsHardwareRowsInputProvider(
+        object? mjpegMetrics,
+        int? pendingPreviewFrameCount,
+        object? nvmlSnapshot)
+    {
+        var contextType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputProviderContext");
+        var providerType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputProvider");
+        var context = Activator.CreateInstance(contextType)
+                      ?? throw new InvalidOperationException("Failed to create StatsHardwareRowsInputProviderContext.");
+
+        SetPropertyOrBackingField(
+            context,
+            "GetMjpegPipelineTimingDetails",
+            CreateStatsHardwareProviderCallback(contextType, "GetMjpegPipelineTimingDetails", () => mjpegMetrics));
+        SetPropertyOrBackingField(
+            context,
+            "GetPendingPreviewFrameCount",
+            CreateStatsHardwareProviderCallback(contextType, "GetPendingPreviewFrameCount", () => pendingPreviewFrameCount));
+        SetPropertyOrBackingField(
+            context,
+            "GetNvmlSnapshot",
+            CreateStatsHardwareProviderCallback(contextType, "GetNvmlSnapshot", () => nvmlSnapshot));
+
+        return Activator.CreateInstance(providerType, context)
+               ?? throw new InvalidOperationException("Failed to create StatsHardwareRowsInputProvider.");
+    }
+
+    private static Delegate CreateStatsHardwareProviderCallback(
+        Type contextType,
+        string propertyName,
+        Func<object?> callback)
+    {
+        var property = contextType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                       ?? throw new InvalidOperationException($"Missing provider context property '{propertyName}'.");
+        var invoke = typeof(Func<object?>).GetMethod(nameof(Func<object?>.Invoke))
+                     ?? throw new InvalidOperationException("Missing Func<object?>.Invoke.");
+        var returnType = property.PropertyType.GetMethod(nameof(Func<object?>.Invoke))?.ReturnType
+                         ?? throw new InvalidOperationException($"Provider context property '{propertyName}' was not a delegate.");
+        var callbackValue = Expression.Call(Expression.Constant(callback), invoke);
+        var convertedValue = Expression.Convert(callbackValue, returnType);
+        return Expression.Lambda(property.PropertyType, convertedValue).Compile();
     }
 
     private static object CreateStatsHardwareNvmlSnapshot()
