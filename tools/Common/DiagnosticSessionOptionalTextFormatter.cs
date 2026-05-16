@@ -1,6 +1,6 @@
 namespace Sussudio.Tools;
 
-internal static class DiagnosticSessionText
+internal static class DiagnosticSessionOptionalTextFormatter
 {
     internal static string FormatOptional(string value)
     {

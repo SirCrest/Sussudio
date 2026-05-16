@@ -107,7 +107,7 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionResultFormatterSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionSampler.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionText.cs"),
+                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionOptionalTextFormatter.cs"),
             ReadDiagnosticSessionModelsSource(),
             ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarios.cs"));
     }

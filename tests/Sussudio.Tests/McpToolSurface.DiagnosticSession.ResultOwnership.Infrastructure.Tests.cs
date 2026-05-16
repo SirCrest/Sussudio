@@ -2,22 +2,22 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task DiagnosticSessionText_OwnsSharedFormattingHelpers()
+    private static Task DiagnosticSessionOptionalTextFormatter_OwnsSharedFormattingHelpers()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
         var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
             .Replace("\r\n", "\n");
-        var textHelpersText = ReadRepoFile("tools/Common/DiagnosticSessionText.cs")
+        var textHelpersText = ReadRepoFile("tools/Common/DiagnosticSessionOptionalTextFormatter.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(textHelpersText, "internal static class DiagnosticSessionText");
+        AssertContains(textHelpersText, "internal static class DiagnosticSessionOptionalTextFormatter");
         AssertContains(textHelpersText, "internal static string FormatOptional(string value)");
         AssertContains(textHelpersText, "string.IsNullOrWhiteSpace(value) ? \"none\" : value");
-        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionText;");
-        AssertContains(formatterText, "using static Sussudio.Tools.DiagnosticSessionText;");
-        AssertContains(validationText, "using static Sussudio.Tools.DiagnosticSessionText;");
+        AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
+        AssertContains(formatterText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
+        AssertContains(validationText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
         AssertDoesNotContain(runnerText, "private static string FormatOptional(");
         AssertDoesNotContain(formatterText, "private static string FormatOptional(");
         AssertDoesNotContain(validationText, "private static string FormatOptional(");

@@ -2302,10 +2302,10 @@ Diagnostic-session result artifact setup now lives in
 construction and pre-summary sample, frame-ledger, and timeline writes while
 the result builder keeps summary field construction.
 
-Shared diagnostic-session text helpers now live in
-`tools/Common/DiagnosticSessionText.cs`. Keep cross-cutting string helpers
-there instead of reintroducing private duplicates in the runner, formatter, or
-validation policy files.
+Shared diagnostic-session optional text formatting now lives in
+`tools/Common/DiagnosticSessionOptionalTextFormatter.cs`. Keep cross-cutting
+`FormatOptional(...)` handling there instead of reintroducing private
+duplicates in scenario, result builder, formatter, or validation policy files.
 
 MCP performance timeline projection is split across the
 `tools/McpServer/Tools/PerformanceTimelineTools.*.cs` family. Keep the public
@@ -2749,7 +2749,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioStartup.DeferredSettings.cs`
 - `DiagnosticSessionScenarioStartup.Playback.cs`
 - `DiagnosticSessionPresentMonStartup.cs`
-- `DiagnosticSessionText.cs`
+- `DiagnosticSessionOptionalTextFormatter.cs`
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionRunExecution.cs`
 - `DiagnosticSessionRunExecution.Completion.cs`

@@ -4,7 +4,7 @@ using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
 using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
-using static Sussudio.Tools.DiagnosticSessionText;
+using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;
 
 namespace Sussudio.Tools;
 

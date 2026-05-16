@@ -33,8 +33,8 @@ static partial class Program
             "Diagnostic session result artifacts have a named owner",
             DiagnosticSessionResultArtifacts_OwnPreSummaryWrites);
         await AddCheckAsync(results,
-            "Diagnostic session shared text helpers have a named owner",
-            DiagnosticSessionText_OwnsSharedFormattingHelpers);
+            "Diagnostic session optional text formatter has a named owner",
+            DiagnosticSessionOptionalTextFormatter_OwnsSharedFormattingHelpers);
         await AddCheckAsync(results,
             "Diagnostic session pipe retry policy has a named owner",
             DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification);

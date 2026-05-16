@@ -2,7 +2,7 @@ using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;
 using static Sussudio.Tools.DiagnosticSessionMetrics;
-using static Sussudio.Tools.DiagnosticSessionText;
+using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;
 
 namespace Sussudio.Tools;
 

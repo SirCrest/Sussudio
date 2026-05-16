@@ -2840,8 +2840,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultFormatter.Helpers.cs` owns small text
   helpers such as frame-rate formatting. Keep
   `DiagnosticSessionRunner.Format(...)` as the stable compatibility wrapper.
-- `tools/Common/DiagnosticSessionText.cs` owns shared diagnostic-session text
-  helpers used by the runner, formatter, and validation policies.
+- `tools/Common/DiagnosticSessionOptionalTextFormatter.cs` owns shared
+  diagnostic-session optional text formatting used by scenarios, result
+  builders, result formatters, and validation policies.
 - `tools/Common/AutomationSnapshotFormatter.cs` owns the top-level shared
   automation snapshot console text flow and delegates each named output
   section to a focused partial.
