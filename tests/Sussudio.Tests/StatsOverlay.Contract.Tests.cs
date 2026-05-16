@@ -3,19 +3,20 @@ static partial class Program
     private static Task StatsOverlayLifecycle_LivesInController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsOverlayCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsOverlayComposition.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/StatsOverlayController.cs").Replace("\r\n", "\n");
         var dockAnimationText = ReadRepoFile("Sussudio/Controllers/StatsOverlayController.DockAnimation.cs").Replace("\r\n", "\n");
         var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayText, "private StatsOverlayController _statsOverlayController = null!;");
-        AssertContains(statsOverlayText, "private void InitializeStatsOverlayController()");
-        AssertContains(statsOverlayText, "InitializeFrameTimeOverlayPresentationController();");
-        AssertContains(statsOverlayText, "StatsToggle = StatsToggle,");
-        AssertContains(statsOverlayText, "IsWindowClosing = () => _isWindowClosing,");
-        AssertContains(statsOverlayText, "SetStatsVisible = visible => ViewModel.IsStatsVisible = visible,");
-        AssertContains(statsOverlayText, "UpdateStatsDock = _statsDockRefreshController.RefreshDock,");
+        AssertContains(statsOverlayCompositionText, "private StatsOverlayController _statsOverlayController = null!;");
+        AssertContains(statsOverlayCompositionText, "private void InitializeStatsOverlayController()");
+        AssertContains(statsOverlayCompositionText, "InitializeFrameTimeOverlayPresentationController();");
+        AssertContains(statsOverlayCompositionText, "StatsToggle = StatsToggle,");
+        AssertContains(statsOverlayCompositionText, "IsWindowClosing = () => _isWindowClosing,");
+        AssertContains(statsOverlayCompositionText, "SetStatsVisible = visible => ViewModel.IsStatsVisible = visible,");
+        AssertContains(statsOverlayCompositionText, "UpdateStatsDock = _statsDockRefreshController.RefreshDock,");
         AssertContains(statsOverlayText, "=> _statsOverlayController.HandleStatsToggleChecked();");
         AssertContains(statsOverlayText, "=> _statsOverlayController.HandleStatsToggleUnchecked();");
         AssertContains(statsOverlayText, "=> _statsOverlayController.SyncStatsVisibility(visible, immediate);");
@@ -26,6 +27,7 @@ static partial class Program
         AssertContains(frameTimeOverlayText, "ExpectedLine = FrameTime_ExpectedLine");
         AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
         AssertContains(mainWindowText, "InitializeStatsOverlayController();");
+        AssertOccursBefore(mainWindowText, "InitializeStatsOverlayController();", "InitializeStatsSectionChromeController();");
         AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _statsPollTimer;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _statsDockStoryboard;");
         AssertContains(controllerText, "internal sealed partial class StatsOverlayController");
@@ -71,12 +73,18 @@ static partial class Program
     private static Task StatsDockPresentationApplication_LivesInController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsOverlayCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsOverlayComposition.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/StatsDockPresentationController.cs").Replace("\r\n", "\n");
         var refreshControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayText, "private StatsDockRefreshController _statsDockRefreshController = null!;");
-        AssertContains(statsOverlayText, "var statsDockPresentationController = new StatsDockPresentationController(new StatsDockPresentationControllerContext");
-        AssertContains(statsOverlayText, "_statsDockRefreshController = new StatsDockRefreshController(new StatsDockRefreshControllerContext");
+        AssertContains(statsOverlayCompositionText, "private StatsDockRefreshController _statsDockRefreshController = null!;");
+        AssertContains(statsOverlayCompositionText, "var statsDockPresentationController = new StatsDockPresentationController(new StatsDockPresentationControllerContext");
+        AssertContains(statsOverlayCompositionText, "_statsDockRefreshController = new StatsDockRefreshController(new StatsDockRefreshControllerContext");
+        AssertOccursBefore(statsOverlayCompositionText, "InitializeFrameTimeOverlayPresentationController();", "var statsDockPresentationController = new StatsDockPresentationController");
+        AssertOccursBefore(statsOverlayCompositionText, "var statsDockPresentationController = new StatsDockPresentationController", "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
+        AssertOccursBefore(statsOverlayCompositionText, "var statsDiagnosticRowsController = new StatsDiagnosticRowsController", "var statsHardwareRowsController = new StatsHardwareRowsController");
+        AssertOccursBefore(statsOverlayCompositionText, "var statsHardwareRowsController = new StatsHardwareRowsController", "_statsDockRefreshController = new StatsDockRefreshController");
+        AssertOccursBefore(statsOverlayCompositionText, "_statsDockRefreshController = new StatsDockRefreshController", "_statsOverlayController = new StatsOverlayController");
         AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshControllerContext");
         AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshController");
         AssertContains(refreshControllerText, "public required Func<bool> IsStatsDockVisible { get; init; }");
@@ -147,6 +155,7 @@ static partial class Program
     private static Task StatsDiagnosticRowPooling_LivesInController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsOverlayCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsOverlayComposition.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
         var hardwareRowsControllerText = ReadRepoFile("Sussudio/Controllers/StatsHardwareRowsController.cs").Replace("\r\n", "\n");
@@ -154,13 +163,13 @@ static partial class Program
         var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
         var refreshControllerText = ReadRepoFile("Sussudio/Controllers/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayText, "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
-        AssertContains(statsOverlayText, "var statsHardwareRowsController = new StatsHardwareRowsController(new StatsHardwareRowsControllerContext");
-        AssertContains(statsOverlayText, "ResourceOwner = StatsDockPanel,");
-        AssertContains(statsOverlayText, "DiagnosticsContent = Diagnostics_Content");
-        AssertContains(statsOverlayText, "GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,");
-        AssertContains(statsOverlayText, "GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,");
-        AssertContains(statsOverlayText, "GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot()");
+        AssertContains(statsOverlayCompositionText, "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
+        AssertContains(statsOverlayCompositionText, "var statsHardwareRowsController = new StatsHardwareRowsController(new StatsHardwareRowsControllerContext");
+        AssertContains(statsOverlayCompositionText, "ResourceOwner = StatsDockPanel,");
+        AssertContains(statsOverlayCompositionText, "DiagnosticsContent = Diagnostics_Content");
+        AssertContains(statsOverlayCompositionText, "GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,");
+        AssertContains(statsOverlayCompositionText, "GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,");
+        AssertContains(statsOverlayCompositionText, "GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot()");
         AssertContains(refreshControllerText, "_context.DiagnosticRowsController.UpdateDiagnostics(presentation);");
         AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateDecodeSection();");
         AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateGpuSection();");
