@@ -743,8 +743,8 @@ Primary current owners:
   animation and size waits, `FullScreenController.Chrome.cs` owns chrome/material
   state, and `FullScreenController.Controls.cs` owns overlay pointer/auto-hide
   behavior. Keep `MainWindow.FullScreen.cs` as the XAML-facing adapter.
-  `MainWindow.FullScreenFlashbackBridge.cs` owns Flashback fullscreen keyboard
-  shortcuts, timeline visibility, and scrub-end bridging.
+  `MainWindow.FullScreenFlashbackBridge.cs` owns the Flashback fullscreen
+  keyboard gate/adapter, timeline visibility, and scrub-end bridging.
 - `Sussudio/Controllers/WindowScreenshotController.cs` owns automation whole-
   window screenshot dispatch, UI-thread enqueue/cancellation, and failure
   wrapping. `Sussudio/Controllers/WindowScreenshotNativeCapture.cs` owns native
@@ -1694,7 +1694,8 @@ Primary current owners:
   playback state polling start/stop, buffer-fill presentation, and position-label
   updates with CTI re-anchor gating. `MainWindow.Flashback.cs` is the adapter.
 - `Sussudio/Controllers/FlashbackCommandController.cs` owns Flashback command
-  semantics for in/out points, clear, play/pause, Go Live, export, save-last-5m,
+  semantics for in/out points, clear, play/pause, Go Live, fullscreen keyboard
+  shortcuts including left/right nudge rejection logging, export, save-last-5m,
   enable-toggle rollback, and apply/restart. `MainWindow.FlashbackCommands.cs`
   preserves the XAML event-handler surface as a thin adapter.
 - `Sussudio/Controllers/FlashbackExportProgressPresentationController.cs` owns

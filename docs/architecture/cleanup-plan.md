@@ -482,8 +482,8 @@ enter/exit orchestration, `FullScreenController.Animation.cs` to rect animation,
 `FullScreenController.Chrome.cs` to chrome/material state, and
 `FullScreenController.Controls.cs` to overlay pointer/auto-hide behavior.
 `MainWindow.FullScreen.cs` remains the XAML event adapter.
-`MainWindow.FullScreenFlashbackBridge.cs` owns Flashback fullscreen keyboard
-shortcuts, timeline visibility, and scrub-end bridging.
+`MainWindow.FullScreenFlashbackBridge.cs` owns the Flashback fullscreen keyboard
+gate/adapter, timeline visibility, and scrub-end bridging.
 
 Automation whole-window screenshot capture now lives in
 `Sussudio/Controllers/WindowScreenshotController.cs`, which now only owns
@@ -1660,7 +1660,8 @@ buffer-fill presentation, and position-label updates with CTI re-anchor gating.
 
 Flashback command semantics now live in
 `Sussudio/Controllers/FlashbackCommandController.cs`: in/out point commands,
-clear, play/pause, Go Live, export, save-last-5m, enable-toggle rollback, and
+clear, play/pause, Go Live, fullscreen keyboard shortcuts including left/right
+nudge rejection logging, export, save-last-5m, enable-toggle rollback, and
 apply/restart. `MainWindow.FlashbackCommands.cs` preserves the existing XAML
 event-handler names as a thin adapter.
 

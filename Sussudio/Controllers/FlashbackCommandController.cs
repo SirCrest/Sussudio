@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Controls;
 using Sussudio.Models;
 using Sussudio.ViewModels;
+using Windows.System;
 
 namespace Sussudio.Controllers;
 
@@ -106,6 +107,41 @@ internal sealed class FlashbackCommandController
         else
         {
             Sussudio.Logger.Log("FLASHBACK_UI_GOLIVE");
+        }
+    }
+
+    public bool HandleFullScreenKeyboardCommand(VirtualKey key)
+    {
+        switch (key)
+        {
+            case VirtualKey.I:
+                SetInPointAtPlayhead();
+                return true;
+            case VirtualKey.O:
+                SetOutPointAtPlayhead();
+                return true;
+            case VirtualKey.Space:
+                TogglePlayPause();
+                return true;
+            case VirtualKey.L:
+                GoLive();
+                return true;
+            case VirtualKey.Left:
+                NudgePlayback(TimeSpan.FromSeconds(-1), "nudge left", "FLASHBACK_UI_NUDGE_REJECTED direction=left");
+                return true;
+            case VirtualKey.Right:
+                NudgePlayback(TimeSpan.FromSeconds(1), "nudge right", "FLASHBACK_UI_NUDGE_REJECTED direction=right");
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void NudgePlayback(TimeSpan offset, string operationName, string rejectionDetail)
+    {
+        if (!_context.ViewModel.FlashbackNudge(offset))
+        {
+            _context.ViewModel.ReportFlashbackPlaybackRejection(operationName, rejectionDetail);
         }
     }
 

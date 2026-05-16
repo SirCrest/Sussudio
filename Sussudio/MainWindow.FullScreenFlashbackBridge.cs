@@ -1,4 +1,3 @@
-using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 
@@ -16,40 +15,9 @@ public sealed partial class MainWindow
             return;
         }
 
-        switch (e.Key)
+        if (_flashbackCommandController.HandleFullScreenKeyboardCommand(e.Key))
         {
-            case Windows.System.VirtualKey.I:
-                FlashbackInButton_Click(sender, e);
-                e.Handled = true;
-                return;
-            case Windows.System.VirtualKey.O:
-                FlashbackOutButton_Click(sender, e);
-                e.Handled = true;
-                return;
-            case Windows.System.VirtualKey.Space:
-                FlashbackPlayPauseButton_Click(sender, e);
-                e.Handled = true;
-                return;
-            case Windows.System.VirtualKey.L:
-                FlashbackGoLiveButton_Click(sender, e);
-                e.Handled = true;
-                return;
-            case Windows.System.VirtualKey.Left:
-                if (!ViewModel.FlashbackNudge(TimeSpan.FromSeconds(-1)))
-                {
-                    ViewModel.ReportFlashbackPlaybackRejection("nudge left", "FLASHBACK_UI_NUDGE_REJECTED direction=left");
-                }
-
-                e.Handled = true;
-                return;
-            case Windows.System.VirtualKey.Right:
-                if (!ViewModel.FlashbackNudge(TimeSpan.FromSeconds(1)))
-                {
-                    ViewModel.ReportFlashbackPlaybackRejection("nudge right", "FLASHBACK_UI_NUDGE_REJECTED direction=right");
-                }
-
-                e.Handled = true;
-                return;
+            e.Handled = true;
         }
     }
 
