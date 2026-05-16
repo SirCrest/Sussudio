@@ -5,6 +5,8 @@ static partial class Program
         var files = new[]
         {
             "tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs",
+            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.Restart.cs",
+            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.Encoder.cs",
             "tools/Common/DiagnosticSessionFlashbackCycleScenarios.Registrations.cs"
         };
         var parts = new string[files.Length];

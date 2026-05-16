@@ -2141,11 +2141,14 @@ Flashback, and playback state that remain active after the runner attempts
 cleanup.
 
 Diagnostic-session Flashback cycle scenarios now live in
-`tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs`. They own the
-restart-cycle and encoder-cycle command flows, export verification, and preset
-restoration. `.Registrations.cs` owns task registration, priority, task-label,
-and started-action wiring while startup only delegates selected cycle scenario
-registration.
+`tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` as a marker shell.
+`DiagnosticSessionFlashbackCycleScenarios.Restart.cs` owns the restart-cycle
+command flow, playback priming, restart validation, export verification, and
+restart-cycle warning/action strings. `DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
+owns preset cycling, buffer readiness, export verification, preset restoration,
+and encoder-cycle warning/action strings. `.Registrations.cs` owns task
+registration, priority, task-label, and started-action wiring while startup only
+delegates selected cycle scenario registration.
 
 Diagnostic-session sampling now lives in
 `tools/Common/DiagnosticSessionSampler.cs`. Keep the sample append before the
@@ -2304,6 +2307,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionRecordingVerification.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
+- `DiagnosticSessionFlashbackCycleScenarios.Restart.cs`
+- `DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`

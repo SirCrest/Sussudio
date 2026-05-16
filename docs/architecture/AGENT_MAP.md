@@ -2314,9 +2314,15 @@ Primary owners:
 - `tools/Common/DiagnosticSessionCleanupPolicy.cs` owns cleanup restore
   validation after diagnostic sessions stop recording, preview, Flashback, or
   playback state.
-- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback
-  diagnostic restart-cycle and encoder-cycle command flows, including export
-  verification and preset restoration.
+- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` is the Flashback
+  diagnostic restart/encoder cycle marker shell.
+- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Restart.cs` owns the
+  restart-cycle command flow, including playback priming, restart validation,
+  export verification, and restart-cycle warning/action strings.
+- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Encoder.cs` owns the
+  encoder-cycle command flow, including preset cycling, buffer readiness,
+  export verification, preset restoration, and encoder-cycle warning/action
+  strings.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Registrations.cs` owns
   Flashback restart/encoder cycle diagnostic task registration, priorities,
   task labels, and started action strings.
