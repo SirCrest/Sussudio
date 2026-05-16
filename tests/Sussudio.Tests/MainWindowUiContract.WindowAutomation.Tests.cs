@@ -18,6 +18,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
             .Replace("\r\n", "\n");
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/WindowUiDispatchController.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(fullScreenSource, "public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => InvokeOnUiThreadAsync(\n            () => _fullScreenController.SetEnabledAsync(enabled),");
         AssertContains(fullScreenSource, "private Task EnterFullScreenAsync()\n        => _fullScreenController.EnterAsync();");
@@ -41,8 +43,9 @@ static partial class Program
         AssertDoesNotContain(fullScreenControllerAnimationSource, "async void");
         AssertDoesNotContain(fullScreenControllerControlsSource, "async void");
         AssertContains(dispatchingSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
-        AssertContains(dispatchingSource, "await action().ConfigureAwait(true);");
-        AssertDoesNotContain(dispatchingSource, "registration.Dispose();\n                registration = default;\n\n                if (cancellationToken.IsCancellationRequested)");
+        AssertContains(dispatchingSource, "=> WindowUiDispatchController.InvokeAsync(action, cancellationToken);");
+        AssertContains(dispatchControllerSource, "await action().ConfigureAwait(true);");
+        AssertDoesNotContain(dispatchControllerSource, "registration.Dispose();\n                registration = default;\n\n                if (cancellationToken.IsCancellationRequested)");
         AssertDoesNotContain(closeLifecycleSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
         return Task.CompletedTask;
     }
@@ -55,6 +58,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Dispatching.cs")
             .Replace("\r\n", "\n");
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/WindowUiDispatchController.cs")
+            .Replace("\r\n", "\n");
         var adapterSource = ReadRepoFile("Sussudio/MainWindow.WindowAutomation.cs")
             .Replace("\r\n", "\n");
         var controllerSource = ReadRepoFile("Sussudio/Controllers/WindowAutomationController.cs")
@@ -66,6 +71,8 @@ static partial class Program
         AssertContains(adapterSource, "GetWindowHandle = () => _hwnd,");
         AssertContains(adapterSource, "InvokeOnUiThreadAsync = InvokeOnUiThreadAsync");
         AssertContains(dispatchingSource, "private Task InvokeOnUiThreadAsync(Action action, CancellationToken cancellationToken = default)");
+        AssertContains(dispatchingSource, "=> WindowUiDispatchController.InvokeAsync(action, cancellationToken);");
+        AssertContains(dispatchControllerSource, "public Task InvokeAsync(Action action, CancellationToken cancellationToken = default)");
         AssertContains(adapterSource, "=> _windowAutomationController.MinimizeAsync(cancellationToken);");
         AssertContains(adapterSource, "=> _windowAutomationController.OpenRecordingsFolderAsync(cancellationToken);");
         AssertContains(adapterSource, "=> _windowAutomationController.SnapToRegionAsync(region, cancellationToken);");
