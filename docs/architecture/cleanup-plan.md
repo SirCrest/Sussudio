@@ -2886,9 +2886,10 @@ Remaining `tools/Common` ownership:
    previous/saved/default audio and microphone selection fallback policy now
    lives in `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs`. Pure
    recording codec filtering and selected-codec fallback policy now live in
-   `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs`, while
-   `MainViewModel.FormatSelection.cs`
-   keeps collection mutation and selected capture-format policy, while
+   `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs`, while observable
+   recording-format option mutation lives in
+   `MainViewModel.RecordingFormatOptions.cs`. `MainViewModel.FormatSelection.cs`
+   keeps pixel-format option mutation and selected capture-format policy, while
    `MainViewModel.HdrModeChanges.cs` owns HDR toggle side effects: recording-time
    revert/status, mode option rebuilds, immediate reinitialize scheduling, and
    settings persistence.

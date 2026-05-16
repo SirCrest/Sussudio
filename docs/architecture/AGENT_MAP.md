@@ -2155,9 +2155,10 @@ Primary current owners:
   `MainViewModel.FrameRateTiming.cs` owns the stateful wrappers that resolve
   timing variants and source/preferred timing from resolution capabilities,
   runtime snapshots, selected formats, source telemetry, and UI selection state.
-  `MainViewModel.FormatSelection.cs` owns pixel-format option building,
-  recording-format policy application to observable state, and selected
-  capture-format selection policy. `MainViewModel.HdrModeChanges.cs` owns
+  `MainViewModel.FormatSelection.cs` owns pixel-format option building and
+  selected capture-format selection policy.
+  `MainViewModel.RecordingFormatOptions.cs` owns recording-format policy
+  application to observable state. `MainViewModel.HdrModeChanges.cs` owns
   HDR toggle side effects: recording-time revert/status, mode option rebuilds,
   immediate reinitialize scheduling, and settings persistence.
   `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs` owns pure recording

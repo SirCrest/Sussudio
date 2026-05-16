@@ -7,8 +7,8 @@ using Sussudio.Services.Capture;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Format and frame-rate selection: pixel-format option building, recording format filtering,
-/// and recording format policy delegation for the capture mode pipeline.
+/// Format and frame-rate selection: pixel-format option building and selected
+/// capture-format policy for the capture mode pipeline.
 /// </summary>
 public partial class MainViewModel
 {
@@ -133,38 +133,6 @@ public partial class MainViewModel
                 FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact) == friendlyBucket &&
                 (IsHdrEnabled ? IsHdrModeCandidate(format) : !IsHdrModeCandidate(format)))
             .ToList();
-    }
-
-    private void RebuildRecordingFormatOptions()
-    {
-        var selection = RecordingFormatSelectionPolicy.Select(
-            _detectedRecordingFormats,
-            AvailableRecordingFormats,
-            SelectedRecordingFormat,
-            IsHdrEnabled,
-            DefaultRecordingFormat,
-            HevcRecordingFormat,
-            Av1RecordingFormat);
-
-        AvailableRecordingFormats.Clear();
-        foreach (var format in selection.AvailableFormats)
-        {
-            AvailableRecordingFormats.Add(format);
-        }
-
-        var previousSelection = SelectedRecordingFormat;
-        SelectedRecordingFormat = selection.SelectedFormat;
-        if (string.Equals(previousSelection, selection.SelectedFormat, StringComparison.Ordinal))
-        {
-            OnPropertyChanged(nameof(SelectedRecordingFormat));
-        }
-
-        if (IsHdrEnabled && !RecordingFormatSelectionPolicy.IsHdrCompatible(SelectedRecordingFormat))
-        {
-            StatusText = "HDR recording requires HEVC or AV1 (10-bit).";
-        }
-
-        Logger.Log($"Selected recording format: {SelectedRecordingFormat}");
     }
 
     private static bool IsHdrModeCandidate(MediaFormat format)
