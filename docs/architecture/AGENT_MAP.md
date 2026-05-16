@@ -1832,13 +1832,13 @@ Primary current owners:
   `Sussudio/Controllers/Recording/RecordingStatePresentationController.cs` owns
   ViewModel-derived lockout/HDR/title/audio-meter policy application and
   delegates record-button chrome.
-  `Sussudio/Controllers/Recording/RecordingButtonChromeController.cs` owns demo-visible
+  `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs` owns demo-visible
   record-button chrome: recording glow, Rec pulse, starting spinner,
   normal/recording content, padding, enabled-state application, and the
   circle/pill width morph. `MainWindow.RecordButtonAnimations.cs` is the
   XAML-facing adapter.
   `MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/Recording/RecordingButtonActionController.cs` owns the recording
+- `Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs` owns the recording
   button command workflow and preview-state logging after a start.
   `MainWindow.RecordingActions.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Shell/LiveSignalInfoController.cs` owns live-signal pill
