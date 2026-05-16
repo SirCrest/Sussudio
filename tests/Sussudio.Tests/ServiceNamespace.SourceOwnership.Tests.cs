@@ -193,6 +193,7 @@ static partial class Program
             "RECORDING_FORMATS_UI_ENQUEUE_FAILED");
         AssertContains(
             File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Rendering.cs"))
+            + "\n" + File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Present.cs"))
             + "\n" + File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Resources.cs"))
             + "\n" + File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PanelBinding.cs")),
             "D3D_FIRST_FRAME_UI_ENQUEUE_FAILED");

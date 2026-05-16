@@ -26,8 +26,30 @@ static partial class Program
 
         AssertDoesNotContain(renderingText, "private void RenderThreadMain()");
         AssertDoesNotContain(renderingText, "private void NotifyRenderThreadFailed(Exception ex)");
-        AssertContains(renderingText, "private void PresentAndTrackFrame(");
-        AssertContains(renderingText, "TrackPresentCadence(frame.CountForPresentCadence);");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_PresentAccountingLivesInFocusedPartial()
+    {
+        var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
+            .Replace("\r\n", "\n");
+        var presentText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Present.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(presentText, "private void PresentAndTrackFrame(");
+        AssertContains(presentText, "TryCaptureFrameBeforePresent(rendererMode);");
+        AssertContains(presentText, "var presentResult = swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);");
+        AssertContains(presentText, "TrackPresentCadence(frame.CountForPresentCadence);");
+        AssertContains(presentText, "var estimatedVisibleTick = EstimateVisibleTick(presentEnd);");
+        AssertContains(presentText, "RecordSlowFrameDiagnostic(frame, presentIntervalMs, inputUploadTicks, renderTicks, presentTicks, totalTicks, presentEnd, estimatedVisibleTick);");
+        AssertDoesNotContain(renderingText, "private void PresentAndTrackFrame(");
+        var captureIndex = presentText.IndexOf("TryCaptureFrameBeforePresent(rendererMode);", StringComparison.Ordinal);
+        var presentIndex = presentText.IndexOf("var presentResult = swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);", StringComparison.Ordinal);
+        if (captureIndex < 0 || presentIndex < 0 || captureIndex > presentIndex)
+        {
+            throw new InvalidOperationException("Present transaction must capture screenshots before swap-chain Present.");
+        }
 
         return Task.CompletedTask;
     }
