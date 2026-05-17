@@ -3,7 +3,7 @@ static partial class Program
     private static Task StatsOverlayLifecycle_LivesInController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var statsOverlayCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsOverlayComposition.cs").Replace("\r\n", "\n");
+        var statsOverlayCompositionText = statsOverlayText;
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
