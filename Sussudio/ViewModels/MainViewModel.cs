@@ -125,7 +125,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Automation snapshots: MainViewModel.AutomationSnapshots.cs; probes: MainViewModel.AutomationProbes.cs
     // Automation options projection: MainViewModel.AutomationOptionsSnapshot.cs
     // Device-selection automation: MainViewModel.AutomationDeviceSelection.cs; audio-input automation: MainViewModel.AutomationAudioInputSelection.cs
-    // Capture-mode automation: MainViewModel.AutomationCaptureMode.cs; frame rate: MainViewModel.AutomationFrameRate.cs; video format: MainViewModel.AutomationVideoFormat.cs; MJPEG decoder count: MainViewModel.AutomationMjpegDecoderCount.cs
+    // Capture-mode automation: MainViewModel.AutomationCaptureMode.cs; shared gate: MainViewModel.AutomationCaptureModeGate.cs; frame rate: MainViewModel.AutomationFrameRate.cs; video format: MainViewModel.AutomationVideoFormat.cs; MJPEG decoder count: MainViewModel.AutomationMjpegDecoderCount.cs
     // UI-only automation: MainViewModel.AutomationUi.cs; stats/overlay automation: MainViewModel.AutomationStatsUi.cs
     // Recording format automation: MainViewModel.AutomationRecordingFormat.cs; recording quality: MainViewModel.AutomationRecordingQuality.cs; split encode mode: MainViewModel.AutomationSplitEncodeMode.cs; custom bitrate: MainViewModel.AutomationCustomBitrate.cs; encoder preset: MainViewModel.AutomationEncoderPreset.cs; output path: MainViewModel.AutomationOutputPath.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs

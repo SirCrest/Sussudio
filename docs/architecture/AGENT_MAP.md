@@ -2316,8 +2316,8 @@ Primary current owners:
   and capture-device selection. `MainViewModel.AutomationAudioInputSelection.cs`
   owns audio-input selection and custom audio-input enablement.
   `MainViewModel.AutomationCaptureMode.cs` owns automation mutation for
-  resolution and the shared reinitialization gate used after active
-  capture-mode changes.
+  resolution. `MainViewModel.AutomationCaptureModeGate.cs` owns the shared
+  reinitialization gate used after active capture-mode changes.
   `MainViewModel.AutomationFrameRate.cs` owns automation mutation for capture
   frame-rate selection while routing through the shared capture-mode
   reinitialization gate.

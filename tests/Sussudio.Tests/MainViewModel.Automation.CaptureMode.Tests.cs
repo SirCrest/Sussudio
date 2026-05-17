@@ -6,18 +6,20 @@ static partial class Program
     {
         var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
         var captureModeAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCaptureMode.cs").Replace("\r\n", "\n");
+        var captureModeGateAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCaptureModeGate.cs").Replace("\r\n", "\n");
         var frameRateAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationFrameRate.cs").Replace("\r\n", "\n");
         var videoFormatAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationVideoFormat.cs").Replace("\r\n", "\n");
         var mjpegDecoderCountAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationMjpegDecoderCount.cs").Replace("\r\n", "\n");
 
         AssertContains(viewModelStateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
-        AssertContains(captureModeAutomationText, "private async Task SetAutomationCaptureModeAsync(");
-        AssertContains(captureModeAutomationText, "await _automationCaptureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(captureModeAutomationText, "_suppressFormatChangeReinitialize = true;");
-        AssertContains(captureModeAutomationText, "_suppressFormatChangeReinitialize = false;");
-        AssertContains(captureModeAutomationText, "return wasPreviewing && SelectedFormat != null;");
-        AssertContains(captureModeAutomationText, "ReinitializeDeviceAsync($\"automation {reason}\")");
-        AssertContains(captureModeAutomationText, "_automationCaptureModeGate.Release();");
+        AssertDoesNotContain(captureModeAutomationText, "private async Task SetAutomationCaptureModeAsync(");
+        AssertContains(captureModeGateAutomationText, "private async Task SetAutomationCaptureModeAsync(");
+        AssertContains(captureModeGateAutomationText, "await _automationCaptureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(captureModeGateAutomationText, "_suppressFormatChangeReinitialize = true;");
+        AssertContains(captureModeGateAutomationText, "_suppressFormatChangeReinitialize = false;");
+        AssertContains(captureModeGateAutomationText, "return wasPreviewing && SelectedFormat != null;");
+        AssertContains(captureModeGateAutomationText, "ReinitializeDeviceAsync($\"automation {reason}\")");
+        AssertContains(captureModeGateAutomationText, "_automationCaptureModeGate.Release();");
         AssertContains(captureModeAutomationText, "return SetAutomationCaptureModeAsync(\"resolution\"");
         AssertDoesNotContain(captureModeAutomationText, "public Task SetFrameRateAsync");
         AssertContains(frameRateAutomationText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
