@@ -4,7 +4,7 @@ static partial class Program
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsOverlayCompositionText = statsOverlayText;
-        var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
+        var frameTimeOverlayText = statsOverlayText;
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
@@ -87,8 +87,6 @@ static partial class Program
         AssertContains(frameTimeGeometryText, "internal static class FrameTimeOverlayGeometry");
         AssertContains(frameTimeGeometryText, "FallbackWidth = 500");
         AssertContains(frameTimeGeometryText, "FallbackHeight = 92");
-        AssertDoesNotContain(statsOverlayText, "private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController");
-        AssertDoesNotContain(statsOverlayText, "new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext");
         AssertDoesNotContain(statsOverlayText, "private void StatsPollTimer_Tick(");
         AssertDoesNotContain(statsOverlayText, "private Storyboard CreateStatsDockStoryboard(");
         AssertDoesNotContain(statsOverlayText, "ViewModel.IsStatsVisible = true;");

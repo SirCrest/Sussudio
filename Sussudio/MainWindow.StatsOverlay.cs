@@ -7,6 +7,7 @@ namespace Sussudio;
 // graph because the dock is only driven by the overlay controller.
 public sealed partial class MainWindow
 {
+    private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;
     private StatsOverlayController _statsOverlayController = null!;
     private StatsDockRefreshController _statsDockRefreshController = null!;
 
@@ -111,6 +112,22 @@ public sealed partial class MainWindow
         });
     }
 
+    private void InitializeFrameTimeOverlayPresentationController()
+    {
+        _frameTimeOverlayPresentationController = new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext
+        {
+            SourceValue = FrameTime_SourceValue,
+            VisualValue = FrameTime_VisualValue,
+            PreviewValue = FrameTime_PreviewValue,
+            LatencyValue = FrameTime_LatencyValue,
+            StatusValue = FrameTime_StatusValue,
+            Canvas = FrameTime_Canvas,
+            VisualLine = FrameTime_VisualLine,
+            PreviewLine = FrameTime_PreviewLine,
+            ExpectedLine = FrameTime_ExpectedLine
+        });
+    }
+
     private void AttachStatsOverlayToggleBindings()
         => _statsOverlayController.AttachToggleBindings();
 
@@ -122,6 +139,19 @@ public sealed partial class MainWindow
 
     private void SetFrameTimeOverlayVisible(bool visible)
         => _statsOverlayController.SetFrameTimeOverlayVisible(visible);
+
+    private bool IsFrameTimeOverlayVisible()
+        => _statsOverlayController.IsFrameTimeOverlayVisible;
+
+    private void UpdateFrameTimeOverlay(StatsSnapshot snapshot)
+    {
+        if (!IsFrameTimeOverlayVisible())
+        {
+            return;
+        }
+
+        _frameTimeOverlayPresentationController.Apply(snapshot);
+    }
 
     private void StartStatsDockPolling()
         => _statsOverlayController.StartPolling();

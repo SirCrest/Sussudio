@@ -1102,8 +1102,9 @@ Primary current owners:
   frame-time overlay text application and graph-line mutation, while
   `Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs` owns frame-time
   canvas sizing, sample projection, and expected-line geometry.
-  `Sussudio/MainWindow.FrameTimeOverlay.cs` owns the XAML-facing compact
-  overlay adapter and presentation-controller composition.
+  `Sussudio/MainWindow.StatsOverlay.cs` owns the XAML-facing compact overlay
+  adapter and presentation-controller composition beside the stats overlay
+  visibility route.
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns shared stats
   formatting helpers.
   `Sussudio/ViewModels/StatsPresentationBuilder.Dock.cs` owns stats dock

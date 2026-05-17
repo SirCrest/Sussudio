@@ -1837,8 +1837,9 @@ Frame-time overlay compact text application and graph-line mutation now live in
 `Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs`;
 frame-time canvas sizing, sample projection, and expected-line geometry live in
 `Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs`;
-`Sussudio/MainWindow.FrameTimeOverlay.cs` is the XAML-facing compact overlay
-adapter and owns the presentation-controller composition, while
+`Sussudio/MainWindow.StatsOverlay.cs` is the XAML-facing compact overlay
+adapter and owns the presentation-controller composition beside the stats
+overlay visibility route, while
 `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` keeps the stats dock
 projection refresh adapter.
 Decode and GPU hardware stats row refresh/application over presentation inputs
