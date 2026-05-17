@@ -7,10 +7,34 @@ namespace Sussudio;
 
 // XAML-facing preview transition adapter. PreviewTransitionAnimationController
 // owns preview content/shell fade and scale transitions plus unavailable-state
-// placeholder presentation.
+// placeholder presentation; focused controllers own delayed fade-in and startup
+// overlay presentation.
 public sealed partial class MainWindow
 {
+    private PreviewFadeInController _previewFadeInController = null!;
+    private PreviewStartupOverlayController _previewStartupOverlayController = null!;
     private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;
+
+    private void InitializePreviewFadeInController()
+    {
+        _previewFadeInController = new PreviewFadeInController(new PreviewFadeInControllerContext
+        {
+            DispatcherQueue = _dispatcherQueue,
+            GetRenderer = () => _previewRendererHostController.Renderer,
+            AnimatePreviewInAsync = AnimatePreviewInAsync,
+            StartPreviewAudioFadeIn = () => StartPreviewAudioFadeIn(),
+        });
+    }
+
+    private void InitializePreviewStartupOverlayController()
+    {
+        _previewStartupOverlayController = new PreviewStartupOverlayController(new PreviewStartupOverlayControllerContext
+        {
+            PreviewLoadingOverlay = PreviewLoadingOverlay,
+            FadeInElement = FadeInElement,
+            FadeOutElement = FadeOutElement,
+        });
+    }
 
     private void InitializePreviewTransitionAnimationController()
     {
@@ -32,6 +56,18 @@ public sealed partial class MainWindow
 
     private void ResetPreviewContentTransform()
         => _previewTransitionAnimationController.ResetPreviewContentTransform();
+
+    private void SchedulePreviewFadeIn()
+        => _previewFadeInController.Schedule();
+
+    private void StopPreviewFadeInTimer()
+        => _previewFadeInController.Stop();
+
+    private void StartPreviewStartupOverlay()
+        => _previewStartupOverlayController.Start();
+
+    private void StopPreviewStartupOverlay()
+        => _previewStartupOverlayController.Stop(IsPreviewReinitAnimating);
 
     private Task AnimatePreviewOutAsync()
     {

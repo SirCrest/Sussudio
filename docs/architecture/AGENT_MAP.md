@@ -1961,8 +1961,8 @@ Primary current owners:
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   shell/content fade and scale transitions, unavailable-placeholder fades, and
   startup/unavailable presentation prep. `MainWindow.PreviewTransitions.cs` is
-  the XAML-facing adapter; shared video-shadow fades route through
-  `PreviewShadowFadeAnimator`.
+  the XAML-facing adapter for transition, delayed fade-in, and startup overlay
+  presentation; shared video-shadow fades route through `PreviewShadowFadeAnimator`.
 - `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs` owns preview
   button glyph and tooltip presentation for Start Preview and Stop Preview.
   `MainWindow.PropertyChangedPreview.cs` wires preview button presentation into
@@ -2036,12 +2036,12 @@ Primary current owners:
 - `Sussudio/Controllers/Preview/PreviewFadeInController.cs` owns delayed preview
   reveal after first visual: rendered-frame threshold, fade-in timer, renderer
   replacement fallback, and preview-audio fade start ordering.
-  `MainWindow.PreviewFadeIn.cs` is the XAML-facing adapter. Keep
+  `MainWindow.PreviewTransitions.cs` wires the XAML-facing adapter. Keep
   timeout/watchdog recovery in `PreviewStartupWatchdogController`.
 - `Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs` owns preview-
   startup loading overlay presentation while the app waits for visual
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
-  reinit-collapse opacity reset. `MainWindow.PreviewStartupOverlay.cs` is the
+  reinit-collapse opacity reset. `MainWindow.PreviewTransitions.cs` is the
   XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
   preview resize log throttling and reset state. `MainWindow.WindowSizing.cs`

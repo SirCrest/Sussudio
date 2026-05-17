@@ -2108,7 +2108,8 @@ button now live in `Sussudio/Controllers/Shell/ShellElevationController.cs`.
 Preview shell/content fade and scale transitions plus unavailable-placeholder
 presentation now live in
 `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
-`MainWindow.PreviewTransitions.cs` is the XAML-facing adapter; shared compositor
+`MainWindow.PreviewTransitions.cs` is the XAML-facing adapter for transition,
+delayed fade-in, and startup overlay presentation; shared compositor
 shadow opacity fades live in
 `Sussudio/Controllers/Preview/PreviewShadowFadeAnimator.cs`.
 
@@ -2187,11 +2188,11 @@ root shell focused on wiring while leaving the existing startup state machine
 behavior unchanged.
 Delayed preview reveal after first visual now lives in
 `Sussudio/Controllers/Preview/PreviewFadeInController.cs`; the adapter remains
-`Sussudio/MainWindow.PreviewFadeIn.cs`. Watchdog/timeout recovery remains in
+`Sussudio/MainWindow.PreviewTransitions.cs`. Watchdog/timeout recovery remains in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Preview startup loading overlay presentation now lives in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs`.
-`MainWindow.PreviewStartupOverlay.cs` is the XAML-facing adapter; watchdog and
+`MainWindow.PreviewTransitions.cs` is the XAML-facing adapter; watchdog and
 timeout recovery stay in `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Top-level preview resize telemetry throttling now lives in
 `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
