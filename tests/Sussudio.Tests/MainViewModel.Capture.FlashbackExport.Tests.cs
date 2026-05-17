@@ -22,6 +22,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
                 .Replace("\r\n", "\n");
+        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
@@ -76,9 +78,9 @@ static partial class Program
         AssertContains(exportCore, "RecordLastFlashbackExportResult(exportId, result);\n            CompleteFlashbackExportDiagnostics(exportId, result);");
 
         var backendCleanup = ExtractTextBetween(
-            captureServiceText,
-            "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync",
-            "    private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+            backendResourcesText,
+            "public async Task<bool> CleanupArtifactsAfterExportAsync",
+            "    public async Task<FlashbackPlaybackController> StartPreviewBackendAsync");
         AssertContains(backendCleanup, "FlashbackBackendArtifactCleanupRequest request,");
         AssertContains(backendCleanup, "bool exportOperationLockAlreadyHeld = false)");
         AssertContains(backendCleanup, "var lockAcquired = exportOperationLockAlreadyHeld;");
@@ -88,6 +90,15 @@ static partial class Program
         AssertContains(backendCleanup, "request.BufferManager.PurgeAllSegments();");
         AssertContains(backendCleanup, "FLASHBACK_BACKEND_CLEANUP_LOCK_REUSED");
         AssertContains(backendCleanup, "if (lockAcquired && releaseLockOnExit)");
+        AssertContains(backendCleanup, "releaseExportOperationLock(mode);");
+
+        var cleanupBridge = ExtractTextBetween(
+            captureServiceText,
+            "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync",
+            "    private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+        AssertContains(cleanupBridge, "_flashbackBackend.CleanupArtifactsAfterExportAsync(");
+        AssertContains(cleanupBridge, "WaitForFlashbackBackendCleanupExportLockAsync");
+        AssertContains(cleanupBridge, "ReleaseFlashbackBackendCleanupExportLock");
 
         var disposeBackend = ExtractTextBetween(
             captureServiceText,

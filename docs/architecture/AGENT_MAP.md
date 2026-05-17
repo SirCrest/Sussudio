@@ -512,8 +512,9 @@ Important entry points:
 - `CaptureService.ResourceRelease.cs` owns best-effort semaphore
   release/disposal, coordination-lock disposal, Flashback backend/export
   held-lock release helpers, and Flashback eviction resume warnings.
-- `CaptureService.DeferredCleanup.cs` owns Flashback artifact-cleanup request
-  handoff and deferred Flashback and unified-video cleanup after drains.
+- `CaptureService.DeferredCleanup.cs` owns Flashback artifact-cleanup adapter
+  handoff, export-lock wait/release delegation, deferred unified-video cleanup
+  after drains, and the pending LibAv drain reentry guard.
 - `CaptureService.Failures.cs` owns fatal capture/recording/Flashback backend
   failure callbacks plus last-failure telemetry state fields, lock, mutation
   helpers, clear helpers, and snapshot reads.
@@ -536,9 +537,10 @@ Important entry points:
   transition coordination: AV1 encoder support probing, video/audio readiness
   waiting, resource-owner request construction, and deferred cleanup handoff.
   Startup construction, install, playback initialization, producer attachment,
-  and startup rollback live in `FlashbackBackendResources.cs`.
+  startup rollback, and backend artifact cleanup mechanics live in
+  `FlashbackBackendResources.cs`.
 - `CaptureService.FlashbackPreviewBackendDisposal.cs` owns Flashback preview
-  backend teardown, detach order, and deferred artifact cleanup scheduling.
+  backend teardown, detach order, and artifact cleanup scheduling handoff.
 - `CaptureService.FlashbackBufferCycle.cs` owns sink-only buffer cycling after
   recording stops and fallback full rebuilds.
 - `CaptureService.FlashbackExportDiagnostics.cs` owns Flashback export
@@ -799,9 +801,12 @@ Primary current owner: `Sussudio/Services/Flashback/`
 Entry points:
 
 - `FlashbackBackendResources.cs` owns preview backend resource grouping,
-  startup construction/install/playback initialization, rollback cleanup, and
-  producer attach/detach request shaping for video, audio, and microphone feeds
-  during preview backend startup, cycling, and teardown. `CaptureService`
+  startup construction/install/playback initialization, rollback cleanup,
+  backend artifact cleanup request/retry/dispose/purge mechanics, and producer
+  attach/detach request shaping for video, audio, and microphone feeds. It
+  receives export-lock wait/release delegates from `CaptureService` rather than
+  owning service semaphores directly during preview backend startup, cycling,
+  and teardown. `CaptureService`
   remains the transition/readiness coordinator and delegates backend mechanics
   into this owner.
 - `FlashbackBufferManager.cs` owns buffer live counters, byte/PTS accounting updates, and core state.

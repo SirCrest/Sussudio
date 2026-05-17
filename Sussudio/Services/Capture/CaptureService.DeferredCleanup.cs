@@ -9,125 +9,36 @@ namespace Sussudio.Services.Capture;
 // exports to drain before disposing native resources and temporary artifacts.
 public partial class CaptureService
 {
-    private readonly record struct FlashbackBackendArtifactCleanupRequest(
-        FlashbackBufferManager? BufferManager,
-        FlashbackExporter? FlashbackExporter,
-        string Reason,
-        bool PurgeSegments);
-
     private void ScheduleDeferredFlashbackBackendCleanup(
         Task sinkCompletionTask,
         FlashbackBackendArtifactCleanupRequest request,
         int attempt = 0)
-    {
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await sinkCompletionTask.ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"FLASHBACK_BACKEND_DEFERRED_WAIT_WARN reason='{request.Reason}' type={ex.GetType().Name} msg={ex.Message}");
-            }
-            finally
-            {
-                var cleanupCompleted = await CleanupFlashbackBackendArtifactsAfterExportAsync(
-                        request,
-                        "deferred")
-                    .ConfigureAwait(false);
-
-                if (cleanupCompleted)
-                {
-                    Logger.Log($"FLASHBACK_BACKEND_DEFERRED_CLEANUP_OK reason='{request.Reason}' attempt={attempt}");
-                }
-                else if (attempt < 3)
-                {
-                    var nextAttempt = attempt + 1;
-                    Logger.Log($"FLASHBACK_BACKEND_DEFERRED_CLEANUP_RETRY reason='{request.Reason}' attempt={attempt} next_attempt={nextAttempt}");
-                    ScheduleDeferredFlashbackBackendCleanup(
-                        Task.Delay(TimeSpan.FromSeconds(5)),
-                        request,
-                        nextAttempt);
-                }
-                else
-                {
-                    Logger.Log($"FLASHBACK_BACKEND_DEFERRED_CLEANUP_GIVE_UP reason='{request.Reason}' attempt={attempt} preserve_segments=true");
-                }
-            }
-        });
-    }
+        => _flashbackBackend.ScheduleDeferredArtifactCleanup(
+            sinkCompletionTask,
+            request,
+            WaitForFlashbackBackendCleanupExportLockAsync,
+            ReleaseFlashbackBackendCleanupExportLock,
+            attempt);
 
     private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync(
         FlashbackBackendArtifactCleanupRequest request,
         string mode,
         bool exportOperationLockAlreadyHeld = false)
-    {
-        if (request.BufferManager == null && request.FlashbackExporter == null)
-        {
-            return true;
-        }
+        => await _flashbackBackend.CleanupArtifactsAfterExportAsync(
+                request,
+                mode,
+                WaitForFlashbackBackendCleanupExportLockAsync,
+                ReleaseFlashbackBackendCleanupExportLock,
+                exportOperationLockAlreadyHeld)
+            .ConfigureAwait(false);
 
-        var lockAcquired = exportOperationLockAlreadyHeld;
-        var releaseLockOnExit = false;
-        try
-        {
-            if (!exportOperationLockAlreadyHeld)
-            {
-                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_AWAITING_EXPORT_LOCK mode={mode} reason='{request.Reason}'");
-                var lockSw = System.Diagnostics.Stopwatch.StartNew();
-                lockAcquired = await _flashbackExportOperationLock
-                    .WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)
-                    .ConfigureAwait(false);
-                lockSw.Stop();
+    private Task<bool> WaitForFlashbackBackendCleanupExportLockAsync()
+        => _flashbackExportOperationLock.WaitAsync(
+            TimeSpan.FromSeconds(30),
+            CancellationToken.None);
 
-                if (!lockAcquired)
-                {
-                    Logger.Log($"FLASHBACK_BACKEND_CLEANUP_EXPORT_LOCK_TIMEOUT mode={mode} reason='{request.Reason}' preserve_segments=true");
-                    return false;
-                }
-
-                releaseLockOnExit = true;
-                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_LOCK_ACQUIRED mode={mode} elapsed_ms={lockSw.ElapsedMilliseconds} reason='{request.Reason}'");
-            }
-            else
-            {
-                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_LOCK_REUSED mode={mode} reason='{request.Reason}'");
-            }
-
-            if (request.FlashbackExporter != null)
-            {
-                try { request.FlashbackExporter.Dispose(); }
-                catch (Exception ex) { Logger.Log($"FLASHBACK_EXPORTER_CLEANUP_DISPOSE_WARN mode={mode} reason='{request.Reason}' type={ex.GetType().Name} msg={ex.Message}"); }
-            }
-
-            if (request.BufferManager != null)
-            {
-                if (request.PurgeSegments)
-                {
-                    try { request.BufferManager.PurgeAllSegments(); }
-                    catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_CLEANUP_PURGE_WARN mode={mode} reason='{request.Reason}' type={ex.GetType().Name} msg={ex.Message}"); }
-                }
-
-                try { request.BufferManager.Dispose(); }
-                catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_CLEANUP_DISPOSE_WARN mode={mode} reason='{request.Reason}' type={ex.GetType().Name} msg={ex.Message}"); }
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_BACKEND_CLEANUP_WARN mode={mode} reason='{request.Reason}' type={ex.GetType().Name} msg={ex.Message}");
-            return false;
-        }
-        finally
-        {
-            if (lockAcquired && releaseLockOnExit)
-            {
-                ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, $"flashback_backend_cleanup_{mode}");
-            }
-        }
-    }
+    private void ReleaseFlashbackBackendCleanupExportLock(string mode)
+        => ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, $"flashback_backend_cleanup_{mode}");
 
     private Task ScheduleDeferredUnifiedVideoCaptureCleanup(
         Task sinkCompletionTask,

@@ -148,6 +148,11 @@ static partial class Program
         AssertContains(backendSource, "playbackController.Initialize(");
         AssertContains(backendSource, "private async Task RollBackPreviewBackendStartAsync(");
         AssertContains(backendSource, "request.ScheduleDeferredCleanup(");
+        AssertContains(backendSource, "internal readonly record struct FlashbackBackendArtifactCleanupRequest(");
+        AssertContains(backendSource, "public void ScheduleDeferredArtifactCleanup(");
+        AssertContains(backendSource, "public async Task<bool> CleanupArtifactsAfterExportAsync(");
+        AssertContains(backendSource, "Func<Task<bool>> acquireExportOperationLockAsync,");
+        AssertContains(backendSource, "Action<string> releaseExportOperationLock,");
         AssertContains(backendSource, "public async Task<FinalizeResult> FinalizeRecordingAsync(");
         AssertContains(backendSource, "private static FinalizeResult PreserveEndArtifactsOnFailure(");
         AssertContains(backendSource, "public FlashbackPlaybackController? TakePlaybackController()");

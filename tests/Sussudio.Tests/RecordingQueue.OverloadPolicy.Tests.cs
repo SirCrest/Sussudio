@@ -140,7 +140,7 @@ static partial class Program
             "await _artifactManager.RollbackAsync(rollback.RecordingContext)");
         AssertDoesNotContain(captureServiceSource, "System.Diagnostics.Trace.TraceWarning($\"Suppressed exception in CaptureService.StartRecordingAsync");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_CYCLE_OK mode=preserve_rebuild");
-        AssertContains(captureServiceSource, "FLASHBACK_BUFFER_CLEANUP_PURGE_WARN");
+        AssertContains(flashbackBackendSource, "FLASHBACK_BUFFER_CLEANUP_PURGE_WARN");
         AssertDoesNotContain(captureServiceSource, "FLASHBACK_BUFFER_DEFERRED_PURGE_SKIP");
         AssertContains(captureServiceSource, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n            {\n                throw;\n            }");
         var stopRecordingBackendRouter = ExtractSourceBlock(
@@ -291,23 +291,33 @@ static partial class Program
             "private void ScheduleDeferredFlashbackBackendCleanup",
             "private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
         AssertContains(deferredFlashbackBackendCleanup, "FlashbackBackendArtifactCleanupRequest request,");
-        AssertContains(deferredFlashbackBackendCleanup, "CleanupFlashbackBackendArtifactsAfterExportAsync(");
-        AssertContains(deferredFlashbackBackendCleanup, "if (cleanupCompleted)");
-        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_OK reason='{request.Reason}' attempt={attempt}");
-        AssertContains(deferredFlashbackBackendCleanup, "else if (attempt < 3)");
-        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_RETRY reason='{request.Reason}' attempt={attempt} next_attempt={nextAttempt}");
-        AssertContains(deferredFlashbackBackendCleanup, "Task.Delay(TimeSpan.FromSeconds(5))");
-        AssertContains(deferredFlashbackBackendCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_GIVE_UP reason='{request.Reason}' attempt={attempt} preserve_segments=true");
+        AssertContains(deferredFlashbackBackendCleanup, "_flashbackBackend.ScheduleDeferredArtifactCleanup(");
+        AssertContains(deferredFlashbackBackendCleanup, "WaitForFlashbackBackendCleanupExportLockAsync");
+        AssertContains(deferredFlashbackBackendCleanup, "ReleaseFlashbackBackendCleanupExportLock");
+
+        var deferredFlashbackBackendResourcesCleanup = ExtractSourceBlock(
+            flashbackBackendSource,
+            "public void ScheduleDeferredArtifactCleanup",
+            "public async Task<bool> CleanupArtifactsAfterExportAsync");
+        AssertContains(deferredFlashbackBackendResourcesCleanup, "FlashbackBackendArtifactCleanupRequest request,");
+        AssertContains(deferredFlashbackBackendResourcesCleanup, "CleanupArtifactsAfterExportAsync(");
+        AssertContains(deferredFlashbackBackendResourcesCleanup, "if (cleanupCompleted)");
+        AssertContains(deferredFlashbackBackendResourcesCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_OK reason='{request.Reason}' attempt={attempt}");
+        AssertContains(deferredFlashbackBackendResourcesCleanup, "else if (attempt < 3)");
+        AssertContains(deferredFlashbackBackendResourcesCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_RETRY reason='{request.Reason}' attempt={attempt} next_attempt={nextAttempt}");
+        AssertContains(deferredFlashbackBackendResourcesCleanup, "Task.Delay(TimeSpan.FromSeconds(5))");
+        AssertContains(deferredFlashbackBackendResourcesCleanup, "FLASHBACK_BACKEND_DEFERRED_CLEANUP_GIVE_UP reason='{request.Reason}' attempt={attempt} preserve_segments=true");
         var flashbackBackendArtifactCleanup = ExtractSourceBlock(
-            captureServiceSource,
-            "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync",
-            "private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+            flashbackBackendSource,
+            "public async Task<bool> CleanupArtifactsAfterExportAsync",
+            "public async Task<FlashbackPlaybackController> StartPreviewBackendAsync");
         AssertContains(flashbackBackendArtifactCleanup, "FlashbackBackendArtifactCleanupRequest request,");
-        AssertContains(flashbackBackendArtifactCleanup, "WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)");
+        AssertContains(captureServiceSource, "WaitAsync(\n            TimeSpan.FromSeconds(30),\n            CancellationToken.None)");
+        AssertContains(flashbackBackendArtifactCleanup, "acquireExportOperationLockAsync()");
         AssertOccursBefore(flashbackBackendArtifactCleanup, "request.FlashbackExporter.Dispose();", "request.BufferManager.PurgeAllSegments();");
         AssertOccursBefore(flashbackBackendArtifactCleanup, "request.FlashbackExporter.Dispose();", "request.BufferManager.Dispose();");
-        AssertOccursBefore(flashbackBackendArtifactCleanup, "WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)", "request.FlashbackExporter.Dispose();");
-        AssertOccursBefore(flashbackBackendArtifactCleanup, "WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)", "request.BufferManager.PurgeAllSegments();");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "acquireExportOperationLockAsync()", "request.FlashbackExporter.Dispose();");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "acquireExportOperationLockAsync()", "request.BufferManager.PurgeAllSegments();");
         var cycleFlashbackBuffer = ExtractSourceBlock(
             captureServiceSource,
             "private async Task CycleFlashbackBufferAsync",
