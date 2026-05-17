@@ -188,7 +188,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "decodePhase={snapshot.FlashbackPlaybackMaxDecodePhase}");
         AssertContains(diagnostics.SourceFamilyText, "audioMasterDouble={health.FlashbackPlaybackAudioMasterDelayDoubles}");
         AssertContains(diagnostics.SourceFamilyText, "audioMasterDouble={snapshot.FlashbackPlaybackAudioMasterDelayDoubles}");
-        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackPlaybackSubmitFailures > 0");
+        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackPlaybackSubmitFailures <= 0");
         AssertContains(diagnostics.SourceFamilyText, "\"flashback_export\"");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackForceRotateRejectWithoutDamage =");
         AssertContains(diagnostics.SourceFamilyText, "!flashbackForceRotateRejectWithoutDamage &&\n              recentFlashbackRecording.SequenceGaps > 0");

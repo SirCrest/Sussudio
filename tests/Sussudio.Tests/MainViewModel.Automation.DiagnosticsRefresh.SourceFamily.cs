@@ -10,6 +10,10 @@ static partial class Program
             EvaluationPolicyText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.EvaluationPolicy.cs"),
             DiagnosticEvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluation.cs"),
             DiagnosticEvaluationFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs"),
+            DiagnosticEvaluationFlashbackStorageText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Storage.cs"),
+            DiagnosticEvaluationFlashbackRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs"),
+            DiagnosticEvaluationFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Export.cs"),
+            DiagnosticEvaluationFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Playback.cs"),
             DiagnosticEvaluationRealtimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs"),
             DiagnosticEvaluationRealtimePreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs"),
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs"),
@@ -109,6 +113,10 @@ static partial class Program
         public string EvaluationPolicyText { get; init; } = string.Empty;
         public string DiagnosticEvaluationText { get; init; } = string.Empty;
         public string DiagnosticEvaluationFlashbackText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationFlashbackStorageText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationFlashbackRecordingText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationFlashbackExportText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationFlashbackPlaybackText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimeText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimePreviewText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
@@ -200,6 +208,10 @@ static partial class Program
                 EvaluationPolicyText,
                 DiagnosticEvaluationText,
                 DiagnosticEvaluationFlashbackText,
+                DiagnosticEvaluationFlashbackStorageText,
+                DiagnosticEvaluationFlashbackRecordingText,
+                DiagnosticEvaluationFlashbackExportText,
+                DiagnosticEvaluationFlashbackPlaybackText,
                 DiagnosticEvaluationRealtimeText,
                 DiagnosticEvaluationRealtimePreviewText,
                 DiagnosticEvaluationLanesText,

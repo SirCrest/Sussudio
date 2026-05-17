@@ -227,7 +227,17 @@ event storage.
 `AutomationDiagnosticsHub.DiagnosticEvaluation.cs` owns diagnostic verdict
 orchestration and the final healthy/mixed fallback.
 `AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs` owns Flashback-specific
-diagnostic verdict ordering and summaries.
+diagnostic verdict ordering.
+`AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Storage.cs` owns
+Flashback storage pressure diagnostic verdicts.
+`AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs` owns
+Flashback encoder failure, export-rotation gap, backend staleness, and recording
+degradation diagnostic verdicts.
+`AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Export.cs` owns active
+and stalled Flashback export diagnostic verdicts.
+`AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Playback.cs` owns
+Flashback playback command, performance, frametime, and submission diagnostic
+verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs` owns idle, warmup,
 recording/audio, source/capture, source-signal, and MJPEG decode/reorder
 diagnostic verdict ordering.
