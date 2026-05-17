@@ -2686,10 +2686,11 @@ task registration, priority, task-label, and started-action wiring.
 flows for normal Flashback, playback, and recording-backed diagnostics while
 startup only delegates selected scenario registration.
 
-Diagnostic-session Flashback rejected-export scenarios now live in
-`tools/Common/DiagnosticSessionFlashbackRejectedExports.cs`. It owns rejected-export
-scenario dispatch plus inactive-buffer and active-recording rejection flows,
-including failure-kind and post-rejection state assertions.
+Diagnostic-session Flashback rejected-export scenarios now live in the
+`tools/Common/DiagnosticSessionFlashbackRejectedExports*.cs` partial family.
+The root owns selected-scenario dispatch, `.Inactive.cs` owns inactive-buffer
+failure-kind and last-result assertions, and `.Recording.cs` owns
+active-Flashback-recording failure-kind and backend-stability assertions.
 
 Diagnostic-session Flashback recording-settings deferral now lives in
 `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs` as a
@@ -2832,6 +2833,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
+- `DiagnosticSessionFlashbackRejectedExports.Inactive.cs`
+- `DiagnosticSessionFlashbackRejectedExports.Recording.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`

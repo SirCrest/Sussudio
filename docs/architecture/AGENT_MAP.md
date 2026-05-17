@@ -2968,8 +2968,12 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
   owns Flashback-recording-backed preview stop/restart diagnostic flow.
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback
-  rejected-export diagnostic scenario dispatch and flows for inactive buffers
-  and active Flashback recording backends.
+  rejected-export diagnostic scenario dispatch.
+- `tools/Common/DiagnosticSessionFlashbackRejectedExports.Inactive.cs` owns
+  inactive-buffer rejected-export failure-kind and last-result assertions.
+- `tools/Common/DiagnosticSessionFlashbackRejectedExports.Recording.cs` owns
+  active-Flashback-recording rejected-export failure-kind and backend-stability
+  assertions.
 - `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs` is the
   Flashback recording-settings diagnostic marker shell.
 - `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
