@@ -1284,7 +1284,9 @@ Primary current owners:
   assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceReaders.cs`
   owns diagnostics refresh source/fixture readers for capture service, source
-  reader, diagnostic-session, and tool-surface source text used by refresh
+  reader, and tool-surface source text used by refresh ownership assertions.
+  `tests/Sussudio.Tests/DiagnosticSession.SourceReaders.cs` owns shared
+  diagnostic-session source-family readers used by refresh, MCP, and tool
   ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.PreviewRuntime.Tests.cs`
   owns diagnostics snapshot preview runtime projection ownership assertions.
