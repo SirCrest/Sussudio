@@ -7,7 +7,7 @@ using Sussudio.Services.Runtime;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Startup FFmpeg capability probes for encoder-backed recording format and split-encode options.
+/// Startup FFmpeg capability probes and observable option application for encoder-backed recording formats.
 /// </summary>
 public partial class MainViewModel
 {
@@ -69,6 +69,38 @@ public partial class MainViewModel
                 Logger.Log($"RECORDING_FORMATS_UI_ENQUEUE_FAILED formats={formats.Count}");
             }
         }
+    }
+
+    private void RebuildRecordingFormatOptions()
+    {
+        var selection = RecordingSettingsSelectionPolicy.Select(
+            _detectedRecordingFormats,
+            AvailableRecordingFormats,
+            SelectedRecordingFormat,
+            IsHdrEnabled,
+            DefaultRecordingFormat,
+            HevcRecordingFormat,
+            Av1RecordingFormat);
+
+        AvailableRecordingFormats.Clear();
+        foreach (var format in selection.AvailableFormats)
+        {
+            AvailableRecordingFormats.Add(format);
+        }
+
+        var previousSelection = SelectedRecordingFormat;
+        SelectedRecordingFormat = selection.SelectedFormat;
+        if (string.Equals(previousSelection, selection.SelectedFormat, StringComparison.Ordinal))
+        {
+            OnPropertyChanged(nameof(SelectedRecordingFormat));
+        }
+
+        if (IsHdrEnabled && !RecordingSettingsSelectionPolicy.IsHdrCompatible(SelectedRecordingFormat))
+        {
+            StatusText = "HDR recording requires HEVC or AV1 (10-bit).";
+        }
+
+        Logger.Log($"Selected recording format: {SelectedRecordingFormat}");
     }
 
     private async Task RefreshSplitEncodeCapabilitiesAsync()

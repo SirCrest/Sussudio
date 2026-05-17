@@ -143,5 +143,5 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Source telemetry: MainViewModel.Telemetry.cs
     // Settings lifecycle/reactions and adapter: MainViewModel.SettingsPersistence.cs; projection: MainViewModelSettingsPersistenceProjection.cs
     // Flashback settings reactions: encoder: MainViewModel.FlashbackEncoderSettings.cs; buffer/GPU: MainViewModel.FlashbackSettings.cs
-    // Recording capability refresh: MainViewModel.RecordingCapabilityRefresh.cs
+    // Recording capability refresh and option application: MainViewModel.RecordingCapabilityRefresh.cs
 }

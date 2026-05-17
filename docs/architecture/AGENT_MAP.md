@@ -2292,8 +2292,9 @@ Primary current owners:
   runtime snapshots, selected formats, source telemetry, and UI selection state.
   `MainViewModel.FormatSelection.cs` owns pixel-format option building and
   selected capture-format selection policy.
-  `MainViewModel.RecordingFormatOptions.cs` owns recording-format policy
-  application to observable state. `MainViewModel.CaptureModeTransactions.cs`
+  `MainViewModel.RecordingCapabilityRefresh.cs` owns startup FFmpeg capability
+  probes and recording-format policy application to observable state.
+  `MainViewModel.CaptureModeTransactions.cs`
   owns HDR toggle side effects: recording-time revert/status, mode option
   rebuilds, immediate reinitialize scheduling, and settings persistence.
   `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs` owns pure recording
@@ -2374,7 +2375,8 @@ Primary current owners:
   NVENC split-encode mode, custom encoder bitrate clamp policy, encoder
   preset, and output-path automation mutation.
   `MainViewModel.RecordingCapabilityRefresh.cs` owns startup FFmpeg capability
-  probes for recording formats and split-encode modes.
+  probes for recording formats and split-encode modes plus observable
+  recording-format option rebuilds.
 
 Refactor direction:
 

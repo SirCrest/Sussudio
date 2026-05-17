@@ -3125,9 +3125,9 @@ Remaining `tools/Common` ownership:
    lives in `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs`. Pure
    recording codec filtering, selected-codec fallback policy, string-to-model
    format/quality parsing, and custom bitrate clamp policy now live in
-   `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs`, while observable
-   recording-format option mutation lives in
-   `MainViewModel.RecordingFormatOptions.cs`. `MainViewModel.FormatSelection.cs`
+   `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs`, while startup
+   FFmpeg capability probes and observable recording-format option mutation live
+   in `MainViewModel.RecordingCapabilityRefresh.cs`. `MainViewModel.FormatSelection.cs`
    keeps pixel-format option mutation and selected capture-format policy, while
    `MainViewModel.CaptureModeTransactions.cs` owns HDR toggle side effects:
    recording-time revert/status, mode option rebuilds, immediate reinitialize
@@ -3223,7 +3223,8 @@ Remaining `tools/Common` ownership:
    the shared capture-mode reinitialization gate now lives in
    `MainViewModel.CaptureModeTransactions.cs`.
    Startup FFmpeg capability probes for recording formats and split-encode modes
-   now live in `MainViewModel.RecordingCapabilityRefresh.cs`.
+   plus observable recording-format option rebuilds now live in
+   `MainViewModel.RecordingCapabilityRefresh.cs`.
    The old `MainViewModel.Automation.cs` catch-all has been retired.
 
 5. Extract capture resource owners behind the transition policy.
