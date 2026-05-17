@@ -2082,7 +2082,8 @@ Randomized interval/mode selection now lives in
 `Sussudio/Controllers/Launch/Splash/SplashLoadingPhrasePacingPolicy.cs`.
 `Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns
 DispatcherTimer lifecycle and the two-line splash text animation.
-`MainWindow.SplashLoading.cs` is the XAML-facing adapter.
+Its MainWindow wiring is folded into `MainWindow.LaunchEntrance.cs` because
+launch entrance owns the only phrase start/stop choreography.
 
 Launch entrance ownership is split by phase:
 `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs` owns context and
@@ -2093,7 +2094,8 @@ handoff into shell entrance, and
 `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs` owns shell
 chrome/button/stats entrance choreography, deferred preview reveal logging,
 active-storyboard cleanup, and control-bar shadow fade. `MainWindow.LaunchEntrance.cs`
-is the XAML-facing adapter.
+is the XAML-facing adapter for launch entrance and splash phrase controller
+wiring.
 
 Control-bar button ownership and hover/press/release scale behavior now live in
 `Sussudio/Controllers/Shell/ControlBarAnimationController.cs`.

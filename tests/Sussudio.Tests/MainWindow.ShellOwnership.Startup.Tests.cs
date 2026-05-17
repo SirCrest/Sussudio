@@ -9,17 +9,17 @@ static partial class Program
     {
         var launchEntranceSplashText = ReadRepoFile("Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var splashAdapterText = ReadRepoFile("Sussudio/MainWindow.SplashLoading.cs").Replace("\r\n", "\n");
+        var launchAdapterText = ReadRepoFile("Sussudio/MainWindow.LaunchEntrance.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs").Replace("\r\n", "\n");
         var catalogText = ReadRepoFile("Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs").Replace("\r\n", "\n");
         var pacingPolicyText = ReadRepoFile("Sussudio/Controllers/Launch/Splash/SplashLoadingPhrasePacingPolicy.cs").Replace("\r\n", "\n");
 
-        AssertContains(splashAdapterText, "private SplashLoadingPhraseController _splashLoadingPhraseController = null!;");
-        AssertContains(splashAdapterText, "private void InitializeSplashLoadingPhraseController()");
-        AssertContains(splashAdapterText, "SplashLoadingTextA = SplashLoadingTextA,");
-        AssertContains(splashAdapterText, "SplashLoadingTransformB = SplashLoadingTransformB,");
-        AssertContains(splashAdapterText, "=> _splashLoadingPhraseController.Start();");
-        AssertContains(splashAdapterText, "=> _splashLoadingPhraseController.Stop();");
+        AssertContains(launchAdapterText, "private SplashLoadingPhraseController _splashLoadingPhraseController = null!;");
+        AssertContains(launchAdapterText, "private void InitializeSplashLoadingPhraseController()");
+        AssertContains(launchAdapterText, "SplashLoadingTextA = SplashLoadingTextA,");
+        AssertContains(launchAdapterText, "SplashLoadingTransformB = SplashLoadingTransformB,");
+        AssertContains(launchAdapterText, "=> _splashLoadingPhraseController.Start();");
+        AssertContains(launchAdapterText, "=> _splashLoadingPhraseController.Stop();");
         AssertContains(mainWindowText, "InitializeSplashLoadingPhraseController();");
         AssertContains(launchEntranceSplashText, "_context.StartSplashLoadingPhrases();");
         AssertContains(launchEntranceSplashText, "_context.StopSplashLoadingPhrases();");
@@ -158,6 +158,7 @@ static partial class Program
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private LaunchEntranceAnimationController _launchEntranceAnimationController = null!;");
+        AssertContains(adapterText, "private SplashLoadingPhraseController _splashLoadingPhraseController = null!;");
         AssertContains(adapterText, "private void InitializeLaunchEntranceAnimationController()");
         AssertContains(adapterText, "SplashContent = SplashContent,");
         AssertContains(adapterText, "PreviewBorder = PreviewBorder,");
