@@ -2229,7 +2229,7 @@ recording property-name router.
 
 Output-path, capture-option, shell-visibility, and live source-signal
 property-name routing now live in focused adapters:
-`Sussudio/MainWindow.OutputPathDisplay.cs`,
+`Sussudio/MainWindow.OutputPath.cs`,
 `Sussudio/MainWindow.PropertyChangedCaptureOptions.cs`,
 `Sussudio/MainWindow.PropertyChangedShell.cs`, and
 `Sussudio/MainWindow.LiveSignalInfo.cs`. Keep the root dispatcher
@@ -2323,12 +2323,12 @@ presentation-preview harness coverage check.
 Recording output-path textbox, tooltip, and resize-event updates now live in
 `Sussudio/Controllers/Recording/Output/OutputPathDisplayController.cs`; pure truncation text
 policy now lives in `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs`.
-`MainWindow.OutputPathDisplay.cs` is the XAML-facing adapter used by binding
+`MainWindow.OutputPath.cs` is the XAML-facing adapter used by binding
 setup and property changes.
 
 Recording output-path browse/open-recordings button workflows now live in
 `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`.
-`MainWindow.OutputPathActions.cs` is the XAML-facing adapter.
+`MainWindow.OutputPath.cs` is the XAML-facing adapter.
 
 Diagnostic session DTOs now live in focused model files:
 `tools/Common/DiagnosticSessionOptions.cs`,

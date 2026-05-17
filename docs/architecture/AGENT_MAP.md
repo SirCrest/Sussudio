@@ -2052,9 +2052,10 @@ Primary current owners:
   recording-specific property-change router and adapter surface, delegating
   record-button, glow, pulse, and recording-time lockout projection through
   `RecordingStatePresentationController` and `RecordingStatePresentationPolicy`.
-- `Sussudio/MainWindow.OutputPathDisplay.cs` owns the output-path
-  property-change router and delegates display updates to
-  `OutputPathDisplayController`.
+- `Sussudio/MainWindow.OutputPath.cs` owns the output-path property-change
+  router and XAML-facing button/display adapter, delegating display updates to
+  `OutputPathDisplayController` and browse/open commands to
+  `OutputPathActionController`.
 - `Sussudio/MainWindow.PropertyChangedCaptureOptions.cs` owns capture-option
   and source-signal property-change routing for HDR toggles, telemetry
   tooltips, source overlay updates, bitrate visibility, and show-all-options
@@ -2140,11 +2141,11 @@ Primary current owners:
 - `Sussudio/Controllers/Recording/Output/OutputPathDisplayController.cs` owns recording output-
   path textbox, tooltip, and resize-event updates.
   `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs` owns pure output-
-  path truncation text policy. `MainWindow.OutputPathDisplay.cs` is the
-  XAML-facing adapter used by binding setup and property changes.
+  path truncation text policy. `MainWindow.OutputPath.cs` is the XAML-facing
+  adapter used by binding setup and property changes.
 - `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs` owns recording output-
-  path browse/open-recordings button workflows. `MainWindow.OutputPathActions.cs`
-  is the XAML-facing adapter.
+  path browse/open-recordings button workflows. `MainWindow.OutputPath.cs` is
+  the XAML-facing adapter.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.cs` owns compatibility-facade
   construction, dependency assignment, collaborator construction, and small bridge
