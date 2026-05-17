@@ -78,18 +78,10 @@ public sealed partial class AutomationCommandDispatcher
             }
 
             case AutomationCommandKind.SetDeviceAudioMode:
-            {
-                var mode = RequireString(payload, "mode");
-                await _viewModel.SetDeviceAudioModeAsync(mode, cancellationToken).ConfigureAwait(false);
-                return CreateResponse(correlationId, $"Device audio mode changed: {mode}.");
-            }
+                return await ExecuteSetDeviceAudioModeCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.SetAnalogAudioGain:
-            {
-                var gain = RequireDouble(payload, "gain");
-                await _viewModel.SetAnalogAudioGainAsync(gain, cancellationToken).ConfigureAwait(false);
-                return CreateResponse(correlationId, $"Analog audio gain set to {gain:0.###}%.");
-            }
+                return await ExecuteSetAnalogAudioGainCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.FlashbackAction:
                 return await ExecuteFlashbackActionCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
@@ -245,11 +237,7 @@ public sealed partial class AutomationCommandDispatcher
                 return await ExecuteSetFlashbackEnabledCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.SetMicrophoneEnabled:
-            {
-                var enabled = GetBool(payload, "enabled") ?? throw new InvalidOperationException("Missing 'enabled' parameter.");
-                await _viewModel.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                return CreateResponse(correlationId, $"Microphone {(enabled ? "enabled" : "disabled")}.");
-            }
+                return await ExecuteSetMicrophoneEnabledCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             default:
                 return CreateResponse(

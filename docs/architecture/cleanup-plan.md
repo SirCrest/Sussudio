@@ -242,6 +242,9 @@ envelope: manifest revision checks, auth/readiness gates, trivial-handler
 dispatch, and error shaping. `AutomationCommandDispatcher.CustomCommands.cs`
 owns the custom command switch/router for commands that need multi-field
 payloads, special response shapes, or capture/Flashback routing.
+`AutomationCommandDispatcher.AudioControlCommands.cs` owns device-audio mode,
+analog audio gain, and microphone-enable command bodies behind the custom
+command router.
 `AutomationCommandDispatcher.DiagnosticCommands.cs` owns diagnostic readback
 command bodies for recent events, performance timeline, and audio ramp traces
 behind the custom command router.
