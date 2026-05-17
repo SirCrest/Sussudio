@@ -2605,20 +2605,16 @@ Primary owners:
 - `tools/ssctl/Formatters.cs` is the console projection facade only.
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration and
   section ordering only.
-- `tools/ssctl/Formatters.Snapshot.State.cs` owns the Sussudio state and
-  capture-command summary.
+- `tools/ssctl/Formatters.Snapshot.CoreSections.cs` owns the Sussudio state,
+  capture-command summary, audio, recording/output, legacy performance, and
+  Memory/GC embedded snapshot text.
 - `tools/ssctl/Formatters.Snapshot.CaptureSettings.cs` owns capture settings
   text and friendly/exact frame-rate summary formatting.
-- `tools/ssctl/Formatters.Snapshot.Audio.cs` owns audio snapshot text.
 - `tools/ssctl/Formatters.Snapshot.VideoPipeline.cs` owns video ingest,
   recording queue, encoder failure, GPU/CUDA queue, freshness, and video
   diagnostic snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Recording.cs` owns recording/output,
-  backend, integrity, audio-integrity, and last-output snapshot text.
 - `tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs` owns diagnostic health,
   summary, evidence, and frame-lane snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Performance.cs` owns legacy performance
-  score, summary, and pipeline-latency snapshot text.
 - `tools/ssctl/Formatters.Snapshot.CaptureCadence.cs` owns capture cadence,
   packet fingerprint, and visual-cadence snapshot text.
 - `tools/ssctl/Formatters.Snapshot.AvSync.cs` owns embedded snapshot AV-sync
@@ -2628,8 +2624,6 @@ Primary owners:
   queue-latency, backpressure, failure, GPU queue, playback state,
   command-queue, cadence, decode, frame, stage, A/V drift, and export
   progress/result snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Memory.cs` owns embedded snapshot Memory/GC
-  text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer-mode
   routing, GPU-media-source text, and non-D3D preview fallback text.
@@ -3046,24 +3040,17 @@ Primary owners:
 - `tools/Common/AutomationSnapshotFormatter.cs` owns the top-level shared
   automation snapshot console text flow and delegates each named output
   section to a focused partial.
-  `tools/Common/AutomationSnapshotFormatter.State.cs` owns the state,
-  capture-command queue, selected-device, and initialized/preview/recording
-  text.
+  `tools/Common/AutomationSnapshotFormatter.CoreSections.cs` owns the state,
+  capture-command queue, selected-device, initialized/preview/recording, audio,
+  recording summary, legacy performance, process CPU, memory, GC, and
+  thread-pool text.
   `tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs` owns capture
   option, recording format, HDR, pipeline, and compact UI setting text.
-  `tools/Common/AutomationSnapshotFormatter.Audio.cs` owns audio enablement,
-  preview/custom input, signal, reader, and frame-count text.
   `tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs` owns video reader,
   encoder queue, queue-latency, backpressure, failure, GPU/CUDA queue,
   freshness, diagnostics, and thread-health routing text.
-  `tools/Common/AutomationSnapshotFormatter.Recording.cs` owns recording
-  summary, integrity, audio integrity, and last-output text.
   `tools/Common/AutomationSnapshotFormatter.Diagnostics.cs` owns diagnostic
   health, summary, evidence, and frame-lane text.
-  `tools/Common/AutomationSnapshotFormatter.Performance.cs` owns legacy
-  performance score, summary, and pipeline-latency text.
-  `tools/Common/AutomationSnapshotFormatter.Memory.cs` owns process CPU,
-  working-set/private/managed memory, GC, and thread-pool text.
   `tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs` owns capture
   cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled visual
   cadence, AV-sync text, source-signal text, and routing to MJPEG/preview

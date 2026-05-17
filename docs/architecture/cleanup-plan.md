@@ -399,18 +399,15 @@ helpers stay with their owning command partials.
 
 `tools/ssctl/Formatters.cs` is only the projection facade for console output.
 Keep app snapshot orchestration and section ordering in `Formatters.Snapshot.cs`,
-state/capture-command text in `Formatters.Snapshot.State.cs`, capture settings
-and friendly/exact frame-rate text in `Formatters.Snapshot.CaptureSettings.cs`,
-audio text in `Formatters.Snapshot.Audio.cs`, video-pipeline text in
-`Formatters.Snapshot.VideoPipeline.cs`, recording text in
-`Formatters.Snapshot.Recording.cs`, diagnostic health/frame-lane text in
-`Formatters.Snapshot.DiagnosticLanes.cs`, legacy performance text in
-`Formatters.Snapshot.Performance.cs`, capture cadence text in
+state/capture-command, audio, recording, legacy performance, and Memory/GC text
+in `Formatters.Snapshot.CoreSections.cs`, capture settings and friendly/exact
+frame-rate text in `Formatters.Snapshot.CaptureSettings.cs`, video-pipeline
+text in `Formatters.Snapshot.VideoPipeline.cs`, diagnostic health/frame-lane
+text in `Formatters.Snapshot.DiagnosticLanes.cs`, capture cadence text in
 `Formatters.Snapshot.CaptureCadence.cs`, Flashback snapshot gating/order,
 encoder/buffer/queue, playback/cadence/drift, and export text in
 `Formatters.Snapshot.Flashback.cs`, embedded snapshot AV-sync drift text in
-`Formatters.Snapshot.AvSync.cs`, embedded snapshot Memory/GC text in
-`Formatters.Snapshot.Memory.cs`, MJPEG timing text in
+`Formatters.Snapshot.AvSync.cs`, MJPEG timing text in
 `Formatters.Snapshot.Mjpeg.cs`, preview renderer-mode routing and non-D3D
 fallback text in `Formatters.Snapshot.Preview.cs`, D3D preview renderer text in
 `Formatters.Snapshot.PreviewD3D.cs` including routing/header order, CPU timing,
@@ -428,16 +425,13 @@ projection in `Formatters.Timeline.Rows.cs`, the private row model in
 `Formatters.Common.cs`.
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
-snapshot formatter facade for top-level text flow. State, capture settings,
-audio, video pipeline, recording, diagnostics, performance, memory, and capture
-cadence text live in `AutomationSnapshotFormatter.State.cs`,
+snapshot formatter facade for top-level text flow. State/audio/recording/
+performance/memory core sections live in
+`AutomationSnapshotFormatter.CoreSections.cs`; capture settings,
+video pipeline, diagnostics, and capture cadence text live in
 `AutomationSnapshotFormatter.CaptureSettings.cs`,
-`AutomationSnapshotFormatter.Audio.cs`,
 `AutomationSnapshotFormatter.VideoPipeline.cs`,
-`AutomationSnapshotFormatter.Recording.cs`,
 `AutomationSnapshotFormatter.Diagnostics.cs`,
-`AutomationSnapshotFormatter.Performance.cs`,
-`AutomationSnapshotFormatter.Memory.cs`, and
 `AutomationSnapshotFormatter.CaptureCadence.cs`. Tolerant JSON accessors live in
 `AutomationSnapshotFormatter.Values.cs`, while byte/number/interval,
 frame-budget, and tick-age display helpers live in

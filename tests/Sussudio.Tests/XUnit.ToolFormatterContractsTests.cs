@@ -136,14 +136,10 @@ public sealed class ToolFormatterContractsTests
         => ReadSourceFamily(new[]
         {
             "tools/Common/AutomationSnapshotFormatter.cs",
-            "tools/Common/AutomationSnapshotFormatter.State.cs",
+            "tools/Common/AutomationSnapshotFormatter.CoreSections.cs",
             "tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs",
-            "tools/Common/AutomationSnapshotFormatter.Audio.cs",
             "tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs",
-            "tools/Common/AutomationSnapshotFormatter.Recording.cs",
             "tools/Common/AutomationSnapshotFormatter.Diagnostics.cs",
-            "tools/Common/AutomationSnapshotFormatter.Performance.cs",
-            "tools/Common/AutomationSnapshotFormatter.Memory.cs",
             "tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs",
             "tools/Common/AutomationSnapshotFormatter.Values.cs",
             "tools/Common/AutomationSnapshotFormatter.DisplayValues.cs",
@@ -159,19 +155,15 @@ public sealed class ToolFormatterContractsTests
         => ReadSourceFamily(new[]
         {
             "tools/ssctl/Formatters.Snapshot.cs",
-            "tools/ssctl/Formatters.Snapshot.Audio.cs",
+            "tools/ssctl/Formatters.Snapshot.CoreSections.cs",
             "tools/ssctl/Formatters.Snapshot.AvSync.cs",
             "tools/ssctl/Formatters.Snapshot.CaptureCadence.cs",
             "tools/ssctl/Formatters.Snapshot.CaptureSettings.cs",
             "tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs",
             "tools/ssctl/Formatters.Snapshot.Flashback.cs",
-            "tools/ssctl/Formatters.Snapshot.Memory.cs",
             "tools/ssctl/Formatters.Snapshot.Mjpeg.cs",
-            "tools/ssctl/Formatters.Snapshot.Performance.cs",
             "tools/ssctl/Formatters.Snapshot.Preview.cs",
             "tools/ssctl/Formatters.Snapshot.PreviewD3D.cs",
-            "tools/ssctl/Formatters.Snapshot.Recording.cs",
-            "tools/ssctl/Formatters.Snapshot.State.cs",
             "tools/ssctl/Formatters.Snapshot.ThreadHealth.cs",
             "tools/ssctl/Formatters.Snapshot.VideoPipeline.cs",
             "tools/ssctl/Formatters.Snapshot.Source.cs"
