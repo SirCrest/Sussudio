@@ -196,9 +196,13 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
         AssertContains(diagnostics.SourceFamilyText, "UpdateD3DRendererRecentCounters(previewRuntime, nowTick)");
         AssertContains(countersText, "private PreviewJitterRecentCounters UpdatePreviewJitterRecentCounters(");
+        AssertContains(countersText, "private long _lastPreviewJitterTotalDropped;");
         AssertContains(countersText, "Interlocked.Exchange(ref _lastPreviewJitterTotalDropped, totalDropped)");
         AssertContains(countersText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
+        AssertContains(countersText, "private long _lastD3DFramesSubmitted;");
         AssertContains(countersText, "Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted)");
+        AssertDoesNotContain(diagnostics.HubText, "private long _lastPreviewJitterTotalDropped;");
+        AssertDoesNotContain(diagnostics.HubText, "private long _lastD3DFramesSubmitted;");
         AssertContains(diagnostics.SourceFamilyText, "recentSubmitted={recentRendererSubmitted} recentDropped={recentRenderer.Dropped}");
         AssertContains(diagnostics.SourceFamilyText, "var previewLastDropReason = string.IsNullOrWhiteSpace(health.MjpegPreviewJitterLastDropReason)");
         AssertContains(diagnostics.SourceFamilyText, "clearedDrops={health.MjpegPreviewJitterClearedDropCount}");

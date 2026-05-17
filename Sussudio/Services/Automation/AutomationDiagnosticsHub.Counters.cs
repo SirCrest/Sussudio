@@ -8,6 +8,33 @@ namespace Sussudio.Services.Automation;
 
 public sealed partial class AutomationDiagnosticsHub
 {
+    private long _lastPreviewJitterTotalDropped;
+    private long _lastPreviewJitterUnderflows;
+    private long _lastPreviewJitterDeadlineDrops;
+    private long _lastPreviewJitterScheduleLateCount;
+    private double _lastPreviewJitterLastScheduleLateMs;
+    private long _lastPreviewJitterEvalTick;
+    private long _lastD3DFramesSubmitted;
+    private long _lastD3DFramesRendered;
+    private long _lastD3DFramesDropped;
+    private long _lastD3DRendererEvalTick;
+    private long _lastD3DFrameStatsMissedRefreshes;
+    private long _lastD3DFrameStatsFailures;
+    private long _lastD3DFrameStatsEvalTick;
+    private long _lastD3DFrameLatencyWaitTimeouts;
+    private long _lastD3DFrameLatencyWaitEvalTick;
+    private long _lastMjpegTotalDropped;
+    private long _lastMjpegDecodeFailures;
+    private long _lastMjpegEmitFailures;
+    private long _lastMjpegCompressedDropsQueueFull;
+    private long _lastMjpegEvalTick;
+    private long _lastFlashbackDroppedFrames;
+    private long _lastFlashbackVideoEncoderDroppedFrames;
+    private long _lastFlashbackVideoSequenceGaps;
+    private long _lastFlashbackGpuFramesDropped;
+    private long _lastFlashbackVideoBackpressureEvents;
+    private long _lastFlashbackRecordingEvalTick;
+
     private PreviewJitterRecentCounters UpdatePreviewJitterRecentCounters(
         CaptureHealthSnapshot health,
         long nowTick)
