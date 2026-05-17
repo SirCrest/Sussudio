@@ -507,16 +507,9 @@ Important entry points:
   export diagnostic field copy, elapsed/progress-age/file-length helpers, and
   derived progress/throughput projection used by health snapshots.
 - `CaptureService.HealthSnapshotFlashbackPlayback.cs` owns Flashback playback
-  health snapshot orchestration and the final field handoff.
-  `CaptureService.HealthSnapshotFlashbackPlayback.State.cs` owns playback state,
-  frame, segment, PTS, seek-cap, A/V drift, and thread-alive field projection.
-  `CaptureService.HealthSnapshotFlashbackPlayback.Cadence.cs` owns playback
-  cadence metrics. `CaptureService.HealthSnapshotFlashbackPlayback.Decode.cs`
-  owns playback decode timing and max-phase metrics.
-  `CaptureService.HealthSnapshotFlashbackPlayback.AudioMaster.cs` owns
-  audio-master pacing/fallback fields.
-  `CaptureService.HealthSnapshotFlashbackPlayback.Commands.cs` owns playback
-  command-queue telemetry fields for health snapshots.
+  health snapshot orchestration, state/frame/segment/PTS/seek-cap/A/V drift
+  projection, playback cadence metrics, decode timing and max-phase metrics,
+  audio-master pacing/fallback fields, and command-queue telemetry fields.
 - `CaptureService.HealthSnapshotRecording.cs` owns recording health snapshot
   orchestration, LibAv-only CUDA queue projection, and the
   `RecordingHealthSnapshotFields` handoff.
