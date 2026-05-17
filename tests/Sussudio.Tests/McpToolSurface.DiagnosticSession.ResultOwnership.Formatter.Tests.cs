@@ -13,8 +13,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingVerificationText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.RecordingVerification.cs")
             .Replace("\r\n", "\n");
-        var presentMonText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.PresentMon.cs")
-            .Replace("\r\n", "\n");
         var flashbackRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Flashback.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackCommandsText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs")
@@ -31,8 +29,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.cs")
             .Replace("\r\n", "\n");
-        var processPerformanceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.ProcessPerformance.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(formatterText, "public static partial class DiagnosticSessionResultFormatter");
         AssertContains(formatterText, "public static string Format(DiagnosticSessionResult result)");
@@ -43,10 +39,10 @@ static partial class Program
         AssertContains(captureModeText, "\"Capture Mode: \"");
         AssertContains(recordingVerificationText, "private static void AppendRecordingVerification(");
         AssertContains(recordingVerificationText, "\"Recording Verification: ");
-        AssertContains(presentMonText, "private static void AppendPresentMon(");
-        AssertContains(presentMonText, "\"PresentMon: ");
-        AssertContains(processPerformanceText, "private static void AppendProcessPerformance(");
-        AssertContains(processPerformanceText, "\"Process Perf: \"");
+        AssertContains(formatterText, "private static void AppendPresentMon(");
+        AssertContains(formatterText, "\"PresentMon: ");
+        AssertContains(formatterText, "private static void AppendProcessPerformance(");
+        AssertContains(formatterText, "\"Process Perf: \"");
         AssertDoesNotContain(overviewText, "\"Capture Mode: \"");
         AssertDoesNotContain(overviewText, "\"Recording Verification: ");
         AssertDoesNotContain(overviewText, "\"PresentMon: ");
