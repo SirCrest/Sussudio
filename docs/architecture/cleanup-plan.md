@@ -1792,10 +1792,11 @@ source/audio drift calculations and encoder drift/correction projection there.
 
 Stats dock, stats toggle, and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/Stats/StatsOverlayController.cs`. Stats overlay controller
-graph construction and stats dock presentation/diagnostic/hardware/refresh
-controller graph wiring now live in `Sussudio/MainWindow.StatsOverlay.cs`;
-the same file is the XAML-facing adapter for stats overlay binding setup,
-stats dock visibility, and polling commands. Stats toggle
+graph construction now lives in `Sussudio/MainWindow.StatsOverlay.cs`;
+stats dock presentation/diagnostic/hardware/refresh controller graph wiring
+now lives in `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs`;
+the overlay partial is the XAML-facing adapter for stats overlay binding setup,
+stats dock visibility, refresh hooks, and polling commands. Stats toggle
 event hookup and checked/unchecked behavior,
 initial/property-changed visibility sync, polling, visibility state, dock
 refresh ordering, dynamic diagnostic row pools, dock metric value/brush

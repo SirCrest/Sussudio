@@ -5,6 +5,7 @@ static partial class Program
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsOverlayCompositionText = statsOverlayText;
         var frameTimeOverlayText = statsOverlayText;
+        var statsDockGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
@@ -17,10 +18,13 @@ static partial class Program
         AssertContains(statsOverlayCompositionText, "private StatsOverlayController _statsOverlayController = null!;");
         AssertContains(statsOverlayCompositionText, "private void InitializeStatsOverlayController()");
         AssertContains(statsOverlayCompositionText, "InitializeFrameTimeOverlayPresentationController();");
+        AssertContains(statsOverlayCompositionText, "InitializeStatsDockControllerGraph();");
         AssertContains(statsOverlayCompositionText, "StatsToggle = StatsToggle,");
         AssertContains(statsOverlayCompositionText, "IsWindowClosing = () => _isWindowClosing,");
         AssertContains(statsOverlayCompositionText, "SetStatsVisible = visible => ViewModel.IsStatsVisible = visible,");
-        AssertContains(statsOverlayCompositionText, "UpdateStatsDock = _statsDockRefreshController.RefreshDock,");
+        AssertContains(statsOverlayCompositionText, "UpdateStatsDock = _statsDockControllerGraph.RefreshDock,");
+        AssertContains(statsDockGraphText, "internal sealed class StatsDockControllerGraph");
+        AssertContains(statsDockGraphText, "public void RefreshDock()");
         AssertContains(bindingsText, "AttachStatsOverlayToggleBindings();");
         AssertContains(statsOverlayText, "private void AttachStatsOverlayToggleBindings()");
         AssertContains(statsOverlayText, "=> _statsOverlayController.AttachToggleBindings();");
@@ -131,7 +135,7 @@ static partial class Program
         AssertContains(controllerText, "_context.RefreshDiagnosticsSection();");
         AssertContains(mainWindowText, "ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;");
         AssertContains(mainWindowText, "InitializeStatsSectionChromeController();");
-        AssertContains(statsOverlayText, "RefreshDiagnosticsSection = _statsDockRefreshController.RefreshDiagnosticsSection");
+        AssertContains(statsOverlayText, "RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection");
         AssertDoesNotContain(statsOverlayText, "StatsDockPanel.FindName(contentName)");
         AssertDoesNotContain(statsOverlayText, "rotate.Angle =");
         AssertDoesNotContain(statsOverlayText, "UpdateDiagnosticsSection(snapshot");

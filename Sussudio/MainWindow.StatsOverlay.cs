@@ -4,13 +4,13 @@ using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// XAML-facing stats overlay adapter and controller composition. This also wires the stats dock refresh,
-// snapshot provider, and section chrome adapters because the dock is only driven by the overlay controller graph.
+// XAML-facing stats overlay adapter. Dedicated stats controllers own the dock graph,
+// snapshot provider, frame-time presentation, and section chrome behavior.
 public sealed partial class MainWindow
 {
     private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;
     private StatsOverlayController _statsOverlayController = null!;
-    private StatsDockRefreshController _statsDockRefreshController = null!;
+    private StatsDockControllerGraph _statsDockControllerGraph = null!;
     private StatsSnapshotProvider _statsSnapshotProvider = null!;
     private StatsSectionChromeController _statsSectionChromeController = null!;
 
@@ -29,7 +29,7 @@ public sealed partial class MainWindow
     private void InitializeStatsOverlayController()
     {
         InitializeFrameTimeOverlayPresentationController();
-        InitializeStatsDockRefreshController();
+        InitializeStatsDockControllerGraph();
         _statsOverlayController = new StatsOverlayController(new StatsOverlayControllerContext
         {
             DispatcherQueue = _dispatcherQueue,
@@ -40,7 +40,7 @@ public sealed partial class MainWindow
             IsWindowClosing = () => _isWindowClosing,
             SetStatsVisible = visible => ViewModel.IsStatsVisible = visible,
             GetStatsSnapshot = GetStatsSnapshot,
-            UpdateStatsDock = _statsDockRefreshController.RefreshDock,
+            UpdateStatsDock = _statsDockControllerGraph.RefreshDock,
             UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,
             Log = message => Logger.Log(message)
         });
@@ -52,14 +52,18 @@ public sealed partial class MainWindow
         {
             StatsDockPanel = StatsDockPanel,
             DiagnosticsContent = Diagnostics_Content,
-            RefreshDiagnosticsSection = _statsDockRefreshController.RefreshDiagnosticsSection
+            RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection
         });
     }
 
-    private void InitializeStatsDockRefreshController()
+    private void InitializeStatsDockControllerGraph()
     {
-        var statsDockPresentationController = new StatsDockPresentationController(new StatsDockPresentationControllerContext
+        _statsDockControllerGraph = new StatsDockControllerGraph(new StatsDockControllerGraphContext
         {
+            IsWindowClosing = () => _isWindowClosing,
+            StatsDockPanel = StatsDockPanel,
+            DiagnosticsContent = Diagnostics_Content,
+            GetStatsSnapshot = GetStatsSnapshot,
             SessionStateValue = Stats_SessionStateValue,
             SummaryCaptureValue = Stats_SummaryCaptureValue,
             SummaryPreviewValue = Stats_SummaryPreviewValue,
@@ -100,40 +104,13 @@ public sealed partial class MainWindow
             EncoderCodecValue = Stats_EncoderCodecValue,
             EncoderResolutionValue = Stats_EncoderResolutionValue,
             EncoderFrameRateValue = Stats_EncoderFrameRateValue,
-            EncoderBitrateValue = Stats_EncoderBitrateValue
-        });
-        var statsDockRowChromeController = new StatsDockRowChromeController(new StatsDockRowChromeControllerContext
-        {
-            ResourceOwner = StatsDockPanel
-        });
-        var statsDiagnosticRowsController = new StatsDiagnosticRowsController(new StatsDiagnosticRowsControllerContext
-        {
-            ResourceOwner = StatsDockPanel,
-            DiagnosticsContent = Diagnostics_Content
-        });
-        var statsHardwareRowsInputProvider = new StatsHardwareRowsInputProvider(new StatsHardwareRowsInputProviderContext
-        {
-            GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,
-            GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,
-            GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot()
-        });
-        var statsHardwareRowsController = new StatsHardwareRowsController(new StatsHardwareRowsControllerContext
-        {
+            EncoderBitrateValue = Stats_EncoderBitrateValue,
             DecodeSection = DecodeSection,
             DecodeContent = Decode_Content,
             GpuContent = GPU_Content,
-            RowChromeController = statsDockRowChromeController,
-            InputProvider = statsHardwareRowsInputProvider
-        });
-        _statsDockRefreshController = new StatsDockRefreshController(new StatsDockRefreshControllerContext
-        {
-            IsWindowClosing = () => _isWindowClosing,
-            IsStatsDockVisible = () => StatsDockPanel.Visibility == Visibility.Visible,
-            IsDiagnosticsSectionVisible = () => Diagnostics_Content.Visibility == Visibility.Visible,
-            GetStatsSnapshot = GetStatsSnapshot,
-            DockPresentationController = statsDockPresentationController,
-            DiagnosticRowsController = statsDiagnosticRowsController,
-            HardwareRowsController = statsHardwareRowsController
+            GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,
+            GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,
+            GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot()
         });
     }
 
