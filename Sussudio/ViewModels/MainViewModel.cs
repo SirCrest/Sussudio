@@ -100,14 +100,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // -- Capture lifecycle methods are in MainViewModel.Capture.cs -----
     // -- Recording lifecycle methods are in MainViewModel.RecordingLifecycle.cs -----
     // -- Recording observable state is in MainViewModel.RecordingState.cs -----
-    // -- Capture settings projection is in MainViewModel.CaptureSettings.cs -----
+    // -- Capture settings projection adapter is in MainViewModel.CaptureSettings.cs -----
     // -- Automation methods are split across MainViewModel.Automation*.cs ---------
 
     // -- Partial class references ----
     // Capture lifecycle facade: MainViewModel.Capture.cs; preview lifecycle owner: MainViewModelPreviewLifecycleController.cs
     // Recording lifecycle facade: MainViewModel.RecordingLifecycle.cs; transition owner: MainViewModelRecordingTransitionController.cs
     // Recording state: MainViewModel.RecordingState.cs
-    // Capture settings projection: MainViewModel.CaptureSettings.cs
+    // Capture settings projection: MainViewModel.CaptureSettings.cs and CaptureSettingsProjectionBuilder.cs
     // Flashback automation: MainViewModel.AutomationFlashback.cs
     // Audio automation: MainViewModel.AutomationAudio.cs
     // HDR automation: MainViewModel.AutomationHdr.cs

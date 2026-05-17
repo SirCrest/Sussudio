@@ -3044,11 +3044,13 @@ Remaining `tools/Common` ownership:
    and live resolution/frame-rate/pixel-format assignment plus preview-stop
    live-info reset; live-signal label formatting now lives in
    `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`. Capture
-   settings projection from UI/runtime state now lives in
-   `MainViewModel.CaptureSettings.cs`, with frame-rate request projection split
-   to `MainViewModel.CaptureSettingsFrameRate.cs` for selected-option seeding,
-   auto-resolved effective FPS, runtime/source rational overrides, and
-   rational/decimal fallbacks; `MainViewModel.Capture.cs` is the stable
+   settings projection from UI/runtime state is sampled by
+   `MainViewModel.CaptureSettings.cs` and projected by
+   `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`: selected-option
+   seeding, auto-resolved effective FPS, runtime/source rational overrides,
+   rational/decimal fallbacks, requested pixel format, MJPEG decode forcing,
+   HDR/preview mode, Flashback options, and audio/microphone device projection.
+   `MainViewModel.Capture.cs` is the stable
    compatibility facade for device initialization, preview start/stop,
    selected-device apply, and preview reinitialization. Preview lifecycle
    implementation now lives in

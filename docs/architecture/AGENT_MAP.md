@@ -2218,11 +2218,13 @@ Primary current owners:
   live-resolution/frame-rate/pixel-format assignment, preview-stop live-info
   reset, and delegates label formatting to
   `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`.
-  `MainViewModel.CaptureSettings.cs` owns capture settings projection from UI
+  `MainViewModel.CaptureSettings.cs` owns the impure adapter that samples UI
   selection and observed runtime/source state, while
-  `MainViewModel.CaptureSettingsFrameRate.cs` owns frame-rate request
-  projection: selected option seed, auto-resolved effective FPS, negotiated
-  rational/source-telemetry overrides, and rational/decimal fallbacks.
+  `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs` owns pure capture
+  settings projection: selected option seed, auto-resolved effective FPS,
+  negotiated rational/source-telemetry overrides, rational/decimal fallbacks,
+  requested pixel format, MJPEG decode forcing, HDR/preview mode, Flashback
+  options, and audio/microphone device projection.
   `MainViewModel.Capture.cs` is the compatibility facade for device
   initialization, preview start/stop, selected-device apply, and preview
   reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
