@@ -784,8 +784,8 @@ resize hooks. `Sussudio/MainWindow.AudioBindings.cs` is the XAML-facing adapter;
 video-format collection setup, initial capture/recording option projection, and
 code-attached resolution/frame-rate handlers now live in the
 `Sussudio/Controllers/Capture/CaptureOptionBindingController*.cs` family, with
-`MainWindow.CaptureOptionBindings.cs` and
-`MainWindow.RecordingOptionBindings.cs` left as XAML-facing adapters.
+`MainWindow.CaptureOptionBindings.cs` left as the XAML-facing capture and
+recording option adapter.
 Flashback settings-control initialization, GPU decode binding/sync, and buffer
 duration combo sync now live in
 `Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs`.
@@ -2345,8 +2345,8 @@ ViewModel-to-control sync, and preview HDR passthrough forwarding, and
 `ShowAllCaptureOptionsToggle` click binding and ViewModel-to-control sync while
 reusing `CaptureComboBoxSelectionNormalizer` for shared frame-rate auto/exact
 matching. The controller delegates presentation affordances back through the
-capture-option presentation adapter. `MainWindow.CaptureOptionBindings.cs` and
-`MainWindow.RecordingOptionBindings.cs` keep only the old method names used by
+capture-option presentation adapter. `MainWindow.CaptureOptionBindings.cs`
+keeps the old capture and recording option method names used by
 `SetupBindings()`.
 
 MainWindow capture ownership tests now mirror these runtime owners instead of

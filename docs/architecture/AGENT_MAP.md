@@ -2250,8 +2250,8 @@ Primary current owners:
   `ShowAllCaptureOptionsToggle` click binding and ViewModel-to-control sync,
   reusing `CaptureComboBoxSelectionNormalizer` for shared frame-rate auto/exact
   matching.
-  `MainWindow.CaptureOptionBindings.cs` and
-  `MainWindow.RecordingOptionBindings.cs` are XAML-facing adapters.
+  `MainWindow.CaptureOptionBindings.cs` is the XAML-facing capture and
+  recording option adapter.
 - `Sussudio/Controllers/Recording/Output/OutputPathDisplayController.cs` owns recording output-
   path textbox, tooltip, and resize-event updates.
   `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs` owns pure output-

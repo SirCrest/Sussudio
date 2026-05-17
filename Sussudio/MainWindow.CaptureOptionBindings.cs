@@ -50,6 +50,9 @@ public sealed partial class MainWindow
     private void AttachCaptureModeSelectionBindings()
         => _captureOptionBindingController.AttachCaptureModeSelectionBindings();
 
+    private void AttachRecordingOptionBindings()
+        => _captureOptionBindingController.AttachRecordingOptionBindings();
+
     private void AttachShowAllCaptureOptionsBinding()
         => _captureOptionBindingController.AttachShowAllCaptureOptionsBinding();
 
