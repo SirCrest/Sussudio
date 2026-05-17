@@ -13,6 +13,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rollingCommandGroupsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingCommandGroups.cs")
             .Replace("\r\n", "\n");
+        var snapshotAssemblyText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs")
+            .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
         AssertContains(rootText, "public async Task<SourceSignalTelemetrySnapshot> ReadAsync(");
@@ -22,12 +24,13 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
         AssertContains(rollingPollText, "public sealed partial class NativeXuAtCommandProvider");
         AssertContains(rollingPollText, "private int _rollingGroup;");
-        AssertContains(rollingPollText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
-        AssertContains(rollingPollText, "private static readonly double[] CanonicalFrameRates");
+        AssertDoesNotContain(rollingPollText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
+        AssertDoesNotContain(rollingPollText, "private static readonly double[] CanonicalFrameRates");
         AssertContains(rollingPollText, "private NodeReadAttempt TryReadRolling(");
         AssertContains(rollingPollText, "private NodeReadAttempt BuildSnapshotFromCachedResults(");
-        AssertContains(rollingPollText, "BuildDetailEntries(");
-        AssertContains(rollingPollText, "new SourceSignalTelemetrySnapshot");
+        AssertContains(rollingPollText, "BuildSnapshotFromCommandResults(");
+        AssertDoesNotContain(rollingPollText, "BuildDetailEntries(");
+        AssertDoesNotContain(rollingPollText, "new SourceSignalTelemetrySnapshot");
         AssertContains(rollingPollText, "PopulateInitialRollingCache(handle, nodeId, cancellationToken);");
         AssertContains(rollingPollText, "RefreshRollingGroup(handle, nodeId, _rollingGroup, cancellationToken);");
         AssertDoesNotContain(rollingPollText, "private AtCommandResult SendRollingCommand(");
@@ -39,8 +42,16 @@ static partial class Program
         AssertContains(rollingCommandGroupsText, "private void PopulateInitialRollingCache(");
         AssertContains(rollingCommandGroupsText, "private void RefreshRollingGroup(");
         AssertContains(rollingCommandGroupsText, "case 5: // Diagnostics");
+        AssertContains(snapshotAssemblyText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
+        AssertContains(snapshotAssemblyText, "private static readonly double[] CanonicalFrameRates");
+        AssertContains(snapshotAssemblyText, "private readonly record struct NativeXuSnapshotCommandResults(");
+        AssertContains(snapshotAssemblyText, "private static NodeReadAttempt BuildSnapshotFromCommandResults(");
+        AssertContains(snapshotAssemblyText, "BuildDetailEntries(");
+        AssertContains(snapshotAssemblyText, "new SourceSignalTelemetrySnapshot");
+        AssertContains(snapshotAssemblyText, "ResolveSnapshotAudioInputOrigin(");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingCommandGroups.cs");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
 
         return Task.CompletedTask;
     }

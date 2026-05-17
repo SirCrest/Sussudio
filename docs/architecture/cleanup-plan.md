@@ -1194,15 +1194,22 @@ payload writes now live in `NativeXuAtCommandProvider.Selector4.cs`.
 
 Native XU reference full-snapshot reads now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.FullSnapshot.cs`. Keep
-the legacy all-command source snapshot path there; the root provider owns
-selected-interface validation and dispatch into the active rolling poll path.
+the legacy all-command AT-command acquisition and full-snapshot logging policy
+there; the root provider owns selected-interface validation and dispatch into
+the active rolling poll path.
 
 Native XU active rolling polling now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs`. Keep
-poll cadence gates, cached AT-command fields, VIC/frame-rate lookup, active
-snapshot assembly, and group advancement there. Rolling command batch
-construction/refresh and per-command cancellation checks now live in
+poll cadence gates, cached AT-command fields, incomplete-cache handling, and
+group advancement there. Rolling command batch construction/refresh and
+per-command cancellation checks now live in
 `NativeXuAtCommandProvider.RollingCommandGroups.cs`.
+
+Native XU source snapshot assembly now lives in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`.
+Keep VIC/frame-rate lookup, AT-command-result decode, diagnostic/detail
+assembly, flash-audio analog-gain row insertion, and full-vs-rolling logging
+and audio-origin policy switches there.
 
 Native XU payload decoding now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.PayloadDecoding.cs`.
@@ -1741,8 +1748,9 @@ Native XU AT-command transport and payload parsing now live in
 AT read/write frames, LRC/envelope handling, device-ID parsing, and command
 failure formatting there; keep payload decoders in
 `NativeXuAtCommandProvider.PayloadDecoding.cs`, keep rolling telemetry polling
-and active snapshot assembly in `NativeXuAtCommandProvider.RollingPoll.cs`, and
-keep rolling command batch dispatch in `NativeXuAtCommandProvider.RollingCommandGroups.cs`.
+in `NativeXuAtCommandProvider.RollingPoll.cs`, keep shared source snapshot
+assembly in `NativeXuAtCommandProvider.SnapshotAssembly.cs`, and keep rolling
+command batch dispatch in `NativeXuAtCommandProvider.RollingCommandGroups.cs`.
 
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples the
