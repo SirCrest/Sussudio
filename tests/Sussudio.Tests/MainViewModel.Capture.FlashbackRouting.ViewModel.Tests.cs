@@ -96,6 +96,8 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettingsControls.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceAudioSource();
 
         AssertContains(coordinatorText, "if (controller is { IsDisposed: false, IsInitialized: true, State: not FlashbackPlaybackState.Disabled })\n        {\n            return true;\n        }");

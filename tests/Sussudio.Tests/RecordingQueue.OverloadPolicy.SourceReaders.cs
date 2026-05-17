@@ -28,6 +28,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.AudioInputs.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackSettingsControls.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             + "\n" + ReadCaptureServiceAudioSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")

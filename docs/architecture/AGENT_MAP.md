@@ -524,8 +524,10 @@ Important entry points:
   cleanup launch, GPU device-lost classification, recovery segment preservation,
   and generation-stale guards. It must not write `_sessionState`.
 - `CaptureService.FlashbackControls.cs` owns Flashback public state, segment
-  access, enable/settings mutations, restarts, format changes, and encoder
-  setting cycles.
+  access, enable/disable mutations, and restart entry points.
+- `CaptureService.FlashbackSettingsControls.cs` owns Flashback buffer/GPU
+  settings updates, active encoding-setting application, recording-format
+  changes, and encoder setting cycles.
 - `CaptureService.FlashbackOrchestration.cs` owns committed restart
   orchestration after preview backend teardown.
 - `CaptureService.FlashbackAudioInputs.cs` owns WASAPI and microphone input

@@ -921,9 +921,11 @@ That file owns the Flashback backend cleanup launcher, GPU device-lost
 classification, recovery segment preservation, and generation-stale guards, and
 must not write `_sessionState`.
 
-Flashback-facing capture controls now live in
-`Sussudio/Services/Capture/CaptureService.FlashbackControls.cs`. That file owns
-public Flashback state, segment access, enable/settings mutations, restarts,
+Flashback-facing capture controls now live in focused CaptureService partials:
+`Sussudio/Services/Capture/CaptureService.FlashbackControls.cs` owns public
+Flashback state, segment access, enable/disable mutations, and restart entry
+points. `Sussudio/Services/Capture/CaptureService.FlashbackSettingsControls.cs`
+owns buffer/GPU settings updates, active encoding-setting application,
 recording-format changes, and encoder-setting cycles while backend resource
 construction stays in the Flashback orchestration partial.
 
