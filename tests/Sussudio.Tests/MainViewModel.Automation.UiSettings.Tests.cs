@@ -23,7 +23,6 @@ static partial class Program
 
     private static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
-        var settingsPartialText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Settings.cs").Replace("\r\n", "\n");
         var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
         var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
@@ -48,13 +47,15 @@ static partial class Program
         AssertContains(settingsProjectionText, "ResolveAvailableValue(");
         AssertDoesNotContain(settingsPersistenceText, "if (settings.ShowAllCaptureOptions.HasValue)");
         AssertDoesNotContain(settingsPersistenceText, "if (settings.IsStatsVisible.HasValue)");
-        AssertDoesNotContain(settingsPartialText, "private void LoadSettings()");
-        AssertDoesNotContain(settingsPartialText, "private void SaveSettings()");
-        AssertContains(settingsPartialText, "partial void OnIsStatsVisibleChanged(bool value)");
+        AssertContains(settingsPersistenceText, "partial void OnIsStatsVisibleChanged(bool value)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Settings.cs")),
+            "old settings pass-through partial removed");
         AssertContains(captureModeTransactionsText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
         AssertContains(captureModeTransactionsText, "RebuildResolutionOptions();\n        SaveSettings();");
-        AssertDoesNotContain(settingsPartialText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
-        AssertDoesNotContain(settingsPartialText, "RebuildResolutionOptions();\n        SaveSettings();");
+        AssertDoesNotContain(settingsPersistenceText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
+        AssertDoesNotContain(settingsPersistenceText, "RebuildResolutionOptions();\n        SaveSettings();");
 
         return Task.CompletedTask;
     }

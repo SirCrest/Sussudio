@@ -291,7 +291,7 @@ static partial class Program
         AssertContains(recordingCapabilityRefreshText, "RECORDING_FORMATS_UI_ENQUEUE_FAILED");
         AssertContains(recordingCapabilityRefreshText, "SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED");
         AssertDoesNotContain(
-            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Settings.cs")),
+            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.SettingsPersistence.cs")),
             "RECORDING_FORMATS_UI_ENQUEUE_FAILED");
         AssertContains(
             File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Rendering.cs"))

@@ -3172,9 +3172,9 @@ Remaining `tools/Common` ownership:
    HDR runtime state/readiness projection and target-summary property
    application live in `MainViewModel.CapturePresentation.cs`; keep snapshot
    application and source-aware auto-retargeting in `MainViewModel.Telemetry.cs`.
-   Settings initialization and simple persistence reactions stay in
-   `MainViewModel.Settings.cs`; the impure settings load/save adapter stays in
-   `MainViewModel.SettingsPersistence.cs`, while
+   Settings initialization, simple persistence reactions, and the impure
+   settings load/save adapter stay in `MainViewModel.SettingsPersistence.cs`,
+   while
    `MainViewModelSettingsPersistenceProjection.cs` owns persisted-settings
    validation, clamping, deferred-selection handoff, and save DTO projection;
    active Flashback reactions to recording format

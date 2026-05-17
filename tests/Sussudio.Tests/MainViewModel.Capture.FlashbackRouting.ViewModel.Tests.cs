@@ -81,11 +81,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rawPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");
-        var settingsText = viewModelFiles["MainViewModel.Settings.cs"];
         var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackEncoderSettings.cs"];
         var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackSettings.cs"];
-        var rawSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Settings.cs")
-            .Replace("\r\n", "\n");
         var rawFlashbackEncoderSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackEncoderSettings.cs")
             .Replace("\r\n", "\n");
         var rawFlashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackSettings.cs")

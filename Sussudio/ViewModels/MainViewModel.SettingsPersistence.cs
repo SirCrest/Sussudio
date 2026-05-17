@@ -1,14 +1,32 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Settings load/save projection between persisted user settings and ViewModel state.
+/// Settings initialization and load/save projection between persisted user settings and ViewModel state.
 /// </summary>
 public partial class MainViewModel
 {
+    public Task InitializeAsync()
+    {
+        LoadSettings();
+        StartRecordingCapabilityRefresh();
+        return Task.CompletedTask;
+    }
+
+    partial void OnOutputPathChanged(string value)
+    {
+        SaveSettings();
+    }
+
+    partial void OnIsStatsVisibleChanged(bool value)
+    {
+        SaveSettings();
+    }
+
     private void LoadSettings()
     {
         _isLoadingSettings = true;

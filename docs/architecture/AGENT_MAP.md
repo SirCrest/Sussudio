@@ -2339,9 +2339,9 @@ Primary current owners:
   source-aware auto-retargeting hints.
   `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
   owns source telemetry summary, telemetry age, and target-summary display text formatting.
-  `MainViewModel.Settings.cs` owns settings initialization and simple
-  persistence reactions. `MainViewModel.SettingsPersistence.cs` owns the impure
-  settings load/save adapter, while `MainViewModelSettingsPersistenceProjection.cs`
+  `MainViewModel.SettingsPersistence.cs` owns settings initialization, simple
+  persistence reactions, and the impure settings load/save adapter, while
+  `MainViewModelSettingsPersistenceProjection.cs`
   owns persisted-settings validation, clamping, deferred-selection handoff, and
   save DTO projection.
   `MainViewModel.FlashbackEncoderSettings.cs` owns active

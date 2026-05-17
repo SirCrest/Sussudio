@@ -9,7 +9,7 @@ static partial class Program
 {
     private static Task PreviewStartup_BeginsDeviceDiscoveryBeforeRecordingCapabilityProbesFinish()
     {
-        var settingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Settings.cs")
+        var settingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs")
             .Replace("\r\n", "\n");
         var recordingCapabilityRefreshText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingCapabilityRefresh.cs")
             .Replace("\r\n", "\n");
