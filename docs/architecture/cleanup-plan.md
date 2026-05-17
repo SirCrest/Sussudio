@@ -3041,9 +3041,8 @@ Remaining `tools/Common` ownership:
    to `MainViewModel.CaptureSettingsFrameRate.cs` for selected-option seeding,
    auto-resolved effective FPS, runtime/source rational overrides, and
    rational/decimal fallbacks; `MainViewModel.Capture.cs` is the stable
-   compatibility facade for device initialization, preview start/stop, and
-   selected-device apply. `MainViewModel.PreviewReinitialization.cs` is the
-   stable compatibility facade for preview reinitialization. Preview lifecycle
+   compatibility facade for device initialization, preview start/stop,
+   selected-device apply, and preview reinitialization. Preview lifecycle
    implementation now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`:
    device initialization, preview start/stop, selected-device apply, debounced

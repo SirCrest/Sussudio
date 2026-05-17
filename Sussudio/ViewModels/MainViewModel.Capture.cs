@@ -27,6 +27,9 @@ public partial class MainViewModel
     public Task ApplySelectedDeviceAsync(CaptureDevice device, CancellationToken cancellationToken = default)
         => _previewLifecycleController.ApplySelectedDeviceAsync(device, cancellationToken);
 
+    private Task ReinitializeDeviceAsync(string reason)
+        => _previewLifecycleController.ReinitializeDeviceAsync(reason);
+
     public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)
         => _previewLifecycleController.StopPreviewAsync(userInitiated, teardownPipeline, cancellationToken);
 }

@@ -2217,9 +2217,8 @@ Primary current owners:
   projection: selected option seed, auto-resolved effective FPS, negotiated
   rational/source-telemetry overrides, and rational/decimal fallbacks.
   `MainViewModel.Capture.cs` is the compatibility facade for device
-  initialization, preview start/stop, and selected-device apply.
-  `MainViewModel.PreviewReinitialization.cs` is the compatibility facade for
-  preview reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
+  initialization, preview start/stop, selected-device apply, and preview
+  reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
   owns the underlying preview lifecycle operations: device initialization,
   preview start/stop, selected-device apply, debounced reinitialization,
   Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
