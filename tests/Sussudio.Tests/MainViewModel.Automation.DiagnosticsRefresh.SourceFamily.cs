@@ -25,6 +25,8 @@ static partial class Program
             DiagnosticEvaluationLanesPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Preview.cs"),
             DiagnosticEvaluationLanesRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Recording.cs"),
             DiagnosticEvaluationLanesFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs"),
+            DiagnosticEvaluationLanesFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.FlashbackExport.cs"),
+            DiagnosticEvaluationLanesFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.FlashbackPlayback.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Alerts.cs"),
             SignalAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.cs"),
             SignalAlertsPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.Preview.cs"),
@@ -135,6 +137,8 @@ static partial class Program
         public string DiagnosticEvaluationLanesPreviewText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesRecordingText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesFlashbackText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesFlashbackExportText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesFlashbackPlaybackText { get; init; } = string.Empty;
         public string AlertsText { get; init; } = string.Empty;
         public string SignalAlertsText { get; init; } = string.Empty;
         public string SignalAlertsPreviewText { get; init; } = string.Empty;
@@ -237,6 +241,8 @@ static partial class Program
                 DiagnosticEvaluationLanesPreviewText,
                 DiagnosticEvaluationLanesRecordingText,
                 DiagnosticEvaluationLanesFlashbackText,
+                DiagnosticEvaluationLanesFlashbackExportText,
+                DiagnosticEvaluationLanesFlashbackPlaybackText,
                 AlertsText,
                 SignalAlertsText,
                 SignalAlertsPreviewText,

@@ -236,8 +236,12 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Recording.cs`
   owns recording and audio integrity diagnostic lane text formatting.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs`
-  owns Flashback recording, export, temp-cache, playback-command, and playback
-  performance diagnostic lane text formatting.
+  owns Flashback recording diagnostic lane text formatting.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.FlashbackExport.cs`
+  owns Flashback export and temp-cache diagnostic lane text formatting.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.FlashbackPlayback.cs`
+  owns Flashback playback-command and playback performance diagnostic lane text
+  formatting.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` owns
   performance scoring.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.EvaluationPolicy.cs`

@@ -78,8 +78,12 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationLanesRecordingText, "private static string BuildRecordingLane(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesRecordingText, "private static string BuildAudioLane(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackRecordingLane(CaptureHealthSnapshot health)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackExportLane(CaptureHealthSnapshot health)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackPlaybackPerformanceLane(");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackExportText, "private static string BuildFlashbackExportLane(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackExportText, "private static string BuildFlashbackTempCacheLane(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackPlaybackText, "private static string BuildFlashbackPlaybackCommandLane(");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackPlaybackText, "private static string BuildFlashbackPlaybackPerformanceLane(");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackExportLane(CaptureHealthSnapshot health)");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackPlaybackPerformanceLane(");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesText, "var sourceTarget =");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesText, "var previewLastDropReason =");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesText, "var dxgiStats =");

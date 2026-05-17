@@ -261,8 +261,12 @@ formatting.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Recording.cs` owns recording
 and audio integrity diagnostic lane text formatting.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs` owns
-Flashback recording, export, temp-cache, playback-command, and playback
-performance diagnostic lane text formatting.
+Flashback recording diagnostic lane text formatting.
+`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.FlashbackExport.cs` owns
+Flashback export and temp-cache diagnostic lane text formatting.
+`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.FlashbackPlayback.cs` owns
+Flashback playback-command and playback performance diagnostic lane text
+formatting.
 `AutomationDiagnosticsHub.Evaluation.cs` owns performance scoring.
 `AutomationDiagnosticsHub.EvaluationPolicy.cs` owns shared alert-detail
 formatting and health classifiers used by both alerts and diagnostic
