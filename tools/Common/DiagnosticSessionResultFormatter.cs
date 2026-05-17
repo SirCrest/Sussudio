@@ -1,4 +1,5 @@
 using System.Text;
+using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;
 
 namespace Sussudio.Tools;
 
@@ -33,5 +34,24 @@ public static partial class DiagnosticSessionResultFormatter
             "Process Perf: " +
             $"cpuPercentEnd={result.ProcessCpuPercentAtEnd:0.##} " +
             $"cpuPercentMaxObserved={result.ProcessCpuMaxPercentObserved:0.##}");
+    }
+
+    private static void AppendCaptureMode(StringBuilder builder, DiagnosticSessionResult result)
+    {
+        builder.AppendLine(
+            "Capture Mode: " +
+            $"selected={FormatOptional(result.SelectedResolutionAtEnd)} @{FormatFrameRate(result.SelectedFrameRateAtEnd, result.SelectedFriendlyFrameRateAtEnd, result.SelectedExactFrameRateArgAtEnd)} " +
+            $"format={FormatOptional(result.SelectedVideoFormatAtEnd)} requested={FormatOptional(result.VideoRequestedSubtypeAtEnd)} negotiated={FormatOptional(result.VideoNegotiatedSubtypeAtEnd)} " +
+            $"source={result.SourceWidthAtEnd}x{result.SourceHeightAtEnd} @{FormatFrameRate(result.DetectedSourceFrameRateAtEnd, string.Empty, result.DetectedSourceFrameRateArgAtEnd)} " +
+            $"hdr={result.SourceIsHdrAtEnd} telemetry={FormatOptional(result.SourceTelemetrySummaryAtEnd)}");
+    }
+
+    private static void AppendRecordingVerification(StringBuilder builder, DiagnosticSessionResult result)
+    {
+        if (result.RecordingVerificationRun)
+        {
+            var status = result.RecordingVerificationSucceeded == true ? "PASS" : "FAIL";
+            builder.AppendLine($"Recording Verification: {status} | {result.RecordingVerificationMessage}");
+        }
     }
 }

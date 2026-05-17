@@ -5,8 +5,6 @@ static partial class Program
                 "\n",
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Overview.cs"),
-                ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs"),
-                ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.RecordingVerification.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Flashback.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs"),

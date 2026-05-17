@@ -9,10 +9,6 @@ static partial class Program
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
         var overviewText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Overview.cs")
             .Replace("\r\n", "\n");
-        var captureModeText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs")
-            .Replace("\r\n", "\n");
-        var recordingVerificationText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.RecordingVerification.cs")
-            .Replace("\r\n", "\n");
         var flashbackRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Flashback.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackCommandsText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs")
@@ -35,10 +31,10 @@ static partial class Program
         AssertContains(formatterText, "== Diagnostic Session:");
         AssertContains(formatterText, "private static void AppendOverview(");
         AssertContains(overviewText, "private static void AppendOverview(");
-        AssertContains(captureModeText, "private static void AppendCaptureMode(");
-        AssertContains(captureModeText, "\"Capture Mode: \"");
-        AssertContains(recordingVerificationText, "private static void AppendRecordingVerification(");
-        AssertContains(recordingVerificationText, "\"Recording Verification: ");
+        AssertContains(formatterText, "private static void AppendCaptureMode(");
+        AssertContains(formatterText, "\"Capture Mode: \"");
+        AssertContains(formatterText, "private static void AppendRecordingVerification(");
+        AssertContains(formatterText, "\"Recording Verification: ");
         AssertContains(formatterText, "private static void AppendPresentMon(");
         AssertContains(formatterText, "\"PresentMon: ");
         AssertContains(formatterText, "private static void AppendProcessPerformance(");
