@@ -2964,7 +2964,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
   owns normal Flashback preview stop/restart diagnostic flow.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
-  owns playback-under-preview-stop diagnostic flow.
+  owns playback-under-preview-stop diagnostic flow and preview state checks.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs`
+  owns playback-preview-cycle export-while-preview-off verification.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
   owns Flashback-recording-backed preview stop/restart diagnostic flow.
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs` owns Flashback

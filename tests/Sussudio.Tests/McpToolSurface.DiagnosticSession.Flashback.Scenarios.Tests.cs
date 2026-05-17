@@ -45,14 +45,23 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var cyclesText = ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource();
+        var playbackCycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs")
+            .Replace("\r\n", "\n");
+        var playbackExportText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(cyclesText, "internal static partial class DiagnosticSessionFlashbackPreviewCycleScenarios");
         AssertContains(cyclesText, "internal static async Task RunFlashbackPreviewCycleAsync(");
         AssertContains(cyclesText, "\"flashback-preview-off-export.mp4\"");
         AssertContains(cyclesText, "flashback preview cycle export verified");
         AssertContains(cyclesText, "internal static async Task RunFlashbackPlaybackPreviewCycleAsync(");
-        AssertContains(cyclesText, "flashback playback preview cycle preview stopped during playback");
-        AssertContains(cyclesText, "flashback playback preview cycle export verified");
+        AssertContains(playbackCycleText, "flashback playback preview cycle preview stopped during playback");
+        AssertContains(playbackCycleText, "VerifyFlashbackPlaybackPreviewCycleExportAsync(");
+        AssertDoesNotContain(playbackCycleText, "CreateFlashbackExportVerifyPayload(exportPath)");
+        AssertContains(playbackExportText, "private static async Task VerifyFlashbackPlaybackPreviewCycleExportAsync(");
+        AssertContains(playbackExportText, "\"flashback-playback-preview-cycle.mp4\"");
+        AssertContains(playbackExportText, "CreateFlashbackExportVerifyPayload(exportPath)");
+        AssertContains(playbackExportText, "flashback playback preview cycle export verified");
         AssertContains(cyclesText, "internal static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(cyclesText, "flashback recording preview cycle preview stopped");
         AssertContains(cyclesText, "internal static bool IsPreviewCycleScenario(");

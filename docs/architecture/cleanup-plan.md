@@ -2683,8 +2683,10 @@ partial family. `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs
 is the marker shell and preview-cycle predicate owner. `.Registrations.cs` owns
 task registration, priority, task-label, and started-action wiring.
 `.Flashback.cs`, `.Playback.cs`, and `.Recording.cs` own preview stop/restart
-flows for normal Flashback, playback, and recording-backed diagnostics while
-startup only delegates selected scenario registration.
+flows for normal Flashback, playback, and recording-backed diagnostics.
+Playback-preview-cycle export-while-preview-off verification lives in
+`.PlaybackExport.cs` while startup only delegates selected scenario
+registration.
 
 Diagnostic-session Flashback rejected-export scenarios now live in the
 `tools/Common/DiagnosticSessionFlashbackRejectedExports*.cs` partial family.
@@ -2833,6 +2835,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
+- `DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs`
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Inactive.cs`
