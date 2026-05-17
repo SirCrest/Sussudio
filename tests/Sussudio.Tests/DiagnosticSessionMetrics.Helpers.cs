@@ -3,7 +3,6 @@ static partial class Program
     private static string ReadDiagnosticSessionMetricsSource()
         => string.Join(
                 "\n",
-                ReadRepoFile("tools/Common/DiagnosticSessionMetrics.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionMetrics.Models.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionMetrics.SourceCadence.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionMetrics.PreviewCadence.cs"),

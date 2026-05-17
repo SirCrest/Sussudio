@@ -2689,14 +2689,13 @@ Diagnostic-session sampling now lives in
 optional checkpoint callback so checkpoint failures cannot orphan an unseen
 sample.
 
-Diagnostic-session metric projection now lives in a focused partial family
-rooted at `tools/Common/DiagnosticSessionMetrics.cs`. The root is only a
-marker shell. `DiagnosticSessionMetrics.Models.cs` owns metric DTOs,
-`.SourceCadence.cs` owns source cadence projection, `.PreviewCadence.cs` owns
-preview/visual cadence projection and health classification, `.PreviewD3D.cs`
-owns D3D slow-frame and CPU timing summaries, `.PlaybackCommands.cs` owns
-playback command-health deltas, and `.Counters.cs` owns shared counter-delta
-helpers.
+Diagnostic-session metric projection now lives in named partial owners.
+`DiagnosticSessionMetrics.Models.cs` owns metric DTOs, `.SourceCadence.cs` owns
+source cadence projection, `.PreviewCadence.cs` owns preview/visual cadence
+projection and health classification, `.PreviewD3D.cs` owns D3D slow-frame and
+CPU timing summaries, `.PlaybackCommands.cs` owns playback command-health
+deltas, and `.Counters.cs` owns shared counter-delta helpers. Do not
+reintroduce an empty family root.
 
 Diagnostic-session Flashback export helpers now live in concrete
 `tools/Common/DiagnosticSessionFlashbackExports*.cs` partial owners. Strict
@@ -2748,14 +2747,14 @@ The root owns selected-scenario dispatch, `.Inactive.cs` owns inactive-buffer
 failure-kind and last-result assertions, and `.Recording.cs` owns
 active-Flashback-recording failure-kind and backend-stability assertions.
 
-Diagnostic-session Flashback recording-settings deferral now lives in
-`tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs` as a
-marker shell. Deferred preset state lives in
+Diagnostic-session Flashback recording-settings deferral now lives in named
+partial owners. Deferred preset state lives in
 `DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`, active
 recording mutation/rejection checks live in
 `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`, and
 post-stop preset verification, encoder-frame check, and original-preset restore
-live in `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`.
+live in `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`. Do
+not reintroduce an empty family root.
 
 Diagnostic-session Flashback segment playback now lives in
 `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios*.cs`. The root
@@ -2788,11 +2787,11 @@ scrub-stress post-go-live drain and command-health checks, and `.AudioMaster.cs`
 owns warmed-playback audio-master fallback classification while the runner only
 starts the scenario tasks.
 
-Diagnostic-session Flashback validation now lives in the
-`tools/Common/DiagnosticSessionFlashbackValidation*.cs` partial family. The root
-is only the validation marker; `.Recording.cs`, `.Playback.cs`, and `.Preview.cs`
-own their respective warning thresholds over already projected metrics while
-the runner retains scenario orchestration.
+Diagnostic-session Flashback validation now lives in concrete
+`tools/Common/DiagnosticSessionFlashbackValidation*.cs` partial owners.
+`.Recording.cs`, `.Playback.cs`, and `.Preview.cs` own their respective warning
+thresholds over already projected metrics while the runner retains scenario
+orchestration. Do not reintroduce an empty family root.
 
 Diagnostic-session health policy now lives in
 `tools/Common/DiagnosticSessionHealthPolicy.cs`. It owns health severity,
@@ -2895,7 +2894,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Inactive.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Recording.cs`
-- `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`
@@ -2912,7 +2910,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackStressScenario.AudioMaster.cs`
 - `DiagnosticSessionFlashbackWaits.cs`
 - `DiagnosticSessionFlashbackWaits.Playback.cs`
-- `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionFlashbackValidation.Recording.cs`
 - `DiagnosticSessionFlashbackValidation.Playback.cs`
 - `DiagnosticSessionFlashbackValidation.Preview.cs`
@@ -2920,7 +2917,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionHealthTolerances.cs`
 - `DiagnosticSessionJsonArtifacts.cs`
 - `DiagnosticSessionInitialSnapshot.cs`
-- `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionMetrics.Models.cs`
 - `DiagnosticSessionMetrics.SourceCadence.cs`
 - `DiagnosticSessionMetrics.PreviewCadence.cs`

@@ -2945,8 +2945,6 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Registrations.cs` owns
   Flashback restart/encoder cycle diagnostic task registration, priorities,
   task labels, and started action strings.
-- `tools/Common/DiagnosticSessionMetrics.cs` is the diagnostic-session metric
-  projection marker shell.
 - `tools/Common/DiagnosticSessionMetrics.Models.cs` owns metric DTOs.
 - `tools/Common/DiagnosticSessionMetrics.SourceCadence.cs` owns source-cadence
   projection from sampled snapshots.
@@ -3019,8 +3017,6 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackRejectedExports.Recording.cs` owns
   active-Flashback-recording rejected-export failure-kind and backend-stability
   assertions.
-- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs` is the
-  Flashback recording-settings diagnostic marker shell.
 - `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
   owns deferred preset state shared by startup, background task, and post-stop
   recording checks.
@@ -3062,8 +3058,6 @@ Primary owners:
   active, Flashback active, recording-ready, and buffer-ready waits.
 - `tools/Common/DiagnosticSessionFlashbackWaits.Playback.cs` owns Flashback
   playback boundary, state, warmup, and position polling waits.
-- `tools/Common/DiagnosticSessionFlashbackValidation.cs` is the Flashback
-  diagnostic-session validation partial root.
 - `tools/Common/DiagnosticSessionFlashbackValidation.Recording.cs` owns
   Flashback recording warning policy over projected recording metrics.
 - `tools/Common/DiagnosticSessionFlashbackValidation.Playback.cs` owns Flashback
