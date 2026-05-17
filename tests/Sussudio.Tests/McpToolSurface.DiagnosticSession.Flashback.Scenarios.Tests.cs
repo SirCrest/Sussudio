@@ -116,13 +116,22 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var segmentPlaybackText = ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource();
+        var segmentPlaybackRootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs")
+            .Replace("\r\n", "\n");
+        var segmentPlaybackValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(segmentPlaybackText, "internal static partial class DiagnosticSessionFlashbackSegmentPlaybackScenarios");
         AssertContains(segmentPlaybackText, "internal static async Task RunFlashbackSegmentPlaybackAsync(");
-        AssertContains(segmentPlaybackText, "flashback segment playback live headroom established");
-        AssertContains(segmentPlaybackText, "flashback segment playback started near boundary");
-        AssertContains(segmentPlaybackText, "frameCount >= 180");
-        AssertContains(segmentPlaybackText, "playback FPS below source-rate target after warm sample");
+        AssertContains(segmentPlaybackRootText, "flashback segment playback live headroom established");
+        AssertContains(segmentPlaybackRootText, "flashback segment playback started near boundary");
+        AssertContains(segmentPlaybackRootText, "ValidateFlashbackSegmentPlaybackSnapshot(");
+        AssertDoesNotContain(segmentPlaybackRootText, "frameCount >= 180");
+        AssertDoesNotContain(segmentPlaybackRootText, "playback FPS below source-rate target after warm sample");
+        AssertContains(segmentPlaybackValidationText, "private static void ValidateFlashbackSegmentPlaybackSnapshot(");
+        AssertContains(segmentPlaybackValidationText, "frameCount >= 180");
+        AssertContains(segmentPlaybackValidationText, "playback FPS below source-rate target after warm sample");
+        AssertContains(segmentPlaybackValidationText, "flashback segment playback: command queue unhealthy");
         AssertContains(segmentPlaybackText, "private static async Task<bool> CreateFlashbackCompletedSegmentViaRecordingAsync(");
         AssertContains(segmentPlaybackText, "recording-assisted rotation started");
         AssertContains(segmentPlaybackText, "private static async Task TryStopRecordingAsync(");

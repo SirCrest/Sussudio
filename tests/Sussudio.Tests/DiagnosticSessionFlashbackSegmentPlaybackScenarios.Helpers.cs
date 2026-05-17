@@ -7,6 +7,7 @@ static partial class Program
             new[]
             {
                 ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs"),
+                ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs")
             }).Replace("\r\n", "\n");
     }

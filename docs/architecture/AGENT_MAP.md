@@ -2986,7 +2986,10 @@ Primary owners:
   owns post-stop preset verification, encoder-frame check, and original-preset
   restore.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs` owns the
-  Flashback completed-segment playback scenario.
+  Flashback completed-segment playback scenario choreography.
+- `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs`
+  owns completed-segment playback snapshot, FPS, command-health, and boundary
+  warning policy.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs`
   owns recording-assisted segment rotation and best-effort stop cleanup for
   segment playback diagnostics.
