@@ -2099,11 +2099,11 @@ wiring.
 
 Control-bar button ownership and hover/press/release scale behavior now live in
 `Sussudio/Controllers/Shell/ControlBarAnimationController.cs`.
-`MainWindow.ControlBarAnimations.cs` is the XAML-facing adapter.
+`MainWindow.ShellChrome.cs` is the XAML-facing adapter.
 
 Static shell ThemeShadow and translation setup for the control bar and record
 button now live in `Sussudio/Controllers/Shell/ShellElevationController.cs`.
-`MainWindow.ShellElevation.cs` is the XAML-facing adapter.
+`MainWindow.ShellChrome.cs` is the XAML-facing adapter.
 
 Preview shell/content fade and scale transitions plus unavailable-placeholder
 presentation now live in
