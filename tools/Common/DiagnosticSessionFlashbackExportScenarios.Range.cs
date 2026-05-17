@@ -148,56 +148,17 @@ internal static partial class DiagnosticSessionFlashbackExportScenarios
             return;
         }
 
-        var inPointMs = GetNullableLong(snapshot, "FlashbackExportInPointMs") ?? 0;
-        var markedOutPointMs = GetNullableLong(snapshot, "FlashbackExportOutPointMs") ?? 0;
-        var exportedDurationMs = markedOutPointMs - inPointMs;
-        var expectedDurationMinMs = Math.Max(0, outPointMs - 1_000);
-        var expectedDurationMaxMs = outPointMs + 2_000;
-        if (exportedDurationMs < expectedDurationMinMs || exportedDurationMs > expectedDurationMaxMs)
-        {
-            warnings.Add(
-                $"{scenarioLabel}: selected export duration outside expected range " +
-                $"in={inPointMs} out={markedOutPointMs} duration={exportedDurationMs} " +
-                $"expected={expectedDurationMinMs}-{expectedDurationMaxMs}");
-        }
-
-        var status = GetString(snapshot, "FlashbackExportStatus") ?? "Unknown";
-        if (!string.Equals(status, "Succeeded", StringComparison.OrdinalIgnoreCase))
-        {
-            warnings.Add($"{scenarioLabel}: expected Succeeded status, got {status}");
-        }
+        ValidateFlashbackRangeExportResult(snapshot, outPointMs, scenarioLabel, warnings);
 
         await CleanupFlashbackSelectionAsync(sendCommandAsync).ConfigureAwait(false);
         actions.Add($"{scenarioLabel} cleared range and went live");
 
-        await Task.Delay(250, cancellationToken).ConfigureAwait(false);
-        var finalSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
-        if (!TryGetSnapshot(finalSnapshotResponse, out var finalSnapshot))
-        {
-            warnings.Add($"{scenarioLabel}: no final snapshot returned");
-            return;
-        }
-
-        var pending = GetInt(finalSnapshot, "FlashbackPlaybackPendingCommands");
-        var commandHealth = BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot);
-        var state = GetString(finalSnapshot, "FlashbackPlaybackState") ?? "Unknown";
-        if (pending > 0)
-        {
-            warnings.Add($"{scenarioLabel}: pending commands remained after go-live pending={pending}");
-        }
-
-        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || commandHealth.SubmitFailures > 0)
-        {
-            warnings.Add(
-                $"{scenarioLabel}: " +
-                $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
-                $"coalescedScrub={commandHealth.CoalescedScrub} coalescedSeek={commandHealth.CoalescedSeek} skipped={commandHealth.Skipped} " +
-                $"submitFailures={commandHealth.SubmitFailures}");
-        }
-
-        if (!string.Equals(state, "Live", StringComparison.OrdinalIgnoreCase))
-        {
-            warnings.Add($"{scenarioLabel}: playback ended in state {state}");
-        }
+        await ValidateFlashbackRangeExportCleanupAsync(
+                baselineSnapshot,
+                scenarioLabel,
+                warnings,
+                sendCommandAsync,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 }

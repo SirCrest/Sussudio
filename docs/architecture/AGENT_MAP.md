@@ -2932,6 +2932,10 @@ Primary owners:
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs`,
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs`, and
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs`.
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
+  owns range duration/status validation, and
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`
+  owns post-cleanup playback command-health validation.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
   owns the export scenario task registration handoff from diagnostic-session
   startup.

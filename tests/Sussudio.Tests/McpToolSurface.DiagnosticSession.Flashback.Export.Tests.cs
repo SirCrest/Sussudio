@@ -22,6 +22,8 @@ static partial class Program
         AssertContains(scenariosText, "flashback export during playback verified");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
         AssertContains(scenariosText, "[\"useSelectionRange\"] = true");
+        AssertContains(scenariosText, "private static void ValidateFlashbackRangeExportResult(");
+        AssertContains(scenariosText, "private static async Task ValidateFlashbackRangeExportCleanupAsync(");
         AssertContains(scenariosText, "internal static void RegisterSelectedFlashbackExportScenarioTasks(");
         AssertContains(scenariosText, "backgroundTasks.AddScenario(");
         AssertContains(scenariosTextWithoutSpaces, "6,\n\"flashback-export-playback-task\",");

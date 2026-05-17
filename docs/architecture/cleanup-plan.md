@@ -2810,7 +2810,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
+- `DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Range.cs`
+- `DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
