@@ -233,6 +233,8 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Preview.cs`
   owns preview scheduler, renderer, present/display, and visual cadence
   diagnostic lane text formatting.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Recording.cs`
+  owns recording and audio integrity diagnostic lane text formatting.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs`
   owns Flashback recording, export, temp-cache, playback-command, and playback
   performance diagnostic lane text formatting.

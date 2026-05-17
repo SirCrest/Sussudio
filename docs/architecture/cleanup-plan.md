@@ -258,6 +258,8 @@ MJPEG decode, and source telemetry diagnostic lane text formatting.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Preview.cs` owns preview
 scheduler, renderer, present/display, and visual cadence diagnostic lane text
 formatting.
+`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Recording.cs` owns recording
+and audio integrity diagnostic lane text formatting.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs` owns
 Flashback recording, export, temp-cache, playback-command, and playback
 performance diagnostic lane text formatting.

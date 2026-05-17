@@ -33,10 +33,8 @@ public sealed partial class AutomationDiagnosticsHub
         var visualLane = BuildVisualLane(health);
         var mjpegDuplicateLane = FormatMjpegDuplicateCadenceDetail(health);
         var sourceSignalLane = BuildSourceSignalLane(health, sourceLane);
-        var recordingLane =
-            $"recording integrity={captureRuntime.RecordingIntegrityStatus} complete={captureRuntime.RecordingIntegrityComplete} seqGaps={captureRuntime.RecordingIntegritySequenceGaps} queueDrops={captureRuntime.RecordingIntegrityQueueDroppedFrames}";
-        var audioLane =
-            $"audio integrity={captureRuntime.RecordingIntegrityAudioStatus} drops={captureRuntime.RecordingIntegrityAudioDropEvents} disc={captureRuntime.RecordingIntegrityAudioDiscontinuities} gaps={captureRuntime.RecordingIntegrityAudioCallbackGaps}";
+        var recordingLane = BuildRecordingLane(captureRuntime);
+        var audioLane = BuildAudioLane(captureRuntime);
         var flashbackRecordingLane = BuildFlashbackRecordingLane(health);
         var exportLane = BuildFlashbackExportLane(health);
         var tempCacheLane = BuildFlashbackTempCacheLane(health);

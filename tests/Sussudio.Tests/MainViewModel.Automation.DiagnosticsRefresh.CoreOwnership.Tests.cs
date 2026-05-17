@@ -65,6 +65,8 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildSourceLane(health)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildPreviewLane(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildRenderLane(previewRuntime, recentRenderer)");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildRecordingLane(captureRuntime)");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildAudioLane(captureRuntime)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildFlashbackRecordingLane(health)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesSourceText, "private static string BuildSourceLane(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesSourceText, "private static string BuildDecodeLane(");
@@ -73,12 +75,16 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationLanesPreviewText, "private static DiagnosticEvaluationRenderLane BuildRenderLane(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesPreviewText, "private static string BuildPresentLane(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesPreviewText, "private static string BuildVisualLane(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesRecordingText, "private static string BuildRecordingLane(CaptureRuntimeSnapshot captureRuntime)");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesRecordingText, "private static string BuildAudioLane(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackRecordingLane(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackExportLane(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackPlaybackPerformanceLane(");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesText, "var sourceTarget =");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesText, "var previewLastDropReason =");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesText, "var dxgiStats =");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesText, "recording integrity={captureRuntime.RecordingIntegrityStatus}");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesText, "audio integrity={captureRuntime.RecordingIntegrityAudioStatus}");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesText, "var exportFailureKind =");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private readonly record struct DiagnosticEvaluationLanes(");
         AssertDoesNotContain(diagnostics.EvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");

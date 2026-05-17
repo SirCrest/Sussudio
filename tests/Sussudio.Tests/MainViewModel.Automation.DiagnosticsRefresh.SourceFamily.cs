@@ -23,6 +23,7 @@ static partial class Program
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs"),
             DiagnosticEvaluationLanesSourceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Source.cs"),
             DiagnosticEvaluationLanesPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Preview.cs"),
+            DiagnosticEvaluationLanesRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Recording.cs"),
             DiagnosticEvaluationLanesFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Alerts.cs"),
             SignalAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.cs"),
@@ -132,6 +133,7 @@ static partial class Program
         public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesSourceText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesPreviewText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesRecordingText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesFlashbackText { get; init; } = string.Empty;
         public string AlertsText { get; init; } = string.Empty;
         public string SignalAlertsText { get; init; } = string.Empty;
@@ -233,6 +235,7 @@ static partial class Program
                 DiagnosticEvaluationLanesText,
                 DiagnosticEvaluationLanesSourceText,
                 DiagnosticEvaluationLanesPreviewText,
+                DiagnosticEvaluationLanesRecordingText,
                 DiagnosticEvaluationLanesFlashbackText,
                 AlertsText,
                 SignalAlertsText,
