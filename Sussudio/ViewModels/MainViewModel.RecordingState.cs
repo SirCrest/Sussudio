@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Sussudio.ViewModels;
@@ -19,12 +18,6 @@ public partial class MainViewModel
     private const string HevcRecordingFormat = "HEVC";
     private const string Av1RecordingFormat = "AV1";
     private List<string> _detectedRecordingFormats = new();
-    private int _recordingToggleInProgress;
-    // Holds the in-flight ToggleRecordingAsync task so the window-close path can
-    // observe (and await) an already-running stop instead of short-circuiting on
-    // the CAS gate above. Cleared in the toggle's finally block.
-    private volatile Task? _activeRecordingToggleTask;
-    private int _activeRecordingTransitionTarget = -1;
 
     [ObservableProperty]
     public partial bool IsRecordingTransitioning { get; set; }

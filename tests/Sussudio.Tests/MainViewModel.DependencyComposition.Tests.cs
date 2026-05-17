@@ -12,6 +12,7 @@ static partial class Program
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
+        var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
         var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
 
@@ -26,6 +27,7 @@ static partial class Program
         AssertContains(rootText, "DispatcherQueue = _dispatcherQueue,");
         AssertContains(rootText, "IsDisposing = () => Volatile.Read(ref _disposeState) != 0,");
         AssertContains(rootText, "_audioDeviceWatcher = dependencies.AudioDeviceWatcher;");
+        AssertContains(rootText, "_recordingTransitionController = new MainViewModelRecordingTransitionController(this);");
         AssertContains(rootText, "_runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);");
         AssertContains(rootText, "_runtimeLifecycleController.Start();");
         AssertContains(rootText, "_runtimeLifecycleController.InitializePresentation();");
@@ -60,6 +62,9 @@ static partial class Program
         AssertContains(uiDispatchControllerText, "internal sealed class MainViewModelUiDispatchControllerContext");
         AssertContains(uiDispatchControllerText, "public required DispatcherQueue DispatcherQueue { get; init; }");
         AssertContains(uiDispatchControllerText, "public required Func<bool> IsDisposing { get; init; }");
+        AssertContains(recordingTransitionControllerText, "private sealed class MainViewModelRecordingTransitionController");
+        AssertContains(recordingTransitionControllerText, "public Task SetRecordingDesiredStateAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(recordingTransitionControllerText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
 
         AssertContains(runtimeLifecycleControllerText, "private sealed class MainViewModelRuntimeLifecycleController");
         AssertContains(runtimeLifecycleControllerText, "public void Start()");

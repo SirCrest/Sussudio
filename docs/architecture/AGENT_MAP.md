@@ -2215,12 +2215,14 @@ Primary current owners:
   and selected-device apply. `MainViewModel.PreviewReinitialization.cs` owns
   debounced preview reinitialization, Flashback-cycle wait-before-reinit,
   renderer-stop handoff, teardown restart, and reinit gate release.
-  `MainViewModel.RecordingLifecycle.cs` owns recording toggle serialization,
-  desired-state routing, graceful stop, emergency stop, and the transition gate.
-  `MainViewModel.RecordingOperations.cs` owns concrete recording start/stop
-  operation execution and failure/cancellation state repair.
+  `MainViewModel.RecordingLifecycle.cs` owns the stable recording facade:
+  toggle, desired-state, graceful-stop, and emergency-stop entry points.
+  `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`
+  owns recording toggle serialization, desired-state routing, graceful stop,
+  emergency stop, transition gating, concrete start/stop operation execution,
+  and failure/cancellation state repair.
   `MainViewModel.RecordingState.cs` owns recording option selections, output
-  path, counters, and transition flags.
+  path, counters, and observable transition flags.
   `MainViewModel.Disposal.cs` owns bounded teardown, watcher disposal, and
   export-cancellation cleanup.
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing capture runtime,

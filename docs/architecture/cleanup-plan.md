@@ -3062,10 +3062,13 @@ Remaining `tools/Common` ownership:
    Debounced preview reinitialization, Flashback-cycle wait-before-reinit,
    renderer-stop handoff, teardown restart, and gate release now live in
    `MainViewModel.PreviewReinitialization.cs`. Output folder browse/open-recordings button workflows now live in
-   `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`. Recording toggle serialization, desired-state routing, graceful stop, emergency stop,
-   and the transition gate now live in `MainViewModel.RecordingLifecycle.cs`.
-   Concrete recording start/stop operation execution and failure/cancellation
-   state repair live in `MainViewModel.RecordingOperations.cs`. Recording option selections, output
+   `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`.
+   Recording facade entry points stay in `MainViewModel.RecordingLifecycle.cs`,
+   while recording toggle serialization, desired-state routing, graceful stop,
+   emergency stop, transition gating, concrete start/stop operation execution,
+   and failure/cancellation state repair now live in
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`.
+   Recording option selections, output
    path, counters, and transition flags now live in
    `MainViewModel.RecordingState.cs`. Bounded teardown and watcher disposal now live
    in `MainViewModel.Disposal.cs`. Automation-facing capture runtime, health,
@@ -3212,8 +3215,9 @@ Remaining `tools/Common` ownership:
    quality, NVENC split-encode mode, custom bitrate clamp policy, encoder
    preset, and output-path automation now live in
    `MainViewModel.AutomationRecordingSettings.cs`.
-   The automation recording desired-state bridge into the shared recording
-   transition gate now lives in `MainViewModel.RecordingLifecycle.cs`.
+   The automation recording desired-state bridge enters through
+   `MainViewModel.RecordingLifecycle.cs` and is serialized by
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`.
    Capture resolution, frame-rate, video-format, MJPEG decoder worker-count
    automation, and the shared capture-mode reinitialization gate now live in
    `MainViewModel.AutomationCaptureSettings.cs`.

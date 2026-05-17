@@ -7,6 +7,8 @@ static partial class Program
     {
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
+        var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
+            .Replace("\r\n", "\n");
         var automationText = recordingLifecycleText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationFlashback.cs")
             .Replace("\r\n", "\n")
@@ -36,8 +38,6 @@ static partial class Program
                 .Replace("\r\n", "\n");
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
-        var recordingOperationsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingOperations.cs")
-            .Replace("\r\n", "\n");
         var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs")
             .Replace("\r\n", "\n");
         var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
@@ -63,26 +63,30 @@ static partial class Program
         AssertContains(recordingLifecycleText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(recordingLifecycleText, "=> SetRecordingDesiredStateAsync(enabled, cancellationToken);");
         AssertContains(recordingLifecycleText, "internal Task SetRecordingDesiredStateAsync");
-        AssertContains(recordingLifecycleText, "public Task ToggleRecordingAsync()\n        => SetRecordingDesiredStateAsync(!IsRecording);");
-        AssertContains(recordingLifecycleText, "Recording transition already in progress.");
-        AssertContains(recordingLifecycleText, "await inFlight;");
-        AssertContains(recordingLifecycleText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(recordingLifecycleText, "var task = RecordingTransitionInnerAsync(enabled, cancellationToken);");
-        AssertContains(recordingLifecycleText, "await StartRecordingAsync(cancellationToken);");
-        AssertContains(recordingLifecycleText, "await StopRecordingAsync(cancellationToken);");
-        AssertContains(recordingLifecycleText, "await BeginRecordingTransitionAsync(enabled, cancellationToken);");
+        AssertContains(recordingLifecycleText, "public Task ToggleRecordingAsync()\n        => _recordingTransitionController.ToggleRecordingAsync();");
+        AssertContains(recordingLifecycleText, "=> _recordingTransitionController.SetRecordingDesiredStateAsync(enabled, cancellationToken);");
+        AssertContains(recordingTransitionControllerText, "private sealed class MainViewModelRecordingTransitionController");
+        AssertContains(recordingTransitionControllerText, "Recording transition already in progress.");
+        AssertContains(recordingTransitionControllerText, "await inFlight;");
+        AssertContains(recordingTransitionControllerText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(recordingTransitionControllerText, "var task = RecordingTransitionInnerAsync(enabled, cancellationToken);");
+        AssertContains(recordingTransitionControllerText, "await StartRecordingAsync(cancellationToken);");
+        AssertContains(recordingTransitionControllerText, "await StopRecordingAsync(cancellationToken);");
+        AssertContains(recordingTransitionControllerText, "await BeginRecordingTransitionAsync(enabled, cancellationToken);");
         AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StopRecordingAsync(cancellationToken);");
-        AssertContains(recordingOperationsText, "private async Task StartRecordingAsync(CancellationToken cancellationToken = default)");
-        AssertContains(recordingOperationsText, "private async Task StopRecordingAsync(CancellationToken cancellationToken = default)");
-        AssertContains(recordingOperationsText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
-        AssertContains(recordingOperationsText, "await _sessionCoordinator.StopRecordingAsync(cancellationToken);");
+        AssertContains(recordingTransitionControllerText, "private async Task StartRecordingAsync(CancellationToken cancellationToken = default)");
+        AssertContains(recordingTransitionControllerText, "private async Task StopRecordingAsync(CancellationToken cancellationToken = default)");
+        AssertContains(recordingTransitionControllerText, "await _viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
+        AssertContains(recordingTransitionControllerText, "await _viewModel._sessionCoordinator.StopRecordingAsync(cancellationToken);");
         AssertDoesNotContain(captureText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertContains(recordingStateText, "private readonly Stopwatch _recordingStopwatch = new();");
         AssertContains(recordingStateText, "public partial ObservableCollection<string> AvailableRecordingFormats");
         AssertContains(recordingStateText, "public partial string OutputPath");
         AssertContains(recordingStateText, "public partial bool IsRecording");
+        AssertDoesNotContain(recordingStateText, "_activeRecordingToggleTask");
+        AssertDoesNotContain(recordingStateText, "_recordingToggleInProgress");
         AssertContains(recordingRuntimeText, "partial void OnIsRecordingChanged(bool value)");
         AssertContains(recordingRuntimeText, "private void UpdateRecordingStats()");
         AssertContains(recordingRuntimeText, "private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)");

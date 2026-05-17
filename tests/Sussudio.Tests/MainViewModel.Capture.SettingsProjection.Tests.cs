@@ -10,7 +10,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
-        var recordingOperationsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingOperations.cs")
+        var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
             .Replace("\r\n", "\n");
         var captureSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSettings.cs")
             .Replace("\r\n", "\n");
@@ -44,7 +44,7 @@ static partial class Program
         AssertContains(captureSettingsFrameRateText, "requestedFrameRateArg = effectiveFrameRate.ToString(\"0.###\");");
         AssertDoesNotContain(captureText, "private CaptureSettings BuildCaptureSettings()");
         AssertContains(captureText, "await _sessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken)");
-        AssertContains(recordingOperationsText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
+        AssertContains(recordingTransitionControllerText, "await _viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertDoesNotContain(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
 
