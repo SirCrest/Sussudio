@@ -2282,9 +2282,12 @@ Primary current owners:
   and analog gain property handlers. `MainViewModel.CaptureModePropertyChanges.cs`
   owns capture-mode property handlers for selected resolution, selected format,
   selected video format, and MJPEG decoder count changes.
-  `MainViewModel.Dispatching.cs` owns shared
-  dispatcher enqueue/invoke helpers and preview event fan-out for the partial
-  family. `MainViewModel.Runtime.cs` owns periodic timer refresh orchestration.
+  `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs` owns
+  shared view-model UI dispatcher enqueue/invoke policy, disposal skip logging,
+  cancellation handoff, enqueue-failure logging, and status projection.
+  `MainViewModel.Dispatching.cs` owns the stable private adapter names plus
+  preview event fan-out for the partial family. `MainViewModel.Runtime.cs`
+  owns periodic timer refresh orchestration.
   `MainViewModel.RuntimeWiring.cs` owns runtime event subscription/unsubscription
   plus initial source-telemetry, HDR, live-info, timer, and disk-space bootstrap.
   `MainViewModel.DiskSpacePresentation.cs` owns the DiskSpaceInfo assignment bridge,

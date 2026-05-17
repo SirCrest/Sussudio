@@ -10,6 +10,7 @@ static partial class Program
         var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
+        var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
         var runtimeWiringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RuntimeWiring.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
         var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
@@ -21,6 +22,9 @@ static partial class Program
         AssertContains(rootText, "_sessionCoordinator = dependencies.SessionCoordinator;");
         AssertContains(rootText, "_deviceAudioControlService = dependencies.DeviceAudioControlService;");
         AssertContains(rootText, "_dispatcherQueue = dependencies.DispatcherQueue;");
+        AssertContains(rootText, "_uiDispatchController = new MainViewModelUiDispatchController(");
+        AssertContains(rootText, "DispatcherQueue = _dispatcherQueue,");
+        AssertContains(rootText, "IsDisposing = () => Volatile.Read(ref _disposeState) != 0,");
         AssertContains(rootText, "_audioDeviceWatcher = dependencies.AudioDeviceWatcher;");
         AssertContains(rootText, "AttachRuntimeWiring();");
         AssertContains(rootText, "InitializeRuntimePresentation();");
@@ -52,6 +56,9 @@ static partial class Program
         AssertContains(captureStateText, "public partial ObservableCollection<CaptureDevice> Devices");
         AssertContains(audioStateText, "public partial bool IsAudioPreviewActive");
         AssertContains(flashbackStateText, "partial void OnIsFlashbackEnabledChanged(bool value)");
+        AssertContains(uiDispatchControllerText, "internal sealed class MainViewModelUiDispatchControllerContext");
+        AssertContains(uiDispatchControllerText, "public required DispatcherQueue DispatcherQueue { get; init; }");
+        AssertContains(uiDispatchControllerText, "public required Func<bool> IsDisposing { get; init; }");
 
         AssertContains(runtimeWiringText, "private void AttachRuntimeWiring()");
         AssertContains(runtimeWiringText, "_deviceService.FormatProbeCompleted += OnDeviceFormatProbeCompleted;");

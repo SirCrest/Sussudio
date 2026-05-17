@@ -3093,7 +3093,10 @@ Remaining `tools/Common` ownership:
    device-native audio mode/gain handlers live in
    `MainViewModel.DeviceAudioPropertyChanges.cs`, and capture-mode property
    handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
-   dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
+   view-model UI dispatcher enqueue/invoke policy now lives in
+   `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`, while
+   `MainViewModel.Dispatching.cs` keeps the stable private adapter names and
+   preview event fan-out;
    periodic timer refresh orchestration now lives in `MainViewModel.Runtime.cs`,
    runtime event subscription/unsubscription and initial source-telemetry/HDR/live-info/
    timer/disk-space bootstrap now live in `MainViewModel.RuntimeWiring.cs`,

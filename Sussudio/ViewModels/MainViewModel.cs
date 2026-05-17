@@ -1,7 +1,9 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Dispatching;
+using Sussudio.Controllers;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
@@ -24,6 +26,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly NativeXuAudioControlService _deviceAudioControlService;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly AudioDeviceWatcher _audioDeviceWatcher;
+    private readonly MainViewModelUiDispatchController _uiDispatchController;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -72,6 +75,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             });
         _deviceAudioControlService = dependencies.DeviceAudioControlService;
         _dispatcherQueue = dependencies.DispatcherQueue;
+        _uiDispatchController = new MainViewModelUiDispatchController(
+            new MainViewModelUiDispatchControllerContext
+            {
+                DispatcherQueue = _dispatcherQueue,
+                IsDisposing = () => Volatile.Read(ref _disposeState) != 0,
+                Log = message => Logger.Log(message),
+                LogException = exception => Logger.LogException(exception),
+                SetStatusText = value => StatusText = value,
+            });
         _audioDeviceWatcher = dependencies.AudioDeviceWatcher;
 
         AttachRuntimeWiring();
@@ -103,6 +115,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Capture-mode automation: MainViewModel.AutomationCaptureMode.cs; shared gate: MainViewModel.AutomationCaptureModeGate.cs; frame rate: MainViewModel.AutomationFrameRate.cs; video format: MainViewModel.AutomationVideoFormat.cs; MJPEG decoder count: MainViewModel.AutomationMjpegDecoderCount.cs
     // UI-only automation: MainViewModel.AutomationUi.cs; stats/overlay automation: MainViewModel.AutomationStatsUi.cs
     // Recording format automation: MainViewModel.AutomationRecordingFormat.cs; recording quality: MainViewModel.AutomationRecordingQuality.cs; split encode mode: MainViewModel.AutomationSplitEncodeMode.cs; custom bitrate: MainViewModel.AutomationCustomBitrate.cs; encoder preset: MainViewModel.AutomationEncoderPreset.cs; output path: MainViewModel.AutomationOutputPath.cs
+    // UI dispatch policy: MainViewModelUiDispatchController.cs; adapter/fan-out: MainViewModel.Dispatching.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs
     // Audio input selection: MainViewModel.AudioInputSelection.cs
     // Audio ramp trace recorder: AudioRampTraceRecorder.cs; adapter: MainViewModel.AudioRampTrace.cs
