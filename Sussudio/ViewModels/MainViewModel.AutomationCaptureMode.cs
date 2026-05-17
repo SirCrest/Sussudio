@@ -103,14 +103,6 @@ public partial class MainViewModel
         }, cancellationToken);
     }
 
-    public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)
-    {
-        return SetAutomationCaptureModeAsync("mjpeg decoder count", () =>
-        {
-            MjpegDecoderCount = Math.Clamp(decoderCount, 1, 8);
-        }, cancellationToken);
-    }
-
     private async Task SetAutomationCaptureModeAsync(
         string reason,
         Action apply,

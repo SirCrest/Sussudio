@@ -2312,8 +2312,11 @@ Primary current owners:
   capture-device selection, audio-input selection, and custom audio-input
   enablement.
   `MainViewModel.AutomationCaptureMode.cs` owns automation mutators for
-  resolution, frame rate, video format, MJPEG decoder count, and the shared
-  reinitialization gate used after active capture-mode changes.
+  resolution, frame rate, video format, and the shared reinitialization gate
+  used after active capture-mode changes.
+  `MainViewModel.AutomationMjpegDecoderCount.cs` owns automation mutation for
+  MJPEG decoder worker count while routing through the shared capture-mode
+  reinitialization gate.
   `MainViewModel.AutomationRecordingFormat.cs` owns recording format automation
   mutation and HDR compatibility enforcement.
   `MainViewModel.AutomationRecordingQuality.cs` owns recording encoder quality
