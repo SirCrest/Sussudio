@@ -5,7 +5,6 @@ static partial class Program
                 "\n",
                 ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs"),
-                ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.DeferredSettings.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.Playback.cs"))
             .Replace("\r\n", "\n");
 }

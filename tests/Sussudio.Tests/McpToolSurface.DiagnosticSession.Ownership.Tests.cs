@@ -110,8 +110,6 @@ static partial class Program
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var startupRegistrationText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs")
             .Replace("\r\n", "\n");
-        var deferredSettingsStartupText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioStartup.DeferredSettings.cs")
-            .Replace("\r\n", "\n");
         var cycleScenariosText = ReadDiagnosticSessionFlashbackCycleScenariosSource();
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var stressScenariosText = ReadDiagnosticSessionFlashbackStressScenarioSource();
@@ -139,10 +137,9 @@ static partial class Program
         AssertDoesNotContain(startupText, "backgroundTasks.AddScenario(");
         AssertContains(startupText, "DiagnosticSessionPresentMonStartup.StartAsync(");
         AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(");
-        AssertContains(deferredSettingsStartupText, "backgroundTasks.SetRecordingSettingsDeferred(");
-        AssertContains(deferredSettingsStartupText, "RunFlashbackRecordingSettingsDeferredAsync(");
-        AssertContains(deferredSettingsStartupText, "actions.Add(\"flashback recording settings deferred started\")");
-        AssertDoesNotContain(startupRegistrationText, "RunFlashbackRecordingSettingsDeferredAsync(");
+        AssertContains(startupRegistrationText, "backgroundTasks.SetRecordingSettingsDeferred(");
+        AssertContains(startupRegistrationText, "RunFlashbackRecordingSettingsDeferredAsync(");
+        AssertContains(startupRegistrationText, "actions.Add(\"flashback recording settings deferred started\")");
         AssertContains(startupRegistrationText, "DiagnosticSessionFlashbackCycleScenarios.RegisterSelectedFlashbackCycleScenarioTasks(");
         AssertContains(startupRegistrationText, "DiagnosticSessionFlashbackStressScenario.RegisterSelectedFlashbackStressScenarioTasks(");
         AssertContains(startupRegistrationText, "DiagnosticSessionFlashbackSegmentPlaybackScenarios.RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");

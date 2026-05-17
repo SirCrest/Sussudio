@@ -2887,9 +2887,8 @@ Primary owners:
   optional background startup orchestration.
 - `tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs` owns
   Flashback scenario registration orchestration and delegates task registration
-  to the focused scenario owners. Keep task stage names stable there.
-- `tools/Common/DiagnosticSessionScenarioStartup.DeferredSettings.cs` owns
-  deferred Flashback recording-settings task registration.
+  to the focused scenario owners, including deferred Flashback recording-settings
+  task registration. Keep task stage names stable there.
 - `tools/Common/DiagnosticSessionScenarioStartup.Playback.cs` owns the direct
   Flashback playback start command, playback buffer readiness warning, and
   playback-state wait.
