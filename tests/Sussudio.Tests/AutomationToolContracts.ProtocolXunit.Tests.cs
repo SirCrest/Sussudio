@@ -53,10 +53,12 @@ public sealed class AutomationToolContractsProtocolXunitTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
 
         Assert.Contains("SendCommandAsync(\n        AutomationCommandKind kind,", ssctlPipeText);
-        Assert.Contains("=> SendCommandAsync(AutomationCommandCatalog.Get(kind).Name, payload, responseTimeoutMs);", ssctlPipeText);
+        Assert.Contains("AutomationCommandTransport.SendCommandAsync(\n            _pipeName,\n            kind,", ssctlPipeText);
+        Assert.DoesNotContain("AutomationCommandCatalog.Get(kind).Name", ssctlPipeText);
         Assert.Contains("HandleSimpleCommandAsync(\n        CommandContext context,\n        AutomationCommandKind kind,", ssctlTransportText);
         Assert.Contains("SendCommandAsync(\n        AutomationCommandKind kind,", mcpPipeText);
-        Assert.Contains("=> SendCommandAsync(AutomationCommandCatalog.Get(kind).Name, payload, responseTimeoutMs);", mcpPipeText);
+        Assert.Contains("AutomationCommandTransport.SendCommandAsync(\n            _pipeName,\n            kind,", mcpPipeText);
+        Assert.DoesNotContain("AutomationCommandCatalog.Get(kind).Name", mcpPipeText);
         Assert.Contains("Optional(AutomationCommandKind kind, string label,", formatterText);
         Assert.Contains("ExecuteAndFormatResultAsync(\n        PipeClient pipeClient,\n        AutomationCommandKind kind,", formatterText);
         Assert.Contains("pipeClient.SendCommandAsync(kind, payload, responseTimeoutMs)", formatterText);
@@ -122,6 +124,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("internal static partial class AutomationPipeClient", sharedClientText);
         Assert.Contains("internal static async Task<string> SendRequestAsync(", sharedClientText);
         Assert.Contains("internal static async Task<AutomationPipeCommandResult> SendCommandWithResultAsync(", sharedClientText);
+        Assert.Contains("AutomationCommandKind kind", sharedClientText);
+        Assert.Contains("=> SendCommandWithResultAsync(\n            pipeName,\n            (int)kind,", sharedClientText);
         Assert.Contains("internal static bool TryReadResponseState(", sharedClientText);
         Assert.Contains("internal readonly record struct AutomationPipeCommandResult(", sharedClientText);
         Assert.Contains("ConnectWithClassifiedErrorsAsync(", pipeClientTransportText);
@@ -141,6 +145,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("public string ErrorCode { get; }", sharedClientText);
 
         Assert.Contains("AutomationCommandTransport.SendCommandAsync(", ssctlPipeText);
+        Assert.Contains("kind,", ssctlPipeText);
         Assert.Contains("unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException", ssctlPipeText);
         Assert.Contains("throw new UsageException(ex.Message);", ssctlPipeText);
         Assert.DoesNotContain("AutomationPipeClient.SendCommandWithResultAsync", ssctlPipeText);
@@ -150,6 +155,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.DoesNotContain("Sussudio is not running or not responding. Start the app and try again.", ssctlPipeText);
 
         Assert.Contains("AutomationCommandTransport.SendCommandAsync(", mcpPipeText);
+        Assert.Contains("kind,", mcpPipeText);
         Assert.Contains("unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError", mcpPipeText);
         Assert.DoesNotContain("AutomationPipeClient.SendCommandWithResultAsync", mcpPipeText);
         Assert.DoesNotContain("catch (AutomationPipeConnectException ex)", mcpPipeText);
@@ -158,6 +164,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.DoesNotContain("Sussudio is not running or not responding. Start the app and try again.", mcpPipeText);
         Assert.Contains("internal static class AutomationCommandTransport", sharedClientText);
         Assert.Contains("internal enum AutomationUnknownCommandHandling", sharedClientText);
+        Assert.Contains("AutomationPipeProtocol.GetDefaultResponseTimeout(kind)", sharedClientText);
         Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, \"unknown-command\")", sharedClientText);
         Assert.Contains("catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))", sharedClientText);
         Assert.Contains("AutomationSyntheticErrorResponse.Create(ex)", sharedClientText);

@@ -2749,9 +2749,10 @@ focused partial family under `tools/Common/AutomationPipeClient/`.
 write/read framing, and response timeout, `AutomationPipeClient.ConnectErrors.cs`
 owns pipe connect failure classification and exact CLI/MCP diagnostic error
 codes, `AutomationPipeClient.Commands.cs` owns command envelope sending and
-`not_ready` retry policy, `AutomationCommandTransport.cs` owns command-specific
-timeout selection, shared response-element validation, synthetic error shaping,
-and explicit ssctl/MCP unknown-command policy mode,
+typed `AutomationCommandKind` command-id routing plus `not_ready` retry policy,
+`AutomationCommandTransport.cs` owns command-specific timeout selection for
+string and typed commands, shared response-element validation, synthetic error
+shaping, and explicit ssctl/MCP unknown-command policy mode,
 `AutomationPipeClient.ResponseState.cs` owns tolerant response-state parsing,
 `AutomationPipeClient.Models.cs` owns command result and exception types,
 `AutomationSyntheticErrorResponse.cs` owns shared structured error-envelope

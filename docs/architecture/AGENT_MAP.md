@@ -2419,10 +2419,12 @@ Primary owners:
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs` owns
   pipe connect failure classification and exact CLI/MCP diagnostic error codes.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs` owns
-  command envelope sending and `not_ready` retry behavior.
+  command envelope sending, typed `AutomationCommandKind` command-id routing,
+  and `not_ready` retry behavior.
 - `tools/Common/AutomationPipeClient/AutomationCommandTransport.cs` owns
-  command-specific timeout selection, shared response-element validation,
-  synthetic error shaping, and explicit ssctl/MCP unknown-command policy mode.
+  command-specific timeout selection for string and typed commands, shared
+  response-element validation, synthetic error shaping, and explicit ssctl/MCP
+  unknown-command policy mode.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs` owns
   tolerant response state parsing.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs` owns pipe
@@ -2432,10 +2434,13 @@ Primary owners:
   exception-to-envelope mapper used by the shared command transport.
 - Fixed MCP routes whose commands exist in `AutomationCommandKind` should call
   the typed MCP `PipeClient.SendCommandAsync(AutomationCommandKind, ...)`
-  overload at the pipe seam. Do not list converted routes here; the shared
-  catalog, per-file MCP owner bullets, and `McpToolSurface.*` source guards are
-  the source of truth. String command names remain only for catalog/manifest-backed
-  dynamic batches and diagnostic-session command callbacks.
+  overload at the pipe seam; fixed ssctl routes should do the same through
+  `PipeTransport.SendCommandAsync(AutomationCommandKind, ...)`. The shared
+  command transport must keep those enum calls typed until the request envelope
+  is created. Do not list converted routes here; the shared catalog, per-file
+  MCP owner bullets, and `McpToolSurface.*` source guards are the source of
+  truth. String command names remain only for catalog/manifest-backed dynamic
+  batches and diagnostic-session command callbacks.
 - `tools/Common/AutomationPipeClient/AutomationResponseState.cs` owns tolerant
   response-state DTOs shared by the pipe client and tool surfaces.
 - `tools/AutomationClient/Program.cs` owns the low-level pipe client entry

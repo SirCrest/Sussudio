@@ -2,6 +2,7 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Sussudio.Models;
 
 namespace Sussudio.Tools;
 
@@ -29,6 +30,28 @@ internal static partial class AutomationPipeClient
         return result.ResponseJson;
     }
 
+    internal static async Task<string> SendCommandAsync(
+        string pipeName,
+        AutomationCommandKind kind,
+        object? payload,
+        int connectTimeoutMs,
+        int responseTimeoutMs,
+        string? authToken = null,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await SendCommandWithResultAsync(
+                pipeName,
+                kind,
+                payload,
+                connectTimeoutMs,
+                responseTimeoutMs,
+                authToken,
+                includeResponseElement: false,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return result.ResponseJson;
+    }
+
     internal static async Task<AutomationPipeCommandResult> SendCommandWithResultAsync(
         string pipeName,
         string commandName,
@@ -41,6 +64,47 @@ internal static partial class AutomationPipeClient
     {
         var commandValue = AutomationPipeProtocol.ResolveCommand(commandName);
 
+        return await SendCommandWithResultAsync(
+                pipeName,
+                commandValue,
+                payload,
+                connectTimeoutMs,
+                responseTimeoutMs,
+                authToken,
+                includeResponseElement,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    internal static Task<AutomationPipeCommandResult> SendCommandWithResultAsync(
+        string pipeName,
+        AutomationCommandKind kind,
+        object? payload,
+        int connectTimeoutMs,
+        int responseTimeoutMs,
+        string? authToken = null,
+        bool includeResponseElement = false,
+        CancellationToken cancellationToken = default)
+        => SendCommandWithResultAsync(
+            pipeName,
+            (int)kind,
+            payload,
+            connectTimeoutMs,
+            responseTimeoutMs,
+            authToken,
+            includeResponseElement,
+            cancellationToken);
+
+    private static async Task<AutomationPipeCommandResult> SendCommandWithResultAsync(
+        string pipeName,
+        int commandValue,
+        object? payload,
+        int connectTimeoutMs,
+        int responseTimeoutMs,
+        string? authToken,
+        bool includeResponseElement,
+        CancellationToken cancellationToken)
+    {
         for (var attempt = 0; ; attempt++)
         {
             cancellationToken.ThrowIfCancellationRequested();

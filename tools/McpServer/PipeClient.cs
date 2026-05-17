@@ -40,6 +40,11 @@ public sealed class PipeClient
         AutomationCommandKind kind,
         Dictionary<string, object?>? payload = null,
         int? responseTimeoutMs = null)
-        => SendCommandAsync(AutomationCommandCatalog.Get(kind).Name, payload, responseTimeoutMs);
+        => AutomationCommandTransport.SendCommandAsync(
+            _pipeName,
+            kind,
+            payload,
+            responseTimeoutMs: responseTimeoutMs,
+            unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError);
 
 }
