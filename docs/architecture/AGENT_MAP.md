@@ -2216,10 +2216,14 @@ Primary current owners:
   `MainViewModel.CaptureSettingsFrameRate.cs` owns frame-rate request
   projection: selected option seed, auto-resolved effective FPS, negotiated
   rational/source-telemetry overrides, and rational/decimal fallbacks.
-  `MainViewModel.Capture.cs` owns device initialization, preview start/stop,
-  and selected-device apply. `MainViewModel.PreviewReinitialization.cs` owns
-  debounced preview reinitialization, Flashback-cycle wait-before-reinit,
-  renderer-stop handoff, teardown restart, and reinit gate release.
+  `MainViewModel.Capture.cs` is the compatibility facade for device
+  initialization, preview start/stop, and selected-device apply.
+  `MainViewModel.PreviewReinitialization.cs` is the compatibility facade for
+  preview reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
+  owns the underlying preview lifecycle operations: device initialization,
+  preview start/stop, selected-device apply, debounced reinitialization,
+  Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
+  and reinit gate release.
   `MainViewModel.RecordingLifecycle.cs` owns the stable recording facade:
   toggle, desired-state, graceful-stop, and emergency-stop entry points.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`

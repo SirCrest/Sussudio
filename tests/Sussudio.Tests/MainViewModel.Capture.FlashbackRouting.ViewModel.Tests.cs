@@ -81,6 +81,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rawPreviewReinitializationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewReinitialization.cs")
             .Replace("\r\n", "\n");
+        var rawPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
+            .Replace("\r\n", "\n");
         var settingsText = viewModelFiles["MainViewModel.Settings.cs"];
         var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackEncoderSettings.cs"];
         var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackSettings.cs"];
@@ -164,14 +166,16 @@ static partial class Program
         AssertContains(viewModelCaptureStateText, "private const int PreviewReinitializeDebounceMs = 250;");
         AssertContains(viewModelPreviewStateText, "private int _previewReinitializeGeneration;");
         AssertDoesNotContain(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
-        AssertContains(rawPreviewReinitializationText, "var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);");
-        AssertContains(rawPreviewReinitializationText, "await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);");
-        AssertContains(rawPreviewReinitializationText, "Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration");
-        AssertContains(rawPreviewReinitializationText, "REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
-        AssertContains(rawPreviewReinitializationText, "await AwaitWithTimeoutAsync(\n                    pendingCycle,\n                    FlashbackCycleBeforeReinitializeTimeoutMs,\n                    \"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(false);");
-        AssertContains(rawPreviewReinitializationText, "catch (TimeoutException ex)\n            {\n                Logger.Log($\"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}\");");
-        AssertContains(rawPreviewReinitializationText, "REINIT_WAIT_FLASHBACK_CYCLE_FAULT");
-        AssertContains(viewModelFiles["MainViewModel.PreviewReinitialization.cs"], "if (ReferenceEquals(_pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)\n            {\n                _pendingFlashbackCycleTask = null;\n            }");
+        AssertContains(rawPreviewReinitializationText, "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
+        AssertContains(rawPreviewLifecycleControllerText, "var reinitializeGeneration = Interlocked.Increment(ref _viewModel._previewReinitializeGeneration);");
+        AssertContains(rawPreviewLifecycleControllerText, "await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);");
+        AssertContains(rawPreviewLifecycleControllerText, "Volatile.Read(ref _viewModel._previewReinitializeGeneration) != reinitializeGeneration");
+        AssertContains(rawPreviewLifecycleControllerText, "REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
+        AssertContains(rawPreviewLifecycleControllerText, "await AwaitWithTimeoutAsync(");
+        AssertContains(rawPreviewLifecycleControllerText, "\"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(false);");
+        AssertContains(rawPreviewLifecycleControllerText, "REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}");
+        AssertContains(rawPreviewLifecycleControllerText, "REINIT_WAIT_FLASHBACK_CYCLE_FAULT");
+        AssertContains(rawPreviewLifecycleControllerText, "if (ReferenceEquals(_viewModel._pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)\n                {\n                    _viewModel._pendingFlashbackCycleTask = null;\n                }");
         AssertContains(flashbackExportOperationText, "private abstract record ExportFlashbackOutcome");
         AssertContains(flashbackExportOperationText, "private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync");
         AssertContains(flashbackExportOperationText, "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");

@@ -187,7 +187,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs")
             .Replace("\r\n", "\n");
-        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");
 
         var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewButtonActionController.cs")
@@ -213,12 +213,12 @@ static partial class Program
         AssertContains(vmRampDown, "_context.SetPreviewVolume(0);");
 
         var stopPreview = ExtractTextBetween(
-            captureText,
+            previewLifecycleControllerText,
             "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
             "\n}\n");
-        AssertContains(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);");
-        AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "PreviewStopRequested?.Invoke(this, EventArgs.Empty);");
-        AssertOccursBefore(stopPreview, "await RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _sessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
+        AssertContains(stopPreview, "await _viewModel.RampPreviewVolumeDownForStopAsync(cancellationToken);");
+        AssertOccursBefore(stopPreview, "await _viewModel.RampPreviewVolumeDownForStopAsync(cancellationToken);", "_viewModel.PreviewStopRequested?.Invoke(_viewModel, EventArgs.Empty);");
+        AssertOccursBefore(stopPreview, "await _viewModel.RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _viewModel._sessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
 
         AssertDoesNotContain(previewPropertyChangedText, "private Task ViewModel_PreviewRendererStopRequested()");
         var previewReinitStop = ExtractMemberCode(previewReinitText, "ViewModel_PreviewRendererStopRequested");

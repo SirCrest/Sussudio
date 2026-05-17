@@ -48,7 +48,7 @@ static partial class Program
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
-        var viewModelCaptureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
+        var viewModelPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");
         var startVideoPreview = ExtractTextBetween(
             captureServiceText,
@@ -222,12 +222,12 @@ static partial class Program
         AssertContains(stopVideoPreviewCore, "catch (Exception ex) when (stopFailure != null)");
         AssertDoesNotContain(stopVideoPreviewCore, "!keepPipelineAlive) StopTelemetryPoll()");
         var stopPreviewBlock = ExtractTextBetween(
-            viewModelCaptureText,
+            viewModelPreviewLifecycleControllerText,
             "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
             "\n}\n");
         AssertContains(stopPreviewBlock, "var commitStoppedState = false;");
         AssertContains(stopPreviewBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
-        AssertContains(stopPreviewBlock, "if (commitStoppedState)\n            {\n                IsPreviewing = false;\n            }");
+        AssertContains(stopPreviewBlock, "if (commitStoppedState)\n                {\n                    _viewModel.IsPreviewing = false;\n                }");
         AssertOccursBefore(
             ExtractTextBetween(
                 captureServiceText,

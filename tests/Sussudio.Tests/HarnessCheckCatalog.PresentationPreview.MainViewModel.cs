@@ -40,8 +40,8 @@ static partial class Program
             "Output drive free-space presentation lives in focused helper",
             OutputDriveSpacePresentationBuilder_LivesInFocusedHelper);
         await AddCheckAsync(results,
-            "MainViewModel preview reinitialization lives in focused partial",
-            MainViewModelPreviewReinitialization_LivesInFocusedPartial);
+            "MainViewModel preview lifecycle lives in controller",
+            MainViewModelPreviewLifecycle_LivesInController);
         await AddCheckAsync(results,
             "MainViewModel audio controls map analog gain curve and clamp endpoints",
             MainViewModelAudioControls_MapsAnalogGainCurveAndClamps);

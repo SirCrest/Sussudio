@@ -30,6 +30,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelDeviceFormatProbeController _deviceFormatProbeController;
     private readonly MainViewModelRuntimeLifecycleController _runtimeLifecycleController;
     private readonly MainViewModelRecordingTransitionController _recordingTransitionController;
+    private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -37,12 +38,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     }
 
     internal void CancelPendingPreviewRestart()
-    {
-        if (IsPreviewReinitializing)
-        {
-            _cancelPreviewRestartAfterReinitialize = true;
-        }
-    }
+        => _previewLifecycleController.CancelPendingPreviewRestart();
 
 
     public MainViewModel()
@@ -89,6 +85,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             });
         _audioDeviceWatcher = dependencies.AudioDeviceWatcher;
         _recordingTransitionController = new MainViewModelRecordingTransitionController(this);
+        _previewLifecycleController = new MainViewModelPreviewLifecycleController(this);
         _deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);
         _runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);
 
@@ -107,7 +104,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // -- Automation methods are split across MainViewModel.Automation*.cs ---------
 
     // -- Partial class references ----
-    // Capture lifecycle: MainViewModel.Capture.cs
+    // Capture lifecycle facade: MainViewModel.Capture.cs; preview lifecycle owner: MainViewModelPreviewLifecycleController.cs
     // Recording lifecycle facade: MainViewModel.RecordingLifecycle.cs; transition owner: MainViewModelRecordingTransitionController.cs
     // Recording state: MainViewModel.RecordingState.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs

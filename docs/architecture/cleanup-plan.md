@@ -3040,11 +3040,15 @@ Remaining `tools/Common` ownership:
    `MainViewModel.CaptureSettings.cs`, with frame-rate request projection split
    to `MainViewModel.CaptureSettingsFrameRate.cs` for selected-option seeding,
    auto-resolved effective FPS, runtime/source rational overrides, and
-   rational/decimal fallbacks; `MainViewModel.Capture.cs` stays focused on
-   device initialization, preview start/stop, and selected-device apply.
-   Debounced preview reinitialization, Flashback-cycle wait-before-reinit,
-   renderer-stop handoff, teardown restart, and gate release now live in
-   `MainViewModel.PreviewReinitialization.cs`. Output folder browse/open-recordings button workflows now live in
+   rational/decimal fallbacks; `MainViewModel.Capture.cs` is the stable
+   compatibility facade for device initialization, preview start/stop, and
+   selected-device apply. `MainViewModel.PreviewReinitialization.cs` is the
+   stable compatibility facade for preview reinitialization. Preview lifecycle
+   implementation now lives in
+   `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`:
+   device initialization, preview start/stop, selected-device apply, debounced
+   reinitialization, Flashback-cycle wait-before-reinit, renderer-stop handoff,
+   teardown restart, and gate release. Output folder browse/open-recordings button workflows now live in
    `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`.
    Recording facade entry points stay in `MainViewModel.RecordingLifecycle.cs`,
    while recording toggle serialization, desired-state routing, graceful stop,

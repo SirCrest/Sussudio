@@ -8,6 +8,8 @@ static partial class Program
     {
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
+            .Replace("\r\n", "\n");
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
@@ -43,7 +45,7 @@ static partial class Program
         AssertContains(captureSettingsFrameRateText, "SelectedFormat?.FrameRateNumerator > 0 && SelectedFormat.FrameRateDenominator > 0");
         AssertContains(captureSettingsFrameRateText, "requestedFrameRateArg = effectiveFrameRate.ToString(\"0.###\");");
         AssertDoesNotContain(captureText, "private CaptureSettings BuildCaptureSettings()");
-        AssertContains(captureText, "await _sessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken)");
+        AssertContains(previewLifecycleControllerText, "await _viewModel._sessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken)");
         AssertContains(recordingTransitionControllerText, "await _viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertDoesNotContain(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
