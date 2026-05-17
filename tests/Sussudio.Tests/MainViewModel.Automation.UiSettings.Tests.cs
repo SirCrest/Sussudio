@@ -5,13 +5,17 @@ static partial class Program
     private static Task AutomationPreviewVolume_PersistsThroughSettingsPath()
     {
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationUi.cs").Replace("\r\n", "\n");
+        var automationStatsUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationStatsUi.cs").Replace("\r\n", "\n");
         var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs").Replace("\r\n", "\n");
 
         AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
         AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
-        AssertContains(automationUiText, "public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }");
-        AssertContains(automationUiText, "public Task SetFrameTimeOverlayVisibleAsync(bool visible, CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(automationUiText, "public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }");
+        AssertContains(automationStatsUiText, "public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }");
+        AssertContains(automationStatsUiText, "public Task SetStatsSectionVisibleAsync(string section, bool visible, CancellationToken cancellationToken = default)");
+        AssertContains(automationStatsUiText, "public Task SetStatsVisibleAsync(bool visible, CancellationToken cancellationToken = default)");
+        AssertContains(automationStatsUiText, "public Task SetFrameTimeOverlayVisibleAsync(bool visible, CancellationToken cancellationToken = default)");
         return Task.CompletedTask;
     }
 

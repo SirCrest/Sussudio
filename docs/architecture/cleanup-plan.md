@@ -3093,7 +3093,10 @@ Remaining `tools/Common` ownership:
    debounce-to-flash, and settings persistence. Use the supported native-XU
    switch/gain command surface rather than the legacy AT input-source fallback
    path.
-   UI-only automation mutators now live in `MainViewModel.AutomationUi.cs`.
+   UI-only automation mutators for settings visibility, Flashback timeline
+   visibility, and show-all capture options now live in
+   `MainViewModel.AutomationUi.cs`; stats dock/section visibility and
+   frame-time overlay display now live in `MainViewModel.AutomationStatsUi.cs`.
    Automation command entry points for audio, audio-preview, preview-volume
    clamp/persist, and device-native audio mode/gain application now live in
    `MainViewModel.AutomationAudio.cs`; microphone enablement with

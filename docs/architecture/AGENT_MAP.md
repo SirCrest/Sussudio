@@ -2297,8 +2297,9 @@ Primary current owners:
   bitrate changes. `MainViewModel.FlashbackSettings.cs` owns active Flashback
   reactions to buffer-duration and GPU-decode setting changes.
   `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
-  for stats/settings visibility, frame-time overlay display, Flashback timeline
-  visibility, and show-all capture options. `MainViewModel.AutomationAudio.cs`
+  for settings visibility, Flashback timeline visibility, and show-all capture
+  options. `MainViewModel.AutomationStatsUi.cs` owns stats dock/section
+  visibility and frame-time overlay display. `MainViewModel.AutomationAudio.cs`
   owns automation command entry points for audio enablement, audio-preview
   enablement, preview-volume clamp/persist, device-native mode/gain
   application. `MainViewModel.AutomationMicrophone.cs` owns automation
