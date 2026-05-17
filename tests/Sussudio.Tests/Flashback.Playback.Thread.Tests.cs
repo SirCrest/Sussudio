@@ -6,16 +6,11 @@ using System.Threading.Tasks;
 static partial class Program
 {
     private static string ReadFlashbackPlaybackControllerPlaybackSource()
-        => string.Join(
-            "\n",
-            ReadFlashbackPlaybackControllerSource(),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs").Replace("\r\n", "\n"));
+        => ReadFlashbackPlaybackControllerSource();
 
     private static Task FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
-        var threadShellText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Thread.cs")
-            .Replace("\r\n", "\n");
         var threadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs")
             .Replace("\r\n", "\n");
         var threadSeekCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs")
@@ -25,8 +20,6 @@ static partial class Program
         var threadCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(threadShellText, "PlaybackThreadEntry lives in FlashbackPlaybackController.ThreadLoop.cs.");
-        AssertDoesNotContain(threadShellText, "private void PlaybackThreadEntry(");
         AssertContains(threadLoopText, "private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)");
         AssertContains(threadLoopText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_ENTER\");");
         AssertContains(threadSeekCommandsText, "private void HandleSeekCommand(");

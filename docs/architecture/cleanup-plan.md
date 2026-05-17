@@ -2045,8 +2045,8 @@ draining, and join/cancel diagnostics now live in
 Keep queue write/coalescing/drop policy in the command queue partial.
 The playback worker loop now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs`; keep
-`PlaybackThreadEntry` command dispatch there and leave
-`FlashbackPlaybackController.Thread.cs` as the shell marker.
+`PlaybackThreadEntry` command dispatch there and do not reintroduce an empty
+thread shell marker.
 Playback-thread seek command execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs`.
 Keep coalesced seek resolution, exact resume targets, playback resume handoff,
