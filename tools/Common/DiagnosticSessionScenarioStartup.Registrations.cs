@@ -1,6 +1,4 @@
 using System.Text.Json;
-using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;
-using static Sussudio.Tools.DiagnosticSessionFlashbackStressScenario;
 
 namespace Sussudio.Tools;
 
@@ -16,32 +14,15 @@ internal static partial class DiagnosticSessionScenarioStartup
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
         CancellationToken cancellationToken)
     {
-        if (scenarioPlan.RunFlashbackStress)
-        {
-            backgroundTasks.AddScenario(
-                1,
-                "flashback-stress-task",
-                RunFlashbackStressAsync(
-                    outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
-            actions.Add("flashback stress started");
-        }
-
-        if (scenarioPlan.RunFlashbackScrubStress)
-        {
-            backgroundTasks.AddScenario(
-                3,
-                "flashback-scrub-stress-task",
-                RunFlashbackScrubStressAsync(
-                    actions,
-                    warnings,
-                    sendRawWithConnectRetryAsync,
-                    cancellationToken));
-            actions.Add("flashback scrub stress started");
-        }
+        DiagnosticSessionFlashbackStressScenario.RegisterSelectedFlashbackStressScenarioTasks(
+            scenarioPlan,
+            outputDirectory,
+            backgroundTasks,
+            actions,
+            warnings,
+            sendAsync,
+            sendRawWithConnectRetryAsync,
+            cancellationToken);
 
         DiagnosticSessionFlashbackCycleScenarios.RegisterSelectedFlashbackCycleScenarioTasks(
             scenarioPlan,
@@ -52,18 +33,13 @@ internal static partial class DiagnosticSessionScenarioStartup
             sendAsync,
             cancellationToken);
 
-        if (scenarioPlan.RunFlashbackSegmentPlayback)
-        {
-            backgroundTasks.AddScenario(
-                7,
-                "flashback-segment-playback-task",
-                RunFlashbackSegmentPlaybackAsync(
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
-            actions.Add("flashback segment playback started");
-        }
+        DiagnosticSessionFlashbackSegmentPlaybackScenarios.RegisterSelectedFlashbackSegmentPlaybackScenarioTask(
+            scenarioPlan,
+            backgroundTasks,
+            actions,
+            warnings,
+            sendAsync,
+            cancellationToken);
 
         DiagnosticSessionFlashbackExportScenarios.RegisterSelectedFlashbackExportScenarioTasks(
             scenarioPlan,

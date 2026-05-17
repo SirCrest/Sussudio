@@ -153,8 +153,13 @@ static partial class Program
         AssertContains(segmentPlaybackText, "private static async Task<bool> CreateFlashbackCompletedSegmentViaRecordingAsync(");
         AssertContains(segmentPlaybackText, "recording-assisted rotation started");
         AssertContains(segmentPlaybackText, "private static async Task TryStopRecordingAsync(");
-        AssertContains(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;");
-        AssertContains(startupText, "RunFlashbackSegmentPlaybackAsync(");
+        AssertContains(segmentPlaybackText, "internal static void RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
+        AssertContains(segmentPlaybackText, "scenarioPlan.RunFlashbackSegmentPlayback");
+        AssertContains(segmentPlaybackText, "7,\n            \"flashback-segment-playback-task\",");
+        AssertContains(segmentPlaybackText, "actions.Add(\"flashback segment playback started\")");
+        AssertContains(startupText, "DiagnosticSessionFlashbackSegmentPlaybackScenarios.RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
+        AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios;");
+        AssertDoesNotContain(startupText, "RunFlashbackSegmentPlaybackAsync(");
         AssertDoesNotContain(runnerText, "private static async Task RunFlashbackSegmentPlaybackAsync(");
         AssertDoesNotContain(runnerText, "private static async Task<bool> CreateFlashbackCompletedSegmentViaRecordingAsync(");
         AssertDoesNotContain(runnerText, "private static async Task TryStopRecordingAsync(");

@@ -2860,9 +2860,8 @@ Primary owners:
 - `tools/Common/DiagnosticSessionScenarioStartup.cs` owns diagnostic-session
   optional background startup orchestration.
 - `tools/Common/DiagnosticSessionScenarioStartup.Registrations.cs` owns
-  remaining startup-side Flashback scenario task registration and delegates
-  cycle, export, lifecycle, and preview-cycle registrations to their focused
-  scenario owners. Keep task stage names stable there.
+  Flashback scenario registration orchestration and delegates task registration
+  to the focused scenario owners. Keep task stage names stable there.
 - `tools/Common/DiagnosticSessionScenarioStartup.DeferredSettings.cs` owns
   deferred Flashback recording-settings task registration.
 - `tools/Common/DiagnosticSessionScenarioStartup.Playback.cs` owns the direct
@@ -3007,7 +3006,7 @@ Primary owners:
   owns post-stop preset verification, encoder-frame check, and original-preset
   restore.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs` owns the
-  Flashback completed-segment playback scenario choreography.
+  Flashback completed-segment playback scenario registration and choreography.
 - `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.Validation.cs`
   owns completed-segment playback snapshot, FPS, command-health, and boundary
   warning policy.
@@ -3019,7 +3018,7 @@ Primary owners:
   playable-boundary headroom waits. Do not add state-mutating scenario steps
   there.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns Flashback
-  stress thresholds.
+  stress thresholds and stress/scrub-stress task registration.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.Stress.cs` owns the
   main Flashback stress command sequence and export verify.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs` owns

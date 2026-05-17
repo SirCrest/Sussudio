@@ -2580,8 +2580,8 @@ the small background-task handoff records.
 Diagnostic-session scenario startup now lives in a focused partial family.
 `tools/Common/DiagnosticSessionScenarioStartup.cs` owns the public startup
 orchestration call. `DiagnosticSessionScenarioStartup.Registrations.cs` owns
-remaining startup-side Flashback scenario task registration and delegates export,
-lifecycle, cycle, and preview-cycle registrations to their focused scenario owners,
+Flashback scenario registration orchestration and delegates task registration to
+the focused scenario owners,
 `DiagnosticSessionScenarioStartup.DeferredSettings.cs` owns deferred Flashback
 recording-settings task registration, and
 `DiagnosticSessionScenarioStartup.Playback.cs` owns the direct Flashback
@@ -2722,9 +2722,9 @@ live in `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`.
 
 Diagnostic-session Flashback segment playback now lives in
 `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios*.cs`. The root
-owns completed-segment playback crossing choreography, `.Validation.cs` owns
-post-boundary snapshot/FPS/command-health warning policy, and recording-assisted
-segment rotation plus best-effort stop cleanup live beside it in
+owns completed-segment playback task registration and crossing choreography,
+`.Validation.cs` owns post-boundary snapshot/FPS/command-health warning policy,
+and recording-assisted segment rotation plus best-effort stop cleanup live beside it in
 `DiagnosticSessionFlashbackSegmentPlaybackScenarios.RecordingAssist.cs` while
 `DiagnosticSessionFlashbackSegments.cs` stays read-only segment parsing and wait
 policy.
@@ -2743,7 +2743,7 @@ scenario command sequencing.
 
 Diagnostic-session Flashback stress orchestration now lives in a focused
 partial family. `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns
-stress thresholds, `.Stress.cs` owns the main stress command sequence,
+stress thresholds and stress/scrub-stress task registration, `.Stress.cs` owns the main stress command sequence,
 `.WarmPlayback.cs` owns warmed-playback frame/FPS/1% low and audio-master
 fallback checks, `.CommandDrain.cs` owns post-go-live playback command drain
 checks, `.Scrub.cs` owns scrub-stress command bursts, `.ScrubDrain.cs` owns

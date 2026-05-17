@@ -114,6 +114,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var cycleScenariosText = ReadDiagnosticSessionFlashbackCycleScenariosSource();
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
+        var stressScenariosText = ReadDiagnosticSessionFlashbackStressScenarioSource();
+        var segmentPlaybackScenariosText = ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource();
         var previewCycleScenariosText = ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource();
         var presentMonStartupText = ReadRepoFile("tools/Common/DiagnosticSessionPresentMonStartup.cs")
             .Replace("\r\n", "\n");
@@ -134,7 +136,7 @@ static partial class Program
         AssertContains(startupText, "private static void RegisterFlashbackScenarioTasks(");
         AssertContains(startupText, "private static void RegisterDeferredFlashbackRecordingSettingsTask(");
         AssertContains(startupText, "private static async Task<bool> TryStartFlashbackPlaybackAsync(");
-        AssertContains(startupText, "backgroundTasks.AddScenario(");
+        AssertDoesNotContain(startupText, "backgroundTasks.AddScenario(");
         AssertContains(startupText, "DiagnosticSessionPresentMonStartup.StartAsync(");
         AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(");
         AssertContains(deferredSettingsStartupText, "backgroundTasks.SetRecordingSettingsDeferred(");
@@ -142,11 +144,20 @@ static partial class Program
         AssertContains(deferredSettingsStartupText, "actions.Add(\"flashback recording settings deferred started\")");
         AssertDoesNotContain(startupRegistrationText, "RunFlashbackRecordingSettingsDeferredAsync(");
         AssertContains(startupRegistrationText, "DiagnosticSessionFlashbackCycleScenarios.RegisterSelectedFlashbackCycleScenarioTasks(");
+        AssertContains(startupRegistrationText, "DiagnosticSessionFlashbackStressScenario.RegisterSelectedFlashbackStressScenarioTasks(");
+        AssertContains(startupRegistrationText, "DiagnosticSessionFlashbackSegmentPlaybackScenarios.RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
         AssertContains(startupRegistrationText, "DiagnosticSessionFlashbackExportScenarios.RegisterSelectedFlashbackExportScenarioTasks(");
         AssertContains(startupRegistrationText, "DiagnosticSessionFlashbackPreviewCycleScenarios.RegisterSelectedFlashbackPreviewCycleScenarioTasks(");
+        AssertDoesNotContain(startupRegistrationText, "RunFlashbackStressAsync(");
+        AssertDoesNotContain(startupRegistrationText, "RunFlashbackScrubStressAsync(");
+        AssertDoesNotContain(startupRegistrationText, "RunFlashbackSegmentPlaybackAsync(");
         AssertDoesNotContain(startupRegistrationText, "RunFlashbackRestartCycleAsync(");
         AssertDoesNotContain(startupRegistrationText, "RunFlashbackEncoderCycleAsync(");
         AssertContains(cycleScenariosText, "internal static void RegisterSelectedFlashbackCycleScenarioTasks(");
+        AssertContains(stressScenariosText, "internal static void RegisterSelectedFlashbackStressScenarioTasks(");
+        AssertContains(stressScenariosText, "backgroundTasks.AddScenario(");
+        AssertContains(segmentPlaybackScenariosText, "internal static void RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
+        AssertContains(segmentPlaybackScenariosText, "backgroundTasks.AddScenario(");
         AssertDoesNotContain(startupRegistrationText, "RegisterFlashbackExportPlaybackTask(");
         AssertDoesNotContain(startupRegistrationText, "RegisterFlashbackRangeExportTasks(");
         AssertDoesNotContain(startupRegistrationText, "RegisterFlashbackExportCoordinationTasks(");
