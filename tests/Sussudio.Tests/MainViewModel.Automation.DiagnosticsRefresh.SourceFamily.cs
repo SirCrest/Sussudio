@@ -22,7 +22,6 @@ static partial class Program
             DiagnosticEvaluationRealtimeMjpegText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Mjpeg.cs"),
             DiagnosticEvaluationRealtimePreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs"),
             DiagnosticEvaluationRealtimePreviewSchedulerText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewScheduler.cs"),
-            DiagnosticEvaluationRealtimePreviewRendererText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewRenderer.cs"),
             DiagnosticEvaluationRealtimePreviewPresentText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewPresent.cs"),
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs"),
             DiagnosticEvaluationLanesRealtimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.cs"),
@@ -122,7 +121,6 @@ static partial class Program
         public string DiagnosticEvaluationRealtimeMjpegText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimePreviewText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimePreviewSchedulerText { get; init; } = string.Empty;
-        public string DiagnosticEvaluationRealtimePreviewRendererText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimePreviewPresentText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesRealtimeText { get; init; } = string.Empty;
@@ -214,7 +212,6 @@ static partial class Program
                 DiagnosticEvaluationRealtimeMjpegText,
                 DiagnosticEvaluationRealtimePreviewText,
                 DiagnosticEvaluationRealtimePreviewSchedulerText,
-                DiagnosticEvaluationRealtimePreviewRendererText,
                 DiagnosticEvaluationRealtimePreviewPresentText,
                 DiagnosticEvaluationLanesText,
                 DiagnosticEvaluationLanesRealtimeText,
