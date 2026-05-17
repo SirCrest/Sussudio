@@ -7,7 +7,11 @@ namespace Sussudio;
 // concrete control projection so the root property dispatcher stays declarative.
 public sealed partial class MainWindow
 {
+    private WindowTitleController _windowTitleController = null!;
     private StatusStripPresentationController _statusStripPresentationController = null!;
+
+    private void InitializeWindowTitleController()
+        => _windowTitleController = new WindowTitleController();
 
     private void InitializeStatusStripPresentationController()
     {
@@ -66,4 +70,7 @@ public sealed partial class MainWindow
 
     private void UpdateDiskWarningPresentation()
         => _statusStripPresentationController.UpdateDiskWarning(ViewModel.IsDiskWarningActive);
+
+    private void ApplyWindowTitle()
+        => Title = _windowTitleController.BuildTitle(ViewModel.IsRecording, ViewModel.RecordingTime);
 }

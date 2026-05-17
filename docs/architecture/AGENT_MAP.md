@@ -965,8 +965,8 @@ Primary current owners:
   `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`,
   `Sussudio/MainWindow.CloseLifecycle.cs`, and
   `Sussudio/MainWindow.ShutdownCleanup.cs`.
-- `Sussudio/MainWindow.WindowTitle.cs` keeps the XAML-facing title update hook;
-  `Sussudio/Controllers/Window/WindowTitleController.cs` owns window title
+- `Sussudio/MainWindow.StatusStripPresentation.cs` keeps the XAML-facing title
+  update hook; `Sussudio/Controllers/Window/WindowTitleController.cs` owns window title
   base/build-stamp formatting and the recording-time suffix used by property
   changes.
 - `Sussudio/Controllers/Shell/StatusStripPresentationController.cs` owns bottom

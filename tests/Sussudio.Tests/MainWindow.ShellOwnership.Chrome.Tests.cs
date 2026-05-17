@@ -38,14 +38,14 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
-        var titleText = ReadRepoFile("Sussudio/MainWindow.WindowTitle.cs").Replace("\r\n", "\n");
+        var statusStripText = ReadRepoFile("Sussudio/MainWindow.StatusStripPresentation.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowTitleController.cs").Replace("\r\n", "\n");
 
-        AssertContains(titleText, "private WindowTitleController _windowTitleController = null!;");
-        AssertContains(titleText, "private void InitializeWindowTitleController()");
-        AssertContains(titleText, "private void ApplyWindowTitle()");
-        AssertContains(titleText, "=> _windowTitleController = new WindowTitleController();");
-        AssertContains(titleText, "=> Title = _windowTitleController.BuildTitle(ViewModel.IsRecording, ViewModel.RecordingTime);");
+        AssertContains(statusStripText, "private WindowTitleController _windowTitleController = null!;");
+        AssertContains(statusStripText, "private void InitializeWindowTitleController()");
+        AssertContains(statusStripText, "private void ApplyWindowTitle()");
+        AssertContains(statusStripText, "=> _windowTitleController = new WindowTitleController();");
+        AssertContains(statusStripText, "=> Title = _windowTitleController.BuildTitle(ViewModel.IsRecording, ViewModel.RecordingTime);");
         AssertContains(controllerText, "internal sealed class WindowTitleController");
         AssertContains(controllerText, "private const string DefaultTitle = \"Simple Sussudio\";");
         AssertContains(controllerText, "public string BuildTitle(bool isRecording, string recordingTime)");
@@ -59,13 +59,13 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeWindowTitleController();");
         AssertContains(mainWindowText, "ApplyWindowTitle();");
         AssertContains(propertyChangedText, "TryHandleStatusStripPropertyChanged(propertyName)");
-        AssertContains(ReadRepoFile("Sussudio/MainWindow.StatusStripPresentation.cs").Replace("\r\n", "\n"), "ApplyWindowTitle);");
+        AssertContains(statusStripText, "ApplyWindowTitle);");
         AssertDoesNotContain(mainWindowText, "private static string BuildWindowTitleBase()");
         AssertDoesNotContain(mainWindowText, "private void ApplyWindowTitle()");
         AssertDoesNotContain(mainWindowText, "CultureInfo.InvariantCulture");
-        AssertDoesNotContain(titleText, "Environment.ProcessPath");
-        AssertDoesNotContain(titleText, "File.GetLastWriteTime(");
-        AssertDoesNotContain(titleText, "CultureInfo.InvariantCulture");
+        AssertDoesNotContain(statusStripText, "Environment.ProcessPath");
+        AssertDoesNotContain(statusStripText, "File.GetLastWriteTime(");
+        AssertDoesNotContain(statusStripText, "CultureInfo.InvariantCulture");
 
         return Task.CompletedTask;
     }
