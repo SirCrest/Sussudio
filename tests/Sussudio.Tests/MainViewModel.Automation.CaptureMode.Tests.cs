@@ -39,21 +39,24 @@ static partial class Program
     private static Task AutomationDeviceSelection_RoutesThroughApplyReinit()
     {
         var deviceSelectionAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs").Replace("\r\n", "\n");
+        var audioInputSelectionAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudioInputSelection.cs").Replace("\r\n", "\n");
         var selectDevice = ExtractTextBetween(
             deviceSelectionAutomationText,
             "public Task SelectDeviceAsync",
-            "public Task SelectAudioInputDeviceAsync");
+            "private CaptureDevice? ResolveDevice");
         var selectAudioDevice = ExtractTextBetween(
-            deviceSelectionAutomationText,
+            audioInputSelectionAutomationText,
             "public Task SelectAudioInputDeviceAsync",
             "public Task SetCustomAudioInputEnabledAsync");
 
         AssertContains(deviceSelectionAutomationText, "public Task RefreshDevicesForAutomationAsync");
         AssertContains(deviceSelectionAutomationText, "public Task SelectDeviceAsync");
-        AssertContains(deviceSelectionAutomationText, "public Task SelectAudioInputDeviceAsync");
-        AssertContains(deviceSelectionAutomationText, "public Task SetCustomAudioInputEnabledAsync");
         AssertContains(deviceSelectionAutomationText, "private CaptureDevice? ResolveDevice");
-        AssertContains(deviceSelectionAutomationText, "private AudioInputDevice? ResolveAudioDevice");
+        AssertDoesNotContain(deviceSelectionAutomationText, "public Task SelectAudioInputDeviceAsync");
+        AssertDoesNotContain(deviceSelectionAutomationText, "public Task SetCustomAudioInputEnabledAsync");
+        AssertContains(audioInputSelectionAutomationText, "public Task SelectAudioInputDeviceAsync");
+        AssertContains(audioInputSelectionAutomationText, "public Task SetCustomAudioInputEnabledAsync");
+        AssertContains(audioInputSelectionAutomationText, "private AudioInputDevice? ResolveAudioDevice");
         AssertContains(selectDevice, "return InvokeOnUiThreadAsync(async () =>");
         AssertContains(selectDevice, "await ApplySelectedDeviceAsync(target, cancellationToken).ConfigureAwait(true);");
         AssertDoesNotContain(selectDevice, "SelectedDevice = target;");

@@ -3106,9 +3106,10 @@ Remaining `tools/Common` ownership:
    availability checks now live in `MainViewModel.AutomationHdr.cs`.
    Automation Flashback enable/restart routing through the capture session
    coordinator now lives in `MainViewModel.AutomationFlashback.cs`.
-   Automation device refresh, capture-device selection, audio-input selection,
-   and custom audio-input enablement now live in
-   `MainViewModel.AutomationDeviceSelection.cs`.
+   Automation device refresh and capture-device selection now live in
+   `MainViewModel.AutomationDeviceSelection.cs`; audio-input selection and
+   custom audio-input enablement now live in
+   `MainViewModel.AutomationAudioInputSelection.cs`.
    Recording format automation mutation and HDR compatibility enforcement now
    live in `MainViewModel.AutomationRecordingFormat.cs`; recording encoder
    quality automation mutation now lives in
