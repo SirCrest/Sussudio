@@ -903,7 +903,8 @@ Primary current owners:
   text policy. `Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs` owns the
   XAML preview-frame screenshot button workflow: directory creation,
   preview-frame capture, logging side effects, and button enable/disable state.
-  `MainWindow.PreviewScreenshot.cs` is the XAML-facing adapter.
+  `MainWindow.Screenshot.cs` is the XAML-facing adapter for both preview-frame
+  screenshots and whole-window automation screenshots.
 - `Sussudio/Controllers/Window/WindowAutomationController.cs` owns window geometry
   automation plus the recordings-folder command: UI-thread dispatch, AppWindow
   and DisplayArea access, maximized presenter restore, and side effects.
