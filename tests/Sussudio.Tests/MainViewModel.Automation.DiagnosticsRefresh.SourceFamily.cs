@@ -33,18 +33,9 @@ static partial class Program
             DiagnosticEvaluationLanesFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Alerts.cs"),
             SignalAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.cs"),
-            FlashbackAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackAlerts.cs"),
             FlashbackRecordingAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs"),
-            FlashbackRecordingAlertsExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.Export.cs"),
-            FlashbackRecordingAlertsStorageText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.Storage.cs"),
-            FlashbackRecordingAlertsEncoderText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.Encoder.cs"),
-            FlashbackRecordingAlertsDegradationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.Degradation.cs"),
             FlashbackPlaybackAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs"),
-            FlashbackPlaybackCommandAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackCommandAlerts.cs"),
-            FlashbackPlaybackPerformanceAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.cs"),
             FlashbackPlaybackPerformanceAlertsCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Cadence.cs"),
-            FlashbackPlaybackPerformanceAlertsAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Audio.cs"),
-            FlashbackPlaybackPerformanceAlertsSubmissionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Submission.cs"),
             EventsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvents.cs"),
             VerificationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.cs"),
             LifecycleText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Lifecycle.cs"),
@@ -146,18 +137,9 @@ static partial class Program
         public string DiagnosticEvaluationLanesFlashbackText { get; init; } = string.Empty;
         public string AlertsText { get; init; } = string.Empty;
         public string SignalAlertsText { get; init; } = string.Empty;
-        public string FlashbackAlertsText { get; init; } = string.Empty;
         public string FlashbackRecordingAlertsText { get; init; } = string.Empty;
-        public string FlashbackRecordingAlertsExportText { get; init; } = string.Empty;
-        public string FlashbackRecordingAlertsStorageText { get; init; } = string.Empty;
-        public string FlashbackRecordingAlertsEncoderText { get; init; } = string.Empty;
-        public string FlashbackRecordingAlertsDegradationText { get; init; } = string.Empty;
         public string FlashbackPlaybackAlertsText { get; init; } = string.Empty;
-        public string FlashbackPlaybackCommandAlertsText { get; init; } = string.Empty;
-        public string FlashbackPlaybackPerformanceAlertsText { get; init; } = string.Empty;
         public string FlashbackPlaybackPerformanceAlertsCadenceText { get; init; } = string.Empty;
-        public string FlashbackPlaybackPerformanceAlertsAudioText { get; init; } = string.Empty;
-        public string FlashbackPlaybackPerformanceAlertsSubmissionText { get; init; } = string.Empty;
         public string EventsText { get; init; } = string.Empty;
         public string VerificationText { get; init; } = string.Empty;
         public string LifecycleText { get; init; } = string.Empty;
@@ -251,18 +233,9 @@ static partial class Program
                 DiagnosticEvaluationLanesFlashbackText,
                 AlertsText,
                 SignalAlertsText,
-                FlashbackAlertsText,
                 FlashbackRecordingAlertsText,
-                FlashbackRecordingAlertsExportText,
-                FlashbackRecordingAlertsStorageText,
-                FlashbackRecordingAlertsEncoderText,
-                FlashbackRecordingAlertsDegradationText,
                 FlashbackPlaybackAlertsText,
-                FlashbackPlaybackCommandAlertsText,
-                FlashbackPlaybackPerformanceAlertsText,
                 FlashbackPlaybackPerformanceAlertsCadenceText,
-                FlashbackPlaybackPerformanceAlertsAudioText,
-                FlashbackPlaybackPerformanceAlertsSubmissionText,
                 EventsText,
                 VerificationText,
                 LifecycleText,

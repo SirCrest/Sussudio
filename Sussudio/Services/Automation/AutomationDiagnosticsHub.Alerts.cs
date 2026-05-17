@@ -1,3 +1,4 @@
+using System;
 using Sussudio.Models;
 
 namespace Sussudio.Services.Automation;
@@ -33,7 +34,9 @@ public sealed partial class AutomationDiagnosticsHub
             visualCadenceHealthy,
             previewSlowFrameDetail);
 
-        UpdateFlashbackAlerts(snapshot, flashbackRecordingRecent);
+        var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        UpdateFlashbackRecordingAlerts(snapshot, flashbackRecordingRecent);
+        UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs);
 
         SetAlertState(
             "hdr-parity-mismatch",

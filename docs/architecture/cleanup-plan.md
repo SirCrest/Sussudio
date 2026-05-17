@@ -207,28 +207,18 @@ snapshot DTO.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation and active-alert
 transitions. `AutomationDiagnosticsHub.SignalAlerts.cs` owns signal alert
 orchestration plus preview, capture, audio, and recording signal alert rules.
-`AutomationDiagnosticsHub.FlashbackAlerts.cs` owns Flashback alert
-orchestration. `AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs` owns
-Flashback recording alert orchestration and shared condition setup.
-`AutomationDiagnosticsHub.FlashbackRecordingAlerts.Export.cs` owns Flashback
-export progress and force-rotation gap alert rules.
-`AutomationDiagnosticsHub.FlashbackRecordingAlerts.Storage.cs` owns Flashback
-temp-cache pressure alert rules.
-`AutomationDiagnosticsHub.FlashbackRecordingAlerts.Encoder.cs` owns Flashback
-encoder failure alert rules.
-`AutomationDiagnosticsHub.FlashbackRecordingAlerts.Degradation.cs` owns
-Flashback recording path degradation alert rules.
+`AutomationDiagnosticsHub.Alerts.cs` also routes Flashback recording and
+playback alert groups. `AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs`
+owns Flashback recording alert orchestration, shared condition setup, export
+progress and force-rotation gap alerts, temp-cache pressure alerts, encoder
+failure alerts, and recording path degradation alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs` owns Flashback playback
-alert orchestration. `AutomationDiagnosticsHub.FlashbackPlaybackCommandAlerts.cs`
-owns playback command queue and command failure alert rules.
-`AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.cs` owns playback
-performance alert orchestration.
+alert orchestration, playback command queue and command failure alerts, playback
+performance orchestration, audio-master fallback and audio-queue backlog alerts,
+and frame-submission failure alerts.
 `AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Cadence.cs` owns
 playback target-rate, present-cadence, slow-playback, and frametime alert
-rules. `AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Audio.cs`
-owns audio-master fallback and audio-queue backlog alert rules.
-`AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Submission.cs`
-owns frame-submission failure alert rules.
+rules.
 `AutomationDiagnosticsHub.DiagnosticEvents.cs` owns diagnostics event
 publication, event throttling, Flashback export completion events, and recent
 event storage.
