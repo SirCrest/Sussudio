@@ -1713,7 +1713,7 @@ Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples the
 read-only runtime inputs consumed by UI, automation, and verification, then
 delegates final DTO construction.
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final
+`Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs` owns final
 `CaptureRuntimeSnapshot` DTO construction from already-sampled field groups.
 Video ingest, source-reader health, WASAPI capture, and playback output counter
 projection lives in
@@ -1735,7 +1735,7 @@ Capture health snapshot sampling now lives in
 captures current service references, invokes focused field builders, and
 hands final service-state/scalar values to the assembler; pure
 diagnostics/automation DTO construction lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`. MJPEG
+`Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs`. MJPEG
 timing, jitter, packet-hash, visual-cadence, and per-decoder projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs`;
 source telemetry, backend, suppression, and circuit-state projection lives in
