@@ -2054,7 +2054,7 @@ Primary current owners:
   recording-specific property-change router and adapter surface, delegating
   record-button, glow, pulse, and recording-time lockout projection through
   `RecordingStatePresentationController` and `RecordingStatePresentationPolicy`.
-- `Sussudio/MainWindow.PropertyChangedOutput.cs` owns the output-path
+- `Sussudio/MainWindow.OutputPathDisplay.cs` owns the output-path
   property-change router and delegates display updates to
   `OutputPathDisplayController`.
 - `Sussudio/MainWindow.PropertyChangedCaptureOptions.cs` owns capture-option

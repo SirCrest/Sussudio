@@ -12,7 +12,7 @@ static partial class Program
         var tooltipFormatterText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionTooltipFormatter.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var captureOptionPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedCaptureOptions.cs").Replace("\r\n", "\n");
-        var outputPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedOutput.cs").Replace("\r\n", "\n");
+        var outputPathDisplayText = ReadRepoFile("Sussudio/MainWindow.OutputPathDisplay.cs").Replace("\r\n", "\n");
 
         AssertContains(captureOptionText, "private CaptureOptionPresentationController _captureOptionPresentationController = null!;");
         AssertContains(captureOptionText, "private void InitializeCaptureOptionPresentationController()");
@@ -73,7 +73,7 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeCaptureOptionPresentationController();");
         AssertContains(propertyChangedText, "TryHandleOutputPropertyChanged(propertyName)");
         AssertContains(propertyChangedText, "TryHandleCaptureOptionPropertyChanged(propertyName)");
-        AssertContains(outputPropertyChangedText, "UpdateOutputPathDisplay();");
+        AssertContains(outputPathDisplayText, "UpdateOutputPathDisplay();");
         AssertContains(captureOptionPropertyChangedText, "ApplyAudioClipVisibility();");
         AssertContains(captureOptionPropertyChangedText, "ApplyHdrToggleEnabledState();");
         AssertContains(captureOptionPropertyChangedText, "RefreshHdrHintText();");

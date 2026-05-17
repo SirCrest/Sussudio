@@ -2222,8 +2222,8 @@ chrome.
 recording property-name router.
 
 Output-path, capture-option, shell-visibility, and live source-signal
-property-name routing now live in focused partials:
-`Sussudio/MainWindow.PropertyChangedOutput.cs`,
+property-name routing now live in focused adapters:
+`Sussudio/MainWindow.OutputPathDisplay.cs`,
 `Sussudio/MainWindow.PropertyChangedCaptureOptions.cs`,
 `Sussudio/MainWindow.PropertyChangedShell.cs`, and
 `Sussudio/MainWindow.PropertyChangedLiveSignal.cs`. Keep the root dispatcher

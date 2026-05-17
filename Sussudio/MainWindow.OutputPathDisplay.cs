@@ -1,8 +1,10 @@
 using Sussudio.Controllers;
+using Sussudio.ViewModels;
 
 namespace Sussudio;
 
-// XAML-facing adapter for recording output-path text truncation and tooltip.
+// XAML-facing adapter for recording output-path text truncation, tooltip, and
+// output-path property-change projection.
 public sealed partial class MainWindow
 {
     private OutputPathDisplayController _outputPathDisplayController = null!;
@@ -21,4 +23,17 @@ public sealed partial class MainWindow
 
     private void UpdateOutputPathDisplay()
         => _outputPathDisplayController.Update();
+
+    private bool TryHandleOutputPropertyChanged(string propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.OutputPath):
+                UpdateOutputPathDisplay();
+                return true;
+
+            default:
+                return false;
+        }
+    }
 }
