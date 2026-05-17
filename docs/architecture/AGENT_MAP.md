@@ -2290,9 +2290,11 @@ Primary current owners:
   `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
   owns source telemetry summary, telemetry age, and target-summary display text formatting.
   `MainViewModel.Settings.cs` owns settings load/save and simple
-  persistence reactions. `MainViewModel.FlashbackSettings.cs` owns active
-  Flashback reactions to recording-format, encoder, buffer, and GPU-decode
-  setting changes. `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
+  persistence reactions. `MainViewModel.FlashbackEncoderSettings.cs` owns active
+  Flashback reactions to recording-format, encoder quality/preset/split, and
+  bitrate changes. `MainViewModel.FlashbackSettings.cs` owns active Flashback
+  reactions to buffer-duration and GPU-decode setting changes.
+  `MainViewModel.AutomationUi.cs` owns UI-only automation mutators
   for stats/settings visibility, frame-time overlay display, Flashback timeline
   visibility, and show-all capture options. `MainViewModel.AutomationAudio.cs`
   owns automation command entry points for audio enablement, audio-preview

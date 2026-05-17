@@ -154,6 +154,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // HDR runtime presentation: MainViewModel.HdrRuntimePresentation.cs
     // Target-summary presentation: MainViewModel.TargetSummaryPresentation.cs
     // Settings persistence: MainViewModel.Settings.cs
-    // Flashback settings reactions: MainViewModel.FlashbackSettings.cs
+    // Flashback settings reactions: encoder: MainViewModel.FlashbackEncoderSettings.cs; buffer/GPU: MainViewModel.FlashbackSettings.cs
     // Recording capability refresh: MainViewModel.RecordingCapabilityRefresh.cs
 }

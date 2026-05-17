@@ -3078,8 +3078,9 @@ Remaining `tools/Common` ownership:
    projection lives in `MainViewModel.HdrRuntimePresentation.cs`; keep snapshot
    application and source-aware auto-retargeting in `MainViewModel.Telemetry.cs`.
    Settings persistence and load/save option restoration stay in
-   `MainViewModel.Settings.cs`; active Flashback reactions to recording format,
-   encoder quality/preset/split/bitrate, and buffer/GPU decode changes now live
+   `MainViewModel.Settings.cs`; active Flashback reactions to recording format
+   and encoder quality/preset/split/bitrate now live in
+   `MainViewModel.FlashbackEncoderSettings.cs`; buffer/GPU decode reactions stay
    in `MainViewModel.FlashbackSettings.cs`.
    Pure analog audio gain percent/XU-byte curve mapping now lives in
    `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; async native-XU device
