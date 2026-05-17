@@ -3133,9 +3133,10 @@ Remaining `tools/Common` ownership:
    revert/status, mode option rebuilds, immediate reinitialize scheduling, and
    settings persistence.
     Late-arriving device format probe reconciliation, collection mutation,
-    selected-device capability refresh, and enqueue/failure logging live in
-    `MainViewModel.DeviceFormatProbes.cs`; UI-side late-probe retarget
-    application now lives in `MainViewModel.DeviceFormatProbeRetarget.cs`, while
+    selected-device capability refresh, enqueue/failure logging, UI-side
+    late-probe retarget application, session mismatch checks, and active-capture
+    restore live in
+    `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`, while
     pure late-probe retarget decisions live in
     `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
     The presentation-preview ownership tests for this capture selection policy

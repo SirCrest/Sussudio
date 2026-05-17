@@ -11,6 +11,7 @@ static partial class Program
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
+        var deviceFormatProbeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
@@ -28,6 +29,7 @@ static partial class Program
         AssertContains(rootText, "IsDisposing = () => Volatile.Read(ref _disposeState) != 0,");
         AssertContains(rootText, "_audioDeviceWatcher = dependencies.AudioDeviceWatcher;");
         AssertContains(rootText, "_recordingTransitionController = new MainViewModelRecordingTransitionController(this);");
+        AssertContains(rootText, "_deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);");
         AssertContains(rootText, "_runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);");
         AssertContains(rootText, "_runtimeLifecycleController.Start();");
         AssertContains(rootText, "_runtimeLifecycleController.InitializePresentation();");
@@ -65,10 +67,13 @@ static partial class Program
         AssertContains(recordingTransitionControllerText, "private sealed class MainViewModelRecordingTransitionController");
         AssertContains(recordingTransitionControllerText, "public Task SetRecordingDesiredStateAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(recordingTransitionControllerText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(deviceFormatProbeControllerText, "private sealed class MainViewModelDeviceFormatProbeController");
+        AssertContains(deviceFormatProbeControllerText, "public void OnDeviceFormatProbeCompleted");
+        AssertContains(deviceFormatProbeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");
 
         AssertContains(runtimeLifecycleControllerText, "private sealed class MainViewModelRuntimeLifecycleController");
         AssertContains(runtimeLifecycleControllerText, "public void Start()");
-        AssertContains(runtimeLifecycleControllerText, "_viewModel._deviceService.FormatProbeCompleted += _viewModel.OnDeviceFormatProbeCompleted;");
+        AssertContains(runtimeLifecycleControllerText, "_viewModel._deviceService.FormatProbeCompleted += _viewModel._deviceFormatProbeController.OnDeviceFormatProbeCompleted;");
         AssertContains(runtimeLifecycleControllerText, "_viewModel._captureService.StatusChanged += OnCaptureStatusChanged;");
         AssertContains(runtimeLifecycleControllerText, "_viewModel._captureService.ErrorOccurred += OnCaptureError;");
         AssertContains(runtimeLifecycleControllerText, "_viewModel._captureService.PreCleanupRequested += OnCapturePreCleanupRequested;");
@@ -79,7 +84,7 @@ static partial class Program
         AssertContains(runtimeLifecycleControllerText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
         AssertContains(runtimeLifecycleControllerText, "_viewModel._audioDeviceWatcher.DevicesChanged += _viewModel.OnAudioDevicesChanged;");
         AssertContains(runtimeLifecycleControllerText, "private void DetachRuntimeWiring()");
-        AssertContains(runtimeLifecycleControllerText, "_viewModel._deviceService.FormatProbeCompleted -= _viewModel.OnDeviceFormatProbeCompleted;");
+        AssertContains(runtimeLifecycleControllerText, "_viewModel._deviceService.FormatProbeCompleted -= _viewModel._deviceFormatProbeController.OnDeviceFormatProbeCompleted;");
         AssertContains(runtimeLifecycleControllerText, "_viewModel._captureService.StatusChanged -= OnCaptureStatusChanged;");
         AssertContains(runtimeLifecycleControllerText, "_viewModel._captureService.AudioLevelUpdated -= _viewModel.OnAudioLevelUpdated;");
         AssertContains(runtimeLifecycleControllerText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");

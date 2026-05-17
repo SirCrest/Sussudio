@@ -135,6 +135,7 @@ static partial class Program
         var mainViewModelCaptureModePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureModePropertyChanges.cs"));
         var mainViewModelDispatchingText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs"));
         var mainViewModelUiDispatchControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelUiDispatchController.cs"));
+        var mainViewModelDeviceFormatProbeControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceFormatProbeController.cs"));
         var mainViewModelRuntimeLifecycleControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeLifecycleController.cs"));
         var mainViewModelDiskSpacePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DiskSpacePresentation.cs"));
         var outputDriveSpacePresentationBuilderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "OutputDriveSpacePresentationBuilder.cs"));
@@ -192,7 +193,7 @@ static partial class Program
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "public void Start()");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private void DetachRuntimeWiring()");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "public void InitializePresentation()");
-        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._deviceService.FormatProbeCompleted += _viewModel.OnDeviceFormatProbeCompleted;");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._deviceService.FormatProbeCompleted += _viewModel._deviceFormatProbeController.OnDeviceFormatProbeCompleted;");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._captureService.StatusChanged += OnCaptureStatusChanged;");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._captureService.ErrorOccurred += OnCaptureError;");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._captureService.PreCleanupRequested += OnCapturePreCleanupRequested;");
@@ -202,7 +203,7 @@ static partial class Program
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._captureService.SourceTelemetryUpdated += _viewModel.OnSourceTelemetryUpdated;");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._audioDeviceWatcher.DevicesChanged += _viewModel.OnAudioDevicesChanged;");
-        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._deviceService.FormatProbeCompleted -= _viewModel.OnDeviceFormatProbeCompleted;");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._deviceService.FormatProbeCompleted -= _viewModel._deviceFormatProbeController.OnDeviceFormatProbeCompleted;");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._captureService.StatusChanged -= OnCaptureStatusChanged;");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._captureService.ErrorOccurred -= OnCaptureError;");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._captureService.PreCleanupRequested -= OnCapturePreCleanupRequested;");
@@ -236,7 +237,6 @@ static partial class Program
         var audioControlCancellationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioControlCancellation.cs"));
         var audioDeviceDiscoveryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioDeviceDiscovery.cs"));
         var audioDeviceSelectionPolicyText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "AudioDeviceSelectionPolicy.cs"));
-        var deviceFormatProbesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceFormatProbes.cs"));
         AssertContains(deviceManagementText, "public async Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
         AssertContains(deviceManagementText, "ReplaceCollection(Devices, devices.ToList());");
         AssertContains(deviceSelectionText, "partial void OnSelectedDeviceChanged(CaptureDevice? value)");
@@ -278,8 +278,8 @@ static partial class Program
         AssertDoesNotContain(deviceManagementText, "_pendingSavedAudioDeviceId = null;");
         AssertDoesNotContain(deviceManagementText, "_pendingSavedMicrophoneDeviceId = null;");
         AssertDoesNotContain(deviceManagementText, "AUDIO_DEVICES_CHANGED_UI_ENQUEUE_FAILED");
-        AssertContains(deviceFormatProbesText, "private void OnDeviceFormatProbeCompleted");
-        AssertContains(deviceFormatProbesText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
+        AssertContains(mainViewModelDeviceFormatProbeControllerText, "public void OnDeviceFormatProbeCompleted");
+        AssertContains(mainViewModelDeviceFormatProbeControllerText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
         AssertDoesNotContain(deviceManagementText, "private void OnDeviceFormatProbeCompleted");
         AssertContains(
             File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Telemetry.cs")),

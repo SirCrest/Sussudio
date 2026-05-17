@@ -2192,6 +2192,10 @@ Primary current owners:
   handling, capture status/error fan-out, capture pre-cleanup renderer stop
   fan-out, frame-captured callbacks, periodic timer refresh orchestration, and
   initial source-telemetry/HDR/live-info/timer/disk-space bootstrap.
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
+  owns late device-format probe event ingress, UI enqueue/generation checks,
+  selected-device capability refresh, UI-side retarget application, session
+  mismatch checks, and active-capture restore.
   `MainViewModel.DiskSpacePresentation.cs` owns the DiskSpaceInfo assignment bridge,
   while `Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs` owns output drive probing,
   fallback, formatting, and suppressed-warning logging.
@@ -2281,12 +2285,12 @@ Primary current owners:
   `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs` owns pure capture-card
   endpoint filtering plus previous/saved/default audio and microphone selection
   fallback policy.
-  `MainViewModel.DeviceFormatProbes.cs` owns late device-format probe
-  reconciliation, format collection mutation, capability refresh after
-  background probes, and enqueue/failure logging.
-  `MainViewModel.DeviceFormatProbeRetarget.cs` owns UI-side late-probe
-  retarget application: HDR/SDR reinitialize dispatch, MJPG HFR preserve,
-  session mismatch check, and active-capture restore. `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
+  owns late device-format probe reconciliation, format collection mutation,
+  capability refresh after background probes, enqueue/failure logging, UI-side
+  late-probe retarget application, HDR/SDR reinitialize dispatch, MJPG HFR
+  preserve, session mismatch check, and active-capture restore.
+  `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`
   owns the pure late-probe decision policy for HDR retarget, SDR NV12 retarget,
   MJPG HFR preservation, session mismatch, and active-capture restore.
   `MainViewModel.AutoResolutionOptions.cs` owns automatic resolution dropdown

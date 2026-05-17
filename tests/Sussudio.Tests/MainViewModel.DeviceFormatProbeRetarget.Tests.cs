@@ -4,26 +4,20 @@ static partial class Program
 {
     private static Task DeviceFormatProbeRetargetApplication_LivesInFocusedPartial()
     {
-        var probeEventText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceFormatProbes.cs").Replace("\r\n", "\n");
-        var retargetApplicationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceFormatProbeRetarget.cs").Replace("\r\n", "\n");
+        var probeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
         var retargetPolicyText = ReadRepoFile("Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs").Replace("\r\n", "\n");
 
-        AssertContains(probeEventText, "private void OnDeviceFormatProbeCompleted");
-        AssertContains(probeEventText, "target.SupportedFormats.Clear();");
-        AssertContains(probeEventText, "RebuildSelectedDeviceCapabilities(SelectedDevice, resetTelemetryState: false);");
-        AssertContains(probeEventText, "TryApplyDeviceFormatProbeRetarget(");
-        AssertDoesNotContain(probeEventText, "DeviceFormatProbeRetargetDecisionKind.HdrRetarget");
-        AssertDoesNotContain(probeEventText, "DeviceFormatProbeRetargetDecisionKind.SdrNv12Retarget");
-        AssertDoesNotContain(probeEventText, "GetCaptureRuntimeSnapshot();");
-
-        AssertContains(retargetApplicationText, "private bool TryApplyDeviceFormatProbeRetarget(");
-        AssertContains(retargetApplicationText, "private DeviceFormatProbeRetargetDecision DecideDeviceFormatProbeRetarget(");
-        AssertContains(retargetApplicationText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
-        AssertContains(retargetApplicationText, "SelectedResolution = retargetDecision.TargetResolution;");
-        AssertContains(retargetApplicationText, "RebuildFrameRateOptions();");
-        AssertContains(retargetApplicationText, "SelectedResolution = previousResolution;");
-        AssertContains(retargetApplicationText, "GetCaptureRuntimeSnapshot();");
-        AssertDoesNotContain(retargetApplicationText, "target.SupportedFormats.Clear();");
+        AssertContains(probeControllerText, "private sealed class MainViewModelDeviceFormatProbeController");
+        AssertContains(probeControllerText, "public void OnDeviceFormatProbeCompleted");
+        AssertContains(probeControllerText, "target.SupportedFormats.Clear();");
+        AssertContains(probeControllerText, "_viewModel.RebuildSelectedDeviceCapabilities(_viewModel.SelectedDevice, resetTelemetryState: false);");
+        AssertContains(probeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");
+        AssertContains(probeControllerText, "private DeviceFormatProbeRetargetDecision DecideDeviceFormatProbeRetarget(");
+        AssertContains(probeControllerText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
+        AssertContains(probeControllerText, "_viewModel.SelectedResolution = retargetDecision.TargetResolution;");
+        AssertContains(probeControllerText, "_viewModel.RebuildFrameRateOptions();");
+        AssertContains(probeControllerText, "_viewModel.SelectedResolution = previousResolution;");
+        AssertContains(probeControllerText, "_viewModel.GetCaptureRuntimeSnapshot();");
         AssertDoesNotContain(retargetPolicyText, "EnqueueUiOperation(");
         AssertDoesNotContain(retargetPolicyText, "GetCaptureRuntimeSnapshot(");
 

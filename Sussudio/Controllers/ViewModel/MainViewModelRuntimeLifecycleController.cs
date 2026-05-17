@@ -24,7 +24,7 @@ public partial class MainViewModel
 
         public void Start()
         {
-            _viewModel._deviceService.FormatProbeCompleted += _viewModel.OnDeviceFormatProbeCompleted;
+            _viewModel._deviceService.FormatProbeCompleted += _viewModel._deviceFormatProbeController.OnDeviceFormatProbeCompleted;
 
             _viewModel._captureService.StatusChanged += OnCaptureStatusChanged;
             _viewModel._captureService.ErrorOccurred += OnCaptureError;
@@ -61,7 +61,7 @@ public partial class MainViewModel
 
         private void DetachRuntimeWiring()
         {
-            _viewModel._deviceService.FormatProbeCompleted -= _viewModel.OnDeviceFormatProbeCompleted;
+            _viewModel._deviceService.FormatProbeCompleted -= _viewModel._deviceFormatProbeController.OnDeviceFormatProbeCompleted;
 
             SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;
 

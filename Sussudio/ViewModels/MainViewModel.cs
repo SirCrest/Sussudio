@@ -27,6 +27,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly AudioDeviceWatcher _audioDeviceWatcher;
     private readonly MainViewModelUiDispatchController _uiDispatchController;
+    private readonly MainViewModelDeviceFormatProbeController _deviceFormatProbeController;
     private readonly MainViewModelRuntimeLifecycleController _runtimeLifecycleController;
     private readonly MainViewModelRecordingTransitionController _recordingTransitionController;
 
@@ -88,6 +89,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             });
         _audioDeviceWatcher = dependencies.AudioDeviceWatcher;
         _recordingTransitionController = new MainViewModelRecordingTransitionController(this);
+        _deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);
         _runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);
 
         _runtimeLifecycleController.Start();
@@ -131,7 +133,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Audio input/microphone/device-audio property changes: focused partials
     // Device management: MainViewModel.DeviceManagement.cs
     // Device selection reactions: MainViewModel.DeviceSelection.cs
-    // Device format probes: MainViewModel.DeviceFormatProbes.cs
+    // Device format probe reconciliation: MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs
     // Capture option visibility: MainViewModel.CaptureOptionVisibility.cs
     // Frame-rate selection: MainViewModel.FrameRateOptions.cs; rebuild: MainViewModel.FrameRateOptionRebuild.cs
     // Runtime wiring/bootstrap/timer/capture-event ingress: MainViewModelRuntimeLifecycleController.cs
