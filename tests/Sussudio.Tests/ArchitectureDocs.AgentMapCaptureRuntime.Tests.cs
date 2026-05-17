@@ -19,4 +19,24 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task ArchitectureAgentMap_MapsFlashbackPreviewStartupToResourceOwner()
+    {
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
+        var previewBackendEntry = ExtractTextBetween(
+            agentMapText,
+            "- `CaptureService.FlashbackPreviewBackend.cs` owns Flashback preview backend",
+            "- `CaptureService.FlashbackPreviewBackendDisposal.cs` owns Flashback preview");
+
+        AssertContains(previewBackendEntry, "transition coordination");
+        AssertContains(previewBackendEntry, "AV1 encoder support probing");
+        AssertContains(previewBackendEntry, "video/audio readiness");
+        AssertContains(previewBackendEntry, "resource-owner request construction");
+        AssertContains(previewBackendEntry, "deferred cleanup handoff");
+        AssertContains(previewBackendEntry, "Startup construction, install, playback initialization, producer attachment");
+        AssertContains(previewBackendEntry, "`FlashbackBackendResources.cs`");
+        AssertDoesNotContain(previewBackendEntry, "startup: buffer manager, encoder sink, exporter, playback controller, and\n  producer attachment");
+
+        return Task.CompletedTask;
+    }
 }

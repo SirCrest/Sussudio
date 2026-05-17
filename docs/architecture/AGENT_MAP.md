@@ -533,8 +533,10 @@ Important entry points:
 - `CaptureService.FlashbackAudioInputs.cs` owns WASAPI and microphone input
   restoration for Flashback preview/recording backends.
 - `CaptureService.FlashbackPreviewBackend.cs` owns Flashback preview backend
-  startup: buffer manager, encoder sink, exporter, playback controller, and
-  producer attachment.
+  transition coordination: AV1 encoder support probing, video/audio readiness
+  waiting, resource-owner request construction, and deferred cleanup handoff.
+  Startup construction, install, playback initialization, producer attachment,
+  and startup rollback live in `FlashbackBackendResources.cs`.
 - `CaptureService.FlashbackPreviewBackendDisposal.cs` owns Flashback preview
   backend teardown, detach order, and deferred artifact cleanup scheduling.
 - `CaptureService.FlashbackBufferCycle.cs` owns sink-only buffer cycling after
