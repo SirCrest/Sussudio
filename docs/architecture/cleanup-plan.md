@@ -842,10 +842,12 @@ endpoint enumeration and friendly-name reads in
 `MfDeviceEnumerator.AudioEndpoints.cs`, and native video format probing/source
 fallback/subtype naming in `MfDeviceEnumerator.FormatProbe.cs`.
 
-Capture service source telemetry polling, fallback merging, and NTSC frame-rate
-correction now live in
-`Sussudio/Services/Capture/CaptureService.Telemetry.cs`. Observed pixel-format
-normalization, resets, and explicit counter updates now live in
+Capture service source telemetry polling and fallback merging now live in
+`Sussudio/Services/Capture/CaptureService.Telemetry.cs`. Capture-format runtime
+telemetry, NTSC frame-rate correction, and frame-rate argument formatting now
+live in
+`Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs`.
+Observed pixel-format normalization, resets, and explicit counter updates now live in
 `Sussudio/Services/Capture/CaptureService.ObservedPixelTelemetry.cs`. The root
 capture service owns shared state, construction, and public event surface, but
 these diagnostics are no longer embedded in the lifecycle/orchestration file.

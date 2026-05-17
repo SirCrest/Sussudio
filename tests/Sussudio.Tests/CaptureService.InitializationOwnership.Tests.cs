@@ -8,6 +8,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var initializationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Initialization.cs")
             .Replace("\r\n", "\n");
+        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Telemetry.cs")
+            .Replace("\r\n", "\n");
+        var captureFormatTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs")
+            .Replace("\r\n", "\n");
 
         AssertDoesNotContain(rootText, "public Task InitializeAsync(");
         AssertContains(rootText, "private static ISourceSignalTelemetryProvider CreateDefaultTelemetryProvider()");
@@ -21,6 +25,12 @@ static partial class Program
         AssertContains(initializationText, "await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);");
         AssertContains(initializationText, "TryCorrectFrameRateFromTelemetry();");
         AssertContains(initializationText, "StatusChanged?.Invoke(this, \"Initialized\");");
+        AssertContains(captureFormatTelemetryText, "private void TryCorrectFrameRateFromTelemetry()");
+        AssertContains(captureFormatTelemetryText, "private static string ResolveFrameRateArg(");
+        AssertContains(captureFormatTelemetryText, "private void CaptureEncoderRuntimeTelemetry(");
+        AssertDoesNotContain(telemetryText, "private void TryCorrectFrameRateFromTelemetry()");
+        AssertDoesNotContain(telemetryText, "private static string ResolveFrameRateArg(");
+        AssertDoesNotContain(telemetryText, "private void CaptureEncoderRuntimeTelemetry(");
 
         return Task.CompletedTask;
     }
