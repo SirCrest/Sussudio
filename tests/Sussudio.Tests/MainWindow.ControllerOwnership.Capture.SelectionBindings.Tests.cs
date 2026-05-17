@@ -9,7 +9,6 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.CaptureSelectionBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
-        var contextText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.Context.cs").Replace("\r\n", "\n");
         var collectionBindingsText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.CollectionBindings.cs").Replace("\r\n", "\n");
         var deviceAudioText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.DeviceAudio.cs").Replace("\r\n", "\n");
         var propertyChangesText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.PropertyChanges.cs").Replace("\r\n", "\n");
@@ -29,7 +28,6 @@ static partial class Program
         var selectionControllerFamilyText = string.Join(
             "\n",
             controllerText,
-            contextText,
             collectionBindingsText,
             deviceAudioText,
             propertyChangesText,
@@ -94,7 +92,7 @@ static partial class Program
         AssertContains(controllerText, "internal sealed partial class CaptureSelectionBindingController");
         AssertContains(controllerText, "private readonly CaptureSelectionBindingControllerContext _context;");
         AssertContains(controllerText, "public CaptureSelectionBindingController(CaptureSelectionBindingControllerContext context)");
-        AssertContains(contextText, "internal sealed class CaptureSelectionBindingControllerContext");
+        AssertContains(controllerText, "internal sealed class CaptureSelectionBindingControllerContext");
         AssertContains(collectionBindingsText, "public void AttachCollectionBindings()");
         AssertContains(selectionSyncText, "private readonly int[] _selectionSyncQueued = new int[9];");
         AssertEqual(
