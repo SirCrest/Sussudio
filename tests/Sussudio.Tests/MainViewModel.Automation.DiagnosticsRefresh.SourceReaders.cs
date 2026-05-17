@@ -93,7 +93,7 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackSegments.cs")
                 + "\n" + ReadDiagnosticSessionFlashbackStressScenarioSource()
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
+                + "\n" + ReadDiagnosticSessionFlashbackValidationSource()
                 + "\n" + ReadDiagnosticSessionFlashbackWaitsSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionHealthTolerances.cs")
@@ -125,6 +125,14 @@ static partial class Program
                 + "\n" + ReadRepoFile("tools/ssctl/CommandHandlers.DiagnosticSession.cs"))
                 .Replace("\r\n", "\n"),
             ReadNormalizedRepoFile("tools/McpServer/Tools/DiagnosticSessionTools.cs"));
+    }
+
+    private static string ReadDiagnosticSessionFlashbackValidationSource()
+    {
+        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Recording.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Playback.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Preview.cs");
     }
 
     private static string ReadNormalizedRepoFile(string path)

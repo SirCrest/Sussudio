@@ -2729,10 +2729,11 @@ checks, `.Scrub.cs` owns scrub-stress command bursts and drain checks, and
 `.AudioMaster.cs` owns warmed-playback audio-master fallback classification
 while the runner only starts the scenario tasks.
 
-Diagnostic-session Flashback validation now lives in
-`tools/Common/DiagnosticSessionFlashbackValidation.cs`. It owns recording,
-playback, and preview-scheduler warning thresholds over already projected
-metrics while the runner retains scenario orchestration.
+Diagnostic-session Flashback validation now lives in the
+`tools/Common/DiagnosticSessionFlashbackValidation*.cs` partial family. The root
+is only the validation marker; `.Recording.cs`, `.Playback.cs`, and `.Preview.cs`
+own their respective warning thresholds over already projected metrics while
+the runner retains scenario orchestration.
 
 Diagnostic-session health policy now lives in
 `tools/Common/DiagnosticSessionHealthPolicy.cs`. It owns health severity,
@@ -2847,6 +2848,9 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackWaits.cs`
 - `DiagnosticSessionFlashbackWaits.Playback.cs`
 - `DiagnosticSessionFlashbackValidation.cs`
+- `DiagnosticSessionFlashbackValidation.Recording.cs`
+- `DiagnosticSessionFlashbackValidation.Playback.cs`
+- `DiagnosticSessionFlashbackValidation.Preview.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionHealthTolerances.cs`
 - `DiagnosticSessionJsonArtifacts.cs`

@@ -3007,9 +3007,14 @@ Primary owners:
   active, Flashback active, recording-ready, and buffer-ready waits.
 - `tools/Common/DiagnosticSessionFlashbackWaits.Playback.cs` owns Flashback
   playback boundary, state, warmup, and position polling waits.
-- `tools/Common/DiagnosticSessionFlashbackValidation.cs` owns Flashback
-  diagnostic-session warning policy for recording, playback, and preview
-  scheduler metrics.
+- `tools/Common/DiagnosticSessionFlashbackValidation.cs` is the Flashback
+  diagnostic-session validation partial root.
+- `tools/Common/DiagnosticSessionFlashbackValidation.Recording.cs` owns
+  Flashback recording warning policy over projected recording metrics.
+- `tools/Common/DiagnosticSessionFlashbackValidation.Playback.cs` owns Flashback
+  playback warning policy over projected playback and visual cadence metrics.
+- `tools/Common/DiagnosticSessionFlashbackValidation.Preview.cs` owns Flashback
+  preview scheduler warning policy over scheduler, cadence, and D3D metrics.
 - `tools/Common/DiagnosticSessionHealthPolicy.cs` owns diagnostic-session health
   observation, severity, and Flashback warmup filtering.
 - `tools/Common/DiagnosticSessionHealthTolerances.cs` owns diagnostic-session

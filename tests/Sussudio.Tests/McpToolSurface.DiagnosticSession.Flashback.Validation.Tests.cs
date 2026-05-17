@@ -6,18 +6,25 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
-        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
+        var validationRootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
+            .Replace("\r\n", "\n");
+        var recordingValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Recording.cs")
+            .Replace("\r\n", "\n");
+        var playbackValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Playback.cs")
+            .Replace("\r\n", "\n");
+        var previewValidationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Preview.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(validationText, "internal static class DiagnosticSessionFlashbackValidation");
-        AssertContains(validationText, "internal static void ValidateFlashbackRecordingSession(");
-        AssertContains(validationText, "\"flashback recording: no Flashback video frames submitted to encoder\"");
-        AssertContains(validationText, "internal static void ValidateFlashbackPlaybackSession(");
-        AssertContains(validationText, "\"flashback playback: no playback frames were observed\"");
-        AssertContains(validationText, "\"flashback playback: absolute A/V drift exceeded budget");
-        AssertContains(validationText, "internal static void ValidateFlashbackPreviewScheduler(");
-        AssertContains(validationText, "\"flashback preview: present/display pressure \"");
-        AssertContains(validationText, "latestSlowReason={FormatOptional(previewD3DMetrics.LatestSlowFrameReason)}");
+        AssertContains(validationRootText, "internal static partial class DiagnosticSessionFlashbackValidation");
+        AssertDoesNotContain(validationRootText, "internal static void ValidateFlashback");
+        AssertContains(recordingValidationText, "internal static void ValidateFlashbackRecordingSession(");
+        AssertContains(recordingValidationText, "\"flashback recording: no Flashback video frames submitted to encoder\"");
+        AssertContains(playbackValidationText, "internal static void ValidateFlashbackPlaybackSession(");
+        AssertContains(playbackValidationText, "\"flashback playback: no playback frames were observed\"");
+        AssertContains(playbackValidationText, "\"flashback playback: absolute A/V drift exceeded budget");
+        AssertContains(previewValidationText, "internal static void ValidateFlashbackPreviewScheduler(");
+        AssertContains(previewValidationText, "\"flashback preview: present/display pressure \"");
+        AssertContains(previewValidationText, "latestSlowReason={FormatOptional(previewD3DMetrics.LatestSlowFrameReason)}");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionFlashbackValidation;");
         AssertDoesNotContain(runnerText, "private static void ValidateFlashbackRecordingSession(");
         AssertDoesNotContain(runnerText, "private static void ValidateFlashbackPlaybackSession(");
