@@ -51,6 +51,9 @@ static partial class Program
             "Automation dispatcher capture control commands live in focused partial",
             AutomationCommandDispatcher_CaptureControlCommands_LiveInFocusedPartial);
         await AddCheckAsync(results,
+            "Automation dispatcher UI settings commands live in focused partial",
+            AutomationCommandDispatcher_UiSettingsCommands_LiveInFocusedPartial);
+        await AddCheckAsync(results,
             "Automation dispatcher window close waits for completion",
             AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion);
         await AddCheckAsync(results,

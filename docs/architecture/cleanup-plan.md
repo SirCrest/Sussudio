@@ -254,6 +254,8 @@ behind the custom command router.
 `AutomationCommandDispatcher.DeviceCommands.cs` owns device refresh,
 capture-device selection, audio-input selection, and capture-options readback
 command bodies behind the custom command router.
+`AutomationCommandDispatcher.UiSettingsCommands.cs` owns UI settings command
+bodies, including stats section visibility, behind the custom command router.
 `AutomationCommandDispatcher.FlashbackCommands.cs` owns Flashback action,
 export, segment, restart, and enable command bodies behind the custom command
 router.

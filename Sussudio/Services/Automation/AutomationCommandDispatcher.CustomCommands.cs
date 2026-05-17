@@ -55,12 +55,7 @@ public sealed partial class AutomationCommandDispatcher
                 return await ExecuteSetMjpegDecoderCountCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.SetStatsSectionVisible:
-            {
-                var section = RequireString(payload, "section");
-                var visible = RequireBool(payload, "visible");
-                await _viewModel.SetStatsSectionVisibleAsync(section, visible, cancellationToken).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, $"Stats section '{section}' {(visible ? "expanded" : "collapsed")}.");
-            }
+                return await ExecuteSetStatsSectionVisibleCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.SetDeviceAudioMode:
                 return await ExecuteSetDeviceAudioModeCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
