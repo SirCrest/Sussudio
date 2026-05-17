@@ -2988,8 +2988,6 @@ Primary owners:
   maxima, audio-master maxima, result-copy, and export metric projections.
   Export metrics include force-rotate fallback total, delta, and last fallback
   segment count; keep those counters derived outside export-observed relevance gating.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` is the
-  Flashback preview-cycle marker shell and predicate owner.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
   owns Flashback preview-cycle diagnostic task registration, priorities, task
   labels, and started action strings.
@@ -3145,8 +3143,9 @@ Primary owners:
   and routing that fixed wait command through the channel's
   `AutomationCommandKind` overload.
 - `tools/Common/DiagnosticSessionScenarioPlan.cs` owns normalized scenario
-  flags and grouped warning/validation policies used by the runner. Keep new
-  scenario booleans there instead of adding string comparisons in
+  flags and grouped warning/validation policies, including the preview-cycle
+  grouped predicate, used by the runner. Keep new scenario booleans there
+  instead of adding string comparisons in
   `DiagnosticSessionRunner`.
 - `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon option/result,
   summary, swap-chain, correlation, and metric DTOs.

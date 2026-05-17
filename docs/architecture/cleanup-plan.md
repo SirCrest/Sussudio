@@ -2655,8 +2655,9 @@ keeps the high-level post-cleanup phase order.
 
 Diagnostic-session scenario flagging now lives in
 `tools/Common/DiagnosticSessionScenarioPlan.cs`. It owns normalized scenario
-booleans plus grouped warning/validation policy switches so the runner does not
-grow direct scenario string comparisons.
+booleans plus grouped warning/validation policy switches, including the
+preview-cycle grouped predicate, so the runner does not grow direct scenario
+string comparisons.
 
 Diagnostic-session cleanup restore validation now lives in
 `tools/Common/DiagnosticSessionCleanupPolicy.cs`. It owns warnings for preview,
@@ -2721,9 +2722,9 @@ diagnostic-session command callbacks, and intentionally unconverted compatibilit
 surfaces with focused coverage.
 
 Diagnostic-session Flashback preview-cycle scenarios now live in a focused
-partial family. `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
-is the marker shell and preview-cycle predicate owner. `.Registrations.cs` owns
-task registration, priority, task-label, and started-action wiring.
+partial family. `.Registrations.cs` owns task registration, priority,
+task-label, and started-action wiring while preview-cycle grouping stays in
+`DiagnosticSessionScenarioPlan.cs`.
 `.Flashback.cs`, `.Playback.cs`, and `.Recording.cs` own preview stop/restart
 flows for normal Flashback, playback, and recording-backed diagnostics. Normal
 Flashback and playback-preview-cycle export-while-preview-off verification live
@@ -2872,7 +2873,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.LowPercentile.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackExport.cs`

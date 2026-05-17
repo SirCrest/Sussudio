@@ -73,7 +73,7 @@ static partial class Program
         AssertContains(playbackExportText, "flashback playback preview cycle export verified");
         AssertContains(cyclesText, "internal static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(cyclesText, "flashback recording preview cycle preview stopped");
-        AssertContains(cyclesText, "internal static bool IsPreviewCycleScenario(");
+        AssertDoesNotContain(cyclesText, "internal static bool IsPreviewCycleScenario(");
         AssertContains(cyclesText, "internal static void RegisterSelectedFlashbackPreviewCycleScenarioTasks(");
         AssertContains(cyclesText, "13,\n                \"flashback-preview-cycle-task\",");
         AssertContains(cyclesText, "14,\n                \"flashback-playback-preview-cycle-task\",");
