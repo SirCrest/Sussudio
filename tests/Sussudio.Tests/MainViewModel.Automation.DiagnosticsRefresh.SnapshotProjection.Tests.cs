@@ -45,6 +45,10 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var flashbackExport = BuildFlashbackExportProjection(health);");
         AssertContains(diagnostics.SnapshotProjectionFlashbackExportText, "private static FlashbackExportProjection BuildFlashbackExportProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionFlashbackExportText, "Active = health.FlashbackExportActive,");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackExportText, "private static FlashbackExportLastResultProjection BuildFlashbackExportLastResultProjection(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackExportText, "LastExportId = health.LastExportId,");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackExportText, "LastExportMessage = health.LastExportMessage");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackExportText, "private readonly record struct FlashbackExportLastResultProjection");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "FlashbackExportActive = health.FlashbackExportActive,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingProjection BuildFlashbackRecordingProjection(");
