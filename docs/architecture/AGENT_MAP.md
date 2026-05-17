@@ -2322,8 +2322,8 @@ Primary current owners:
   automation mutation.
   `MainViewModel.AutomationCustomBitrate.cs` owns custom encoder bitrate
   automation mutation and clamp policy.
-  `MainViewModel.AutomationRecordingSettings.cs` owns encoder
-  preset automation mutation.
+  `MainViewModel.AutomationEncoderPreset.cs` owns encoder preset automation
+  mutation.
   `MainViewModel.AutomationOutputPath.cs` owns output-path automation mutation.
   `MainViewModel.AutomationRecordingLifecycle.cs` owns the automation
   recording desired-state bridge into the shared recording transition gate.

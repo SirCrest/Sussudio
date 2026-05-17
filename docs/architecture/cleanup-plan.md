@@ -3116,8 +3116,7 @@ Remaining `tools/Common` ownership:
    `MainViewModel.AutomationSplitEncodeMode.cs`; custom encoder bitrate
    automation mutation and clamp policy now live in
    `MainViewModel.AutomationCustomBitrate.cs`; encoder preset automation
-   mutation lives in
-   `MainViewModel.AutomationRecordingSettings.cs`;
+   mutation lives in `MainViewModel.AutomationEncoderPreset.cs`;
    output-path automation mutation now lives in `MainViewModel.AutomationOutputPath.cs`.
    The automation recording desired-state bridge into the shared recording
    transition gate now lives in `MainViewModel.AutomationRecordingLifecycle.cs`.

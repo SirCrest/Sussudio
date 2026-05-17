@@ -66,7 +66,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCustomBitrate.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationEncoderPreset.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationOutputPath.cs")
                 .Replace("\r\n", "\n")
@@ -198,7 +198,7 @@ static partial class Program
         AssertContains(automationAudioText, "public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)");
         AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
-        var automationRecordingSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
+        var automationEncoderPresetText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationEncoderPreset.cs")
             .Replace("\r\n", "\n");
         var automationRecordingFormatText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingFormat.cs")
             .Replace("\r\n", "\n");
@@ -212,20 +212,21 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(automationRecordingFormatText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
         AssertContains(automationRecordingFormatText, "RecordingFormatSelectionPolicy.IsHdrCompatible(matched)");
-        AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetRecordingFormatAsync");
         AssertContains(automationRecordingQualityText, "public async Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)");
         AssertContains(automationRecordingQualityText, "ParseVideoQuality(SelectedQuality)");
-        AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetQualityAsync");
         AssertContains(automationSplitEncodeModeText, "public async Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)");
         AssertContains(automationSplitEncodeModeText, "splitEncodeMode: settings.SplitEncodeMode");
-        AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetSplitEncodeModeAsync");
         AssertContains(automationCustomBitrateText, "public async Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)");
         AssertContains(automationCustomBitrateText, "CustomBitrateMbps = Math.Clamp(bitrateMbps, 1, 300);");
-        AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetCustomBitrateAsync");
+        AssertContains(automationEncoderPresetText, "public async Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)");
+        AssertContains(automationEncoderPresetText, "SelectedPreset = matched;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationRecordingSettings.cs")),
+            "stale recording settings automation partial");
         AssertContains(automationOutputPathText, "public Task SetOutputPathAsync(string outputPath, CancellationToken cancellationToken = default)");
         AssertContains(automationOutputPathText, "Directory.CreateDirectory(outputPath);");
         AssertContains(automationOutputPathText, "OutputPath = outputPath;");
-        AssertDoesNotContain(automationRecordingSettingsText, "public Task SetOutputPathAsync");
         AssertContains(automationText, "=> InvokeOnUiThreadAsync(() => RefreshDevicesAsync(cancellationToken), cancellationToken);");
         AssertContains(automationText, "await StartPreviewAsync(userInitiated: true, cancellationToken);");
         AssertContains(automationText, "await StopPreviewAsync(userInitiated: true, teardownPipeline: false, cancellationToken);");
