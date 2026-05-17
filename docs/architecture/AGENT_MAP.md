@@ -2455,10 +2455,11 @@ Primary owners:
   `FlashbackExport` payload shaping.
 - `tools/NativeXuAudioProbe/Program.cs` owns probe command routing and command
   workflows; `Program.Models.cs` owns probe experiment/readback DTOs and
-  result-diff records; `Program.Commands.cs` owns Native XU command IDs;
+  result-diff records; `Program.Commands.cs` owns Native XU command IDs and
+  shared raw-payload formatting;
   `Program.AtCommands.cs` owns direct AT read/write/input subcommands;
   `Program.DefaultExperiment.cs` owns the default baseline/experiment/restore
-  runner; `Program.Formatting.cs` owns shared byte formatting;
+  runner;
   `Program.I2cCommands.cs` owns the exploratory `i2c-cmd` router/basic
   get/set/scan paths; `Program.I2cCommands.SelectorProbe.cs` owns selector
   transport probing for that command family;

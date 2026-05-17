@@ -33,3 +33,8 @@ static class NativeXuProbeCommands
     public const int CmdGetAuxOutVolume = 0x81;
     public const int CmdSetAuxOutVolume = 0x82;
 }
+
+static class NativeXuProbeFormatting
+{
+    public static string FormatRaw(byte[]? payload) => payload == null ? "null" : BitConverter.ToString(payload);
+}

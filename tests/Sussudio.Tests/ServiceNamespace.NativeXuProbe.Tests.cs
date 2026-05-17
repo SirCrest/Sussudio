@@ -55,7 +55,6 @@ static partial class Program
         var probeCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Commands.cs"));
         var probeDefaultExperimentText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.cs"));
         var probeExperimentPayloadsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ExperimentPayloads.cs"));
-        var probeFormattingText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Formatting.cs"));
         var probeI2cCommandsText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.cs"));
         var probeI2cCommandsHighSelectorProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.HighSelectorProbe.cs"));
         var probeI2cCommandsSelectorProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.SelectorProbe.cs"));
@@ -98,13 +97,13 @@ static partial class Program
         AssertContains(probeModelsText, "sealed class ExperimentResult");
         AssertContains(probeCommandsText, "public const int CmdAudioFormat = 0x04;");
         AssertContains(probeCommandsText, "public const int CmdSetAuxOutVolume = 0x82;");
+        AssertContains(probeCommandsText, "static class NativeXuProbeFormatting");
+        AssertContains(probeCommandsText, "public static string FormatRaw");
         AssertContains(probeDefaultExperimentText, "static class NativeXuProbeDefaultExperiment");
         AssertContains(probeDefaultExperimentText, "public static async Task<int> RunAsync(CaptureDevice device)");
         AssertContains(probeDefaultExperimentText, "RunAnalogGainSequenceAsync");
         AssertContains(probeExperimentPayloadsText, "public static IEnumerable<SetExperiment> BuildShortExperiments");
         AssertContains(probeExperimentPayloadsText, "public static byte[] BuildPayload(int width, long value)");
-        AssertContains(probeFormattingText, "static class NativeXuProbeFormatting");
-        AssertContains(probeFormattingText, "public static string FormatRaw");
         AssertContains(probeI2cCommandsText, "static partial class NativeXuProbeI2cCommands");
         AssertContains(probeI2cCommandsText, "public static async Task<int> RunAsync");
         AssertContains(probeI2cCommandsText, "Usage: i2c-cmd get|set|scan");
