@@ -1915,9 +1915,14 @@ fraction/duration math used by scrub and playhead presentation now lives in
 `Sussudio/Controllers/Flashback/FlashbackTimelineGeometry.cs`.
 
 Flashback CTI/playhead compositor motion now lives in
-`Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`. It owns visual
-setup, snap placement, magnetic scrub movement, long-horizon linear playhead
-extrapolation, snap-on-open state, and CTI anchor timing.
+`Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`,
+`Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.cs`, and
+`Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Visuals.cs`.
+The root file owns context, public entry points, and shared state; `.Cti.cs`
+owns playback-state sampling, scrub/window gating, live right-edge pinning,
+long-horizon extrapolation scheduling, and CTI anchor timing; `.Visuals.cs` owns
+compositor visual setup, snap placement, magnetic scrub movement, linear
+keyframe animation, and label clamp/positioning.
 `Sussudio/MainWindow.FlashbackPlayhead.cs` is the XAML-facing adapter;
 command handling and toggle/apply workflows now live in the command controller.
 
@@ -2064,7 +2069,7 @@ the root controller can remain a field/property facade plus shared state setter.
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/Flashback/FlashbackPollingController.cs`.
 `MainWindow.FlashbackPolling.cs` is the XAML-facing adapter; CTI anchor timing
-lives in `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`.
+lives in `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.cs`.
 
 Settings shelf visibility, the animation gate, and show/hide storyboard
 construction now live in

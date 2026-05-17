@@ -21,7 +21,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackPlayheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs")
             .Replace("\r\n", "\n");
-        var flashbackPlayheadControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs")
+        var flashbackPlayheadControllerText = (
+            ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.cs")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Visuals.cs"))
             .Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
