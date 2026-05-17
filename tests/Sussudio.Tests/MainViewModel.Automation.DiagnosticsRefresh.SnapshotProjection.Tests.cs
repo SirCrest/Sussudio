@@ -76,11 +76,11 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "TargetFps = health.FlashbackPlaybackTargetFps,");
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "private static FlashbackPlaybackAudioMasterProjection BuildFlashbackPlaybackAudioMasterProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "LastFallbackReason = health.FlashbackPlaybackAudioMasterLastFallbackReason,");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackDecodeText, "private static FlashbackPlaybackDecodeProjection BuildFlashbackPlaybackDecodeProjection(CaptureHealthSnapshot health)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackDecodeText, "MaxPhase = health.FlashbackPlaybackMaxDecodePhase,");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackDecodeText, "SeekForwardDecodeCapHits = health.FlashbackPlaybackSeekForwardDecodeCapHits,");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackCommandsText, "private static FlashbackPlaybackCommandProjection BuildFlashbackPlaybackCommandProjection(CaptureHealthSnapshot health)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackCommandsText, "LastFailure = health.FlashbackPlaybackLastCommandFailure");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "private static FlashbackPlaybackDecodeProjection BuildFlashbackPlaybackDecodeProjection(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "MaxPhase = health.FlashbackPlaybackMaxDecodePhase,");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "SeekForwardDecodeCapHits = health.FlashbackPlaybackSeekForwardDecodeCapHits,");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "private static FlashbackPlaybackCommandProjection BuildFlashbackPlaybackCommandProjection(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "LastFailure = health.FlashbackPlaybackLastCommandFailure");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioAndIngestProjection BuildAudioAndIngestProjection(");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "var audioSignalProjection = BuildAudioSignalProjection(viewModelSnapshot, audioSignal);");

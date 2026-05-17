@@ -56,8 +56,6 @@ static partial class Program
             SnapshotProjectionMjpegPacketHashText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.MjpegPacketHash.cs"),
             SnapshotProjectionFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs"),
             SnapshotProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs"),
-            SnapshotProjectionFlashbackPlaybackDecodeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlaybackDecode.cs"),
-            SnapshotProjectionFlashbackPlaybackCommandsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlaybackCommands.cs"),
             SnapshotProjectionFlashbackRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs"),
             SnapshotProjectionFlashbackRecordingQueuesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecordingQueues.cs"),
             SnapshotProjectionPreviewD3DText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs"),
@@ -143,8 +141,6 @@ static partial class Program
         public string SnapshotProjectionMjpegPacketHashText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackExportText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackPlaybackText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackPlaybackDecodeText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackPlaybackCommandsText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackRecordingText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackRecordingQueuesText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DText { get; init; } = string.Empty;
@@ -220,8 +216,6 @@ static partial class Program
                 SnapshotProjectionMjpegPacketHashText,
                 SnapshotProjectionFlashbackExportText,
                 SnapshotProjectionFlashbackPlaybackText,
-                SnapshotProjectionFlashbackPlaybackDecodeText,
-                SnapshotProjectionFlashbackPlaybackCommandsText,
                 SnapshotProjectionFlashbackRecordingText,
                 SnapshotProjectionFlashbackRecordingQueuesText,
                 SnapshotProjectionPreviewD3DText,
