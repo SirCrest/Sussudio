@@ -813,10 +813,10 @@ Entry points:
 - `FlashbackDecoder.DecodeLoop.cs` owns video frame receive, packet feeding, inline audio interleave during video reads, live-file EOF clearing, and decode phase timing state.
 - `FlashbackDecoder.Seeking.cs` owns keyframe/exact seek control flow, pending-frame transfer, seek-cap diagnostics, and seek-buffer flushing.
 - `FlashbackDecoder.D3D11.cs` owns D3D11VA decoder selection, get-format callback behavior, hardware-config diagnostics, and hardware decoder context setup.
-- `FlashbackDecoder.VideoOutput.cs` owns decoded video frame output, D3D11 surface validation, software frame validation, plane copies, and YUV-to-NV12/P010 conversion.
+- `FlashbackDecoder.VideoOutput.cs` owns decoded video frame output, plane copies, and YUV-to-NV12/P010 conversion.
 - `FlashbackDecoder.AudioOutput.cs` owns audio codec/resampler initialization, audio packet delivery, callback failure handling, resampler output conversion, and bounded audio buffer sizing.
 - `FlashbackDecoder.Timestamps.cs` owns PTS-to-TimeSpan conversion, seek timestamp conversion, best-effort frame timestamp selection, and recoverable seek log suppression.
-- `FlashbackDecoder.Validation.cs` owns decoded frame-size calculation, video-dimension validation, input stream-count bounds, and stream-index bounds.
+- `FlashbackDecoder.Validation.cs` owns decoded frame-size calculation, video-dimension validation, D3D11/software decoded-frame validation, input stream-count bounds, and stream-index bounds.
 - `FlashbackPlaybackController*.cs` owns playback, scrub, and marker control.
 - `FlashbackPlaybackController.DecoderFiles.cs` owns decoder creation, active file identity, file open checks, best-effort close handling, and decoder cleanup.
 - `FlashbackPlaybackController.DecoderReopen.cs` owns active fMP4 reopen retry, adjacent-segment seek fallback, keyframe-reopen recovery, and near-live reopen guards.

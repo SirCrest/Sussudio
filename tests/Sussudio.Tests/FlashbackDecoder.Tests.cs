@@ -54,13 +54,21 @@ static partial class Program
             .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Validation.cs")
             .Replace("\r\n", "\n");
+        var videoOutputText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(validationText, "private static int CalculateFrameBufferSize(int width, int height, bool isHdr)");
         AssertContains(validationText, "private static void ValidateVideoDimensions(int width, int height)");
+        AssertContains(validationText, "private static bool TryValidateSoftwareVideoFrame(");
+        AssertContains(validationText, "private static bool TryValidatePlane(AVFrame* frame, int planeIndex, int minLineSize, out string failure)");
+        AssertContains(validationText, "private static bool TryValidateD3D11VideoFrame(AVFrame* frame, int width, int height, out string failure)");
         AssertContains(validationText, "private static bool TryGetInputStreamCount(AVFormatContext* formatCtx, out int streamCount, out string failureMessage)");
         AssertContains(validationText, "private static bool IsValidStreamIndex(int streamIndex, int streamCount)");
         AssertDoesNotContain(rootText, "private static int CalculateFrameBufferSize(int width, int height, bool isHdr)");
         AssertDoesNotContain(rootText, "private static void ValidateVideoDimensions(int width, int height)");
+        AssertDoesNotContain(videoOutputText, "private static bool TryValidateSoftwareVideoFrame(");
+        AssertDoesNotContain(videoOutputText, "private static bool TryValidatePlane(AVFrame* frame, int planeIndex, int minLineSize, out string failure)");
+        AssertDoesNotContain(videoOutputText, "private static bool TryValidateD3D11VideoFrame(AVFrame* frame, int width, int height, out string failure)");
         AssertDoesNotContain(rootText, "private static bool TryGetInputStreamCount(AVFormatContext* formatCtx, out int streamCount, out string failureMessage)");
         AssertDoesNotContain(rootText, "private static bool IsValidStreamIndex(int streamIndex, int streamCount)");
 

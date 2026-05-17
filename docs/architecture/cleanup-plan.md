@@ -1298,8 +1298,7 @@ delivery, audio codec/resampler initialization, audio callback failure handling,
 resampler output conversion, and bounded audio sample/byte sizing there. D3D11VA decoder selection and hardware
 configuration diagnostics now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs`. Decoded video frame
-output, D3D11/software frame validation, plane copies, and YUV-to-NV12/P010
-conversion now live in
+output, plane copies, and YUV-to-NV12/P010 conversion now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs`. Keep file
 open/close and initialization/disposal lifecycle in the root decoder. Video
 frame receive, packet feeding, inline audio interleave during video reads, and
@@ -1310,8 +1309,8 @@ in `Sussudio/Services/Flashback/FlashbackDecoder.Seeking.cs`. Shared PTS
 conversion, seek timestamp conversion, best-effort frame timestamp selection,
 and recoverable seek log suppression now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.Timestamps.cs`.
-Decoded frame-size calculation, video-dimension validation, input stream-count
-bounds, and stream-index bounds now live in
+Decoded frame-size calculation, video-dimension validation, D3D11/software
+decoded-frame validation, input stream-count bounds, and stream-index bounds now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.Validation.cs`.
 File-close native cleanup, software buffer returns, pending held-frame release,
 decoder state reset, and held-frame best-effort release helpers now live in
