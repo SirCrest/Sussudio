@@ -37,6 +37,8 @@ static partial class Program
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
         var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
             .Replace("\r\n", "\n");
+        var automationMicrophoneText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationMicrophone.cs")
+            .Replace("\r\n", "\n");
         var automationPreviewText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationPreview.cs")
             .Replace("\r\n", "\n");
         var automationHdrText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationHdr.cs")
@@ -52,6 +54,7 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Automation.cs")),
             "MainViewModel automation catch-all partial");
         var automationText = automationAudioText
+            + "\n" + automationMicrophoneText
             + "\n" + automationPreviewText
             + "\n" + automationHdrText
             + "\n" + automationFlashbackText
@@ -195,8 +198,9 @@ static partial class Program
         AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)");
+        AssertDoesNotContain(automationAudioText, "public Task SetMicrophoneEnabledAsync");
+        AssertContains(automationMicrophoneText, "public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(automationMicrophoneText, "private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)");
         AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
         var automationEncoderPresetText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationEncoderPreset.cs")
             .Replace("\r\n", "\n");

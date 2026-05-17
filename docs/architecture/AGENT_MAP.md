@@ -2301,8 +2301,9 @@ Primary current owners:
   visibility, and show-all capture options. `MainViewModel.AutomationAudio.cs`
   owns automation command entry points for audio enablement, audio-preview
   enablement, preview-volume clamp/persist, device-native mode/gain
-  application, and microphone enablement with recording-time refusal and
-  idempotent handling. `MainViewModel.AutomationPreview.cs` owns automation
+  application. `MainViewModel.AutomationMicrophone.cs` owns automation
+  microphone enablement with recording-time refusal and idempotent handling.
+  `MainViewModel.AutomationPreview.cs` owns automation
   preview enable/disable idempotence, pending-reinit cancellation, and
   start/stop routing. `MainViewModel.AutomationHdr.cs` owns automation HDR and
   true-HDR preview recording-time guard enforcement and availability checks.

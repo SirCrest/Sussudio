@@ -3095,9 +3095,10 @@ Remaining `tools/Common` ownership:
    path.
    UI-only automation mutators now live in `MainViewModel.AutomationUi.cs`.
    Automation command entry points for audio, audio-preview, preview-volume
-   clamp/persist, device-native audio mode/gain application, and microphone
-   enablement with recording-time refusal/idempotent handling now live in
-   `MainViewModel.AutomationAudio.cs`.
+   clamp/persist, and device-native audio mode/gain application now live in
+   `MainViewModel.AutomationAudio.cs`; microphone enablement with
+   recording-time refusal/idempotent handling now lives in
+   `MainViewModel.AutomationMicrophone.cs`.
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
    `MainViewModel.AutomationPreview.cs`.
