@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Automation mutators that change capture mode selection and reinitialize preview
-/// when an active session needs to renegotiate.
+/// Automation helper for capture resolution changes and active-preview renegotiation.
 /// </summary>
 public partial class MainViewModel
 {
@@ -30,56 +29,6 @@ public partial class MainViewModel
             }
 
             SelectedResolution = matched.Value;
-        }, cancellationToken);
-    }
-
-    public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)
-    {
-        return SetAutomationCaptureModeAsync("frame rate", () =>
-        {
-            if (AvailableFrameRates.Count == 0)
-            {
-                throw new InvalidOperationException("No frame rates are available.");
-            }
-
-            var enabledRates = AvailableFrameRates
-                .Where(rate => rate.IsEnabled)
-                .ToList();
-            if (enabledRates.Count == 0)
-            {
-                throw new InvalidOperationException("No enabled frame rates are available for the current selection.");
-            }
-
-            if (FrameRateTimingPolicy.IsAutoFrameRateValue(frameRate))
-            {
-                var autoRate = enabledRates.FirstOrDefault(rate => FrameRateTimingPolicy.IsAutoFrameRateValue(rate.Value));
-                if (autoRate == null)
-                {
-                    throw new InvalidOperationException("Auto frame rate is not available for the current selection.");
-                }
-
-                SelectAutoFrameRate();
-                return;
-            }
-
-            var requestedFriendly = Math.Round(frameRate);
-            var friendlyMatches = enabledRates
-                .Where(rate => Math.Round(rate.FriendlyValue) == requestedFriendly)
-                .OrderBy(rate => Math.Abs(rate.FriendlyValue - frameRate))
-                .ThenBy(rate => Math.Abs(rate.Value - frameRate))
-                .ToList();
-
-            var matched = (friendlyMatches.Count > 0 ? friendlyMatches : enabledRates)
-                .OrderBy(rate => Math.Abs(rate.Value - frameRate))
-                .First();
-
-            if (friendlyMatches.Count == 0 && !FrameRateTimingPolicy.IsFrameRateMatch(matched.Value, frameRate))
-            {
-                throw new InvalidOperationException(
-                    $"Frame rate '{frameRate:0.###}' is not available for {SelectedResolution ?? "the current resolution"}.");
-            }
-
-            SelectedFrameRate = matched.Value;
         }, cancellationToken);
     }
 

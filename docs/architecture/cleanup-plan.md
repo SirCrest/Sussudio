@@ -3120,9 +3120,10 @@ Remaining `tools/Common` ownership:
    output-path automation mutation now lives in `MainViewModel.AutomationOutputPath.cs`.
    The automation recording desired-state bridge into the shared recording
    transition gate now lives in `MainViewModel.AutomationRecordingLifecycle.cs`.
-   Capture-mode automation mutators for resolution and frame rate now live in
-   `MainViewModel.AutomationCaptureMode.cs`; capture video-format automation
-   now lives in `MainViewModel.AutomationVideoFormat.cs`; MJPEG decoder
+   Capture resolution automation and the shared capture-mode reinitialization
+   gate now live in `MainViewModel.AutomationCaptureMode.cs`; capture
+   frame-rate automation now lives in `MainViewModel.AutomationFrameRate.cs`;
+   capture video-format automation now lives in `MainViewModel.AutomationVideoFormat.cs`; MJPEG decoder
    worker-count automation lives in
    `MainViewModel.AutomationMjpegDecoderCount.cs` and still routes through the
    shared capture-mode reinitialization gate.

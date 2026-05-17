@@ -6,6 +6,7 @@ static partial class Program
     {
         var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
         var captureModeAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCaptureMode.cs").Replace("\r\n", "\n");
+        var frameRateAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationFrameRate.cs").Replace("\r\n", "\n");
         var videoFormatAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationVideoFormat.cs").Replace("\r\n", "\n");
         var mjpegDecoderCountAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationMjpegDecoderCount.cs").Replace("\r\n", "\n");
 
@@ -18,7 +19,11 @@ static partial class Program
         AssertContains(captureModeAutomationText, "ReinitializeDeviceAsync($\"automation {reason}\")");
         AssertContains(captureModeAutomationText, "_automationCaptureModeGate.Release();");
         AssertContains(captureModeAutomationText, "return SetAutomationCaptureModeAsync(\"resolution\"");
-        AssertContains(captureModeAutomationText, "return SetAutomationCaptureModeAsync(\"frame rate\"");
+        AssertDoesNotContain(captureModeAutomationText, "public Task SetFrameRateAsync");
+        AssertContains(frameRateAutomationText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
+        AssertContains(frameRateAutomationText, "return SetAutomationCaptureModeAsync(\"frame rate\"");
+        AssertContains(frameRateAutomationText, "FrameRateTimingPolicy.IsAutoFrameRateValue(frameRate)");
+        AssertContains(frameRateAutomationText, "SelectedFrameRate = matched.Value;");
         AssertDoesNotContain(captureModeAutomationText, "public Task SetVideoFormatAsync");
         AssertContains(videoFormatAutomationText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
         AssertContains(videoFormatAutomationText, "return SetAutomationCaptureModeAsync(\"video format\"");
