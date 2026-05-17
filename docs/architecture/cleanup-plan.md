@@ -2926,8 +2926,9 @@ Remaining `tools/Common` ownership:
    Microphone endpoint volume synchronization and persistence now live in
    `MainViewModel.MicrophoneVolume.cs`; device-native audio-control support
    probing, readback, and pending saved-state reconciliation now live in
-   `MainViewModel.DeviceAudioRefresh.cs`; mode switching stays in
-   `MainViewModel.AudioControls.cs`, while analog gain writes live in
+   `MainViewModel.DeviceAudioRefresh.cs`; mode switching and failure readback
+   live in `MainViewModel.DeviceAudioMode.cs`; shared audio-control guards stay
+   in `MainViewModel.AudioControls.cs`, while analog gain writes live in
    `MainViewModel.AnalogAudioGain.cs`. UI-facing state is
    split by owner: `MainViewModel.State.cs` owns shared shell/status/live-info
    flags and non-preview coordination gates, `MainViewModel.PreviewState.cs`
@@ -3080,7 +3081,8 @@ Remaining `tools/Common` ownership:
    Pure analog audio gain percent/XU-byte curve mapping now lives in
    `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; async native-XU device
    audio-control refresh/readback stays in `MainViewModel.DeviceAudioRefresh.cs`,
-   mode switching stays in `MainViewModel.AudioControls.cs`, and
+   mode switching and failure readback live in `MainViewModel.DeviceAudioMode.cs`,
+   shared audio-control guards stay in `MainViewModel.AudioControls.cs`, and
    `MainViewModel.AnalogAudioGain.cs` owns analog gain XU writes,
    debounce-to-flash, and settings persistence. Use the supported native-XU
    switch/gain command surface rather than the legacy AT input-source fallback

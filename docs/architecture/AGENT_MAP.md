@@ -2145,9 +2145,11 @@ Primary current owners:
   synchronization and persistence.
   `MainViewModel.DeviceAudioRefresh.cs` owns device-native audio-control support
   probing, readback, and pending saved-state reconciliation.
-  `MainViewModel.AudioControls.cs` owns device-native audio mode switching
-  through the supported native-XU switch command surface, not the legacy AT
-  input-source fallback path. `MainViewModel.AnalogAudioGain.cs` owns analog
+  `MainViewModel.DeviceAudioMode.cs` owns device-native audio mode switching
+  and failure readback through the supported native-XU switch command surface,
+  not the legacy AT input-source fallback path. `MainViewModel.AudioControls.cs`
+  owns shared audio-control guards and mode normalization.
+  `MainViewModel.AnalogAudioGain.cs` owns analog
   gain XU writes, flash-persist debounce, and settings persistence.
   `Sussudio/ViewModels/DeviceAudioGainMapper.cs` owns the pure percent-to-XU-
   byte analog gain curve used by device-native gain application.

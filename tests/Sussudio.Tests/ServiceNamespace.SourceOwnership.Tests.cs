@@ -105,22 +105,25 @@ static partial class Program
         AssertContains(captureServiceTelemetryText, "Telemetry poll start deferred until canceled poll exits");
 
         var audioControlsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioControls.cs"));
+        var deviceAudioModeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioMode.cs"));
         var deviceAudioRefreshText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRefresh.cs"));
         var analogAudioGainText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs"));
         AssertContains(deviceAudioRefreshText, "RefreshDeviceAudioControlsAsync(");
         AssertContains(deviceAudioRefreshText, "ReadStateAsync(device, cancellationToken)");
         AssertContains(deviceAudioRefreshText, "NATIVEXU_AUDIO_RESTORE_READ_ONLY");
         AssertDoesNotContain(audioControlsText, "RefreshDeviceAudioControlsAsync(");
-        AssertContains(audioControlsText, "Device audio mode failure readback ignored");
-        AssertContains(audioControlsText, "failureState.Mode");
-        AssertContains(audioControlsText, "failureState.AnalogGainPercent");
-        AssertContains(audioControlsText, "private async Task<bool> ApplyDeviceAudioModeAsync");
-        AssertContains(audioControlsText, "CaptureDevice? targetDevice = null");
+        AssertContains(deviceAudioModeText, "Device audio mode failure readback ignored");
+        AssertContains(deviceAudioModeText, "failureState.Mode");
+        AssertContains(deviceAudioModeText, "failureState.AnalogGainPercent");
+        AssertContains(deviceAudioModeText, "private async Task<bool> ApplyDeviceAudioModeAsync");
+        AssertContains(deviceAudioModeText, "CaptureDevice? targetDevice = null");
         AssertContains(analogAudioGainText, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertContains(analogAudioGainText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken)");
         AssertContains(analogAudioGainText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
         AssertDoesNotContain(audioControlsText, "private async Task<bool> ApplyAnalogAudioGainAsync");
-        AssertContains(audioControlsText, "IsCurrentSelectedDevice(device)");
+        AssertDoesNotContain(audioControlsText, "private async Task<bool> ApplyDeviceAudioModeAsync");
+        AssertContains(audioControlsText, "private bool IsCurrentSelectedDevice(CaptureDevice device)");
+        AssertContains(deviceAudioModeText, "IsCurrentSelectedDevice(device)");
         AssertDoesNotContain(audioControlsText, "TryApplyAtDeviceAudioModeAsync");
         AssertDoesNotContain(audioControlsText, "SetInputSourceAsync");
 

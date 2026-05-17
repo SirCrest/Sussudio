@@ -13,12 +13,14 @@ static partial class Program
             ?? throw new InvalidOperationException("DeviceAudioGainMapper.GainByteToPercent was not found.");
         var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs")
             .Replace("\r\n", "\n");
+        var deviceAudioModeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioMode.cs")
+            .Replace("\r\n", "\n");
         var analogAudioGainText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs")
             .Replace("\r\n", "\n");
         var gainMapperText = ReadRepoFile("Sussudio/ViewModels/DeviceAudioGainMapper.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(audioControlsText, "DeviceAudioGainMapper.PercentToGainByte(AnalogAudioGainPercent)");
+        AssertContains(deviceAudioModeText, "DeviceAudioGainMapper.PercentToGainByte(AnalogAudioGainPercent)");
         AssertContains(analogAudioGainText, "DeviceAudioGainMapper.PercentToGainByte(gainPercent)");
         AssertContains(analogAudioGainText, "Device-native analog gain application and deferred flash persistence.");
         AssertDoesNotContain(audioControlsText, "private static byte MapPercentToGainByte");
@@ -135,12 +137,15 @@ static partial class Program
         AssertNotNull(viewModelType.GetMethod("SaveMicrophoneVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SaveMicrophoneVolume");
 
         var audioControlsCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioControls.cs");
+        var deviceAudioModeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioMode.cs")
+            .Replace("\r\n", "\n");
+        var deviceAudioModeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioMode.cs");
         var deviceAudioRefreshText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioRefresh.cs")
             .Replace("\r\n", "\n");
         var deviceAudioRefreshCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioRefresh.cs");
         var analogAudioGainCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs");
         var microphoneVolumeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.MicrophoneVolume.cs");
-        var audioCode = audioControlsCode + "\n" + deviceAudioRefreshCode + "\n" + analogAudioGainCode + "\n" + microphoneVolumeCode;
+        var audioCode = audioControlsCode + "\n" + deviceAudioModeCode + "\n" + deviceAudioRefreshCode + "\n" + analogAudioGainCode + "\n" + microphoneVolumeCode;
         var setMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "SetMicrophoneEndpointVolume");
         var getMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "GetMicrophoneEndpointVolume");
         var refreshDeviceAudioControls = ExtractMemberCode(audioCode, "RefreshDeviceAudioControlsAsync");
@@ -157,6 +162,9 @@ static partial class Program
         AssertDoesNotContain(audioControlsCode, "private async Task RefreshDeviceAudioControlsAsync");
         AssertContains(deviceAudioRefreshCode, "private async Task RefreshDeviceAudioControlsAsync");
         AssertContains(deviceAudioRefreshText, "Device-native audio-control support probing and state readback.");
+        AssertDoesNotContain(audioControlsCode, "private async Task<bool> ApplyDeviceAudioModeAsync");
+        AssertContains(deviceAudioModeCode, "private async Task<bool> ApplyDeviceAudioModeAsync");
+        AssertContains(deviceAudioModeText, "Device-native audio mode switching and failure readback.");
         AssertDoesNotContain(audioControlsCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertContains(analogAudioGainCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertDoesNotContain(audioControlsCode, "TryApplyAtDeviceAudioModeAsync");
