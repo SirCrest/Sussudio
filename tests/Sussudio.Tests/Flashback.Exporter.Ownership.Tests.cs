@@ -12,6 +12,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs")
             .Replace("\r\n", "\n");
+        var singleFilePacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketWriting.cs")
+            .Replace("\r\n", "\n");
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
@@ -68,7 +70,19 @@ static partial class Program
         AssertContains(lifetimeText, "public void Dispose()");
         AssertContains(lifetimeText, "FLASHBACK_EXPORT_DISPOSE_TIMEOUT_OK");
         AssertContains(singleFileText, "private FinalizeResult ExportCore(");
+        AssertContains(singleFileText, "WriteSingleFilePacketsToActiveOutput(");
         AssertContains(singleFileText, "ReleaseExportLockBestEffort(\"single_export\");");
+        AssertContains(singleFilePacketWritingText, "private SingleFilePacketWriteResult WriteSingleFilePacketsToActiveOutput(");
+        AssertContains(singleFilePacketWritingText, "private readonly record struct SingleFilePacketWriteResult(FinalizeResult? Failure, long TotalPackets);");
+        AssertContains(singleFilePacketWritingText, "var packet = ffmpeg.av_packet_alloc();");
+        AssertContains(singleFilePacketWritingText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
+        AssertContains(singleFilePacketWritingText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
+        AssertContains(singleFilePacketWritingText, "LogTimestampBaseDrift(timestampBasesUs, hasTimestampBase);");
+        AssertContains(singleFilePacketWritingText, "Flashback export failed: no video packets were written.");
+        AssertDoesNotContain(singleFileText, "var timestampBasesUs = new long[streamCount];");
+        AssertDoesNotContain(singleFileText, "var packet = ffmpeg.av_packet_alloc();");
+        AssertDoesNotContain(singleFileText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
+        AssertDoesNotContain(singleFileText, "LogTimestampBaseDrift(timestampBasesUs, hasTimestampBase);");
         AssertContains(segmentsText, "private FinalizeResult ExportSegmentsCore(");
         AssertContains(segmentsText, "TryValidateSegmentExportInputs(");
         AssertContains(segmentsText, "TryEstimateSegmentExportReadableBytes(");

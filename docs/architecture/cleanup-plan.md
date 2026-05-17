@@ -1381,10 +1381,13 @@ single/multi-segment task wrappers, linked cancellation source disposal,
 background thread priority, and segment
 snapshots there so native export cores stay behind focused entry points.
 
-Flashback exporter single-file packet-copy/remux behavior now lives in
+Flashback exporter single-file export shell now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs`. Keep the
-single `.ts` export validation, seek, packet buffering, timestamp base
-normalization, and single-export lock release there.
+single `.ts` export validation, seek/setup, final output replacement, success
+result shaping, and single-export lock release there. Single-file packet
+allocation/read/remux, buffered timestamp-base flush, drift logging, and
+no-packet validation now live in
+`Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketWriting.cs`.
 
 Flashback exporter multi-segment packet-copy/remux behavior now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Segments.cs`. Keep segment
