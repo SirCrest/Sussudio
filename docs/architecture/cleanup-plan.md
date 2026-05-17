@@ -634,10 +634,9 @@ owns D3D reinit disposal, unsafe-window telemetry, stop tick accounting, fresh
 SwapChainPanel replacement, and retired-renderer handoff during D3D renderer
 mode switches. `MainWindow.PreviewRenderer.cs` is the XAML-facing host/reinit
 adapter surface.
-`Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs` is the stable automation
-preview snapshot adapter over MainWindow UI dispatching.
-`Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns UI-thread-only preview
-state sampling. Read-only preview runtime snapshot construction now lives in
+`Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns the stable automation
+preview snapshot UI-dispatch adapter and UI-thread-only preview state sampling.
+Read-only preview runtime snapshot construction now lives in
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`,
 which owns preview-state composition and blank/stall suspicion.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs` owns

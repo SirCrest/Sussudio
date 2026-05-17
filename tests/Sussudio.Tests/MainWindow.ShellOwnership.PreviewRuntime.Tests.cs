@@ -64,7 +64,6 @@ static partial class Program
         var previewSurfaceText = ReadRepoFile("Sussudio/MainWindow.PreviewSurface.cs").Replace("\r\n", "\n");
         var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs").Replace("\r\n", "\n");
         var previewRendererStartupPlanBuilderText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererStartupPlanBuilder.cs").Replace("\r\n", "\n");
-        var previewRuntimeSnapshotDispatchText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
         var previewRuntimeD3DProjectionText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs").Replace("\r\n", "\n");
@@ -198,12 +197,11 @@ static partial class Program
         AssertContains(previewRendererStartupPlanBuilderText, "var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : settingsWidth;");
         AssertContains(previewRendererStartupPlanBuilderText, "var rendererFps = negotiatedFps > 0 ? negotiatedFps : settingsFps;");
 
-        AssertContains(previewRuntimeSnapshotDispatchText, "Automation preview snapshot adapter; dispatch/retry policy lives in WindowUiDispatchController.");
-        AssertContains(previewRuntimeSnapshotDispatchText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
-        AssertContains(previewRuntimeSnapshotDispatchText, "=> await WindowUiDispatchController.InvokeWithRetryAsync(");
-        AssertContains(previewRuntimeSnapshotDispatchText, "GetPreviewRuntimeSnapshot,");
-        AssertContains(previewRuntimeSnapshotDispatchText, "\"Failed to enqueue preview snapshot operation.\",");
-        AssertContains(previewRuntimeSnapshotDispatchText, "cancellationToken).ConfigureAwait(false);");
+        AssertContains(previewRuntimeSnapshotText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
+        AssertContains(previewRuntimeSnapshotText, "=> await WindowUiDispatchController.InvokeWithRetryAsync(");
+        AssertContains(previewRuntimeSnapshotText, "GetPreviewRuntimeSnapshot,");
+        AssertContains(previewRuntimeSnapshotText, "\"Failed to enqueue preview snapshot operation.\",");
+        AssertContains(previewRuntimeSnapshotText, "cancellationToken).ConfigureAwait(false);");
         AssertContains(previewRuntimeSnapshotText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
         AssertContains(previewRuntimeSnapshotText, "return PreviewRuntimeSnapshotController.Build(new PreviewRuntimeSnapshotInput");
         AssertContains(previewRuntimeSnapshotText, "D3DRenderer = _previewRendererHostController.Renderer,");
@@ -235,7 +233,6 @@ static partial class Program
         AssertDoesNotContain(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
         AssertDoesNotContain(previewRendererText, "var negotiatedWidth = sourceProbe.SessionActive ? sourceProbe.CurrentWidth : 0;");
         AssertDoesNotContain(previewRendererText, "var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : width;");
-        AssertDoesNotContain(previewRuntimeSnapshotText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
         AssertDoesNotContain(previewRuntimeSnapshotText, "TaskCompletionSource<PreviewRuntimeSnapshot>");
         AssertDoesNotContain(previewRuntimeSnapshotText, "return new PreviewRuntimeSnapshot");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetRenderCpuTimingMetrics()");
@@ -243,11 +240,10 @@ static partial class Program
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetDxgiFrameStatisticsMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetFrameLatencyWaitMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetPipelineLatencyMetrics()");
-        AssertDoesNotContain(previewRuntimeSnapshotDispatchText, "TaskCompletionSource<PreviewRuntimeSnapshot>");
-        AssertDoesNotContain(previewRuntimeSnapshotDispatchText, "_dispatcherQueue.TryEnqueue");
-        AssertDoesNotContain(previewRuntimeSnapshotDispatchText, "const int maxAttempts = 3;");
-        AssertDoesNotContain(previewRuntimeSnapshotDispatchText, "completion.TrySetResult(GetPreviewRuntimeSnapshot());");
-        AssertDoesNotContain(previewRuntimeSnapshotDispatchText, "await Task.Delay(50, cancellationToken).ConfigureAwait(false);");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "_dispatcherQueue.TryEnqueue");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "const int maxAttempts = 3;");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "completion.TrySetResult(GetPreviewRuntimeSnapshot());");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "await Task.Delay(50, cancellationToken).ConfigureAwait(false);");
         AssertDoesNotContain(mainWindowFamilyText, "private SoftwareBitmapSource? _previewSource;");
         AssertDoesNotContain(mainWindowFamilyText, "private D3D11PreviewRenderer? _d3dRenderer;");
         AssertDoesNotContain(mainWindowText, "private SpriteVisual? _videoShadowVisual;");

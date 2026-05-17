@@ -1,3 +1,5 @@
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Sussudio.Controllers;
 using Sussudio.Models;
@@ -7,6 +9,12 @@ namespace Sussudio;
 // UI-thread automation/runtime snapshot sampling for diagnostics and MCP/CLI callers.
 public sealed partial class MainWindow
 {
+    private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
+        => await WindowUiDispatchController.InvokeWithRetryAsync(
+            GetPreviewRuntimeSnapshot,
+            "Failed to enqueue preview snapshot operation.",
+            cancellationToken).ConfigureAwait(false);
+
     private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()
     {
         var startupMissingSignals = PreviewStartupMissingSignals;
