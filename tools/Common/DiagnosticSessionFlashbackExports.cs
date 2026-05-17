@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 
 namespace Sussudio.Tools;
 
@@ -43,5 +44,22 @@ internal static partial class DiagnosticSessionFlashbackExports
             out var value)
             ? value
             : null;
+    }
+
+    internal static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath) =>
+        new()
+        {
+            ["filePath"] = filePath,
+            ["strict"] = true,
+            ["verificationProfile"] = "flashback-export"
+        };
+
+    internal static async Task CleanupFlashbackSelectionAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
+    {
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "clear-in-out-points" }, null)
+            .ConfigureAwait(false);
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
+            .ConfigureAwait(false);
     }
 }

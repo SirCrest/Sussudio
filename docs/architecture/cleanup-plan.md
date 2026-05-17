@@ -2687,12 +2687,13 @@ CPU timing summaries, `.PlaybackCommands.cs` owns playback command-health
 deltas, and `.Counters.cs` owns shared counter-delta helpers. Do not
 reintroduce an empty family root.
 
-Diagnostic-session Flashback export helpers now live in concrete
-`tools/Common/DiagnosticSessionFlashbackExports*.cs` partial owners. Strict
-export verification payload construction, rotated-export segment-count parsing,
-range-selection cleanup, and the range export audio-switch companion command
-each live in a named partial. Scenario command sequencing lives in separate
-scenario owners. Do not reintroduce an empty family root.
+Diagnostic-session Flashback export helpers now live in
+`tools/Common/DiagnosticSessionFlashbackExports.cs`, which owns strict export
+verification payload construction, rotated-export segment-count parsing, and
+range-selection cleanup. `DiagnosticSessionFlashbackExports.AudioSwitch.cs`
+owns the range export audio-switch companion command because it performs a
+stateful toggle/restore workflow. Scenario command sequencing lives in separate
+scenario owners.
 
 Diagnostic-session Flashback export scenarios now live in a focused partial
 family of named owners. Concurrent export, disable-during-export, rotated
@@ -2852,10 +2853,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackCycleScenarios.Restart.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Registrations.cs`
+- `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExports.AudioSwitch.cs`
-- `DiagnosticSessionFlashbackExports.SegmentCount.cs`
-- `DiagnosticSessionFlashbackExports.SelectionCleanup.cs`
-- `DiagnosticSessionFlashbackExports.VerifyPayload.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
