@@ -2197,7 +2197,8 @@ Primary current owners:
   `MainViewModel.Disposal.cs` owns bounded teardown, event unsubscription, and
   export-cancellation cleanup.
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing capture runtime,
-  health, recording, and probe snapshot projection.
+  health, and recording snapshot projection. `MainViewModel.AutomationProbes.cs`
+  owns automation-facing source/preview probes and preview frame capture.
   `MainViewModel.ViewModelRuntimeSnapshot.cs` owns automation-facing view-model runtime snapshot UI-thread capture.
   `ViewModelRuntimeSnapshotBuilder.cs` owns pure view-model runtime snapshot DTO construction.
   `MainViewModel.AutomationOptionsSnapshot.cs` owns automation-facing options

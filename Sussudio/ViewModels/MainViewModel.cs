@@ -122,6 +122,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Recording lifecycle automation: MainViewModel.AutomationRecordingLifecycle.cs
     // Audio automation: MainViewModel.AutomationAudio.cs; microphone automation: MainViewModel.AutomationMicrophone.cs
     // HDR automation: MainViewModel.AutomationHdr.cs
+    // Automation snapshots: MainViewModel.AutomationSnapshots.cs; probes: MainViewModel.AutomationProbes.cs
     // Automation options projection: MainViewModel.AutomationOptionsSnapshot.cs
     // Device-selection automation: MainViewModel.AutomationDeviceSelection.cs; audio-input automation: MainViewModel.AutomationAudioInputSelection.cs
     // Capture-mode automation: MainViewModel.AutomationCaptureMode.cs; frame rate: MainViewModel.AutomationFrameRate.cs; video format: MainViewModel.AutomationVideoFormat.cs; MJPEG decoder count: MainViewModel.AutomationMjpegDecoderCount.cs

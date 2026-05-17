@@ -2980,9 +2980,10 @@ Remaining `tools/Common` ownership:
    path, counters, and transition flags now live in
    `MainViewModel.RecordingState.cs`. Bounded teardown and event unsubscription now live
    in `MainViewModel.Disposal.cs`. Automation-facing capture runtime, health,
-   recording, and probe snapshot projection now lives in
-   `MainViewModel.AutomationSnapshots.cs`; automation-facing view-model runtime
-   snapshot UI-thread capture now lives in
+   and recording snapshot projection now lives in
+   `MainViewModel.AutomationSnapshots.cs`; source/preview probes and preview
+   frame capture live in `MainViewModel.AutomationProbes.cs`; automation-facing
+   view-model runtime snapshot UI-thread capture now lives in
    `MainViewModel.ViewModelRuntimeSnapshot.cs`; pure view-model runtime snapshot DTO
    construction lives in `ViewModelRuntimeSnapshotBuilder.cs`;
    automation options UI-thread snapshot capture now lives in
