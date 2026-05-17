@@ -18,6 +18,10 @@ static partial class Program
             SignalAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.cs"),
             FlashbackAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackAlerts.cs"),
             FlashbackRecordingAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs"),
+            FlashbackRecordingAlertsExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.Export.cs"),
+            FlashbackRecordingAlertsStorageText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.Storage.cs"),
+            FlashbackRecordingAlertsEncoderText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.Encoder.cs"),
+            FlashbackRecordingAlertsDegradationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.Degradation.cs"),
             FlashbackPlaybackAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs"),
             FlashbackPlaybackCommandAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackCommandAlerts.cs"),
             FlashbackPlaybackPerformanceAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.cs"),
@@ -109,6 +113,10 @@ static partial class Program
         public string SignalAlertsText { get; init; } = string.Empty;
         public string FlashbackAlertsText { get; init; } = string.Empty;
         public string FlashbackRecordingAlertsText { get; init; } = string.Empty;
+        public string FlashbackRecordingAlertsExportText { get; init; } = string.Empty;
+        public string FlashbackRecordingAlertsStorageText { get; init; } = string.Empty;
+        public string FlashbackRecordingAlertsEncoderText { get; init; } = string.Empty;
+        public string FlashbackRecordingAlertsDegradationText { get; init; } = string.Empty;
         public string FlashbackPlaybackAlertsText { get; init; } = string.Empty;
         public string FlashbackPlaybackCommandAlertsText { get; init; } = string.Empty;
         public string FlashbackPlaybackPerformanceAlertsText { get; init; } = string.Empty;
@@ -192,6 +200,10 @@ static partial class Program
                 SignalAlertsText,
                 FlashbackAlertsText,
                 FlashbackRecordingAlertsText,
+                FlashbackRecordingAlertsExportText,
+                FlashbackRecordingAlertsStorageText,
+                FlashbackRecordingAlertsEncoderText,
+                FlashbackRecordingAlertsDegradationText,
                 FlashbackPlaybackAlertsText,
                 FlashbackPlaybackCommandAlertsText,
                 FlashbackPlaybackPerformanceAlertsText,

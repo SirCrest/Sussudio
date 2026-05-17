@@ -196,7 +196,15 @@ transitions. `AutomationDiagnosticsHub.SignalAlerts.cs` owns preview, capture,
 audio-signal, and recording-growth alert rules.
 `AutomationDiagnosticsHub.FlashbackAlerts.cs` owns Flashback alert
 orchestration. `AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs` owns
-Flashback export, storage, encoder, and recording alert rules.
+Flashback recording alert orchestration and shared condition setup.
+`AutomationDiagnosticsHub.FlashbackRecordingAlerts.Export.cs` owns Flashback
+export progress and force-rotation gap alert rules.
+`AutomationDiagnosticsHub.FlashbackRecordingAlerts.Storage.cs` owns Flashback
+temp-cache pressure alert rules.
+`AutomationDiagnosticsHub.FlashbackRecordingAlerts.Encoder.cs` owns Flashback
+encoder failure alert rules.
+`AutomationDiagnosticsHub.FlashbackRecordingAlerts.Degradation.cs` owns
+Flashback recording path degradation alert rules.
 `AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs` owns Flashback playback
 alert orchestration. `AutomationDiagnosticsHub.FlashbackPlaybackCommandAlerts.cs`
 owns playback command queue and command failure alert rules.

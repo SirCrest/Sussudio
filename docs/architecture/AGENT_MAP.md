@@ -163,7 +163,15 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackAlerts.cs`
   owns Flashback alert orchestration.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs`
-  owns Flashback export, storage, encoder, and recording alert rules.
+  owns Flashback recording alert orchestration and shared condition setup.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackRecordingAlerts.Export.cs`
+  owns Flashback export progress and force-rotation gap alert rules.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackRecordingAlerts.Storage.cs`
+  owns Flashback temp-cache pressure alert rules.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackRecordingAlerts.Encoder.cs`
+  owns Flashback encoder failure alert rules.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackRecordingAlerts.Degradation.cs`
+  owns Flashback recording path degradation alert rules.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs`
   owns Flashback playback alert orchestration.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackCommandAlerts.cs`
