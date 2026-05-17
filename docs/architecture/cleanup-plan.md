@@ -1933,9 +1933,8 @@ visual-repeat drift result.
 Stats presentation DTO records/enums now live in
 `Sussudio/ViewModels/StatsPresentationModels.cs`.
 The UI stats snapshot contract lives in `Sussudio/ViewModels/StatsSnapshot.cs`;
-shell snapshot orchestration lives in `Sussudio/Controllers/Stats/StatsSnapshotProvider.cs`;
-renderer cadence/recent-sample acquisition lives in
-`Sussudio/Controllers/Stats/StatsSnapshotProvider.RenderMetrics.cs`; and projection
+shell snapshot orchestration plus renderer cadence/recent-sample acquisition
+lives in `Sussudio/Controllers/Stats/StatsSnapshotProvider.cs`; and projection
 from capture health, renderer metrics, and shell view state lives in
 `Sussudio/ViewModels/StatsSnapshotBuilder.cs`.
 Pure capture option construction lives in

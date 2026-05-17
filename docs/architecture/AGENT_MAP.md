@@ -1134,9 +1134,8 @@ Primary current owners:
   owns detached stats-window metric text and delegates dynamic telemetry detail
   rendering to `Sussudio/Controllers/Stats/StatsWindowTelemetryDetailsController.cs`.
   `Sussudio/Controllers/Stats/StatsSnapshotProvider.cs` owns shell stats snapshot
-  orchestration from capture-health, renderer metrics, and view state.
-  `Sussudio/Controllers/Stats/StatsSnapshotProvider.RenderMetrics.cs` owns renderer
-  cadence/recent-sample acquisition and null fallback policy.
+  orchestration from capture-health, renderer metrics, and view state, including
+  renderer cadence/recent-sample acquisition and null fallback policy.
   `Sussudio/MainWindow.StatsSnapshot.cs` is the XAML-facing adapter.
   `MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats overlay
   binding setup, stats dock visibility, polling, and refresh controllers.
