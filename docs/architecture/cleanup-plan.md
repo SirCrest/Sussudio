@@ -2265,16 +2265,14 @@ Responsive layout ownership checks live in
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
 the `Sussudio/Controllers/Capture/CaptureSelectionBindingController*.cs` family. The
-root controller owns the controller shell and context lifetime,
-`.Context.cs` owns the XAML control dependency bag, `.CollectionBindings.cs`
-owns capture/audio/microphone/encoder collection wiring, `.SelectionSync.cs` owns
-collection-change debounce/queued sync plus available-option property-change
-rebinding, `.DeviceSelection.cs` owns capture-device selection, pending-device
+root controller owns the controller shell, context lifetime, XAML control
+dependency bag, capture/audio/microphone/encoder collection wiring,
+collection-change debounce/queued sync, and available-option property-change
+rebinding. `.DeviceSelection.cs` owns capture-device selection, pending-device
 apply state, and mismatch logging, `.AudioSelection.cs` owns audio input and
 microphone selection, `.CaptureModeSelection.cs` owns resolution and frame-rate
 selection, `.RecordingSelection.cs` owns recording format/quality/preset/
-split-encode selection, `.StringSelection.cs` owns shared string ComboBox
-selection application,
+split-encode selection and shared string ComboBox selection application,
 `Sussudio/Controllers/Capture/CaptureComboBoxSelectionNormalizer.cs` owns pure capture/audio/microphone/
 resolution/frame-rate/string ComboBox selection and fallback matching, and
 `.DeviceAudio.cs` owns device-audio mode/gain projection. `.PropertyChanges.cs`
