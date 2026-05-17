@@ -6,6 +6,7 @@ static partial class Program
     {
         var resolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptions.cs").Replace("\r\n", "\n");
         var autoResolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionOptions.cs").Replace("\r\n", "\n");
+        var autoResolutionSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionSelection.cs").Replace("\r\n", "\n");
         var autoResolutionStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionState.cs").Replace("\r\n", "\n");
         var autoResolutionPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionPresentation.cs").Replace("\r\n", "\n");
         var selectionPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
@@ -24,8 +25,14 @@ static partial class Program
         AssertContains(resolutionOptionsText, "AvailableResolutions.Add(option);");
         AssertDoesNotContain(resolutionOptionsText, "private string GetSelectedResolutionDisplayText()");
         AssertDoesNotContain(resolutionOptionsText, "private bool TryResolveResolutionKey(");
-        AssertContains(autoResolutionOptionsText, "private AutoCaptureSelection? ResolveAutoCaptureSelection(");
-        AssertContains(autoResolutionOptionsText, "private ResolutionOption? SelectBestAutoResolutionCandidate(");
+        AssertContains(autoResolutionOptionsText, "private ResolutionOption CreateAutoResolutionOption()");
+        AssertContains(autoResolutionOptionsText, "private bool ShouldSelectAutoResolutionOption(");
+        AssertDoesNotContain(autoResolutionOptionsText, "private AutoCaptureSelection? ResolveAutoCaptureSelection(");
+        AssertDoesNotContain(autoResolutionOptionsText, "private ResolutionOption? SelectBestAutoResolutionCandidate(");
+        AssertContains(autoResolutionSelectionText, "/// Source-aware automatic resolution and frame-rate selection policy.");
+        AssertContains(autoResolutionSelectionText, "private AutoCaptureSelection? ResolveAutoCaptureSelection(");
+        AssertContains(autoResolutionSelectionText, "private ResolutionOption? SelectBestAutoResolutionCandidate(");
+        AssertContains(autoResolutionSelectionText, "private MediaFormat SelectPreferredAutoFrameRateFormat(");
         AssertDoesNotContain(autoResolutionOptionsText, "private void UpdateAutoResolutionState(");
         AssertDoesNotContain(autoResolutionOptionsText, "private void ClearAutoResolutionState()");
         AssertContains(autoResolutionStateText, "/// Effective Source resolution state and query helpers.");

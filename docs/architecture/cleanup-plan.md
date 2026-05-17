@@ -3048,8 +3048,10 @@ Remaining `tools/Common` ownership:
     `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.*.cs` family so
     frame-rate, resolution, mode-selection, late-probe, recording-format, and
     runtime-flag assertions stay near their matching policy owners.
-    Automatic resolution ranking and source-aware auto-selection now live in
-    `MainViewModel.AutoResolutionOptions.cs`; effective Source resolution state,
+    Automatic resolution dropdown option construction now lives in
+    `MainViewModel.AutoResolutionOptions.cs`; automatic resolution ranking and
+    source-aware frame-rate selection now live in
+    `MainViewModel.AutoResolutionSelection.cs`; effective Source resolution state,
    auto-value detection, and effective resolution query helpers live in
    `MainViewModel.AutoResolutionState.cs`; auto-resolution display text used by
    status and telemetry presentation lives in

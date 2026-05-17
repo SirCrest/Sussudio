@@ -145,7 +145,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Automatic frame-rate selection policy: MainViewModel.FrameRateAutoSelectionPolicy.cs
     // Frame-rate/mode selection state: MainViewModel.ModeSelectionState.cs
     // Frame-rate timing state wrappers: MainViewModel.FrameRateTiming.cs; pure timing policy: FrameRateTimingPolicy.cs
-    // Auto resolution options: MainViewModel.AutoResolutionOptions.cs
+    // Auto resolution options: MainViewModel.AutoResolutionOptions.cs; selection: MainViewModel.AutoResolutionSelection.cs
     // Resolution selection policy: MainViewModel.ResolutionSelectionPolicy.cs
     // Disposal / teardown: MainViewModel.Disposal.cs
     // Runtime status/timers: MainViewModel.Runtime.cs, MainViewModel.CaptureRuntimeEvents.cs, and MainViewModel.RecordingRuntime.cs
