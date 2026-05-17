@@ -2433,13 +2433,12 @@ so existing ssctl and MCP callers do not need to know about the formatter owner.
 Diagnostic-session result construction now lives in
 `tools/Common/DiagnosticSessionResultBuilder.cs`. The root owns result phase
 orchestration, artifact-write handoff, summary-write handoff, and final
-summary emission while the runner keeps the phase sequence.
-`DiagnosticSessionResultBuilder.Result.cs` owns final-result orchestration from
-analysis and artifact paths into the named projection set and flattening owner.
+summary emission while the runner keeps the phase sequence. It also owns
+final-result orchestration from analysis and artifact paths into the named
+projection set and flattening owner.
 `DiagnosticSessionResultBuilder.Flattening.cs` owns final
 `DiagnosticSessionResult` DTO assignment from the projection set; keep domain
-projection composition outside this initializer.
-`DiagnosticSessionResultBuilder.Composition.cs` owns result projection-set
+projection composition outside this initializer. The root owns projection-set
 assembly from overview, capture, Flashback, preview, D3D, and visual-cadence
 projection owners. Overview
 outcome policy plus process CPU, recording verification, and PresentMon DTO
@@ -2920,9 +2919,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionPostRunSnapshots.cs`
 - `DiagnosticSessionResultArtifacts.cs`
 - `DiagnosticSessionResultBuilder.cs`
-- `DiagnosticSessionResultBuilder.Result.cs`
 - `DiagnosticSessionResultBuilder.Flattening.cs`
-- `DiagnosticSessionResultBuilder.Composition.cs`
 - `DiagnosticSessionResultBuilder.OverviewResult.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`

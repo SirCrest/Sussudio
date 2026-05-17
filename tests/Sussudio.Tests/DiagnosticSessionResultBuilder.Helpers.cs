@@ -5,9 +5,7 @@ static partial class Program
         var files = new[]
         {
             "tools/Common/DiagnosticSessionResultBuilder.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.Result.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Flattening.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.Composition.cs",
             "tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Analysis.cs",
             "tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs",

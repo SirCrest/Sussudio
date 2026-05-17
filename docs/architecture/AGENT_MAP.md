@@ -2753,18 +2753,13 @@ Primary owners:
 - `tools/Common/DiagnosticSessionSample.cs` owns sampled snapshot DTOs.
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,
-  and final summary emission. Keep `summary.json` field shape stable in the
-  builder family.
-- `tools/Common/DiagnosticSessionResultBuilder.Result.cs` owns
-  diagnostic-session final-result orchestration from analysis and artifact
-  paths into the named projection set and flattening owner.
+  final summary emission, and final-result orchestration from analysis and
+  artifact paths into the named projection set and flattening owner. Keep
+  `summary.json` field shape stable in the builder family.
 - `tools/Common/DiagnosticSessionResultBuilder.Flattening.cs` owns final
   `DiagnosticSessionResult` DTO assignment from the projection set. Keep
-  domain projection composition in the projection owners and composition file,
-  not in this initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.Composition.cs` owns
-  diagnostic-session result projection-set assembly from overview, capture,
-  Flashback, preview, D3D, and visual-cadence projection owners.
+  domain projection composition in the projection owners and root projection-set
+  assembly, not in this initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.OverviewResult.cs` owns
   diagnostic-session outcome policy plus overview DTO projection for process
   CPU, recording verification, and PresentMon fields.

@@ -2,11 +2,9 @@ static partial class Program
 {
     private static void AssertDiagnosticSessionResultBuilderPreviewProjectionOwnership()
     {
-        var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Result.cs")
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
-            .Replace("\r\n", "\n");
-        var compositionText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Composition.cs")
             .Replace("\r\n", "\n");
         var previewD3DResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs")
             .Replace("\r\n", "\n");
@@ -15,11 +13,11 @@ static partial class Program
         var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(resultText, "return FlattenResultProjectionSet(");
+        AssertContains(builderText, "return FlattenResultProjectionSet(");
         AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
-        AssertContains(compositionText, "Preview: BuildPreviewResultProjection(analysis)");
-        AssertContains(compositionText, "PreviewD3D: BuildPreviewD3DResultProjection(analysis)");
-        AssertContains(compositionText, "PreviewVisualCadence: BuildPreviewVisualCadenceResultProjection(analysis)");
+        AssertContains(builderText, "Preview: BuildPreviewResultProjection(analysis)");
+        AssertContains(builderText, "PreviewD3D: BuildPreviewD3DResultProjection(analysis)");
+        AssertContains(builderText, "PreviewVisualCadence: BuildPreviewVisualCadenceResultProjection(analysis)");
         AssertContains(flatteningText, "var previewResult = resultProjections.Preview;");
         AssertContains(flatteningText, "var previewD3DResult = resultProjections.PreviewD3D;");
         AssertContains(flatteningText, "var previewVisualCadenceResult = resultProjections.PreviewVisualCadence;");
