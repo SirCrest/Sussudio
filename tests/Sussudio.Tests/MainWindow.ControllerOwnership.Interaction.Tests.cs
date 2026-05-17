@@ -40,7 +40,7 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var liveSignalAdapterText = ReadRepoFile("Sussudio/MainWindow.LiveSignalInfo.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
-        var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
+        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/LiveSignalInfoController.cs").Replace("\r\n", "\n");
 
         AssertContains(liveSignalAdapterText, "private LiveSignalInfoController _liveSignalInfoController = null!;");
@@ -54,7 +54,7 @@ static partial class Program
         AssertContains(liveSignalAdapterText, "=> _liveSignalInfoController.StopTimers();");
         AssertContains(mainWindowText, "InitializeLiveSignalInfoController();");
         AssertContains(bindingsText, "UpdateLiveSignalInfoVisibility();");
-        AssertContains(shutdownCleanupText, "StopLiveSignalInfoTimers();");
+        AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");
         AssertContains(controllerText, "internal sealed class LiveSignalInfoController");
         AssertContains(controllerText, "private DispatcherQueueTimer? _showDebounceTimer;");
         AssertContains(controllerText, "private DispatcherQueueTimer? _hideDebounceTimer;");
@@ -358,7 +358,7 @@ static partial class Program
         var adapterText = ReadRepoFile("Sussudio/MainWindow.MicrophoneControls.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
-        var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
+        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Audio/MicrophoneControlsController.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerInitialStateText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.InitialState.cs").Replace("\r\n", "\n");
         var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlPresentationController.cs").Replace("\r\n", "\n");
@@ -383,7 +383,7 @@ static partial class Program
         AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandleMicrophoneVolumeChanged();");
         AssertContains(audioControlPresentationControllerText, "_context.UpdateMicrophoneControlsVisibility();");
         AssertContains(audioControlPresentationControllerText, "_context.SyncMicrophoneVolumeControls(_context.ViewModel.MicrophoneVolume);");
-        AssertContains(shutdownCleanupText, "StopMicMeterRowAnimation();");
+        AssertContains(shutdownCleanupControllerText, "_context.StopRecordingVisuals();");
         AssertContains(controllerText, "internal sealed class MicrophoneControlsController");
         AssertContains(controllerText, "private bool _syncingVolumeControls;");
         AssertContains(controllerText, "private Storyboard? _activeRowStoryboard;");

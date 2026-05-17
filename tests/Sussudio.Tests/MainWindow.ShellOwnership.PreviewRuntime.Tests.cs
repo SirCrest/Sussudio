@@ -9,6 +9,7 @@ static partial class Program
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs").Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
+        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
 
         AssertContains(windowSizingText, "private PreviewResizeTelemetryController _previewResizeTelemetryController = null!;");
@@ -22,7 +23,9 @@ static partial class Program
         AssertContains(windowSizingText, "=> _previewResizeTelemetryController.Reset();");
         AssertContains(mainWindowText, "InitializePreviewResizeTelemetryController();");
         AssertContains(mainWindowText, "mainContent.SizeChanged += MainWindow_SizeChanged;");
+        AssertContains(shutdownCleanupText, "private void DetachMainContentSizeChanged()");
         AssertContains(shutdownCleanupText, "mainContent.SizeChanged -= MainWindow_SizeChanged;");
+        AssertContains(shutdownCleanupControllerText, "_context.DetachMainContentSizeChanged();");
         AssertContains(previewRendererText, "ResetPreviewResizeTelemetry = ResetPreviewResizeTelemetry,");
         AssertContains(controllerText, "internal sealed class PreviewResizeTelemetryController");
         AssertContains(controllerText, "private long _previewLastResizeLogTick;");

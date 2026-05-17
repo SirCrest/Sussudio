@@ -36,6 +36,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeStatsSnapshotProvider();
         InitializeStatsOverlayController();
         InitializeStatsSectionChromeController();
+        InitializeWindowShutdownCleanupController();
 
         var appWindow = InitializeNativeShellWindow();
         RegisterCloseLifecycle(appWindow);

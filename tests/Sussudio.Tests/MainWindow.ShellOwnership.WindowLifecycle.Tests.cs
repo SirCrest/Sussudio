@@ -15,6 +15,7 @@ static partial class Program
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var closeRequestControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRequestController.cs").Replace("\r\n", "\n");
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs").Replace("\r\n", "\n");
+        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
         var stopBeforeCloseMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task<bool> StopBeforeCloseAsync(");
@@ -52,6 +53,7 @@ static partial class Program
             "Sussudio/Controllers/Window/WindowCloseLifecycleController.cs",
             "Sussudio/Controllers/Window/WindowCloseRequestController.cs",
             "Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs",
+            "Sussudio/Controllers/Window/WindowShutdownCleanupController.cs",
             "Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs",
             "Sussudio/MainWindow.CloseLifecycle.cs",
             "Sussudio/MainWindow.ShutdownCleanup.cs",
@@ -88,9 +90,12 @@ static partial class Program
         AssertContains(closeLifecycleText, "CompleteWindowCloseRequest(new InvalidOperationException(ViewModel.StatusText));");
         AssertContains(closeLifecycleText, "RequestWindowClose();");
         AssertContains(shutdownCleanupText, "Post-close shutdown cleanup");
+        AssertContains(shutdownCleanupText, "private WindowShutdownCleanupController _windowShutdownCleanupController = null!;");
+        AssertContains(shutdownCleanupText, "private void InitializeWindowShutdownCleanupController()");
         AssertContains(shutdownCleanupText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");
-        AssertContains(shutdownCleanupText, "await _windowCloseRecordingFinalizationController.StopAfterClosedBestEffortAsync(");
-        AssertContains(shutdownCleanupText, "await DisposeAutomationHostAsync();");
+        AssertContains(shutdownCleanupText, "=> await _windowShutdownCleanupController.RunAsync();");
+        AssertContains(shutdownCleanupText, "StopRecordingAfterClosedBestEffortAsync = () => _windowCloseRecordingFinalizationController.StopAfterClosedBestEffortAsync(");
+        AssertContains(shutdownCleanupText, "DisposeAutomationHostAsync = DisposeAutomationHostAsync,");
         AssertContains(automationHostAdapterText, "private ValueTask DisposeAutomationHostAsync()");
         AssertContains(automationHostAdapterText, "=> _automationHostLifecycleController.DisposeAsync();");
         AssertContains(automationHostControllerText, "public async ValueTask DisposeAsync()");
@@ -100,7 +105,33 @@ static partial class Program
         AssertContains(automationHostControllerText, "Logger.Log($\"Automation diagnostics shutdown cleanup failed: {ex.Message}\");");
         AssertOccursBefore(automationHostControllerText, "await _pipeServer.DisposeAsync();", "await _diagnosticsHub.DisposeAsync();");
         AssertOccursBefore(automationHostControllerText, "Logger.Log($\"Automation shutdown cleanup failed: {ex.Message}\");", "await _diagnosticsHub.DisposeAsync();");
-        AssertOccursBefore(shutdownCleanupText, "CompleteWindowCloseRequest();", "_windowCloseLifecycleController.MarkClosing();");
+        AssertContains(shutdownCleanupControllerText, "internal sealed class WindowShutdownCleanupControllerContext");
+        AssertContains(shutdownCleanupControllerText, "internal sealed class WindowShutdownCleanupController");
+        AssertContains(shutdownCleanupControllerText, "public async Task RunAsync()");
+        AssertContains(shutdownCleanupControllerText, "_context.CancelNativeShellRevealAfterFirstFrame();");
+        AssertContains(shutdownCleanupControllerText, "if (!_context.LifecycleController.TryBeginCleanup())");
+        AssertContains(shutdownCleanupControllerText, "LogWindowClosedTrigger();");
+        AssertContains(shutdownCleanupControllerText, "_context.CompleteWindowCloseRequest();");
+        AssertContains(shutdownCleanupControllerText, "_context.LifecycleController.MarkClosing();");
+        AssertContains(shutdownCleanupControllerText, "_context.DetachMeterActivationHandlers();");
+        AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");
+        AssertContains(shutdownCleanupControllerText, "_context.StopStatsOverlay();");
+        AssertContains(shutdownCleanupControllerText, "_context.StopRecordingVisuals();");
+        AssertContains(shutdownCleanupControllerText, "_context.DetachMainContentSizeChanged();");
+        AssertContains(shutdownCleanupControllerText, "_context.DetachViewModelEventHandlers();");
+        AssertContains(shutdownCleanupControllerText, "_context.StopPreviewForShutdown();");
+        AssertContains(shutdownCleanupControllerText, "_context.ResetPreviewStartupTracking();");
+        AssertContains(shutdownCleanupControllerText, "await _context.StopRecordingAfterClosedBestEffortAsync().ConfigureAwait(false);");
+        AssertContains(shutdownCleanupControllerText, "await _context.DisposeAutomationHostAsync().ConfigureAwait(false);");
+        AssertContains(shutdownCleanupControllerText, "_context.DisposeNvmlMonitor();");
+        AssertContains(shutdownCleanupControllerText, "await _context.DisposeViewModelAsync().ConfigureAwait(false);");
+        AssertOccursBefore(shutdownCleanupControllerText, "_context.CancelNativeShellRevealAfterFirstFrame();", "if (!_context.LifecycleController.TryBeginCleanup())");
+        AssertOccursBefore(shutdownCleanupControllerText, "_context.CompleteWindowCloseRequest();", "_context.LifecycleController.MarkClosing();");
+        AssertOccursBefore(shutdownCleanupControllerText, "_context.LifecycleController.MarkClosing();", "_context.DetachMeterActivationHandlers();");
+        AssertOccursBefore(shutdownCleanupControllerText, "_context.DetachViewModelEventHandlers();", "_context.StopPreviewForShutdown();");
+        AssertOccursBefore(shutdownCleanupControllerText, "_context.ResetPreviewStartupTracking();", "await _context.StopRecordingAfterClosedBestEffortAsync().ConfigureAwait(false);");
+        AssertOccursBefore(shutdownCleanupControllerText, "await _context.StopRecordingAfterClosedBestEffortAsync().ConfigureAwait(false);", "await _context.DisposeAutomationHostAsync().ConfigureAwait(false);");
+        AssertOccursBefore(shutdownCleanupControllerText, "await _context.DisposeAutomationHostAsync().ConfigureAwait(false);", "_context.DisposeNvmlMonitor();");
         AssertContains(closeLifecycleText, "public Task CloseAsync(CancellationToken cancellationToken = default)");
         AssertContains(closeLifecycleText, "=> _windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken);");
         AssertContains(closeLifecycleText, "private void RequestWindowClose()");
@@ -161,11 +192,7 @@ static partial class Program
         AssertContains(shutdownCleanupText, "StopLiveSignalInfoTimers();");
         AssertContains(shutdownCleanupText, "StopMicMeterRowAnimation();");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
-        AssertContains(shutdownCleanupText, "CancelNativeShellRevealAfterFirstFrame();");
-        AssertOccursBefore(
-            shutdownCleanupText,
-            "CancelNativeShellRevealAfterFirstFrame();",
-            "if (!_windowCloseLifecycleController.TryBeginCleanup())");
+        AssertContains(shutdownCleanupText, "CancelNativeShellRevealAfterFirstFrame = CancelNativeShellRevealAfterFirstFrame,");
         AssertContains(nativeWindowText, "private readonly NativeWindowBootstrapController _nativeWindowBootstrapController = new();");
         AssertContains(nativeWindowText, "private IntPtr _hwnd;");
         AssertContains(nativeWindowText, "private AppWindow InitializeNativeShellWindow()");
@@ -218,9 +245,11 @@ static partial class Program
         AssertContains(mainWindowText, "ViewModel = new MainViewModel();");
         AssertContains(mainWindowText, "InitializeWindowCloseRequestController();");
         AssertOccursBefore(mainWindowText, "ViewModel = new MainViewModel();", "InitializeWindowCloseRequestController();");
+        AssertContains(mainWindowText, "InitializeWindowShutdownCleanupController();");
         AssertOccursBefore(mainWindowText, "InitializeWindowCloseRequestController();", "_automationHostLifecycleController = new WindowAutomationHostLifecycleController(");
         AssertContains(mainWindowText, "var appWindow = InitializeNativeShellWindow();");
         AssertContains(mainWindowText, "RegisterCloseLifecycle(appWindow);");
+        AssertOccursBefore(mainWindowText, "InitializeWindowShutdownCleanupController();", "RegisterCloseLifecycle(appWindow);");
         AssertOccursBefore(mainWindowText, "InitializeWindowCloseRequestController();", "RegisterCloseLifecycle(appWindow);");
         AssertContains(mainWindowText, "InitializeShellControllers();");
         AssertContains(mainWindowText, "Closed += MainWindow_Closed;");
@@ -246,6 +275,7 @@ static partial class Program
         AssertDoesNotContain(shutdownCleanupText, "Task.WhenAny(");
         AssertDoesNotContain(shutdownCleanupText, "StopBudgetMs");
         AssertDoesNotContain(shutdownCleanupText, "StopRecordingAndWaitAsync");
+        AssertDoesNotContain(shutdownCleanupText, "WINDOW_CLOSED_TRIGGER ");
         AssertDoesNotContain(shutdownCleanupText, "_automationPipeServer.DisposeAsync()");
         AssertDoesNotContain(shutdownCleanupText, "_automationDiagnosticsHub.DisposeAsync()");
         AssertDoesNotContain(closeLifecycleText, "private Microsoft.UI.Windowing.AppWindow GetAppWindow()");

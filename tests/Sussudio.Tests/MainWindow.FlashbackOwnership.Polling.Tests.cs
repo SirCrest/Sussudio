@@ -9,6 +9,7 @@ static partial class Program
         var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPolling.cs").Replace("\r\n", "\n");
         var timelineAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackTimeline.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
+        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPollingController.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
 
@@ -23,6 +24,7 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
         AssertContains(timelineAdapterText, "StartStatusPolling = StartFlashbackStatusPolling,");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
+        AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");
         AssertContains(flashbackText, "StartPlaybackPolling = StartFlashbackPlaybackPolling,");
         AssertContains(flashbackText, "StopPlaybackPolling = StopFlashbackPlaybackPolling,");
         AssertContains(playbackCoordinatorText, "_context.StartPlaybackPolling();");

@@ -7,6 +7,7 @@ static partial class Program
         var frameTimeOverlayText = ReadRepoFile("Sussudio/MainWindow.FrameTimeOverlay.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
+        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.cs").Replace("\r\n", "\n");
         var dockAnimationText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.DockAnimation.cs").Replace("\r\n", "\n");
@@ -27,6 +28,7 @@ static partial class Program
         AssertContains(statsOverlayText, "=> _statsOverlayController.DetachToggleBindings();");
         AssertContains(shutdownCleanupText, "DetachStatsOverlayToggleBindings();");
         AssertOccursBefore(shutdownCleanupText, "DetachStatsOverlayToggleBindings();", "StopStatsDockPolling();");
+        AssertContains(shutdownCleanupControllerText, "_context.StopStatsOverlay();");
         AssertContains(statsOverlayText, "=> _statsOverlayController.SyncStatsVisibility(visible, immediate);");
         AssertContains(statsOverlayText, "=> _statsOverlayController.SetFrameTimeOverlayVisible(visible);");
         AssertContains(frameTimeOverlayText, "private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;");

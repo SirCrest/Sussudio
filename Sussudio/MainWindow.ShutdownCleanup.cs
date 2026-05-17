@@ -1,5 +1,5 @@
 using Microsoft.UI.Xaml;
-using System;
+using Sussudio.Controllers;
 
 namespace Sussudio;
 
@@ -8,84 +8,80 @@ namespace Sussudio;
 // WindowCloseLifecycleController.
 public sealed partial class MainWindow
 {
-    private async void MainWindow_Closed(object sender, WindowEventArgs args)
+    private WindowShutdownCleanupController _windowShutdownCleanupController = null!;
+
+    private void InitializeWindowShutdownCleanupController()
     {
-        CancelNativeShellRevealAfterFirstFrame();
-
-        if (!_windowCloseLifecycleController.TryBeginCleanup())
+        _windowShutdownCleanupController = new WindowShutdownCleanupController(new WindowShutdownCleanupControllerContext
         {
-            return;
-        }
+            LifecycleController = _windowCloseLifecycleController,
+            IsRecording = () => ViewModel.IsRecording,
+            IsPreviewing = () => ViewModel.IsPreviewing,
+            CancelNativeShellRevealAfterFirstFrame = CancelNativeShellRevealAfterFirstFrame,
+            CompleteWindowCloseRequest = () => CompleteWindowCloseRequest(),
+            DetachMeterActivationHandlers = DetachMeterActivationHandlers,
+            StopTimers = StopShutdownTimers,
+            StopStatsOverlay = StopStatsOverlayForShutdown,
+            StopRecordingVisuals = StopRecordingVisualsForShutdown,
+            DetachMainContentSizeChanged = DetachMainContentSizeChanged,
+            DetachViewModelEventHandlers = DetachViewModelEventHandlers,
+            StopPreviewForShutdown = StopPreviewForShutdown,
+            ResetPreviewStartupTracking = () => ResetPreviewStartupTracking(),
+            StopRecordingAfterClosedBestEffortAsync = () => _windowCloseRecordingFinalizationController.StopAfterClosedBestEffortAsync(
+                ViewModel,
+                Content as FrameworkElement),
+            DisposeAutomationHostAsync = DisposeAutomationHostAsync,
+            DisposeNvmlMonitor = () => _nvmlMonitor?.Dispose(),
+            DisposeViewModelAsync = ViewModel.DisposeAsync
+        });
+    }
 
-        try
-        {
-            var snapshot = _windowCloseLifecycleController.Snapshot;
-            Logger.Log(
-                "WINDOW_CLOSED_TRIGGER " +
-                $"requested={snapshot.Requested} " +
-                $"recordingStopInProgress={snapshot.RecordingStopInProgress} " +
-                $"allowedAfterRecordingStop={snapshot.AllowedAfterRecordingStop} " +
-                $"isRecording={ViewModel.IsRecording} " +
-                $"isPreviewing={ViewModel.IsPreviewing} " +
-                $"stack=\n{new System.Diagnostics.StackTrace(true)}");
-        }
-        catch (Exception logEx)
-        {
-            System.Diagnostics.Trace.TraceWarning($"WINDOW_CLOSED_TRIGGER log failed: {logEx.Message}");
-        }
+    private async void MainWindow_Closed(object sender, WindowEventArgs args)
+        => await _windowShutdownCleanupController.RunAsync();
 
-        CompleteWindowCloseRequest();
-        _windowCloseLifecycleController.MarkClosing();
+    private void DetachMeterActivationHandlers()
+    {
         ViewModel.AudioMeterActivated -= EnsureAudioMeterTimerRunning;
         ViewModel.MicrophoneMeterActivated -= EnsureAudioMeterTimerRunning;
+    }
+
+    private void StopShutdownTimers()
+    {
         StopAudioMeterTimer();
         StopLiveSignalInfoTimers();
         StopFullScreenAutoHideTimer();
         StopFlashbackStatusPolling();
+    }
+
+    private void StopStatsOverlayForShutdown()
+    {
         DetachStatsOverlayToggleBindings();
         StopStatsDockPolling();
         HideStatsDockPanel(immediate: true);
+    }
+
+    private void StopRecordingVisualsForShutdown()
+    {
         StopMicMeterRowAnimation();
         RecordingGlowPulseStoryboard.Stop();
         RecordingGlowBorder.Opacity = 0;
         RecPulseStoryboard.Stop();
+    }
 
-        if (this.Content is FrameworkElement mainContent)
+    private void DetachMainContentSizeChanged()
+    {
+        if (Content is FrameworkElement mainContent)
         {
             mainContent.SizeChanged -= MainWindow_SizeChanged;
         }
+    }
 
+    private void DetachViewModelEventHandlers()
+    {
         ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
         ViewModel.PreviewStartRequested -= ViewModel_PreviewStartRequested;
         ViewModel.PreviewStopRequested -= ViewModel_PreviewStopRequested;
         ViewModel.PreviewReinitRequested -= ViewModel_PreviewReinitRequested;
         ViewModel.PreviewRendererStopRequested -= ViewModel_PreviewRendererStopRequested;
-
-        try
-        {
-            StopPreviewForShutdown();
-            ResetPreviewStartupTracking();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Preview shutdown cleanup failed: {ex.Message}");
-        }
-
-        await _windowCloseRecordingFinalizationController.StopAfterClosedBestEffortAsync(
-            ViewModel,
-            Content as FrameworkElement);
-
-        await DisposeAutomationHostAsync();
-
-        _nvmlMonitor?.Dispose();
-
-        try
-        {
-            await ViewModel.DisposeAsync();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"ViewModel dispose during window close failed: {ex.Message}");
-        }
     }
 }
