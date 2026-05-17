@@ -34,7 +34,7 @@ static partial class Program
             AutomationCommandDispatcher_WaitAndAssertCommands_LiveWithSupportOwners);
         await AddCheckAsync(results,
             "Automation dispatcher trivial handler payload fields match catalog",
-            AutomationCommandDispatcher_TrivialHandlers_MatchCatalogPayloadFields);
+            AutomationCommandDispatcher_OneFieldHandlers_MatchCatalogPayloadFields);
         await AddCheckAsync(results,
             "Automation dispatcher audio control commands live in focused partial",
             AutomationCommandDispatcher_AudioControlCommands_LiveInFocusedPartial);
@@ -54,8 +54,8 @@ static partial class Program
             "Automation dispatcher introspection commands live in focused partial",
             AutomationCommandDispatcher_IntrospectionCommands_LiveInFocusedPartial);
         await AddCheckAsync(results,
-            "Automation dispatcher custom router owns stats section visibility command",
-            AutomationCommandDispatcher_CustomCommands_OwnStatsSectionVisibilityCommand);
+            "Automation dispatcher UI settings commands live in focused partial",
+            AutomationCommandDispatcher_UiSettingsCommands_OwnUiSettingsApplication);
         await AddCheckAsync(results,
             "Automation dispatcher window close waits for completion",
             AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion);

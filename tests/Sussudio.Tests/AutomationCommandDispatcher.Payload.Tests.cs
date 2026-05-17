@@ -155,18 +155,14 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task AutomationCommandDispatcher_TrivialHandlers_MatchCatalogPayloadFields()
+    private static Task AutomationCommandDispatcher_OneFieldHandlers_MatchCatalogPayloadFields()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
-        var handlersField = dispatcherType.GetField(
-            "TrivialHandlers",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("TrivialHandlers not found.");
-        var handlers = ((IEnumerable)handlersField.GetValue(null)!)
-            .Cast<object>()
+        var handlers = GetHandlerEntries(dispatcherType, "TrivialHandlers")
+            .Concat(GetHandlerEntries(dispatcherType, "UiSettingsHandlers"))
             .ToArray();
 
-        AssertEqual(true, handlers.Length > 0, "dispatcher trivial handler table is not empty");
+        AssertEqual(true, handlers.Length > 0, "dispatcher one-field handler tables are not empty");
 
         foreach (var entry in handlers)
         {
@@ -180,14 +176,25 @@ static partial class Program
             var catalogMetadata = GetAutomationCommandCatalogMetadata(kind);
             var catalogPayloadFields = GetMetadataCollection(catalogMetadata, "PayloadFields");
 
-            AssertEqual(1, catalogPayloadFields.Length, $"{commandName} trivial catalog payload field count");
+            AssertEqual(1, catalogPayloadFields.Length, $"{commandName} one-field catalog payload field count");
             var catalogPayloadField = catalogPayloadFields[0];
-            AssertEqual(handlerPayloadFieldName, (string)GetMetadataProperty(catalogPayloadField, "Name")!, $"{commandName} trivial payload field name");
-            AssertEqual(handlerPayloadFieldType, GetMetadataProperty(catalogPayloadField, "Type")!.ToString(), $"{commandName} trivial payload field type");
-            AssertEqual(true, (bool)GetMetadataProperty(catalogPayloadField, "Required")!, $"{commandName} trivial payload field required");
+            AssertEqual(handlerPayloadFieldName, (string)GetMetadataProperty(catalogPayloadField, "Name")!, $"{commandName} one-field payload field name");
+            AssertEqual(handlerPayloadFieldType, GetMetadataProperty(catalogPayloadField, "Type")!.ToString(), $"{commandName} one-field payload field type");
+            AssertEqual(true, (bool)GetMetadataProperty(catalogPayloadField, "Required")!, $"{commandName} one-field payload field required");
         }
 
         return Task.CompletedTask;
+
+        static object[] GetHandlerEntries(Type dispatcherType, string fieldName)
+        {
+            var handlersField = dispatcherType.GetField(
+                fieldName,
+                BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException($"{fieldName} not found.");
+            return ((IEnumerable)handlersField.GetValue(null)!)
+                .Cast<object>()
+                .ToArray();
+        }
 
         static object GetAutomationCommandCatalogMetadata(object kind)
         {

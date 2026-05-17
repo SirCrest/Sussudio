@@ -256,8 +256,11 @@ Automation command dispatch now keeps the root router focused on the command
 envelope: manifest revision checks, auth/readiness gates, trivial-handler
 dispatch, and error shaping. `AutomationCommandDispatcher.CustomCommands.cs`
 owns the custom command switch/router for commands that need multi-field
-payloads, special response shapes, capture/Flashback routing, or singleton UI
-settings command bodies that do not justify their own focused partial.
+payloads, special response shapes, capture/Flashback routing, or domain command
+handoff. `AutomationCommandDispatcher.UiSettingsCommands.cs` owns UI/settings
+automation command application, including show-all capture options, preview
+volume, stats visibility, settings visibility, frame-time overlay visibility,
+Flashback timeline visibility, and stats-section expand/collapse response text.
 `AutomationCommandDispatcher.AudioControlCommands.cs` owns device-audio mode,
 analog audio gain, and microphone-enable command bodies behind the custom
 command router.
@@ -282,7 +285,7 @@ preview-color probe, preview-frame capture, window screenshot capture, default
 capture output paths, and capture response status shaping behind the custom
 command router.
 `AutomationCommandDispatcher.TrivialHandlers.cs` owns the simple one-property
-command table. Named partials own support responsibilities:
+capture and pipeline command table. Named partials own support responsibilities:
 `AutomationCommandDispatcher.Authorization.cs` handles auth-token lookup and
 constant-time comparison;
 `AutomationCommandDispatcher.CommandParsing.cs` handles command metadata,

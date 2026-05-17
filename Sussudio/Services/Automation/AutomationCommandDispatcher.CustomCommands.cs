@@ -46,9 +46,6 @@ public sealed partial class AutomationCommandDispatcher
             case AutomationCommandKind.SetMjpegDecoderCount:
                 return await ExecuteSetMjpegDecoderCountCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
-            case AutomationCommandKind.SetStatsSectionVisible:
-                return await ExecuteSetStatsSectionVisibleCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
-
             case AutomationCommandKind.SetDeviceAudioMode:
                 return await ExecuteSetDeviceAudioModeCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
@@ -125,14 +122,4 @@ public sealed partial class AutomationCommandDispatcher
         }
     }
 
-    private async Task<AutomationCommandResponse> ExecuteSetStatsSectionVisibleCommandAsync(
-        JsonElement payload,
-        string correlationId,
-        CancellationToken cancellationToken)
-    {
-        var section = RequireString(payload, "section");
-        var visible = RequireBool(payload, "visible");
-        await _viewModel.SetStatsSectionVisibleAsync(section, visible, cancellationToken).ConfigureAwait(false);
-        return CreateAcknowledgedResponse(correlationId, $"Stats section '{section}' {(visible ? "expanded" : "collapsed")}.");
-    }
 }

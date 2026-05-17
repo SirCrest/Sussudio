@@ -111,6 +111,13 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
 
             var payload = request.Payload;
 
+            var uiSettingsResponse = await TryExecuteUiSettingsCommandAsync(request.Command, payload, correlationId, cancellationToken)
+                .ConfigureAwait(false);
+            if (uiSettingsResponse != null)
+            {
+                return uiSettingsResponse;
+            }
+
             if (TrivialHandlers.TryGetValue(request.Command, out var trivialHandler))
             {
                 await trivialHandler.InvokeAsync(_viewModel, payload, cancellationToken).ConfigureAwait(false);

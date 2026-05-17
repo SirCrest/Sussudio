@@ -5,8 +5,8 @@ namespace Sussudio.Services.Automation;
 
 public sealed partial class AutomationCommandDispatcher
 {
-    // Trivial one-property commands live here so the root dispatcher stays focused
-    // on request lifecycle, readiness, and error shaping.
+    // Trivial one-property capture and pipeline commands live here so the root
+    // dispatcher stays focused on request lifecycle, readiness, and error shaping.
     private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler> TrivialHandlers =
         new Dictionary<AutomationCommandKind, AutomationCommandHandler>
         {
@@ -22,18 +22,6 @@ public sealed partial class AutomationCommandDispatcher
                 (vm, v, ct) => vm.SetPresetAsync(v, ct), "preset"),
             [AutomationCommandKind.SetSplitEncodeMode] = AutomationCommandHandler.String(
                 (vm, v, ct) => vm.SetSplitEncodeModeAsync(v, ct), "splitEncodeMode"),
-            [AutomationCommandKind.SetShowAllCaptureOptions] = AutomationCommandHandler.Bool(
-                (vm, v, ct) => vm.SetShowAllCaptureOptionsAsync(v, ct), "enabled"),
-            [AutomationCommandKind.SetPreviewVolume] = AutomationCommandHandler.Double(
-                (vm, v, ct) => vm.SetPreviewVolumeAsync(v, ct), "previewVolumePercent"),
-            [AutomationCommandKind.SetStatsVisible] = AutomationCommandHandler.Bool(
-                (vm, v, ct) => vm.SetStatsVisibleAsync(v, ct), "visible"),
-            [AutomationCommandKind.SetSettingsVisible] = AutomationCommandHandler.Bool(
-                (vm, v, ct) => vm.SetSettingsVisibleAsync(v, ct), "visible"),
-            [AutomationCommandKind.SetFrameTimeOverlayVisible] = AutomationCommandHandler.Bool(
-                (vm, v, ct) => vm.SetFrameTimeOverlayVisibleAsync(v, ct), "visible"),
-            [AutomationCommandKind.SetFlashbackTimelineVisible] = AutomationCommandHandler.Bool(
-                (vm, v, ct) => vm.SetFlashbackTimelineVisibleAsync(v, ct), "visible"),
             [AutomationCommandKind.SetRecordingFormat] = AutomationCommandHandler.String(
                 (vm, v, ct) => vm.SetRecordingFormatAsync(v, ct), "format"),
             [AutomationCommandKind.SetQuality] = AutomationCommandHandler.String(

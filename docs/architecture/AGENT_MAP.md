@@ -90,8 +90,12 @@ Automation diagnostics ownership:
   router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`
   owns the custom automation command router for multi-field payloads, special
-  response shapes, capture routing, and singleton UI settings command bodies
-  that do not justify their own focused partial.
+  response shapes, capture routing, and domain command handoff.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.UiSettingsCommands.cs`
+  owns UI/settings automation command application, including show-all capture
+  options, preview volume, stats visibility, settings visibility, frame-time
+  overlay visibility, Flashback timeline visibility, and stats-section
+  expand/collapse response text.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.DiagnosticCommands.cs`
   owns diagnostic readback command bodies for recent events, performance
   timeline, and audio ramp traces behind the custom command router.
@@ -112,8 +116,8 @@ Automation diagnostics ownership:
   screenshot capture, default capture output paths, and capture response
   status shaping behind the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.TrivialHandlers.cs`
-  owns the table of simple one-property commands that delegate straight to the
-  automation view-model port.
+  owns the table of simple one-property capture and pipeline commands that
+  delegate straight to the automation view-model port.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Authorization.cs`
   owns auth-token fallback lookup, constant-time token comparison, and auth
   failure logging.
