@@ -34,7 +34,7 @@ static partial class Program
         AssertContains(previewBackendEntry, "resource-owner request construction");
         AssertContains(previewBackendEntry, "deferred cleanup handoff");
         AssertContains(previewBackendEntry, "Startup construction, install, playback initialization, producer attachment");
-        AssertContains(previewBackendEntry, "`FlashbackBackendResources.cs`");
+        AssertContains(previewBackendEntry, "`FlashbackBackendResources.Startup.cs`");
         AssertDoesNotContain(previewBackendEntry, "startup: buffer manager, encoder sink, exporter, playback controller, and\n  producer attachment");
 
         return Task.CompletedTask;

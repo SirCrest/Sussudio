@@ -536,8 +536,8 @@ Important entry points:
   transition coordination: AV1 encoder support probing, video/audio readiness
   waiting, resource-owner request construction, and deferred cleanup handoff.
   Startup construction, install, playback initialization, producer attachment,
-  and startup rollback live in `FlashbackBackendResources.cs`; backend artifact
-  cleanup mechanics live in `FlashbackBackendResources.ArtifactCleanup.cs`.
+  and startup rollback live in `FlashbackBackendResources.Startup.cs`; backend
+  artifact cleanup mechanics live in `FlashbackBackendResources.ArtifactCleanup.cs`.
 - `CaptureService.FlashbackPreviewBackendDisposal.cs` owns Flashback preview
   backend teardown, detach order, and artifact cleanup scheduling handoff.
 - `CaptureService.FlashbackBufferCycle.cs` owns buffer-cycle transition
@@ -801,9 +801,10 @@ Primary current owner: `Sussudio/Services/Flashback/`
 Entry points:
 
 - `FlashbackBackendResources.cs` owns preview backend resource grouping,
-  startup construction/install/playback initialization, rollback cleanup,
-  and producer attach/detach request shaping for video, audio, and microphone
-  feeds.
+  recovery-preserve state, recording-finalize handoff, and producer attach/detach
+  request shaping for video, audio, and microphone feeds.
+  `FlashbackBackendResources.Startup.cs` owns preview backend startup
+  construction/install/playback initialization and startup rollback cleanup.
   `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
   mechanics.
   `FlashbackBackendResources.ArtifactCleanup.cs` owns backend artifact cleanup

@@ -940,7 +940,9 @@ rational inference, codec/HDR guardrails, encoded-frame forwarding, and
 recording topology validation. Preview-backend producer wiring now belongs to
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
 video/audio/microphone attach and detach request shapes used by preview startup,
-buffer cycling, and teardown. `Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs`
+buffer cycling, and teardown. `Sussudio/Services/Flashback/FlashbackBackendResources.Startup.cs`
+owns preview backend startup construction/install/playback initialization and
+startup rollback cleanup. `Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs`
 owns sink-only buffer-cycle mechanics, while `Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs`
 owns backend artifact cleanup request/retry/dispose/purge mechanics.
 `CaptureService` supplies the service-level export-lock adapter and full rebuild
@@ -3321,7 +3323,8 @@ Remaining `tools/Common` ownership:
    slices should keep it authoritative while introducing smaller owners for
    audio graph, recording controller, Flashback backend resources, and video
    pipeline lifetime. `FlashbackBackendResources.cs` now owns the preview
-   backend resource set, producer attach/detach wiring, startup construction,
+   backend resource set and producer attach/detach wiring.
+   `FlashbackBackendResources.Startup.cs` owns startup construction,
    install/playback initialization, and startup rollback cleanup.
    `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
    mechanics, and `FlashbackBackendResources.ArtifactCleanup.cs` owns backend
