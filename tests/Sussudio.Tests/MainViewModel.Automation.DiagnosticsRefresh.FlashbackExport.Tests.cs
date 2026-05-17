@@ -174,7 +174,7 @@ static partial class Program
         var flashbackExporterText = ReadFlashbackExporterSource();
         AssertContains(flashbackExporterText, "if (request.Segments is { Count: > 0 })");
         AssertContains(flashbackExporterText, "var useSegmentTimeline = segment.StartPts.HasValue");
-        AssertContains(flashbackExporterText, "var comparePtsUs = useSegmentTimeline");
+        AssertContains(flashbackExporterText, "var comparePtsUs = state.UseSegmentTimeline");
         AssertContains(flashbackExporterText, "ResolveSegmentBoundaryTimestampRepairUs(");
         AssertContains(flashbackExporterText, "FLASHBACK_EXPORT_SEGMENT_PTS_REPAIR");
 

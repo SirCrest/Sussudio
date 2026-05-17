@@ -43,7 +43,7 @@ static partial class Program
         AssertDoesNotContain(packetTimingText, "private long FlushBufferedPackets(");
         AssertDoesNotContain(packetTimingText, "private static void FreeBufferedPackets(");
         AssertDoesNotContain(packetTimingText, "private static AVPacket* ClonePacketOrThrow(");
-        AssertEqual(4, sourceText.Split("NormalizePacketTimestampsBeforeWrite(", StringSplitOptions.None).Length - 2, "All export packet write paths normalize timestamps");
+        AssertEqual(3, sourceText.Split("NormalizePacketTimestampsBeforeWrite(", StringSplitOptions.None).Length - 2, "All export packet write paths normalize timestamps");
         AssertDoesNotContain(sourceText, "if (packet->pts < 0) packet->pts = 0;");
         AssertDoesNotContain(sourceText, "if (packet->dts < 0) packet->dts = 0;");
         AssertDoesNotContain(sourceText, "if (buffPkt->pts < 0) buffPkt->pts = 0;");

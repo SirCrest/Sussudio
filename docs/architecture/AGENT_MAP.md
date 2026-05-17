@@ -882,9 +882,13 @@ Entry points:
   dispatch, temp-output preparation, final output replacement, and export-lock
   release.
 - `FlashbackExporter.SegmentPacketWriting.cs` owns the multi-segment
-  packet-copy/remux core: output-template initialization, per-segment packet
-  buffering, timestamp repair, EOF buffered-packet rescue, progress reporting,
-  and requested-segment skip validation.
+  packet-copy/remux orchestration: output-template initialization, packet read
+  loop, progress reporting, segment offset updates, and requested-segment skip
+  validation.
+- `FlashbackExporter.SegmentPacketWriteState.cs` owns per-segment packet write
+  state and decisions: timestamp-base discovery, buffered-packet rescue/flush,
+  timestamp rebasing, segment-boundary repair, DTS monotonicity, and native
+  packet write outcomes.
 - `FlashbackExporter.SegmentRangeProjection.cs` owns per-segment export
   range/window projection and empty effective-range skip classification.
 - `FlashbackExporter.SegmentInputPreflight.cs` owns per-segment input open,

@@ -113,11 +113,14 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
+        var segmentPacketWriteStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriteState.cs")
+            .Replace("\r\n", "\n");
         var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(packetBuffersText, "private static void FreeBufferedPackets(List<IntPtr> bufferedPackets, List<int>? bufferedStreamIndices = null)");
-        AssertContains(sourceText, "FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);");
+        AssertContains(sourceText, "FreeBufferedPackets(segmentPacketState.BufferedPackets, segmentPacketState.BufferedStreamIndices);");
+        AssertContains(sourceText, "FreeBufferedPackets(state.BufferedPackets, state.BufferedStreamIndices);");
         AssertContains(sourceText, "FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);");
         AssertContains(packetBuffersText, "bufferedStreamIndices?.Clear();");
         AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
@@ -130,27 +133,36 @@ static partial class Program
 
         var segmentLoopBlock = ExtractTextBetween(
             segmentPacketWritingText,
-            "var segmentVideoFrameDurUs = 33333L;",
+            "var segmentPacketState = CreateSegmentPacketWriteState(",
             "// Update cross-segment offset:");
-        // The inline flush body was extracted into a local function FlushSegmentBufferedPackets
-        // so the EOF rescue path can call it too. Both call sites must exist.
-        AssertContains(segmentLoopBlock, "int FlushSegmentBufferedPackets(out bool stopFlushing)");
-        AssertContains(segmentLoopBlock, "totalPackets += FlushSegmentBufferedPackets(out var stopFlushing);");
-        AssertContains(segmentLoopBlock, "totalPackets += FlushSegmentBufferedPackets(out _);");
-        // The local function's finally block must release buffered packets.
-        AssertContains(segmentLoopBlock, "finally\n                    {\n                        FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                    }");
+        // The buffered flush owner is shared by the mid-loop transition and EOF rescue path.
+        AssertContains(segmentPacketWriteStateText, "private int FlushSegmentBufferedPackets(");
+        AssertContains(segmentLoopBlock, "totalPackets += FlushSegmentBufferedPackets(\n                                    ref segmentPacketState,");
+        AssertContains(segmentLoopBlock, "totalPackets += FlushSegmentBufferedPackets(\n                        ref segmentPacketState,");
+        var segmentFlushBlock = ExtractTextBetween(
+            segmentPacketWriteStateText,
+            "private int FlushSegmentBufferedPackets(",
+            "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(");
+        var segmentWriteBlock = ExtractTextBetween(
+            segmentPacketWriteStateText,
+            "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(",
+            "private enum SegmentPacketWriteOutcome");
+        // The flush owner's finally block must release buffered packets.
+        AssertContains(segmentFlushBlock, "finally\n        {\n            FreeBufferedPackets(state.BufferedPackets, state.BufferedStreamIndices);\n        }");
+        AssertContains(segmentFlushBlock, "WriteRebasedSegmentPacket(");
+        AssertContains(segmentWriteBlock, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\");");
         AssertOccursBefore(
-            segmentLoopBlock,
-            "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), \"av_interleaved_write_frame\");",
-            "finally\n                    {\n                        FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                    }");
+            segmentFlushBlock,
+            "WriteRebasedSegmentPacket(",
+            "finally\n        {\n            FreeBufferedPackets(state.BufferedPackets, state.BufferedStreamIndices);\n        }");
         // EOF rescue: when Phase 1 never completed because some configured stream never
         // produced packets, flush whatever is buffered using a fallback base of 0 so we
         // do not silently discard video. (Was: bare FreeBufferedPackets that dropped video.)
-        AssertContains(segmentLoopBlock, "if (!segAllBasesDiscovered && segBufferedPackets.Count > 0)");
-        AssertContains(segmentLoopBlock, "segMinBaseUs ??= 0;");
+        AssertContains(segmentLoopBlock, "if (!segmentPacketState.AllBasesDiscovered && segmentPacketState.BufferedPackets.Count > 0)");
+        AssertContains(segmentLoopBlock, "segmentPacketState.MinBaseUs ??= 0;");
         AssertContains(segmentLoopBlock, "FLASHBACK_EXPORT_SEGMENT_PARTIAL_BASE_FLUSH seg={segIdx}");
         // The else branch still calls FreeBufferedPackets for the empty-buffer case.
-        AssertContains(segmentLoopBlock, "FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);");
+        AssertContains(segmentLoopBlock, "FreeBufferedPackets(segmentPacketState.BufferedPackets, segmentPacketState.BufferedStreamIndices);");
 
         var sharedFlushBlock = ExtractTextBetween(
             packetBuffersText,
