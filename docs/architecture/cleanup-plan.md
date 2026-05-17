@@ -1988,8 +1988,8 @@ draining, and join/cancel diagnostics now live in
 Keep queue write/coalescing/drop policy in the command queue partial.
 The playback worker loop now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs`; keep
-`PlaybackThreadEntry` command dispatch there and do not reintroduce an empty
-thread shell marker.
+`PlaybackThreadEntry` command dispatch and timer-resolution P/Invoke there, and
+do not reintroduce an empty thread shell marker.
 Playback-thread seek command execution now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs`.
 Keep coalesced seek resolution, exact resume targets, playback resume handoff,
@@ -2005,10 +2005,6 @@ Playback thread exit cleanup now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCleanup.cs`.
 Keep repeated live-restore cleanup and playback CTS disposal warnings there
 instead of duplicating teardown blocks inside the worker loop.
-Playback timer-resolution P/Invoke now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadTimer.cs`;
-keep it isolated from thread command execution and audio prebuffer logic.
-
 Flashback playback audio routing now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs`.
 Keep decoder audio callbacks, playback chunk validation/return, live audio

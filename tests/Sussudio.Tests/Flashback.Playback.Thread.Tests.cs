@@ -21,6 +21,9 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(threadLoopText, "private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)");
+        AssertContains(threadLoopText, "[DllImport(\"winmm.dll\", ExactSpelling = true)]");
+        AssertContains(threadLoopText, "private static extern uint timeBeginPeriod(uint uMilliseconds);");
+        AssertContains(threadLoopText, "private static extern uint timeEndPeriod(uint uMilliseconds);");
         AssertContains(threadLoopText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_ENTER\");");
         AssertContains(threadSeekCommandsText, "private void HandleSeekCommand(");
         AssertContains(threadSeekScrubCommandsText, "private void HandleBeginScrubCommand(");
