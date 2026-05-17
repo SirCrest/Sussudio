@@ -49,6 +49,7 @@ static partial class Program
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var automationFlashbackText = viewModelFiles["MainViewModel.AutomationFlashback.cs"];
         var automationRecordingFormatText = viewModelFiles["MainViewModel.AutomationRecordingFormat.cs"];
+        var automationRecordingQualityText = viewModelFiles["MainViewModel.AutomationRecordingQuality.cs"];
         var automationSplitEncodeModeText = viewModelFiles["MainViewModel.AutomationSplitEncodeMode.cs"];
         var automationCustomBitrateText = viewModelFiles["MainViewModel.AutomationCustomBitrate.cs"];
         var automationRecordingSettingsText = viewModelFiles["MainViewModel.AutomationRecordingSettings.cs"];
@@ -210,6 +211,10 @@ static partial class Program
         AssertMemberContains(automationRecordingFormatText, "SetRecordingFormatAsync", "await _sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
         AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetRecordingFormatAsync");
         AssertDoesNotContain(automationFlashbackText, "public async Task SetRecordingFormatAsync");
+        AssertMemberContains(automationRecordingQualityText, "SetQualityAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
+        AssertMemberContains(automationRecordingQualityText, "SetQualityAsync", "SelectedQuality = matched;");
+        AssertMemberContains(automationRecordingQualityText, "SetQualityAsync", "quality: settings.Quality");
+        AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetQualityAsync");
         AssertMemberContains(automationSplitEncodeModeText, "SetSplitEncodeModeAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
         AssertMemberContains(automationSplitEncodeModeText, "SetSplitEncodeModeAsync", "SplitEncodeMode: SelectedSplitEncodeMode");
         AssertMemberContains(automationSplitEncodeModeText, "SetSplitEncodeModeAsync", "splitEncodeMode: settings.SplitEncodeMode");

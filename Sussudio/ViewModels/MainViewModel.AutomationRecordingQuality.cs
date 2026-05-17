@@ -6,25 +6,25 @@ using System.Threading.Tasks;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Automation mutator for encoder preset selection.
+/// Automation mutator for recording encoder quality selection.
 /// </summary>
 public partial class MainViewModel
 {
-    public async Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)
+    public async Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)
     {
         var settings = await InvokeOnUiThreadAsync(() =>
         {
-            var matched = AvailablePresets.FirstOrDefault(value =>
-                string.Equals(value, preset, StringComparison.OrdinalIgnoreCase));
+            var matched = AvailableQualities.FirstOrDefault(value =>
+                string.Equals(value, quality, StringComparison.OrdinalIgnoreCase));
             if (matched == null)
             {
-                throw new InvalidOperationException($"Preset '{preset}' is not available.");
+                throw new InvalidOperationException($"Quality '{quality}' is not available.");
             }
 
             _suppressFlashbackEncoderSettingsCycle = true;
             try
             {
-                SelectedPreset = matched;
+                SelectedQuality = matched;
             }
             finally
             {

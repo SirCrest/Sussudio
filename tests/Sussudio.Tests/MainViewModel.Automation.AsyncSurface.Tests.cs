@@ -60,6 +60,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingFormat.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingQuality.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSplitEncodeMode.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCustomBitrate.cs")
@@ -200,6 +202,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var automationRecordingFormatText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingFormat.cs")
             .Replace("\r\n", "\n");
+        var automationRecordingQualityText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingQuality.cs")
+            .Replace("\r\n", "\n");
         var automationSplitEncodeModeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSplitEncodeMode.cs")
             .Replace("\r\n", "\n");
         var automationCustomBitrateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCustomBitrate.cs")
@@ -209,6 +213,9 @@ static partial class Program
         AssertContains(automationRecordingFormatText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
         AssertContains(automationRecordingFormatText, "RecordingFormatSelectionPolicy.IsHdrCompatible(matched)");
         AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetRecordingFormatAsync");
+        AssertContains(automationRecordingQualityText, "public async Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)");
+        AssertContains(automationRecordingQualityText, "ParseVideoQuality(SelectedQuality)");
+        AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetQualityAsync");
         AssertContains(automationSplitEncodeModeText, "public async Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)");
         AssertContains(automationSplitEncodeModeText, "splitEncodeMode: settings.SplitEncodeMode");
         AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetSplitEncodeModeAsync");
