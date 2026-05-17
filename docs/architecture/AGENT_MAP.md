@@ -155,7 +155,8 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.Responses.cs` owns
   error/timeout responses and fallback trace logging.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` owns polling,
-  snapshot refresh serialization, counters, and timeline flow.
+  field/constructor state, and timeline flow. `AutomationDiagnosticsHub.Counters.cs`
+  owns recent-counter delta updates used by diagnostics evaluation.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs` owns alert
   rule evaluation and active-alert transitions.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.cs` owns

@@ -195,6 +195,8 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "health.FlashbackExportActive ||\n             health.FlashbackForceRotateActive ||\n             health.FlashbackForceRotateRequested ||\n             health.FlashbackForceRotateDraining");
         AssertContains(diagnostics.SourceFamilyText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
         AssertContains(diagnostics.SourceFamilyText, "UpdateD3DRendererRecentCounters(previewRuntime, nowTick)");
+        AssertContains(countersText, "private PreviewJitterRecentCounters UpdatePreviewJitterRecentCounters(");
+        AssertContains(countersText, "Interlocked.Exchange(ref _lastPreviewJitterTotalDropped, totalDropped)");
         AssertContains(countersText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
         AssertContains(countersText, "Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted)");
         AssertContains(diagnostics.SourceFamilyText, "recentSubmitted={recentRendererSubmitted} recentDropped={recentRenderer.Dropped}");
@@ -202,6 +204,8 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "clearedDrops={health.MjpegPreviewJitterClearedDropCount}");
         AssertContains(diagnostics.SourceFamilyText, "resumeReprimes={health.MjpegPreviewJitterResumeReprimeCount} recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows} lastDropReason={previewLastDropReason}");
         AssertContains(diagnostics.SourceFamilyText, "UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick)");
+        AssertContains(countersText, "private long UpdateD3DFrameLatencyWaitRecentCounters(");
+        AssertContains(countersText, "Interlocked.Exchange(ref _lastD3DFrameLatencyWaitTimeouts, timeouts)");
         AssertContains(diagnostics.SourceFamilyText, "recentMissed={recentD3DMissedRefreshes} recentFail={recentD3DStatsFailures}");
         AssertContains(diagnostics.SourceFamilyText, "\"capture-cadence-low-1pct\"");
         AssertContains(diagnostics.SourceFamilyText, "\"Capture cadence 1% low is below target:");

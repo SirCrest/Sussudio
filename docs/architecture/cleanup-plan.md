@@ -39,7 +39,8 @@ flow and summary writing.
 
 Automation diagnostics now have named partial owners instead of one large hub
 body. `AutomationDiagnosticsHub.cs` is the compact field/constructor and
-counter state owner. `AutomationDiagnosticsHub.Snapshots.cs` owns snapshot
+counter state owner. `AutomationDiagnosticsHub.Counters.cs` owns recent-counter
+delta updates used by diagnostics evaluation. `AutomationDiagnosticsHub.Snapshots.cs` owns snapshot
 refresh and read-only snapshot access. `AutomationDiagnosticsHub.SnapshotProjection.cs`
 owns snapshot projection orchestration from runtime/view-model snapshots and
 diagnostic classifiers. `AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs`

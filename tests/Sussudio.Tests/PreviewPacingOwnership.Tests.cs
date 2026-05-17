@@ -41,6 +41,7 @@ public sealed class PreviewPacingOwnershipTests
         var diagnosticsSnapshotProjectionSnapshotEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SnapshotEvaluation.cs");
         var diagnosticsSnapshotProjectionCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs");
         var diagnosticsPreviewPacingText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.PreviewPacing.cs");
+        var diagnosticsCountersText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.cs");
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + diagnosticsSnapshotsText
             + "\n" + diagnosticsSnapshotProjectionText
@@ -48,6 +49,7 @@ public sealed class PreviewPacingOwnershipTests
             + "\n" + diagnosticsSnapshotProjectionSnapshotEvaluationText
             + "\n" + diagnosticsSnapshotProjectionCaptureCadenceText
             + "\n" + diagnosticsPreviewPacingText
+            + "\n" + diagnosticsCountersText
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.TimelineProjection.cs");
 
@@ -67,6 +69,8 @@ public sealed class PreviewPacingOwnershipTests
         Assert.Contains("RecentPreviewJitterScheduleLateCount = recentPreviewJitter.ScheduleLateCount", diagnosticsHubText);
         Assert.Contains("RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts", diagnosticsHubText);
         Assert.Contains("UpdateD3DFrameLatencyWaitRecentCounters", diagnosticsHubText);
+        Assert.Contains("private long UpdateD3DFrameLatencyWaitRecentCounters(", diagnosticsCountersText);
+        Assert.DoesNotContain("private long UpdateD3DFrameLatencyWaitRecentCounters(", ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs"));
         Assert.Contains("PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage", diagnosticsHubText);
         Assert.Contains("PreviewPacingSlowStageConfidence = previewPacingClassification.Confidence", diagnosticsHubText);
         Assert.Contains("PreviewPacingSlowStageEvidence = previewPacingClassification.Evidence", diagnosticsHubText);
