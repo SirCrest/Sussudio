@@ -2314,9 +2314,10 @@ Primary current owners:
   `MainViewModel.AutomationCaptureMode.cs` owns automation mutators for
   resolution, frame rate, video format, MJPEG decoder count, and the shared
   reinitialization gate used after active capture-mode changes.
-  `MainViewModel.AutomationRecordingSettings.cs` owns recording format,
-  encoder preset/quality/split-mode/custom-bitrate, and output-path automation
-  mutators. `MainViewModel.AutomationRecordingLifecycle.cs` owns the automation
+  `MainViewModel.AutomationRecordingSettings.cs` owns recording format and
+  encoder preset/quality/split-mode/custom-bitrate automation mutators.
+  `MainViewModel.AutomationOutputPath.cs` owns output-path automation mutation.
+  `MainViewModel.AutomationRecordingLifecycle.cs` owns the automation
   recording desired-state bridge into the shared recording transition gate.
   `MainViewModel.RecordingCapabilityRefresh.cs` owns startup FFmpeg capability
   probes for recording formats and split-encode modes.

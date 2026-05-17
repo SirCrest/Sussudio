@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +7,7 @@ using Sussudio.Models;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Automation mutators for recording format, encoder quality, and output-path settings.
+/// Automation mutators for recording format, encoder quality, preset, split mode, and bitrate settings.
 /// </summary>
 public partial class MainViewModel
 {
@@ -169,20 +168,5 @@ public partial class MainViewModel
                 nvencPreset: settings.Preset,
                 cancellationToken: cancellationToken)
             .ConfigureAwait(false);
-    }
-
-    public Task SetOutputPathAsync(string outputPath, CancellationToken cancellationToken = default)
-    {
-        return InvokeOnUiThreadAsync(() =>
-        {
-            if (string.IsNullOrWhiteSpace(outputPath))
-            {
-                throw new InvalidOperationException("Output path cannot be empty.");
-            }
-
-            Directory.CreateDirectory(outputPath);
-            OutputPath = outputPath;
-            return Task.CompletedTask;
-        }, cancellationToken);
     }
 }

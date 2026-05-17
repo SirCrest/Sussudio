@@ -3108,9 +3108,9 @@ Remaining `tools/Common` ownership:
    Automation device refresh, capture-device selection, audio-input selection,
    and custom audio-input enablement now live in
    `MainViewModel.AutomationDeviceSelection.cs`.
-   Recording format, encoder preset/quality/split-mode/custom-bitrate, and
-   output-path automation mutators now live in
-   `MainViewModel.AutomationRecordingSettings.cs`.
+   Recording format and encoder preset/quality/split-mode/custom-bitrate
+   automation mutators now live in `MainViewModel.AutomationRecordingSettings.cs`;
+   output-path automation mutation now lives in `MainViewModel.AutomationOutputPath.cs`.
    The automation recording desired-state bridge into the shared recording
    transition gate now lives in `MainViewModel.AutomationRecordingLifecycle.cs`.
    Capture-mode automation mutators for resolution, frame rate, video format,
