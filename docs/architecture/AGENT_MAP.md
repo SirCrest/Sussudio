@@ -183,17 +183,10 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Storage.cs`
   owns Flashback storage pressure diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs`
-  owns Flashback recording diagnostic verdict ordering.
+  owns Flashback recording diagnostic verdict ordering plus encoder failure,
+  export-rotation gap, backend staleness, and recording degradation verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.RecordingConditions.cs`
   owns Flashback recording diagnostic condition assembly.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.RecordingEncoder.cs`
-  owns Flashback encoder failure diagnostic verdicts.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.RecordingExport.cs`
-  owns Flashback export-rotation gap diagnostic verdicts.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.RecordingBackend.cs`
-  owns Flashback backend staleness diagnostic verdicts.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.RecordingDegradation.cs`
-  owns Flashback recording degradation diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Export.cs`
   owns active and stalled Flashback export diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Playback.cs`
