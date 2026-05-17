@@ -2812,10 +2812,9 @@ swap-chain normalization, artifact filtering, and selected-chain summaries.
 `tools/Common/PresentMon/PresentMonProbe.Csv.Summary.cs` owns warnings, counted text fields, and
 percentile metric aggregation. `tools/Common/PresentMon/PresentMonProbe.Csv.Models.cs` owns the private
 parsed CSV handoff and row shapes. `tools/Common/PresentMon/PresentMonProbe.cs` keeps the public run
-orchestration.
+orchestration, command-line construction, and argument quoting.
 `tools/Common/PresentMon/PresentMonProbe.Paths.cs` owns target process,
-PresentMon executable, and output-path resolution. `tools/Common/PresentMon/PresentMonProbe.Arguments.cs`
-owns command-line construction and argument quoting. `tools/Common/PresentMon/PresentMonProbe.Process.cs`
+PresentMon executable, and output-path resolution. `tools/Common/PresentMon/PresentMonProbe.Process.cs`
 owns process supervision, stdout/stderr drain, timeout kill, and temp CSV
 cleanup.
 
@@ -2956,7 +2955,6 @@ Remaining `tools/Common` ownership:
 - `ToolJsonOptions.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`
 - `tools/Common/PresentMon/PresentMonProbe.Paths.cs`
-- `tools/Common/PresentMon/PresentMonProbe.Arguments.cs`
 - `tools/Common/PresentMon/PresentMonProbe.Process.cs`
 - `tools/Common/PresentMon/PresentMonProbe.ResultMessage.cs`
 

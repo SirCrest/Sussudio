@@ -3124,11 +3124,10 @@ Primary owners:
   fields, and percentile metric aggregation.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.Models.cs` owns the private parsed CSV
   handoff and row shapes.
-- `tools/Common/PresentMon/PresentMonProbe.cs` owns PresentMon public run orchestration.
+- `tools/Common/PresentMon/PresentMonProbe.cs` owns PresentMon public run orchestration,
+  command-line construction, and argument quoting.
 - `tools/Common/PresentMon/PresentMonProbe.Paths.cs` owns target process, PresentMon
   executable, and output-path resolution.
-- `tools/Common/PresentMon/PresentMonProbe.Arguments.cs` owns PresentMon command-line
-  construction and argument quoting.
 - `tools/Common/PresentMon/PresentMonProbe.Process.cs` owns process supervision,
   stdout/stderr drain, timeout kill, and temp CSV cleanup.
 
