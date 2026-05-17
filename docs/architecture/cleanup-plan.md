@@ -2969,9 +2969,10 @@ Remaining `tools/Common` ownership:
    Debounced preview reinitialization, Flashback-cycle wait-before-reinit,
    renderer-stop handoff, teardown restart, and gate release now live in
    `MainViewModel.PreviewReinitialization.cs`. Output folder browse/open-recordings button workflows now live in
-   `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`. Recording toggle serialization, graceful stop, emergency stop,
-   and start/stop recording transitions now live in
-   `MainViewModel.RecordingLifecycle.cs`. Recording option selections, output
+   `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`. Recording toggle serialization, desired-state routing, graceful stop, emergency stop,
+   and the transition gate now live in `MainViewModel.RecordingLifecycle.cs`.
+   Concrete recording start/stop operation execution and failure/cancellation
+   state repair live in `MainViewModel.RecordingOperations.cs`. Recording option selections, output
    path, counters, and transition flags now live in
    `MainViewModel.RecordingState.cs`. Bounded teardown and event unsubscription now live
    in `MainViewModel.Disposal.cs`. Automation-facing capture runtime, health,

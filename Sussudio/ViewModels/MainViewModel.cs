@@ -115,7 +115,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     // -- Partial class references ----
     // Capture lifecycle: MainViewModel.Capture.cs
-    // Recording lifecycle: MainViewModel.RecordingLifecycle.cs
+    // Recording lifecycle: MainViewModel.RecordingLifecycle.cs; operations: MainViewModel.RecordingOperations.cs
     // Recording state: MainViewModel.RecordingState.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs
     // Flashback automation: MainViewModel.AutomationFlashback.cs

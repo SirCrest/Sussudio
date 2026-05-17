@@ -65,9 +65,11 @@ static partial class Program
     {
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
+        var recordingOperationsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingOperations.cs")
+            .Replace("\r\n", "\n");
 
-        AssertContains(recordingLifecycleText, "Logger.LogException(ex);");
-        AssertContains(recordingLifecycleText, "IsRecording = _sessionCoordinator.Snapshot.IsRecording;");
+        AssertContains(recordingOperationsText, "Logger.LogException(ex);");
+        AssertContains(recordingOperationsText, "IsRecording = _sessionCoordinator.Snapshot.IsRecording;");
         AssertContains(
             recordingLifecycleText,
             "catch (OperationCanceledException ex)\n            {\n                transitionError = ex;\n                Logger.Log($\"Recording transition wait canceled: {ex.Message}\");\n            }");
@@ -75,14 +77,14 @@ static partial class Program
             recordingLifecycleText,
             "if (transitionError is OperationCanceledException transitionCanceled && inFlightTarget == (enabled ? 1 : 0))\n            {\n                throw transitionCanceled;\n            }");
         AssertContains(
-            recordingLifecycleText,
+            recordingOperationsText,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            IsRecording = _sessionCoordinator.Snapshot.IsRecording;\n            StatusText = \"Recording start canceled\";\n            throw;\n        }");
         AssertContains(
-            recordingLifecycleText,
+            recordingOperationsText,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            IsRecording = _sessionCoordinator.Snapshot.IsRecording;\n            StatusText = \"Stop recording canceled\";\n            throw;\n        }");
-        AssertContains(recordingLifecycleText, "StatusText = $\"Recording failed: {ex.Message}\";");
-        AssertContains(recordingLifecycleText, "StatusText = $\"Stop recording failed: {ex.Message}\";");
-        AssertContains(recordingLifecycleText, "throw;");
+        AssertContains(recordingOperationsText, "StatusText = $\"Recording failed: {ex.Message}\";");
+        AssertContains(recordingOperationsText, "StatusText = $\"Stop recording failed: {ex.Message}\";");
+        AssertContains(recordingOperationsText, "throw;");
 
         return Task.CompletedTask;
     }

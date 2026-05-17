@@ -36,6 +36,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
+        var recordingOperationsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingOperations.cs")
+            .Replace("\r\n", "\n");
         var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs")
             .Replace("\r\n", "\n");
         var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
@@ -60,8 +62,12 @@ static partial class Program
         AssertContains(recordingLifecycleText, "await StartRecordingAsync(cancellationToken);");
         AssertContains(recordingLifecycleText, "await StopRecordingAsync(cancellationToken);");
         AssertContains(recordingLifecycleText, "await BeginRecordingTransitionAsync(enabled, cancellationToken);");
-        AssertContains(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
-        AssertContains(recordingLifecycleText, "await _sessionCoordinator.StopRecordingAsync(cancellationToken);");
+        AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
+        AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StopRecordingAsync(cancellationToken);");
+        AssertContains(recordingOperationsText, "private async Task StartRecordingAsync(CancellationToken cancellationToken = default)");
+        AssertContains(recordingOperationsText, "private async Task StopRecordingAsync(CancellationToken cancellationToken = default)");
+        AssertContains(recordingOperationsText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
+        AssertContains(recordingOperationsText, "await _sessionCoordinator.StopRecordingAsync(cancellationToken);");
         AssertDoesNotContain(captureText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertContains(recordingStateText, "private readonly Stopwatch _recordingStopwatch = new();");

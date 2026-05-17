@@ -2189,7 +2189,9 @@ Primary current owners:
   debounced preview reinitialization, Flashback-cycle wait-before-reinit,
   renderer-stop handoff, teardown restart, and reinit gate release.
   `MainViewModel.RecordingLifecycle.cs` owns recording toggle serialization,
-  graceful stop, emergency stop, and start/stop recording transitions.
+  desired-state routing, graceful stop, emergency stop, and the transition gate.
+  `MainViewModel.RecordingOperations.cs` owns concrete recording start/stop
+  operation execution and failure/cancellation state repair.
   `MainViewModel.RecordingState.cs` owns recording option selections, output
   path, counters, and transition flags.
   `MainViewModel.Disposal.cs` owns bounded teardown, event unsubscription, and
