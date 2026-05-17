@@ -142,7 +142,6 @@ static partial class Program
             "tools/ssctl/CommandHandlers.Json.cs",
             "tools/ssctl/CommandHandlers.Observability.cs",
             "tools/ssctl/CommandHandlers.PresentMon.cs",
-            "tools/ssctl/CommandHandlers.Recordings.cs",
             "tools/ssctl/CommandHandlers.Transport.cs",
             "tools/ssctl/CommandHandlers.UiVisibility.cs",
             "tools/ssctl/CommandHandlers.Values.cs",

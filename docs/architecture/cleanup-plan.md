@@ -377,8 +377,8 @@ owns catalog-backed help lines.
 helper. `CommandHandlers.Device.cs` owns device
 refresh/list/select, audio-input selection, and custom-audio enablement.
 `CommandHandlers.Window.cs` owns window close arming, state/geometry actions,
-fullscreen toggles, and snap commands. `CommandHandlers.Recordings.cs` owns the
-recordings-folder CLI command. `CommandHandlers.AutomationFlow.cs` owns
+fullscreen toggles, snap commands, and the recordings-folder CLI command.
+`CommandHandlers.AutomationFlow.cs` owns
 wait/assert/probe scripting flow commands. `CommandHandlers.UiVisibility.cs`
 owns stats, settings, and frame-time visibility commands.
 `CommandHandlers.Verification.cs` owns recording/file verification commands.

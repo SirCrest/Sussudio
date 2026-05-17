@@ -27,9 +27,9 @@ static partial class Program
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.ArmClose");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.WindowAction");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.SetFullScreenEnabled");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleRecordingsAsync");
+        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "AutomationCommandKind.OpenRecordingsFolder");
         AssertDoesNotContain(ReadRepoFile("tools/ssctl/CommandHandlers.Window.cs"), "HandleDeviceAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Recordings.cs"), "HandleRecordingsAsync");
-        AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.Recordings.cs"), "AutomationCommandKind.OpenRecordingsFolder");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "HandleWaitAsync");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "AutomationCommandKind.WaitForCondition");
         AssertContains(ReadRepoFile("tools/ssctl/CommandHandlers.AutomationFlow.cs"), "Math.Max(timeoutMs.GetValueOrDefault(0) + 5000, 60000)");

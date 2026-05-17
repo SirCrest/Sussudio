@@ -2548,9 +2548,8 @@ Primary owners:
 - `tools/ssctl/CommandHandlers.Device.cs` owns device refresh/list/select,
   audio-input selection, and custom-audio enablement.
 - `tools/ssctl/CommandHandlers.Window.cs` owns window close arming, window
-  state/geometry actions, fullscreen toggles, and snap commands.
-- `tools/ssctl/CommandHandlers.Recordings.cs` owns the recordings-folder CLI
-  command.
+  state/geometry actions, fullscreen toggles, snap commands, and the
+  recordings-folder CLI command.
 - `tools/ssctl/CommandHandlers.AutomationFlow.cs` owns wait/assert/probe
   scripting flow commands.
 - `tools/ssctl/CommandHandlers.UiVisibility.cs` owns stats, settings, and
