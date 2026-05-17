@@ -156,7 +156,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // HDR automation: MainViewModel.AutomationHdr.cs
     // Automation snapshots and probes: MainViewModel.AutomationSnapshots.cs
     // Automation options projection: MainViewModel.AutomationOptionsSnapshot.cs
-    // Device-selection automation: MainViewModel.AutomationDeviceSelection.cs; audio-input automation: MainViewModel.AutomationAudioInputSelection.cs
+    // Device and audio-input selection automation: MainViewModel.AutomationDeviceSelection.cs
     // Capture settings automation: MainViewModel.AutomationCaptureSettings.cs; capture-mode transactions: MainViewModel.CaptureModeTransactions.cs
     // UI-only automation: MainViewModel.AutomationUi.cs
     // Recording settings automation: MainViewModel.AutomationRecordingSettings.cs

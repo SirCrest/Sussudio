@@ -2363,9 +2363,9 @@ Primary current owners:
   true-HDR preview recording-time guard enforcement and availability checks.
   `MainViewModel.AutomationFlashback.cs` owns automation Flashback
   enable/restart routing through the capture session coordinator.
-  `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh
-  and capture-device selection. `MainViewModel.AutomationAudioInputSelection.cs`
-  owns audio-input selection and custom audio-input enablement.
+  `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh,
+  capture-device selection, audio-input selection, and custom audio-input
+  enablement.
   `MainViewModel.AutomationCaptureSettings.cs` owns capture resolution,
   frame-rate, video-format, and MJPEG decoder worker-count automation mutators.
   `MainViewModel.CaptureModeTransactions.cs` owns the shared reinitialization
