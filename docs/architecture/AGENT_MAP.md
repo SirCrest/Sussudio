@@ -2654,13 +2654,9 @@ Primary owners:
 - `tools/ssctl/Formatters.Snapshot.AvSync.cs` owns embedded snapshot AV-sync
   drift text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
-  active/failure gating and section ordering.
-  `tools/ssctl/Formatters.Snapshot.Flashback.Encoding.cs` owns Flashback
-  encoder, buffer, temp-cache, queue-latency, backpressure, failure, and GPU
-  queue snapshot text. `tools/ssctl/Formatters.Snapshot.Flashback.Playback.cs`
-  owns Flashback playback state, command-queue, cadence, decode, frame, stage,
-  and A/V drift snapshot text.
-  `tools/ssctl/Formatters.Snapshot.Flashback.Export.cs` owns Flashback export
+  active/failure gating, section ordering, encoder, buffer, temp-cache,
+  queue-latency, backpressure, failure, GPU queue, playback state,
+  command-queue, cadence, decode, frame, stage, A/V drift, and export
   progress/result snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Memory.cs` owns embedded snapshot Memory/GC
   text.

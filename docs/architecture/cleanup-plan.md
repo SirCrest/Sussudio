@@ -406,12 +406,10 @@ audio text in `Formatters.Snapshot.Audio.cs`, video-pipeline text in
 `Formatters.Snapshot.Recording.cs`, diagnostic health/frame-lane text in
 `Formatters.Snapshot.DiagnosticLanes.cs`, legacy performance text in
 `Formatters.Snapshot.Performance.cs`, capture cadence text in
-`Formatters.Snapshot.CaptureCadence.cs`, Flashback snapshot gating and ordering
-in `Formatters.Snapshot.Flashback.cs`, Flashback encoder/buffer/queue text in
-`Formatters.Snapshot.Flashback.Encoding.cs`, Flashback playback/cadence/drift
-text in `Formatters.Snapshot.Flashback.Playback.cs`, Flashback export text in
-`Formatters.Snapshot.Flashback.Export.cs`, embedded snapshot AV-sync drift text
-in `Formatters.Snapshot.AvSync.cs`, embedded snapshot Memory/GC text in
+`Formatters.Snapshot.CaptureCadence.cs`, Flashback snapshot gating/order,
+encoder/buffer/queue, playback/cadence/drift, and export text in
+`Formatters.Snapshot.Flashback.cs`, embedded snapshot AV-sync drift text in
+`Formatters.Snapshot.AvSync.cs`, embedded snapshot Memory/GC text in
 `Formatters.Snapshot.Memory.cs`, MJPEG timing text in
 `Formatters.Snapshot.Mjpeg.cs`, preview renderer-mode routing and non-D3D
 fallback text in `Formatters.Snapshot.Preview.cs`, D3D preview renderer text in
