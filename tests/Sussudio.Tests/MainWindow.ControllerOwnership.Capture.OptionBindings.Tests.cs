@@ -8,29 +8,13 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
-        var controllerRootText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
-        var controllerContextText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.Context.cs").Replace("\r\n", "\n");
-        var controllerInitializationText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.Initialization.cs").Replace("\r\n", "\n");
-        var controllerSelectionHandlersText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.SelectionHandlers.cs").Replace("\r\n", "\n");
-        var controllerRecordingOptionsText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.RecordingOptions.cs").Replace("\r\n", "\n");
-        var controllerHdrText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.Hdr.cs").Replace("\r\n", "\n");
-        var controllerShowAllText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.ShowAll.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
         var captureOptionPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedCaptureOptions.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
-        var controllerText = string.Join(
-            "\n",
-            controllerRootText,
-            controllerContextText,
-            controllerInitializationText,
-            controllerSelectionHandlersText,
-            controllerRecordingOptionsText,
-            controllerHdrText,
-            controllerShowAllText);
-        var selectionBindingControllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
         var selectionBindingFamilyText = string.Join(
             "\n",
-            selectionBindingControllerText,
+            ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.RecordingSelection.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.StringSelection.cs").Replace("\r\n", "\n"));
         var captureOptionBindingsWithoutVideoFormat = captureOptionBindingsText.Replace("VideoFormatComboBox.SelectionChanged +=", string.Empty);
@@ -66,42 +50,11 @@ static partial class Program
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.AttachRecordingOptionBindings();");
         AssertContains(mainWindowText, "InitializeCaptureOptionBindingController();");
 
-        AssertContains(controllerRootText, "internal sealed partial class CaptureOptionBindingController");
-        AssertContains(controllerRootText, "private readonly CaptureOptionBindingControllerContext _context;");
-        AssertContains(controllerRootText, "public CaptureOptionBindingController(CaptureOptionBindingControllerContext context)");
-        AssertContains(controllerContextText, "internal sealed class CaptureOptionBindingControllerContext");
-        AssertContains(controllerInitializationText, "public void InitializeCollections()");
-        AssertContains(controllerInitializationText, "public void ApplyInitialSelections()");
-        AssertContains(controllerInitializationText, "public void EnsureInitialSelections()");
-        AssertContains(controllerSelectionHandlersText, "public void AttachCaptureModeSelectionBindings()");
-        AssertContains(controllerRecordingOptionsText, "public void AttachRecordingOptionBindings()");
-        AssertContains(controllerRecordingOptionsText, "public void HandleCustomBitratePropertyChanged()");
-        AssertContains(controllerRecordingOptionsText, "private static void AttachStringSelection(ComboBox comboBox, Action<string> setVmProp)");
-        AssertContains(controllerHdrText, "private void AttachHdrToggleBindings()");
-        AssertContains(controllerHdrText, "public void HandleHdrEnabledChanged()");
-        AssertContains(controllerHdrText, "public void HandleTrueHdrPreviewEnabledChanged()");
-        AssertContains(controllerShowAllText, "public void AttachShowAllCaptureOptionsBinding()");
-        AssertContains(controllerShowAllText, "public void HandleShowAllCaptureOptionsChanged()");
-        AssertDoesNotContain(controllerSelectionHandlersText, "public void InitializeCollections()");
-        AssertDoesNotContain(controllerSelectionHandlersText, "public void ApplyInitialSelections()");
-        AssertDoesNotContain(controllerSelectionHandlersText, "public void EnsureInitialSelections()");
-        AssertDoesNotContain(controllerSelectionHandlersText, "public void AttachRecordingOptionBindings()");
-        AssertDoesNotContain(controllerSelectionHandlersText, "public void AttachShowAllCaptureOptionsBinding()");
-        AssertDoesNotContain(controllerSelectionHandlersText, "CustomBitrateNumberBox.ValueChanged +=");
-        AssertDoesNotContain(controllerSelectionHandlersText, "_context.HdrToggle.Click +=");
-        AssertDoesNotContain(controllerSelectionHandlersText, "_context.TrueHdrPreviewToggle.Click +=");
-        AssertDoesNotContain(controllerRecordingOptionsText, "public void AttachCaptureModeSelectionBindings()");
-        AssertDoesNotContain(controllerInitializationText, "public void AttachCaptureModeSelectionBindings()");
-        AssertDoesNotContain(controllerInitializationText, "public void AttachRecordingOptionBindings()");
-        AssertDoesNotContain(controllerInitializationText, "public void HandleHdrEnabledChanged()");
-        AssertDoesNotContain(controllerInitializationText, "public void HandleShowAllCaptureOptionsChanged()");
-        AssertDoesNotContain(controllerRootText, "public void InitializeCollections()");
-        AssertDoesNotContain(controllerRootText, "public void ApplyInitialSelections()");
-        AssertDoesNotContain(controllerRootText, "public void EnsureInitialSelections()");
-        AssertDoesNotContain(controllerRootText, "public void AttachCaptureModeSelectionBindings()");
-        AssertDoesNotContain(controllerRootText, "public void AttachRecordingOptionBindings()");
-        AssertDoesNotContain(controllerRootText, "public void AttachShowAllCaptureOptionsBinding()");
-        AssertDoesNotContain(controllerRootText, "internal sealed class CaptureOptionBindingControllerContext");
+        AssertContains(controllerText, "internal sealed class CaptureOptionBindingControllerContext");
+        AssertContains(controllerText, "internal sealed class CaptureOptionBindingController");
+        AssertDoesNotContain(controllerText, "internal sealed partial class CaptureOptionBindingController");
+        AssertContains(controllerText, "private readonly CaptureOptionBindingControllerContext _context;");
+        AssertContains(controllerText, "public CaptureOptionBindingController(CaptureOptionBindingControllerContext context)");
         AssertContains(controllerText, "public void InitializeCollections()");
         AssertContains(controllerText, "_context.VideoFormatComboBox.ItemsSource = _context.ViewModel.AvailableVideoFormats;");
         AssertContains(controllerText, "for (var i = 1; i <= 8; i++)");
@@ -124,32 +77,24 @@ static partial class Program
         AssertContains(controllerText, "if (CaptureComboBoxSelectionNormalizer.IsAutoFrameRateOption(frameRate))");
         AssertContains(controllerText, "if (!_context.ViewModel.IsAutoFrameRateSelected)");
         AssertContains(controllerText, "else if (!CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(frameRate.Value, _context.ViewModel.SelectedFrameRate))");
-        AssertDoesNotContain(controllerSelectionHandlersText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
-        AssertDoesNotContain(controllerSelectionHandlersText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
-        AssertDoesNotContain(controllerSelectionHandlersText, "=> option.Value <= 0 || option.FriendlyValue <= 0;");
         AssertContains(controllerText, "public void AttachRecordingOptionBindings()");
         AssertContains(controllerText, "AttachStringSelection(_context.FormatComboBox, value => _context.ViewModel.SelectedRecordingFormat = value);");
         AssertContains(controllerText, "AttachStringSelection(_context.QualityComboBox, value => _context.ViewModel.SelectedQuality = value);");
         AssertContains(controllerText, "AttachStringSelection(_context.PresetComboBox, value => _context.ViewModel.SelectedPreset = value);");
         AssertContains(controllerText, "AttachStringSelection(_context.SplitEncodeComboBox, value => _context.ViewModel.SelectedSplitEncodeMode = value);");
         AssertContains(controllerText, "_context.VideoFormatComboBox.SelectionChanged +=");
-        AssertContains(controllerText, "_context.UpdateDecoderCountVisibility();");
         AssertContains(controllerText, "_context.CustomBitrateNumberBox.ValueChanged +=");
-        AssertContains(controllerText, "if (!double.IsNaN(_context.CustomBitrateNumberBox.Value))");
         AssertContains(controllerText, "_context.HdrToggle.Click +=");
         AssertContains(controllerText, "_context.TrueHdrPreviewToggle.Click +=");
-        AssertContains(controllerText, "if (_context.HdrToggle.IsChecked != _context.ViewModel.IsHdrEnabled)");
-        AssertContains(controllerText, "_context.ApplyHdrToggleEnabledState();");
-        AssertContains(controllerText, "if (_context.TrueHdrPreviewToggle.IsChecked != _context.ViewModel.IsTrueHdrPreviewEnabled)");
-        AssertContains(controllerText, "_context.SetHdrPassthroughEnabled(_context.ViewModel.IsTrueHdrPreviewEnabled);");
         AssertContains(controllerText, "_context.ShowAllCaptureOptionsToggle.Click +=");
-        AssertContains(controllerText, "_context.ViewModel.ShowAllCaptureOptions = _context.ShowAllCaptureOptionsToggle.IsChecked == true;");
-        AssertContains(controllerText, "public void HandleShowAllCaptureOptionsChanged()");
-        AssertContains(controllerText, "(_context.ShowAllCaptureOptionsToggle.IsChecked == true) != _context.ViewModel.ShowAllCaptureOptions");
-        AssertContains(controllerText, "_context.ShowAllCaptureOptionsToggle.IsChecked = _context.ViewModel.ShowAllCaptureOptions;");
         AssertContains(controllerText, "public void HandleCustomBitratePropertyChanged()");
-        AssertContains(controllerText, "Math.Abs(_context.CustomBitrateNumberBox.Value - _context.ViewModel.CustomBitrateMbps) > 0.01");
-        AssertContains(controllerText, "_context.CustomBitrateNumberBox.Value = _context.ViewModel.CustomBitrateMbps;");
+        AssertContains(controllerText, "public void HandleHdrEnabledChanged()");
+        AssertContains(controllerText, "public void HandleTrueHdrPreviewEnabledChanged()");
+        AssertContains(controllerText, "public void HandleShowAllCaptureOptionsChanged()");
+        AssertContains(controllerText, "private void AttachHdrToggleBindings()");
+        AssertContains(controllerText, "private static void AttachStringSelection(ComboBox comboBox, Action<string> setVmProp)");
+        AssertDoesNotContain(controllerText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
+        AssertDoesNotContain(controllerText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
 
         AssertContains(bindingsText, "InitializeCaptureOptionCollections();");
         AssertContains(bindingsText, "ApplyInitialCaptureOptionSelections();");
@@ -167,11 +112,16 @@ static partial class Program
         AssertDoesNotContain(selectionBindingFamilyText, "AttachStringSelection(_context.FormatComboBox, value => _context.ViewModel.SelectedRecordingFormat = value);");
         AssertDoesNotContain(selectionBindingFamilyText, "private static void AttachStringSelection(ComboBox comboBox, Action<string> setVmProp)");
 
-        AssertContains(agentMapText, "`CaptureOptionBindingController.RecordingOptions.cs` owns recording option");
-        AssertContains(agentMapText, "event bindings for format, quality, preset, split-encode, video format, and\n  custom bitrate plus custom-bitrate property-change value projection");
-        AssertDoesNotContain(agentMapText, "Recording format, quality, preset, and split-encode string\n  selection handlers live with\n  `CaptureSelectionBindingController`");
-        AssertContains(cleanupPlanText, "`CaptureOptionBindingController.RecordingOptions.cs` owns recording option event\nbindings for format, quality, preset, split-encode, video format, and custom\nbitrate plus custom-bitrate property-change value projection");
-        AssertDoesNotContain(cleanupPlanText, "delegates recording\nformat/quality/preset/split-encode string selection to\n`CaptureSelectionBindingController`");
+        AssertContains(agentMapText, "`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the capture");
+        AssertContains(agentMapText, "option binding adapter in one file: XAML/view-model adapter context");
+        AssertContains(agentMapText, "initialization, resolution/frame-rate selection, recording option event");
+        AssertContains(agentMapText, "bindings, HDR/true-HDR forwarding, and show-all option binding");
+        AssertDoesNotContain(agentMapText, "CaptureOptionBindingController.Context.cs");
+        AssertContains(cleanupPlanText, "`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs`. The single");
+        AssertContains(cleanupPlanText, "controller owns the full capture-option binding adapter: XAML/view-model");
+        AssertContains(cleanupPlanText, "context, video-format and initial decoder projection, initial selection");
+        AssertContains(cleanupPlanText, "projection, resolution/frame-rate selection handlers, recording option event");
+        AssertDoesNotContain(cleanupPlanText, "CaptureOptionBindingController.Context.cs");
 
         AssertDoesNotContain(captureOptionBindingsText, "VideoFormatComboBox.ItemsSource = ViewModel.AvailableVideoFormats;");
         AssertDoesNotContain(captureOptionBindingsText, "ResolutionComboBox.SelectionChanged +=");

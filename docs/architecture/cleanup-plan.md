@@ -752,8 +752,8 @@ record/preview/custom-audio/microphone toggle handlers, and `.Meters.cs` owns
 audio-meter activation, initial meter presentation, and device-audio gain/meter
 resize hooks. `Sussudio/MainWindow.AudioBindings.cs` is the XAML-facing adapter;
 video-format collection setup, initial capture/recording option projection, and
-code-attached resolution/frame-rate handlers now live in the
-`Sussudio/Controllers/Capture/CaptureOptionBindingController*.cs` family, with
+code-attached resolution/frame-rate handlers now live in
+`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs`, with
 `MainWindow.CaptureOptionBindings.cs` left as the XAML-facing capture and
 recording option adapter.
 Flashback settings-control initialization, GPU decode binding/sync, and buffer
@@ -2344,27 +2344,20 @@ Pure HDR readiness hint and FPS telemetry tooltip text policy now lives in
 the existing method names for binding setup, property-change projection, and
 the XAML decoder-count selection event.
 
-Capture option binding setup now lives in the
-`Sussudio/Controllers/Capture/CaptureOptionBindingController*.cs` family:
-`CaptureOptionBindingController.cs` is the controller shell,
-`CaptureOptionBindingController.Context.cs` owns the XAML/view-model adapter
-context, `CaptureOptionBindingController.Initialization.cs` owns video-format
-collection setup and initial capture/recording option projection,
-`CaptureOptionBindingController.SelectionHandlers.cs` owns resolution/frame-rate
-selection handlers,
-`CaptureOptionBindingController.RecordingOptions.cs` owns recording option event
+Capture option binding setup now lives in
+`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs`. The single
+controller owns the full capture-option binding adapter: XAML/view-model
+context, video-format and initial decoder projection, initial selection
+projection, resolution/frame-rate selection handlers, recording option event
 bindings for format, quality, preset, split-encode, video format, and custom
-bitrate plus custom-bitrate property-change value projection, and delegates HDR
-click binding during `SetupBindings()`,
-`CaptureOptionBindingController.Hdr.cs` owns HDR/true-HDR click binding,
-ViewModel-to-control sync, and preview HDR passthrough forwarding, and
-`CaptureOptionBindingController.ShowAll.cs` owns
-`ShowAllCaptureOptionsToggle` click binding and ViewModel-to-control sync while
-reusing `CaptureComboBoxSelectionNormalizer` for shared frame-rate auto/exact
-matching. The controller delegates presentation affordances back through the
-capture-option presentation adapter. `MainWindow.CaptureOptionBindings.cs`
-keeps the old capture and recording option method names used by
-`SetupBindings()`.
+bitrate, custom-bitrate property-change value projection, HDR/true-HDR click
+binding and ViewModel-to-control sync, preview HDR passthrough forwarding, and
+`ShowAllCaptureOptionsToggle` click binding/sync. This deliberately folds the
+former tiny partial files back into one auditable adapter while preserving the
+same MainWindow-facing method surface. The controller delegates presentation
+affordances back through the capture-option presentation adapter.
+`MainWindow.CaptureOptionBindings.cs` keeps the old capture and recording option
+method names used by `SetupBindings()`.
 
 MainWindow capture ownership tests now mirror these runtime owners instead of
 living in one capture test grab-bag. Selection bindings, selection normalizer
