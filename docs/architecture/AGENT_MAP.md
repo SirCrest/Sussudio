@@ -2214,10 +2214,13 @@ Primary current owners:
   fallback, formatting, and suppressed-warning logging.
   `MainViewModel.RecordingRuntime.cs` owns
   recording size/bitrate projection and recording-state reset reactions.
-  `MainViewModel.LiveSignalPresentation.cs` owns live-capture info projection
-  from `CaptureRuntimeSnapshot`, including audio-preview activity and
-  live-resolution/frame-rate/pixel-format assignment, preview-stop live-info
-  reset, and delegates label formatting to
+  `MainViewModel.CapturePresentation.cs` owns capture presentation adapters:
+  live-capture info projection from `CaptureRuntimeSnapshot`, including
+  audio-preview activity and live-resolution/frame-rate/pixel-format
+  assignment, preview-stop live-info reset, HDR runtime state/readiness
+  projection, target-summary property application, and auto-resolution display
+  text used by status and telemetry presentation. It delegates live-signal
+  label formatting to
   `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`.
   `MainViewModel.CaptureSettings.cs` owns the impure adapter that samples UI
   selection and observed runtime/source state, while
@@ -2321,8 +2324,6 @@ Primary current owners:
   ranking and source-aware frame-rate selection.
   `MainViewModel.AutoResolutionState.cs` owns effective Source resolution state,
   auto-value detection, and effective resolution query helpers.
-  `MainViewModel.AutoResolutionPresentation.cs` owns
-  auto-resolution display text used by status and telemetry presentation.
   `Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs` owns the pure
   resolution selection facade. `CaptureResolutionSelectionPolicy.Support.cs`
   owns parsing and frame-rate support checks. `CaptureResolutionSelectionPolicy.Ranking.cs`
@@ -2336,9 +2337,7 @@ Primary current owners:
   `MainViewModel.ResolutionSelectionPolicy.cs` delegates state-backed
   capability queries to that helper.
   `MainViewModel.Telemetry.cs` owns source telemetry projection and
-  source-aware auto-retargeting hints. `MainViewModel.TargetPresentation.cs`
-  owns HDR runtime state/readiness projection from capture runtime snapshots
-  and target-summary property application.
+  source-aware auto-retargeting hints.
   `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
   owns source telemetry summary, telemetry age, and target-summary display text formatting.
   `MainViewModel.Settings.cs` owns settings initialization and simple

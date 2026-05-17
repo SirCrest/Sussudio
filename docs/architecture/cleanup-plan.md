@@ -2142,9 +2142,10 @@ is the XAML-facing adapter, while
 `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs` owns label formatting.
 Source telemetry summary, telemetry age, and target-summary display text
 formatting now live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`.
-HDR runtime state/readiness projection from capture runtime snapshots and
-target-summary property application live in
-`Sussudio/ViewModels/MainViewModel.TargetPresentation.cs`.
+HDR runtime state/readiness projection from capture runtime snapshots,
+target-summary property application, live-signal info projection, and
+auto-resolution display text live together in
+`Sussudio/ViewModels/MainViewModel.CapturePresentation.cs`.
 
 Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
 and volume save suppression now live in
@@ -3038,10 +3039,12 @@ Remaining `tools/Common` ownership:
    `OutputDriveSpacePresentationBuilder.cs`. Recording size/bitrate
    projection and recording-state reset reactions also live in
    `MainViewModel.RecordingRuntime.cs`, and
-   live-capture info projection from runtime snapshots now lives in
-   `MainViewModel.LiveSignalPresentation.cs`, including audio-preview activity
-   and live resolution/frame-rate/pixel-format assignment plus preview-stop
-   live-info reset; live-signal label formatting now lives in
+   capture presentation adapters now live in
+   `MainViewModel.CapturePresentation.cs`: live-capture info projection from
+   runtime snapshots, audio-preview activity, live resolution/frame-rate/pixel-format
+   assignment, preview-stop live-info reset, HDR runtime state/readiness
+   projection, target-summary property application, and auto-resolution display
+   text; live-signal label formatting now lives in
    `Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs`. Capture
    settings projection from UI/runtime state is sampled by
    `MainViewModel.CaptureSettings.cs` and projected by
@@ -3149,7 +3152,7 @@ Remaining `tools/Common` ownership:
    auto-value detection, and effective resolution query helpers live in
    `MainViewModel.AutoResolutionState.cs`; auto-resolution display text used by
    status and telemetry presentation lives in
-   `MainViewModel.AutoResolutionPresentation.cs`.
+   `MainViewModel.CapturePresentation.cs`.
    Pure resolution selection policy now lives in the
    `Sussudio/ViewModels/CaptureResolutionSelectionPolicy*.cs` family:
    `CaptureResolutionSelectionPolicy.cs` owns the facade,
@@ -3168,7 +3171,7 @@ Remaining `tools/Common` ownership:
    Source telemetry summary, telemetry age, and target-summary display text
    formatting now live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`;
    HDR runtime state/readiness projection and target-summary property
-   application live in `MainViewModel.TargetPresentation.cs`; keep snapshot
+   application live in `MainViewModel.CapturePresentation.cs`; keep snapshot
    application and source-aware auto-retargeting in `MainViewModel.Telemetry.cs`.
    Settings initialization and simple persistence reactions stay in
    `MainViewModel.Settings.cs`; the impure settings load/save adapter stays in

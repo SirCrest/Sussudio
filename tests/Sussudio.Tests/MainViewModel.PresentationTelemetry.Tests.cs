@@ -78,26 +78,25 @@ static partial class Program
     private static Task SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
     {
         var telemetryText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Telemetry.cs").Replace("\r\n", "\n");
-        var targetPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.TargetPresentation.cs").Replace("\r\n", "\n");
-        var autoResolutionPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionPresentation.cs").Replace("\r\n", "\n");
+        var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CapturePresentation.cs").Replace("\r\n", "\n");
         var builderText = ReadRepoFile("Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs").Replace("\r\n", "\n");
 
         AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(_latestSourceTelemetry, DateTimeOffset.UtcNow);");
         AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(snapshot, DateTimeOffset.UtcNow);");
         AssertContains(telemetryText, "UpdateTargetSummary();");
         AssertDoesNotContain(telemetryText, "private void UpdateHdrRuntimeStatusFromCapture(");
-        AssertContains(targetPresentationText, "private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
-        AssertContains(targetPresentationText, "HdrRuntimeState = runtime.HdrRuntimeState;");
-        AssertContains(targetPresentationText, "HdrReadinessReason = runtime.HdrReadinessReason;");
-        AssertContains(targetPresentationText, "UpdateTargetSummary();");
+        AssertContains(capturePresentationText, "private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
+        AssertContains(capturePresentationText, "HdrRuntimeState = runtime.HdrRuntimeState;");
+        AssertContains(capturePresentationText, "HdrReadinessReason = runtime.HdrReadinessReason;");
+        AssertContains(capturePresentationText, "UpdateTargetSummary();");
         AssertDoesNotContain(telemetryText, "private void UpdateTargetSummary()");
         AssertDoesNotContain(telemetryText, "SourceTelemetryPresentationBuilder.BuildTargetSummary(");
-        AssertContains(targetPresentationText, "private void UpdateTargetSummary()");
-        AssertContains(targetPresentationText, "SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(");
-        AssertContains(targetPresentationText, "GetSelectedResolutionDisplayText(),");
-        AssertContains(targetPresentationText, "SelectedFriendlyFrameRate,");
-        AssertContains(targetPresentationText, "SelectedExactFrameRate,");
-        AssertContains(targetPresentationText, "SelectedExactFrameRateArg,");
+        AssertContains(capturePresentationText, "private void UpdateTargetSummary()");
+        AssertContains(capturePresentationText, "SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(");
+        AssertContains(capturePresentationText, "GetSelectedResolutionDisplayText(),");
+        AssertContains(capturePresentationText, "SelectedFriendlyFrameRate,");
+        AssertContains(capturePresentationText, "SelectedExactFrameRate,");
+        AssertContains(capturePresentationText, "SelectedExactFrameRateArg,");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.HdrRuntimePresentation.cs")),
@@ -106,7 +105,15 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.TargetSummaryPresentation.cs")),
             "old target summary presentation file removed");
-        AssertContains(autoResolutionPresentationText, "private string GetSelectedResolutionDisplayText()");
+        AssertContains(capturePresentationText, "private string GetSelectedResolutionDisplayText()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.TargetPresentation.cs")),
+            "old target presentation file removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutoResolutionPresentation.cs")),
+            "old auto resolution presentation file removed");
         AssertDoesNotContain(telemetryText, "private static string BuildSourceTelemetrySummaryText(");
         AssertDoesNotContain(telemetryText, "private static string BuildTelemetryAgeText(");
         AssertDoesNotContain(telemetryText, "Source: waiting for signal telemetry");
@@ -130,7 +137,7 @@ static partial class Program
     {
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs")
             .Replace("\r\n", "\n");
-        var liveSignalPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.LiveSignalPresentation.cs")
+        var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CapturePresentation.cs")
             .Replace("\r\n", "\n");
         var liveSignalText = ReadRepoFile("Sussudio/ViewModels/LiveSignalTextPresentationBuilder.cs")
             .Replace("\r\n", "\n");
@@ -146,21 +153,25 @@ static partial class Program
         AssertDoesNotContain(runtimeLifecycleControllerText, "IsAudioPreviewActive =");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateLiveCaptureInfo(");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private void ResetLiveCaptureInfo()");
-        AssertContains(liveSignalPresentationText, "private void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
-        AssertContains(liveSignalPresentationText, "IsAudioPreviewActive = runtime.IsAudioPreviewActive;");
-        AssertContains(liveSignalPresentationText, "var liveSignalText = LiveSignalTextPresentationBuilder.Build(");
-        AssertContains(liveSignalPresentationText, "_captureService.EncoderCodecName,");
-        AssertContains(liveSignalPresentationText, "LiveInfoUnavailable);");
-        AssertContains(liveSignalPresentationText, "LiveResolution = liveSignalText.Resolution;");
-        AssertContains(liveSignalPresentationText, "LiveFrameRate = liveSignalText.FrameRate;");
-        AssertContains(liveSignalPresentationText, "LivePixelFormat = liveSignalText.PixelFormat;");
-        AssertContains(liveSignalPresentationText, "private void ResetLiveCaptureInfo()");
-        AssertContains(liveSignalPresentationText, "partial void OnIsPreviewingChanged(bool value)");
-        AssertContains(liveSignalPresentationText, "if (!value && !IsRecording)");
-        AssertContains(liveSignalPresentationText, "IsAudioPreviewActive = false;");
-        AssertContains(liveSignalPresentationText, "LiveResolution = LiveInfoUnavailable;");
-        AssertContains(liveSignalPresentationText, "LiveFrameRate = LiveInfoUnavailable;");
-        AssertContains(liveSignalPresentationText, "LivePixelFormat = LiveInfoUnavailable;");
+        AssertContains(capturePresentationText, "private void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
+        AssertContains(capturePresentationText, "IsAudioPreviewActive = runtime.IsAudioPreviewActive;");
+        AssertContains(capturePresentationText, "var liveSignalText = LiveSignalTextPresentationBuilder.Build(");
+        AssertContains(capturePresentationText, "_captureService.EncoderCodecName,");
+        AssertContains(capturePresentationText, "LiveInfoUnavailable);");
+        AssertContains(capturePresentationText, "LiveResolution = liveSignalText.Resolution;");
+        AssertContains(capturePresentationText, "LiveFrameRate = liveSignalText.FrameRate;");
+        AssertContains(capturePresentationText, "LivePixelFormat = liveSignalText.PixelFormat;");
+        AssertContains(capturePresentationText, "private void ResetLiveCaptureInfo()");
+        AssertContains(capturePresentationText, "partial void OnIsPreviewingChanged(bool value)");
+        AssertContains(capturePresentationText, "if (!value && !IsRecording)");
+        AssertContains(capturePresentationText, "IsAudioPreviewActive = false;");
+        AssertContains(capturePresentationText, "LiveResolution = LiveInfoUnavailable;");
+        AssertContains(capturePresentationText, "LiveFrameRate = LiveInfoUnavailable;");
+        AssertContains(capturePresentationText, "LivePixelFormat = LiveInfoUnavailable;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.LiveSignalPresentation.cs")),
+            "old live signal presentation file removed");
         AssertDoesNotContain(runtimeLifecycleControllerText, "runtime.ReaderSourceSubtype ??");
         AssertDoesNotContain(runtimeLifecycleControllerText, "runtime.LatestObservedFramePixelFormat ??");
         AssertContains(liveSignalText, "internal static class LiveSignalTextPresentationBuilder");

@@ -141,7 +141,7 @@ static partial class Program
         var mainViewModelRuntimeLifecycleControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeLifecycleController.cs"));
         var mainViewModelRecordingRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingRuntime.cs"));
         var outputDriveSpacePresentationBuilderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "OutputDriveSpacePresentationBuilder.cs"));
-        var mainViewModelLiveSignalPresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.LiveSignalPresentation.cs"));
+        var mainViewModelCapturePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CapturePresentation.cs"));
         var mainViewModelDisposalText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Disposal.cs"));
         AssertContains(mainViewModelDispatchingText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelDispatchingText, "_uiDispatchController.Enqueue(operation, operationName, allowDuringDispose);");
@@ -189,8 +189,8 @@ static partial class Program
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private void OnSystemPowerModeChanged");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "e.Mode != PowerModes.Resume");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
-        AssertContains(mainViewModelLiveSignalPresentationText, "partial void OnIsPreviewingChanged(bool value)");
-        AssertContains(mainViewModelLiveSignalPresentationText, "ResetLiveCaptureInfo();");
+        AssertContains(mainViewModelCapturePresentationText, "partial void OnIsPreviewingChanged(bool value)");
+        AssertContains(mainViewModelCapturePresentationText, "ResetLiveCaptureInfo();");
         AssertDoesNotContain(mainViewModelRuntimeLifecycleControllerText, "private void UpdateDiskSpace()");
         AssertDoesNotContain(mainViewModelRuntimeLifecycleControllerText, "partial void OnIsPreviewingChanged(bool value)");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "public void Start()");

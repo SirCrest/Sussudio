@@ -7,7 +7,7 @@ static partial class Program
         var resolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptions.cs").Replace("\r\n", "\n");
         var autoResolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionOptions.cs").Replace("\r\n", "\n");
         var autoResolutionStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionState.cs").Replace("\r\n", "\n");
-        var autoResolutionPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionPresentation.cs").Replace("\r\n", "\n");
+        var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CapturePresentation.cs").Replace("\r\n", "\n");
         var autoCaptureSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs").Replace("\r\n", "\n");
         var selectionPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
         var helperText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
@@ -54,9 +54,9 @@ static partial class Program
         AssertContains(autoResolutionStateText, "AutoResolvedWidth = selection?.Resolution.Width;");
         AssertContains(autoResolutionStateText, "private void ClearAutoResolutionState()");
         AssertDoesNotContain(autoResolutionStateText, "private string GetSelectedResolutionDisplayText()");
-        AssertContains(autoResolutionPresentationText, "/// Auto-resolution display labels used by status and telemetry presentation.");
-        AssertContains(autoResolutionPresentationText, "private string GetSelectedResolutionDisplayText()");
-        AssertContains(autoResolutionPresentationText, "return $\"{AutoResolutionValue} ({GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value)} @ {friendlyRate.Value:0} fps)\";");
+        AssertContains(capturePresentationText, "/// Capture presentation adapters that apply runtime/source state to ViewModel labels.");
+        AssertContains(capturePresentationText, "private string GetSelectedResolutionDisplayText()");
+        AssertContains(capturePresentationText, "return $\"{AutoResolutionValue} ({GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value)} @ {friendlyRate.Value:0} fps)\";");
         AssertContains(autoResolutionStateText, "private static bool IsAutoResolutionValue(");
         AssertContains(autoResolutionStateText, "private bool TryResolveResolutionKey(");
         AssertContains(autoResolutionStateText, "private string? GetEffectiveResolutionKey(");
