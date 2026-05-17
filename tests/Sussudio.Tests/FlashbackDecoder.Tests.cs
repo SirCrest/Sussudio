@@ -156,6 +156,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackDecoder_DecodeLoopLivesInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var decodeLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(decodeLoopText, "private PlaybackDecodePhaseTimings _lastDecodePhaseTimings;");
+        AssertContains(decodeLoopText, "public PlaybackDecodePhaseTimings LastDecodePhaseTimings => _lastDecodePhaseTimings;");
+        AssertContains(decodeLoopText, "public readonly record struct PlaybackDecodePhaseTimings(");
+        AssertContains(decodeLoopText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
+        AssertContains(decodeLoopText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
+        AssertContains(decodeLoopText, "ffmpeg.av_read_frame(_formatCtx, _packet)");
+        AssertContains(decodeLoopText, "DecodeAndDeliverAudioPacket(_packet);");
+        AssertDoesNotContain(rootText, "private PlaybackDecodePhaseTimings _lastDecodePhaseTimings;");
+        AssertDoesNotContain(rootText, "public PlaybackDecodePhaseTimings LastDecodePhaseTimings => _lastDecodePhaseTimings;");
+        AssertDoesNotContain(rootText, "public readonly record struct PlaybackDecodePhaseTimings(");
+        AssertDoesNotContain(rootText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(rootText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");

@@ -1316,8 +1316,10 @@ configuration diagnostics now live in
 output, D3D11/software frame validation, plane copies, and YUV-to-NV12/P010
 conversion now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs`. Keep file
-open/close, decode control flow, and native cleanup in the root decoder until
-those areas get their own focused slices. Keyframe/exact seek control flow,
+open/close and initialization/disposal lifecycle in the root decoder. Video
+frame receive, packet feeding, inline audio interleave during video reads, and
+decode phase timing state now live in
+`Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs`. Keyframe/exact seek control flow,
 pending-frame transfer, seek-cap diagnostics, and seek-buffer flushing now live
 in `Sussudio/Services/Flashback/FlashbackDecoder.Seeking.cs`. Shared PTS
 conversion, seek timestamp conversion, best-effort frame timestamp selection,

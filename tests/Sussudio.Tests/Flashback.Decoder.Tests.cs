@@ -201,6 +201,8 @@ static partial class Program
     private static Task FlashbackDecoder_DecodeLoopsObserveCancellation()
     {
         var sourceText = ReadFlashbackDecoderSource();
+        var decodeLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.DecodeLoop.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
         AssertContains(sourceText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
@@ -218,12 +220,8 @@ static partial class Program
         AssertContains(seekToBlock, "cancellationToken.ThrowIfCancellationRequested();");
         AssertOccursBefore(seekToBlock, "cancellationToken.ThrowIfCancellationRequested();\n                if (!TryDecodeNextVideoFrame", "if (!TryDecodeNextVideoFrame(out var frame, cancellationToken))");
 
-        var decodeBlock = ExtractTextBetween(
-            sourceText,
-            "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame",
-            "    public void Dispose()");
-        AssertContains(decodeBlock, "cancellationToken.ThrowIfCancellationRequested();");
-        AssertContains(decodeBlock, "if (!FeedNextVideoPacket(cancellationToken))");
+        AssertContains(decodeLoopText, "cancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(decodeLoopText, "if (!FeedNextVideoPacket(cancellationToken))");
 
         return Task.CompletedTask;
     }
@@ -273,11 +271,12 @@ static partial class Program
 
         AssertEqual(null, callbackProperty.GetValue(decoder), "Disposed decoder clears audio callback");
 
-        var sourceText = ReadFlashbackDecoderSource();
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
         var disposeBlock = ExtractTextBetween(
             sourceText,
             "public void Dispose()",
-            "private bool FeedNextVideoPacket");
+            "// Free persistent D3D11VA device context");
         AssertContains(disposeBlock, "AudioChunkCallback = null;");
         AssertOccursBefore(disposeBlock, "AudioChunkCallback = null;", "CloseFileCore();");
 

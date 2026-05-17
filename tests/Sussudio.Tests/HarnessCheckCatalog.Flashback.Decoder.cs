@@ -30,6 +30,9 @@ static partial class Program
             "Flashback decoder seeking lives in focused partial",
             FlashbackDecoder_SeekingLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "Flashback decoder decode loop lives in focused partial",
+            FlashbackDecoder_DecodeLoopLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "Flashback decoder defaults to closed state",
             FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized);
         await AddCheckAsync(results,
