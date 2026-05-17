@@ -6,7 +6,8 @@ public sealed partial class AutomationDiagnosticsHub
 {
     private static HdrPipelineProjection BuildHdrPipelineProjection(
         ViewModelRuntimeSnapshot viewModelSnapshot,
-        CaptureRuntimeSnapshot captureRuntime)
+        CaptureRuntimeSnapshot captureRuntime,
+        HdrTruthVerdict truthVerdict)
         => new()
         {
             IsHdrAvailable = viewModelSnapshot.IsHdrAvailable,
@@ -26,7 +27,8 @@ public sealed partial class AutomationDiagnosticsHub
             PipelineModeStatus = captureRuntime.PipelineModeStatus,
             PipelineModeReason = captureRuntime.PipelineModeReason,
             TelemetryAlignmentStatus = captureRuntime.TelemetryAlignmentStatus,
-            TelemetryAlignmentReason = captureRuntime.TelemetryAlignmentReason
+            TelemetryAlignmentReason = captureRuntime.TelemetryAlignmentReason,
+            TruthVerdict = truthVerdict
         };
 
     private static string PreferViewModelHdrText(string viewModelValue, string runtimeValue)
@@ -52,5 +54,6 @@ public sealed partial class AutomationDiagnosticsHub
         public string PipelineModeReason { get; init; }
         public string TelemetryAlignmentStatus { get; init; }
         public string TelemetryAlignmentReason { get; init; }
+        public HdrTruthVerdict TruthVerdict { get; init; }
     }
 }

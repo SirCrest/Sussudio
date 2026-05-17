@@ -55,8 +55,7 @@ public sealed partial class AutomationDiagnosticsHub
             previewRuntime,
             recentD3DMissedRefreshes,
             recentD3DStatsFailures);
-        var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime);
-        var hdrTruth = BuildHdrTruthProjection(hdrTruthVerdict);
+        var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime, hdrTruthVerdict);
         var flashbackExport = BuildFlashbackExportProjection(health);
         var flashbackExportLastResult = BuildFlashbackExportLastResultProjection(health);
         var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);
@@ -86,7 +85,6 @@ public sealed partial class AutomationDiagnosticsHub
             mjpeg,
             previewD3D,
             hdrPipeline,
-            hdrTruth,
             flashbackExport,
             flashbackExportLastResult,
             flashbackRecording,
@@ -117,7 +115,6 @@ public sealed partial class AutomationDiagnosticsHub
         MjpegProjection Mjpeg,
         PreviewD3DProjection PreviewD3D,
         HdrPipelineProjection HdrPipeline,
-        HdrTruthProjection HdrTruth,
         FlashbackExportProjection FlashbackExport,
         FlashbackExportLastResultProjection FlashbackExportLastResult,
         FlashbackRecordingProjection FlashbackRecording,

@@ -30,7 +30,6 @@ public sealed partial class AutomationDiagnosticsHub
         var mjpeg = projections.Mjpeg;
         var previewD3D = projections.PreviewD3D;
         var hdrPipeline = projections.HdrPipeline;
-        var hdrTruth = projections.HdrTruth;
         var flashbackExport = projections.FlashbackExport;
         var flashbackExportLastResult = projections.FlashbackExportLastResult;
         var flashbackRecording = projections.FlashbackRecording;
@@ -656,7 +655,7 @@ public sealed partial class AutomationDiagnosticsHub
             LastOutputExists = recordingOutput.LastOutputExists,
             LastOutputSizeBytes = recordingOutput.LastOutputSizeBytes,
             LastVerification = recordingOutput.LastVerification,
-            HdrTruthVerdict = hdrTruth.Verdict,
+            HdrTruthVerdict = hdrPipeline.TruthVerdict,
             MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,
             MemoryPrivateBytesMb = processResourceProjection.MemoryPrivateBytesMb,
             MemoryManagedHeapMb = processResourceProjection.MemoryManagedHeapMb,
