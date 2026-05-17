@@ -2674,15 +2674,15 @@ Diagnostic-session cleanup restore validation now lives in
 Flashback, and playback state that remain active after the runner attempts
 cleanup.
 
-Diagnostic-session Flashback cycle scenarios now live in
-`tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` as a marker shell.
+Diagnostic-session Flashback cycle scenarios now live in named partial owners.
 `DiagnosticSessionFlashbackCycleScenarios.Restart.cs` owns the restart-cycle
 command flow, playback priming, restart validation, export verification, and
 restart-cycle warning/action strings. `DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
 owns preset cycling, buffer readiness, export verification, preset restoration,
 and encoder-cycle warning/action strings. `.Registrations.cs` owns task
 registration, priority, task-label, and started-action wiring while startup only
-delegates selected cycle scenario registration.
+delegates selected cycle scenario registration. Do not reintroduce an empty
+family root.
 
 Diagnostic-session sampling now lives in
 `tools/Common/DiagnosticSessionSampler.cs`. Keep the sample append before the
@@ -2698,20 +2698,19 @@ owns D3D slow-frame and CPU timing summaries, `.PlaybackCommands.cs` owns
 playback command-health deltas, and `.Counters.cs` owns shared counter-delta
 helpers.
 
-Diagnostic-session Flashback export helpers now live in the
-`tools/Common/DiagnosticSessionFlashbackExports*.cs` partial family. The root
-is a marker shell, while strict export verification payload construction,
-rotated-export segment-count parsing, range-selection cleanup, and the range
-export audio-switch companion command each live in a named partial. Scenario
-command sequencing lives in separate scenario owners.
+Diagnostic-session Flashback export helpers now live in concrete
+`tools/Common/DiagnosticSessionFlashbackExports*.cs` partial owners. Strict
+export verification payload construction, rotated-export segment-count parsing,
+range-selection cleanup, and the range export audio-switch companion command
+each live in a named partial. Scenario command sequencing lives in separate
+scenario owners. Do not reintroduce an empty family root.
 
 Diagnostic-session Flashback export scenarios now live in a focused partial
-family rooted at `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs`.
-The root is only a marker shell; concurrent export, disable-during-export,
-rotated export, export during playback, and selection-range export flows each
-have their own named file. `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
+family of named owners. Concurrent export, disable-during-export, rotated
+export, export during playback, and selection-range export flows each have
+their own named file. `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
 owns export scenario task registration while diagnostic-session startup makes a
-single qualified call into that owner.
+single qualified call into that owner. Do not reintroduce an empty family root.
 
 Diagnostic-session Flashback lifecycle checks now live in
 `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`. They own the
@@ -2719,12 +2718,12 @@ pause/seek/play disable-and-re-enable task registration, flow, and post-disable
 playback queue assertions while startup only delegates to the lifecycle owner.
 
 Diagnostic-session Flashback metric projection now lives in a focused partial
-family rooted at `tools/Common/DiagnosticSessionFlashbackMetrics.cs`. The root
-is only a marker shell; DTOs, recording metrics, playback session aggregation,
+family of named owners. DTOs, recording metrics, playback session aggregation,
 playback result copying, and export metrics each have named owner files. Export
 metrics also own force-rotate fallback total, delta, and last fallback segment
 count, derived outside export-observed relevance gating. These helpers remain
-snapshot-only projections and must not send automation commands.
+snapshot-only projections and must not send automation commands. Do not
+reintroduce an empty family root.
 
 MCP fixed command routes should use `AutomationCommandKind` overloads when the
 command is part of the shared catalog. Keep this as an ownership rule, not a
@@ -2862,16 +2861,13 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionRecordingVerification.cs`
-- `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Restart.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Registrations.cs`
-- `DiagnosticSessionFlashbackExports.cs`
 - `DiagnosticSessionFlashbackExports.AudioSwitch.cs`
 - `DiagnosticSessionFlashbackExports.SegmentCount.cs`
 - `DiagnosticSessionFlashbackExports.SelectionCleanup.cs`
 - `DiagnosticSessionFlashbackExports.VerifyPayload.cs`
-- `DiagnosticSessionFlashbackExportScenarios.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
@@ -2881,7 +2877,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
 - `DiagnosticSessionFlashbackLifecycleScenarios.cs`
-- `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
 - `DiagnosticSessionFlashbackMetrics.Models.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`

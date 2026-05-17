@@ -6,17 +6,14 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
-        var rootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs")
-            .Replace("\r\n", "\n");
         var restartText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.Restart.cs")
             .Replace("\r\n", "\n");
         var encoderText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.Encoder.cs")
             .Replace("\r\n", "\n");
+        var registrationsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackCycleScenarios.Registrations.cs")
+            .Replace("\r\n", "\n");
         var cyclesText = ReadDiagnosticSessionFlashbackCycleScenariosSource();
 
-        AssertContains(rootText, "internal static partial class DiagnosticSessionFlashbackCycleScenarios");
-        AssertDoesNotContain(rootText, "RunFlashbackRestartCycleAsync(");
-        AssertDoesNotContain(rootText, "RunFlashbackEncoderCycleAsync(");
         AssertContains(restartText, "internal static partial class DiagnosticSessionFlashbackCycleScenarios");
         AssertContains(restartText, "internal static async Task RunFlashbackRestartCycleAsync(");
         AssertContains(restartText, "\"RestartFlashback\"");
@@ -27,6 +24,9 @@ static partial class Program
         AssertContains(encoderText, "var cycledPreset = string.Equals(originalPreset, \"P1\", StringComparison.OrdinalIgnoreCase) ? \"P2\" : \"P1\";");
         AssertContains(encoderText, "\"flashback-encoder-cycle-export.mp4\"");
         AssertContains(encoderText, "flashback encoder preset restored to");
+        AssertContains(registrationsText, "internal static partial class DiagnosticSessionFlashbackCycleScenarios");
+        AssertDoesNotContain(registrationsText, "internal static async Task RunFlashbackRestartCycleAsync(");
+        AssertDoesNotContain(registrationsText, "internal static async Task RunFlashbackEncoderCycleAsync(");
         AssertContains(cyclesText, "internal static void RegisterSelectedFlashbackCycleScenarioTasks(");
         AssertContains(cyclesText, "4,\n                \"flashback-restart-cycle-task\",");
         AssertContains(cyclesText, "5,\n                \"flashback-encoder-cycle-task\",");

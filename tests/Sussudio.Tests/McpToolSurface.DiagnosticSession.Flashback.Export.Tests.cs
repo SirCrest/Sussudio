@@ -55,8 +55,6 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
-        var exportsRootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
-            .Replace("\r\n", "\n");
         var segmentCountText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.SegmentCount.cs")
             .Replace("\r\n", "\n");
         var verifyPayloadText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.VerifyPayload.cs")
@@ -66,11 +64,7 @@ static partial class Program
         var selectionCleanupText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.SelectionCleanup.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(exportsRootText, "internal static partial class DiagnosticSessionFlashbackExports");
-        AssertDoesNotContain(exportsRootText, "TryParseFlashbackExportSegmentCount(");
-        AssertDoesNotContain(exportsRootText, "CreateFlashbackExportVerifyPayload(");
-        AssertDoesNotContain(exportsRootText, "ToggleAudioEnabledDuringFlashbackExportAsync(");
-        AssertDoesNotContain(exportsRootText, "CleanupFlashbackSelectionAsync(");
+        AssertContains(segmentCountText, "internal static partial class DiagnosticSessionFlashbackExports");
         AssertContains(segmentCountText, "internal static int? TryParseFlashbackExportSegmentCount(");
         AssertContains(segmentCountText, "const string marker = \" from \";");
         AssertContains(segmentCountText, "suffix.Contains(\"segment\", StringComparison.OrdinalIgnoreCase)");

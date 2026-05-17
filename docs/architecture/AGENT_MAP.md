@@ -2935,8 +2935,6 @@ Primary owners:
 - `tools/Common/DiagnosticSessionCleanupPolicy.cs` owns cleanup restore
   validation after diagnostic sessions stop recording, preview, Flashback, or
   playback state.
-- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` is the Flashback
-  diagnostic restart/encoder cycle marker shell.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.Restart.cs` owns the
   restart-cycle command flow, including playback priming, restart validation,
   export verification, and restart-cycle warning/action strings.
@@ -2960,8 +2958,6 @@ Primary owners:
   command-health deltas.
 - `tools/Common/DiagnosticSessionMetrics.Counters.cs` owns shared counter-delta
   helpers.
-- `tools/Common/DiagnosticSessionFlashbackExports.cs` is the Flashback export
-  diagnostic helper marker shell.
 - `tools/Common/DiagnosticSessionFlashbackExports.SegmentCount.cs` owns
   rotated-export segment-count parsing.
 - `tools/Common/DiagnosticSessionFlashbackExports.VerifyPayload.cs` owns
@@ -2970,15 +2966,14 @@ Primary owners:
   audio-toggle companion used by the range export audio-switch scenario.
 - `tools/Common/DiagnosticSessionFlashbackExports.SelectionCleanup.cs` owns
   range-selection cleanup.
-- `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs` is the Flashback
-  export diagnostic scenario marker shell. Concurrent export,
-  disable-during-export, rotated export, export-during-playback, and
-  selection-range export flows live in focused files:
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`,
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`,
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs`,
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs`, and
-  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs`.
+- Flashback export diagnostic scenario flows live in focused files:
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
+  owns concurrent export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
+  owns disable-during-export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Rotated.cs`
+  owns rotated export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs`
+  owns export-during-playback, and
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs` owns
+  selection-range export.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
   owns range duration/status validation, and
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`
@@ -2989,9 +2984,7 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs` owns
   Flashback playback disable/re-enable lifecycle diagnostic task registration
   and flow.
-- `tools/Common/DiagnosticSessionFlashbackMetrics.cs` is the Flashback metric
-  projection marker shell.
-  `tools/Common/DiagnosticSessionFlashbackMetrics.Models.cs` owns session/result
+- `tools/Common/DiagnosticSessionFlashbackMetrics.Models.cs` owns session/result
   DTOs. `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.LowPercentile.cs`,
