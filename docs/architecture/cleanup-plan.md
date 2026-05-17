@@ -2435,7 +2435,8 @@ Diagnostic-session result construction now lives in
 orchestration, artifact-write handoff, summary-write handoff, and final
 summary emission while the runner keeps the phase sequence. It also owns
 final-result orchestration from analysis and artifact paths into the named
-projection set and flattening owner.
+projection set and flattening owner, plus Flashback playback projection
+composition from focused playback projection owners.
 `DiagnosticSessionResultBuilder.Flattening.cs` owns final
 `DiagnosticSessionResult` DTO assignment from the projection set; keep domain
 projection composition outside this initializer. The root owns projection-set
@@ -2468,8 +2469,7 @@ so D3D summary fields are kept out of the broader preview projection. Preview
 visual-cadence result projection values live in
 `DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs` so visual
 cadence summary fields have the same focused owner.
-Flashback playback result composition lives in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`, while command
+Flashback playback result composition lives in the root result builder, while command
 queue, cadence/1% low, decode timing, audio-master/A/V drift, and stage/seek
 DTO projection values live in focused `FlashbackPlayback*Result.cs` partials
 so result construction can consume one named playback projection while
@@ -2924,7 +2924,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
-- `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackDecodeResult.cs`

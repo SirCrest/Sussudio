@@ -2754,8 +2754,10 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,
   final summary emission, and final-result orchestration from analysis and
-  artifact paths into the named projection set and flattening owner. Keep
-  `summary.json` field shape stable in the builder family.
+  artifact paths into the named projection set and flattening owner. It also
+  owns Flashback playback projection composition from focused playback
+  projection owners. Keep `summary.json` field shape stable in the builder
+  family.
 - `tools/Common/DiagnosticSessionResultBuilder.Flattening.cs` owns final
   `DiagnosticSessionResult` DTO assignment from the projection set. Keep
   domain projection composition in the projection owners and root projection-set
@@ -2781,9 +2783,6 @@ Primary owners:
   analysis: target-FPS fallback, visual-cadence tolerance checks, sparse
   deadline/drop tolerance selection, and the call into shared Flashback
   preview validation.
-- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` owns
-  Flashback playback result projection composition from focused playback
-  projection owners.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackCommandsResult.cs`
   owns Flashback playback command queue DTO projection values.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackCadenceResult.cs`
