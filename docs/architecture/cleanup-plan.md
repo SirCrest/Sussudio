@@ -451,9 +451,11 @@ lives in `AutomationSnapshotFormatter.Flashback.cs` with encoder, buffer,
 cache, queue, failure, playback, and export text kept together. MJPEG timing,
 AV sync, preview routing, D3D preview text, thread-health, and source sections
 live in the remaining focused formatter partials. The
-`AutomationSnapshotFormatter.PreviewD3D*.cs` family keeps D3D header/routing,
-CPU timing, frame-flow, frame-latency wait, DXGI frame stats, and slow-frame
-diagnostics in separate owners while preserving output order. Tests that
+`AutomationSnapshotFormatter.PreviewD3D.cs` owner keeps D3D header/routing,
+CPU timing, frame-flow, frame-latency wait, and DXGI frame stats together while
+preserving output order. Slow-frame diagnostics stay in
+`AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs` because `ssctl` reuses
+that formatter directly. Tests that
 reason about formatter source use `ReadAutomationSnapshotFormatterSource()` so
 ownership checks cover the full partial family.
 

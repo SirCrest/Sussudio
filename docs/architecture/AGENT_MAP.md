@@ -3143,10 +3143,6 @@ Primary owners:
   `tools/Common/AutomationSnapshotFormatter.AvSync.cs`,
   `tools/Common/AutomationSnapshotFormatter.Preview.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs`,
-  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.CpuTiming.cs`,
-  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameFlow.cs`,
-  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameLatencyWait.cs`,
-  `tools/Common/AutomationSnapshotFormatter.PreviewD3D.FrameStats.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs`,
   `tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs`, and
   `tools/Common/AutomationSnapshotFormatter.Source.cs` own the named snapshot
