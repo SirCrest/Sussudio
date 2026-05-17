@@ -105,9 +105,12 @@ static partial class Program
         AssertContains(captureServiceTelemetryText, "Telemetry poll start deferred until canceled poll exits");
 
         var audioControlsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioControls.cs"));
+        var deviceAudioRefreshText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRefresh.cs"));
         var analogAudioGainText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs"));
-        AssertContains(audioControlsText, "RefreshDeviceAudioControlsAsync(");
-        AssertContains(audioControlsText, "ReadStateAsync(device, cancellationToken)");
+        AssertContains(deviceAudioRefreshText, "RefreshDeviceAudioControlsAsync(");
+        AssertContains(deviceAudioRefreshText, "ReadStateAsync(device, cancellationToken)");
+        AssertContains(deviceAudioRefreshText, "NATIVEXU_AUDIO_RESTORE_READ_ONLY");
+        AssertDoesNotContain(audioControlsText, "RefreshDeviceAudioControlsAsync(");
         AssertContains(audioControlsText, "Device audio mode failure readback ignored");
         AssertContains(audioControlsText, "failureState.Mode");
         AssertContains(audioControlsText, "failureState.AnalogGainPercent");

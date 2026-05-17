@@ -132,9 +132,12 @@ static partial class Program
         AssertNotNull(viewModelType.GetMethod("SaveMicrophoneVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SaveMicrophoneVolume");
 
         var audioControlsCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioControls.cs");
+        var deviceAudioRefreshText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioRefresh.cs")
+            .Replace("\r\n", "\n");
+        var deviceAudioRefreshCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioRefresh.cs");
         var analogAudioGainCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs");
         var microphoneVolumeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.MicrophoneVolume.cs");
-        var audioCode = audioControlsCode + "\n" + analogAudioGainCode + "\n" + microphoneVolumeCode;
+        var audioCode = audioControlsCode + "\n" + deviceAudioRefreshCode + "\n" + analogAudioGainCode + "\n" + microphoneVolumeCode;
         var setMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "SetMicrophoneEndpointVolume");
         var getMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "GetMicrophoneEndpointVolume");
         var refreshDeviceAudioControls = ExtractMemberCode(audioCode, "RefreshDeviceAudioControlsAsync");
@@ -148,6 +151,9 @@ static partial class Program
         AssertContains(microphoneVolumeCode, "partial void OnMicrophoneVolumeChanged(double value)");
         AssertDoesNotContain(audioControlsCode, "SetMicrophoneEndpointVolume");
         AssertDoesNotContain(audioControlsCode, "GetMicrophoneEndpointVolume");
+        AssertDoesNotContain(audioControlsCode, "private async Task RefreshDeviceAudioControlsAsync");
+        AssertContains(deviceAudioRefreshCode, "private async Task RefreshDeviceAudioControlsAsync");
+        AssertContains(deviceAudioRefreshText, "Device-native audio-control support probing and state readback.");
         AssertDoesNotContain(audioControlsCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertContains(analogAudioGainCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertDoesNotContain(audioControlsCode, "TryApplyAtDeviceAudioModeAsync");
