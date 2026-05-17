@@ -447,13 +447,9 @@ cadence text live in `AutomationSnapshotFormatter.State.cs`,
 `AutomationSnapshotFormatter.Values.cs`, while byte/number/interval,
 frame-budget, and tick-age display helpers live in
 `AutomationSnapshotFormatter.DisplayValues.cs`; the Flashback gate/header/order
-lives in `AutomationSnapshotFormatter.Flashback.cs`, with
-encoder/buffer/cache/queue/failure text in
-`AutomationSnapshotFormatter.Flashback.Encoding.cs`, playback status/commands
-and cadence/decode/frame/drift text in
-`AutomationSnapshotFormatter.Flashback.Playback.cs`, and export progress/result
-text in `AutomationSnapshotFormatter.Flashback.Export.cs`. MJPEG timing, AV
-sync, preview routing, D3D preview text, thread-health, and source sections
+lives in `AutomationSnapshotFormatter.Flashback.cs` with encoder, buffer,
+cache, queue, failure, playback, and export text kept together. MJPEG timing,
+AV sync, preview routing, D3D preview text, thread-health, and source sections
 live in the remaining focused formatter partials. The
 `AutomationSnapshotFormatter.PreviewD3D*.cs` family keeps D3D header/routing,
 CPU timing, frame-flow, frame-latency wait, DXGI frame stats, and slow-frame
