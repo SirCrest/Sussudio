@@ -17,6 +17,9 @@ static partial class Program
         AssertContains(metricsText, "internal sealed class FlashbackExportSessionMetrics");
         AssertContains(metricsText, "internal static FlashbackRecordingSessionMetrics BuildFlashbackRecordingMetrics(");
         AssertContains(metricsText, "internal static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(");
+        AssertContains(metricsText, "private static void ObservePlaybackOnePercentLow(");
+        AssertContains(metricsText, "private static void ObservePlaybackFrameAndDecodeMetrics(");
+        AssertContains(metricsText, "private static void ObservePlaybackAudioMasterMetrics(");
         AssertContains(metricsText, "internal static FlashbackPlaybackResultMetrics BuildFlashbackPlaybackResultMetrics(");
         AssertContains(metricsText, "internal static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(");
         AssertContains(metricsText, "public long ForceRotateFallbacksAtEnd { get; set; }");

@@ -95,7 +95,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, ": frameCount;");
         AssertContains(diagnosticSessionText, "metrics.EndSessionFrameCount = sessionFrameCount;");
         AssertContains(diagnosticSessionText, "targetFps > 0 ? (long)Math.Ceiling(targetFps * 10.0) : 240");
-        AssertContains(diagnosticSessionText, "onePercentLow > 0 && sessionFrameCount >= minimumPlaybackFramesForLowPercentile");
+        AssertContains(diagnosticSessionText, "if (onePercentLow <= 0 || sessionFrameCount < minimumPlaybackFramesForLowPercentile)");
         AssertContains(diagnosticSessionText, "metrics.OnePercentLowSampleWindowObserved = true;");
         AssertContains(diagnosticSessionText, "metrics.MaxSessionFrameCountObserved = Math.Max(metrics.MaxSessionFrameCountObserved, sessionFrameCount);");
         AssertContains(diagnosticSessionText, "fpsMin={result.FlashbackPlaybackMinObservedFpsObserved:0.##}");
