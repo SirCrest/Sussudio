@@ -93,6 +93,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs")
             .Replace("\r\n", "\n");
+        var mjpegLifecycleSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.MjpegPipelineLifecycle.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(lifecycleSource, "public async Task InitializeAsync(");
         AssertContains(lifecycleSource, "public void Start()");
@@ -102,7 +104,12 @@ static partial class Program
         AssertContains(lifecycleSource, "private async ValueTask DisposeCoreAsync(bool disposeSharedD3DDeviceManager)");
         AssertContains(lifecycleSource, "private void ThrowIfDisposed()");
         AssertContains(lifecycleSource, "private void OnCaptureFatalError(object? sender, Exception ex)");
-        AssertContains(lifecycleSource, "private void OnMjpegPipelineFatalError(Exception ex)");
+        AssertContains(mjpegLifecycleSource, "private static bool ShouldUseExternalMjpegDecode(");
+        AssertContains(mjpegLifecycleSource, "private ParallelMjpegDecodePipeline? CreateExternalMjpegPipelineIfNeeded(");
+        AssertContains(mjpegLifecycleSource, "private void InstallMjpegPreviewJitterBuffer(double fps)");
+        AssertContains(mjpegLifecycleSource, "private void StopAndDisposeMjpegPipeline(ParallelMjpegDecodePipeline mjpegPipelineToStop)");
+        AssertContains(mjpegLifecycleSource, "private static void DisposeMjpegPipelineResources(");
+        AssertContains(mjpegLifecycleSource, "private void OnMjpegPipelineFatalError(Exception ex)");
         AssertDoesNotContain(rootSource, "public async Task InitializeAsync(");
         AssertDoesNotContain(rootSource, "public async Task StopAsync()");
         AssertDoesNotContain(rootSource, "private async ValueTask DisposeCoreAsync(bool disposeSharedD3DDeviceManager)");

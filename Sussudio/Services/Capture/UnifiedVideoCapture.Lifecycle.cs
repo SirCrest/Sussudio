@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Runtime;
@@ -32,36 +31,15 @@ internal sealed partial class UnifiedVideoCapture
 
         var d3dManager = new SharedD3DDeviceManager();
         var dxgiDeviceManagerPtr = d3dManager.DxgiDeviceManagerPtr;
-        ParallelMjpegDecodePipeline? mjpegPipeline = null;
-
-        // 4K120 MJPEG is compressed on the USB wire. In that mode the source
-        // reader must hand compressed samples to our decoder instead of trying
-        // to expose D3D textures directly from Media Foundation.
-        var useExternalMjpegDecode =
-            useMjpegHighFrameRateMode &&
-            !requireP010 &&
-            string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
-
-        if (useExternalMjpegDecode)
-        {
-            try
-            {
-                mjpegPipeline = new ParallelMjpegDecodePipeline(
-                    mjpegDecoderCount,
-                    width,
-                    height,
-                    OnMjpegPipelineFrameEmitted,
-                    OnMjpegPipelineFatalError,
-                    OnMjpegPipelinePreviewFrameDecoded);
-            }
-            catch (Exception ex)
-            {
-                mjpegPipeline?.Dispose();
-                Logger.Log($"SW_MJPEG_PIPELINE_FAIL type={ex.GetType().Name} msg={ex.Message}");
-                throw new InvalidOperationException(
-                    $"CPU MJPEG decode pipeline failed to initialize: {ex.Message}", ex);
-            }
-        }
+        var useExternalMjpegDecode = ShouldUseExternalMjpegDecode(
+            useMjpegHighFrameRateMode,
+            requireP010,
+            requestedPixelFormat);
+        var mjpegPipeline = CreateExternalMjpegPipelineIfNeeded(
+            useExternalMjpegDecode,
+            mjpegDecoderCount,
+            width,
+            height);
 
         var capture = new MfSourceReaderVideoCapture();
         try
@@ -88,15 +66,7 @@ internal sealed partial class UnifiedVideoCapture
 
         if (mjpegPipeline != null)
         {
-            var previewJitterFps = capture.Fps > 0 ? capture.Fps : fps;
-            Volatile.Write(
-                ref _mjpegPreviewJitterBuffer,
-                new MjpegPreviewJitterBuffer(
-                    previewJitterFps,
-                    () => Volatile.Read(ref _previewSink),
-                    () => _previewSuppressed,
-                    previewFrameProbe: null,
-                    targetDepth: 3));
+            InstallMjpegPreviewJitterBuffer(capture.Fps > 0 ? capture.Fps : fps);
         }
 
         if (!capture.IsD3DOutputEnabled)
@@ -235,28 +205,7 @@ internal sealed partial class UnifiedVideoCapture
 
             if (mjpegPipelineToStop != null)
             {
-                var jitterBuffer = Interlocked.Exchange(ref _mjpegPreviewJitterBuffer, null);
-                jitterBuffer?.Dispose();
-
-                if (!mjpegPipelineToStop.TryStop(TimeSpan.FromSeconds(5), out var failureReason))
-                {
-                    var stopException = new InvalidOperationException(
-                        $"CPU MJPEG pipeline stop did not quiesce cleanly: {failureReason ?? "unknown"}");
-                    SignalFatalError(
-                        stopException,
-                        $"UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='{failureReason ?? "unknown"}'");
-                    throw stopException;
-                }
-
-                lock (_sync)
-                {
-                    if (ReferenceEquals(_mjpegPipeline, mjpegPipelineToStop))
-                    {
-                        _mjpegPipeline = null;
-                    }
-                }
-
-                mjpegPipelineToStop.Dispose();
+                StopAndDisposeMjpegPipeline(mjpegPipelineToStop);
             }
         }
         finally
@@ -316,8 +265,7 @@ internal sealed partial class UnifiedVideoCapture
             await capture.DisposeAsync().ConfigureAwait(false);
         }
 
-        mjpegPipeline?.Dispose();
-        jitterBuffer?.Dispose();
+        DisposeMjpegPipelineResources(mjpegPipeline, jitterBuffer);
         if (disposeSharedD3DDeviceManager)
         {
             d3dManager?.Dispose();
@@ -343,10 +291,4 @@ internal sealed partial class UnifiedVideoCapture
             $"UNIFIED_VIDEO_FATAL_CAPTURE_ERROR type={ex.GetType().Name} msg={ex.Message}");
     }
 
-    private void OnMjpegPipelineFatalError(Exception ex)
-    {
-        SignalFatalError(
-            ex,
-            $"UNIFIED_VIDEO_FATAL_MJPEG_ERROR type={ex.GetType().Name} msg={ex.Message}");
-    }
 }
