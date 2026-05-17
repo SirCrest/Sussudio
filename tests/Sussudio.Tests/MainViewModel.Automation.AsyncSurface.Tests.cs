@@ -47,8 +47,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationUi.cs")
             .Replace("\r\n", "\n");
-        var automationStatsUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationStatsUi.cs")
-            .Replace("\r\n", "\n");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Automation.cs")),
@@ -58,7 +56,6 @@ static partial class Program
             + "\n" + automationHdrText
             + "\n" + automationFlashbackText
             + "\n" + recordingLifecycleText
-            + "\n" + automationStatsUiText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudioInputSelection.cs")

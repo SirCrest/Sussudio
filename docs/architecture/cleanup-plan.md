@@ -3193,9 +3193,8 @@ Remaining `tools/Common` ownership:
    the supported native-XU switch/gain command surface rather than the legacy
    AT input-source fallback path.
    UI-only automation mutators for settings visibility, Flashback timeline
-   visibility, and show-all capture options now live in
-   `MainViewModel.AutomationUi.cs`; stats dock/section visibility and
-   frame-time overlay display now live in `MainViewModel.AutomationStatsUi.cs`.
+   visibility, show-all capture options, stats dock/section visibility, and
+   frame-time overlay display now live in `MainViewModel.AutomationUi.cs`.
    Automation command entry points for audio enablement, audio-preview
    enablement, preview-volume clamp/persist, device-native mode/gain
    application, and microphone enablement with recording-time
