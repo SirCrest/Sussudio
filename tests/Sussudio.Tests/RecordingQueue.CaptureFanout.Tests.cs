@@ -204,7 +204,8 @@ static partial class Program
         AssertContains(backendSource, "ClearRecoveryPreserve();");
         AssertContains(captureSource, "_flashbackBackend.FinalizeRecordingAsync(");
         AssertContains(backendSource, "ClearSinkAndSettings();");
-        AssertContains(captureSource, "_flashbackBackend.Clear();");
+        AssertContains(captureSource, "_flashbackBackend.DisposePreviewBackendAsync(request)");
+        AssertContains(backendSource, "Clear();");
         AssertDoesNotContain(captureSource, "var bufferManager = new FlashbackBufferManager(");
         AssertDoesNotContain(captureSource, "FlashbackPlaybackController? playbackController = null;");
 

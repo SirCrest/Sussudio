@@ -276,17 +276,22 @@ static partial class Program
         var disposeFlashbackPreviewBackendCore = ExtractSourceBlock(
             captureServiceSource,
             "private async Task DisposeFlashbackPreviewBackendCoreAsync",
-            "private async Task CycleFlashbackBufferAsync");
-        AssertOccursBefore(disposeFlashbackPreviewBackendCore, "cancellationToken.ThrowIfCancellationRequested();", "CleanupFlashbackBackendArtifactsAfterExportAsync(");
-        AssertOccursBefore(disposeFlashbackPreviewBackendCore, "_flashbackBackend.TakePlaybackController()", "flashbackPlaybackController.GoLive();");
-        AssertContains(disposeFlashbackPreviewBackendCore, "_flashbackBackend.DetachProducers(");
-        AssertContains(disposeFlashbackPreviewBackendCore, "\"FLASHBACK_PREVIEW_DETACH_WARN\"");
-        AssertContains(disposeFlashbackPreviewBackendCore, "await flashbackSink.StopAsync(CancellationToken.None).ConfigureAwait(false);");
-        AssertOccursBefore(disposeFlashbackPreviewBackendCore, "_flashbackBackend.DetachProducers(", "await flashbackSink.StopAsync(CancellationToken.None).ConfigureAwait(false);");
-        AssertOccursBefore(disposeFlashbackPreviewBackendCore, "_flashbackBackend.Clear();", "cancellationToken.ThrowIfCancellationRequested();");
-        AssertOccursBefore(disposeFlashbackPreviewBackendCore, "ScheduleDeferredFlashbackBackendCleanup(", "cancellationToken.ThrowIfCancellationRequested();");
-        AssertContains(disposeFlashbackPreviewBackendCore, "var cleanupCompleted = await CleanupFlashbackBackendArtifactsAfterExportAsync(");
-        AssertContains(disposeFlashbackPreviewBackendCore, "ScheduleDeferredFlashbackBackendCleanup(\n                Task.Delay(TimeSpan.FromSeconds(1)),");
+            "private FlashbackPreviewBackendDisposalRequest CreateFlashbackPreviewBackendDisposalRequest");
+        AssertContains(disposeFlashbackPreviewBackendCore, "_flashbackBackend.DisposePreviewBackendAsync(request)");
+        var disposeFlashbackPreviewBackendResources = ExtractSourceBlock(
+            flashbackBackendSource,
+            "public async Task DisposePreviewBackendAsync",
+            "public void ScheduleDeferredArtifactCleanup");
+        AssertOccursBefore(disposeFlashbackPreviewBackendResources, "request.CancellationToken.ThrowIfCancellationRequested();", "CleanupArtifactsAfterExportAsync(");
+        AssertOccursBefore(disposeFlashbackPreviewBackendResources, "TakePlaybackController()", "flashbackPlaybackController.GoLive();");
+        AssertContains(disposeFlashbackPreviewBackendResources, "DetachProducers(");
+        AssertContains(disposeFlashbackPreviewBackendResources, "\"FLASHBACK_PREVIEW_DETACH_WARN\"");
+        AssertContains(disposeFlashbackPreviewBackendResources, "await flashbackSink.StopAsync(CancellationToken.None).ConfigureAwait(false);");
+        AssertOccursBefore(disposeFlashbackPreviewBackendResources, "DetachProducers(", "await flashbackSink.StopAsync(CancellationToken.None).ConfigureAwait(false);");
+        AssertOccursBefore(disposeFlashbackPreviewBackendResources, "Clear();", "request.CancellationToken.ThrowIfCancellationRequested();");
+        AssertOccursBefore(disposeFlashbackPreviewBackendResources, "ScheduleDeferredArtifactCleanup(", "request.CancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(disposeFlashbackPreviewBackendResources, "var cleanupCompleted = await CleanupArtifactsAfterExportAsync(");
+        AssertContains(disposeFlashbackPreviewBackendResources, "ScheduleDeferredArtifactCleanup(\n                Task.Delay(TimeSpan.FromSeconds(1)),");
         var deferredFlashbackBackendCleanup = ExtractSourceBlock(
             captureServiceSource,
             "private void ScheduleDeferredFlashbackBackendCleanup",
@@ -364,9 +369,9 @@ static partial class Program
         AssertContains(cycleNewSinkStart, "PlaybackController = playbackController;");
         AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_DETACH_WARN");
-        AssertContains(captureServiceSource, "request.PurgeSegments");
+        AssertContains(flashbackBackendSource, "request.PurgeSegments");
         AssertContains(captureServiceSource, "new FlashbackPreviewBackendDisposalRequest(");
-        AssertContains(captureServiceSource, "new FlashbackBackendArtifactCleanupRequest(");
+        AssertContains(flashbackBackendSource, "new FlashbackBackendArtifactCleanupRequest(");
         AssertContains(captureServiceSource, "effectivePurgeSegments,");
         AssertContains(captureServiceSource, "!activeFlashbackSink.CanBeginRecording");
         AssertContains(captureServiceSource, "_flashbackRecordingStartInProgress");
@@ -384,7 +389,7 @@ static partial class Program
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_CANCELLED");
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_FAIL");
         AssertContains(captureServiceSource, "Logger.Log($\"{failureToken} type={ex.GetType().Name} error='{ex.Message}'\")");
-        AssertContains(captureServiceSource, "new FlashbackProducerDetachRequest(");
+        AssertContains(flashbackBackendSource, "new FlashbackProducerDetachRequest(");
         AssertContains(flashbackBackendSource, "\"FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN\"");
         AssertContains(flashbackBackendSource, "Logger.Log($\"{request.WarningToken} target=video");
         AssertContains(flashbackBackendSource, "Logger.Log($\"{request.WarningToken} target=audio");

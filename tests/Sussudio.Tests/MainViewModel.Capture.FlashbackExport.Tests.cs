@@ -111,7 +111,7 @@ static partial class Program
             "private async Task DisposeFlashbackPreviewBackendAsync",
             "    private async Task DisposeFlashbackPreviewBackendCoreAsync");
         AssertContains(disposeBackend, "await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(disposeBackend, "ExportOperationLockAlreadyHeld: true");
+        AssertContains(disposeBackend, "exportOperationLockAlreadyHeld: true");
         AssertContains(disposeBackend, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
 
         var disposeBackendCore = ExtractTextBetween(
@@ -119,9 +119,15 @@ static partial class Program
             "private async Task DisposeFlashbackPreviewBackendCoreAsync",
             "    private async Task CycleFlashbackBufferAsync");
         AssertContains(disposeBackendCore, "FlashbackPreviewBackendDisposalRequest request)");
-        AssertContains(disposeBackendCore, "request.ExportOperationLockAlreadyHeld");
-        AssertContains(disposeBackendCore, "request.PurgeSegments ? \"preview_backend_dispose_purge\" : \"preview_backend_dispose\"");
-        AssertContains(disposeBackendCore, "\"preview_backend_dispose\",\n                request.ExportOperationLockAlreadyHeld)");
+        AssertContains(disposeBackendCore, "_flashbackBackend.DisposePreviewBackendAsync(request)");
+
+        var disposeBackendResources = ExtractTextBetween(
+            backendResourcesText,
+            "public async Task DisposePreviewBackendAsync",
+            "    public void ScheduleDeferredArtifactCleanup");
+        AssertContains(disposeBackendResources, "request.ExportOperationLockAlreadyHeld");
+        AssertContains(disposeBackendResources, "request.PurgeSegments ? \"preview_backend_dispose_purge\" : \"preview_backend_dispose\"");
+        AssertContains(disposeBackendResources, "\"preview_backend_dispose\",\n                request.AcquireExportOperationLockAsync,\n                request.ReleaseExportOperationLock,\n                request.ExportOperationLockAlreadyHeld)");
 
         return Task.CompletedTask;
     }
