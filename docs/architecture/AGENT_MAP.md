@@ -1114,8 +1114,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionTooltipFormatter.Tests.cs`
   owns capture option HDR/FPS tooltip text-policy assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs` owns
-  MainWindow output path display/actions and preview screenshot workflow
-  ownership assertions.
+  MainWindow output path display/action ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.PreviewScreenshot.Tests.cs`
+  owns MainWindow preview screenshot workflow and text-policy ownership
+  assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Tests.cs` is the
   MainWindow Flashback ownership test-family marker shell.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Polling.Tests.cs` owns
