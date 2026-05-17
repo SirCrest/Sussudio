@@ -118,7 +118,11 @@ static partial class Program
         AssertContains(cycleBuffer, "var preservedOutPointFilePts = !effectivePurgeSegments ? oldPlaybackController?.OutPointFilePts : null;");
         AssertDoesNotContain(cycleBuffer, "var preservedInPoint = oldPlaybackController?.InPoint;");
         AssertDoesNotContain(cycleBuffer, "var preservedOutPoint = oldPlaybackController?.OutPoint;");
-        AssertContains(cycleBuffer, "playbackController.RestoreInOutPoints(\n                preservedInPoint,\n                preservedOutPoint,\n                preservedInPointFilePts,\n                preservedOutPointFilePts);");
+        AssertContains(cycleBuffer, "playbackController.RestoreInOutPoints(");
+        AssertContains(cycleBuffer, "preservedInPoint,");
+        AssertContains(cycleBuffer, "preservedOutPoint,");
+        AssertContains(cycleBuffer, "preservedInPointFilePts,");
+        AssertContains(cycleBuffer, "preservedOutPointFilePts);");
         var ensureFlashbackPreviewBackend = ExtractTextBetween(
             captureServiceText,
             "private async Task EnsureFlashbackPreviewBackendAsync",
@@ -194,7 +198,9 @@ static partial class Program
         AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(cycleBuffer, "var committedCycleToken = CancellationToken.None;");
         AssertContains(cycleBuffer, "await oldSink.StopAsync(committedCycleToken)");
-        AssertContains(cycleBuffer, "await newSink.StartAsync(\n                CreateFlashbackSessionContext(unifiedVideoCapture, _currentSettings),\n                committedCycleToken,");
+        AssertContains(cycleBuffer, "await newSink.StartAsync(");
+        AssertContains(cycleBuffer, "CreateFlashbackSessionContext(unifiedVideoCapture, _currentSettings),");
+        AssertContains(cycleBuffer, "committedCycleToken,");
         AssertContains(cycleBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
         AssertOccursBefore(
             cycleBuffer,

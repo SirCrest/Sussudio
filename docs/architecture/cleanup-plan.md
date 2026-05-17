@@ -928,9 +928,12 @@ construction stays in the Flashback orchestration partial.
 
 Flashback recording policy and session-context helpers now live in
 `Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`. That file owns
-Flashback backend ownership checks, audio attach, session-context construction,
-frame-rate rational inference, codec/HDR guardrails, encoded-frame forwarding,
-and recording topology validation.
+Flashback backend ownership checks, session-context construction, frame-rate
+rational inference, codec/HDR guardrails, encoded-frame forwarding, and
+recording topology validation. Preview-backend producer wiring now belongs to
+`Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
+video/audio/microphone attach and detach request shapes used by preview startup,
+buffer cycling, and teardown.
 
 Recording start lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`. That file owns
@@ -3291,7 +3294,10 @@ Remaining `tools/Common` ownership:
    The policy is now the legality/steady-state owner. The next deeper capture
    slices should keep it authoritative while introducing smaller owners for
    audio graph, recording controller, Flashback backend resources, and video
-   pipeline lifetime.
+   pipeline lifetime. `FlashbackBackendResources.cs` has started that resource
+   owner path by grouping the backend resource set and owning producer
+   attach/detach wiring; keep later Flashback backend slices there before
+   inventing another small owner.
 
 ## Guardrails
 

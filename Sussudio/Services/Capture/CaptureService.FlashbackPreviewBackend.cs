@@ -77,20 +77,18 @@ public partial class CaptureService
                 CreateFlashbackSessionContext(unifiedVideoCapture, settings),
                 cancellationToken).ConfigureAwait(false);
             flashbackSink.FrameEncoded += OnFlashbackFrameEncoded;
-            unifiedVideoCapture.SetFlashbackSink(flashbackSink);
-            // Install the backend before AttachFlashbackAudioIfSupported — it reads the active sink.
             _flashbackBackend.Install(
                 bufferManager,
                 flashbackSink,
                 flashbackExporter,
                 playbackController: null,
                 settingsSnapshot: null);
-            AttachFlashbackAudioIfSupported(_wasapiAudioCapture, "preview_backend_start");
-            if (_microphoneCapture != null && flashbackSink.MicrophoneEnabled)
-            {
-                _microphoneCapture.SetAudioWriter(samples => flashbackSink.WriteMicrophoneAudioAsync(samples));
-                Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='preview_backend_start'");
-            }
+            _flashbackBackend.AttachProducers(
+                new FlashbackProducerAttachRequest(
+                    unifiedVideoCapture,
+                    _wasapiAudioCapture,
+                    _microphoneCapture,
+                    "preview_backend_start"));
 
             // Create playback controller for timeline scrubbing/playback
             playbackController = new FlashbackPlaybackController(bufferManager);
@@ -113,12 +111,13 @@ public partial class CaptureService
                 : "FLASHBACK_PREVIEW_INIT_FAIL";
             Logger.Log($"{failureToken} type={ex.GetType().Name} error='{ex.Message}'");
             flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;
-            try { unifiedVideoCapture.SetFlashbackSink(null); }
-            catch (Exception detachEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=video type={detachEx.GetType().Name} msg={detachEx.Message}"); }
-            try { _wasapiAudioCapture?.DetachFlashbackSink(); }
-            catch (Exception detachEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=audio type={detachEx.GetType().Name} msg={detachEx.Message}"); }
-            try { _microphoneCapture?.SetAudioWriter(null); }
-            catch (Exception detachEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=microphone type={detachEx.GetType().Name} msg={detachEx.Message}"); }
+            _flashbackBackend.DetachProducers(
+                new FlashbackProducerDetachRequest(
+                    unifiedVideoCapture,
+                    _wasapiAudioCapture,
+                    _microphoneCapture,
+                    "FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN",
+                    DetachMicrophoneWriter: true));
             try { (playbackController ?? _flashbackPlaybackController)?.Dispose(); }
             catch (Exception disposeEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_PLAYBACK_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
             try { await flashbackSink.DisposeAsync().ConfigureAwait(false); }

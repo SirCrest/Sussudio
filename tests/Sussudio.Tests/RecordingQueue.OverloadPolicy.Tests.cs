@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 
 // Tests for recording sink queue limits, drops, and latency accounting.
@@ -337,6 +337,9 @@ static partial class Program
             "var newSink = new FlashbackEncoderSink(bufferManager);",
             "finally");
         AssertContains(cycleNewSinkStart, "committedCycleToken,");
+        AssertContains(cycleNewSinkStart, "_flashbackBackend.AttachProducers(");
+        AssertContains(cycleNewSinkStart, "new FlashbackProducerAttachRequest(");
+        AssertContains(cycleNewSinkStart, "\"buffer_cycle\"");
         AssertContains(cycleNewSinkStart, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
         AssertContains(cycleNewSinkStart, "newSink.FrameEncoded -= OnFlashbackFrameEncoded;");
         AssertContains(cycleNewSinkStart, "unifiedVideoCapture.SetFlashbackSink(null);");
@@ -368,9 +371,11 @@ static partial class Program
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_CANCELLED");
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_FAIL");
         AssertContains(captureServiceSource, "Logger.Log($\"{failureToken} type={ex.GetType().Name} error='{ex.Message}'\")");
-        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=video");
-        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=audio");
-        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=microphone");
+        AssertContains(captureServiceSource, "new FlashbackProducerDetachRequest(");
+        AssertContains(captureServiceSource, "\"FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN\"");
+        AssertContains(flashbackBackendSource, "Logger.Log($\"{request.WarningToken} target=video");
+        AssertContains(flashbackBackendSource, "Logger.Log($\"{request.WarningToken} target=audio");
+        AssertContains(flashbackBackendSource, "Logger.Log($\"{request.WarningToken} target=microphone");
         AssertContains(captureServiceSource, "MIC_MONITOR_WRITER_DETACH_WARN");
         AssertOccursBefore(captureServiceSource, "MIC_MONITOR_WRITER_DETACH_WARN", "await mic.DisposeAsync().ConfigureAwait(false);");
         AssertContains(captureServiceSource, "VIDEO_DIAG flashback_recording_pipeline");

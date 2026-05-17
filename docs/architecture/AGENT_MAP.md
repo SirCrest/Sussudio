@@ -786,8 +786,9 @@ Primary current owner: `Sussudio/Services/Flashback/`
 
 Entry points:
 
-- `FlashbackBackendResources.cs` owns backend resource grouping and
-  producer-detach request shaping.
+- `FlashbackBackendResources.cs` owns backend resource grouping plus
+  producer attach/detach request shaping for video, audio, and microphone
+  feeds during preview backend startup, cycling, and teardown.
 - `FlashbackBufferManager.cs` owns buffer live counters, byte/PTS accounting updates, and core state.
 - `FlashbackBufferManager.SegmentMutation.cs` owns active segment path generation, active segment start/abandonment, completion registration, and same-path segment extension.
 - `FlashbackBufferManager.Lifecycle.cs` owns initialization, segment extension setup, recovery-preserve markers, disposal, and disposed-state guards.

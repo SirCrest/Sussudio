@@ -134,6 +134,13 @@ static partial class Program
         AssertContains(backendSource, "public async Task<FinalizeResult> FinalizeRecordingAsync(");
         AssertContains(backendSource, "private static FinalizeResult PreserveEndArtifactsOnFailure(");
         AssertContains(backendSource, "public FlashbackPlaybackController? TakePlaybackController()");
+        AssertContains(backendSource, "internal readonly record struct FlashbackProducerAttachRequest(");
+        AssertContains(backendSource, "public void AttachProducers(FlashbackProducerAttachRequest request)");
+        AssertContains(backendSource, "request.VideoCapture.SetFlashbackSink(flashbackSink);");
+        AssertContains(backendSource, "private static void AttachAudioProducer(");
+        AssertContains(backendSource, "FLASHBACK_AUDIO_ATTACH_SKIPPED reason='{reason}' sink_audio_enabled=false");
+        AssertContains(backendSource, "private static void AttachMicrophoneProducer(");
+        AssertContains(backendSource, "FLASHBACK_MIC_ATTACH_OK reason='{reason}'");
         AssertContains(backendSource, "internal readonly record struct FlashbackProducerDetachRequest(");
         AssertContains(backendSource, "UnifiedVideoCapture? VideoCapture,");
         AssertContains(backendSource, "WasapiAudioCapture? AudioCapture,");
@@ -153,6 +160,8 @@ static partial class Program
         AssertContains(captureSource, "_flashbackBackend.HasAnyResource");
         AssertContains(captureSource, "_flashbackBackend.Install(");
         AssertContains(captureSource, "_flashbackBackend.TakePlaybackController()");
+        AssertContains(captureSource, "_flashbackBackend.AttachProducers(");
+        AssertContains(captureSource, "new FlashbackProducerAttachRequest(");
         AssertContains(captureSource, "_flashbackBackend.DetachProducers(");
         AssertContains(captureSource, "_flashbackBackend.ResolveSegmentPurge(");
         AssertContains(captureSource, "_flashbackBackend.PreserveRecoverySegments(");
