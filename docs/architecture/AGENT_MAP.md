@@ -225,7 +225,14 @@ Automation diagnostics ownership:
   owns preview scheduler, renderer pacing, present/display cadence, and preview
   display 1% low diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs`
-  owns diagnostic lane text formatting used by diagnostic verdicts.
+  owns diagnostic lane text orchestration and lane DTOs used by diagnostic
+  verdicts.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Source.cs`
+  owns source, MJPEG decode, and source telemetry diagnostic lane text
+  formatting.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Preview.cs`
+  owns preview scheduler, renderer, present/display, and visual cadence
+  diagnostic lane text formatting.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs`
   owns Flashback recording, export, temp-cache, playback-command, and playback
   performance diagnostic lane text formatting.

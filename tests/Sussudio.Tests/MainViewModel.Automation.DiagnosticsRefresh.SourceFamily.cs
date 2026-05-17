@@ -21,6 +21,8 @@ static partial class Program
             DiagnosticEvaluationRealtimeMjpegText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Mjpeg.cs"),
             DiagnosticEvaluationRealtimePreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs"),
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs"),
+            DiagnosticEvaluationLanesSourceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Source.cs"),
+            DiagnosticEvaluationLanesPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Preview.cs"),
             DiagnosticEvaluationLanesFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Alerts.cs"),
             SignalAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.cs"),
@@ -128,6 +130,8 @@ static partial class Program
         public string DiagnosticEvaluationRealtimeMjpegText { get; init; } = string.Empty;
         public string DiagnosticEvaluationRealtimePreviewText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesSourceText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesPreviewText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesFlashbackText { get; init; } = string.Empty;
         public string AlertsText { get; init; } = string.Empty;
         public string SignalAlertsText { get; init; } = string.Empty;
@@ -227,6 +231,8 @@ static partial class Program
                 DiagnosticEvaluationRealtimeMjpegText,
                 DiagnosticEvaluationRealtimePreviewText,
                 DiagnosticEvaluationLanesText,
+                DiagnosticEvaluationLanesSourceText,
+                DiagnosticEvaluationLanesPreviewText,
                 DiagnosticEvaluationLanesFlashbackText,
                 AlertsText,
                 SignalAlertsText,
