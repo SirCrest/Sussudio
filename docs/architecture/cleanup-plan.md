@@ -1646,9 +1646,19 @@ active recording backend selection, LibAv-vs-Flashback fallback, and
 backend-specific queue/counter normalization live in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotRecordingActiveBackend.cs`;
 Flashback export diagnostic and derived progress/throughput projection lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs`,
-and Flashback playback state/cadence/decode/command projection lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`.
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs`.
+Flashback playback health snapshot orchestration lives in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`,
+with state/frame fields in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.State.cs`,
+cadence metrics in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Cadence.cs`,
+decode timing in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Decode.cs`,
+audio-master fallback fields in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.AudioMaster.cs`,
+and command telemetry in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Commands.cs`.
 The general snapshot partial is now the diagnostics-snapshot compatibility
 entry point plus shared tick-age snapshot helper policy. Flashback
 backend-staleness reason policy now stays with the buffer health partial, while
