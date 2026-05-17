@@ -3144,15 +3144,15 @@ Remaining `tools/Common` ownership:
     `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.*.cs` family so
     frame-rate, resolution, mode-selection, late-probe, recording-format, and
     runtime-flag assertions stay near their matching policy owners.
-    Automatic resolution dropdown option construction now lives in
-    `MainViewModel.AutoResolutionOptions.cs`; automatic resolution-selection
-    state adaptation now lives in `MainViewModel.ResolutionOptions.cs`,
-    while automatic resolution ranking and source-aware frame-rate selection now
-    live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; effective Source resolution state,
-   auto-value detection, and effective resolution query helpers live in
-   `MainViewModel.AutoResolutionState.cs`; auto-resolution display text used by
-   status and telemetry presentation lives in
-   `MainViewModel.CapturePresentation.cs`.
+    The resolution option lifecycle now lives in
+    `MainViewModel.ResolutionOptions.cs`: automatic resolution dropdown option
+    construction, automatic resolution-selection adaptation, effective Source
+    resolution state, state-backed delegates to the pure selection policy, and
+    resolution dropdown mutation.
+    Automatic resolution ranking and source-aware frame-rate selection now
+    live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; auto-resolution
+    display text used by status and telemetry presentation lives in
+    `MainViewModel.CapturePresentation.cs`.
    Pure resolution selection policy now lives in the
    `Sussudio/ViewModels/CaptureResolutionSelectionPolicy*.cs` family:
    `CaptureResolutionSelectionPolicy.cs` owns the facade,
@@ -3164,10 +3164,9 @@ Remaining `tools/Common` ownership:
    selection, `CaptureResolutionSelectionPolicy.Sdr.cs` owns SDR auto/fallback
    selection, and `CaptureResolutionSelectionPolicy.Models.cs` owns the
    request/result records.
-   `MainViewModel.ResolutionSelectionPolicy.cs` only keeps state-backed
-   delegates for callers that still live across the partial family; keep
-   dropdown rebuild, collection mutation, and property notifications in
-   `MainViewModel.ResolutionOptions.cs`.
+   State-backed delegates for callers that still live across the partial
+   family, dropdown rebuild, collection mutation, and property notifications
+   live together in `MainViewModel.ResolutionOptions.cs`.
    Source telemetry summary, telemetry age, and target-summary display text
    formatting now live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`;
    HDR runtime state/readiness projection and target-summary property
