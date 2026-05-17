@@ -1055,16 +1055,17 @@ Primary current owners:
   stats dock metric text, visibility, and status brush application after the
   presentation model is built. `Sussudio/Controllers/Stats/StatsSectionChromeController.cs`
   owns stats dock section expand/collapse chrome and automation-visible section
-  visibility application, and `Sussudio/MainWindow.StatsSections.cs` is its
-  XAML/automation adapter. `Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`
+  visibility application; `Sussudio/MainWindow.StatsOverlay.cs` is the
+  XAML/automation adapter for that stats shell wiring.
+  `Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`
   owns detached stats-window metric text and delegates dynamic telemetry detail
   rendering to `Sussudio/Controllers/Stats/StatsWindowTelemetryDetailsController.cs`.
   `Sussudio/Controllers/Stats/StatsSnapshotProvider.cs` owns shell stats snapshot
   orchestration from capture-health, renderer metrics, and view state, including
   renderer cadence/recent-sample acquisition and null fallback policy.
-  `Sussudio/MainWindow.StatsSnapshot.cs` is the XAML-facing adapter.
-  `MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats overlay
-  composition, stats dock visibility, polling, and refresh controllers.
+  `Sussudio/MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats
+  snapshot provider composition, stats overlay composition, stats dock
+  visibility, polling, section chrome, and refresh controllers.
 - `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` owns legacy harness
   contract checks for stats overlay lifecycle wiring and stats section chrome.
 - `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs` owns legacy harness

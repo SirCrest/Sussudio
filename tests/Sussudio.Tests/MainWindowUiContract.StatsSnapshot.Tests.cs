@@ -5,7 +5,6 @@ static partial class Program
     private static Task StatsSnapshotConstruction_LivesInFocusedBuilder()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var mainWindowStatsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsSnapshot.cs").Replace("\r\n", "\n");
         var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSnapshotProvider.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs").Replace("\r\n", "\n");
@@ -19,14 +18,14 @@ static partial class Program
         AssertContains(statsSnapshotBuilderText, "return new StatsSnapshot(");
         AssertContains(statsSnapshotText, "public sealed record StatsSnapshot(");
         AssertContains(mainWindowText, "InitializeStatsSnapshotProvider();");
-        AssertContains(mainWindowStatsSnapshotText, "private StatsSnapshot GetStatsSnapshot()");
-        AssertContains(mainWindowStatsSnapshotText, "private StatsSnapshotProvider _statsSnapshotProvider = null!;");
-        AssertContains(mainWindowStatsSnapshotText, "GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,");
-        AssertContains(mainWindowStatsSnapshotText, "GetRenderer = () => _previewRendererHostController.Renderer,");
-        AssertContains(mainWindowStatsSnapshotText, "GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs");
-        AssertContains(mainWindowStatsSnapshotText, "IsPreviewing = () => ViewModel.IsPreviewing,");
-        AssertContains(mainWindowStatsSnapshotText, "IsRecording = () => ViewModel.IsRecording");
-        AssertContains(mainWindowStatsSnapshotText, "=> _statsSnapshotProvider.GetSnapshot();");
+        AssertContains(statsOverlayText, "private StatsSnapshot GetStatsSnapshot()");
+        AssertContains(statsOverlayText, "private StatsSnapshotProvider _statsSnapshotProvider = null!;");
+        AssertContains(statsOverlayText, "GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,");
+        AssertContains(statsOverlayText, "GetRenderer = () => _previewRendererHostController.Renderer,");
+        AssertContains(statsOverlayText, "GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs");
+        AssertContains(statsOverlayText, "IsPreviewing = () => ViewModel.IsPreviewing,");
+        AssertContains(statsOverlayText, "IsRecording = () => ViewModel.IsRecording");
+        AssertContains(statsOverlayText, "=> _statsSnapshotProvider.GetSnapshot();");
         AssertContains(statsSnapshotProviderText, "internal sealed class StatsSnapshotProvider");
         AssertDoesNotContain(statsSnapshotProviderText, "internal sealed partial class StatsSnapshotProvider");
         AssertContains(statsSnapshotProviderText, "private const int RecentSampleCount = 180;");
@@ -37,10 +36,9 @@ static partial class Program
         AssertDoesNotContain(statsSnapshotProviderText, "MainViewModel ViewModel");
         AssertContains(statsSnapshotProviderText, "var presentCadence = renderer?.GetPresentCadenceMetrics(previewMinPresentationIntervalMs);");
         AssertContains(statsSnapshotProviderText, "PreviewRecentPresentIntervalsMs: renderer?.GetRecentPresentIntervalsMs(RecentSampleCount) ?? Array.Empty<double>()");
-        AssertDoesNotContain(mainWindowStatsSnapshotText, "var renderer = new StatsSnapshotRenderMetrics(");
-        AssertDoesNotContain(mainWindowStatsSnapshotText, "return StatsSnapshotBuilder.Build(health, renderer, viewState);");
         AssertDoesNotContain(statsOverlayText, "var renderer = new StatsSnapshotRenderMetrics(");
         AssertDoesNotContain(statsOverlayText, "return new StatsSnapshot(");
+        AssertDoesNotContain(statsOverlayText, "return StatsSnapshotBuilder.Build(health, renderer, viewState);");
         AssertContains(statsWindowText, "private readonly Func<StatsSnapshot> _dataProvider;");
         AssertDoesNotContain(statsWindowText, "public sealed record StatsSnapshot(");
 

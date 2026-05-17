@@ -1810,7 +1810,8 @@ Stats dock metric value, visibility, and status brush application now live in
 `Sussudio/Controllers/Stats/StatsDockPresentationController.cs`.
 Stats section expand/collapse chrome and automation-visible section application
 now live in `Sussudio/Controllers/Stats/StatsSectionChromeController.cs`.
-`Sussudio/MainWindow.StatsSections.cs` is the XAML/automation adapter.
+`Sussudio/MainWindow.StatsOverlay.cs` is the XAML/automation adapter for the
+stats shell wiring.
 Detached stats-window metric text now lives in
 `Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`, while dynamic
 telemetry-detail clearing, empty state, group headers, and row rendering live
@@ -1875,8 +1876,9 @@ Stats presentation DTO records/enums now live in
 `Sussudio/ViewModels/StatsPresentationModels.cs`.
 The UI stats snapshot contract lives in `Sussudio/ViewModels/StatsSnapshot.cs`;
 shell snapshot orchestration plus renderer cadence/recent-sample acquisition
-lives in `Sussudio/Controllers/Stats/StatsSnapshotProvider.cs`; and projection
-from capture health, renderer metrics, and shell view state lives in
+lives in `Sussudio/Controllers/Stats/StatsSnapshotProvider.cs`;
+`Sussudio/MainWindow.StatsOverlay.cs` is the XAML-facing provider composition
+adapter; and projection from capture health, renderer metrics, and shell view state lives in
 `Sussudio/ViewModels/StatsSnapshotBuilder.cs`.
 Pure capture option construction lives in
 `Sussudio/ViewModels/CaptureModeOptionsBuilder.cs`.

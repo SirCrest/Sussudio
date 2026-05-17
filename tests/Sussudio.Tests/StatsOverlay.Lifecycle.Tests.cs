@@ -111,16 +111,15 @@ static partial class Program
     private static Task StatsSectionChrome_LivesInFocusedPartial()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var statsSectionsText = ReadRepoFile("Sussudio/MainWindow.StatsSections.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSectionChromeController.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsSectionsText, "private StatsSectionChromeController _statsSectionChromeController = null!;");
-        AssertContains(statsSectionsText, "private void InitializeStatsSectionChromeController()");
-        AssertContains(statsSectionsText, "private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)");
-        AssertContains(statsSectionsText, "private void SetStatsSectionVisible(string section, bool visible)");
-        AssertContains(statsSectionsText, "=> _statsSectionChromeController.ToggleFromHeader(sender);");
-        AssertContains(statsSectionsText, "=> _statsSectionChromeController.SetVisible(section, visible);");
+        AssertContains(statsOverlayText, "private StatsSectionChromeController _statsSectionChromeController = null!;");
+        AssertContains(statsOverlayText, "private void InitializeStatsSectionChromeController()");
+        AssertContains(statsOverlayText, "private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)");
+        AssertContains(statsOverlayText, "private void SetStatsSectionVisible(string section, bool visible)");
+        AssertContains(statsOverlayText, "=> _statsSectionChromeController.ToggleFromHeader(sender);");
+        AssertContains(statsOverlayText, "=> _statsSectionChromeController.SetVisible(section, visible);");
         AssertContains(controllerText, "internal sealed class StatsSectionChromeControllerContext");
         AssertContains(controllerText, "internal sealed class StatsSectionChromeController");
         AssertContains(controllerText, "public void ToggleFromHeader(object sender)");
@@ -132,12 +131,10 @@ static partial class Program
         AssertContains(controllerText, "_context.RefreshDiagnosticsSection();");
         AssertContains(mainWindowText, "ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;");
         AssertContains(mainWindowText, "InitializeStatsSectionChromeController();");
-        AssertContains(statsSectionsText, "RefreshDiagnosticsSection = _statsDockRefreshController.RefreshDiagnosticsSection");
-        AssertDoesNotContain(statsSectionsText, "StatsDockPanel.FindName(contentName)");
-        AssertDoesNotContain(statsSectionsText, "rotate.Angle =");
-        AssertDoesNotContain(statsSectionsText, "UpdateDiagnosticsSection(snapshot");
-        AssertDoesNotContain(statsOverlayText, "private void StatsSectionHeader_Tapped(");
-        AssertDoesNotContain(statsOverlayText, "private void SetStatsSectionVisible(string section, bool visible)");
+        AssertContains(statsOverlayText, "RefreshDiagnosticsSection = _statsDockRefreshController.RefreshDiagnosticsSection");
+        AssertDoesNotContain(statsOverlayText, "StatsDockPanel.FindName(contentName)");
+        AssertDoesNotContain(statsOverlayText, "rotate.Angle =");
+        AssertDoesNotContain(statsOverlayText, "UpdateDiagnosticsSection(snapshot");
 
         return Task.CompletedTask;
     }

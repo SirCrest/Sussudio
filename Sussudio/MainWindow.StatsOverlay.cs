@@ -1,15 +1,30 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Input;
 using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// XAML-facing stats overlay adapter and controller composition. This also wires the stats dock refresh
-// graph because the dock is only driven by the overlay controller.
+// XAML-facing stats overlay adapter and controller composition. This also wires the stats dock refresh,
+// snapshot provider, and section chrome adapters because the dock is only driven by the overlay controller graph.
 public sealed partial class MainWindow
 {
     private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;
     private StatsOverlayController _statsOverlayController = null!;
     private StatsDockRefreshController _statsDockRefreshController = null!;
+    private StatsSnapshotProvider _statsSnapshotProvider = null!;
+    private StatsSectionChromeController _statsSectionChromeController = null!;
+
+    private void InitializeStatsSnapshotProvider()
+    {
+        _statsSnapshotProvider = new StatsSnapshotProvider(new StatsSnapshotProviderContext
+        {
+            GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,
+            GetRenderer = () => _previewRendererHostController.Renderer,
+            GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs,
+            IsPreviewing = () => ViewModel.IsPreviewing,
+            IsRecording = () => ViewModel.IsRecording
+        });
+    }
 
     private void InitializeStatsOverlayController()
     {
@@ -28,6 +43,16 @@ public sealed partial class MainWindow
             UpdateStatsDock = _statsDockRefreshController.RefreshDock,
             UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,
             Log = message => Logger.Log(message)
+        });
+    }
+
+    private void InitializeStatsSectionChromeController()
+    {
+        _statsSectionChromeController = new StatsSectionChromeController(new StatsSectionChromeControllerContext
+        {
+            StatsDockPanel = StatsDockPanel,
+            DiagnosticsContent = Diagnostics_Content,
+            RefreshDiagnosticsSection = _statsDockRefreshController.RefreshDiagnosticsSection
         });
     }
 
@@ -164,4 +189,13 @@ public sealed partial class MainWindow
 
     private void HideStatsDockPanel(bool immediate = false)
         => _statsOverlayController.HideDockPanel(immediate);
+
+    private StatsSnapshot GetStatsSnapshot()
+        => _statsSnapshotProvider.GetSnapshot();
+
+    private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)
+        => _statsSectionChromeController.ToggleFromHeader(sender);
+
+    private void SetStatsSectionVisible(string section, bool visible)
+        => _statsSectionChromeController.SetVisible(section, visible);
 }
