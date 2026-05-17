@@ -2898,7 +2898,9 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultFormatter.cs` owns the public
   human-readable diagnostic-session text flow used by ssctl and MCP, including
   the simple capture-mode, recording-verification, PresentMon, and
-  process-performance summary rows.
+  process-performance summary rows plus small result text helpers such as
+  frame-rate formatting. Keep `DiagnosticSessionRunner.Format(...)` as the
+  stable compatibility wrapper.
 - `tools/Common/DiagnosticSessionResultFormatter.Overview.cs` owns the
   diagnostic-session header, summary, and evidence section.
 - `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs` owns Flashback
@@ -2913,9 +2915,6 @@ Primary owners:
   performance/slow-frame, D3D CPU timing, and visual-cadence lines.
 - `tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs` owns artifact,
   action, and warning sections.
-- `tools/Common/DiagnosticSessionResultFormatter.Helpers.cs` owns small text
-  helpers such as frame-rate formatting. Keep
-  `DiagnosticSessionRunner.Format(...)` as the stable compatibility wrapper.
 - `tools/Common/DiagnosticSessionOptionalTextFormatter.cs` owns shared
   diagnostic-session optional text formatting used by scenarios, result
   builders, result formatters, and validation policies.

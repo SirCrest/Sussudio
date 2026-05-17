@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;
 
@@ -53,5 +54,17 @@ public static partial class DiagnosticSessionResultFormatter
             var status = result.RecordingVerificationSucceeded == true ? "PASS" : "FAIL";
             builder.AppendLine($"Recording Verification: {status} | {result.RecordingVerificationMessage}");
         }
+    }
+
+    private static string FormatFrameRate(double fps, string friendlyFps, string exactArg)
+    {
+        var display = !string.IsNullOrWhiteSpace(friendlyFps)
+            ? friendlyFps
+            : fps > 0
+                ? fps.ToString("0.###", CultureInfo.InvariantCulture)
+                : "0";
+        return !string.IsNullOrWhiteSpace(exactArg)
+            ? $"{display}fps ({exactArg})"
+            : $"{display}fps";
     }
 }

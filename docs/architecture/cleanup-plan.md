@@ -2882,7 +2882,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs`
 - `DiagnosticSessionResultFormatter.Preview.cs`
 - `DiagnosticSessionResultFormatter.Artifacts.cs`
-- `DiagnosticSessionResultFormatter.Helpers.cs`
 - `DiagnosticSessionSummaryWriter.cs`
 - `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionLiveStateWriter.cs`

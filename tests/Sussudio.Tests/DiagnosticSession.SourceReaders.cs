@@ -118,8 +118,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs",
             "tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs",
             "tools/Common/DiagnosticSessionResultFormatter.Preview.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs",
-            "tools/Common/DiagnosticSessionResultFormatter.Helpers.cs");
+            "tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs");
 
     private static string ReadDiagnosticSessionRunnerSource()
         => ReadNormalizedSourceFiles(
