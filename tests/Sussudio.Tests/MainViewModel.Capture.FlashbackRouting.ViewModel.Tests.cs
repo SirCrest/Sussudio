@@ -48,11 +48,12 @@ static partial class Program
         var viewModelAudioStateText = viewModelFiles["MainViewModel.AudioState.cs"];
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var automationFlashbackText = viewModelFiles["MainViewModel.AutomationFlashback.cs"];
-        var automationRecordingFormatText = viewModelFiles["MainViewModel.AutomationRecordingFormat.cs"];
-        var automationRecordingQualityText = viewModelFiles["MainViewModel.AutomationRecordingQuality.cs"];
-        var automationSplitEncodeModeText = viewModelFiles["MainViewModel.AutomationSplitEncodeMode.cs"];
-        var automationCustomBitrateText = viewModelFiles["MainViewModel.AutomationCustomBitrate.cs"];
-        var automationEncoderPresetText = viewModelFiles["MainViewModel.AutomationEncoderPreset.cs"];
+        var automationRecordingSettingsText = viewModelFiles["MainViewModel.AutomationRecordingSettings.cs"];
+        var automationRecordingFormatText = automationRecordingSettingsText;
+        var automationRecordingQualityText = automationRecordingSettingsText;
+        var automationSplitEncodeModeText = automationRecordingSettingsText;
+        var automationCustomBitrateText = automationRecordingSettingsText;
+        var automationEncoderPresetText = automationRecordingSettingsText;
         var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExportOperation.cs"];
         var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExportAutomation.cs"];

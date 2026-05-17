@@ -2348,29 +2348,13 @@ Primary current owners:
   `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh
   and capture-device selection. `MainViewModel.AutomationAudioInputSelection.cs`
   owns audio-input selection and custom audio-input enablement.
-  `MainViewModel.AutomationCaptureMode.cs` owns automation mutation for
-  resolution. `MainViewModel.AutomationCaptureModeGate.cs` owns the shared
-  reinitialization gate used after active capture-mode changes.
-  `MainViewModel.AutomationFrameRate.cs` owns automation mutation for capture
-  frame-rate selection while routing through the shared capture-mode
-  reinitialization gate.
-  `MainViewModel.AutomationVideoFormat.cs` owns automation mutation for capture
-  video format while routing through the shared capture-mode reinitialization
-  gate.
-  `MainViewModel.AutomationMjpegDecoderCount.cs` owns automation mutation for
-  MJPEG decoder worker count while routing through the shared capture-mode
-  reinitialization gate.
-  `MainViewModel.AutomationRecordingFormat.cs` owns recording format automation
-  mutation and HDR compatibility enforcement.
-  `MainViewModel.AutomationRecordingQuality.cs` owns recording encoder quality
-  automation mutation.
-  `MainViewModel.AutomationSplitEncodeMode.cs` owns NVENC split-encode mode
-  automation mutation.
-  `MainViewModel.AutomationCustomBitrate.cs` owns custom encoder bitrate
-  automation mutation and clamp policy.
-  `MainViewModel.AutomationEncoderPreset.cs` owns encoder preset automation
-  mutation.
-  `MainViewModel.AutomationOutputPath.cs` owns output-path automation mutation.
+  `MainViewModel.AutomationCaptureSettings.cs` owns capture resolution,
+  frame-rate, video-format, MJPEG decoder worker-count automation, and the
+  shared reinitialization gate used after active capture-mode changes.
+  `MainViewModel.AutomationRecordingSettings.cs` owns recording format
+  automation, HDR compatibility enforcement, recording encoder quality,
+  NVENC split-encode mode, custom encoder bitrate clamp policy, encoder
+  preset, and output-path automation mutation.
   `MainViewModel.AutomationRecordingLifecycle.cs` owns the automation
   recording desired-state bridge into the shared recording transition gate.
   `MainViewModel.RecordingCapabilityRefresh.cs` owns startup FFmpeg capability

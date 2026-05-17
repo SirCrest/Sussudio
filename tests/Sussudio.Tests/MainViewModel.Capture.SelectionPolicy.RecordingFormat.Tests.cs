@@ -7,7 +7,7 @@ static partial class Program
     {
         var formatSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FormatSelection.cs").Replace("\r\n", "\n");
         var recordingFormatOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingFormatOptions.cs").Replace("\r\n", "\n");
-        var automationRecordingFormatText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingFormat.cs").Replace("\r\n", "\n");
+        var automationRecordingFormatText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs").Replace("\r\n", "\n");
         var recordingFormatPolicyText = ReadRepoFile("Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(recordingFormatOptionsText, "private void RebuildRecordingFormatOptions()");
@@ -21,8 +21,8 @@ static partial class Program
         AssertContains(automationRecordingFormatText, "public async Task SetRecordingFormatAsync");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationRecordingSettings.cs")),
-            "stale recording settings automation partial");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationRecordingFormat.cs")),
+            "stale recording format automation partial");
         AssertDoesNotContain(formatSelectionText, "private static bool IsHdrCompatibleRecordingFormat(");
         AssertContains(recordingFormatPolicyText, "internal static class RecordingFormatSelectionPolicy");
         AssertContains(recordingFormatPolicyText, "internal static bool IsHdrCompatible(");

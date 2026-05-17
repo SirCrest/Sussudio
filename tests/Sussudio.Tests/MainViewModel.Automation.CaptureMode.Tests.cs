@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -5,35 +6,42 @@ static partial class Program
     private static Task AutomationCaptureModeChanges_AwaitReinitialization()
     {
         var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
-        var captureModeAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCaptureMode.cs").Replace("\r\n", "\n");
-        var captureModeGateAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCaptureModeGate.cs").Replace("\r\n", "\n");
-        var frameRateAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationFrameRate.cs").Replace("\r\n", "\n");
-        var videoFormatAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationVideoFormat.cs").Replace("\r\n", "\n");
-        var mjpegDecoderCountAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationMjpegDecoderCount.cs").Replace("\r\n", "\n");
+        var captureSettingsAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCaptureSettings.cs").Replace("\r\n", "\n");
 
         AssertContains(viewModelStateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
-        AssertDoesNotContain(captureModeAutomationText, "private async Task SetAutomationCaptureModeAsync(");
-        AssertContains(captureModeGateAutomationText, "private async Task SetAutomationCaptureModeAsync(");
-        AssertContains(captureModeGateAutomationText, "await _automationCaptureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(captureModeGateAutomationText, "_suppressFormatChangeReinitialize = true;");
-        AssertContains(captureModeGateAutomationText, "_suppressFormatChangeReinitialize = false;");
-        AssertContains(captureModeGateAutomationText, "return wasPreviewing && SelectedFormat != null;");
-        AssertContains(captureModeGateAutomationText, "ReinitializeDeviceAsync($\"automation {reason}\")");
-        AssertContains(captureModeGateAutomationText, "_automationCaptureModeGate.Release();");
-        AssertContains(captureModeAutomationText, "return SetAutomationCaptureModeAsync(\"resolution\"");
-        AssertDoesNotContain(captureModeAutomationText, "public Task SetFrameRateAsync");
-        AssertContains(frameRateAutomationText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
-        AssertContains(frameRateAutomationText, "return SetAutomationCaptureModeAsync(\"frame rate\"");
-        AssertContains(frameRateAutomationText, "FrameRateTimingPolicy.IsAutoFrameRateValue(frameRate)");
-        AssertContains(frameRateAutomationText, "SelectedFrameRate = matched.Value;");
-        AssertDoesNotContain(captureModeAutomationText, "public Task SetVideoFormatAsync");
-        AssertContains(videoFormatAutomationText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
-        AssertContains(videoFormatAutomationText, "return SetAutomationCaptureModeAsync(\"video format\"");
-        AssertContains(videoFormatAutomationText, "SelectedVideoFormat = match;");
-        AssertDoesNotContain(captureModeAutomationText, "public Task SetMjpegDecoderCountAsync");
-        AssertContains(mjpegDecoderCountAutomationText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
-        AssertContains(mjpegDecoderCountAutomationText, "return SetAutomationCaptureModeAsync(\"mjpeg decoder count\"");
-        AssertContains(mjpegDecoderCountAutomationText, "MjpegDecoderCount = Math.Clamp(decoderCount, 1, 8);");
+        AssertContains(captureSettingsAutomationText, "public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)");
+        AssertContains(captureSettingsAutomationText, "return SetAutomationCaptureModeAsync(\"resolution\"");
+        AssertContains(captureSettingsAutomationText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
+        AssertContains(captureSettingsAutomationText, "return SetAutomationCaptureModeAsync(\"frame rate\"");
+        AssertContains(captureSettingsAutomationText, "FrameRateTimingPolicy.IsAutoFrameRateValue(frameRate)");
+        AssertContains(captureSettingsAutomationText, "SelectedFrameRate = matched.Value;");
+        AssertContains(captureSettingsAutomationText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
+        AssertContains(captureSettingsAutomationText, "return SetAutomationCaptureModeAsync(\"video format\"");
+        AssertContains(captureSettingsAutomationText, "SelectedVideoFormat = match;");
+        AssertContains(captureSettingsAutomationText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
+        AssertContains(captureSettingsAutomationText, "return SetAutomationCaptureModeAsync(\"mjpeg decoder count\"");
+        AssertContains(captureSettingsAutomationText, "MjpegDecoderCount = Math.Clamp(decoderCount, 1, 8);");
+        AssertContains(captureSettingsAutomationText, "private async Task SetAutomationCaptureModeAsync(");
+        AssertContains(captureSettingsAutomationText, "await _automationCaptureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(captureSettingsAutomationText, "_suppressFormatChangeReinitialize = true;");
+        AssertContains(captureSettingsAutomationText, "_suppressFormatChangeReinitialize = false;");
+        AssertContains(captureSettingsAutomationText, "return wasPreviewing && SelectedFormat != null;");
+        AssertContains(captureSettingsAutomationText, "ReinitializeDeviceAsync($\"automation {reason}\")");
+        AssertContains(captureSettingsAutomationText, "_automationCaptureModeGate.Release();");
+        foreach (var stalePath in new[]
+        {
+            "MainViewModel.AutomationCaptureMode.cs",
+            "MainViewModel.AutomationCaptureModeGate.cs",
+            "MainViewModel.AutomationFrameRate.cs",
+            "MainViewModel.AutomationVideoFormat.cs",
+            "MainViewModel.AutomationMjpegDecoderCount.cs"
+        })
+        {
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", stalePath)),
+                $"stale capture settings automation partial {stalePath}");
+        }
 
         return Task.CompletedTask;
     }

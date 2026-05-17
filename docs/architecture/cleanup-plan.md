@@ -3210,27 +3210,15 @@ Remaining `tools/Common` ownership:
    `MainViewModel.AutomationDeviceSelection.cs`; audio-input selection and
    custom audio-input enablement now live in
    `MainViewModel.AutomationAudioInputSelection.cs`.
-   Recording format automation mutation and HDR compatibility enforcement now
-   live in `MainViewModel.AutomationRecordingFormat.cs`; recording encoder
-   quality automation mutation now lives in
-   `MainViewModel.AutomationRecordingQuality.cs`; NVENC split-encode mode
-   automation mutation now lives in
-   `MainViewModel.AutomationSplitEncodeMode.cs`; custom encoder bitrate
-   automation mutation and clamp policy now live in
-   `MainViewModel.AutomationCustomBitrate.cs`; encoder preset automation
-   mutation lives in `MainViewModel.AutomationEncoderPreset.cs`;
-   output-path automation mutation now lives in `MainViewModel.AutomationOutputPath.cs`.
+   Recording format automation, HDR compatibility enforcement, encoder
+   quality, NVENC split-encode mode, custom bitrate clamp policy, encoder
+   preset, and output-path automation now live in
+   `MainViewModel.AutomationRecordingSettings.cs`.
    The automation recording desired-state bridge into the shared recording
    transition gate now lives in `MainViewModel.AutomationRecordingLifecycle.cs`.
-   Capture resolution automation now lives in
-   `MainViewModel.AutomationCaptureMode.cs`; the shared capture-mode
-   reinitialization gate now lives in
-   `MainViewModel.AutomationCaptureModeGate.cs`; capture frame-rate automation
-   now lives in `MainViewModel.AutomationFrameRate.cs`;
-   capture video-format automation now lives in `MainViewModel.AutomationVideoFormat.cs`; MJPEG decoder
-   worker-count automation lives in
-   `MainViewModel.AutomationMjpegDecoderCount.cs` and still routes through the
-   shared capture-mode reinitialization gate.
+   Capture resolution, frame-rate, video-format, MJPEG decoder worker-count
+   automation, and the shared capture-mode reinitialization gate now live in
+   `MainViewModel.AutomationCaptureSettings.cs`.
    Startup FFmpeg capability probes for recording formats and split-encode modes
    now live in `MainViewModel.RecordingCapabilityRefresh.cs`.
    The old `MainViewModel.Automation.cs` catch-all has been retired.
