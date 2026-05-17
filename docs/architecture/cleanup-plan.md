@@ -2791,7 +2791,6 @@ classification while the runner still owns scenario execution and warning emissi
 
 Shared automation pipe client ownership is split from a single helper into a
 focused partial family under `tools/Common/AutomationPipeClient/`.
-`AutomationPipeClient.cs` is the public client marker shell,
 `AutomationPipeClient.Transport.cs` owns named-pipe connect orchestration,
 write/read framing, and response timeout, `AutomationPipeClient.ConnectErrors.cs`
 owns pipe connect failure classification and exact CLI/MCP diagnostic error
@@ -2831,7 +2830,6 @@ cleanup.
 
 Remaining `tools/Common` ownership:
 
-- `AutomationPipeClient/AutomationPipeClient.cs`
 - `AutomationPipeClient/AutomationPipeClient.Transport.cs`
 - `AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs`
 - `AutomationPipeClient/AutomationPipeClient.Commands.cs`

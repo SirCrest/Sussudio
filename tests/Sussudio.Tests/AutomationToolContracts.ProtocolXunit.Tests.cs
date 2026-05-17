@@ -225,7 +225,6 @@ public sealed class AutomationToolContractsProtocolXunitTests
             "\n",
             new[]
             {
-                "tools/Common/AutomationPipeClient/AutomationPipeClient.cs",
                 "tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs",
                 "tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs",
                 "tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs",

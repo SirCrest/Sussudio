@@ -2525,8 +2525,6 @@ Primary owners:
   shared JSON options.
 - `tools/Common/AutomationPipeClient/` owns the shared pipe-client helper family
   used by ssctl, MCP, diagnostic sessions, and smoke tools.
-- `tools/Common/AutomationPipeClient/AutomationPipeClient.cs` is the marker
-  shell for the shared automation pipe client.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs` owns
   named-pipe connect orchestration, request/response framing, and response
   timeout.
