@@ -2347,8 +2347,6 @@ Primary current owners:
   automation, HDR compatibility enforcement, recording encoder quality,
   NVENC split-encode mode, custom encoder bitrate clamp policy, encoder
   preset, and output-path automation mutation.
-  `MainViewModel.AutomationRecordingLifecycle.cs` owns the automation
-  recording desired-state bridge into the shared recording transition gate.
   `MainViewModel.RecordingCapabilityRefresh.cs` owns startup FFmpeg capability
   probes for recording formats and split-encode modes.
 

@@ -12,6 +12,9 @@ public partial class MainViewModel
     public Task ToggleRecordingAsync()
         => SetRecordingDesiredStateAsync(!IsRecording);
 
+    public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+        => SetRecordingDesiredStateAsync(enabled, cancellationToken);
+
     private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)
     {
         if (enabled == IsRecording)

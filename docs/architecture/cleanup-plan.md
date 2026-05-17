@@ -3207,7 +3207,7 @@ Remaining `tools/Common` ownership:
    preset, and output-path automation now live in
    `MainViewModel.AutomationRecordingSettings.cs`.
    The automation recording desired-state bridge into the shared recording
-   transition gate now lives in `MainViewModel.AutomationRecordingLifecycle.cs`.
+   transition gate now lives in `MainViewModel.RecordingLifecycle.cs`.
    Capture resolution, frame-rate, video-format, MJPEG decoder worker-count
    automation, and the shared capture-mode reinitialization gate now live in
    `MainViewModel.AutomationCaptureSettings.cs`.

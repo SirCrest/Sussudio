@@ -5,9 +5,9 @@ static partial class Program
 {
     private static Task MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate()
     {
-        var automationRecordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingLifecycle.cs")
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
-        var automationText = automationRecordingLifecycleText
+        var automationText = recordingLifecycleText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationFlashback.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
@@ -36,8 +36,6 @@ static partial class Program
                 .Replace("\r\n", "\n");
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
-        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
-            .Replace("\r\n", "\n");
         var recordingOperationsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingOperations.cs")
             .Replace("\r\n", "\n");
         var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs")
@@ -54,7 +52,16 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Automation.cs")),
             "MainViewModel automation catch-all partial");
-        AssertContains(automationRecordingLifecycleText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(
+                GetRepoRoot(),
+                "Sussudio",
+                "ViewModels",
+                "MainViewModel.AutomationRecordingLifecycle.cs")),
+            "MainViewModel automation recording lifecycle bridge partial");
+        AssertContains(recordingLifecycleText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(recordingLifecycleText, "=> SetRecordingDesiredStateAsync(enabled, cancellationToken);");
         AssertContains(recordingLifecycleText, "internal Task SetRecordingDesiredStateAsync");
         AssertContains(recordingLifecycleText, "public Task ToggleRecordingAsync()\n        => SetRecordingDesiredStateAsync(!IsRecording);");
         AssertContains(recordingLifecycleText, "Recording transition already in progress.");
@@ -89,7 +96,7 @@ static partial class Program
         AssertDoesNotContain(runtimeText, "partial void OnIsRecordingChanged(bool value)");
         AssertDoesNotContain(rootViewModelText, "public partial ObservableCollection<string> AvailableRecordingFormats");
         AssertDoesNotContain(rootViewModelText, "public partial string OutputPath");
-        AssertContains(automationText, "return SetRecordingDesiredStateAsync(enabled, cancellationToken);");
+        AssertContains(automationText, "=> SetRecordingDesiredStateAsync(enabled, cancellationToken);");
         AssertContains(dispatcherText, "return CreateResponse(correlationId, $\"Recording {(enabled ? \"started\" : \"stopped\")}.\"");
         AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "snapshot: snapshot");

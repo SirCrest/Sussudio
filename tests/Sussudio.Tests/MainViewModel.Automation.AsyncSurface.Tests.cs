@@ -43,7 +43,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var automationFlashbackText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationFlashback.cs")
             .Replace("\r\n", "\n");
-        var automationRecordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingLifecycle.cs")
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationUi.cs")
             .Replace("\r\n", "\n");
@@ -57,7 +57,7 @@ static partial class Program
             + "\n" + automationPreviewText
             + "\n" + automationHdrText
             + "\n" + automationFlashbackText
-            + "\n" + automationRecordingLifecycleText
+            + "\n" + recordingLifecycleText
             + "\n" + automationStatsUiText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs")
                 .Replace("\r\n", "\n")
