@@ -4,7 +4,6 @@ static partial class Program
     {
         var files = new[]
         {
-            "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs",
             "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs",
             "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs"
         };

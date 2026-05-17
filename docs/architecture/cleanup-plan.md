@@ -2685,9 +2685,8 @@ failure-kind and last-result assertions, and `.Recording.cs` owns
 active-Flashback-recording failure-kind and backend-stability assertions.
 
 Diagnostic-session Flashback recording-settings deferral now lives in named
-partial owners. Deferred preset state lives in
-`DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`, active
-recording mutation/rejection checks live in
+partial owners. Deferred preset state and active recording mutation/rejection
+checks live in
 `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`, and
 post-stop preset verification, encoder-frame check, and original-preset restore
 live in `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`. Do
@@ -2821,7 +2820,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackRejectedExports.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Inactive.cs`
 - `DiagnosticSessionFlashbackRejectedExports.Recording.cs`
-- `DiagnosticSessionFlashbackRecordingSettingsScenarios.Models.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.DuringRecording.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.PostStop.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`

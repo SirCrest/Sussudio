@@ -5,6 +5,10 @@ using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
 
 namespace Sussudio.Tools;
 
+internal readonly record struct FlashbackRecordingSettingsDeferredPresetState(
+    string? OriginalPreset,
+    string? DeferredPreset);
+
 internal static partial class DiagnosticSessionFlashbackRecordingSettingsScenarios
 {
     internal static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(
