@@ -4,7 +4,7 @@ static partial class Program
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsOverlayComposition.cs").Replace("\r\n", "\n");
-        var statsDockCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsDockComposition.cs").Replace("\r\n", "\n");
+        var statsDockCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsOverlayComposition.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockPresentationController.cs").Replace("\r\n", "\n");
         var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
@@ -12,14 +12,15 @@ static partial class Program
         AssertContains(statsDockCompositionText, "private void InitializeStatsDockRefreshController()");
         AssertContains(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController(new StatsDockPresentationControllerContext");
         AssertContains(statsDockCompositionText, "_statsDockRefreshController = new StatsDockRefreshController(new StatsDockRefreshControllerContext");
+        AssertContains(statsDockCompositionText, "This also wires the stats dock refresh");
         AssertOccursBefore(statsOverlayCompositionText, "InitializeFrameTimeOverlayPresentationController();", "InitializeStatsDockRefreshController();");
         AssertOccursBefore(statsOverlayCompositionText, "InitializeStatsDockRefreshController();", "_statsOverlayController = new StatsOverlayController");
         AssertOccursBefore(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController", "var statsDockRowChromeController = new StatsDockRowChromeController");
         AssertOccursBefore(statsDockCompositionText, "var statsDockRowChromeController = new StatsDockRowChromeController", "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
         AssertOccursBefore(statsDockCompositionText, "var statsDiagnosticRowsController = new StatsDiagnosticRowsController", "var statsHardwareRowsController = new StatsHardwareRowsController");
         AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsController = new StatsHardwareRowsController", "_statsDockRefreshController = new StatsDockRefreshController");
-        AssertDoesNotContain(statsOverlayCompositionText, "var statsDockPresentationController = new StatsDockPresentationController");
-        AssertDoesNotContain(statsOverlayCompositionText, "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
+        AssertDoesNotContain(statsOverlayText, "var statsDockPresentationController = new StatsDockPresentationController");
+        AssertDoesNotContain(statsOverlayText, "var statsDiagnosticRowsController = new StatsDiagnosticRowsController");
         AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshControllerContext");
         AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshController");
         AssertContains(refreshControllerText, "public required Func<bool> IsStatsDockVisible { get; init; }");
@@ -56,7 +57,7 @@ static partial class Program
     private static Task StatsDockRowChrome_LivesInFocusedController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var statsDockCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsDockComposition.cs").Replace("\r\n", "\n");
+        var statsDockCompositionText = ReadRepoFile("Sussudio/MainWindow.StatsOverlayComposition.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs").Replace("\r\n", "\n");
         var rowChromeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRowChromeController.cs").Replace("\r\n", "\n");

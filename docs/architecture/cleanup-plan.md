@@ -1800,7 +1800,7 @@ Stats dock, stats toggle, and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/Stats/StatsOverlayController.cs`. Stats overlay controller graph
 construction now lives in `Sussudio/MainWindow.StatsOverlayComposition.cs`, and
 stats dock presentation/diagnostic/hardware/refresh controller graph wiring now
-lives in `Sussudio/MainWindow.StatsDockComposition.cs`;
+lives in `Sussudio/MainWindow.StatsOverlayComposition.cs`;
 `MainWindow.StatsOverlay.cs` is now the XAML-facing adapter for stats overlay
 binding setup, stats dock visibility, and polling commands. Stats toggle
 event hookup and checked/unchecked behavior,

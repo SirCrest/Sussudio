@@ -1,8 +1,7 @@
 namespace Sussudio;
 
 // XAML-facing stats dock presentation and visibility adapter. Controller
-// composition lives in MainWindow.StatsOverlayComposition.cs and
-// MainWindow.StatsDockComposition.cs.
+// composition lives in MainWindow.StatsOverlayComposition.cs.
 public sealed partial class MainWindow
 {
     private void AttachStatsOverlayToggleBindings()
