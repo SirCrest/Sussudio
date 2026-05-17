@@ -169,8 +169,15 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackCommandAlerts.cs`
   owns Flashback playback command queue and command failure alert rules.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.cs`
-  owns Flashback playback cadence, audio pacing, and submit-failure alert
+  owns Flashback playback performance alert orchestration.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Cadence.cs`
+  owns Flashback playback target-rate, present-cadence, slow-playback, and
+  frametime alert rules.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Audio.cs`
+  owns Flashback playback audio-master fallback and audio-queue backlog alert
   rules.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Submission.cs`
+  owns Flashback playback frame-submission failure alert rules.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvents.cs`
   owns diagnostics event publication, event throttling, Flashback export
   completion events, and recent event storage.

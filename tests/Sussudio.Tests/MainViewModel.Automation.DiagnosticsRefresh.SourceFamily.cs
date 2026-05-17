@@ -21,6 +21,9 @@ static partial class Program
             FlashbackPlaybackAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackAlerts.cs"),
             FlashbackPlaybackCommandAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackCommandAlerts.cs"),
             FlashbackPlaybackPerformanceAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.cs"),
+            FlashbackPlaybackPerformanceAlertsCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Cadence.cs"),
+            FlashbackPlaybackPerformanceAlertsAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Audio.cs"),
+            FlashbackPlaybackPerformanceAlertsSubmissionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackPlaybackPerformanceAlerts.Submission.cs"),
             EventsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvents.cs"),
             VerificationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Verification.cs"),
             LifecycleText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Lifecycle.cs"),
@@ -109,6 +112,9 @@ static partial class Program
         public string FlashbackPlaybackAlertsText { get; init; } = string.Empty;
         public string FlashbackPlaybackCommandAlertsText { get; init; } = string.Empty;
         public string FlashbackPlaybackPerformanceAlertsText { get; init; } = string.Empty;
+        public string FlashbackPlaybackPerformanceAlertsCadenceText { get; init; } = string.Empty;
+        public string FlashbackPlaybackPerformanceAlertsAudioText { get; init; } = string.Empty;
+        public string FlashbackPlaybackPerformanceAlertsSubmissionText { get; init; } = string.Empty;
         public string EventsText { get; init; } = string.Empty;
         public string VerificationText { get; init; } = string.Empty;
         public string LifecycleText { get; init; } = string.Empty;
@@ -189,6 +195,9 @@ static partial class Program
                 FlashbackPlaybackAlertsText,
                 FlashbackPlaybackCommandAlertsText,
                 FlashbackPlaybackPerformanceAlertsText,
+                FlashbackPlaybackPerformanceAlertsCadenceText,
+                FlashbackPlaybackPerformanceAlertsAudioText,
+                FlashbackPlaybackPerformanceAlertsSubmissionText,
                 EventsText,
                 VerificationText,
                 LifecycleText,
