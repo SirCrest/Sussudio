@@ -4,7 +4,17 @@ static partial class Program
     {
         var captureServiceText = ReadCaptureServiceDiagnosticsRefreshSource();
         var flashbackBackendText = ReadFlashbackBackendResourcesSource();
+        var exportOperationsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs");
+        var exportCoreText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
+        AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
+        AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
+        AssertContains(exportOperationsText, "return await ExportFlashbackCoreAsync(");
+        AssertDoesNotContain(exportOperationsText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
+        AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
+        AssertContains(exportCoreText, "bufferManager.PauseEviction();");
+        AssertContains(exportCoreText, "ForceRotateForExport");
+        AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
         AssertContains(captureServiceText, "FlashbackExporter? snapshotExporter = null,");
         AssertContains(captureServiceText, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackExporter ??= new FlashbackExporter();\n            }");
@@ -23,9 +33,9 @@ static partial class Program
             "internal async Task<FinalizeResult> ExportFlashbackRangeAsync",
             "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
         var exportLastNMethod = ExtractTextBetween(
-            captureServiceText,
+            exportOperationsText,
             "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
-            "private FinalizeResult FailFlashbackExport");
+            "\n}");
         AssertContains(exportRangeMethod, "FlashbackExporter? flashbackExporter;");
         AssertContains(exportRangeMethod, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
         AssertContains(exportRangeMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");

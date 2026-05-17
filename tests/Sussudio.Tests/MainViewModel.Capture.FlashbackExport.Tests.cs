@@ -9,8 +9,12 @@ static partial class Program
 {
     private static Task CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
-            .Replace("\r\n", "\n")
+        var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
+            .Replace("\r\n", "\n");
+        var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+            .Replace("\r\n", "\n");
+        var captureServiceText = exportOperationsText
+            + "\n" + exportCoreText
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
                 .Replace("\r\n", "\n")
@@ -18,6 +22,15 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
                 .Replace("\r\n", "\n");
+
+        AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
+        AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
+        AssertContains(exportOperationsText, "return await ExportFlashbackCoreAsync(");
+        AssertDoesNotContain(exportOperationsText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
+        AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
+        AssertContains(exportCoreText, "bufferManager.PauseEviction();");
+        AssertContains(exportCoreText, "ForceRotateForExport");
+        AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
 
         var rangeExport = ExtractTextBetween(
             captureServiceText,
@@ -33,9 +46,9 @@ static partial class Program
         AssertContains(rangeExport, "exportOperationLockAlreadyHeld: true,");
 
         var lastNExport = ExtractTextBetween(
-            captureServiceText,
+            exportOperationsText,
             "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
-            "    private FinalizeResult FailFlashbackExport");
+            "\n}\n");
         AssertContains(lastNExport, "FlashbackExporter? flashbackExporter;");
         AssertContains(lastNExport, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
         AssertContains(lastNExport, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);\n            exportOperationLockHeld = true;");
@@ -46,9 +59,9 @@ static partial class Program
         AssertContains(lastNExport, "exportOperationLockAlreadyHeld: true,");
 
         var exportCore = ExtractTextBetween(
-            captureServiceText,
+            exportCoreText,
             "    private async Task<FinalizeResult> ExportFlashbackCoreAsync",
-            "\n}\n\nusing System;");
+            "\n}\n");
         AssertContains(exportCore, "FlashbackExporter? snapshotExporter = null,");
         AssertContains(exportCore, "bool exportOperationLockAlreadyHeld = false,");
         AssertContains(exportCore, "var exportOperationLockHeld = exportOperationLockAlreadyHeld;");

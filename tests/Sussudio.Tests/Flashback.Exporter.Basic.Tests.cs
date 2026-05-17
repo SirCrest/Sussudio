@@ -10,9 +10,12 @@ static partial class Program
             ?? throw new InvalidOperationException("ResolveFlashbackExportThrottleDelayMs not found.");
         var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs")
             .Replace("\r\n", "\n");
+        var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+            .Replace("\r\n", "\n");
         var exportPlanningText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs")
             .Replace("\r\n", "\n");
         var sourceText = exportOperationsText
+            + "\n" + exportCoreText
             + "\n" + exportPlanningText
             + "\n" + ReadCaptureServiceRecordingFinalizationSource();
 

@@ -995,10 +995,13 @@ Flashback export failure classification now lives in
 Keep the export failure-kind taxonomy there because automation responses and
 capture diagnostics both consume it.
 
-Flashback export entry points and the core export flow now live in
+Flashback export entry points now live in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportOperations.cs`.
-Keep range export, last-N export, backend lease handoff, native export
-dispatch, and export cleanup ordering there.
+Keep range export, last-N export, backend snapshotting, and session-lock release
+before native export there. The shared export pipeline now lives in
+`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`; keep
+eviction pause, force-rotate fallback, exporter request construction,
+diagnostics completion, and cleanup there.
 
 Flashback export planning now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportPlanning.cs`. Keep
