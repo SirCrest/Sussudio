@@ -18,6 +18,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var threadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadLoop.cs")
             .Replace("\r\n", "\n");
+        var threadSeekCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekCommands.cs")
+            .Replace("\r\n", "\n");
         var threadSeekScrubCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadSeekScrubCommands.cs")
             .Replace("\r\n", "\n");
         var threadCommandsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs")
@@ -27,10 +29,11 @@ static partial class Program
         AssertDoesNotContain(threadShellText, "private void PlaybackThreadEntry(");
         AssertContains(threadLoopText, "private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)");
         AssertContains(threadLoopText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_ENTER\");");
-        AssertContains(threadSeekScrubCommandsText, "private void HandleSeekCommand(");
+        AssertContains(threadSeekCommandsText, "private void HandleSeekCommand(");
         AssertContains(threadSeekScrubCommandsText, "private void HandleBeginScrubCommand(");
         AssertContains(threadSeekScrubCommandsText, "private void HandleUpdateScrubCommand(");
         AssertContains(threadSeekScrubCommandsText, "private void HandleEndScrubCommand(");
+        AssertDoesNotContain(threadSeekScrubCommandsText, "private void HandleSeekCommand(");
         AssertDoesNotContain(threadCommandsText, "private void HandleSeekCommand(");
         AssertDoesNotContain(threadCommandsText, "private void HandleBeginScrubCommand(");
         AssertDoesNotContain(threadCommandsText, "private void HandleUpdateScrubCommand(");
@@ -39,7 +42,7 @@ static partial class Program
         AssertContains(threadCommandsText, "private void HandlePauseCommand(");
         AssertContains(threadCommandsText, "private void HandleGoLiveCommand(");
         AssertContains(threadCommandsText, "private void HandleNudgeCommand(");
-        AssertContains(threadSeekScrubCommandsText, "cmd = ResolveSeekCommandPosition(cmd);");
+        AssertContains(threadSeekCommandsText, "cmd = ResolveSeekCommandPosition(cmd);");
         AssertContains(threadSeekScrubCommandsText, "SafeSuppressPreviewSubmission(\"begin_scrub\")");
         AssertContains(threadCommandsText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");");
         AssertContains(threadLoopText, "HandleSeekCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);");
