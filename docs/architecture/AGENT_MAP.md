@@ -536,14 +536,14 @@ Important entry points:
   transition coordination: AV1 encoder support probing, video/audio readiness
   waiting, resource-owner request construction, and deferred cleanup handoff.
   Startup construction, install, playback initialization, producer attachment,
-  startup rollback, and backend artifact cleanup mechanics live in
-  `FlashbackBackendResources.cs`.
+  and startup rollback live in `FlashbackBackendResources.cs`; backend artifact
+  cleanup mechanics live in `FlashbackBackendResources.ArtifactCleanup.cs`.
 - `CaptureService.FlashbackPreviewBackendDisposal.cs` owns Flashback preview
   backend teardown, detach order, and artifact cleanup scheduling handoff.
 - `CaptureService.FlashbackBufferCycle.cs` owns buffer-cycle transition
   coordination: backend/export lock ordering, purge-preserve decisions, and
   full rebuild fallbacks. Sink-only resource mechanics live in
-  `FlashbackBackendResources.cs`.
+  `FlashbackBackendResources.BufferCycle.cs`.
 - `CaptureService.FlashbackExportDiagnostics.cs` owns Flashback export
   diagnostic state, progress forwarding, rejection records, and force-rotate
   fallback counters.
@@ -802,8 +802,10 @@ Entry points:
 
 - `FlashbackBackendResources.cs` owns preview backend resource grouping,
   startup construction/install/playback initialization, rollback cleanup,
-  sink-only buffer-cycle mechanics, and producer attach/detach request shaping
-  for video, audio, and microphone feeds.
+  and producer attach/detach request shaping for video, audio, and microphone
+  feeds.
+  `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
+  mechanics.
   `FlashbackBackendResources.ArtifactCleanup.cs` owns backend artifact cleanup
   request/retry/dispose/purge mechanics. The backend resource owner
   receives export-lock wait/release delegates from `CaptureService` rather than
