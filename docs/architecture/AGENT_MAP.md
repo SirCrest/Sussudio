@@ -2302,8 +2302,9 @@ Primary current owners:
   options. `MainViewModel.AutomationStatsUi.cs` owns stats dock/section
   visibility and frame-time overlay display. `MainViewModel.AutomationAudio.cs`
   owns automation command entry points for audio enablement, audio-preview
-  enablement, preview-volume clamp/persist, device-native mode/gain
-  application. `MainViewModel.AutomationMicrophone.cs` owns automation
+  enablement, and preview-volume clamp/persist.
+  `MainViewModel.AutomationDeviceAudio.cs` owns device-native mode/gain
+  automation application. `MainViewModel.AutomationMicrophone.cs` owns automation
   microphone enablement with recording-time refusal and idempotent handling.
   `MainViewModel.AutomationPreview.cs` owns automation
   preview enable/disable idempotence, pending-reinit cancellation, and

@@ -37,6 +37,8 @@ static partial class Program
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
         var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
             .Replace("\r\n", "\n");
+        var automationDeviceAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceAudio.cs")
+            .Replace("\r\n", "\n");
         var automationMicrophoneText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationMicrophone.cs")
             .Replace("\r\n", "\n");
         var automationPreviewText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationPreview.cs")
@@ -56,6 +58,7 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Automation.cs")),
             "MainViewModel automation catch-all partial");
         var automationText = automationAudioText
+            + "\n" + automationDeviceAudioText
             + "\n" + automationMicrophoneText
             + "\n" + automationPreviewText
             + "\n" + automationHdrText
@@ -203,8 +206,10 @@ static partial class Program
         AssertContains(automationAudioText, "public Task SetAudioEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetAudioPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(automationAudioText, "public Task SetDeviceAudioModeAsync");
+        AssertDoesNotContain(automationAudioText, "public Task SetAnalogAudioGainAsync");
+        AssertContains(automationDeviceAudioText, "public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)");
+        AssertContains(automationDeviceAudioText, "public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(automationAudioText, "public Task SetMicrophoneEnabledAsync");
         AssertContains(automationMicrophoneText, "public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationMicrophoneText, "private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)");
