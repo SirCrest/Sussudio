@@ -3203,9 +3203,10 @@ Remaining `tools/Common` ownership:
     frame-rate, resolution, mode-selection, late-probe, recording-format, and
     runtime-flag assertions stay near their matching policy owners.
     Automatic resolution dropdown option construction now lives in
-    `MainViewModel.AutoResolutionOptions.cs`; automatic resolution ranking and
-    source-aware frame-rate selection now live in
-    `MainViewModel.AutoResolutionSelection.cs`; effective Source resolution state,
+    `MainViewModel.AutoResolutionOptions.cs`; automatic resolution-selection
+    state adaptation now lives in `MainViewModel.AutoResolutionSelection.cs`,
+    while automatic resolution ranking and source-aware frame-rate selection now
+    live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; effective Source resolution state,
    auto-value detection, and effective resolution query helpers live in
    `MainViewModel.AutoResolutionState.cs`; auto-resolution display text used by
    status and telemetry presentation lives in

@@ -9,6 +9,7 @@ static partial class Program
         var autoResolutionSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionSelection.cs").Replace("\r\n", "\n");
         var autoResolutionStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionState.cs").Replace("\r\n", "\n");
         var autoResolutionPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionPresentation.cs").Replace("\r\n", "\n");
+        var autoCaptureSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs").Replace("\r\n", "\n");
         var selectionPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
         var helperText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
         var sourcePolicyText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Source.cs").Replace("\r\n", "\n");
@@ -29,10 +30,19 @@ static partial class Program
         AssertContains(autoResolutionOptionsText, "private bool ShouldSelectAutoResolutionOption(");
         AssertDoesNotContain(autoResolutionOptionsText, "private AutoCaptureSelection? ResolveAutoCaptureSelection(");
         AssertDoesNotContain(autoResolutionOptionsText, "private ResolutionOption? SelectBestAutoResolutionCandidate(");
-        AssertContains(autoResolutionSelectionText, "/// Source-aware automatic resolution and frame-rate selection policy.");
+        AssertContains(autoResolutionSelectionText, "/// Source-aware automatic resolution and frame-rate selection adapter.");
         AssertContains(autoResolutionSelectionText, "private AutoCaptureSelection? ResolveAutoCaptureSelection(");
-        AssertContains(autoResolutionSelectionText, "private ResolutionOption? SelectBestAutoResolutionCandidate(");
-        AssertContains(autoResolutionSelectionText, "private MediaFormat SelectPreferredAutoFrameRateFormat(");
+        AssertContains(autoResolutionSelectionText, "AutoCaptureSelectionPolicy.Select(new AutoCaptureSelectionRequest(");
+        AssertDoesNotContain(autoResolutionSelectionText, "private ResolutionOption? SelectBestAutoResolutionCandidate(");
+        AssertDoesNotContain(autoResolutionSelectionText, "private MediaFormat SelectPreferredAutoFrameRateFormat(");
+        AssertContains(autoCaptureSelectionPolicyText, "internal sealed record AutoCaptureSelection(");
+        AssertContains(autoCaptureSelectionPolicyText, "internal sealed record AutoCaptureSelectionRequest(");
+        AssertContains(autoCaptureSelectionPolicyText, "internal static class AutoCaptureSelectionPolicy");
+        AssertContains(autoCaptureSelectionPolicyText, "internal static AutoCaptureSelection? Select(AutoCaptureSelectionRequest request)");
+        AssertContains(autoCaptureSelectionPolicyText, "private static ResolutionOption? SelectBestResolutionCandidate(");
+        AssertContains(autoCaptureSelectionPolicyText, "private static MediaFormat SelectPreferredFrameRateFormat(");
+        AssertDoesNotContain(autoCaptureSelectionPolicyText, "AvailableResolutions.Clear();");
+        AssertDoesNotContain(autoCaptureSelectionPolicyText, "SelectedResolution =");
         AssertDoesNotContain(autoResolutionOptionsText, "private void UpdateAutoResolutionState(");
         AssertDoesNotContain(autoResolutionOptionsText, "private void ClearAutoResolutionState()");
         AssertContains(autoResolutionStateText, "/// Effective Source resolution state and query helpers.");
@@ -191,6 +201,53 @@ static partial class Program
 
         AssertEqual("1920x1080", GetStringProperty(selected, "Value"), "SDR auto prefers a 60 fps bucket before largest 120-only resolution");
         AssertEqual(60, selection.GetType().GetProperty("SdrAutoFriendlyFrameRateBucket")!.GetValue(selection), "SDR auto selected friendly bucket");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AutoCaptureSelectionPolicy_PreservesSourceBoundedSelection()
+    {
+        var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
+        var resolutionType = RequireType("Sussudio.Models.ResolutionOption");
+        var telemetryType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
+
+        var formatsByResolution = CreateResolutionFormatDictionary(mediaFormatType);
+        AddResolutionFormats(
+            formatsByResolution,
+            mediaFormatType,
+            "3840x2160",
+            CreateTestMediaFormat(mediaFormatType, 3840, 2160, 120, "NV12", isHdr: false));
+        AddResolutionFormats(
+            formatsByResolution,
+            mediaFormatType,
+            "1920x1080",
+            CreateTestMediaFormat(mediaFormatType, 1920, 1080, 60, "NV12", isHdr: false));
+        AddResolutionFormats(
+            formatsByResolution,
+            mediaFormatType,
+            "1280x720",
+            CreateTestMediaFormat(mediaFormatType, 1280, 720, 30, "NV12", isHdr: false));
+
+        var telemetry = CreateConfigInstance(telemetryType);
+        SetPropertyOrBackingField(telemetry, "Width", 1920);
+        SetPropertyOrBackingField(telemetry, "Height", 1080);
+        SetPropertyOrBackingField(telemetry, "FrameRateExact", 60d);
+
+        var selection = InvokeAutoCaptureSelection(
+            CreateResolutionOptionList(
+                resolutionType,
+                CreateResolutionOption(resolutionType, "3840x2160", 3840, 2160, isEnabled: true),
+                CreateResolutionOption(resolutionType, "1920x1080", 1920, 1080, isEnabled: true),
+                CreateResolutionOption(resolutionType, "1280x720", 1280, 720, isEnabled: true)),
+            formatsByResolution,
+            telemetry,
+            isHdrEnabled: false);
+        var selectedResolution = selection.GetType().GetProperty("Resolution")!.GetValue(selection)
+            ?? throw new InvalidOperationException("Auto capture selection returned no resolution.");
+
+        AssertEqual("1920x1080", GetStringProperty(selectedResolution, "Value"), "Auto capture selection caps resolution to source dimensions");
+        AssertEqual(60, selection.GetType().GetProperty("FriendlyFrameRate")!.GetValue(selection), "Auto capture selection keeps source-friendly frame-rate bucket");
+        AssertEqual(60d, GetDoubleProperty(selection, "ExactFrameRate"), "Auto capture selection keeps exact frame rate");
 
         return Task.CompletedTask;
     }

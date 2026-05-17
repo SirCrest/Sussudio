@@ -80,6 +80,28 @@ static partial class Program
             ?? throw new InvalidOperationException("CaptureResolutionSelectionPolicy.Select returned null.");
     }
 
+    private static object InvokeAutoCaptureSelection(
+        object options,
+        object formatsByResolution,
+        object telemetry,
+        bool isHdrEnabled)
+    {
+        var requestType = RequireType("Sussudio.ViewModels.AutoCaptureSelectionRequest");
+        var policyType = RequireType("Sussudio.ViewModels.AutoCaptureSelectionPolicy");
+        var constructor = FindConstructor(requestType, parameterCount: 4);
+        var request = constructor.Invoke(new object?[]
+        {
+            options,
+            formatsByResolution,
+            telemetry,
+            isHdrEnabled
+        });
+        var select = policyType.GetMethod("Select", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("AutoCaptureSelectionPolicy.Select missing.");
+        return select.Invoke(null, new[] { request })
+            ?? throw new InvalidOperationException("AutoCaptureSelectionPolicy.Select returned null.");
+    }
+
     private static object InvokeFrameRateAutoSelection(
         object options,
         bool autoFrameRateOptionAvailable,

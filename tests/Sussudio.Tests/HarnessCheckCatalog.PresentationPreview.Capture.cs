@@ -51,6 +51,9 @@ static partial class Program
             "Capture resolution selection policy preserves SDR auto bucket preference",
             CaptureResolutionSelectionPolicy_PreservesSdrAutoBucketPreference);
         await AddCheckAsync(results,
+            "Auto capture selection policy preserves source-bounded selection",
+            AutoCaptureSelectionPolicy_PreservesSourceBoundedSelection);
+        await AddCheckAsync(results,
             "Device format probe retarget policy lives in focused helper",
             DeviceFormatProbeRetargetPolicy_LivesInFocusedHelper);
         await AddCheckAsync(results,

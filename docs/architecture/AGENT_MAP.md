@@ -2389,8 +2389,10 @@ Primary current owners:
   owns the pure late-probe decision policy for HDR retarget, SDR NV12 retarget,
   MJPG HFR preservation, session mismatch, and active-capture restore.
   `MainViewModel.AutoResolutionOptions.cs` owns automatic resolution dropdown
-  option construction. `MainViewModel.AutoResolutionSelection.cs` owns automatic
-  resolution ranking and source-aware frame-rate selection.
+  option construction. `MainViewModel.AutoResolutionSelection.cs` owns the
+  automatic resolution-selection adapter over current ViewModel state.
+  `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs` owns automatic resolution
+  ranking and source-aware frame-rate selection.
   `MainViewModel.AutoResolutionState.cs` owns effective Source resolution state,
   auto-value detection, and effective resolution query helpers.
   `MainViewModel.AutoResolutionPresentation.cs` owns
