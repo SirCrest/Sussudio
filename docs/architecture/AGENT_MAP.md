@@ -564,8 +564,8 @@ Important entry points:
 - `CaptureService.SnapshotObservedFrames.cs` owns observed frame-format
   telemetry projection from explicit counters and the private
   `ObservedFrameSnapshotFields` owner shared by runtime/health assemblers.
-- `CaptureService.SnapshotAvSync.cs` owns A/V sync drift snapshot helpers for
-  live source/audio drift and encoder correction telemetry.
+- `CaptureService.SnapshotAvSync.cs` owns A/V sync drift state, baseline reset,
+  live source/audio drift sampling, and encoder correction telemetry.
 - `CaptureService.SnapshotTelemetry.cs` owns source telemetry snapshot
   presentation policy, telemetry/request alignment, and HDR warmup state
   classification.

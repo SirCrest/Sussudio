@@ -159,12 +159,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private const int TelemetryPollIntervalMs = 500;
     private const int TelemetryPollStopDrainTimeoutMs = 750;
 
-    // AV sync drift diagnostics
-    private double _avSyncBaselineDriftMs = double.NaN;
-    private double _avSyncPrevDriftMs;
-    private long _avSyncPrevDriftTick;
-    private double _avSyncDriftRateMsPerSec;
-
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<Exception>? ErrorOccurred;
     public event Action? PreCleanupRequested;

@@ -266,11 +266,15 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     [Fact]
     public void CaptureService_HealthSnapshotAvSyncFields_LiveInFocusedPartial()
     {
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
-        var avSyncText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.AvSync.cs")
+        var avSyncHealthText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.AvSync.cs")
+            .Replace("\r\n", "\n");
+        var avSyncSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAvSync.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var avSyncHealth = CaptureAvSyncHealthSnapshotFields();");
@@ -280,10 +284,19 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertDoesNotContain(healthSnapshotText, "var (avSyncDriftMs, avSyncDriftRate) = ComputeAvSyncDrift();");
         AssertDoesNotContain(healthSnapshotText, "var (avSyncEncoderDriftMs, avSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();");
 
-        AssertContains(avSyncText, "private AvSyncHealthSnapshotFields CaptureAvSyncHealthSnapshotFields()");
-        AssertContains(avSyncText, "var (captureDriftMs, captureDriftRateMsPerSec) = ComputeAvSyncDrift();");
-        AssertContains(avSyncText, "var (encoderDriftMs, encoderCorrectionSamples) = GetEncoderAvSyncDrift();");
-        AssertContains(avSyncText, "private readonly record struct AvSyncHealthSnapshotFields");
+        AssertContains(avSyncHealthText, "private AvSyncHealthSnapshotFields CaptureAvSyncHealthSnapshotFields()");
+        AssertContains(avSyncHealthText, "var (captureDriftMs, captureDriftRateMsPerSec) = ComputeAvSyncDrift();");
+        AssertContains(avSyncHealthText, "var (encoderDriftMs, encoderCorrectionSamples) = GetEncoderAvSyncDrift();");
+        AssertContains(avSyncHealthText, "private readonly record struct AvSyncHealthSnapshotFields");
+        AssertContains(avSyncSnapshotText, "private double _avSyncBaselineDriftMs = double.NaN;");
+        AssertContains(avSyncSnapshotText, "private double _avSyncPrevDriftMs;");
+        AssertContains(avSyncSnapshotText, "private long _avSyncPrevDriftTick;");
+        AssertContains(avSyncSnapshotText, "private double _avSyncDriftRateMsPerSec;");
+        AssertContains(avSyncSnapshotText, "private void ResetAvSyncDriftBaseline()");
+        AssertDoesNotContain(rootText, "_avSyncBaselineDriftMs");
+        AssertDoesNotContain(rootText, "_avSyncPrevDriftMs");
+        AssertDoesNotContain(rootText, "_avSyncPrevDriftTick");
+        AssertDoesNotContain(rootText, "_avSyncDriftRateMsPerSec");
 
     }
 

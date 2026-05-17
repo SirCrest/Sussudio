@@ -31,7 +31,7 @@ public partial class CaptureService
                     wasapiCapture.Start();
                     _wasapiAudioCapture = wasapiCapture;
                     wasapiCapture = null;
-                    _avSyncBaselineDriftMs = double.NaN;
+                    ResetAvSyncDriftBaseline();
                     Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
                     Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
                     Logger.Log($"FLASHBACK_AUDIO_CAPTURE_RESTORED reason='{reason}' device='{audioDeviceId}'");

@@ -121,7 +121,7 @@ public partial class CaptureService
         _currentSettings = null;
         _activeRecordingSettings = null;
         _recordingContext = null;
-        _avSyncBaselineDriftMs = double.NaN;
+        ResetAvSyncDriftBaseline();
         _sessionState = _isDisposed != 0 ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;
 
         if (cancellationRequested || transitionToken.IsCancellationRequested)

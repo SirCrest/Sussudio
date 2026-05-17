@@ -4,6 +4,17 @@ namespace Sussudio.Services.Capture;
 
 public partial class CaptureService
 {
+    // AV sync drift diagnostics are sampled by runtime and health snapshots.
+    private double _avSyncBaselineDriftMs = double.NaN;
+    private double _avSyncPrevDriftMs;
+    private long _avSyncPrevDriftTick;
+    private double _avSyncDriftRateMsPerSec;
+
+    private void ResetAvSyncDriftBaseline()
+    {
+        _avSyncBaselineDriftMs = double.NaN;
+    }
+
     private (double? DriftMs, double? RateMsPerSec) ComputeAvSyncDrift()
     {
         var unifiedVideoCapture = _unifiedVideoCapture;

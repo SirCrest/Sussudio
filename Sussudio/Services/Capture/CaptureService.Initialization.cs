@@ -23,7 +23,7 @@ public partial class CaptureService
             _activeVideoInputPixelFormat = settings.HdrEnabled ? "p010le" : "nv12";
             _lastUsePostMuxAudio = false;
             Interlocked.Exchange(ref _videoFramesDropped, 0);
-            _avSyncBaselineDriftMs = double.NaN;
+            ResetAvSyncDriftBaseline();
             ResetObservedPixelTelemetry();
             ResetCachedMjpegTimingMetrics();
             _latestSourceTelemetry = BuildFallbackTelemetry();
