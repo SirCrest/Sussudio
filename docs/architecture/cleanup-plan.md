@@ -9,6 +9,15 @@ capture, preview, recording, Flashback, or automation behavior by vibes alone.
 Performance and runtime semantics stay primary; file layout changes must earn
 their keep with smaller ownership boundaries and passing checks.
 
+## Granularity Guardrail
+
+Do not split files just to make the line count smaller. A new file needs a
+specific runtime or ownership reason: a distinct lifecycle, policy, protocol
+contract, hot-path boundary, UI controller concern, or testable responsibility
+that future agents can find faster by name. Sub-100-line files are acceptable
+only when they carry one of those deliberate boundaries; otherwise keep the
+code grouped and document the owner in place.
+
 ## Completed Slices
 
 Automation contracts have been extracted into `Sussudio.Automation.Contracts/`.
