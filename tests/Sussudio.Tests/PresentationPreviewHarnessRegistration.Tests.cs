@@ -57,7 +57,8 @@ static partial class Program
 
     private static readonly string[] PresentationPreviewStatsContractTestFiles =
     {
-        "tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs",
+        "tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs",
+        "tests/Sussudio.Tests/StatsDockPresentation.Tests.cs",
         "tests/Sussudio.Tests/StatsHardwareRowsController.Tests.cs",
         "tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs",
         "tests/Sussudio.Tests/StatsPresentation.Encoder.Tests.cs",

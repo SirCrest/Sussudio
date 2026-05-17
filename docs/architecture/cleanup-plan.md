@@ -1874,8 +1874,11 @@ in `Sussudio/Controllers/Stats/StatsWindowTelemetryDetailsController.cs`, with
 `Sussudio/StatsWindow.xaml.cs` kept to lifecycle, sizing, polling, controller
 composition, and always-on-top behavior.
 Stats overlay lifecycle, stats dock refresh, stats section chrome, and
-diagnostic row pooling contract checks now live in
-`tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs`. Source telemetry panel
+diagnostic row pooling contract checks now live in two focused owners:
+`tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` covers overlay
+lifecycle and section chrome, while
+`tests/Sussudio.Tests/StatsDockPresentation.Tests.cs` covers dock presentation
+application, diagnostic rows, hardware rows, and row chrome pooling. Source telemetry panel
 projection checks live with stats presentation coverage in
 `tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs`.
 Frame-time overlay compact text application and graph-line mutation now live in

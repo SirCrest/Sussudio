@@ -1136,10 +1136,11 @@ Primary current owners:
   `Sussudio/MainWindow.StatsSnapshot.cs` is the XAML-facing adapter.
   `MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats overlay
   binding setup, stats dock visibility, polling, and refresh controllers.
-- `tests/Sussudio.Tests/StatsOverlay.Contract.Tests.cs` owns legacy harness
-  contract checks for stats overlay lifecycle wiring, stats section chrome,
-  stats dock refresh orchestration, diagnostic row update delegation, and row
-  chrome pooling.
+- `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` owns legacy harness
+  contract checks for stats overlay lifecycle wiring and stats section chrome.
+- `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs` owns legacy harness
+  contract checks for stats dock refresh orchestration, diagnostic row update
+  delegation, hardware row projection, and row chrome pooling.
 - `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs` owns diagnostic row
   presentation, empty-state rows, group headers, and diagnostic row pooling.
   `Sussudio/Controllers/Stats/StatsDockRowChromeController.cs` owns dynamic decode/GPU
