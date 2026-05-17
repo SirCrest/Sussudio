@@ -3077,8 +3077,10 @@ Remaining `tools/Common` ownership:
    `MainViewModel.TargetSummaryPresentation.cs`; HDR runtime state/readiness
    projection lives in `MainViewModel.HdrRuntimePresentation.cs`; keep snapshot
    application and source-aware auto-retargeting in `MainViewModel.Telemetry.cs`.
-   Settings persistence and load/save option restoration stay in
-   `MainViewModel.Settings.cs`; active Flashback reactions to recording format
+   Settings initialization and simple persistence reactions stay in
+   `MainViewModel.Settings.cs`; load/save projection between persisted user
+   settings and ViewModel state now lives in
+   `MainViewModel.SettingsPersistence.cs`; active Flashback reactions to recording format
    and encoder quality/preset/split/bitrate now live in
    `MainViewModel.FlashbackEncoderSettings.cs`; buffer/GPU decode reactions stay
    in `MainViewModel.FlashbackSettings.cs`.

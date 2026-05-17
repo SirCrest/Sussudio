@@ -2289,8 +2289,10 @@ Primary current owners:
   `MainViewModel.TargetSummaryPresentation.cs` owns target-summary property application.
   `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
   owns source telemetry summary, telemetry age, and target-summary display text formatting.
-  `MainViewModel.Settings.cs` owns settings load/save and simple
-  persistence reactions. `MainViewModel.FlashbackEncoderSettings.cs` owns active
+  `MainViewModel.Settings.cs` owns settings initialization and simple
+  persistence reactions. `MainViewModel.SettingsPersistence.cs` owns settings
+  load/save projection between persisted user settings and ViewModel state.
+  `MainViewModel.FlashbackEncoderSettings.cs` owns active
   Flashback reactions to recording-format, encoder quality/preset/split, and
   bitrate changes. `MainViewModel.FlashbackSettings.cs` owns active Flashback
   reactions to buffer-duration and GPU-decode setting changes.
