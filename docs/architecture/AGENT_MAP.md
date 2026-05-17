@@ -2174,6 +2174,10 @@ Primary current owners:
   owns audio input retargeting and preview-monitoring ramp handoff.
   `MainViewModel.MicrophoneVolume.cs` owns microphone endpoint volume
   synchronization and persistence.
+  `MainViewModel.DeviceAudioRequests.cs` owns device-native audio request
+  lifetime: selected-device refresh scheduling, mode/gain property-change
+  request scheduling, analog gain flash-persist debounce, debounce CTS fields,
+  and cancellation cleanup.
   `MainViewModel.DeviceAudioRefresh.cs` owns device-native audio-control support
   probing, readback, and pending saved-state reconciliation.
   `MainViewModel.DeviceAudioMode.cs` owns device-native audio mode switching
@@ -2181,17 +2185,14 @@ Primary current owners:
   not the legacy AT input-source fallback path. `MainViewModel.AudioControls.cs`
   owns shared audio-control guards and mode normalization.
   `MainViewModel.AnalogAudioGain.cs` owns analog
-  gain XU writes, flash-persist debounce, and settings persistence.
+  gain XU writes and settings persistence.
   `Sussudio/ViewModels/DeviceAudioGainMapper.cs` owns the pure percent-to-XU-
   byte analog gain curve used by device-native gain application.
-  `MainViewModel.AudioControlCancellation.cs` owns cancellation cleanup for
-  pending device-audio refresh, mode, XU gain, and flash-persist work.
   `MainViewModel.AudioPropertyChanges.cs` owns audio capture/preview property
   handlers. `MainViewModel.AudioInputPropertyChanges.cs` owns custom audio
   input property handlers. `MainViewModel.MicrophonePropertyChanges.cs` owns
   microphone monitor and selected-microphone property handlers.
-  `MainViewModel.DeviceAudioPropertyChanges.cs` owns device-native audio mode
-  and analog gain property handlers. `MainViewModel.CaptureModePropertyChanges.cs`
+  `MainViewModel.CaptureModePropertyChanges.cs`
   owns capture-mode property handlers for selected resolution, selected format,
   selected video format, and MJPEG decoder count changes.
   `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs` owns

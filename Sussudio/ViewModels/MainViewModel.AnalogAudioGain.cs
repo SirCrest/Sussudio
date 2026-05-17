@@ -52,36 +52,7 @@ public partial class MainViewModel
 
         StatusText = $"Analog audio gain set to {gainPercent:0}%";
         WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = gainPercent);
-
-        var oldCts = _gainFlashDebounceCts;
-        oldCts?.Cancel();
-        var cts = new CancellationTokenSource();
-        var token = cts.Token;
-        _gainFlashDebounceCts = cts;
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await Task.Delay(300, token).ConfigureAwait(false);
-                if (!token.IsCancellationRequested && IsCurrentSelectedDevice(device))
-                {
-                    await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                /* Superseded by a newer gain change - expected */
-            }
-            finally
-            {
-                if (ReferenceEquals(_gainFlashDebounceCts, cts))
-                {
-                    _gainFlashDebounceCts = null;
-                }
-
-                cts.Dispose();
-            }
-        });
+        RequestAnalogGainFlashPersist(device, gainByte);
 
         if (persistSettings)
         {

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using Sussudio.Models;
 
 namespace Sussudio.ViewModels;
@@ -15,41 +14,7 @@ public partial class MainViewModel
     {
         CancelPendingAudioControlWork();
         RebuildSelectedDeviceCapabilities(value, resetTelemetryState: true);
-        var refreshCts = new CancellationTokenSource();
-        var refreshToken = refreshCts.Token;
-        _deviceAudioRefreshCts = refreshCts;
-        var enqueued = EnqueueUiOperation(async () =>
-        {
-            try
-            {
-                if (Volatile.Read(ref _disposeState) == 0)
-                {
-                    await RefreshDeviceAudioControlsAsync(value, applySavedState: true, refreshToken).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                Logger.Log("Device audio controls refresh canceled because selected device changed");
-            }
-            finally
-            {
-                if (ReferenceEquals(_deviceAudioRefreshCts, refreshCts))
-                {
-                    _deviceAudioRefreshCts = null;
-                }
-
-                refreshCts.Dispose();
-            }
-        }, "device audio controls refresh", allowDuringDispose: true);
-        if (!enqueued)
-        {
-            if (ReferenceEquals(_deviceAudioRefreshCts, refreshCts))
-            {
-                _deviceAudioRefreshCts = null;
-            }
-
-            refreshCts.Dispose();
-        }
+        RequestDeviceAudioControlsRefresh(value);
         SaveSettings();
     }
 

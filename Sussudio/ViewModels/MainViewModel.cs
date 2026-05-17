@@ -123,11 +123,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Audio ramp trace recorder: AudioRampTraceRecorder.cs; adapter: MainViewModel.AudioRampTrace.cs
     // Preview audio volume transitions: PreviewAudioVolumeTransitionController.cs
     // Microphone endpoint volume: MainViewModel.MicrophoneVolume.cs
-    // Device-native audio controls: guards: MainViewModel.AudioControls.cs; mode writes: MainViewModel.DeviceAudioMode.cs; refresh: MainViewModel.DeviceAudioRefresh.cs; analog gain writes: MainViewModel.AnalogAudioGain.cs
-    // Device-native audio cancellation: MainViewModel.AudioControlCancellation.cs
+    // Device-native audio controls: requests: MainViewModel.DeviceAudioRequests.cs; guards: MainViewModel.AudioControls.cs; mode writes: MainViewModel.DeviceAudioMode.cs; refresh: MainViewModel.DeviceAudioRefresh.cs; analog gain writes: MainViewModel.AnalogAudioGain.cs
     // Watcher-driven audio endpoint discovery: MainViewModel.AudioDeviceDiscovery.cs
     // Audio capture/preview property changes: MainViewModel.AudioPropertyChanges.cs
-    // Audio input/microphone/device-audio property changes: focused partials
+    // Audio input/microphone property changes: focused partials
     // Device management: MainViewModel.DeviceManagement.cs
     // Device selection reactions: MainViewModel.DeviceSelection.cs
     // Device format probe reconciliation: MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs

@@ -2,14 +2,60 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Services.Telemetry;
 
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Device-native audio observable property change handlers.
+/// Device-native audio request lifetime: selected-device refresh, mode-change
+/// application, analog-gain debounce, and cancellation cleanup.
 /// </summary>
 public partial class MainViewModel
 {
+    private CancellationTokenSource? _gainFlashDebounceCts;
+    private CancellationTokenSource? _gainXuDebounceCts;
+    private CancellationTokenSource? _deviceAudioModeCts;
+    private CancellationTokenSource? _deviceAudioRefreshCts;
+
+    private void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)
+    {
+        var refreshCts = new CancellationTokenSource();
+        var refreshToken = refreshCts.Token;
+        _deviceAudioRefreshCts = refreshCts;
+        var enqueued = EnqueueUiOperation(async () =>
+        {
+            try
+            {
+                if (Volatile.Read(ref _disposeState) == 0)
+                {
+                    await RefreshDeviceAudioControlsAsync(targetDevice, applySavedState: true, refreshToken).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Log("Device audio controls refresh canceled because selected device changed");
+            }
+            finally
+            {
+                if (ReferenceEquals(_deviceAudioRefreshCts, refreshCts))
+                {
+                    _deviceAudioRefreshCts = null;
+                }
+
+                refreshCts.Dispose();
+            }
+        }, "device audio controls refresh", allowDuringDispose: true);
+        if (!enqueued)
+        {
+            if (ReferenceEquals(_deviceAudioRefreshCts, refreshCts))
+            {
+                _deviceAudioRefreshCts = null;
+            }
+
+            refreshCts.Dispose();
+        }
+    }
+
     partial void OnSelectedDeviceAudioModeChanged(string value)
     {
         if (_isLoadingSettings || _isRefreshingDeviceAudioControls || !IsDeviceAudioControlSupported)
@@ -144,5 +190,57 @@ public partial class MainViewModel
             }
         });
         SaveSettings();
+    }
+
+    private void RequestAnalogGainFlashPersist(CaptureDevice device, byte gainByte)
+    {
+        var oldCts = _gainFlashDebounceCts;
+        oldCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        var token = cts.Token;
+        _gainFlashDebounceCts = cts;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(300, token).ConfigureAwait(false);
+                if (!token.IsCancellationRequested && IsCurrentSelectedDevice(device))
+                {
+                    await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                /* Superseded by a newer gain change - expected */
+            }
+            finally
+            {
+                if (ReferenceEquals(_gainFlashDebounceCts, cts))
+                {
+                    _gainFlashDebounceCts = null;
+                }
+
+                cts.Dispose();
+            }
+        });
+    }
+
+    private void CancelPendingAudioControlWork()
+    {
+        var flashCts = _gainFlashDebounceCts;
+        _gainFlashDebounceCts = null;
+        flashCts?.Cancel();
+
+        var xuCts = _gainXuDebounceCts;
+        _gainXuDebounceCts = null;
+        xuCts?.Cancel();
+
+        var modeCts = _deviceAudioModeCts;
+        _deviceAudioModeCts = null;
+        modeCts?.Cancel();
+
+        var refreshCts = _deviceAudioRefreshCts;
+        _deviceAudioRefreshCts = null;
+        refreshCts?.Cancel();
     }
 }

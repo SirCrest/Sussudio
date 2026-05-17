@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
@@ -33,10 +32,6 @@ public partial class MainViewModel
     private string? _pendingSavedDeviceAudioMode;
     private double? _pendingSavedAnalogAudioGainPercent;
     private bool _isRefreshingDeviceAudioControls;
-    private CancellationTokenSource? _gainFlashDebounceCts;
-    private CancellationTokenSource? _gainXuDebounceCts;
-    private CancellationTokenSource? _deviceAudioModeCts;
-    private CancellationTokenSource? _deviceAudioRefreshCts;
     private int _audioEnabledChangeGeneration;
     private bool _suppressAudioPreviewEnabledChangeOperation;
     private bool _suppressMicrophoneMonitorUpdate;

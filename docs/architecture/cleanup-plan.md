@@ -3003,12 +3003,13 @@ Remaining `tools/Common` ownership:
    `MainViewModel.AudioMonitoring.cs`, while audio input retargeting and
    preview-monitoring ramp handoff live in `MainViewModel.AudioInputSelection.cs`.
    Microphone endpoint volume synchronization and persistence now live in
-   `MainViewModel.MicrophoneVolume.cs`; device-native audio-control support
-   probing, readback, and pending saved-state reconciliation now live in
-   `MainViewModel.DeviceAudioRefresh.cs`; mode switching and failure readback
-   live in `MainViewModel.DeviceAudioMode.cs`; shared audio-control guards stay
-   in `MainViewModel.AudioControls.cs`, while analog gain writes live in
-   `MainViewModel.AnalogAudioGain.cs`. UI-facing state is
+   `MainViewModel.MicrophoneVolume.cs`; device-native audio request lifetime
+   now lives in `MainViewModel.DeviceAudioRequests.cs`; device-native
+   audio-control support probing, readback, and pending saved-state reconciliation
+   now live in `MainViewModel.DeviceAudioRefresh.cs`; mode switching and failure
+   readback live in `MainViewModel.DeviceAudioMode.cs`; shared audio-control
+   guards stay in `MainViewModel.AudioControls.cs`, while analog gain writes
+   live in `MainViewModel.AnalogAudioGain.cs`. UI-facing state is
    split by owner: `MainViewModel.State.cs` owns shared shell/status/live-info
    flags and non-preview coordination gates, `MainViewModel.PreviewState.cs`
    owns preview lifecycle flags, preview reinitialize coordination, and preview
@@ -3021,9 +3022,7 @@ Remaining `tools/Common` ownership:
    `MainViewModel.AudioPropertyChanges.cs`, custom audio input handlers live in
    `MainViewModel.AudioInputPropertyChanges.cs`, microphone monitor/device
    selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`,
-   device-native audio mode/gain handlers live in
-   `MainViewModel.DeviceAudioPropertyChanges.cs`, and capture-mode property
-   handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
+   capture-mode property handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
    view-model UI dispatcher enqueue/invoke policy now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`, while
    `MainViewModel.Dispatching.cs` keeps the stable private adapter names and
@@ -3181,14 +3180,16 @@ Remaining `tools/Common` ownership:
    `MainViewModel.FlashbackEncoderSettings.cs`; buffer/GPU decode reactions stay
    in `MainViewModel.FlashbackSettings.cs`.
    Pure analog audio gain percent/XU-byte curve mapping now lives in
-   `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; async native-XU device
-   audio-control refresh/readback stays in `MainViewModel.DeviceAudioRefresh.cs`,
-   mode switching and failure readback live in `MainViewModel.DeviceAudioMode.cs`,
-   shared audio-control guards stay in `MainViewModel.AudioControls.cs`, and
-   `MainViewModel.AnalogAudioGain.cs` owns analog gain XU writes,
-   debounce-to-flash, and settings persistence. Use the supported native-XU
-   switch/gain command surface rather than the legacy AT input-source fallback
-   path.
+   `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; device-native audio request
+   lifetime, including flash-persist debounce, stays in
+   `MainViewModel.DeviceAudioRequests.cs`; async native-XU
+   device audio-control refresh/readback stays in
+   `MainViewModel.DeviceAudioRefresh.cs`, mode switching and failure readback
+   live in `MainViewModel.DeviceAudioMode.cs`, shared audio-control guards stay
+   in `MainViewModel.AudioControls.cs`, and `MainViewModel.AnalogAudioGain.cs`
+   owns analog gain XU writes and settings persistence. Use
+   the supported native-XU switch/gain command surface rather than the legacy
+   AT input-source fallback path.
    UI-only automation mutators for settings visibility, Flashback timeline
    visibility, and show-all capture options now live in
    `MainViewModel.AutomationUi.cs`; stats dock/section visibility and
