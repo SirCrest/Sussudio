@@ -16,11 +16,11 @@ static partial class Program
             "MainViewModel automation routes preview volume persistence through save hook",
             MainViewModelAutomation_RoutesPreviewVolumePersistenceThroughSaveHook);
         await AddCheckAsync(results,
-            "MainViewModel automation preview enablement lives in focused partial",
-            MainViewModelAutomation_PreviewEnablementLivesInFocusedPartial);
+            "MainViewModel automation preview enablement lives in preview lifecycle controller",
+            MainViewModelAutomation_PreviewEnablementLivesInPreviewLifecycleController);
         await AddCheckAsync(results,
-            "MainViewModel automation HDR enablement lives in focused partial",
-            MainViewModelAutomation_HdrEnablementLivesInFocusedPartial);
+            "MainViewModel automation HDR enablement lives in capture-mode transactions",
+            MainViewModelAutomation_HdrEnablementLivesInCaptureModeTransactions);
         await AddCheckAsync(results,
             "MainViewModel capture routes audio monitoring through coordinator",
             MainViewModelCapture_RoutesAudioMonitoringThroughCoordinator);

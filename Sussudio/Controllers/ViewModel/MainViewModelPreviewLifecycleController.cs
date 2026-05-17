@@ -102,6 +102,35 @@ public partial class MainViewModel
             }
         }
 
+        public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+        {
+            return _viewModel.InvokeOnUiThreadAsync(async () =>
+            {
+                if (!enabled && _viewModel.IsPreviewReinitializing)
+                {
+                    CancelPendingPreviewRestart();
+                    if (!_viewModel.IsPreviewing)
+                    {
+                        return;
+                    }
+                }
+
+                if (enabled == _viewModel.IsPreviewing)
+                {
+                    return;
+                }
+
+                if (enabled)
+                {
+                    await StartPreviewAsync(userInitiated: true, cancellationToken);
+                }
+                else
+                {
+                    await StopPreviewAsync(userInitiated: true, teardownPipeline: false, cancellationToken);
+                }
+            }, cancellationToken);
+        }
+
         public async Task ApplySelectedDeviceAsync(CaptureDevice device, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();

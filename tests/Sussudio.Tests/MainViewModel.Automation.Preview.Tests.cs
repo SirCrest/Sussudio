@@ -1,17 +1,25 @@
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task MainViewModelAutomation_PreviewEnablementLivesInFocusedPartial()
+    private static Task MainViewModelAutomation_PreviewEnablementLivesInPreviewLifecycleController()
     {
-        var automationPreviewText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationPreview.cs")
+        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(automationPreviewText, "public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(automationPreviewText, "CancelPendingPreviewRestart();");
-        AssertContains(automationPreviewText, "if (enabled == IsPreviewing)");
-        AssertContains(automationPreviewText, "await StartPreviewAsync(userInitiated: true, cancellationToken);");
-        AssertContains(automationPreviewText, "await StopPreviewAsync(userInitiated: true, teardownPipeline: false, cancellationToken);");
+        AssertContains(mainViewModelText, "public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => _previewLifecycleController.SetPreviewEnabledAsync(enabled, cancellationToken);");
+        AssertContains(previewLifecycleControllerText, "public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(previewLifecycleControllerText, "CancelPendingPreviewRestart();");
+        AssertContains(previewLifecycleControllerText, "if (enabled == _viewModel.IsPreviewing)");
+        AssertContains(previewLifecycleControllerText, "await StartPreviewAsync(userInitiated: true, cancellationToken);");
+        AssertContains(previewLifecycleControllerText, "await StopPreviewAsync(userInitiated: true, teardownPipeline: false, cancellationToken);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationPreview.cs")),
+            "MainViewModel preview automation partial");
 
         return Task.CompletedTask;
     }

@@ -37,9 +37,9 @@ static partial class Program
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
         var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationAudio.cs")
             .Replace("\r\n", "\n");
-        var automationPreviewText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationPreview.cs")
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");
-        var automationHdrText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationHdr.cs")
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs")
             .Replace("\r\n", "\n");
         var automationFlashbackText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationFlashback.cs")
             .Replace("\r\n", "\n");
@@ -51,9 +51,17 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Automation.cs")),
             "MainViewModel automation catch-all partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationPreview.cs")),
+            "MainViewModel automation preview partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationHdr.cs")),
+            "MainViewModel automation HDR partial");
         var automationText = automationAudioText
-            + "\n" + automationPreviewText
-            + "\n" + automationHdrText
+            + "\n" + previewLifecycleControllerText
+            + "\n" + captureModeTransactionsText
             + "\n" + automationFlashbackText
             + "\n" + recordingLifecycleText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs")

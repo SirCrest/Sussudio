@@ -3204,9 +3204,11 @@ Remaining `tools/Common` ownership:
    refusal/idempotent handling now live in `MainViewModel.AutomationAudio.cs`.
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
-   `MainViewModel.AutomationPreview.cs`.
+   `MainViewModelPreviewLifecycleController.cs`, with the stable
+   `MainViewModel.cs` compatibility facade preserving the automation surface.
    Automation HDR and true-HDR preview recording-time guard enforcement and HDR
-   availability checks now live in `MainViewModel.AutomationHdr.cs`.
+   availability checks now live in `MainViewModel.CaptureModeTransactions.cs`
+   beside HDR mode change side effects.
    Automation Flashback enable/restart routing through the capture session
    coordinator now lives in `MainViewModel.AutomationFlashback.cs`.
    Automation device refresh, capture-device selection, audio-input selection,

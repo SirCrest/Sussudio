@@ -1231,10 +1231,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Settings.Tests.cs` owns
   Flashback settings binding and command controller ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs` owns
-  automation preview enable/disable command ownership assertions.
+  automation preview enable/disable routing through the preview lifecycle
+  controller.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Hdr.Tests.cs` owns
-  automation HDR/true-HDR preview enablement guard assertions plus HDR mode
-  change side-effect ownership assertions.
+  automation HDR/true-HDR preview enablement guard assertions in the
+  capture-mode transaction owner plus HDR mode change side-effect ownership
+  assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.PreviewVolume.Tests.cs` owns
   preview-volume persistence and automation options surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
@@ -2357,10 +2359,12 @@ Primary current owners:
   enablement, preview-volume clamp/persist, device-native mode/gain
   application, and microphone enablement with recording-time refusal and
   idempotent handling.
-  `MainViewModel.AutomationPreview.cs` owns automation
-  preview enable/disable idempotence, pending-reinit cancellation, and
-  start/stop routing. `MainViewModel.AutomationHdr.cs` owns automation HDR and
-  true-HDR preview recording-time guard enforcement and availability checks.
+  `MainViewModelPreviewLifecycleController.cs` owns automation preview
+  enable/disable idempotence, pending-reinit cancellation, and start/stop
+  routing behind the `MainViewModel.cs` compatibility facade.
+  `MainViewModel.CaptureModeTransactions.cs` owns automation HDR and true-HDR
+  preview recording-time guard enforcement and availability checks alongside
+  HDR mode change side effects.
   `MainViewModel.AutomationFlashback.cs` owns automation Flashback
   enable/restart routing through the capture session coordinator.
   `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh,

@@ -47,6 +47,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)
         => _previewLifecycleController.StartPreviewAsync(userInitiated, cancellationToken);
 
+    public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+        => _previewLifecycleController.SetPreviewEnabledAsync(enabled, cancellationToken);
+
     public Task StopPreviewAsync()
         => StopPreviewAsync(userInitiated: true, teardownPipeline: false, CancellationToken.None);
 
@@ -153,11 +156,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Capture settings projection: MainViewModel.CaptureSettings.cs and CaptureSettingsProjectionBuilder.cs
     // Flashback automation: MainViewModel.AutomationFlashback.cs
     // Audio automation: MainViewModel.AutomationAudio.cs
-    // HDR automation: MainViewModel.AutomationHdr.cs
+    // HDR automation: MainViewModel.CaptureModeTransactions.cs
     // Automation snapshots and probes: MainViewModel.AutomationSnapshots.cs
     // Automation options projection: MainViewModel.AutomationOptionsSnapshot.cs
     // Device and audio-input selection automation: MainViewModel.AutomationDeviceSelection.cs
-    // Capture settings automation: MainViewModel.AutomationCaptureSettings.cs; capture-mode transactions: MainViewModel.CaptureModeTransactions.cs
+    // Capture settings automation: MainViewModel.AutomationCaptureSettings.cs; preview automation: MainViewModelPreviewLifecycleController.cs; capture-mode transactions: MainViewModel.CaptureModeTransactions.cs
     // UI-only automation: MainViewModel.AutomationUi.cs
     // Recording settings automation: MainViewModel.AutomationRecordingSettings.cs
     // UI dispatch policy: MainViewModelUiDispatchController.cs; adapter/fan-out: MainViewModel.Dispatching.cs
