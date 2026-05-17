@@ -248,9 +248,14 @@ recording integrity and audio integrity diagnostic verdicts.
 source/capture cadence diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Mjpeg.cs` owns MJPEG
 duplicate source-signal and decode/reorder diagnostic verdicts.
-`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs` owns preview
-scheduler, renderer pacing, present/display cadence, and preview display 1% low
-diagnostic verdicts.
+`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs` owns realtime
+preview diagnostic verdict ordering.
+`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewScheduler.cs` owns
+preview scheduler diagnostic verdicts.
+`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewRenderer.cs` owns
+renderer pacing diagnostic verdicts.
+`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.PreviewPresent.cs` owns
+present/display cadence and preview display 1% low diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs` owns diagnostic lane text
 orchestration and lane DTOs used by diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Source.cs` owns source,

@@ -212,7 +212,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "visualChanges={snapshot.VisualCadenceChangeObservedFps:0.##}fps");
         AssertContains(diagnostics.SourceFamilyText, "var previewSubmitFailed = string.Equals(");
         AssertContains(diagnostics.SourceFamilyText, "health.MjpegPreviewJitterLastDropReason,\n            \"submit-failed\"");
-        AssertContains(diagnostics.SourceFamilyText, "if (previewSubmitFailed ||\n            (recentPreviewDeadlineDrops > 0 && !visualCadenceHealthy) ||\n            recentPreviewUnderflows > 3)");
+        AssertContains(diagnostics.SourceFamilyText, "if (!previewSubmitFailed &&\n            (recentPreviewDeadlineDrops <= 0 || visualCadenceHealthy) &&\n            recentPreviewUnderflows <= 3)");
         AssertContains(diagnostics.SourceFamilyText, "\"Preview scheduler failed to submit frames.\"");
         AssertContains(diagnostics.SourceFamilyText, "var presentCadenceOverBudget =\n            previewRuntime.DisplayCadenceExpectedIntervalMs > 0 &&\n            previewRuntime.DisplayCadenceP95IntervalMs > previewRuntime.DisplayCadenceExpectedIntervalMs * 1.5;");
         AssertContains(diagnostics.SourceFamilyText, "var previewSlowFrameDetail = FormatPreviewSlowFrameAlertDetail(snapshot);");
@@ -224,10 +224,10 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "if (presentCadenceOverBudget ||\n            unsyncedPresentCallSlow)");
         AssertContains(diagnostics.SourceFamilyText, "if (!captureOnePercentLowDegraded)");
         AssertContains(diagnostics.SourceFamilyText, "\"Source/capture 1% low is below target.\"");
-        AssertContains(diagnostics.SourceFamilyText, "if (previewOnePercentLowDegraded)");
+        AssertContains(diagnostics.SourceFamilyText, "if (!previewOnePercentLowDegraded)");
         AssertContains(diagnostics.SourceFamilyText, "var visualCadenceHealthy =\n            IsVisualCadenceHealthy(");
         AssertContains(diagnostics.SourceFamilyText, "Present/display 1% low is below target, but sampled visual cadence confirms source-rate output.");
-        AssertContains(diagnostics.SourceFamilyText, "if (visualCadenceHealthy)\n            {\n                return new DiagnosticEvaluation(\n                    \"Healthy\",");
+        AssertContains(diagnostics.SourceFamilyText, "if (visualCadenceHealthy)\n        {\n            return new DiagnosticEvaluation(\n                \"Healthy\",");
         AssertContains(diagnostics.SourceFamilyText, "private static bool IsMjpegDuplicateCadenceDetected(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SourceFamilyText, "health.MjpegPacketHashDuplicateFramePercent < 20.0");
         AssertContains(diagnostics.SourceFamilyText, "health.MjpegPacketHashUniqueObservedFps <= health.ExpectedFrameRate * 0.75");
@@ -247,7 +247,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick);");
         AssertContains(diagnostics.SourceFamilyText, "recentDropped={recentMjpeg.TotalDropped} recentFailures={recentMjpeg.Failures}");
         AssertContains(diagnostics.SourceFamilyText, "recentMjpeg.TotalDropped <= 0");
-        AssertContains(diagnostics.SourceFamilyText, "if (recentRendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&\n            recentRendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)");
+        AssertContains(diagnostics.SourceFamilyText, "if (recentRendererSubmitted < DiagnosticThresholds.RendererDropWarningMinSamples ||\n            recentRendererDropPercent <= DiagnosticThresholds.RendererDropWarningPercent)");
         AssertDoesNotContain(diagnostics.SourceFamilyText, "rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||\n            previewRuntime.DisplayCadenceSlowFramePercent > 1.0");
     }
 }
