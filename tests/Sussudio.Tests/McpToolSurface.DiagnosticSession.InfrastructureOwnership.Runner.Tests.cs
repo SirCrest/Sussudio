@@ -17,7 +17,7 @@ static partial class Program
         AssertDoesNotContain(runnerText, "SampleLoopAsync(");
         AssertDoesNotContain(runnerText, "DiagnosticSessionCleanupActions.RunAsync(");
         AssertContains(executionText, "internal static partial class DiagnosticSessionRunExecution");
-        AssertContains(executionText, "RunScenarioPhaseAsync(");
+        AssertContains(executionText, "DiagnosticSessionScenarioPhaseRunner.RunAsync(scenarioPhaseContext)");
         AssertContains(executionText, "DiagnosticSessionCleanupActions.RunAsync(");
         AssertContains(scenarioText, "DiagnosticSessionScenarioSetup.RunAsync(");
         AssertContains(scenarioText, "SampleLoopAsync(");

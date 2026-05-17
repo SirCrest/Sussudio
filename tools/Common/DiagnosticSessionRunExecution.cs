@@ -27,7 +27,7 @@ internal static partial class DiagnosticSessionRunExecution
 
         try
         {
-            scenarioPhase = await RunScenarioPhaseAsync(scenarioPhaseContext).ConfigureAwait(false);
+            scenarioPhase = await DiagnosticSessionScenarioPhaseRunner.RunAsync(scenarioPhaseContext).ConfigureAwait(false);
         }
         finally
         {

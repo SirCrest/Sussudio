@@ -2424,10 +2424,10 @@ handoffs passed into those phases.
 `DiagnosticSessionRunExecution.Completion.cs` owns the
 post-cleanup evidence/result sequence for recording checks, post-run timeline
 and final snapshot capture, result-build handoff, and terminal live-state write.
-`DiagnosticSessionRunExecution.Scenario.cs` owns the scenario phase handoff,
-while `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario
-execution phase for setup/startup, sampling/completion delegation, and fault
-drain delegation. `DiagnosticSessionScenarioPhaseRunner.Models.cs` owns the
+`DiagnosticSessionRunExecution.cs` hands scenario execution directly to
+`DiagnosticSessionScenarioPhaseRunner.cs`, which owns the main scenario phase
+for setup/startup, sampling/completion delegation, and fault drain delegation.
+`DiagnosticSessionScenarioPhaseRunner.Models.cs` owns the
 explicit phase context/state/result records.
 `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owns scenario sampling and
 post-sampling completion: live-state sampling setup, sample-loop invocation,
@@ -3026,7 +3026,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunner.cs`
 - `DiagnosticSessionRunExecution.cs`
 - `DiagnosticSessionRunExecution.Completion.cs`
-- `DiagnosticSessionRunExecution.Scenario.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionScenarioPhaseRunner.Models.cs`
 - `DiagnosticSessionRunExecution.ResultRequest.cs`
@@ -3047,10 +3046,9 @@ Remaining `tools/Common` ownership:
    mutable per-run infrastructure, with
    `tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs` owning explicit
    scenario/completion context construction. `DiagnosticSessionRunExecution.Completion.cs` owns the
-   post-cleanup evidence/result sequence,
-   `DiagnosticSessionRunExecution.Scenario.cs` owns the scenario phase handoff,
-   and `DiagnosticSessionScenarioPhaseRunner.cs` owns the main
-   scenario execution phase, `DiagnosticSessionScenarioPhaseRunner.Models.cs`
+   post-cleanup evidence/result sequence, while
+   `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
+   phase. `DiagnosticSessionScenarioPhaseRunner.Models.cs`
    owns the explicit scenario context/state/result handoff, with
    `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owning sampling,
    post-sampling background-task completion, rejected-export handling,

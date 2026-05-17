@@ -14,8 +14,7 @@ static partial class Program
         var samplingText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(scenarioText, "private static Task<DiagnosticSessionScenarioPhaseResult> RunScenarioPhaseAsync(DiagnosticSessionScenarioPhaseContext context)");
-        AssertContains(scenarioText, "DiagnosticSessionScenarioPhaseRunner.RunAsync(context)");
+        AssertContains(executionText, "DiagnosticSessionScenarioPhaseRunner.RunAsync(scenarioPhaseContext)");
         AssertContains(phaseRunnerText, "internal static partial class DiagnosticSessionScenarioPhaseRunner");
         AssertContains(phaseModelsText, "internal sealed class DiagnosticSessionScenarioPhaseContext");
         AssertContains(phaseModelsText, "internal sealed record DiagnosticSessionScenarioPhaseResult(");
@@ -46,7 +45,7 @@ static partial class Program
         AssertContains(contextText, "new DiagnosticSessionScenarioPhaseContext");
         AssertContains(executionText, "var scenarioPhaseContext = runContext.CreateScenarioPhaseContext(options, cancellationToken);");
         AssertContains(executionText, "var scenarioPhase = DiagnosticSessionScenarioPhaseResult.Empty;");
-        AssertContains(executionText, "scenarioPhase = await RunScenarioPhaseAsync(scenarioPhaseContext)");
+        AssertContains(executionText, "scenarioPhase = await DiagnosticSessionScenarioPhaseRunner.RunAsync(scenarioPhaseContext)");
         AssertContains(executionText, "scenarioPhase.StartedRecording");
         AssertContains(executionText, "scenarioPhase.StartedPreview");
         AssertContains(executionText, "scenarioPhase.EnabledFlashback");
