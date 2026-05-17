@@ -1919,7 +1919,7 @@ command handling and toggle/apply workflows now live in the command controller.
 Flashback marker placement and compact duration text now live in
 `Sussudio/Controllers/Flashback/FlashbackMarkerPresentationController.cs`, including
 in/out marker visibility, selection-region layout, and `m:ss` formatting.
-`MainWindow.FlashbackMarkers.cs` is the XAML-facing adapter.
+`MainWindow.Flashback.cs` is the XAML-facing marker adapter.
 
 Flashback playback presentation now lives in
 `Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs`: play/pause

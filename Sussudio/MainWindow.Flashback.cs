@@ -6,12 +6,24 @@ namespace Sussudio;
 // Flashback timeline presentation glue. Command behavior lives in
 // FlashbackCommandController; playback UI sequencing lives in
 // FlashbackPlaybackUiCoordinator, and scrub/playhead, markers, playback,
-// and settings each have their own focused controller or adapter partial.
+// and settings each have their own focused controller.
 public sealed partial class MainWindow
 {
+    private FlashbackMarkerPresentationController _flashbackMarkerPresentationController = null!;
     private FlashbackPlaybackPresentationController _flashbackPlaybackPresentationController = null!;
     private FlashbackPlaybackUiCoordinator _flashbackPlaybackUiCoordinator = null!;
     private FlashbackExportProgressPresentationController _flashbackExportProgressPresentationController = null!;
+
+    private void InitializeFlashbackMarkerPresentationController()
+    {
+        _flashbackMarkerPresentationController = new FlashbackMarkerPresentationController(new FlashbackMarkerPresentationControllerContext
+        {
+            ScrubArea = FlashbackScrubArea,
+            InPointMarker = FlashbackInPointMarker,
+            OutPointMarker = FlashbackOutPointMarker,
+            SelectionRegion = FlashbackSelectionRegion,
+        });
+    }
 
     private void InitializeFlashbackPlaybackPresentationController()
     {
@@ -63,6 +75,12 @@ public sealed partial class MainWindow
 
     private void UpdateFlashbackBufferPresentation()
         => _flashbackPlaybackUiCoordinator.UpdateBufferPresentation();
+
+    private void UpdateFlashbackMarkers()
+        => _flashbackMarkerPresentationController.UpdateMarkers(
+            ViewModel.FlashbackBufferFilledDuration,
+            ViewModel.FlashbackInPoint,
+            ViewModel.FlashbackOutPoint);
 
     private void UpdateFlashbackExportProgress(double progress)
         => _flashbackExportProgressPresentationController.UpdateProgress(progress);
