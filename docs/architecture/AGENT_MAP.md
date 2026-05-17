@@ -1681,17 +1681,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/CommandHandlers.Helpers.cs` owns source-family
   reader, routing-capture helpers, and `AssertSsctlCommandRequest`, which routes
   captured ssctl `request.command` checks through the shared golden command table
-  instead of per-test numeric IDs. Pipe-captured routing coverage is split by
-  command group across `CommandHandlers.Routing.Device.Tests.cs`,
-  `CommandHandlers.Routing.CaptureControls.Tests.cs`,
-  `CommandHandlers.Routing.Recordings.Tests.cs`,
-  `CommandHandlers.Routing.Flashback.Tests.cs`,
-  `CommandHandlers.Routing.Window.Tests.cs`,
-  `CommandHandlers.Routing.Manifest.Tests.cs`,
-  `CommandHandlers.Routing.Observability.Tests.cs`,
-  `CommandHandlers.Routing.AutomationFlow.Tests.cs`,
-  `CommandHandlers.Routing.UiVisibility.Tests.cs`, and
-  `CommandHandlers.Routing.Verification.Tests.cs`.
+  instead of per-test numeric IDs. `CommandHandlers.Routing.Tests.cs` owns the
+  pipe-captured routing contract checks for device, capture controls,
+  recordings, Flashback, window, manifest, observability, automation-flow, UI
+  visibility, and verification commands.
   `CommandHandlers.SourceOwnership.Tests.cs` owns ssctl handler partial-family
   source ownership assertions, and `CommandHandlers.Help.Tests.cs` owns ssctl
   help/catalog force-flag coverage.

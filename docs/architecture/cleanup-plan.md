@@ -527,11 +527,11 @@ output, Preview D3D output, and source ownership live in focused
 the offline harness. ssctl formatter output smoke checks stay in
 `Formatters.Tests.cs`, while `Formatters.SnapshotOwnership.Tests.cs` owns ssctl
 formatter source ownership assertions.
-ssctl command-handler routing coverage now mirrors command-group ownership:
-device, capture controls, recordings, Flashback, window, manifest,
-observability, automation-flow, UI visibility, and verification checks live in
-focused `CommandHandlers.Routing.*.Tests.cs` files, with source ownership kept
-separate in `CommandHandlers.SourceOwnership.Tests.cs`. Captured ssctl
+ssctl command-handler routing coverage now lives in one grouped
+`CommandHandlers.Routing.Tests.cs` owner for device, capture controls,
+recordings, Flashback, window, manifest, observability, automation-flow, UI
+visibility, and verification commands, with source ownership kept separate in
+`CommandHandlers.SourceOwnership.Tests.cs`. Captured ssctl
 `request.command` ID assertions now flow through `AssertSsctlCommandRequest`,
 which delegates to the shared golden-table-backed `AssertAutomationCommandId`
 helper instead of duplicating numeric IDs in routing tests. Fixed ssctl source
