@@ -415,12 +415,9 @@ in `Formatters.Snapshot.AvSync.cs`, embedded snapshot Memory/GC text in
 `Formatters.Snapshot.Memory.cs`, MJPEG timing text in
 `Formatters.Snapshot.Mjpeg.cs`, preview renderer-mode routing and non-D3D
 fallback text in `Formatters.Snapshot.Preview.cs`, D3D preview renderer text in
-the `Formatters.Snapshot.PreviewD3D*.cs` family (`.PreviewD3D.cs` owns
-routing/header order, `.CpuTiming.cs` owns CPU timing text, `.FrameFlow.cs`
-owns pipeline latency and frame-ownership text, `.FrameLatencyWait.cs` owns
-frame-latency wait text, `.FrameStats.cs` owns DXGI frame-stat text, and
-`.SlowFrames.cs` delegates to the shared slow-frame formatter), thread-health
-text in
+`Formatters.Snapshot.PreviewD3D.cs` including routing/header order, CPU timing,
+pipeline latency, frame ownership, frame-latency wait, DXGI frame-stat text, and
+delegation to the shared slow-frame formatter, thread-health text in
 `Formatters.Snapshot.ThreadHealth.cs`, source telemetry snapshot text in
 `Formatters.Snapshot.Source.cs`, diagnostic-event text in
 `Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
