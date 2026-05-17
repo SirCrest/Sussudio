@@ -11,17 +11,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Flashback.cs")
             .Replace("\r\n", "\n");
-        var flashbackPlaybackCommandsText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs")
-            .Replace("\r\n", "\n");
         var flashbackPlaybackPerformanceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackDecodeText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackStagesText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs")
-            .Replace("\r\n", "\n");
-        var flashbackRecordingText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackRecording.cs")
-            .Replace("\r\n", "\n");
-        var flashbackExportText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackExport.cs")
             .Replace("\r\n", "\n");
         var previewRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.cs")
             .Replace("\r\n", "\n");
@@ -52,10 +44,15 @@ static partial class Program
         AssertContains(flashbackRootText, "AppendFlashbackPlaybackCommands(builder, result);");
         AssertContains(flashbackRootText, "AppendFlashbackRecording(builder, result);");
         AssertContains(flashbackRootText, "AppendFlashbackExport(builder, result);");
+        AssertContains(flashbackRootText, "private static void AppendFlashbackPlaybackCommands(");
+        AssertContains(flashbackRootText, "\"Flashback Playback Commands: \"");
+        AssertContains(flashbackRootText, "private static void AppendFlashbackPlaybackStages(");
+        AssertContains(flashbackRootText, "\"Flashback Playback Stages: \"");
+        AssertContains(flashbackRootText, "private static void AppendFlashbackRecording(");
+        AssertContains(flashbackRootText, "\"Flashback Recording: \"");
+        AssertContains(flashbackRootText, "private static void AppendFlashbackExport(");
+        AssertContains(flashbackRootText, "\"Flashback Export: \"");
         AssertDoesNotContain(flashbackRootText, "\"Flashback Playback Perf: \"");
-        AssertContains(flashbackPlaybackCommandsText, "private static void AppendFlashbackPlaybackCommands(");
-        AssertContains(flashbackPlaybackCommandsText, "\"Flashback Playback Commands: \"");
-        AssertDoesNotContain(flashbackPlaybackCommandsText, "\"Flashback Playback Perf: \"");
         AssertContains(flashbackPlaybackPerformanceText, "private static void AppendFlashbackPlaybackPerformance(");
         AssertContains(flashbackPlaybackPerformanceText, "\"Flashback Playback Perf: \"");
         AssertContains(flashbackPlaybackPerformanceText, "FormatOptional(result.FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd)");
@@ -63,14 +60,6 @@ static partial class Program
         AssertContains(flashbackPlaybackDecodeText, "private static void AppendFlashbackPlaybackDecode(");
         AssertContains(flashbackPlaybackDecodeText, "\"Flashback Playback Decode: \"");
         AssertDoesNotContain(flashbackPlaybackDecodeText, "\"Flashback Playback Stages: \"");
-        AssertContains(flashbackPlaybackStagesText, "private static void AppendFlashbackPlaybackStages(");
-        AssertContains(flashbackPlaybackStagesText, "\"Flashback Playback Stages: \"");
-        AssertDoesNotContain(flashbackPlaybackStagesText, "\"Flashback Recording: \"");
-        AssertContains(flashbackRecordingText, "private static void AppendFlashbackRecording(");
-        AssertContains(flashbackRecordingText, "\"Flashback Recording: \"");
-        AssertDoesNotContain(flashbackRecordingText, "\"Flashback Export: \"");
-        AssertContains(flashbackExportText, "private static void AppendFlashbackExport(");
-        AssertContains(flashbackExportText, "\"Flashback Export: \"");
         AssertContains(previewRootText, "private static void AppendPreviewSections(");
         AssertContains(previewRootText, "AppendPreviewScheduler(builder, result);");
         AssertContains(previewRootText, "AppendPreviewD3DPerformance(builder, result);");

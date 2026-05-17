@@ -3073,18 +3073,12 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultFormatter.Overview.cs` owns the
   diagnostic-session header, summary, and evidence section.
 - `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs` owns Flashback
-  diagnostic-session text section ordering.
-  `DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs` owns
-  playback command lines,
+  diagnostic-session text section ordering plus playback command,
+  playback stage/seek-cap, recording, and export lines.
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs` owns
   playback cadence/audio-master performance lines,
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs` owns playback
-  decode timing lines,
-  `DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs` owns playback
-  stage/seek-cap lines,
-  `DiagnosticSessionResultFormatter.FlashbackRecording.cs` owns recording
-  lines, and `DiagnosticSessionResultFormatter.FlashbackExport.cs` owns export
-  lines.
+  decode timing lines.
 - `tools/Common/DiagnosticSessionResultFormatter.Preview.cs` owns preview
   diagnostic-session text section ordering plus preview scheduler, D3D
   performance/slow-frame, D3D CPU timing, and visual-cadence lines.
@@ -3135,11 +3129,9 @@ Primary owners:
   `tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs`, and
   `tools/Common/AutomationSnapshotFormatter.Source.cs` own the named snapshot
   sections. Within the D3D formatter family, `.PreviewD3D.cs` keeps
-  routing/header order, `.CpuTiming.cs` owns CPU timing text, `.FrameFlow.cs`
-  owns pipeline-latency and frame-ownership text, `.FrameLatencyWait.cs` owns
-  frame-latency wait text, `.FrameStats.cs` owns DXGI frame-stat text, and
-  `.SlowFrames.cs` owns slow-frame diagnostics and diagnostic millisecond
-  formatting.
+  routing/header order plus CPU timing, pipeline-latency, frame-ownership,
+  frame-latency wait, and DXGI frame-stat text, while `.SlowFrames.cs` owns
+  reusable slow-frame diagnostics and diagnostic millisecond formatting.
 - `tools/Common/DiagnosticSessionPipeRetryPolicy.cs` owns diagnostic-session
   connect retry classification and local failure-response envelopes.
 - `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized

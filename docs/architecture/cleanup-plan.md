@@ -2420,13 +2420,11 @@ Diagnostic-session result text now lives in a focused partial family rooted at
 `tools/Common/DiagnosticSessionResultFormatter.cs`. The root owns the public
 `Format(...)` flow plus the simple capture-mode, recording-verification,
 PresentMon, and process-performance summary rows. `.Overview.cs` owns the
-header/summary/evidence section, `.Flashback.cs` owns Flashback section ordering,
-`.FlashbackPlayback.Commands.cs` owns playback command text,
-`.FlashbackPlayback.Performance.cs` owns playback cadence/audio-master
+header/summary/evidence section, `.Flashback.cs` owns Flashback section ordering
+plus simple playback command, playback stage/seek-cap, recording, and export
+rows, `.FlashbackPlayback.Performance.cs` owns playback cadence/audio-master
 performance text, `.FlashbackPlayback.Decode.cs` owns playback decode text,
-`.FlashbackPlayback.Stages.cs` owns playback stage/seek-cap text,
-`.FlashbackRecording.cs` owns recording text, `.FlashbackExport.cs` owns export
-text, `.Preview.cs` owns preview section ordering plus preview scheduler, D3D
+`.Preview.cs` owns preview section ordering plus preview scheduler, D3D
 performance/slow-frame, D3D CPU timing, and visual cadence text. `.Artifacts.cs`
 owns artifact/action/warning sections, and `.Helpers.cs` owns
 small text helpers. The runner keeps `Format(...)` as a compatibility wrapper
@@ -2952,13 +2950,8 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionResultFormatter.Overview.cs`
 - `DiagnosticSessionResultFormatter.Flashback.cs`
-- `DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs`
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs`
-- `DiagnosticSessionResultFormatter.FlashbackPlayback.Stages.cs`
-- `DiagnosticSessionResultFormatter.FlashbackRecording.cs`
-- `DiagnosticSessionResultFormatter.FlashbackExport.cs`
-- `DiagnosticSessionResultFormatter.Preview.cs`
 - `DiagnosticSessionResultFormatter.Preview.cs`
 - `DiagnosticSessionResultFormatter.Artifacts.cs`
 - `DiagnosticSessionResultFormatter.Helpers.cs`
