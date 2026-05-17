@@ -1639,8 +1639,7 @@ Primary current owners:
   coordinates automation-diagnostics check registration; focused
   `HarnessCheckCatalog.AutomationDiagnostics.*.cs` partials own app shell,
   MainWindow surface, dispatcher, pipe/auth, ViewModel/Flashback UI,
-  capture/Flashback routing, snapshot projection, and protocol registration
-  groups.
+  capture/Flashback routing, and snapshot projection registration groups.
 - `tests/Sussudio.Tests/ServiceNamespace.Tests.cs` owns the harness-visible
   service namespace/source ownership orchestrator.
 - `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` owns service

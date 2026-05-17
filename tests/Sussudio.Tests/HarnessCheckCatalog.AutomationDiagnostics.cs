@@ -12,6 +12,8 @@ static partial class Program
         await AddAutomationDiagnosticsViewModelAndFlashbackUiChecksAsync(results);
         await AddAutomationDiagnosticsCaptureAndFlashbackRoutingChecksAsync(results);
         await AddAutomationDiagnosticsSnapshotProjectionChecksAsync(results);
-        await AddAutomationDiagnosticsProtocolChecksAsync(results);
+        await AddCheckAsync(results,
+            "Automation SetRecordingEnabled uses recording-sized client timeout",
+            AutomationProtocol_SetRecordingUsesRecordingSizedTimeout);
     }
 }
