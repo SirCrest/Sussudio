@@ -2922,8 +2922,9 @@ Remaining `tools/Common` ownership:
    `MainViewModel.AudioRampTrace.cs` kept as the automation-facing adapter; keep
    the preview monitoring call sites in `MainViewModel.AudioMonitoring.cs`.
    Microphone endpoint volume synchronization and persistence now live in
-   `MainViewModel.MicrophoneVolume.cs`; device-native audio mode/gain
-   management stays in `MainViewModel.AudioControls.cs`. UI-facing state is
+   `MainViewModel.MicrophoneVolume.cs`; device-native audio-control refresh and
+   mode switching stay in `MainViewModel.AudioControls.cs`, while analog gain
+   writes live in `MainViewModel.AnalogAudioGain.cs`. UI-facing state is
    split by owner: `MainViewModel.State.cs` owns shared shell/status/live-info
    flags and non-preview coordination gates, `MainViewModel.PreviewState.cs`
    owns preview lifecycle flags, preview reinitialize coordination, and preview
@@ -3071,10 +3072,12 @@ Remaining `tools/Common` ownership:
    encoder quality/preset/split/bitrate, and buffer/GPU decode changes now live
    in `MainViewModel.FlashbackSettings.cs`.
    Pure analog audio gain percent/XU-byte curve mapping now lives in
-   `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; keep async native-XU device
-   mode/gain application, cancellation, debounce-to-flash, and persistence in
-   `MainViewModel.AudioControls.cs`, using the supported native-XU switch/gain
-   command surface rather than the legacy AT input-source fallback path.
+   `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; async native-XU device
+   audio-control refresh and mode switching stay in `MainViewModel.AudioControls.cs`,
+   while `MainViewModel.AnalogAudioGain.cs` owns analog gain XU writes,
+   debounce-to-flash, and settings persistence. Use the supported native-XU
+   switch/gain command surface rather than the legacy AT input-source fallback
+   path.
    UI-only automation mutators now live in `MainViewModel.AutomationUi.cs`.
    Automation command entry points for audio, audio-preview, preview-volume
    clamp/persist, device-native audio mode/gain application, and microphone

@@ -105,6 +105,7 @@ static partial class Program
         AssertContains(captureServiceTelemetryText, "Telemetry poll start deferred until canceled poll exits");
 
         var audioControlsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioControls.cs"));
+        var analogAudioGainText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs"));
         AssertContains(audioControlsText, "RefreshDeviceAudioControlsAsync(");
         AssertContains(audioControlsText, "ReadStateAsync(device, cancellationToken)");
         AssertContains(audioControlsText, "Device audio mode failure readback ignored");
@@ -112,7 +113,10 @@ static partial class Program
         AssertContains(audioControlsText, "failureState.AnalogGainPercent");
         AssertContains(audioControlsText, "private async Task<bool> ApplyDeviceAudioModeAsync");
         AssertContains(audioControlsText, "CaptureDevice? targetDevice = null");
-        AssertContains(audioControlsText, "private async Task<bool> ApplyAnalogAudioGainAsync");
+        AssertContains(analogAudioGainText, "private async Task<bool> ApplyAnalogAudioGainAsync");
+        AssertContains(analogAudioGainText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken)");
+        AssertContains(analogAudioGainText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
+        AssertDoesNotContain(audioControlsText, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertContains(audioControlsText, "IsCurrentSelectedDevice(device)");
         AssertDoesNotContain(audioControlsText, "TryApplyAtDeviceAudioModeAsync");
         AssertDoesNotContain(audioControlsText, "SetInputSourceAsync");

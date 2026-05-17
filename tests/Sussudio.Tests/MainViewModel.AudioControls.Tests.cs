@@ -13,11 +13,14 @@ static partial class Program
             ?? throw new InvalidOperationException("DeviceAudioGainMapper.GainByteToPercent was not found.");
         var audioControlsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioControls.cs")
             .Replace("\r\n", "\n");
+        var analogAudioGainText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs")
+            .Replace("\r\n", "\n");
         var gainMapperText = ReadRepoFile("Sussudio/ViewModels/DeviceAudioGainMapper.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(audioControlsText, "DeviceAudioGainMapper.PercentToGainByte(AnalogAudioGainPercent)");
-        AssertContains(audioControlsText, "DeviceAudioGainMapper.PercentToGainByte(gainPercent)");
+        AssertContains(analogAudioGainText, "DeviceAudioGainMapper.PercentToGainByte(gainPercent)");
+        AssertContains(analogAudioGainText, "Device-native analog gain application and deferred flash persistence.");
         AssertDoesNotContain(audioControlsText, "private static byte MapPercentToGainByte");
         AssertDoesNotContain(audioControlsText, "private static double MapGainByteToPercent");
         AssertContains(gainMapperText, "private const double GainCurveK = 4.0;");
@@ -129,8 +132,9 @@ static partial class Program
         AssertNotNull(viewModelType.GetMethod("SaveMicrophoneVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SaveMicrophoneVolume");
 
         var audioControlsCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioControls.cs");
+        var analogAudioGainCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs");
         var microphoneVolumeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.MicrophoneVolume.cs");
-        var audioCode = audioControlsCode + "\n" + microphoneVolumeCode;
+        var audioCode = audioControlsCode + "\n" + analogAudioGainCode + "\n" + microphoneVolumeCode;
         var setMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "SetMicrophoneEndpointVolume");
         var getMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "GetMicrophoneEndpointVolume");
         var refreshDeviceAudioControls = ExtractMemberCode(audioCode, "RefreshDeviceAudioControlsAsync");
@@ -144,6 +148,8 @@ static partial class Program
         AssertContains(microphoneVolumeCode, "partial void OnMicrophoneVolumeChanged(double value)");
         AssertDoesNotContain(audioControlsCode, "SetMicrophoneEndpointVolume");
         AssertDoesNotContain(audioControlsCode, "GetMicrophoneEndpointVolume");
+        AssertDoesNotContain(audioControlsCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
+        AssertContains(analogAudioGainCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertDoesNotContain(audioControlsCode, "TryApplyAtDeviceAudioModeAsync");
         AssertDoesNotContain(audioControlsCode, "SetInputSourceAsync");
 
