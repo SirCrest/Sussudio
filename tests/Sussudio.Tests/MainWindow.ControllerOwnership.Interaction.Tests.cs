@@ -289,19 +289,18 @@ static partial class Program
         var propertyChangedPreviewText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.PreviewButtonPresentation.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs").Replace("\r\n", "\n");
         var actionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewButtonActionController.cs").Replace("\r\n", "\n");
         var reinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs").Replace("\r\n", "\n");
 
-        AssertContains(adapterText, "private PreviewButtonPresentationController _previewButtonPresentationController = null!;");
-        AssertContains(adapterText, "private void InitializePreviewButtonPresentationController()");
-        AssertContains(adapterText, "PreviewButton = PreviewButton,");
-        AssertContains(adapterText, "PreviewButtonIcon = PreviewButtonIcon,");
-        AssertContains(adapterText, "private void ShowStopPreviewButtonPresentation()");
-        AssertContains(adapterText, "=> _previewButtonPresentationController.ShowStopPreview();");
-        AssertContains(adapterText, "private void ShowStartPreviewButtonPresentation()");
-        AssertContains(adapterText, "=> _previewButtonPresentationController.ShowStartPreview();");
+        AssertContains(propertyChangedPreviewText, "private PreviewButtonPresentationController _previewButtonPresentationController = null!;");
+        AssertContains(propertyChangedPreviewText, "private void InitializePreviewButtonPresentationController()");
+        AssertContains(propertyChangedPreviewText, "PreviewButton = PreviewButton,");
+        AssertContains(propertyChangedPreviewText, "PreviewButtonIcon = PreviewButtonIcon,");
+        AssertContains(propertyChangedPreviewText, "private void ShowStopPreviewButtonPresentation()");
+        AssertContains(propertyChangedPreviewText, "=> _previewButtonPresentationController.ShowStopPreview();");
+        AssertContains(propertyChangedPreviewText, "private void ShowStartPreviewButtonPresentation()");
+        AssertContains(propertyChangedPreviewText, "=> _previewButtonPresentationController.ShowStartPreview();");
         AssertContains(mainWindowText, "InitializePreviewButtonPresentationController();");
         AssertContains(previewLifecycleControllerText, "_context.ShowStopPreviewButtonPresentation();");
         AssertContains(previewLifecycleControllerText, "_context.ShowStartPreviewButtonPresentation();");

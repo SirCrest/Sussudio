@@ -7,7 +7,17 @@ namespace Sussudio;
 // choreography and its PropertyChanged routes live in the controller.
 public sealed partial class MainWindow
 {
+    private PreviewButtonPresentationController _previewButtonPresentationController = null!;
     private PreviewLifecycleEventController _previewLifecycleEventController = null!;
+
+    private void InitializePreviewButtonPresentationController()
+    {
+        _previewButtonPresentationController = new PreviewButtonPresentationController(new PreviewButtonPresentationControllerContext
+        {
+            PreviewButton = PreviewButton,
+            PreviewButtonIcon = PreviewButtonIcon,
+        });
+    }
 
     private void InitializePreviewLifecycleEventController()
     {
@@ -52,4 +62,10 @@ public sealed partial class MainWindow
 
     private void ViewModel_PreviewStopRequested(object? sender, System.EventArgs e)
         => _previewLifecycleEventController.HandlePreviewStopRequested();
+
+    private void ShowStopPreviewButtonPresentation()
+        => _previewButtonPresentationController.ShowStopPreview();
+
+    private void ShowStartPreviewButtonPresentation()
+        => _previewButtonPresentationController.ShowStartPreview();
 }

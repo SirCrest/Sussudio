@@ -1965,7 +1965,8 @@ Primary current owners:
   `PreviewShadowFadeAnimator`.
 - `Sussudio/Controllers/Preview/PreviewButtonPresentationController.cs` owns preview
   button glyph and tooltip presentation for Start Preview and Stop Preview.
-  `MainWindow.PreviewButtonPresentation.cs` is the XAML-facing adapter.
+  `MainWindow.PropertyChangedPreview.cs` wires preview button presentation into
+  preview lifecycle property/event routing.
 - `Sussudio/Controllers/Preview/PreviewButtonActionController.cs` owns preview button
   command choreography: pending-reinit cancel, user stop intent, audio/visual
   fade-out ordering, preview start/stop calls, reinit animation reset, and
