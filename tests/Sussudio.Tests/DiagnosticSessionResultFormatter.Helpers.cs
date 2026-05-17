@@ -16,10 +16,6 @@ static partial class Program
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackRecording.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackExport.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.cs"),
-                ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.Scheduler.cs"),
-                ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.D3DPerformance.cs"),
-                ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.D3DCpuTiming.cs"),
-                ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.VisualCadence.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.ProcessPerformance.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Helpers.cs"))
