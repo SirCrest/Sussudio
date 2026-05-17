@@ -64,6 +64,7 @@ static partial class Program
         var previewRuntimeSnapshotDispatchText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
+        var previewRuntimeD3DProjectionText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs").Replace("\r\n", "\n");
         var previewSurfaceShadowControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs").Replace("\r\n", "\n");
         var statsSnapshotText = ReadRepoFile("Sussudio/MainWindow.StatsSnapshot.cs").Replace("\r\n", "\n");
         var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSnapshotProvider.cs").Replace("\r\n", "\n");
@@ -213,11 +214,16 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotControllerText, "internal sealed class PreviewRuntimeSnapshotInput");
         AssertContains(previewRuntimeSnapshotControllerText, "internal static class PreviewRuntimeSnapshotController");
         AssertContains(previewRuntimeSnapshotControllerText, "public static PreviewRuntimeSnapshot Build(PreviewRuntimeSnapshotInput input)");
-        AssertContains(previewRuntimeSnapshotControllerText, "var d3d = input.D3DRenderer;");
-        AssertContains(previewRuntimeSnapshotControllerText, "var rendererCadence = d3d?.GetPresentCadenceMetrics(input.PreviewMinPresentationIntervalMs);");
+        AssertContains(previewRuntimeSnapshotControllerText, "var d3dProjection = PreviewRuntimeD3DProjection.Build(input);");
         AssertContains(previewRuntimeSnapshotControllerText, "return new PreviewRuntimeSnapshot");
         AssertContains(previewRuntimeSnapshotControllerText, "BlankSuspected = blankSuspected,");
         AssertContains(previewRuntimeSnapshotControllerText, "StallSuspected = stallSuspected,");
+        AssertContains(previewRuntimeD3DProjectionText, "internal sealed class PreviewRuntimeD3DProjection");
+        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DProjection Build(PreviewRuntimeSnapshotInput input)");
+        AssertContains(previewRuntimeD3DProjectionText, "var d3d = input.D3DRenderer;");
+        AssertContains(previewRuntimeD3DProjectionText, "var rendererCadence = d3d?.GetPresentCadenceMetrics(input.PreviewMinPresentationIntervalMs);");
+        AssertContains(previewRuntimeD3DProjectionText, "var d3dFrameLatencyWait = d3d?.GetFrameLatencyWaitMetrics();");
+        AssertContains(previewRuntimeD3DProjectionText, "EstimatedPipelineLatencyMs = d3dPipelineLatency?.AverageMs ?? 0,");
 
         AssertContains(statsSnapshotText, "GetRenderer = () => _previewRendererHostController.Renderer,");
         AssertContains(statsSnapshotText, "GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs");

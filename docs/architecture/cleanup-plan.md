@@ -687,8 +687,11 @@ adapter surface.
 preview snapshot adapter over MainWindow UI dispatching.
 `Sussudio/MainWindow.PreviewRuntimeSnapshot.cs` owns UI-thread-only preview
 state sampling. Read-only preview runtime snapshot construction now lives in
-`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`, which owns renderer
-metrics, blank/stall suspicion, cadence projection, and D3D diagnostic fields.
+`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`,
+which owns preview-state composition and blank/stall suspicion.
+`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs` owns
+renderer frame-counter override, cadence projection, D3D diagnostic fields,
+estimated pipeline latency, and GPU playback projection.
 Close routing/finalization handling remains in the explicit window close
 lifecycle owners below.
 
