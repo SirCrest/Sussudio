@@ -16,9 +16,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var helpWriterSectionsText = ReadRepoFile("tools/ssctl/SsctlHelpWriter.Sections.cs")
             .Replace("\r\n", "\n");
-        var helpWriterCatalogText = ReadRepoFile("tools/ssctl/SsctlHelpWriter.Catalog.cs")
-            .Replace("\r\n", "\n");
-        var helpWriterText = string.Join("\n", helpWriterRootText, helpWriterSectionsText, helpWriterCatalogText);
+        var helpWriterText = string.Join("\n", helpWriterRootText, helpWriterSectionsText);
         var catalogText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
             .Replace("\r\n", "\n");
         var flashbackHandlersText = string.Join(
@@ -44,8 +42,8 @@ static partial class Program
         AssertContains(helpWriterRootText, "WriteFlagsSection(writer);");
         AssertDoesNotContain(helpWriterRootText, "AutomationCommandCatalog.Get(kind).CliHelp");
         AssertDoesNotContain(helpWriterRootText, "Flashback:");
-        AssertContains(helpWriterCatalogText, "AutomationCommandCatalog.Get(kind).CliHelp");
-        AssertContains(helpWriterCatalogText, "private static void WriteCatalogHelpLine(TextWriter writer, AutomationCommandKind kind, string? suffix = null)");
+        AssertContains(helpWriterSectionsText, "AutomationCommandCatalog.Get(kind).CliHelp");
+        AssertContains(helpWriterSectionsText, "private static void WriteCatalogHelpLine(TextWriter writer, AutomationCommandKind kind, string? suffix = null)");
         AssertContains(helpWriterSectionsText, "private static void WriteFlashbackSection(TextWriter writer)");
         AssertContains(helpWriterSectionsText, "private static void WriteWaitVerifySection(TextWriter writer)");
         AssertContains(helpWriterSectionsText, "WriteCatalogHelpLine(writer, AutomationCommandKind.FlashbackExport);");

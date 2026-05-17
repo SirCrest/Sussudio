@@ -2478,8 +2478,7 @@ Primary owners:
   CLI option parsing, and exit-code shaping.
 - `tools/ssctl/SsctlHelpWriter.cs` owns the `ssctl` help facade.
   `tools/ssctl/SsctlHelpWriter.Sections.cs` owns operator-facing help section
-  text, and `tools/ssctl/SsctlHelpWriter.Catalog.cs` owns catalog-backed CLI
-  help lines.
+  text and catalog-backed CLI help lines.
 - `tools/ssctl/CommandHandlers.Context.cs` owns the per-invocation command
   context wrapper.
 - `tools/ssctl/CommandHandlers.Flags.cs` owns flag consumption and optional

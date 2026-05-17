@@ -322,8 +322,7 @@ parsing and runner invocation.
 `tools/ssctl/Program.cs` owns only process entry, Ctrl-C cancellation, CLI
 option parsing, and exit-code shaping; `tools/ssctl/SsctlHelpWriter.cs` owns
 the help facade, `tools/ssctl/SsctlHelpWriter.Sections.cs` owns
-operator-facing help section text, and `tools/ssctl/SsctlHelpWriter.Catalog.cs`
-owns catalog-backed help lines.
+operator-facing help section text plus catalog-backed help lines.
 `CommandHandlers.CaptureControls.cs` owns preview/record/screenshot/frame and
 `set` capture/audio/output mutations, including the shared set-value payload
 helper. `CommandHandlers.Device.cs` owns device
