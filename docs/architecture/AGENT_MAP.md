@@ -93,6 +93,10 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.VerificationCommands.cs`
   owns file and last-recording verification command bodies behind the custom
   command router.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.VisualCaptureCommands.cs`
+  owns video-source probe, preview-color probe, preview-frame capture, window
+  screenshot capture, default capture output paths, and capture response
+  status shaping behind the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.TrivialHandlers.cs`
   owns the table of simple one-property commands that delegate straight to the
   automation view-model port.

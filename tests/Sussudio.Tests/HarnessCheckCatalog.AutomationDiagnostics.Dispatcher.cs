@@ -63,6 +63,9 @@ static partial class Program
             "Automation dispatcher verification commands live in focused partial",
             AutomationCommandDispatcher_VerificationCommands_LiveInFocusedPartial);
         await AddCheckAsync(results,
+            "Automation dispatcher visual capture commands live in focused partial",
+            AutomationCommandDispatcher_VisualCaptureCommands_LiveInFocusedPartial);
+        await AddCheckAsync(results,
             "Automation dispatcher handles every AutomationCommandKind value",
             AutomationCommandDispatcher_AllCommandKinds_AreHandled);
     }

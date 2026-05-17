@@ -250,6 +250,10 @@ export, segment, restart, and enable command bodies behind the custom command
 router.
 `AutomationCommandDispatcher.VerificationCommands.cs` owns file and
 last-recording verification command bodies.
+`AutomationCommandDispatcher.VisualCaptureCommands.cs` owns video-source probe,
+preview-color probe, preview-frame capture, window screenshot capture, default
+capture output paths, and capture response status shaping behind the custom
+command router.
 `AutomationCommandDispatcher.TrivialHandlers.cs` owns the simple one-property
 command table. Named partials own support responsibilities:
 `AutomationCommandDispatcher.Authorization.cs` handles auth-token lookup and

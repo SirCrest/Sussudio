@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -236,50 +235,16 @@ public sealed partial class AutomationCommandDispatcher
             }
 
             case AutomationCommandKind.ProbeVideoSource:
-            {
-                var result = await _viewModel.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false);
-                return CreateResponse(correlationId, "Video source probe completed.", data: result);
-            }
+                return await ExecuteProbeVideoSourceCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.ProbePreviewColor:
-            {
-                var result = await _viewModel.ProbePreviewColorAsync(cancellationToken).ConfigureAwait(false);
-                return CreateResponse(correlationId, "Preview color probe completed.", data: result);
-            }
+                return await ExecuteProbePreviewColorCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.CapturePreviewFrame:
-            {
-                var outputPath = ValidatePathPayload(
-                    AutomationCommandKind.CapturePreviewFrame,
-                    "outputPath",
-                    GetString(payload, "outputPath")
-                        ?? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp"));
-                var result = await _viewModel.CapturePreviewFrameAsync(outputPath, cancellationToken).ConfigureAwait(false);
-                return CreateResponse(
-                    correlationId,
-                    result.Message,
-                    data: result,
-                    success: result.Succeeded,
-                    status: result.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
-                    errorCode: result.Succeeded ? null : "capture-failed");
-            }
+                return await ExecuteCapturePreviewFrameCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.CaptureWindowScreenshot:
-            {
-                var outputPath = ValidatePathPayload(
-                    AutomationCommandKind.CaptureWindowScreenshot,
-                    "outputPath",
-                    GetString(payload, "outputPath")
-                        ?? Path.Combine(Path.GetTempPath(), $"window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.png"));
-                var result = await _windowControl.CaptureWindowScreenshotAsync(outputPath, cancellationToken).ConfigureAwait(false);
-                return CreateResponse(
-                    correlationId,
-                    result.Message,
-                    data: result,
-                    success: result.Succeeded,
-                    status: result.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
-                    errorCode: result.Succeeded ? null : "capture-failed");
-            }
+                return await ExecuteCaptureWindowScreenshotCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.GetPerformanceTimeline:
                 return ExecuteGetPerformanceTimelineCommand(payload, correlationId);
