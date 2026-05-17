@@ -1769,7 +1769,8 @@ partials.
 
 Capture health snapshot sampling now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file
-captures current service references and invokes focused field builders; final
+captures current service references, invokes focused field builders, and
+hands final service-state/scalar values to the assembler; pure
 diagnostics/automation DTO construction lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`. MJPEG
 timing, jitter, packet-hash, visual-cadence, and per-decoder projection lives in

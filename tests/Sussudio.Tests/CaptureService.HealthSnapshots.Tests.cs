@@ -13,12 +13,20 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(healthSnapshotText, "return AssembleCaptureHealthSnapshot(");
-        AssertContains(healthSnapshotText, "new CaptureHealthSnapshotAssemblyFields(");
-        AssertContains(healthSnapshotAssemblerText, "private CaptureHealthSnapshot AssembleCaptureHealthSnapshot(");
-        AssertContains(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields(");
+        AssertContains(healthSnapshotText, "return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields");
+        AssertContains(healthSnapshotText, "SessionState = _sessionState,");
+        AssertContains(healthSnapshotText, "FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(currentSettings, unifiedVideoCapture),");
+        AssertContains(healthSnapshotText, "LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),");
+        AssertContains(healthSnapshotAssemblerText, "private static class CaptureHealthSnapshotAssembler");
+        AssertContains(healthSnapshotAssemblerText, "public static CaptureHealthSnapshot Build(");
+        AssertContains(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "LibAvRecordingSink? Sink");
         AssertDoesNotContain(healthSnapshotAssemblerText, "var sink = fields.Sink;");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "UnifiedVideoCapture? UnifiedVideoCapture");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "_sessionState");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "_isRecording");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "_currentSettings");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "ComputeTickAge(");
         AssertContains(healthSnapshotAssemblerText, "TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(snapshotUtcUnixMs),");
         AssertDoesNotContain(healthSnapshotText, "return new CaptureHealthSnapshot");
 

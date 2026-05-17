@@ -560,10 +560,11 @@ Important entry points:
 - `CaptureService.FlashbackRecording.cs` owns Flashback recording backend
   ownership checks, session context construction, frame-rate rational policy,
   codec/HDR guardrails, and recording topology validation.
-- `CaptureService.HealthSnapshots.cs` samples health snapshot field groups
-  consumed by diagnostics and automation health checks.
+- `CaptureService.HealthSnapshots.cs` samples health snapshot field groups and
+  final service-state/scalar handoff values consumed by diagnostics and
+  automation health checks.
 - `CaptureService.HealthSnapshotAssembler.cs` owns final
-  `CaptureHealthSnapshot` DTO construction from already-sampled field groups.
+  pure `CaptureHealthSnapshot` DTO construction from captured fields.
 - `CaptureService.HealthSnapshots.AvSync.cs` owns A/V sync field projection for
   health snapshots while sharing drift calculation policy with runtime snapshots.
 - `CaptureService.HealthSnapshotCaptureCadence.cs` owns source-reader capture

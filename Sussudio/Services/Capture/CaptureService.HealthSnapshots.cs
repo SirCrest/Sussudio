@@ -36,22 +36,47 @@ public partial class CaptureService
             _currentSettings);
 
         var flashbackPlayback = CaptureFlashbackPlaybackHealthSnapshotFields(fbPlayback);
+        var currentSettings = _currentSettings;
+        var isRecording = _isRecording;
 
-        return AssembleCaptureHealthSnapshot(
-            new CaptureHealthSnapshotAssemblyFields(
-                unifiedVideoCapture,
-                fatalCleanupInProgress,
-                flashbackCleanupInProgress,
-                observedTelemetry,
-                sourceTelemetry,
-                captureCadence,
-                mjpegHealth,
-                avSyncHealth,
-                recordingHealth,
-                flashbackQueues,
-                snapshotUtcUnixMs,
-                flashbackExport,
-                flashbackBuffer,
-                flashbackPlayback));
+        return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields
+        {
+            SessionState = _sessionState,
+            IsRecording = isRecording,
+            RecordingBackend = ResolveRecordingBackendName(),
+            RecordingElapsedMs = isRecording ? _recordingStopwatch.ElapsedMilliseconds : 0,
+            ExpectedFrameRate = _actualFrameRate ?? currentSettings?.FrameRate ?? 0,
+            NegotiatedWidth = _actualWidth,
+            NegotiatedHeight = _actualHeight,
+            NegotiatedFrameRate = _actualFrameRate,
+            NegotiatedFrameRateArg = _actualFrameRateArg,
+            NegotiatedFrameRateNumerator = _actualFrameRateNumerator,
+            NegotiatedFrameRateDenominator = _actualFrameRateDenominator,
+            NegotiatedPixelFormat = _actualPixelFormat,
+            RequestedReaderSubtype = currentSettings?.RequestedPixelFormat,
+            ReaderSourceStreamType = (isRecording || _isVideoPreviewActive) && unifiedVideoCapture != null
+                ? "MfSourceReader"
+                : null,
+            ReaderSourceSubtype = _actualPixelFormat,
+            FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(currentSettings, unifiedVideoCapture),
+            FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(currentSettings, unifiedVideoCapture),
+            LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),
+            VideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? 0,
+            LastVideoEnqueueAgeMs = ComputeTickAge(recordingHealth.LastVideoEnqueueTick),
+            LastVideoWriteAgeMs = ComputeTickAge(recordingHealth.LastVideoWriteTick),
+            FatalCleanupInProgress = fatalCleanupInProgress,
+            FlashbackCleanupInProgress = flashbackCleanupInProgress,
+            ObservedTelemetry = observedTelemetry,
+            SourceTelemetry = sourceTelemetry,
+            CaptureCadence = captureCadence,
+            MjpegHealth = mjpegHealth,
+            AvSyncHealth = avSyncHealth,
+            RecordingHealth = recordingHealth,
+            FlashbackQueues = flashbackQueues,
+            SnapshotUtcUnixMs = snapshotUtcUnixMs,
+            FlashbackExport = flashbackExport,
+            FlashbackBuffer = flashbackBuffer,
+            FlashbackPlayback = flashbackPlayback
+        });
     }
 }
