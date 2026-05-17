@@ -74,8 +74,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "AudioMaster = audioMaster,");
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "Commands = commands");
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "TargetFps = health.FlashbackPlaybackTargetFps,");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackAudioMasterText, "private static FlashbackPlaybackAudioMasterProjection BuildFlashbackPlaybackAudioMasterProjection(CaptureHealthSnapshot health)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackAudioMasterText, "LastFallbackReason = health.FlashbackPlaybackAudioMasterLastFallbackReason,");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "private static FlashbackPlaybackAudioMasterProjection BuildFlashbackPlaybackAudioMasterProjection(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "LastFallbackReason = health.FlashbackPlaybackAudioMasterLastFallbackReason,");
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackDecodeText, "private static FlashbackPlaybackDecodeProjection BuildFlashbackPlaybackDecodeProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackDecodeText, "MaxPhase = health.FlashbackPlaybackMaxDecodePhase,");
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackDecodeText, "SeekForwardDecodeCapHits = health.FlashbackPlaybackSeekForwardDecodeCapHits,");

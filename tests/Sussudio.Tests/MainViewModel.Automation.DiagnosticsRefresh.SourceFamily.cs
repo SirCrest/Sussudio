@@ -58,7 +58,6 @@ static partial class Program
             SnapshotProjectionMjpegPacketHashText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.MjpegPacketHash.cs"),
             SnapshotProjectionFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs"),
             SnapshotProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs"),
-            SnapshotProjectionFlashbackPlaybackAudioMasterText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlaybackAudioMaster.cs"),
             SnapshotProjectionFlashbackPlaybackDecodeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlaybackDecode.cs"),
             SnapshotProjectionFlashbackPlaybackCommandsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlaybackCommands.cs"),
             SnapshotProjectionFlashbackRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs"),
@@ -155,7 +154,6 @@ static partial class Program
         public string SnapshotProjectionMjpegPacketHashText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackExportText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackPlaybackText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackPlaybackAudioMasterText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackPlaybackDecodeText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackPlaybackCommandsText { get; init; } = string.Empty;
         public string SnapshotProjectionFlashbackRecordingText { get; init; } = string.Empty;
@@ -242,7 +240,6 @@ static partial class Program
                 SnapshotProjectionMjpegPacketHashText,
                 SnapshotProjectionFlashbackExportText,
                 SnapshotProjectionFlashbackPlaybackText,
-                SnapshotProjectionFlashbackPlaybackAudioMasterText,
                 SnapshotProjectionFlashbackPlaybackDecodeText,
                 SnapshotProjectionFlashbackPlaybackCommandsText,
                 SnapshotProjectionFlashbackRecordingText,
