@@ -14,6 +14,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var commandDrainText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs")
             .Replace("\r\n", "\n");
+        var scrubText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs")
+            .Replace("\r\n", "\n");
+        var scrubDrainText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(stressText, "internal static partial class DiagnosticSessionFlashbackStressScenario");
         AssertContains(stressText, "internal const int FlashbackStressMaxPlaybackPendingCommands = 4;");
@@ -35,10 +39,16 @@ static partial class Program
         AssertContains(commandDrainText, "\"flashback stress: playback command queue did not drain within 10s \"");
         AssertDoesNotContain(commandDrainText, "WaitForFlashbackPlaybackWarmSampleAsync(");
         AssertContains(stressText, "internal static async Task RunFlashbackScrubStressAsync(");
-        AssertContains(stressText, "WaitForFlashbackStressBufferReadyAsync(");
-        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
-        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
-        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = positions[^1] }");
+        AssertContains(scrubText, "WaitForFlashbackStressBufferReadyAsync(");
+        AssertContains(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
+        AssertContains(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
+        AssertContains(scrubText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = positions[^1] }");
+        AssertContains(scrubText, "ValidateFlashbackScrubStressDrainAsync(");
+        AssertDoesNotContain(scrubText, "\"flashback scrub stress: playback did not settle live with an empty queue within 10s \"");
+        AssertContains(scrubDrainText, "private static async Task ValidateFlashbackScrubStressDrainAsync(");
+        AssertContains(scrubDrainText, "\"flashback scrub stress: playback did not settle live with an empty queue within 10s \"");
+        AssertContains(scrubDrainText, "BuildPlaybackCommandHealth(lastSnapshot, baselineSnapshot)");
+        AssertContains(scrubDrainText, "FlashbackScrubStressMaxPlaybackPendingCommands");
         AssertContains(stressText, "CreateFlashbackExportVerifyPayload(exportPath)");
         AssertContains(stressText, "internal static string? ClassifyFlashbackStressAudioMasterFallbackWarning(");
         AssertContains(stressText, "\"flashback stress: audio-master harmful fallbacks increased during warmed playback \"");

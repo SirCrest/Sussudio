@@ -3003,7 +3003,10 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs` owns
   post-go-live playback command drain, latency, and final-state checks.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs` owns the
-  scrub-stress command burst and drain checks.
+  scrub-stress command burst.
+- `tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs` owns
+  scrub-stress post-go-live drain, command-health, latency, and final-state
+  checks.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.AudioMaster.cs` owns
   warmed-playback audio-master fallback classification.
 - `tools/Common/DiagnosticSessionFlashbackWaits.cs` owns read-only snapshot

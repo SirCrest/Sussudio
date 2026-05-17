@@ -9,6 +9,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.CommandDrain.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.Scrub.cs",
+            "tools/Common/DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs",
             "tools/Common/DiagnosticSessionFlashbackStressScenario.AudioMaster.cs"
         };
         var parts = new string[files.Length];

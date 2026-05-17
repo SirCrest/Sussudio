@@ -2726,9 +2726,10 @@ partial family. `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns
 stress thresholds, `.Stress.cs` owns the main stress command sequence,
 `.WarmPlayback.cs` owns warmed-playback frame/FPS/1% low and audio-master
 fallback checks, `.CommandDrain.cs` owns post-go-live playback command drain
-checks, `.Scrub.cs` owns scrub-stress command bursts and drain checks, and
-`.AudioMaster.cs` owns warmed-playback audio-master fallback classification
-while the runner only starts the scenario tasks.
+checks, `.Scrub.cs` owns scrub-stress command bursts, `.ScrubDrain.cs` owns
+scrub-stress post-go-live drain and command-health checks, and `.AudioMaster.cs`
+owns warmed-playback audio-master fallback classification while the runner only
+starts the scenario tasks.
 
 Diagnostic-session Flashback validation now lives in the
 `tools/Common/DiagnosticSessionFlashbackValidation*.cs` partial family. The root
@@ -2847,6 +2848,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackStressScenario.WarmPlayback.cs`
 - `DiagnosticSessionFlashbackStressScenario.CommandDrain.cs`
 - `DiagnosticSessionFlashbackStressScenario.Scrub.cs`
+- `DiagnosticSessionFlashbackStressScenario.ScrubDrain.cs`
 - `DiagnosticSessionFlashbackStressScenario.AudioMaster.cs`
 - `DiagnosticSessionFlashbackWaits.cs`
 - `DiagnosticSessionFlashbackWaits.Playback.cs`
