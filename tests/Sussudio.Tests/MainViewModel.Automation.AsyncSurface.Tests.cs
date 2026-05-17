@@ -60,6 +60,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingFormat.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSplitEncodeMode.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationOutputPath.cs")
@@ -196,11 +198,16 @@ static partial class Program
             .Replace("\r\n", "\n");
         var automationRecordingFormatText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingFormat.cs")
             .Replace("\r\n", "\n");
+        var automationSplitEncodeModeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSplitEncodeMode.cs")
+            .Replace("\r\n", "\n");
         var automationOutputPathText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationOutputPath.cs")
             .Replace("\r\n", "\n");
         AssertContains(automationRecordingFormatText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
         AssertContains(automationRecordingFormatText, "RecordingFormatSelectionPolicy.IsHdrCompatible(matched)");
         AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetRecordingFormatAsync");
+        AssertContains(automationSplitEncodeModeText, "public async Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)");
+        AssertContains(automationSplitEncodeModeText, "splitEncodeMode: settings.SplitEncodeMode");
+        AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetSplitEncodeModeAsync");
         AssertContains(automationOutputPathText, "public Task SetOutputPathAsync(string outputPath, CancellationToken cancellationToken = default)");
         AssertContains(automationOutputPathText, "Directory.CreateDirectory(outputPath);");
         AssertContains(automationOutputPathText, "OutputPath = outputPath;");

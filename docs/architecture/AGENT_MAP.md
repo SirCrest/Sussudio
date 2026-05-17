@@ -2316,8 +2316,10 @@ Primary current owners:
   reinitialization gate used after active capture-mode changes.
   `MainViewModel.AutomationRecordingFormat.cs` owns recording format automation
   mutation and HDR compatibility enforcement.
+  `MainViewModel.AutomationSplitEncodeMode.cs` owns NVENC split-encode mode
+  automation mutation.
   `MainViewModel.AutomationRecordingSettings.cs` owns encoder
-  preset/quality/split-mode/custom-bitrate automation mutators.
+  preset/quality/custom-bitrate automation mutators.
   `MainViewModel.AutomationOutputPath.cs` owns output-path automation mutation.
   `MainViewModel.AutomationRecordingLifecycle.cs` owns the automation
   recording desired-state bridge into the shared recording transition gate.

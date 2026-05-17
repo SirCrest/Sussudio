@@ -126,7 +126,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device-selection automation: MainViewModel.AutomationDeviceSelection.cs
     // Capture-mode automation: MainViewModel.AutomationCaptureMode.cs
     // UI-only automation: MainViewModel.AutomationUi.cs
-    // Recording format automation: MainViewModel.AutomationRecordingFormat.cs; encoder settings: MainViewModel.AutomationRecordingSettings.cs; output path: MainViewModel.AutomationOutputPath.cs
+    // Recording format automation: MainViewModel.AutomationRecordingFormat.cs; split encode mode: MainViewModel.AutomationSplitEncodeMode.cs; encoder settings: MainViewModel.AutomationRecordingSettings.cs; output path: MainViewModel.AutomationOutputPath.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs
     // Audio input selection: MainViewModel.AudioInputSelection.cs
     // Audio ramp trace recorder: AudioRampTraceRecorder.cs; adapter: MainViewModel.AudioRampTrace.cs
