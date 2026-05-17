@@ -48,6 +48,9 @@ static partial class Program
             "Automation dispatcher ready-independent catalog commands bypass device readiness",
             AutomationCommandDispatcher_CatalogReadyIndependentCommands_BypassDeviceReadiness);
         await AddCheckAsync(results,
+            "Automation dispatcher capture control commands live in focused partial",
+            AutomationCommandDispatcher_CaptureControlCommands_LiveInFocusedPartial);
+        await AddCheckAsync(results,
             "Automation dispatcher window close waits for completion",
             AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion);
         await AddCheckAsync(results,

@@ -245,6 +245,9 @@ payloads, special response shapes, or capture/Flashback routing.
 `AutomationCommandDispatcher.AudioControlCommands.cs` owns device-audio mode,
 analog audio gain, and microphone-enable command bodies behind the custom
 command router.
+`AutomationCommandDispatcher.CaptureControlCommands.cs` owns MJPEG decoder
+count, output-path, and recording-enable command bodies, including the
+recording-response snapshot refresh, behind the custom command router.
 `AutomationCommandDispatcher.DiagnosticCommands.cs` owns diagnostic readback
 command bodies for recent events, performance timeline, and audio ramp traces
 behind the custom command router.

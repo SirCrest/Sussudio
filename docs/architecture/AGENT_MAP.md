@@ -84,6 +84,10 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.AudioControlCommands.cs`
   owns device-audio mode, analog audio gain, and microphone-enable command
   bodies behind the custom command router.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.CaptureControlCommands.cs`
+  owns MJPEG decoder count, output-path, and recording-enable command bodies,
+  including recording-response snapshot refresh, behind the custom command
+  router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`
   owns the custom automation command router for multi-field payloads, special
   response shapes, and capture routing.
