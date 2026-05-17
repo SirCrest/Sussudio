@@ -2905,6 +2905,10 @@ Remaining `tools/Common` ownership:
    runtime snapshot dispatch/sampling, audio meter rendering, preview startup,
    Flashback playback/export presentation, and stats overlay/row/snapshot
    projection are extracted behind named controllers or builders.
+   `MainWindow.xaml.cs` now keeps the controller initialization list grouped
+   into shell, Flashback, presentation, preview, recording, launch/status,
+   preview action, audio, capture, and output phases so the composition root
+   stays navigable as new controllers appear.
    Start the next UI cleanup from remaining broad adapters not already covered
    by controller ownership tests. Keep XAML bindings stable.
 

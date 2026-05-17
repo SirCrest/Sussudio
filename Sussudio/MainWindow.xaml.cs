@@ -75,8 +75,28 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void InitializeShellControllers()
     {
+        InitializeWindowShellControllers();
+        InitializeFlashbackControllers();
+        InitializeShellPresentationControllers();
+        InitializePreviewControllers();
+        InitializeRecordingControllers();
+        InitializeLaunchAndStatusControllers();
+        InitializePreviewActionControllers();
+        InitializeAudioControllers();
+        InitializeResponsiveShellLayoutController();
+        InitializeCaptureControllers();
+        InitializeOutputControllers();
+        InitializePreviewScreenshotController();
+    }
+
+    private void InitializeWindowShellControllers()
+    {
         InitializeWindowAutomationController();
         InitializeWindowScreenshotController();
+    }
+
+    private void InitializeFlashbackControllers()
+    {
         InitializeFlashbackPollingController();
         InitializeFlashbackScrubInteractionController();
         InitializeFlashbackPlayheadMotionController();
@@ -87,10 +107,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeFlashbackPlaybackPresentationController();
         InitializeFlashbackPlaybackUiCoordinator();
         InitializeFlashbackExportProgressPresentationController();
+    }
+
+    private void InitializeShellPresentationControllers()
+    {
         InitializeSettingsShelfController();
         InitializeSplashLoadingPhraseController();
         InitializeControlBarAnimationController();
         InitializeShellElevationController();
+    }
+
+    private void InitializePreviewControllers()
+    {
         InitializePreviewResizeTelemetryController();
         InitializePreviewSurfacePresentationController();
         InitializePreviewStartupSessionController();
@@ -101,24 +129,46 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializePreviewFadeInController();
         InitializePreviewTransitionAnimationController();
         InitializePreviewButtonPresentationController();
+    }
+
+    private void InitializeRecordingControllers()
+    {
         InitializeRecordingButtonChromeController();
         InitializeRecordingStatePresentationController();
         InitializeRecordingButtonActionController();
+    }
+
+    private void InitializeLaunchAndStatusControllers()
+    {
         InitializeLaunchEntranceAnimationController();
         InitializeLiveSignalInfoController();
         InitializeStatusStripPresentationController();
+    }
+
+    private void InitializePreviewActionControllers()
+    {
         InitializePreviewAudioFadeController();
         InitializePreviewButtonActionController();
+    }
+
+    private void InitializeAudioControllers()
+    {
         InitializeMicrophoneControlsController();
         InitializeAudioControlBindingController();
         InitializeAudioControlPresentationController();
-        InitializeResponsiveShellLayoutController();
+    }
+
+    private void InitializeCaptureControllers()
+    {
         InitializeCaptureSelectionBindingController();
         InitializeCaptureDeviceActionController();
         InitializeCaptureOptionPresentationController();
         InitializeCaptureOptionBindingController();
+    }
+
+    private void InitializeOutputControllers()
+    {
         InitializeOutputPathDisplayController();
         InitializeOutputPathActionController();
-        InitializePreviewScreenshotController();
     }
 }
