@@ -62,9 +62,6 @@ static partial class Program
             SnapshotProjectionFlashbackRecordingQueuesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecordingQueues.cs"),
             SnapshotProjectionPreviewD3DText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs"),
             SnapshotProjectionPreviewD3DCpuTimingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DCpuTiming.cs"),
-            SnapshotProjectionPreviewD3DFrameFlowText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DFrameFlow.cs"),
-            SnapshotProjectionPreviewD3DFrameLatencyWaitText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DFrameLatencyWait.cs"),
-            SnapshotProjectionPreviewD3DFrameStatsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DFrameStats.cs"),
             SnapshotProjectionPreviewRuntimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs"),
             SnapshotProjectionProcessResourcesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs"),
             SnapshotProjectionRecordingIntegrityText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs"),
@@ -152,9 +149,6 @@ static partial class Program
         public string SnapshotProjectionFlashbackRecordingQueuesText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DCpuTimingText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewD3DFrameFlowText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewD3DFrameLatencyWaitText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewD3DFrameStatsText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewRuntimeText { get; init; } = string.Empty;
         public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingIntegrityText { get; init; } = string.Empty;
@@ -231,8 +225,6 @@ static partial class Program
                 SnapshotProjectionFlashbackRecordingText,
                 SnapshotProjectionFlashbackRecordingQueuesText,
                 SnapshotProjectionPreviewD3DText,
-                SnapshotProjectionPreviewD3DFrameLatencyWaitText,
-                SnapshotProjectionPreviewD3DFrameStatsText,
                 SnapshotProjectionPreviewRuntimeText,
                 SnapshotProjectionProcessResourcesText,
                 SnapshotProjectionRecordingIntegrityText,
@@ -250,7 +242,6 @@ static partial class Program
                 TimelineText,
                 TimelineProjectionText,
                 SnapshotProjectionPreviewD3DCpuTimingText,
-                SnapshotProjectionPreviewD3DFrameFlowText,
                 SnapshotProjectionMjpegTimingText,
             });
     }
