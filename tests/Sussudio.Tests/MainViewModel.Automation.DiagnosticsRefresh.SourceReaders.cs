@@ -83,7 +83,7 @@ static partial class Program
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunBootstrap.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionCleanupPolicy.cs")
                 + "\n" + ReadDiagnosticSessionFlashbackCycleScenariosSource()
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
+                + "\n" + ReadDiagnosticSessionFlashbackExportsSource()
                 + "\n" + ReadDiagnosticSessionFlashbackExportScenariosSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs")
                 + "\n" + ReadDiagnosticSessionFlashbackMetricsSource()
@@ -133,6 +133,15 @@ static partial class Program
             + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Recording.cs")
             + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Playback.cs")
             + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.Preview.cs");
+    }
+
+    private static string ReadDiagnosticSessionFlashbackExportsSource()
+    {
+        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.SegmentCount.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.VerifyPayload.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.AudioSwitch.cs")
+            + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.SelectionCleanup.cs");
     }
 
     private static string ReadDiagnosticSessionFlashbackRejectedExportsSource()

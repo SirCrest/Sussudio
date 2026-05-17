@@ -55,20 +55,32 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
-        var exportsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
+        var exportsRootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
+            .Replace("\r\n", "\n");
+        var segmentCountText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.SegmentCount.cs")
+            .Replace("\r\n", "\n");
+        var verifyPayloadText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.VerifyPayload.cs")
+            .Replace("\r\n", "\n");
+        var audioSwitchText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.AudioSwitch.cs")
+            .Replace("\r\n", "\n");
+        var selectionCleanupText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.SelectionCleanup.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(exportsText, "internal static class DiagnosticSessionFlashbackExports");
-        AssertContains(exportsText, "internal static int? TryParseFlashbackExportSegmentCount(");
-        AssertContains(exportsText, "const string marker = \" from \";");
-        AssertContains(exportsText, "suffix.Contains(\"segment\", StringComparison.OrdinalIgnoreCase)");
-        AssertContains(exportsText, "internal static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath)");
-        AssertContains(exportsText, "[\"verificationProfile\"] = \"flashback-export\"");
-        AssertContains(exportsText, "internal static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
-        AssertContains(exportsText, "\"SetAudioEnabled\"");
-        AssertContains(exportsText, "internal static async Task CleanupFlashbackSelectionAsync(");
-        AssertContains(exportsText, "\"clear-in-out-points\"");
-        AssertContains(exportsText, "\"go-live\"");
+        AssertContains(exportsRootText, "internal static partial class DiagnosticSessionFlashbackExports");
+        AssertDoesNotContain(exportsRootText, "TryParseFlashbackExportSegmentCount(");
+        AssertDoesNotContain(exportsRootText, "CreateFlashbackExportVerifyPayload(");
+        AssertDoesNotContain(exportsRootText, "ToggleAudioEnabledDuringFlashbackExportAsync(");
+        AssertDoesNotContain(exportsRootText, "CleanupFlashbackSelectionAsync(");
+        AssertContains(segmentCountText, "internal static int? TryParseFlashbackExportSegmentCount(");
+        AssertContains(segmentCountText, "const string marker = \" from \";");
+        AssertContains(segmentCountText, "suffix.Contains(\"segment\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(verifyPayloadText, "internal static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath)");
+        AssertContains(verifyPayloadText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertContains(audioSwitchText, "internal static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
+        AssertContains(audioSwitchText, "\"SetAudioEnabled\"");
+        AssertContains(selectionCleanupText, "internal static async Task CleanupFlashbackSelectionAsync(");
+        AssertContains(selectionCleanupText, "\"clear-in-out-points\"");
+        AssertContains(selectionCleanupText, "\"go-live\"");
         AssertContains(exportScenariosText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExports;");
         AssertContains(stressText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExports;");
         AssertDoesNotContain(runnerText, "private static int? TryParseFlashbackExportSegmentCount(");

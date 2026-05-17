@@ -2644,11 +2644,12 @@ owns D3D slow-frame and CPU timing summaries, `.PlaybackCommands.cs` owns
 playback command-health deltas, and `.Counters.cs` owns shared counter-delta
 helpers.
 
-Diagnostic-session Flashback export helpers now live in
-`tools/Common/DiagnosticSessionFlashbackExports.cs`. They own strict export
-verification payload construction, rotated-export segment-count parsing,
-range-selection cleanup, and the range export audio-switch companion command
-while scenario command sequencing lives in a separate owner.
+Diagnostic-session Flashback export helpers now live in the
+`tools/Common/DiagnosticSessionFlashbackExports*.cs` partial family. The root
+is a marker shell, while strict export verification payload construction,
+rotated-export segment-count parsing, range-selection cleanup, and the range
+export audio-switch companion command each live in a named partial. Scenario
+command sequencing lives in separate scenario owners.
 
 Diagnostic-session Flashback export scenarios now live in a focused partial
 family rooted at `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs`.
@@ -2812,6 +2813,10 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackCycleScenarios.Encoder.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackExports.cs`
+- `DiagnosticSessionFlashbackExports.AudioSwitch.cs`
+- `DiagnosticSessionFlashbackExports.SegmentCount.cs`
+- `DiagnosticSessionFlashbackExports.SelectionCleanup.cs`
+- `DiagnosticSessionFlashbackExports.VerifyPayload.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Concurrent.cs`
 - `DiagnosticSessionFlashbackExportScenarios.DisableDuringExport.cs`
