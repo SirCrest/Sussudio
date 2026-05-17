@@ -39,7 +39,8 @@ static partial class Program
         AssertFlashbackRecordingQueueOverloadPolicy(flashbackSource);
         AssertFlashbackBufferRecoveryPolicy(flashbackSource, flashbackBufferSource, flashbackCleanupSource);
         AssertContains(captureServiceSource, "libAvSink.OnEncodingFailed = OnRecordingBackendFatalError");
-        AssertContains(captureServiceSource, "flashbackSink.SetFatalErrorCallback(OnFlashbackBackendFatalError)");
+        AssertContains(captureServiceSource, "OnFlashbackBackendFatalError,");
+        AssertContains(flashbackBackendSource, "flashbackSink.SetFatalErrorCallback(request.FatalErrorCallback)");
         AssertContains(captureServiceSource, "newSink.SetFatalErrorCallback(OnFlashbackBackendFatalError)");
         AssertContains(captureServiceSource, "if (sink == null && controller is { IsDisposed: false, IsInitialized: true })");
         AssertContains(captureServiceSource, "controller.PrepareForPreviewDetach();");
@@ -72,10 +73,10 @@ static partial class Program
         AssertContains(captureServiceSource, "_flashbackBackend.PreserveRecoverySegments");
         AssertContains(flashbackBackendSource, "MarkSessionPreservedForRecovery");
         AssertContains(flashbackBackendSource, "FLASHBACK_RECOVERY_PRESERVE");
-        AssertContains(captureServiceSource, "_flashbackBackend.ClearRecoveryPreserve();");
-        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_PURGE_WARN");
-        AssertContains(captureServiceSource, "flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;");
-        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_PLAYBACK_WARN");
+        AssertContains(flashbackBackendSource, "ClearRecoveryPreserve();");
+        AssertContains(flashbackBackendSource, "FLASHBACK_PREVIEW_ROLLBACK_PURGE_WARN");
+        AssertContains(flashbackBackendSource, "flashbackSink.FrameEncoded -= request.FrameEncodedHandler;");
+        AssertContains(flashbackBackendSource, "FLASHBACK_PREVIEW_ROLLBACK_PLAYBACK_WARN");
         AssertContains(captureServiceSource, "_flashbackBackend.ResolveSegmentPurge");
         AssertContains(flashbackBackendSource, "FLASHBACK_SEGMENT_PURGE_BLOCKED");
         AssertContains(captureServiceSource, "WaitForForceRotateIdle(TimeSpan.FromSeconds(10))");
@@ -372,7 +373,7 @@ static partial class Program
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_FAIL");
         AssertContains(captureServiceSource, "Logger.Log($\"{failureToken} type={ex.GetType().Name} error='{ex.Message}'\")");
         AssertContains(captureServiceSource, "new FlashbackProducerDetachRequest(");
-        AssertContains(captureServiceSource, "\"FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN\"");
+        AssertContains(flashbackBackendSource, "\"FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN\"");
         AssertContains(flashbackBackendSource, "Logger.Log($\"{request.WarningToken} target=video");
         AssertContains(flashbackBackendSource, "Logger.Log($\"{request.WarningToken} target=audio");
         AssertContains(flashbackBackendSource, "Logger.Log($\"{request.WarningToken} target=microphone");

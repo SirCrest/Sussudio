@@ -3316,10 +3316,12 @@ Remaining `tools/Common` ownership:
    The policy is now the legality/steady-state owner. The next deeper capture
    slices should keep it authoritative while introducing smaller owners for
    audio graph, recording controller, Flashback backend resources, and video
-   pipeline lifetime. `FlashbackBackendResources.cs` has started that resource
-   owner path by grouping the backend resource set and owning producer
-   attach/detach wiring; keep later Flashback backend slices there before
-   inventing another small owner.
+   pipeline lifetime. `FlashbackBackendResources.cs` now owns the preview
+   backend resource set, producer attach/detach wiring, startup construction,
+   install/playback initialization, and startup rollback cleanup. Keep later
+   Flashback backend mechanics there before inventing another small owner;
+   `CaptureService.FlashbackPreviewBackend.cs` should stay the transition
+   coordinator for AV1 probing, readiness waiting, and deferred cleanup handoff.
 
 ## Guardrails
 

@@ -43,6 +43,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewLifecycleText = ReadCaptureServicePreviewLifecycleSource();
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
+        var flashbackPreviewBackendText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs");
+        var flashbackBackendResourcesText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
         var viewModelCaptureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
         var startVideoPreview = ExtractTextBetween(
@@ -175,13 +177,27 @@ static partial class Program
         AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN");
         AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_CANCEL_DEFERRED");
 
-        AssertContains(captureServiceText, "_flashbackBackendSettings = CloneCaptureSettings(settings)");
+        AssertContains(captureServiceText, "await _flashbackBackend.StartPreviewBackendAsync(");
+        AssertContains(captureServiceText, "new FlashbackPreviewBackendStartRequest(");
+        AssertContains(captureServiceText, "CloneCaptureSettings(settings),");
         AssertContains(captureServiceText, "_flashbackBackendSettings = CloneCaptureSettings(_currentSettings)");
         AssertContains(captureServiceText, "_flashbackBackend.ClearSinkAndSettings();");
         AssertContains(captureServiceText, "_flashbackBackend.Clear();");
-        AssertContains(captureServiceText, "FlashbackPlaybackController? playbackController = null;");
+        AssertContains(flashbackBackendResourcesText, "public async Task<FlashbackPlaybackController> StartPreviewBackendAsync(");
+        AssertContains(flashbackBackendResourcesText, "var bufferManager = new FlashbackBufferManager(");
+        AssertContains(flashbackBackendResourcesText, "flashbackSink.SetFatalErrorCallback(request.FatalErrorCallback);");
+        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded += request.FrameEncodedHandler;");
+        AssertContains(flashbackBackendResourcesText, "Install(");
+        AssertContains(flashbackBackendResourcesText, "AttachProducers(");
+        AssertContains(flashbackBackendResourcesText, "playbackController.Initialize(");
+        AssertContains(flashbackBackendResourcesText, "private async Task RollBackPreviewBackendStartAsync(");
+        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded -= request.FrameEncodedHandler;");
+        AssertContains(flashbackBackendResourcesText, "request.ScheduleDeferredCleanup(");
+        AssertDoesNotContain(captureServiceText, "var bufferManager = new FlashbackBufferManager(");
+        AssertDoesNotContain(captureServiceText, "FlashbackPlaybackController? playbackController = null;");
+        AssertDoesNotContain(captureServiceText, "flashbackSink.SetFatalErrorCallback(OnFlashbackBackendFatalError);");
+        AssertDoesNotContain(flashbackPreviewBackendText, "flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;");
         AssertContains(captureServiceText, "controller is { IsDisposed: false, IsInitialized: false }");
-        AssertContains(captureServiceText, "(playbackController ?? _flashbackPlaybackController)?.Dispose();");
         AssertContains(coordinatorText, "controller == null || controller.IsDisposed");
         AssertContains(coordinatorText, "controller is { IsDisposed: false, IsInitialized: true, State: not FlashbackPlaybackState.Disabled }");
         AssertContains(coordinatorText, "? \"disposed\"");

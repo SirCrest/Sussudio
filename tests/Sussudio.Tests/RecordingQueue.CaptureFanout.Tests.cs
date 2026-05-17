@@ -138,6 +138,16 @@ static partial class Program
         AssertContains(backendSource, "public void ClearRecoveryPreserve()");
         AssertContains(backendSource, "public bool ResolveSegmentPurge(bool requested, string reason)");
         AssertContains(backendSource, "public void PreserveRecoverySegments(string reason)");
+        AssertContains(backendSource, "internal readonly record struct FlashbackPreviewBackendStartRequest(");
+        AssertContains(backendSource, "public async Task<FlashbackPlaybackController> StartPreviewBackendAsync(");
+        AssertContains(backendSource, "var bufferManager = new FlashbackBufferManager(");
+        AssertContains(backendSource, "flashbackSink.SetFatalErrorCallback(request.FatalErrorCallback);");
+        AssertContains(backendSource, "flashbackSink.FrameEncoded += request.FrameEncodedHandler;");
+        AssertContains(backendSource, "Install(");
+        AssertContains(backendSource, "AttachProducers(");
+        AssertContains(backendSource, "playbackController.Initialize(");
+        AssertContains(backendSource, "private async Task RollBackPreviewBackendStartAsync(");
+        AssertContains(backendSource, "request.ScheduleDeferredCleanup(");
         AssertContains(backendSource, "public async Task<FinalizeResult> FinalizeRecordingAsync(");
         AssertContains(backendSource, "private static FinalizeResult PreserveEndArtifactsOnFailure(");
         AssertContains(backendSource, "public FlashbackPlaybackController? TakePlaybackController()");
@@ -165,17 +175,21 @@ static partial class Program
         AssertDoesNotContain(captureSource, "private FlashbackPlaybackController? _flashbackPlaybackController;");
         AssertDoesNotContain(captureSource, "private CaptureSettings? _flashbackBackendSettings;");
         AssertContains(captureSource, "_flashbackBackend.HasAnyResource");
-        AssertContains(captureSource, "_flashbackBackend.Install(");
+        AssertContains(captureSource, "_flashbackBackend.StartPreviewBackendAsync(");
+        AssertContains(backendSource, "Install(");
+        AssertDoesNotContain(captureSource, "_flashbackBackend.Install(");
         AssertContains(captureSource, "_flashbackBackend.TakePlaybackController()");
         AssertContains(captureSource, "_flashbackBackend.AttachProducers(");
         AssertContains(captureSource, "new FlashbackProducerAttachRequest(");
         AssertContains(captureSource, "_flashbackBackend.DetachProducers(");
         AssertContains(captureSource, "_flashbackBackend.ResolveSegmentPurge(");
         AssertContains(captureSource, "_flashbackBackend.PreserveRecoverySegments(");
-        AssertContains(captureSource, "_flashbackBackend.ClearRecoveryPreserve();");
+        AssertContains(backendSource, "ClearRecoveryPreserve();");
         AssertContains(captureSource, "_flashbackBackend.FinalizeRecordingAsync(");
         AssertContains(captureSource, "_flashbackBackend.ClearSinkAndSettings();");
         AssertContains(captureSource, "_flashbackBackend.Clear();");
+        AssertDoesNotContain(captureSource, "var bufferManager = new FlashbackBufferManager(");
+        AssertDoesNotContain(captureSource, "FlashbackPlaybackController? playbackController = null;");
 
         return Task.CompletedTask;
     }
