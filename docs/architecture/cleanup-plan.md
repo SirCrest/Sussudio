@@ -217,6 +217,9 @@ scheduler, renderer pacing, present/display cadence, and preview display 1% low
 diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs` owns diagnostic lane text
 formatting used by diagnostic verdicts.
+`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs` owns
+Flashback recording, export, temp-cache, playback-command, and playback
+performance diagnostic lane text formatting.
 `AutomationDiagnosticsHub.Evaluation.cs` owns performance scoring.
 `AutomationDiagnosticsHub.EvaluationPolicy.cs` owns shared alert-detail
 formatting and health classifiers used by both alerts and diagnostic

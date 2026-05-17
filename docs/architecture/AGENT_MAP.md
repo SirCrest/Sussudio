@@ -186,6 +186,9 @@ Automation diagnostics ownership:
   display 1% low diagnostic verdicts.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs`
   owns diagnostic lane text formatting used by diagnostic verdicts.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs`
+  owns Flashback recording, export, temp-cache, playback-command, and playback
+  performance diagnostic lane text formatting.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` owns
   performance scoring.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.EvaluationPolicy.cs`

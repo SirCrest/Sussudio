@@ -29,6 +29,11 @@ static partial class Program
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationText, "\"source_capture\"");
         AssertDoesNotContain(diagnostics.DiagnosticEvaluationText, "var sourceTarget =");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static DiagnosticEvaluationLanes BuildDiagnosticEvaluationLanes(");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildFlashbackRecordingLane(health)");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackRecordingLane(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackExportLane(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackPlaybackPerformanceLane(");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesText, "var exportFailureKind =");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private readonly record struct DiagnosticEvaluationLanes(");
         AssertDoesNotContain(diagnostics.EvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertDoesNotContain(diagnostics.HubText, "private PerformanceEvaluation EvaluatePerformance(");
