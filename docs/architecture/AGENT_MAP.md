@@ -449,9 +449,11 @@ Important entry points:
 - `CaptureService.FlashbackControls.cs` owns Flashback public state, segment
   access, enable/disable mutations, restart entry points, and committed restart
   orchestration after preview backend teardown.
-- `CaptureService.FlashbackSettingsControls.cs` owns Flashback buffer/GPU
-  settings updates, active encoding-setting application, recording-format
-  changes, and encoder setting cycles.
+- `CaptureService.FlashbackBufferSettings.cs` owns Flashback buffer/GPU
+  settings updates and live playback-controller GPU decode propagation.
+- `CaptureService.FlashbackEncoderSettings.cs` owns active encoding-setting
+  application, recording-format changes, encoder setting cycles, and rollback
+  after failed Flashback buffer cycles.
 - `CaptureService.FlashbackAudioInputs.cs` owns WASAPI and microphone input
   restoration for Flashback preview/recording backends.
 - `CaptureService.FlashbackPreviewBackend.cs` owns Flashback preview backend

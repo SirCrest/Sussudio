@@ -847,10 +847,12 @@ Flashback-facing capture controls now live in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.FlashbackControls.cs` owns public
 Flashback state, segment access, enable/disable mutations, restart entry
 points, and committed restart orchestration after preview backend teardown.
-`Sussudio/Services/Capture/CaptureService.FlashbackSettingsControls.cs`
-owns buffer/GPU settings updates, active encoding-setting application,
-recording-format changes, and encoder-setting cycles while backend resource
-construction stays in the Flashback preview backend partials.
+`Sussudio/Services/Capture/CaptureService.FlashbackBufferSettings.cs`
+owns buffer/GPU settings updates and live playback-controller GPU decode
+propagation. `Sussudio/Services/Capture/CaptureService.FlashbackEncoderSettings.cs`
+owns active encoding-setting application, recording-format changes,
+encoder-setting cycles, and rollback after failed Flashback buffer cycles while
+backend resource construction stays in the Flashback preview backend partials.
 
 Flashback recording policy and session-context helpers now live in
 `Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`. That file owns

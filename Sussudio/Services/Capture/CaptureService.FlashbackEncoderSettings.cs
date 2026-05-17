@@ -5,43 +5,9 @@ using Sussudio.Models;
 
 namespace Sussudio.Services.Capture;
 
-// Flashback setting mutations: buffer/GPU options, recording format, encoder
-// parameters, and the guarded updates that feed Flashback restarts.
+// Flashback encoder mutations: codec/quality/preset/bitrate/split changes and rollback.
 public partial class CaptureService
 {
-    /// <summary>
-    /// Updates flashback-specific fields in the active capture settings without
-    /// requiring a full session restart. Call before <see cref="RestartFlashbackAsync"/>
-    /// so the rebuild uses the latest values.
-    /// </summary>
-    // REVIEWED 2026-04-07: called from UI thread only; values are independent scalars
-    // so a stale read from a background thread produces a slightly-off config, not a crash.
-    // RestartFlashbackAsync (which consumes these) acquires _sessionTransitionLock.
-    public Task UpdateFlashbackSettingsAsync(
-        int bufferMinutes,
-        bool gpuDecode,
-        CancellationToken cancellationToken = default)
-        => RunTransitionAsync(_sessionState, transitionToken =>
-        {
-            if (_currentSettings != null)
-            {
-                _currentSettings.FlashbackBufferMinutes = bufferMinutes;
-                _currentSettings.FlashbackGpuDecode = gpuDecode;
-            }
-
-            if (_flashbackPlaybackController != null)
-            {
-                _flashbackPlaybackController.GpuDecodeEnabled = gpuDecode;
-            }
-
-            if (_isRecording && IsFlashbackRecordingBackendActive())
-            {
-                _pendingFlashbackSettingsChange = true;
-            }
-
-            return Task.CompletedTask;
-        }, cancellationToken);
-
     /// <summary>
     /// Updates encoding-related fields in the active capture settings so that
     /// <see cref="RestartFlashbackAsync"/> picks up the latest bitrate/quality/preset.
