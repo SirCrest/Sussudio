@@ -162,8 +162,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "Status = captureRuntime.RecordingIntegrityStatus,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "RecordingIntegrityStatus = captureRuntime.RecordingIntegrityStatus,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionRecordingBackendText, "private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionRecordingBackendText, "MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)");
+        AssertContains(diagnostics.SnapshotProjectionRecordingOutputText, "private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)");
+        AssertContains(diagnostics.SnapshotProjectionRecordingOutputText, "MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "RecordingBackend = captureRuntime.RecordingBackend,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "MuxResult = captureRuntime.MuxSucceeded.HasValue");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingPipeline = BuildRecordingPipelineProjection(health);");

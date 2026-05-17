@@ -38,7 +38,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs")
             .Replace("\r\n", "\n");
-        var recordingBackendProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingBackend.cs")
+        var recordingOutputProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
@@ -48,12 +48,12 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "RecordingBackend = captureRuntime.RecordingBackend,");
         AssertDoesNotContain(snapshotFlatteningText, "MuxResult = captureRuntime.MuxSucceeded.HasValue");
 
-        AssertContains(recordingBackendProjectionText, "private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)");
-        AssertContains(recordingBackendProjectionText, "Backend = captureRuntime.RecordingBackend,");
-        AssertContains(recordingBackendProjectionText, "AudioPathMode = captureRuntime.AudioPathMode,");
-        AssertContains(recordingBackendProjectionText, "MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)");
-        AssertContains(recordingBackendProjectionText, "private static string ResolveMuxResult(bool? muxSucceeded)");
-        AssertContains(recordingBackendProjectionText, "private readonly record struct RecordingBackendProjection");
+        AssertContains(recordingOutputProjectionText, "private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)");
+        AssertContains(recordingOutputProjectionText, "Backend = captureRuntime.RecordingBackend,");
+        AssertContains(recordingOutputProjectionText, "AudioPathMode = captureRuntime.AudioPathMode,");
+        AssertContains(recordingOutputProjectionText, "MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)");
+        AssertContains(recordingOutputProjectionText, "private static string ResolveMuxResult(bool? muxSucceeded)");
+        AssertContains(recordingOutputProjectionText, "private readonly record struct RecordingBackendProjection");
 
         return Task.CompletedTask;
     }
