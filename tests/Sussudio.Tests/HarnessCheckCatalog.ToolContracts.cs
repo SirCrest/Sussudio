@@ -51,6 +51,9 @@ static partial class Program
             "Architecture agent map has unique tools/Common ownership entries",
             ArchitectureAgentMap_ToolsCommonOwnershipEntriesAreUnique);
         await AddCheckAsync(results,
+            "Test project avoids empty partial marker shells",
+            TestProject_DoesNotKeepEmptyPartialMarkerShells);
+        await AddCheckAsync(results,
             "Architecture agent map covers automation consumer checklist",
             ArchitectureAgentMap_CoversAutomationConsumerChecklist);
         await AddCheckAsync(results,

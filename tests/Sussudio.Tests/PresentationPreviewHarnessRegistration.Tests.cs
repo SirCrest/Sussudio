@@ -13,7 +13,6 @@ static partial class Program
     private static readonly string[] PresentationPreviewUiOwnershipTestFiles =
     {
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs",
-        "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.DeviceActions.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionBindings.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionPresentation.Tests.cs",
@@ -26,7 +25,6 @@ static partial class Program
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.PreviewScreenshot.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs",
-        "tests/Sussudio.Tests/MainWindow.ShellOwnership.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.Tests.cs",

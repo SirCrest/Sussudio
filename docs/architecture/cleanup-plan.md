@@ -459,12 +459,13 @@ ownership checks cover the full partial family.
 the diagnostic-session MCP surface index shell. Diagnostic-session coverage is
 split into `McpToolSurface.DiagnosticSession.Tool.Tests.cs` for MCP tool
 artifact contracts, `McpToolSurface.DiagnosticSession.Ownership.Tests.cs` for
-core helper ownership assertions, `McpToolSurface.DiagnosticSession.Flashback.Tests.cs`
-for Flashback scenario/metrics/wait/export ownership assertions,
+core helper ownership assertions,
+`McpToolSurface.DiagnosticSession.Flashback.*.Tests.cs` for Flashback
+scenario/metrics/wait/export ownership assertions,
 `McpToolSurface.DiagnosticSession.InfrastructureOwnership.Tests.cs` as a marker
 shell for focused infrastructure ownership tests, and
-`McpToolSurface.DiagnosticSession.Runner.Tests.cs` as a marker shell for
-focused reflective runner behavior tests. The runner behavior files now own
+`McpToolSurface.DiagnosticSession.Runner.*.Tests.cs` for focused reflective
+runner behavior tests. The runner behavior files now own
 final-snapshot artifact failures, sparse source-cadence health tolerance,
 Flashback export/playback command flow, unknown-initial-snapshot mutation
 safety, synthetic pipe-connect retry, and concurrent-output-directory lockout.
@@ -482,9 +483,7 @@ split into capacity/drop policy, scrub coalescing, and seek-slot barrier
 owners. Keep new Flashback tests in the closest owner file instead of
 regrowing the root helper shell.
 
-`tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` is now only the
-automation view-model test family marker shell. Automation view-model
-regression coverage is split into preview-volume persistence, recording
+Automation view-model regression coverage is split into preview-volume persistence, recording
 transition routing, async Flashback/probe surface assertions, diagnostics
 refresh, diagnostics projection ownership, runtime-safety behavior, audio
 command guards, UI settings, capture-mode routing, and Flashback cleanup
@@ -509,12 +508,11 @@ queue source-reader helper shell. Recording queue coverage is split into queue
 overload policy, LibAv sink, WASAPI, and capture fan-out / Flashback backend
 owner files.
 
-`tests/Sussudio.Tests/D3D11PreviewRenderer.Tests.cs` is now only the
-preview-renderer test family marker shell. D3D preview renderer coverage is
+D3D preview renderer coverage is
 split into geometry/screenshot helper contracts, cadence contracts, the large
 diagnostics contract, device-lost behavior, and frame-flow/shared-device
-assertions. Source ownership coverage has its own marker shell plus focused
-ContractsAndMetrics, RenderPipeline, and RuntimeCapture owner files.
+assertions. Source ownership coverage lives in focused ContractsAndMetrics,
+RenderPipeline, RenderThread, RuntimeCapture owner files.
 
 `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` now keeps only shared
 reflection helpers. Pure `Sussudio.Automation.Contracts` command ID, manifest
@@ -548,8 +546,6 @@ guards also live in `CommandHandlers.SourceOwnership.Tests.cs`; they require
 `AutomationCommandKind` enum overloads at routing call sites while leaving
 labels and wire IDs catalog-backed, with the dynamic diagnostic-session runner
 channel intentionally remaining string-based.
-`tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` is now only the
-architecture-doc test family marker shell.
 `tests/Sussudio.Tests/ArchitectureDocs.AgentMapReferences.Tests.cs` owns
 AGENT_MAP reference resolution.
 `tests/Sussudio.Tests/ArchitectureDocs.SourceReferencePaths.Tests.cs` owns
@@ -594,8 +590,6 @@ lease lifecycle/fan-out contracts, MJPEG jitter frame-ingress/adaptive policy,
 MJPEG jitter queue/drop/reprime behavior, and queued lease release contracts
 for D3D, recording, and Flashback paths.
 
-`tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
-is now only the automation diagnostics projection test family marker shell.
 Projection ownership checks are split into snapshot/status, audio, capture and
 source, MJPEG, recording, system resources and A/V sync, preview, and Flashback
 owner files.
@@ -652,9 +646,8 @@ names for callers. Window close completion, close-request dispatch, and
 recording finalization are covered by the explicit window close lifecycle
 section below.
 
-`tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` is now only the
-MCP command-routing test family marker shell. MCP command-routing coverage is
-split into capture, host/pipe, recording, formatter batching, device, pipeline,
+MCP command-routing coverage is split into capture, host/pipe, recording,
+formatter batching, device, pipeline,
 UI, and verification owner files. Captured `request.command` ID assertions now
 flow through `AssertAutomationCommandId`, which reads the golden command table
 instead of duplicating numeric IDs in routing tests. Cross-tool source guards
@@ -786,11 +779,10 @@ bookkeeping, and queue latency accounting now live in
 `CaptureSessionCoordinator.Snapshot.cs`. Dispose/drain/cancel lifecycle for the
 worker queue and cancellation token source now lives in
 `CaptureSessionCoordinator.Disposal.cs`.
-`tests/Sussudio.Tests/CaptureSessionCoordinator.Tests.cs` is now only the
-coordinator test-family marker shell. API/command/snapshot contracts, focused
+Capture session coordinator API/command/snapshot contracts, focused
 source-ownership contracts, queue behavior, Flashback/cancellation behavior,
 transition policy, and shared reflection harness helpers now live in separate
-named files beside it.
+named files.
 Queued Flashback mutations, read-only Flashback status/projection helpers,
 export forwarding, and active playback-controller readiness checks now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs`.
@@ -2364,10 +2356,9 @@ keeps the old capture and recording option method names used by
 `SetupBindings()`.
 
 MainWindow capture ownership tests now mirror these runtime owners instead of
-living in one capture test grab-bag. `MainWindow.ControllerOwnership.Capture.Tests.cs`
-is only the marker shell; selection bindings, selection normalizer policy,
-device actions, option presentation, option affordance policy, option bindings,
-and option tooltip formatting each have a focused
+living in one capture test grab-bag. Selection bindings, selection normalizer
+policy, device actions, option presentation, option affordance policy, option
+bindings, and option tooltip formatting each have a focused
 `MainWindow.ControllerOwnership.Capture.*.Tests.cs` file registered with the
 presentation-preview harness coverage check.
 

@@ -95,4 +95,28 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task TestProject_DoesNotKeepEmptyPartialMarkerShells()
+    {
+        var repoRoot = GetRepoRoot();
+        var testRoot = Path.Combine(repoRoot, "tests", "Sussudio.Tests");
+        var emptyMarkerShells = Directory.EnumerateFiles(testRoot, "*.cs", SearchOption.TopDirectoryOnly)
+            .Where(path =>
+            {
+                var normalized = File.ReadAllText(path).Replace("\r\n", "\n").Trim();
+                return normalized == "static partial class Program\n{\n}";
+            })
+            .Select(path => Path.GetRelativePath(repoRoot, path).Replace('\\', '/'))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToArray();
+
+        if (emptyMarkerShells.Length > 0)
+        {
+            throw new InvalidOperationException(
+                "Empty test partial marker shells add navigation cost without ownership: " +
+                string.Join(", ", emptyMarkerShells));
+        }
+
+        return Task.CompletedTask;
+    }
 }

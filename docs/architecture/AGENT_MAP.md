@@ -1223,10 +1223,6 @@ Primary current owners:
   MainWindow UI-dispatching contract checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.StatsSnapshot.Tests.cs` owns stats
   snapshot builder contract checks.
-- `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs` is the MainWindow UI
-  contract marker shell.
-- `tests/Sussudio.Tests/MainWindow.ShellOwnership.Tests.cs` is the MainWindow
-  shell-ownership marker shell.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs` owns
   MainWindow shell chrome ownership assertions for the settings shelf and window
   title.
@@ -1252,8 +1248,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs` owns
   MainWindow responsive shell layout controller-adapter and breakpoint/placement
   policy assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs` is the
-  MainWindow capture ownership test family marker shell.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
   owns capture selection binding/sync controller-adapter ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs`
@@ -1273,8 +1267,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.PreviewScreenshot.Tests.cs`
   owns MainWindow preview screenshot workflow and text-policy ownership
   assertions.
-- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Tests.cs` is the
-  MainWindow Flashback ownership test-family marker shell.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Polling.Tests.cs` owns
   Flashback status/playback polling controller ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Timeline.Tests.cs` owns
@@ -1289,8 +1281,6 @@ Primary current owners:
   owns Flashback export progress presentation ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Settings.Tests.cs` owns
   Flashback settings binding and command controller ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.Tests.cs` is the automation
-  view-model test family marker shell.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs` owns
   automation preview enable/disable command ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Hdr.Tests.cs` owns
@@ -1367,9 +1357,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsLoop.Tests.cs`
   owns diagnostics-loop polling contracts that keep options snapshots out of
   hot diagnostics refresh paths.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
-  is now only the automation diagnostics projection test family marker shell.
-  Keep new projection ownership assertions in the focused owner files:
+- Keep new automation diagnostics projection ownership assertions in the focused
+  owner files:
   `DiagnosticsProjection.Snapshot.Tests.cs`, `DiagnosticsProjection.Audio.Tests.cs`,
   `DiagnosticsProjection.Capture.Tests.cs`, `DiagnosticsProjection.Mjpeg.Tests.cs`,
   `DiagnosticsProjection.Recording.Tests.cs`, `DiagnosticsProjection.System.Tests.cs`,
@@ -1421,8 +1410,6 @@ Primary current owners:
   stop audio-ramp ordering assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease and export-operation lock assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Tests.cs` is the
-  Flashback routing test family marker shell.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`
   owns MainViewModel Flashback coordinator-routing assertions, including the
   automation Flashback enable/restart entry-point owner.
@@ -1432,8 +1419,6 @@ Primary current owners:
   handoff.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Toggle.Tests.cs`
   owns Flashback timeline toggle rollback and lockout assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.Tests.cs` is the
-  Flashback backend test family marker shell.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.PreviewPipeline.Tests.cs`
   owns retained Flashback preview backend, audio restoration, and preview stop
   rollback assertions.
@@ -1466,8 +1451,6 @@ Primary current owners:
   snapshot property-list, nullability, and helper assertion methods.
 - `tests/Sussudio.Tests/SnapshotModels.ReflectionJson.cs` owns shared
   reflection JSON round-trip and registered-property coverage helpers.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.Tests.cs` is the automation
-  snapshot model marker shell.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.SourceTelemetry.Tests.cs`
   owns source-signal projection drift guards.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpeg.Tests.cs` owns
@@ -1579,8 +1562,6 @@ Primary current owners:
   validation success and colorimetry/pixel-format mismatch scenarios.
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Cadence.Tests.cs` owns
   NTSC frame-rate tolerance scenarios.
-- `tests/Sussudio.Tests/D3D11PreviewRenderer.Tests.cs` is the preview-renderer
-  test family marker shell.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.Geometry.Tests.cs` owns letterbox,
   black-edge counting, and PNG CRC helper contract tests.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.Cadence.Tests.cs` owns present
@@ -1597,9 +1578,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.SourceReaders.cs`
   owns source-loading setup for the preview-renderer diagnostics contract
   assertion.
-- `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.Tests.cs` is the
-  renderer source-ownership marker shell.
-  `D3D11PreviewRenderer.SourceOwnership.ContractsAndMetrics.Tests.cs` owns
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.ContractsAndMetrics.Tests.cs` owns
   configuration, native interop, frame type/ownership, DXGI frame-stat,
   slow-frame, and metric-tracking assertions.
   `D3D11PreviewRenderer.SourceOwnership.RenderPipeline.Tests.cs` owns panel
@@ -1631,11 +1610,10 @@ Primary current owners:
   ValidateOptions reflection coverage for valid options, output path and
   dimension rejection, HDR codec/P010 constraints, and frame-rate
   numerator/denominator pairing.
-- `tests/Sussudio.Tests/LibAvEncoder.Tests.cs` is the marker shell for
-  LibAvEncoder harness checks; `LibAvEncoder.*.Tests.cs` and
-  `LibAvEncoder.Helpers.cs` own codec policy, frame-size, diagnostics,
-  HDR metadata, output lifecycle, source-ownership, and shared source-reading
-  helpers.
+- `tests/Sussudio.Tests/LibAvEncoder.*.Tests.cs` and
+  `tests/Sussudio.Tests/LibAvEncoder.Helpers.cs` own LibAvEncoder codec policy,
+  frame-size, diagnostics, HDR metadata, output lifecycle, source-ownership,
+  and shared source-reading helpers.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Tests.cs` owns the live
   dispatcher source-family reader; `AutomationCommandDispatcher.*.Tests.cs`
   and `AutomationCommandDispatcher.Helpers.cs` own authorization, manifest,
@@ -1670,8 +1648,7 @@ Primary current owners:
   serialization contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
   reliability-gates script contract test.
-- `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` is the architecture-doc test
-  family marker shell. `ArchitectureDocs.AgentMapReferences.Tests.cs` owns
+- `tests/Sussudio.Tests/ArchitectureDocs.AgentMapReferences.Tests.cs` owns
   AGENT_MAP file/folder reference drift checks;
   `ArchitectureDocs.SourceReferencePaths.Tests.cs` owns literal `ReadRepoFile`
   source-shape path drift checks;
@@ -1700,8 +1677,7 @@ Primary current owners:
   owns ssctl formatter source ownership assertions, while
   `tests/Sussudio.Tests/Formatters.Timeline.Tests.cs` owns timeline table and
   summary output checks.
-- `tests/Sussudio.Tests/CommandHandlers.Tests.cs` is the ssctl command-handler
-  test family marker shell. `CommandHandlers.Helpers.cs` owns source-family
+- `tests/Sussudio.Tests/CommandHandlers.Helpers.cs` owns source-family
   reader, routing-capture helpers, and `AssertSsctlCommandRequest`, which routes
   captured ssctl `request.command` checks through the shared golden command table
   instead of per-test numeric IDs. Pipe-captured routing coverage is split by
@@ -1813,9 +1789,9 @@ Primary current owners:
   DTO contract tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.RecordingPipeline.Tests.cs`
   owns recording pipeline queue capacity and drop-policy tests.
-- `tests/Sussudio.Tests/CaptureSessionCoordinator.Tests.cs` is the capture
-  session coordinator marker shell. Focused coordinator coverage lives in
-  `CaptureSessionCoordinator.Api`, `CaptureSessionCoordinator.Contracts`,
+- Focused capture session coordinator coverage lives in
+  `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs`,
+  `CaptureSessionCoordinator.Contracts`,
   `CaptureSessionCoordinator.Queue`, `CaptureSessionCoordinator.Flashback`,
   `CaptureSessionCoordinator.Ownership`, and `CaptureSessionTransitionPolicy`
   files; command/source ownership checks include the focused
@@ -1837,9 +1813,8 @@ Primary current owners:
   settings tools. It also owns source guards that fixed-command MCP automation
   routes call `AutomationCommandKind` enum overloads at the pipe seam while
   preserving existing command labels and wire IDs.
-- `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` is now the
-  MCP command-routing test family marker shell. Keep route/formatter assertions
-  in the focused `CommandRouting.Capture`, `CommandRouting.Host`,
+- Keep MCP command-routing route/formatter assertions in the focused
+  `CommandRouting.Capture`, `CommandRouting.Host`,
   `CommandRouting.Recording`, `CommandRouting.Formatting`,
   `CommandRouting.Device`, `CommandRouting.Pipeline`, `CommandRouting.Ui`, and
   `CommandRouting.Verification` owner files. Captured command-ID assertions use
@@ -1866,8 +1841,6 @@ Primary current owners:
   are further split across `ResultOwnership.Builder.*.Tests.cs` files by core,
   preview scheduler, overview/capture, Flashback, preview, analysis, and
   artifact handoff ownership.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Tests.cs` is
-  the diagnostic-session Flashback ownership marker shell.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.HealthPolicy.Tests.cs`
   owns diagnostic-session Flashback warmup health-policy ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`
@@ -1886,9 +1859,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Export.Tests.cs`
   owns diagnostic-session Flashback export ownership assertions for export
   scenario flows, export helpers, and shared segment wait/parsing collaborators.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs` is
-  the diagnostic-session runner behavior marker shell. Focused runner behavior
-  coverage lives beside it in `Runner.Artifacts`, `Runner.HealthPolicy`,
+- Focused diagnostic-session runner behavior coverage lives in
+  `McpToolSurface.DiagnosticSession.Runner.Artifacts`,
+  `Runner.HealthPolicy`,
   `Runner.FlashbackPlayback`, `Runner.InitialSnapshot`, `Runner.PipeRetry`,
   and `Runner.Concurrency` files that execute the reflective runner against
   synthetic command delegates.
@@ -1977,10 +1950,10 @@ Primary current owners:
   playback in/out marker API, normalization, disposal, and marker clamp tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Thread.Tests.cs` owns Flashback
   playback thread recovery and live-preview transition tests.
-- `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` is the
-  Flashback playback command queue marker shell. Capacity/drop-oldest,
+- Flashback playback command queue capacity/drop-oldest,
   scrub-coalescing source ownership, and seek-slot barrier behavior coverage live in focused
-  `CommandQueue.Capacity`, `CommandQueue.ScrubCoalescing`, and
+  `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Capacity.Tests.cs`,
+  `CommandQueue.ScrubCoalescing`, and
   `CommandQueue.SeekSlots` owner files.
 - `tests/Sussudio.Tests/Flashback.Playback.Cadence.Tests.cs` owns Flashback
   playback cadence, submit-failure, fMP4 reopen, and metrics reset tests.
