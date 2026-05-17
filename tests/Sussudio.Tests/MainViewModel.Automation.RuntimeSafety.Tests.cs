@@ -63,7 +63,7 @@ static partial class Program
 
     private static Task MainViewModelCapture_RecordingFailuresPropagateToCallers()
     {
-        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
             .Replace("\r\n", "\n");
@@ -271,7 +271,7 @@ static partial class Program
             + "\n" + ReadCaptureServicePreviewLifecycleSource()
             + "\n" + ReadCaptureServiceAudioSource();
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
-        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
+        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)");
@@ -341,9 +341,7 @@ static partial class Program
     {
         var appText = ReadRepoFile("Sussudio/App.xaml.cs")
             .Replace("\r\n", "\n");
-        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
-            .Replace("\r\n", "\n");
-        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(recordingLifecycleText, "internal Task StopRecordingForEmergencyAsync");
@@ -357,7 +355,14 @@ static partial class Program
         AssertDoesNotContain(appText, "StopRecordingAndWaitAsync().ConfigureAwait(false)");
         AssertDoesNotContain(appText, "viewModel == null || !viewModel.IsRecording");
         AssertDoesNotContain(recordingLifecycleText, "if (!IsRecording)");
-        AssertDoesNotContain(captureText, "internal Task StopRecordingForEmergencyAsync");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
+            "MainViewModel capture lifecycle facade partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.RecordingLifecycle.cs")),
+            "MainViewModel recording lifecycle facade partial");
 
         return Task.CompletedTask;
     }

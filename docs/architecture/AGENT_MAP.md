@@ -2229,14 +2229,14 @@ Primary current owners:
   negotiated rational/source-telemetry overrides, rational/decimal fallbacks,
   requested pixel format, MJPEG decode forcing, HDR/preview mode, Flashback
   options, and audio/microphone device projection.
-  `MainViewModel.Capture.cs` is the compatibility facade for device
+  `MainViewModel.cs` keeps the compatibility facade entry points for device
   initialization, preview start/stop, selected-device apply, and preview
   reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
   owns the underlying preview lifecycle operations: device initialization,
   preview start/stop, selected-device apply, debounced reinitialization,
   Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
   and reinit gate release.
-  `MainViewModel.RecordingLifecycle.cs` owns the stable recording facade:
+  `MainViewModel.cs` owns the stable recording facade:
   toggle, desired-state, graceful-stop, and emergency-stop entry points.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`
   owns recording toggle serialization, desired-state routing, graceful stop,

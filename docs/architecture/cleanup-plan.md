@@ -3052,16 +3052,16 @@ Remaining `tools/Common` ownership:
    seeding, auto-resolved effective FPS, runtime/source rational overrides,
    rational/decimal fallbacks, requested pixel format, MJPEG decode forcing,
    HDR/preview mode, Flashback options, and audio/microphone device projection.
-   `MainViewModel.Capture.cs` is the stable
-   compatibility facade for device initialization, preview start/stop,
-   selected-device apply, and preview reinitialization. Preview lifecycle
+   `MainViewModel.cs` keeps the stable compatibility facade entry points for
+   device initialization, preview start/stop, selected-device apply, and preview
+   reinitialization. Preview lifecycle
    implementation now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`:
    device initialization, preview start/stop, selected-device apply, debounced
    reinitialization, Flashback-cycle wait-before-reinit, renderer-stop handoff,
    teardown restart, and gate release. Output folder browse/open-recordings button workflows now live in
    `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`.
-   Recording facade entry points stay in `MainViewModel.RecordingLifecycle.cs`,
+   Recording facade entry points now stay in `MainViewModel.cs`,
    while recording toggle serialization, desired-state routing, graceful stop,
    emergency stop, transition gating, concrete start/stop operation execution,
    and failure/cancellation state repair now live in
@@ -3216,7 +3216,7 @@ Remaining `tools/Common` ownership:
    preset, and output-path automation now live in
    `MainViewModel.AutomationRecordingSettings.cs`.
    The automation recording desired-state bridge enters through
-   `MainViewModel.RecordingLifecycle.cs` and is serialized by
+   `MainViewModel.cs` and is serialized by
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`.
    Capture resolution, frame-rate, video-format, and MJPEG decoder worker-count
    automation mutators now live in `MainViewModel.AutomationCaptureSettings.cs`;

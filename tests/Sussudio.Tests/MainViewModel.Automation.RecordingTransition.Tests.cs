@@ -5,7 +5,7 @@ static partial class Program
 {
     private static Task MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate()
     {
-        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs")
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
             .Replace("\r\n", "\n");
@@ -34,7 +34,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.ViewModelRuntimeSnapshot.cs")
                 .Replace("\r\n", "\n");
-        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
+        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs")
             .Replace("\r\n", "\n");
@@ -58,6 +58,14 @@ static partial class Program
                 "ViewModels",
                 "MainViewModel.AutomationRecordingLifecycle.cs")),
             "MainViewModel automation recording lifecycle bridge partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.RecordingLifecycle.cs")),
+            "MainViewModel recording lifecycle facade partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
+            "MainViewModel capture lifecycle facade partial");
         AssertContains(recordingLifecycleText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(recordingLifecycleText, "=> SetRecordingDesiredStateAsync(enabled, cancellationToken);");
         AssertContains(recordingLifecycleText, "internal Task SetRecordingDesiredStateAsync");

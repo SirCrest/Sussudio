@@ -161,7 +161,7 @@ static partial class Program
         AssertContains(viewModelCaptureStateText, "private const int PreviewReinitializeDebounceMs = 250;");
         AssertContains(viewModelPreviewStateText, "private int _previewReinitializeGeneration;");
         AssertDoesNotContain(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
-        AssertContains(viewModelFiles["MainViewModel.Capture.cs"], "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
         AssertContains(rawPreviewLifecycleControllerText, "var reinitializeGeneration = Interlocked.Increment(ref _viewModel._previewReinitializeGeneration);");
         AssertContains(rawPreviewLifecycleControllerText, "await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);");
         AssertContains(rawPreviewLifecycleControllerText, "Volatile.Read(ref _viewModel._previewReinitializeGeneration) != reinitializeGeneration");

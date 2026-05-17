@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Dispatching;
 using Sussudio.Controllers;
+using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
@@ -40,6 +41,49 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     internal void CancelPendingPreviewRestart()
         => _previewLifecycleController.CancelPendingPreviewRestart();
 
+    private Task InitializeDeviceAsync(CancellationToken cancellationToken = default)
+        => _previewLifecycleController.InitializeDeviceAsync(cancellationToken);
+
+    public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)
+        => _previewLifecycleController.StartPreviewAsync(userInitiated, cancellationToken);
+
+    public Task StopPreviewAsync()
+        => StopPreviewAsync(userInitiated: true, teardownPipeline: false, CancellationToken.None);
+
+    public Task StopPreviewAsync(bool userInitiated)
+        => StopPreviewAsync(userInitiated, teardownPipeline: false, CancellationToken.None);
+
+    public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline)
+        => StopPreviewAsync(userInitiated, teardownPipeline, CancellationToken.None);
+
+    public Task ApplySelectedDeviceAsync(CaptureDevice device, CancellationToken cancellationToken = default)
+        => _previewLifecycleController.ApplySelectedDeviceAsync(device, cancellationToken);
+
+    private Task ReinitializeDeviceAsync(string reason)
+        => _previewLifecycleController.ReinitializeDeviceAsync(reason);
+
+    public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)
+        => _previewLifecycleController.StopPreviewAsync(userInitiated, teardownPipeline, cancellationToken);
+
+    public Task ToggleRecordingAsync()
+        => _recordingTransitionController.ToggleRecordingAsync();
+
+    public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+        => SetRecordingDesiredStateAsync(enabled, cancellationToken);
+
+    internal Task SetRecordingDesiredStateAsync(bool enabled, CancellationToken cancellationToken = default)
+        => _recordingTransitionController.SetRecordingDesiredStateAsync(enabled, cancellationToken);
+
+    /// <summary>
+    /// Graceful-stop entry point for callers that must NOT short-circuit on the
+    /// toggle CAS gate (e.g. the window-close handler). If a toggle is in flight,
+    /// await it; afterwards, if still recording, initiate a fresh stop.
+    /// </summary>
+    public Task StopRecordingAndWaitAsync(CancellationToken cancellationToken = default)
+        => _recordingTransitionController.StopRecordingAndWaitAsync(cancellationToken);
+
+    internal Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
+        => _recordingTransitionController.StopRecordingForEmergencyAsync(cancellationToken);
 
     public MainViewModel()
         : this(MainViewModelDependencies.CreateDefault())
@@ -97,15 +141,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _windowHandle = handle;
     }
 
-    // -- Capture lifecycle methods are in MainViewModel.Capture.cs -----
-    // -- Recording lifecycle methods are in MainViewModel.RecordingLifecycle.cs -----
+    // -- Capture and recording lifecycle facade methods stay in this root compatibility facade -----
     // -- Recording observable state is in MainViewModel.RecordingState.cs -----
     // -- Capture settings projection adapter is in MainViewModel.CaptureSettings.cs -----
     // -- Automation methods are split across MainViewModel.Automation*.cs ---------
 
     // -- Partial class references ----
-    // Capture lifecycle facade: MainViewModel.Capture.cs; preview lifecycle owner: MainViewModelPreviewLifecycleController.cs
-    // Recording lifecycle facade: MainViewModel.RecordingLifecycle.cs; transition owner: MainViewModelRecordingTransitionController.cs
+    // Capture lifecycle facade: this file; preview lifecycle owner: MainViewModelPreviewLifecycleController.cs
+    // Recording lifecycle facade: this file; transition owner: MainViewModelRecordingTransitionController.cs
     // Recording state: MainViewModel.RecordingState.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs and CaptureSettingsProjectionBuilder.cs
     // Flashback automation: MainViewModel.AutomationFlashback.cs

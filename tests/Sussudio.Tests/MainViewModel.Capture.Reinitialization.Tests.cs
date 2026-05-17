@@ -4,7 +4,7 @@ static partial class Program
 {
     private static Task MainViewModelPreviewLifecycle_LivesInController()
     {
-        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
+        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");
@@ -15,6 +15,10 @@ static partial class Program
 
         AssertContains(captureText, "private Task ReinitializeDeviceAsync(string reason)");
         AssertContains(captureText, "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
+            "MainViewModel capture lifecycle facade partial");
         if (System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.PreviewReinitialization.cs")))
         {
             throw new System.InvalidOperationException("Preview reinitialization should not live in a tiny pass-through partial.");
