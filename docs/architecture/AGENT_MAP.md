@@ -983,14 +983,18 @@ Primary current owners:
   recording finalization side effects during pre-close and post-close cleanup:
   the 120-second stop budget, `StopRecordingAndWaitAsync` wait race, timeout/
   failure breadcrumbs, status text, and shutdown-content dim/restore policy.
+- `Sussudio/Controllers/Window/WindowAppClosingController.cs` owns
+  `AppWindow.Closing` decision choreography: trigger logging, recording-aware
+  close cancellation, duplicate-stop guard, pre-close recording stop handoff,
+  completion, and second-close request.
 - `Sussudio/Controllers/Window/WindowShutdownCleanupController.cs` owns the
   post-`Closed` cleanup order: cleanup latch, close completion, closing-state
   mark, timer stops, event detaches, preview shutdown, post-close recording
   finalization handoff, automation disposal, NVML disposal, and ViewModel
   disposal.
 - `Sussudio/MainWindow.CloseLifecycle.cs` owns the XAML/AppWindow close adapter:
-  `AppWindow.Closing`, recording-aware pre-close cancellation/completion
-  choreography, and the stable `RequestWindowClose()` adapter.
+  `RegisterCloseLifecycle`, `CloseAsync`, and the stable
+  `RequestWindowClose()` adapter.
 - `Sussudio/MainWindow.ShutdownCleanup.cs` is the XAML-facing `Closed` adapter
   and wires MainWindow cleanup delegates into `WindowShutdownCleanupController`.
 - `Sussudio/Controllers/Window/NativeWindowBootstrapController.cs` owns native window

@@ -1,7 +1,7 @@
-using Microsoft.UI.Xaml;
 using System;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.UI.Xaml;
 using Sussudio.Controllers;
 
 namespace Sussudio;
@@ -13,6 +13,7 @@ public sealed partial class MainWindow
     private readonly WindowCloseLifecycleController _windowCloseLifecycleController = new();
     private readonly WindowCloseRecordingFinalizationController _windowCloseRecordingFinalizationController = new();
     private WindowCloseRequestController _windowCloseRequestController = null!;
+    private WindowAppClosingController _windowAppClosingController = null!;
     private bool _isWindowClosing => _windowCloseLifecycleController.IsClosing;
 
     private void InitializeWindowCloseRequestController()
@@ -25,6 +26,16 @@ public sealed partial class MainWindow
             IsRecording = () => ViewModel.IsRecording,
             IsRecordingTransitioning = () => ViewModel.IsRecordingTransitioning
         });
+
+        _windowAppClosingController = new WindowAppClosingController(new WindowAppClosingControllerContext
+        {
+            LifecycleController = _windowCloseLifecycleController,
+            IsRecording = () => ViewModel.IsRecording,
+            IsRecordingTransitioning = () => ViewModel.IsRecordingTransitioning,
+            GetStatusText = () => ViewModel.StatusText,
+            StopRecordingBeforeCloseAsync = TryStopRecordingBeforeCloseAsync,
+            RequestWindowClose = RequestWindowClose
+        });
     }
 
     private void RegisterCloseLifecycle(Microsoft.UI.Windowing.AppWindow appWindow)
@@ -33,61 +44,7 @@ public sealed partial class MainWindow
     private async void MainWindow_Closing(
         Microsoft.UI.Windowing.AppWindow sender,
         Microsoft.UI.Windowing.AppWindowClosingEventArgs args)
-    {
-        try
-        {
-            var snapshot = _windowCloseLifecycleController.Snapshot;
-            Logger.Log(
-                "WINDOW_CLOSING_TRIGGER " +
-                $"requested={snapshot.Requested} " +
-                $"isRecording={ViewModel.IsRecording} " +
-                $"stack=\n{new System.Diagnostics.StackTrace(true)}");
-        }
-        catch (Exception logEx)
-        {
-            System.Diagnostics.Trace.TraceWarning($"WINDOW_CLOSING_TRIGGER log failed: {logEx.Message}");
-        }
-
-        if (_windowCloseLifecycleController.IsCleanupStarted ||
-            _windowCloseLifecycleController.IsAllowedAfterRecordingStop)
-        {
-            CompleteWindowCloseRequest();
-            return;
-        }
-
-        if (!ViewModel.IsRecording && !ViewModel.IsRecordingTransitioning)
-        {
-            CompleteWindowCloseRequest();
-            return;
-        }
-
-        args.Cancel = true;
-        _windowCloseLifecycleController.ClearRequested();
-
-        if (!_windowCloseLifecycleController.TryBeginRecordingStop())
-        {
-            Logger.Log("WINDOW_CLOSE_RECORDING_STOP: close already waiting for recording stop.");
-            return;
-        }
-
-        try
-        {
-            var stopped = await TryStopRecordingBeforeCloseAsync();
-            if (!stopped)
-            {
-                CompleteWindowCloseRequest(new InvalidOperationException(ViewModel.StatusText));
-                return;
-            }
-
-            _windowCloseLifecycleController.AllowAfterRecordingStop();
-            CompleteWindowCloseRequest();
-            RequestWindowClose();
-        }
-        finally
-        {
-            _windowCloseLifecycleController.EndRecordingStop();
-        }
-    }
+        => await _windowAppClosingController.HandleClosingAsync(args);
 
     private Task<bool> TryStopRecordingBeforeCloseAsync()
         => _windowCloseRecordingFinalizationController.StopBeforeCloseAsync(

@@ -94,6 +94,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs")
             .Replace("\r\n", "\n");
+        var appClosingControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAppClosingController.cs")
+            .Replace("\r\n", "\n");
         var closeRequestControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRequestController.cs")
             .Replace("\r\n", "\n");
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs")
@@ -101,18 +103,19 @@ static partial class Program
 
         AssertContains(windowCtorText, "RegisterCloseLifecycle(appWindow);");
         AssertContains(closeLifecycleText, "appWindow.Closing += MainWindow_Closing;");
-        AssertContains(closeLifecycleText, "args.Cancel = true;");
+        AssertContains(closeLifecycleText, "_windowAppClosingController.HandleClosingAsync(args)");
+        AssertContains(appClosingControllerText, "args.Cancel = true;");
         AssertContains(closeLifecycleText, "TryStopRecordingBeforeCloseAsync");
-        AssertContains(closeLifecycleText, "if (!ViewModel.IsRecording && !ViewModel.IsRecordingTransitioning)");
+        AssertContains(appClosingControllerText, "if (!_context.IsRecording() && !_context.IsRecordingTransitioning())");
         AssertContains(closeLifecycleText, "=> _windowCloseRecordingFinalizationController.StopBeforeCloseAsync(");
-        AssertContains(closeLifecycleText, "RequestWindowClose();");
+        AssertContains(appClosingControllerText, "_context.RequestWindowClose();");
         AssertContains(closeLifecycleText, "_windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken)");
         AssertContains(closeLifecycleText, "=> _windowCloseRequestController.RequestClose();");
         AssertContains(closeRequestControllerText, "_context.CloseWindow();");
         AssertContains(closeRequestControllerText, "_context.LifecycleController.CompleteRequest();");
         AssertContains(closeRequestControllerText, "_context.ExitApplication();");
-        AssertContains(closeLifecycleText, "CompleteWindowCloseRequest(new InvalidOperationException(ViewModel.StatusText));");
-        AssertContains(closeLifecycleText, "CompleteWindowCloseRequest();");
+        AssertContains(appClosingControllerText, "_context.LifecycleController.CompleteRequest(new InvalidOperationException(_context.GetStatusText()))");
+        AssertContains(appClosingControllerText, "_context.LifecycleController.CompleteRequest();");
         AssertContains(closeLifecycleControllerText, "private Task GetCompletionTask(CancellationToken cancellationToken)");
         AssertContains(closeLifecycleControllerText, "var enqueueFailure = new InvalidOperationException(\"Failed to enqueue window close action on the UI thread.\");");
         AssertContains(closeRecordingFinalizationControllerText, "private const int StopBudgetMs = 120_000;");
@@ -123,6 +126,7 @@ static partial class Program
         AssertContains(closeRecordingFinalizationControllerText, "RECORDING_FINALIZE_FAILED_AFTER_CLOSE ");
         AssertDoesNotContain(closeLifecycleText, "Task.WhenAny(");
         AssertDoesNotContain(closeLifecycleText, "StopRecordingAndWaitAsync");
+        AssertDoesNotContain(closeLifecycleText, "args.Cancel = true;");
         AssertDoesNotContain(closeLifecycleText, "MP4 may be truncated.");
 
         return Task.CompletedTask;
