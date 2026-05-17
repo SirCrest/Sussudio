@@ -16,6 +16,10 @@ static partial class Program
             DiagnosticEvaluationLanesFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Alerts.cs"),
             SignalAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.cs"),
+            SignalAlertsPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.Preview.cs"),
+            SignalAlertsCaptureText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.Capture.cs"),
+            SignalAlertsAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.Audio.cs"),
+            SignalAlertsRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SignalAlerts.Recording.cs"),
             FlashbackAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackAlerts.cs"),
             FlashbackRecordingAlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs"),
             FlashbackRecordingAlertsExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackRecordingAlerts.Export.cs"),
@@ -111,6 +115,10 @@ static partial class Program
         public string DiagnosticEvaluationLanesFlashbackText { get; init; } = string.Empty;
         public string AlertsText { get; init; } = string.Empty;
         public string SignalAlertsText { get; init; } = string.Empty;
+        public string SignalAlertsPreviewText { get; init; } = string.Empty;
+        public string SignalAlertsCaptureText { get; init; } = string.Empty;
+        public string SignalAlertsAudioText { get; init; } = string.Empty;
+        public string SignalAlertsRecordingText { get; init; } = string.Empty;
         public string FlashbackAlertsText { get; init; } = string.Empty;
         public string FlashbackRecordingAlertsText { get; init; } = string.Empty;
         public string FlashbackRecordingAlertsExportText { get; init; } = string.Empty;
@@ -198,6 +206,10 @@ static partial class Program
                 DiagnosticEvaluationLanesFlashbackText,
                 AlertsText,
                 SignalAlertsText,
+                SignalAlertsPreviewText,
+                SignalAlertsCaptureText,
+                SignalAlertsAudioText,
+                SignalAlertsRecordingText,
                 FlashbackAlertsText,
                 FlashbackRecordingAlertsText,
                 FlashbackRecordingAlertsExportText,

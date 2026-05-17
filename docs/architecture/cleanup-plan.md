@@ -192,8 +192,13 @@ availability/request state, runtime/readiness fallback, HDR warmup/downgrade,
 pipeline parity, and telemetry-alignment projection consumed by the automation
 snapshot DTO.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation and active-alert
-transitions. `AutomationDiagnosticsHub.SignalAlerts.cs` owns preview, capture,
-audio-signal, and recording-growth alert rules.
+transitions. `AutomationDiagnosticsHub.SignalAlerts.cs` owns signal alert
+orchestration. `AutomationDiagnosticsHub.SignalAlerts.Preview.cs` owns preview
+blank/stall, startup, cadence, and display 1% low alert rules.
+`AutomationDiagnosticsHub.SignalAlerts.Capture.cs` owns capture cadence drop and
+capture 1% low alert rules. `AutomationDiagnosticsHub.SignalAlerts.Audio.cs`
+owns audio signal alert rules. `AutomationDiagnosticsHub.SignalAlerts.Recording.cs`
+owns recording output growth alert rules.
 `AutomationDiagnosticsHub.FlashbackAlerts.cs` owns Flashback alert
 orchestration. `AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs` owns
 Flashback recording alert orchestration and shared condition setup.

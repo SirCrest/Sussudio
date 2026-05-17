@@ -159,7 +159,15 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs` owns alert
   rule evaluation and active-alert transitions.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.cs` owns
-  preview, capture, audio-signal, and recording-growth alert rules.
+  signal alert orchestration.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.Preview.cs`
+  owns preview blank/stall, startup, cadence, and display 1% low alert rules.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.Capture.cs`
+  owns capture cadence drop and capture 1% low alert rules.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.Audio.cs`
+  owns audio signal alert rules.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SignalAlerts.Recording.cs`
+  owns recording output growth alert rules.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackAlerts.cs`
   owns Flashback alert orchestration.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs`
