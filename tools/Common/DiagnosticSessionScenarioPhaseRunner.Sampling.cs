@@ -20,37 +20,10 @@ internal static partial class DiagnosticSessionScenarioPhaseRunner
                 context.WriteSamplingLiveStateBestEffortAsync)
             .ConfigureAwait(false);
 
-        await backgroundTasks.AwaitScenarioTasksAsync().ConfigureAwait(false);
-        scenarioPhase.FlashbackRecordingSettingsDeferredPresetState = await backgroundTasks
-            .AwaitRecordingSettingsDeferredAsync(scenarioPhase.FlashbackRecordingSettingsDeferredPresetState)
+        await DiagnosticSessionScenarioPhaseCompletion.CompleteAfterSamplingAsync(
+                context,
+                backgroundTasks,
+                scenarioPhase)
             .ConfigureAwait(false);
-
-        await DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(
-                context.ScenarioPlan,
-                context.OutputDirectory,
-                context.Actions,
-                context.Warnings,
-                context.CommandChannel.SendAsync,
-                context.RunCancellationToken)
-            .ConfigureAwait(false);
-
-        scenarioPhase.PresentMon = await backgroundTasks.AwaitPresentMonAsync(scenarioPhase.PresentMon, context.Warnings).ConfigureAwait(false);
-    }
-
-    private static async Task DrainBackgroundTasksAfterFaultAsync(
-        DiagnosticSessionScenarioPhaseContext context,
-        DiagnosticSessionBackgroundTasks backgroundTasks,
-        DiagnosticSessionScenarioPhaseState scenarioPhase)
-    {
-        var backgroundTaskDrain = await backgroundTasks.ObserveAfterFaultAsync(
-                context.Warnings,
-                context.SetStage,
-                context.RecordTerminalException,
-                context.WriteLiveStateBestEffortAsync,
-                scenarioPhase.PresentMon,
-                scenarioPhase.FlashbackRecordingSettingsDeferredPresetState)
-            .ConfigureAwait(false);
-        scenarioPhase.PresentMon = backgroundTaskDrain.PresentMon;
-        scenarioPhase.FlashbackRecordingSettingsDeferredPresetState = backgroundTaskDrain.RecordingSettingsDeferredPresetState;
     }
 }

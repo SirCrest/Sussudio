@@ -2353,10 +2353,12 @@ and final snapshot capture, result-build handoff, and terminal live-state write.
 for setup/startup, sampling/completion delegation, and fault drain delegation.
 `DiagnosticSessionScenarioPhaseRunner.Models.cs` owns the
 explicit phase context/state/result records.
-`DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owns scenario sampling and
-post-sampling completion: live-state sampling setup, sample-loop invocation,
-scenario background task awaits, recording-settings deferred await,
-rejected-export handling, PresentMon await, and background-task fault drain.
+`DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owns scenario sampling:
+live-state sampling setup, sample-loop invocation, and handoff to completion.
+`DiagnosticSessionScenarioPhaseCompletion.cs` owns post-sampling completion and
+fault drain: scenario background task awaits, recording-settings deferred
+await, rejected-export handling, PresentMon await, and interrupted
+background-task drain.
 `DiagnosticSessionRunExecution.Completion.cs` owns the final result-build
 request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
@@ -2932,9 +2934,10 @@ Remaining `tools/Common` ownership:
    `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
    phase. `DiagnosticSessionScenarioPhaseRunner.Models.cs`
    owns the explicit scenario context/state/result handoff, with
-   `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owning sampling,
-   post-sampling background-task completion, rejected-export handling,
-   PresentMon await, and fault drain. Scenario catalog, initial scenario setup, optional scenario
+   `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owning sampling and
+   `DiagnosticSessionScenarioPhaseCompletion.cs` owning post-sampling
+   background-task completion, rejected-export handling, PresentMon await, and
+   fault drain. Scenario catalog, initial scenario setup, optional scenario
    startup, cleanup mutation ownership, post-cleanup recording checks,
    post-run snapshot fetches, command send/failure plumbing, and result
    construction are extracted; next, split remaining production runner

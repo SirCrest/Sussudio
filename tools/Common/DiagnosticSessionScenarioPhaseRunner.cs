@@ -53,7 +53,7 @@ internal static partial class DiagnosticSessionScenarioPhaseRunner
         {
             context.RecordTerminalException(ex, context.GetLastStage());
             context.ScenarioCancellationSource.Cancel();
-            await DrainBackgroundTasksAfterFaultAsync(context, backgroundTasks, scenarioPhase).ConfigureAwait(false);
+            await DiagnosticSessionScenarioPhaseCompletion.DrainAfterFaultAsync(context, backgroundTasks, scenarioPhase).ConfigureAwait(false);
             await context.WriteLiveStateBestEffortAsync().ConfigureAwait(false);
         }
 
