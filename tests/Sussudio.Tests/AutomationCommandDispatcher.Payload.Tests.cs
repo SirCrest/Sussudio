@@ -204,8 +204,18 @@ static partial class Program
     {
         var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
             .Replace("\r\n", "\n");
+        var diagnosticCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.DiagnosticCommands.cs")
+            .Replace("\r\n", "\n");
         AssertContains(dispatcherText, "case AutomationCommandKind.GetAudioRampTrace:");
-        AssertContains(dispatcherText, "var maxEntries = GetInt(payload, \"maxEntries\") ?? 512;");
+        AssertContains(dispatcherText, "ExecuteGetDiagnosticsCommand(payload, correlationId)");
+        AssertContains(dispatcherText, "ExecuteGetPerformanceTimelineCommand(payload, correlationId)");
+        AssertContains(dispatcherText, "ExecuteGetAudioRampTraceCommandAsync(payload, correlationId, cancellationToken)");
+        AssertContains(diagnosticCommandsText, "private AutomationCommandResponse ExecuteGetDiagnosticsCommand(");
+        AssertContains(diagnosticCommandsText, "var maxEvents = GetInt(payload, \"maxEvents\") ?? 100;");
+        AssertContains(diagnosticCommandsText, "private AutomationCommandResponse ExecuteGetPerformanceTimelineCommand(");
+        AssertContains(diagnosticCommandsText, "var maxEntries = GetInt(payload, \"maxEntries\") ?? 240;");
+        AssertContains(diagnosticCommandsText, "var maxEntries = GetInt(payload, \"maxEntries\") ?? 512;");
+        AssertContains(diagnosticCommandsText, "GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken)");
 
         var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
         var kind = Enum.Parse(enumType, "GetAudioRampTrace");

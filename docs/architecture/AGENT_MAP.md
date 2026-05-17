@@ -83,7 +83,10 @@ Automation diagnostics ownership:
   error shaping.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`
   owns the custom automation command router for multi-field payloads, special
-  response shapes, diagnostics, and capture routing.
+  response shapes, and capture routing.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.DiagnosticCommands.cs`
+  owns diagnostic readback command bodies for recent events, performance
+  timeline, and audio ramp traces behind the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs`
   owns Flashback action/export/segment/restart/enable command bodies behind the
   custom command router.

@@ -44,11 +44,7 @@ public sealed partial class AutomationCommandDispatcher
                 return CreateAcknowledgedResponse(correlationId, "Recordings folder open requested.");
 
             case AutomationCommandKind.GetDiagnostics:
-            {
-                var maxEvents = GetInt(payload, "maxEvents") ?? 100;
-                var events = _diagnosticsHub.GetRecentEvents(maxEvents);
-                return CreateResponse(correlationId, "Diagnostics retrieved.", data: events);
-            }
+                return ExecuteGetDiagnosticsCommand(payload, correlationId);
 
             case AutomationCommandKind.RefreshDevices:
                 await _viewModel.RefreshDevicesForAutomationAsync(cancellationToken).ConfigureAwait(false);
@@ -286,18 +282,10 @@ public sealed partial class AutomationCommandDispatcher
             }
 
             case AutomationCommandKind.GetPerformanceTimeline:
-            {
-                var maxEntries = GetInt(payload, "maxEntries") ?? 240;
-                var timeline = _diagnosticsHub.GetPerformanceTimeline(maxEntries);
-                return CreateResponse(correlationId, "Performance timeline retrieved.", data: timeline);
-            }
+                return ExecuteGetPerformanceTimelineCommand(payload, correlationId);
 
             case AutomationCommandKind.GetAudioRampTrace:
-            {
-                var maxEntries = GetInt(payload, "maxEntries") ?? 512;
-                var trace = await _viewModel.GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken).ConfigureAwait(false);
-                return CreateResponse(correlationId, "Audio ramp trace retrieved.", data: trace);
-            }
+                return await ExecuteGetAudioRampTraceCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.RestartFlashback:
                 return await ExecuteRestartFlashbackCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);

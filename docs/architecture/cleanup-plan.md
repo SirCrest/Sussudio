@@ -241,7 +241,10 @@ Automation command dispatch now keeps the root router focused on the command
 envelope: manifest revision checks, auth/readiness gates, trivial-handler
 dispatch, and error shaping. `AutomationCommandDispatcher.CustomCommands.cs`
 owns the custom command switch/router for commands that need multi-field
-payloads, special response shapes, diagnostics, or capture/Flashback routing.
+payloads, special response shapes, or capture/Flashback routing.
+`AutomationCommandDispatcher.DiagnosticCommands.cs` owns diagnostic readback
+command bodies for recent events, performance timeline, and audio ramp traces
+behind the custom command router.
 `AutomationCommandDispatcher.FlashbackCommands.cs` owns Flashback action,
 export, segment, restart, and enable command bodies behind the custom command
 router.
