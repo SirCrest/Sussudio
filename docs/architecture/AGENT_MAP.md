@@ -2211,8 +2211,10 @@ Primary current owners:
   export command execution, linked cancellation, and dispatcher cleanup.
   `MainViewModel.FlashbackSegments.cs` owns read-only Flashback segment
   projection for UI, CLI, and MCP callers.
-  `MainViewModel.FrameRateOptions.cs` owns frame-rate option rebuilding and
-  observable collection mutation. `MainViewModel.FrameRateAutoSelectionPolicy.cs`
+  `MainViewModel.FrameRateOptions.cs` owns frame-rate selection reactions and
+  auto-selection entry points. `MainViewModel.FrameRateOptionRebuild.cs` owns
+  frame-rate option rebuilding and observable collection mutation.
+  `MainViewModel.FrameRateAutoSelectionPolicy.cs`
   owns pure frame-rate option choice: pending SDR bucket preference,
   Source-rate nearest match with timing-family tie-break, generic auto fallback,
   and previous/manual selection fallback.

@@ -2993,8 +2993,10 @@ Remaining `tools/Common` ownership:
    and dispatcher cleanup now live in
    `MainViewModel.FlashbackExportAutomation.cs`. Read-only Flashback segment
    projection for UI, CLI, and MCP callers now lives in
-   `MainViewModel.FlashbackSegments.cs`. Frame-rate option rebuilding, observable
-   collection mutation now live in `MainViewModel.FrameRateOptions.cs`. Pure
+   `MainViewModel.FlashbackSegments.cs`. Frame-rate selection reactions and
+   auto-selection entry points now live in `MainViewModel.FrameRateOptions.cs`,
+   while frame-rate option rebuilding and observable collection mutation live in
+   `MainViewModel.FrameRateOptionRebuild.cs`. Pure
    frame-rate option choice, including pending SDR bucket preference,
    Source-rate nearest match with timing-family tie-break, generic auto fallback,
    and previous/manual selection fallback, now lives in

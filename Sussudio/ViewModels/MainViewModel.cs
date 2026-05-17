@@ -140,7 +140,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device selection reactions: MainViewModel.DeviceSelection.cs
     // Device format probes: MainViewModel.DeviceFormatProbes.cs
     // Capture option visibility: MainViewModel.CaptureOptionVisibility.cs
-    // Frame-rate options: MainViewModel.FrameRateOptions.cs
+    // Frame-rate selection: MainViewModel.FrameRateOptions.cs; rebuild: MainViewModel.FrameRateOptionRebuild.cs
     // Automatic frame-rate selection policy: MainViewModel.FrameRateAutoSelectionPolicy.cs
     // Frame-rate/mode selection state: MainViewModel.ModeSelectionState.cs
     // Frame-rate timing state wrappers: MainViewModel.FrameRateTiming.cs; pure timing policy: FrameRateTimingPolicy.cs

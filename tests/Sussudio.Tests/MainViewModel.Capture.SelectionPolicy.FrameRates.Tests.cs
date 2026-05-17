@@ -8,11 +8,13 @@ static partial class Program
     private static Task ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates()
     {
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
+        var frameRateRebuildText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptionRebuild.cs").Replace("\r\n", "\n");
         var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateSourceFilterPolicy.cs").Replace("\r\n", "\n");
         var captureOptionVisibilityText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureOptionVisibility.cs").Replace("\r\n", "\n");
 
-        AssertContains(mainViewModelText, "FrameRateSourceFilterPolicy.Apply(");
-        AssertContains(mainViewModelText, "ShowAllCaptureOptions);");
+        AssertContains(frameRateRebuildText, "FrameRateSourceFilterPolicy.Apply(");
+        AssertContains(frameRateRebuildText, "ShowAllCaptureOptions);");
+        AssertContains(mainViewModelText, "RebuildFrameRateOptions();");
         AssertContains(captureOptionVisibilityText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
         AssertContains(captureOptionVisibilityText, "if (IsRecording)");
         AssertContains(captureOptionVisibilityText, "_pendingModeOptionsRefresh = true;");
@@ -28,8 +30,8 @@ static partial class Program
         AssertContains(sourceFilterPolicyText, "showAllCaptureOptions");
         AssertContains(sourceFilterPolicyText, "!IsSourceFilteredFrameRateDisableReason(option.DisableReason)");
         AssertContains(sourceFilterPolicyText, "CloneOption(option, isEnabled: true, disableReason: string.Empty)");
-        AssertDoesNotContain(mainViewModelText, "private static bool IsSourceFilteredFrameRateDisableReason(");
-        AssertDoesNotContain(mainViewModelText, "higher capture fps duplicates frames");
+        AssertDoesNotContain(frameRateRebuildText, "private static bool IsSourceFilteredFrameRateDisableReason(");
+        AssertDoesNotContain(frameRateRebuildText, "higher capture fps duplicates frames");
 
         return Task.CompletedTask;
     }
@@ -37,12 +39,18 @@ static partial class Program
     private static Task FrameRateSourceFilterPolicy_LivesInFocusedHelper()
     {
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
+        var frameRateRebuildText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptionRebuild.cs").Replace("\r\n", "\n");
         var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateSourceFilterPolicy.cs").Replace("\r\n", "\n");
         var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs").Replace("\r\n", "\n");
 
-        AssertContains(frameRateOptionsText, "var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
-        AssertContains(frameRateOptionsText, "AvailableFrameRates.Clear();");
-        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
+        AssertContains(frameRateOptionsText, "/// Frame-rate selection reactions and auto-selection entry points.");
+        AssertContains(frameRateOptionsText, "private void SelectAutoFrameRate(bool rebuildOptions)");
+        AssertDoesNotContain(frameRateOptionsText, "private void RebuildFrameRateOptions()");
+        AssertContains(frameRateRebuildText, "/// Frame-rate option rebuilding and observable collection mutation.");
+        AssertContains(frameRateRebuildText, "private void RebuildFrameRateOptions()");
+        AssertContains(frameRateRebuildText, "var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
+        AssertContains(frameRateRebuildText, "AvailableFrameRates.Clear();");
+        AssertContains(frameRateRebuildText, "ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
         AssertContains(modeSelectionText, "private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)");
         AssertContains(sourceFilterPolicyText, "private static class FrameRateSourceFilterPolicy");
         AssertContains(sourceFilterPolicyText, "internal static FrameRateSourceFilterResult Apply(");
@@ -64,17 +72,19 @@ static partial class Program
     private static Task FrameRateAutoSelectionPolicy_LivesInFocusedHelper()
     {
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
+        var frameRateRebuildText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptionRebuild.cs").Replace("\r\n", "\n");
         var autoSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateAutoSelectionPolicy.cs").Replace("\r\n", "\n");
         var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs").Replace("\r\n", "\n");
 
-        AssertContains(frameRateOptionsText, "/// Frame-rate option building and observable collection mutation.");
         AssertContains(frameRateOptionsText, "FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(");
-        AssertContains(frameRateOptionsText, "AvailableFrameRates.Clear();");
-        AssertContains(frameRateOptionsText, "AvailableFrameRates.Add(option);");
-        AssertContains(frameRateOptionsText, "IsAutoFrameRateSelected = selection.SelectAutoOption;");
-        AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
-        AssertContains(frameRateOptionsText, "_pendingSdrAutoSelectionForDeviceChange = false;");
+        AssertContains(frameRateRebuildText, "FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(");
+        AssertContains(frameRateRebuildText, "AvailableFrameRates.Clear();");
+        AssertContains(frameRateRebuildText, "AvailableFrameRates.Add(option);");
+        AssertContains(frameRateRebuildText, "IsAutoFrameRateSelected = selection.SelectAutoOption;");
+        AssertContains(frameRateRebuildText, "ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
+        AssertContains(frameRateRebuildText, "_pendingSdrAutoSelectionForDeviceChange = false;");
         AssertDoesNotContain(frameRateOptionsText, "OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))");
+        AssertDoesNotContain(frameRateRebuildText, "OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))");
         AssertContains(autoSelectionPolicyText, "private static class FrameRateAutoSelectionPolicy");
         AssertContains(autoSelectionPolicyText, "private readonly record struct FrameRateAutoSelectionSource(");
         AssertContains(autoSelectionPolicyText, "private sealed record FrameRateAutoSelectionRequest(");
