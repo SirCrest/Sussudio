@@ -216,8 +216,11 @@ Automation diagnostics ownership:
   owns capture memory preference, requested/negotiated video subtype, and
   frame-ledger projection consumed by `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs`
-  owns source capture cadence, preview visual cadence, and center-crop visual
-  cadence projection inputs consumed by `AutomationSnapshot`.
+  owns source capture cadence projection inputs consumed by
+  `AutomationSnapshot`.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs`
+  owns preview visual cadence and center-crop visual cadence projection inputs
+  consumed by `AutomationSnapshot`.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs`
   owns CPU MJPEG totals, compressed queue, and failure projection inputs
   consumed by `AutomationSnapshot`.

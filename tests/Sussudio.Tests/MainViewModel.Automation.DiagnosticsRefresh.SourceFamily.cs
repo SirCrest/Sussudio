@@ -39,6 +39,7 @@ static partial class Program
             SnapshotProjectionCaptureFormatText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs"),
             SnapshotProjectionCaptureTransportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureTransport.cs"),
             SnapshotProjectionCaptureCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs"),
+            SnapshotProjectionVisualCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs"),
             SnapshotProjectionMjpegText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs"),
             SnapshotProjectionMjpegTimingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.MjpegTiming.cs"),
             SnapshotProjectionMjpegPreviewJitterText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs"),
@@ -125,6 +126,7 @@ static partial class Program
         public string SnapshotProjectionCaptureFormatText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureTransportText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureCadenceText { get; init; } = string.Empty;
+        public string SnapshotProjectionVisualCadenceText { get; init; } = string.Empty;
         public string SnapshotProjectionMjpegText { get; init; } = string.Empty;
         public string SnapshotProjectionMjpegTimingText { get; init; } = string.Empty;
         public string SnapshotProjectionMjpegPreviewJitterText { get; init; } = string.Empty;

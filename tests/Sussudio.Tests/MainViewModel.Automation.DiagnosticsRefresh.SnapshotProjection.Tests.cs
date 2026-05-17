@@ -129,9 +129,13 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionText, "var captureCadence = BuildCaptureCadenceProjection(health);");
         AssertContains(diagnostics.SnapshotProjectionCaptureCadenceText, "private static CaptureCadenceProjection BuildCaptureCadenceProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionCaptureCadenceText, "EstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,");
-        AssertContains(diagnostics.SnapshotProjectionCaptureCadenceText, "VisualCenterRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "VisualCenterCadenceRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs,");
+        AssertContains(diagnostics.SnapshotProjectionText, "var visualCadence = BuildVisualCadenceProjection(health);");
+        AssertContains(diagnostics.SnapshotProjectionVisualCadenceText, "private static VisualCadenceProjection BuildVisualCadenceProjection(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.SnapshotProjectionVisualCadenceText, "CenterRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = visualCadence.CenterRecentChangeIntervalsMs,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionCaptureCadenceText, "VisualCenterRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs");
         AssertContains(diagnostics.SnapshotProjectionText, "var mjpeg = BuildMjpegProjection(health);");
         AssertContains(diagnostics.SnapshotProjectionMjpegText, "private static MjpegProjection BuildMjpegProjection(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SnapshotProjectionMjpegText, "var timing = BuildMjpegTimingProjection(health);");

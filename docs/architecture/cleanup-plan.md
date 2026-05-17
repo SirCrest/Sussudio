@@ -93,8 +93,10 @@ the automation snapshot DTO.
 memory preference, requested/negotiated video subtype, and frame-ledger
 projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureCadence.cs` owns source
-capture cadence, preview visual cadence, and center-crop visual cadence
-projection inputs consumed by the automation snapshot DTO.
+capture cadence projection inputs consumed by the automation snapshot DTO.
+`AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs` owns preview
+visual cadence and center-crop visual cadence projection inputs consumed by the
+automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` owns CPU MJPEG totals,
 compressed queue, and failure projection inputs consumed by the automation
 snapshot DTO.

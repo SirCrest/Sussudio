@@ -49,6 +49,7 @@ public sealed partial class AutomationDiagnosticsHub
         var recordingBackend = BuildRecordingBackendProjection(captureRuntime);
         var recordingPipeline = BuildRecordingPipelineProjection(health);
         var captureCadence = BuildCaptureCadenceProjection(health);
+        var visualCadence = BuildVisualCadenceProjection(health);
         var mjpeg = BuildMjpegProjection(health);
         var previewD3D = BuildPreviewD3DProjection(
             previewRuntime,
@@ -80,6 +81,7 @@ public sealed partial class AutomationDiagnosticsHub
             recordingBackend,
             recordingPipeline,
             captureCadence,
+            visualCadence,
             mjpeg,
             previewD3D,
             hdrPipeline,

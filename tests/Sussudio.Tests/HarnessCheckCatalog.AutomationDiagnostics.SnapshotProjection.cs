@@ -33,6 +33,9 @@ static partial class Program
             "Automation diagnostics capture cadence projection lives in focused partial",
             AutomationDiagnosticsCaptureCadenceProjection_LivesInFocusedPartial);
         await AddCheckAsync(results,
+            "Automation diagnostics visual cadence projection lives in focused partial",
+            AutomationDiagnosticsVisualCadenceProjection_LivesInFocusedPartial);
+        await AddCheckAsync(results,
             "Automation diagnostics MJPEG projection lives in focused partial",
             AutomationDiagnosticsMjpegProjection_LivesInFocusedPartial);
         await AddCheckAsync(results,
