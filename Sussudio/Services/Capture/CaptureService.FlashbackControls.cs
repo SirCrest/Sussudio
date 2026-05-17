@@ -8,8 +8,7 @@ using Sussudio.Services.Flashback;
 namespace Sussudio.Services.Capture;
 
 // Flashback-facing control surface: public state, enable/settings mutations,
-// restarts, and encoder-setting cycles. Backend resource construction remains
-// in the Flashback orchestration partial.
+// restarts, and encoder-setting cycles.
 public partial class CaptureService
 {
     public bool IsFlashbackActive => _flashbackSink != null;
@@ -137,6 +136,24 @@ public partial class CaptureService
             UpdateEncodingSettings(settings);
             await RestartFlashbackCoreAsync(transitionToken).ConfigureAwait(false);
         }, cancellationToken);
+    }
+
+    private async Task RestartFlashbackCoreAsync(CancellationToken cancellationToken)
+    {
+        await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
+
+        var committedRestartToken = CancellationToken.None;
+        var unifiedVideoCapture = _unifiedVideoCapture;
+        var settings = _currentSettings;
+        if (!_flashbackEnabled || unifiedVideoCapture == null || settings == null)
+        {
+            Logger.Log($"FLASHBACK_RESTART_TEARDOWN_ONLY enabled={_flashbackEnabled} capture={unifiedVideoCapture != null} settings={settings != null}");
+            return;
+        }
+
+        await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, committedRestartToken).ConfigureAwait(false);
+        Logger.Log("FLASHBACK_RESTART_OK");
+        cancellationToken.ThrowIfCancellationRequested();
     }
 
 }

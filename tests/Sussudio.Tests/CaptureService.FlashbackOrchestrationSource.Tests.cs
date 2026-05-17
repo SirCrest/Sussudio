@@ -4,7 +4,7 @@ static partial class Program
 {
     private static readonly string[] CaptureServiceFlashbackOrchestrationFiles =
     {
-        "Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs",
+        "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackAudioInputs.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs",
         "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackendDisposal.cs",
@@ -92,23 +92,24 @@ static partial class Program
 
     private static Task CaptureService_FlashbackOrchestrationLivesInFocusedPartials()
     {
-        var orchestrationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackOrchestration.cs");
+        var controlsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs");
         var audioInputsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackAudioInputs.cs");
         var previewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs");
         var disposalText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackendDisposal.cs");
         var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs");
 
-        AssertContains(orchestrationText, "private async Task RestartFlashbackCoreAsync(");
+        AssertContains(controlsText, "public Task RestartFlashbackAsync(");
+        AssertContains(controlsText, "private async Task RestartFlashbackCoreAsync(");
         AssertContains(audioInputsText, "private async Task EnsureFlashbackAudioInputsAsync(");
         AssertContains(previewBackendText, "private async Task EnsureFlashbackPreviewBackendAsync(");
         AssertContains(disposalText, "private async Task DisposeFlashbackPreviewBackendAsync(");
         AssertContains(disposalText, "private readonly record struct FlashbackPreviewBackendDisposalRequest(");
         AssertContains(disposalText, "private async Task DisposeFlashbackPreviewBackendCoreAsync(");
         AssertContains(bufferCycleText, "private async Task CycleFlashbackBufferAsync(");
-        AssertDoesNotContain(orchestrationText, "private async Task EnsureFlashbackAudioInputsAsync(");
-        AssertDoesNotContain(orchestrationText, "private async Task EnsureFlashbackPreviewBackendAsync(");
-        AssertDoesNotContain(orchestrationText, "private async Task DisposeFlashbackPreviewBackendAsync(");
-        AssertDoesNotContain(orchestrationText, "private async Task CycleFlashbackBufferAsync(");
+        AssertDoesNotContain(controlsText, "private async Task EnsureFlashbackAudioInputsAsync(");
+        AssertDoesNotContain(controlsText, "private async Task EnsureFlashbackPreviewBackendAsync(");
+        AssertDoesNotContain(controlsText, "private async Task DisposeFlashbackPreviewBackendAsync(");
+        AssertDoesNotContain(controlsText, "private async Task CycleFlashbackBufferAsync(");
 
         return Task.CompletedTask;
     }

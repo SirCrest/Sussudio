@@ -926,11 +926,12 @@ must not write `_sessionState`.
 
 Flashback-facing capture controls now live in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.FlashbackControls.cs` owns public
-Flashback state, segment access, enable/disable mutations, and restart entry
-points. `Sussudio/Services/Capture/CaptureService.FlashbackSettingsControls.cs`
+Flashback state, segment access, enable/disable mutations, restart entry
+points, and committed restart orchestration after preview backend teardown.
+`Sussudio/Services/Capture/CaptureService.FlashbackSettingsControls.cs`
 owns buffer/GPU settings updates, active encoding-setting application,
 recording-format changes, and encoder-setting cycles while backend resource
-construction stays in the Flashback orchestration partial.
+construction stays in the Flashback preview backend partials.
 
 Flashback recording policy and session-context helpers now live in
 `Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`. That file owns
