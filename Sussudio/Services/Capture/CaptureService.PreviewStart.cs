@@ -153,69 +153,7 @@ public partial class CaptureService
                 _activeVideoInputPixelFormat = unifiedVideoCapture.IsP010 ? "p010le" : "nv12";
                 TryCorrectFrameRateFromTelemetry();
 
-                if (settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId))
-                {
-                    wasapiCapture = new WasapiAudioCapture();
-                    await wasapiCapture.InitializeAsync(audioDeviceId, transitionToken).ConfigureAwait(false);
-                    wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-                    wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
-                    wasapiCapture.Start();
-                    _wasapiAudioCapture = wasapiCapture;
-                }
-                else if (settings.AudioEnabled)
-                {
-                    Logger.Log("Audio preview requested but no audio capture device is available; continuing with video-only preview.");
-                }
-
-                if (_isAudioPreviewActive && _wasapiAudioCapture != null)
-                {
-                    await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
-                }
-
-                Logger.Log(
-                    _wasapiAudioCapture != null
-                        ? "Preview backend active: IMFSourceReader video + WASAPI audio ingest."
-                        : "Preview backend active: IMFSourceReader video only (no audio capture endpoint).");
-
-                // Start mic monitoring if enabled (metering only, no recording sink)
-                if (_micMonitorEnabled && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))
-                {
-                    WasapiAudioCapture? micCapture = null;
-                    try
-                    {
-                        micCapture = new WasapiAudioCapture();
-                        await micCapture.InitializeAsync(_micMonitorDeviceId, transitionToken).ConfigureAwait(false);
-                        micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
-                        micCapture.CaptureFailed += OnWasapiCaptureFailed;
-                        micCapture.Start();
-                        if (_flashbackSink is { MicrophoneEnabled: true } fbSink)
-                        {
-                            micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
-                            Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='preview_mic_monitor_start'");
-                        }
-                        _microphoneCapture = micCapture;
-                        micCapture = null;
-                        Logger.Log("MIC_MONITOR_START device='" + (_micMonitorDeviceName ?? "?") + "'");
-                    }
-                    catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)
-                    {
-                        throw;
-                    }
-                    catch (Exception micEx)
-                    {
-                        Logger.Log("Mic monitor start failed (non-fatal): " + micEx.Message);
-                    }
-                    finally
-                    {
-                        if (micCapture != null)
-                        {
-                            micCapture.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
-                            micCapture.CaptureFailed -= OnWasapiCaptureFailed;
-                            try { await micCapture.DisposeAsync().ConfigureAwait(false); }
-                            catch (Exception disposeEx) { Logger.Log($"MIC_MONITOR_PREVIEW_START_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
-                        }
-                    }
-                }
+                wasapiCapture = await StartPreviewAudioGraphAsync(settings, audioDeviceId, transitionToken).ConfigureAwait(false);
 
                 // Start flashback AFTER all preview components are running.
                 // This eliminates the ~840ms A/V sync drift caused by WASAPI audio
@@ -241,26 +179,7 @@ public partial class CaptureService
                     }
                 }
 
-                if (wasapiCapture != null)
-                {
-                    wasapiCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                    wasapiCapture.CaptureFailed -= OnWasapiCaptureFailed;
-                }
-
-                var capture = _wasapiAudioCapture ?? wasapiCapture;
-                _wasapiAudioCapture = null;
-                if (capture != null)
-                {
-                    DetachWasapiAudioCapture(capture);
-                    try
-                    {
-                        await capture.DisposeAsync().ConfigureAwait(false);
-                    }
-                    catch (Exception disposeEx)
-                    {
-                        Logger.Log($"WASAPI capture rollback dispose warning: {disposeEx.Message}");
-                    }
-                }
+                await RollbackPreviewAudioCaptureStartupAsync(wasapiCapture).ConfigureAwait(false);
 
                 throw;
             }

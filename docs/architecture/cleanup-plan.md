@@ -1028,6 +1028,10 @@ Preview lifecycle now lives in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.PreviewStart.cs` owns video-preview
 start transitions, retained-backend fast-path reattachment, preview-start
 rollback, and fresh preview backend startup ordering;
+`Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs` owns preview
+WASAPI capture startup, video-only audio fallback logging, preview playback
+attach, preview-time microphone monitor startup, and partially-started audio
+rollback;
 `Sussudio/Services/Capture/CaptureService.PreviewStop.cs` owns video-preview
 stop transitions, keep-pipeline-alive detach semantics, and stopped-state/
 telemetry commit; `Sussudio/Services/Capture/CaptureService.PreviewReuse.cs`

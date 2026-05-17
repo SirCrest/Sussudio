@@ -8,7 +8,7 @@ static partial class Program
 {
     private static Task PreviewStartup_ToleratesMissingAudioCaptureDevices()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "if (settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId))");
         AssertContains(captureServiceText, "Audio preview requested but no audio capture device is available; continuing with video-only preview.");
@@ -20,6 +20,7 @@ static partial class Program
     private static Task CaptureService_PreviewLifecycleLivesInFocusedPartials()
     {
         var startText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs").Replace("\r\n", "\n");
+        var audioGraphText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
         var stopText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStop.cs").Replace("\r\n", "\n");
         var reuseText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewReuse.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs").Replace("\r\n", "\n");
@@ -29,7 +30,11 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewLifecycle.cs")),
             "mixed preview lifecycle partial should stay removed");
         AssertContains(startText, "public Task StartVideoPreviewAsync(CaptureSettings settings, CancellationToken cancellationToken = default)");
+        AssertContains(startText, "await StartPreviewAudioGraphAsync(settings, audioDeviceId, transitionToken)");
         AssertContains(startText, "var previewStartRollbackToken = CancellationToken.None;");
+        AssertContains(audioGraphText, "private async Task<WasapiAudioCapture?> StartPreviewAudioGraphAsync(");
+        AssertContains(audioGraphText, "private async Task StartPreviewMicrophoneMonitorAsync(");
+        AssertContains(audioGraphText, "private async Task RollbackPreviewAudioCaptureStartupAsync(");
         AssertContains(stopText, "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)");
         AssertContains(stopText, "private Task StopVideoPreviewCoreAsync(bool teardownPipeline, CancellationToken cancellationToken = default)");
         AssertContains(reuseText, "private bool CanReuseVideoCaptureForPreview(UnifiedVideoCapture capture, CaptureSettings settings)");
@@ -38,6 +43,8 @@ static partial class Program
         AssertContains(disposalText, "private async Task DisposePreviewPipelineAsync(");
         AssertDoesNotContain(startText, "private Task StopVideoPreviewCoreAsync(");
         AssertDoesNotContain(startText, "private async Task DisposePreviewPipelineAsync(");
+        AssertDoesNotContain(startText, "new WasapiAudioCapture()");
+        AssertDoesNotContain(startText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
         AssertDoesNotContain(stopText, "public Task StartVideoPreviewAsync(");
         AssertDoesNotContain(stopText, "private static CaptureSettings CloneCaptureSettings(");
         AssertDoesNotContain(reuseText, "public Task StartVideoPreviewAsync(");
@@ -96,7 +103,7 @@ static partial class Program
 
     private static Task PreviewBackendLog_ReflectsVideoOnlyFallback()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "_wasapiAudioCapture != null");
         AssertContains(captureServiceText, "\"Preview backend active: IMFSourceReader video + WASAPI audio ingest.\"");

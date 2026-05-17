@@ -99,14 +99,22 @@ static partial class Program
             captureServiceRawText,
             "public Task StartVideoPreviewAsync",
             "private bool CanReuseVideoCaptureForPreview");
-        var previewMicMonitorStart = ExtractTextBetween(
+        AssertOccursBefore(
             startVideoPreviewRaw,
-            "// Start mic monitoring if enabled",
+            "await StartPreviewAudioGraphAsync(settings, audioDeviceId, transitionToken)",
             "// Start flashback AFTER");
+        var previewAudioGraphRaw = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs")
+            .Replace("\r\n", "\n");
+        var previewMicMonitorStart = ExtractTextBetween(
+            previewAudioGraphRaw,
+            "private async Task StartPreviewMicrophoneMonitorAsync",
+            "private async Task RollbackPreviewAudioCaptureStartupAsync");
         AssertContains(previewMicMonitorStart, "WasapiAudioCapture? micCapture = null;");
         AssertContains(previewMicMonitorStart, "catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)");
         AssertContains(previewMicMonitorStart, "MIC_MONITOR_PREVIEW_START_DISPOSE_WARN");
-        AssertContains(previewMicMonitorStart, "_microphoneCapture = micCapture;\n                        micCapture = null;");
+        AssertContains(previewMicMonitorStart, "_microphoneCapture = micCapture;");
+        AssertContains(previewMicMonitorStart, "micCapture = null;");
+        AssertContains(previewMicMonitorStart, "_microphoneCapture = micCapture;\n            micCapture = null;");
 
         AssertContains(ensureFlashbackAudio, "if (settings.AudioEnabled && _wasapiAudioCapture == null)");
         AssertContains(ensureFlashbackAudio, "AttachFlashbackAudioIfSupported(_wasapiAudioCapture, reason)");

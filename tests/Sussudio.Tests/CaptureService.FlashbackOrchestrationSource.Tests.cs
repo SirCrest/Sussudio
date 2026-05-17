@@ -35,6 +35,7 @@ static partial class Program
     private static readonly string[] CaptureServicePreviewLifecycleFiles =
     {
         "Sussudio/Services/Capture/CaptureService.PreviewStart.cs",
+        "Sussudio/Services/Capture/CaptureService.PreviewAudioGraph.cs",
         "Sussudio/Services/Capture/CaptureService.PreviewStop.cs",
         "Sussudio/Services/Capture/CaptureService.PreviewReuse.cs",
         "Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs"
