@@ -117,6 +117,9 @@ Automation diagnostics ownership:
   diagnostics.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.WindowActions.cs`
   owns window automation action execution.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.WindowCommands.cs`
+  owns full-screen, recordings-folder, arm-close, and window-action command
+  bodies, including close-arm gating, behind the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.WaitConditions.cs`
   owns wait-condition polling and snapshot predicates.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs`

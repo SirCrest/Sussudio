@@ -48,6 +48,9 @@ static partial class Program
             "Automation dispatcher window close waits for completion",
             AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion);
         await AddCheckAsync(results,
+            "Automation dispatcher window commands live in focused partial",
+            AutomationCommandDispatcher_WindowCommands_LiveInFocusedPartial);
+        await AddCheckAsync(results,
             "Automation dispatcher preview health waits for first visual",
             AutomationCommandDispatcher_PreviewRendererHealthy_RequiresFirstVisual);
         await AddCheckAsync(results,

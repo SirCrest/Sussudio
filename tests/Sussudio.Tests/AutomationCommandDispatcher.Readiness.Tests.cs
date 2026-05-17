@@ -46,11 +46,12 @@ static partial class Program
 
     private static Task AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion()
     {
-        var sourceText = ReadAutomationCommandDispatcherFamilyText();
+        var sourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.WindowCommands.cs")
+            .Replace("\r\n", "\n");
         var windowActionBlock = ExtractTextBetween(
             sourceText,
-            "case AutomationCommandKind.WindowAction:",
-            "case AutomationCommandKind.WaitForCondition:");
+            "private async Task<AutomationCommandResponse> ExecuteWindowActionCommandAsync(",
+            "return CreateAcknowledgedResponse(correlationId, $\"Window action requested: {action}.\");");
         var closeBlock = ExtractTextBetween(
             windowActionBlock,
             "if (action == AutomationWindowAction.Close)",

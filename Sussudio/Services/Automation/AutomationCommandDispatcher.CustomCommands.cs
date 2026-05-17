@@ -32,15 +32,10 @@ public sealed partial class AutomationCommandDispatcher
                     includeSnapshot: false);
 
             case AutomationCommandKind.SetFullScreenEnabled:
-            {
-                var enabled = RequireBool(payload, "enabled");
-                await _windowControl.SetFullScreenEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, $"Full screen {(enabled ? "enter" : "exit")} requested.");
-            }
+                return await ExecuteSetFullScreenEnabledCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.OpenRecordingsFolder:
-                await _windowControl.OpenRecordingsFolderAsync(cancellationToken).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, "Recordings folder open requested.");
+                return await ExecuteOpenRecordingsFolderCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.GetDiagnostics:
                 return ExecuteGetDiagnosticsCommand(payload, correlationId);
@@ -114,44 +109,10 @@ public sealed partial class AutomationCommandDispatcher
             }
 
             case AutomationCommandKind.ArmClose:
-            {
-                var armed = GetBool(payload, "armed") ?? true;
-                lock (_closeArmLock)
-                {
-                    _closeArmed = armed;
-                }
-                return CreateAcknowledgedResponse(correlationId, $"Window close arm state requested: {(armed ? "armed" : "disarmed")}.");
-            }
+                return ExecuteArmCloseCommand(payload, correlationId);
 
             case AutomationCommandKind.WindowAction:
-            {
-                var action = ParseWindowAction(payload);
-                if (action == AutomationWindowAction.Close)
-                {
-                    var armed = false;
-                    lock (_closeArmLock)
-                    {
-                        armed = _closeArmed;
-                        _closeArmed = false;
-                    }
-
-                    if (!armed)
-                    {
-                        return CreateResponse(
-                            correlationId,
-                            "Window close is disallowed until ArmClose is requested.",
-                            errorCode: "window-close-not-armed",
-                            success: false,
-                            status: AutomationResponseStatus.Error);
-                    }
-
-                    await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, "Window close completed.");
-                }
-
-                await ExecuteWindowActionAsync(action, cancellationToken, payload).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, $"Window action requested: {action}.");
-            }
+                return await ExecuteWindowActionCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.WaitForCondition:
             {
