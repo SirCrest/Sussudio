@@ -13,8 +13,8 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "PerformanceThresholdCaptureDropPercent = _perfectionCaptureDropPercentThreshold,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var audioDrops = BuildAudioDropsProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionAudioDropsText, "private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)");
-        AssertContains(diagnostics.SnapshotProjectionAudioDropsText, "QueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
+        AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.SnapshotProjectionAudioText, "QueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AudioQueueDropsRealtime = audioDrops.QueueDropsRealtime,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "AudioDropsQueueSaturated = health.AudioDropsQueueSaturated,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "AudioQueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");

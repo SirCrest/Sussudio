@@ -120,4 +120,25 @@ public sealed partial class AutomationDiagnosticsHub
         public bool SignalPresent { get; init; }
         public bool MutedSuspected { get; init; }
     }
+
+    private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)
+    {
+        return new()
+        {
+            QueueSaturated = health.AudioDropsQueueSaturated,
+            BacklogEviction = health.AudioDropsBacklogEviction,
+            ChunksDropped = health.AudioChunksDropped,
+            QueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,
+            QueueDropsFileWriter = health.AudioChunksDropped
+        };
+    }
+
+    private readonly record struct AudioDropsProjection
+    {
+        public long QueueSaturated { get; init; }
+        public long BacklogEviction { get; init; }
+        public long ChunksDropped { get; init; }
+        public long QueueDropsRealtime { get; init; }
+        public long QueueDropsFileWriter { get; init; }
+    }
 }

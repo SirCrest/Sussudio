@@ -61,7 +61,8 @@ status-text projection consumed by the automation snapshot DTO.
 performance score, diagnostic lane, preview pacing classifier, and performance
 threshold projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns view-model audio
-signal projection and composes ingest and WASAPI projection owners into the
+signal projection, audio drop counter projection, derived real-time/file-writer
+drop totals, and composes ingest and WASAPI projection owners into the
 automation snapshot audio/ingest DTO fields.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs` owns capture
 audio/video reader, source-reader, and ingest counter projection consumed by the
