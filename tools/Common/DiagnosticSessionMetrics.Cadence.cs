@@ -5,6 +5,20 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionMetrics
 {
+    internal static SourceCadenceSessionMetrics BuildSourceCadenceSessionMetrics(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement lastSnapshot)
+    {
+        var metrics = new SourceCadenceSessionMetrics();
+        ObserveSourceCadenceSnapshot(metrics, lastSnapshot);
+        foreach (var sample in samples)
+        {
+            ObserveSourceCadenceSnapshot(metrics, sample.Snapshot);
+        }
+
+        return metrics;
+    }
+
     internal static PreviewCadenceSessionMetrics BuildPreviewCadenceSessionMetrics(
         IReadOnlyList<DiagnosticSessionSample> samples,
         JsonElement lastSnapshot)
@@ -58,6 +72,19 @@ internal static partial class DiagnosticSessionMetrics
            metrics.MinChangeFpsObserved >= targetFps * 0.98 &&
            metrics.MaxRepeatPercentObserved <= 1.0 &&
            metrics.LongestRepeatRunAtEnd <= 1;
+
+    private static void ObserveSourceCadenceSnapshot(SourceCadenceSessionMetrics metrics, JsonElement snapshot)
+    {
+        metrics.MaxSevereGapCountObserved = Math.Max(
+            metrics.MaxSevereGapCountObserved,
+            GetNullableLong(snapshot, "CaptureCadenceSevereGapCount") ?? 0);
+        metrics.MaxEstimatedDroppedFramesObserved = Math.Max(
+            metrics.MaxEstimatedDroppedFramesObserved,
+            GetNullableLong(snapshot, "CaptureCadenceEstimatedDroppedFrames") ?? 0);
+        metrics.MaxDropPercentObserved = Math.Max(
+            metrics.MaxDropPercentObserved,
+            GetDouble(snapshot, "CaptureCadenceEstimatedDropPercent"));
+    }
 
     private static void ObservePreviewCadenceSnapshot(PreviewCadenceSessionMetrics metrics, JsonElement snapshot)
     {
