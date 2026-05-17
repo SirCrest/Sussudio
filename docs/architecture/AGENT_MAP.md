@@ -1099,15 +1099,11 @@ Primary current owners:
   monitoring/disabled animations plus rounded content clips.
   `Sussudio/MainWindow.AudioMeter.cs` is its XAML-facing adapter.
   `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns the audio-control
-  binding controller shell and context lifetime.
-  `Sussudio/Controllers/Audio/AudioControlBindingController.Context.cs` owns the XAML
-  control dependency bag, `AudioControlBindingController.InitialState.cs` owns
-  initial audio/microphone projection plus preview-volume binding and priming,
-  `AudioControlBindingController.Selections.cs` owns audio/microphone/device
-  audio selection handlers, `AudioControlBindingController.Toggles.cs` owns
-  record/preview/custom-audio/microphone toggle handlers, and
-  `AudioControlBindingController.Meters.cs` owns audio-meter activation,
-  initial meter presentation, and device-audio gain/meter resize hooks.
+  binding context, initial audio/microphone projection, preview-volume binding
+  and priming, audio/microphone/device-audio selection handlers,
+  record/preview/custom-audio/microphone toggle handlers, audio-meter
+  activation, initial meter presentation, and device-audio gain/meter resize
+  hooks.
   `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
 - `Sussudio/Controllers/Stats/StatsOverlayController.cs` owns stats dock visibility
   orchestration, stats/frame-time toggle event hookup and checked/unchecked
@@ -2176,15 +2172,11 @@ Primary current owners:
   owns the capture-selection `PropertyChanged` router.
   `MainWindow.CaptureSelectionBindings.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns the audio-control
-  binding controller shell and context lifetime.
-  `Sussudio/Controllers/Audio/AudioControlBindingController.Context.cs` owns the XAML
-  control dependency bag, `AudioControlBindingController.InitialState.cs` owns
-  initial audio/microphone projection plus preview-volume binding and priming,
-  `AudioControlBindingController.Selections.cs` owns audio/microphone/device
-  audio selection handlers, `AudioControlBindingController.Toggles.cs` owns
-  record/preview/custom-audio/microphone toggle handlers, and
-  `AudioControlBindingController.Meters.cs` owns audio-meter activation,
-  initial meter presentation, and device-audio gain/meter resize hooks.
+  binding context, initial audio/microphone projection, preview-volume binding
+  and priming, audio/microphone/device-audio selection handlers,
+  record/preview/custom-audio/microphone toggle handlers, audio-meter
+  activation, initial meter presentation, and device-audio gain/meter resize
+  hooks.
   Device-audio mode/gain control projection stays in
   `Sussudio/Controllers/Capture/CaptureSelectionBindingController.DeviceAudio.cs`.
   `Sussudio/MainWindow.AudioBindings.cs` is its XAML-facing adapter.
