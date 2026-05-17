@@ -29,9 +29,7 @@ public partial class MainViewModel
         _gainXuDebounceCts?.Cancel();
         _deviceAudioModeCts?.Cancel();
         _deviceAudioRefreshCts?.Cancel();
-        _timer?.Stop();
-        DetachRuntimeWiring();
-        _audioDeviceWatcher.Dispose();
+        _runtimeLifecycleController.StopForDispose();
         var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "SUSSUDIO_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,

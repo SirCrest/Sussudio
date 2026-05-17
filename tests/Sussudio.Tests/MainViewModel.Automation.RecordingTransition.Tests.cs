@@ -42,7 +42,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
             .Replace("\r\n", "\n");
-        var runtimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Runtime.cs")
+        var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs")
             .Replace("\r\n", "\n");
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
@@ -90,10 +90,10 @@ static partial class Program
         AssertContains(recordingRuntimeText, "RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : \"--\";");
         AssertContains(recordingRuntimeText, "_pendingModeOptionsRefresh = false;");
         AssertContains(recordingRuntimeText, "RebuildResolutionOptions();");
-        AssertContains(runtimeText, "UpdateRecordingStats();");
-        AssertDoesNotContain(runtimeText, "private void UpdateRecordingStats()");
-        AssertDoesNotContain(runtimeText, "private static double? ComputeAverageBitrate(");
-        AssertDoesNotContain(runtimeText, "partial void OnIsRecordingChanged(bool value)");
+        AssertContains(runtimeLifecycleControllerText, "_viewModel.UpdateRecordingStats();");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateRecordingStats()");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "private static double? ComputeAverageBitrate(");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "partial void OnIsRecordingChanged(bool value)");
         AssertDoesNotContain(rootViewModelText, "public partial ObservableCollection<string> AvailableRecordingFormats");
         AssertDoesNotContain(rootViewModelText, "public partial string OutputPath");
         AssertContains(automationText, "=> SetRecordingDesiredStateAsync(enabled, cancellationToken);");

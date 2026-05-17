@@ -1,13 +1,11 @@
 using System;
 using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Microsoft.UI.Dispatching;
 
 namespace Sussudio.ViewModels;
 
 public partial class MainViewModel
 {
-    private DispatcherQueueTimer? _timer;
     private IntPtr _windowHandle;
     private const string LiveInfoUnavailable = "\u2014";
 

@@ -128,7 +128,7 @@ static partial class Program
 
     private static Task LiveSignalTextProjection_PreservesPixelFormatFallbackOrder()
     {
-        var runtimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Runtime.cs")
+        var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs")
             .Replace("\r\n", "\n");
         var liveSignalPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.LiveSignalPresentation.cs")
             .Replace("\r\n", "\n");
@@ -141,11 +141,11 @@ static partial class Program
             System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("LiveSignalTextPresentationBuilder.Build was not found.");
 
-        AssertContains(runtimeText, "UpdateLiveCaptureInfo(runtimeSnapshot);");
-        AssertContains(runtimeText, "ResetLiveCaptureInfo();");
-        AssertDoesNotContain(runtimeText, "IsAudioPreviewActive =");
-        AssertDoesNotContain(runtimeText, "private void UpdateLiveCaptureInfo(");
-        AssertDoesNotContain(runtimeText, "private void ResetLiveCaptureInfo()");
+        AssertContains(runtimeLifecycleControllerText, "_viewModel.UpdateLiveCaptureInfo(runtimeSnapshot);");
+        AssertContains(runtimeLifecycleControllerText, "_viewModel.ResetLiveCaptureInfo();");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "IsAudioPreviewActive =");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateLiveCaptureInfo(");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "private void ResetLiveCaptureInfo()");
         AssertContains(liveSignalPresentationText, "private void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
         AssertContains(liveSignalPresentationText, "IsAudioPreviewActive = runtime.IsAudioPreviewActive;");
         AssertContains(liveSignalPresentationText, "var liveSignalText = LiveSignalTextPresentationBuilder.Build(");
@@ -161,8 +161,8 @@ static partial class Program
         AssertContains(liveSignalPresentationText, "LiveResolution = LiveInfoUnavailable;");
         AssertContains(liveSignalPresentationText, "LiveFrameRate = LiveInfoUnavailable;");
         AssertContains(liveSignalPresentationText, "LivePixelFormat = LiveInfoUnavailable;");
-        AssertDoesNotContain(runtimeText, "runtime.ReaderSourceSubtype ??");
-        AssertDoesNotContain(runtimeText, "runtime.LatestObservedFramePixelFormat ??");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "runtime.ReaderSourceSubtype ??");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "runtime.LatestObservedFramePixelFormat ??");
         AssertContains(liveSignalText, "internal static class LiveSignalTextPresentationBuilder");
         AssertContains(liveSignalText, "internal static LiveSignalTextPresentation Build(");
         AssertContains(liveSignalText, "runtime.ActualWidth ?? runtime.NegotiatedWidth ?? runtime.RequestedWidth");

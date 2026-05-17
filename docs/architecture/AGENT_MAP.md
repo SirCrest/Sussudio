@@ -2190,17 +2190,16 @@ Primary current owners:
   shared view-model UI dispatcher enqueue/invoke policy, disposal skip logging,
   cancellation handoff, enqueue-failure logging, and status projection.
   `MainViewModel.Dispatching.cs` owns the stable private adapter names plus
-  preview event fan-out for the partial family. `MainViewModel.Runtime.cs`
-  owns periodic timer refresh orchestration.
-  `MainViewModel.RuntimeWiring.cs` owns runtime event subscription/unsubscription
-  plus initial source-telemetry, HDR, live-info, timer, and disk-space bootstrap.
+  preview event fan-out for the partial family.
+  `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`
+  owns runtime event subscription/unsubscription, system-resume preview rebind
+  handling, capture status/error fan-out, capture pre-cleanup renderer stop
+  fan-out, frame-captured callbacks, periodic timer refresh orchestration, and
+  initial source-telemetry/HDR/live-info/timer/disk-space bootstrap.
   `MainViewModel.DiskSpacePresentation.cs` owns the DiskSpaceInfo assignment bridge,
   while `Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs` owns output drive probing,
   fallback, formatting, and suppressed-warning logging.
-  `MainViewModel.PowerResume.cs` owns system-resume preview rebind
-  handling. `MainViewModel.CaptureRuntimeEvents.cs`
-  owns capture status/error fan-out, capture pre-cleanup renderer stop fan-out,
-  and frame-captured callbacks. `MainViewModel.RecordingRuntime.cs` owns
+  `MainViewModel.RecordingRuntime.cs` owns
   recording size/bitrate projection and recording-state reset reactions.
   `MainViewModel.LiveSignalPresentation.cs` owns live-capture info projection
   from `CaptureRuntimeSnapshot`, including audio-preview activity and

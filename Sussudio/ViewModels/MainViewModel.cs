@@ -27,6 +27,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly AudioDeviceWatcher _audioDeviceWatcher;
     private readonly MainViewModelUiDispatchController _uiDispatchController;
+    private readonly MainViewModelRuntimeLifecycleController _runtimeLifecycleController;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -85,9 +86,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 SetStatusText = value => StatusText = value,
             });
         _audioDeviceWatcher = dependencies.AudioDeviceWatcher;
+        _runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);
 
-        AttachRuntimeWiring();
-        InitializeRuntimePresentation();
+        _runtimeLifecycleController.Start();
+        _runtimeLifecycleController.InitializePresentation();
     }
     public void SetWindowHandle(IntPtr handle)
     {
@@ -130,14 +132,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device format probes: MainViewModel.DeviceFormatProbes.cs
     // Capture option visibility: MainViewModel.CaptureOptionVisibility.cs
     // Frame-rate selection: MainViewModel.FrameRateOptions.cs; rebuild: MainViewModel.FrameRateOptionRebuild.cs
-    // Runtime wiring/bootstrap: MainViewModel.RuntimeWiring.cs
+    // Runtime wiring/bootstrap/timer/capture-event ingress: MainViewModelRuntimeLifecycleController.cs
     // Automatic frame-rate selection policy: MainViewModel.FrameRateAutoSelectionPolicy.cs
     // Frame-rate/mode selection state: MainViewModel.ModeSelectionState.cs
     // Frame-rate timing state wrappers: MainViewModel.FrameRateTiming.cs; pure timing policy: FrameRateTimingPolicy.cs
     // Auto resolution options: MainViewModel.AutoResolutionOptions.cs; state-backed selection: MainViewModel.ResolutionOptions.cs
     // Resolution selection policy: MainViewModel.ResolutionSelectionPolicy.cs
     // Disposal / teardown: MainViewModel.Disposal.cs
-    // Runtime status/timers: MainViewModel.Runtime.cs, MainViewModel.CaptureRuntimeEvents.cs, and MainViewModel.RecordingRuntime.cs
+    // Recording runtime status: MainViewModel.RecordingRuntime.cs
     // Live-signal presentation: MainViewModel.LiveSignalPresentation.cs
     // Source telemetry: MainViewModel.Telemetry.cs
     // Target/HDR presentation: MainViewModel.TargetPresentation.cs
