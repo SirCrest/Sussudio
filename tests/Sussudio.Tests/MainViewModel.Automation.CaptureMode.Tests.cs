@@ -6,6 +6,7 @@ static partial class Program
     {
         var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
         var captureModeAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCaptureMode.cs").Replace("\r\n", "\n");
+        var videoFormatAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationVideoFormat.cs").Replace("\r\n", "\n");
         var mjpegDecoderCountAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationMjpegDecoderCount.cs").Replace("\r\n", "\n");
 
         AssertContains(viewModelStateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
@@ -18,7 +19,10 @@ static partial class Program
         AssertContains(captureModeAutomationText, "_automationCaptureModeGate.Release();");
         AssertContains(captureModeAutomationText, "return SetAutomationCaptureModeAsync(\"resolution\"");
         AssertContains(captureModeAutomationText, "return SetAutomationCaptureModeAsync(\"frame rate\"");
-        AssertContains(captureModeAutomationText, "return SetAutomationCaptureModeAsync(\"video format\"");
+        AssertDoesNotContain(captureModeAutomationText, "public Task SetVideoFormatAsync");
+        AssertContains(videoFormatAutomationText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
+        AssertContains(videoFormatAutomationText, "return SetAutomationCaptureModeAsync(\"video format\"");
+        AssertContains(videoFormatAutomationText, "SelectedVideoFormat = match;");
         AssertDoesNotContain(captureModeAutomationText, "public Task SetMjpegDecoderCountAsync");
         AssertContains(mjpegDecoderCountAutomationText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
         AssertContains(mjpegDecoderCountAutomationText, "return SetAutomationCaptureModeAsync(\"mjpeg decoder count\"");

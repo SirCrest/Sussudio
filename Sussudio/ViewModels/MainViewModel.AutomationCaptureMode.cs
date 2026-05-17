@@ -83,26 +83,6 @@ public partial class MainViewModel
         }, cancellationToken);
     }
 
-    public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)
-    {
-        return SetAutomationCaptureModeAsync("video format", () =>
-        {
-            if (string.IsNullOrWhiteSpace(videoFormat))
-            {
-                throw new ArgumentException("Video format is required.", nameof(videoFormat));
-            }
-
-            var match = AvailableVideoFormats.FirstOrDefault(
-                format => string.Equals(format, videoFormat, StringComparison.OrdinalIgnoreCase));
-            if (match == null)
-            {
-                throw new InvalidOperationException($"Video format '{videoFormat}' is not available.");
-            }
-
-            SelectedVideoFormat = match;
-        }, cancellationToken);
-    }
-
     private async Task SetAutomationCaptureModeAsync(
         string reason,
         Action apply,
