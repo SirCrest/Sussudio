@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -7,6 +10,34 @@ namespace Sussudio.Services.Automation;
 
 public sealed partial class AutomationCommandDispatcher
 {
+    private async Task<AutomationCommandResponse> ExecuteWaitForConditionCommandAsync(
+        JsonElement payload,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var condition = ParseWaitCondition(payload);
+        var timeoutMs = Math.Clamp(GetInt(payload, "timeoutMs") ?? DefaultWaitTimeoutMs, 250, 300_000);
+        var pollMs = Math.Clamp(GetInt(payload, "pollMs") ?? DefaultWaitPollMs, 50, 5_000);
+        var (met, snapshot) = await WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken).ConfigureAwait(false);
+
+        return CreateResponse(
+            correlationId,
+            met
+                ? $"Condition met: {condition}."
+                : $"Timed out waiting for condition: {condition}.",
+            data: new Dictionary<string, object?>
+            {
+                ["condition"] = condition.ToString(),
+                ["met"] = met,
+                ["timeoutMs"] = timeoutMs,
+                ["pollMs"] = pollMs
+            },
+            errorCode: met ? null : "timeout",
+            success: met,
+            status: met ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
+            snapshot: snapshot);
+    }
+
     private async Task<(bool Met, AutomationSnapshot Snapshot)> WaitForConditionAsync(
         AutomationWaitCondition condition,
         int timeoutMs,

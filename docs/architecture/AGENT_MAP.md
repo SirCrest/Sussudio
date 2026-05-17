@@ -121,9 +121,11 @@ Automation diagnostics ownership:
   owns full-screen, recordings-folder, arm-close, and window-action command
   bodies, including close-arm gating, behind the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.WaitConditions.cs`
-  owns wait-condition polling and snapshot predicates.
+  owns WaitForCondition command response shaping, wait-condition polling, and
+  snapshot predicates.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs`
-  owns AssertSnapshot payload parsing and snapshot comparison helpers.
+  owns AssertSnapshot command response shaping, payload parsing, and snapshot
+  comparison helpers.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs` owns
   JSON payload extraction helpers for dispatcher command bodies.
 - `Sussudio/Services/Automation/AutomationCommandHandler.cs` owns the shared

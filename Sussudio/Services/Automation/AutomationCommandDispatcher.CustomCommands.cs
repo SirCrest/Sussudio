@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -115,63 +114,13 @@ public sealed partial class AutomationCommandDispatcher
                 return await ExecuteWindowActionCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.WaitForCondition:
-            {
-                var condition = ParseWaitCondition(payload);
-                var timeoutMs = Math.Clamp(GetInt(payload, "timeoutMs") ?? DefaultWaitTimeoutMs, 250, 300_000);
-                var pollMs = Math.Clamp(GetInt(payload, "pollMs") ?? DefaultWaitPollMs, 50, 5_000);
-                var (met, snapshot) = await WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken).ConfigureAwait(false);
-
-                return CreateResponse(
-                    correlationId,
-                    met
-                        ? $"Condition met: {condition}."
-                        : $"Timed out waiting for condition: {condition}.",
-                    data: new Dictionary<string, object?>
-                    {
-                        ["condition"] = condition.ToString(),
-                        ["met"] = met,
-                        ["timeoutMs"] = timeoutMs,
-                        ["pollMs"] = pollMs
-                    },
-                    errorCode: met ? null : "timeout",
-                    success: met,
-                    status: met ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
-                    snapshot: snapshot);
-            }
+                return await ExecuteWaitForConditionCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.VerifyLastRecording:
                 return await ExecuteVerifyLastRecordingCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.AssertSnapshot:
-            {
-                var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
-                var assertions = ParseAssertions(payload);
-                var failures = new List<string>();
-                foreach (var assertion in assertions)
-                {
-                    if (!TryEvaluateAssertion(snapshot, assertion, out var failure))
-                    {
-                        failures.Add(failure ?? $"assertion-failed({assertion.Field})");
-                    }
-                }
-
-                var passed = failures.Count == 0;
-                return CreateResponse(
-                    correlationId,
-                    passed
-                        ? $"All {assertions.Count} snapshot assertions passed."
-                        : $"{failures.Count} of {assertions.Count} snapshot assertions failed.",
-                    data: new Dictionary<string, object?>
-                    {
-                        ["assertions"] = assertions.Count,
-                        ["passed"] = passed,
-                        ["failures"] = failures
-                    },
-                    errorCode: passed ? null : "assertion-failed",
-                    success: passed,
-                    status: passed ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
-                    snapshot: snapshot);
-            }
+                return await ExecuteAssertSnapshotCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.ProbeVideoSource:
                 return await ExecuteProbeVideoSourceCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);

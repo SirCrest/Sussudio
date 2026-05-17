@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Sussudio.Models;
 
 namespace Sussudio.Services.Automation;
@@ -11,6 +13,40 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationCommandDispatcher
 {
     private static readonly ConcurrentDictionary<string, PropertyInfo?> SnapshotPropertyCache = new(StringComparer.OrdinalIgnoreCase);
+
+    private async Task<AutomationCommandResponse> ExecuteAssertSnapshotCommandAsync(
+        JsonElement payload,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
+        var assertions = ParseAssertions(payload);
+        var failures = new List<string>();
+        foreach (var assertion in assertions)
+        {
+            if (!TryEvaluateAssertion(snapshot, assertion, out var failure))
+            {
+                failures.Add(failure ?? $"assertion-failed({assertion.Field})");
+            }
+        }
+
+        var passed = failures.Count == 0;
+        return CreateResponse(
+            correlationId,
+            passed
+                ? $"All {assertions.Count} snapshot assertions passed."
+                : $"{failures.Count} of {assertions.Count} snapshot assertions failed.",
+            data: new Dictionary<string, object?>
+            {
+                ["assertions"] = assertions.Count,
+                ["passed"] = passed,
+                ["failures"] = failures
+            },
+            errorCode: passed ? null : "assertion-failed",
+            success: passed,
+            status: passed ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
+            snapshot: snapshot);
+    }
 
     private static List<SnapshotAssertion> ParseAssertions(JsonElement payload)
     {

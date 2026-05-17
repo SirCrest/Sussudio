@@ -30,6 +30,9 @@ static partial class Program
             "Automation dispatcher defaults missing wait condition",
             AutomationCommandDispatcher_WaitForCondition_DefaultsMissingConditionToPreviewFrames);
         await AddCheckAsync(results,
+            "Automation dispatcher wait and assert commands live with support owners",
+            AutomationCommandDispatcher_WaitAndAssertCommands_LiveWithSupportOwners);
+        await AddCheckAsync(results,
             "Automation dispatcher trivial handler payload fields match catalog",
             AutomationCommandDispatcher_TrivialHandlers_MatchCatalogPayloadFields);
         await AddCheckAsync(results,
