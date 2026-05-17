@@ -4,7 +4,7 @@ static partial class Program
 {
     private static Task SsctlFormatters_SnapshotSourceOwnership_IsSplit()
     {
-        var ssctlFormatterRoot = ReadRepoFile("tools/ssctl/Formatters.cs");
+        var ssctlFormatterCommonSource = ReadRepoFile("tools/ssctl/Formatters.Common.cs");
         var ssctlFormatterSource = ReadSsctlSnapshotFormatterSource();
         var ssctlSnapshotRootSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
         var ssctlSnapshotCoreSectionsSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.CoreSections.cs");
@@ -19,7 +19,7 @@ static partial class Program
         var ssctlSnapshotThreadHealthSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.ThreadHealth.cs");
         var ssctlSnapshotVideoPipelineSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.VideoPipeline.cs");
         var ssctlSnapshotSourceSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.Source.cs");
-        AssertDoesNotContain(ssctlFormatterRoot, "public static string FormatSnapshot");
+        AssertDoesNotContain(ssctlFormatterCommonSource, "public static string FormatSnapshot");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotStateSection(builder, snapshot);");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotCaptureSettingsSection(builder, snapshot);");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotAudioSection(builder, snapshot);");
@@ -148,7 +148,7 @@ static partial class Program
         AssertContains(ssctlTimelineSummariesSource, "private static void AppendTimelineTrendSummary(StringBuilder builder, IReadOnlyList<TimelineRow> entries)");
         AssertContains(ssctlTimelineSummariesSource, "== Trend Summary (first vs last sample) ==");
         AssertContains(ReadRepoFile("tools/ssctl/Formatters.Memory.cs"), "public static string FormatMemory");
-        AssertContains(ReadRepoFile("tools/ssctl/Formatters.Common.cs"), "public static string FormatResult");
+        AssertContains(ssctlFormatterCommonSource, "public static string FormatResult");
         AssertContains(ssctlFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
         AssertContains(ssctlFormatterSource, "CaptureCommandMaxQueueLatencyMs");
         AssertContains(ssctlFormatterSource, "CaptureCommandCommandsCoalesced");

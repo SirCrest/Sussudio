@@ -347,8 +347,8 @@ owns primitive/domain value parsing, and `CommandHandlers.Transport.cs` owns
 shared command sending plus response exit-code shaping. Command-family payload
 helpers stay with their owning command partials.
 
-`tools/ssctl/Formatters.cs` is only the projection facade for console output.
-Keep app snapshot orchestration and section ordering in `Formatters.Snapshot.cs`,
+The `tools/ssctl/Formatters.*.cs` partial family is only the projection facade
+for console output. Keep app snapshot orchestration and section ordering in `Formatters.Snapshot.cs`,
 state/capture-command, audio, recording, legacy performance, and Memory/GC text
 in `Formatters.Snapshot.CoreSections.cs`, capture settings and friendly/exact
 frame-rate text in `Formatters.Snapshot.CaptureSettings.cs`, video-pipeline

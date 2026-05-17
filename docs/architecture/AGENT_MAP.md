@@ -2490,7 +2490,8 @@ Primary owners:
   `AutomationCommandKind` command resolution for handlers, and response
   exit-code shaping; command-family payload helpers stay with their owning
   command partials.
-- `tools/ssctl/Formatters.cs` is the console projection facade only.
+- The `tools/ssctl/Formatters.*.cs` partial family is the console projection
+  facade only.
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration and
   section ordering only.
 - `tools/ssctl/Formatters.Snapshot.CoreSections.cs` owns the Sussudio state,
