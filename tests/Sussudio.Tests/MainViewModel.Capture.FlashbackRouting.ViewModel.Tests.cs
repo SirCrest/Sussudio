@@ -50,6 +50,7 @@ static partial class Program
         var automationFlashbackText = viewModelFiles["MainViewModel.AutomationFlashback.cs"];
         var automationRecordingFormatText = viewModelFiles["MainViewModel.AutomationRecordingFormat.cs"];
         var automationSplitEncodeModeText = viewModelFiles["MainViewModel.AutomationSplitEncodeMode.cs"];
+        var automationCustomBitrateText = viewModelFiles["MainViewModel.AutomationCustomBitrate.cs"];
         var automationRecordingSettingsText = viewModelFiles["MainViewModel.AutomationRecordingSettings.cs"];
         var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExportOperation.cs"];
@@ -213,6 +214,10 @@ static partial class Program
         AssertMemberContains(automationSplitEncodeModeText, "SetSplitEncodeModeAsync", "SplitEncodeMode: SelectedSplitEncodeMode");
         AssertMemberContains(automationSplitEncodeModeText, "SetSplitEncodeModeAsync", "splitEncodeMode: settings.SplitEncodeMode");
         AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetSplitEncodeModeAsync");
+        AssertMemberContains(automationCustomBitrateText, "SetCustomBitrateAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
+        AssertMemberContains(automationCustomBitrateText, "SetCustomBitrateAsync", "CustomBitrateMbps = Math.Clamp(bitrateMbps, 1, 300);");
+        AssertMemberContains(automationCustomBitrateText, "SetCustomBitrateAsync", "customBitrateMbps: settings.Bitrate");
+        AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetCustomBitrateAsync");
         AssertMemberContains(flashbackEncoderSettingsText, "OnCustomBitrateMbpsChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(flashbackSettingsText, "OnFlashbackBufferMinutesChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
         AssertMemberContains(flashbackSettingsText, "OnFlashbackGpuDecodeChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");

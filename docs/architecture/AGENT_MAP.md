@@ -2318,8 +2318,10 @@ Primary current owners:
   mutation and HDR compatibility enforcement.
   `MainViewModel.AutomationSplitEncodeMode.cs` owns NVENC split-encode mode
   automation mutation.
+  `MainViewModel.AutomationCustomBitrate.cs` owns custom encoder bitrate
+  automation mutation and clamp policy.
   `MainViewModel.AutomationRecordingSettings.cs` owns encoder
-  preset/quality/custom-bitrate automation mutators.
+  preset/quality automation mutators.
   `MainViewModel.AutomationOutputPath.cs` owns output-path automation mutation.
   `MainViewModel.AutomationRecordingLifecycle.cs` owns the automation
   recording desired-state bridge into the shared recording transition gate.

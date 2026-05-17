@@ -62,6 +62,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSplitEncodeMode.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCustomBitrate.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationOutputPath.cs")
@@ -200,6 +202,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var automationSplitEncodeModeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSplitEncodeMode.cs")
             .Replace("\r\n", "\n");
+        var automationCustomBitrateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCustomBitrate.cs")
+            .Replace("\r\n", "\n");
         var automationOutputPathText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationOutputPath.cs")
             .Replace("\r\n", "\n");
         AssertContains(automationRecordingFormatText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
@@ -208,6 +212,9 @@ static partial class Program
         AssertContains(automationSplitEncodeModeText, "public async Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)");
         AssertContains(automationSplitEncodeModeText, "splitEncodeMode: settings.SplitEncodeMode");
         AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetSplitEncodeModeAsync");
+        AssertContains(automationCustomBitrateText, "public async Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)");
+        AssertContains(automationCustomBitrateText, "CustomBitrateMbps = Math.Clamp(bitrateMbps, 1, 300);");
+        AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetCustomBitrateAsync");
         AssertContains(automationOutputPathText, "public Task SetOutputPathAsync(string outputPath, CancellationToken cancellationToken = default)");
         AssertContains(automationOutputPathText, "Directory.CreateDirectory(outputPath);");
         AssertContains(automationOutputPathText, "OutputPath = outputPath;");

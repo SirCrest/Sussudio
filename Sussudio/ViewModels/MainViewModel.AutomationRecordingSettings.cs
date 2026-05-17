@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Automation mutators for encoder quality, preset, and bitrate settings.
+/// Automation mutators for encoder quality and preset settings.
 /// </summary>
 public partial class MainViewModel
 {
@@ -74,28 +74,4 @@ public partial class MainViewModel
             .ConfigureAwait(false);
     }
 
-    public async Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)
-    {
-        var settings = await InvokeOnUiThreadAsync(() =>
-        {
-            _suppressFlashbackEncoderSettingsCycle = true;
-            try
-            {
-                CustomBitrateMbps = Math.Clamp(bitrateMbps, 1, 300);
-            }
-            finally
-            {
-                _suppressFlashbackEncoderSettingsCycle = false;
-            }
-
-            return (Quality: ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset);
-        }, cancellationToken).ConfigureAwait(false);
-
-        await _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
-                quality: settings.Quality,
-                customBitrateMbps: settings.Bitrate,
-                nvencPreset: settings.Preset,
-                cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-    }
 }

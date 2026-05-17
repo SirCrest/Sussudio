@@ -3111,8 +3111,10 @@ Remaining `tools/Common` ownership:
    Recording format automation mutation and HDR compatibility enforcement now
    live in `MainViewModel.AutomationRecordingFormat.cs`; NVENC split-encode
    mode automation mutation now lives in
-   `MainViewModel.AutomationSplitEncodeMode.cs`; encoder
-   preset/quality/custom-bitrate automation mutators live in
+   `MainViewModel.AutomationSplitEncodeMode.cs`; custom encoder bitrate
+   automation mutation and clamp policy now live in
+   `MainViewModel.AutomationCustomBitrate.cs`; encoder
+   preset/quality automation mutators live in
    `MainViewModel.AutomationRecordingSettings.cs`;
    output-path automation mutation now lives in `MainViewModel.AutomationOutputPath.cs`.
    The automation recording desired-state bridge into the shared recording
