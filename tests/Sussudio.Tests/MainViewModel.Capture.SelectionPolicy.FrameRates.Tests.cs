@@ -10,23 +10,26 @@ static partial class Program
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var frameRateRebuildText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptionRebuild.cs").Replace("\r\n", "\n");
         var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateSourceFilterPolicy.cs").Replace("\r\n", "\n");
-        var captureOptionVisibilityText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureOptionVisibility.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
+        var showAllCaptureOptionsChanged = ExtractTextBetween(
+            captureModeTransactionsText,
+            "partial void OnShowAllCaptureOptionsChanged(bool value)",
+            "\n}");
 
         AssertContains(frameRateRebuildText, "FrameRateSourceFilterPolicy.Apply(");
         AssertContains(frameRateRebuildText, "ShowAllCaptureOptions);");
         AssertContains(mainViewModelText, "RebuildFrameRateOptions();");
-        AssertContains(captureOptionVisibilityText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
-        AssertContains(captureOptionVisibilityText, "if (IsRecording)");
-        AssertContains(captureOptionVisibilityText, "_pendingModeOptionsRefresh = true;");
-        AssertContains(captureOptionVisibilityText, "_pendingModeOptionsRefresh = false;");
-        AssertContains(captureOptionVisibilityText, "RebuildResolutionOptions();");
-        AssertContains(captureOptionVisibilityText, "SaveSettings();");
-        AssertOccursBefore(captureOptionVisibilityText, "if (IsRecording)", "_pendingModeOptionsRefresh = true;");
-        AssertOccursBefore(captureOptionVisibilityText, "_pendingModeOptionsRefresh = true;", "SaveSettings();");
-        AssertOccursBefore(captureOptionVisibilityText, "SaveSettings();", "return;");
-        AssertOccursBefore(captureOptionVisibilityText, "return;", "_pendingModeOptionsRefresh = false;");
-        AssertOccursBefore(captureOptionVisibilityText, "_pendingModeOptionsRefresh = false;", "RebuildResolutionOptions();");
-        AssertOccursBefore(captureOptionVisibilityText, "RebuildResolutionOptions();", "SaveSettings();\n    }");
+        AssertContains(showAllCaptureOptionsChanged, "if (IsRecording)");
+        AssertContains(showAllCaptureOptionsChanged, "_pendingModeOptionsRefresh = true;");
+        AssertContains(showAllCaptureOptionsChanged, "_pendingModeOptionsRefresh = false;");
+        AssertContains(showAllCaptureOptionsChanged, "RebuildResolutionOptions();");
+        AssertContains(showAllCaptureOptionsChanged, "SaveSettings();");
+        AssertOccursBefore(showAllCaptureOptionsChanged, "if (IsRecording)", "_pendingModeOptionsRefresh = true;");
+        AssertOccursBefore(showAllCaptureOptionsChanged, "_pendingModeOptionsRefresh = true;", "SaveSettings();");
+        AssertOccursBefore(showAllCaptureOptionsChanged, "SaveSettings();", "return;");
+        AssertOccursBefore(showAllCaptureOptionsChanged, "return;", "_pendingModeOptionsRefresh = false;");
+        AssertOccursBefore(showAllCaptureOptionsChanged, "_pendingModeOptionsRefresh = false;", "RebuildResolutionOptions();");
+        AssertOccursBefore(showAllCaptureOptionsChanged, "RebuildResolutionOptions();", "SaveSettings();\n    }");
         AssertContains(sourceFilterPolicyText, "showAllCaptureOptions");
         AssertContains(sourceFilterPolicyText, "!IsSourceFilteredFrameRateDisableReason(option.DisableReason)");
         AssertContains(sourceFilterPolicyText, "CloneOption(option, isEnabled: true, disableReason: string.Empty)");
@@ -215,15 +218,15 @@ static partial class Program
     private static Task FrameRateTimingPolicy_LivesInFocusedPartial()
     {
         var formatSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FormatSelection.cs").Replace("\r\n", "\n");
-        var hdrModeChangesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.HdrModeChanges.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var timingText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateTiming.cs").Replace("\r\n", "\n");
         var timingPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(formatSelectionText, "private void UpdateSelectedFormat()");
         AssertContains(formatSelectionText, "private void RebuildVideoFormatOptions()");
         AssertDoesNotContain(formatSelectionText, "partial void OnIsHdrEnabledChanged(bool value)");
-        AssertContains(hdrModeChangesText, "/// HDR/SDR mode transition side effects for the capture pipeline.");
-        AssertContains(hdrModeChangesText, "partial void OnIsHdrEnabledChanged(bool value)");
+        AssertContains(captureModeTransactionsText, "/// Capture-mode transactions that coordinate option rebuilds, HDR/SDR changes,");
+        AssertContains(captureModeTransactionsText, "partial void OnIsHdrEnabledChanged(bool value)");
         AssertDoesNotContain(formatSelectionText, "private FrameRateTimingFamily ResolvePreferredTimingFamily(");
         AssertDoesNotContain(formatSelectionText, "private static bool TryInferFrameRateTimingFamily(");
         AssertContains(formatSelectionText, "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");

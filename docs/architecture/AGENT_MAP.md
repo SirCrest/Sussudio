@@ -2276,8 +2276,9 @@ Primary current owners:
   resolved automatic frame-rate application, disabled frame-rate reason
   projection, and capture-mode reset flags.
   `MainViewModel.FrameRateSourceFilterPolicy.cs` owns source-rate filtering and
-  `ShowAllCaptureOptions` unlock policy. `MainViewModel.CaptureOptionVisibility.cs`
-  owns `ShowAllCaptureOptions` change handling and deferred rebuild behavior.
+  `ShowAllCaptureOptions` unlock policy. `MainViewModel.CaptureModeTransactions.cs`
+  owns `ShowAllCaptureOptions` change handling, deferred rebuild behavior,
+  capture-mode reinitialization serialization, and duplicate-reinit suppression.
   `Sussudio/ViewModels/FrameRateTimingPolicy.cs` owns pure frame-rate timing
   family and variant models, rational parsing, friendly/exact frame-rate
   matching, timing-family ranking, and preferred-format ranking helpers used by
@@ -2288,9 +2289,9 @@ Primary current owners:
   `MainViewModel.FormatSelection.cs` owns pixel-format option building and
   selected capture-format selection policy.
   `MainViewModel.RecordingFormatOptions.cs` owns recording-format policy
-  application to observable state. `MainViewModel.HdrModeChanges.cs` owns
-  HDR toggle side effects: recording-time revert/status, mode option rebuilds,
-  immediate reinitialize scheduling, and settings persistence.
+  application to observable state. `MainViewModel.CaptureModeTransactions.cs`
+  owns HDR toggle side effects: recording-time revert/status, mode option
+  rebuilds, immediate reinitialize scheduling, and settings persistence.
   `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs` owns pure recording
   codec filtering, selected-codec fallback policy, string-to-model format/quality
   parsing, and custom bitrate clamp policy shared by UI and automation.
@@ -2366,8 +2367,9 @@ Primary current owners:
   and capture-device selection. `MainViewModel.AutomationAudioInputSelection.cs`
   owns audio-input selection and custom audio-input enablement.
   `MainViewModel.AutomationCaptureSettings.cs` owns capture resolution,
-  frame-rate, video-format, MJPEG decoder worker-count automation, and the
-  shared reinitialization gate used after active capture-mode changes.
+  frame-rate, video-format, and MJPEG decoder worker-count automation mutators.
+  `MainViewModel.CaptureModeTransactions.cs` owns the shared reinitialization
+  gate used after active capture-mode changes.
   `MainViewModel.AutomationRecordingSettings.cs` owns recording format
   automation, HDR compatibility enforcement, recording encoder quality,
   NVENC split-encode mode, custom encoder bitrate clamp policy, encoder

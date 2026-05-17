@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Sussudio.ViewModels;
@@ -31,5 +30,4 @@ public partial class MainViewModel
     public partial string DiskSpaceInfo { get; set; } = "";
 
     private int _disposeState;
-    private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);
 }

@@ -114,7 +114,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Automation snapshots and probes: MainViewModel.AutomationSnapshots.cs
     // Automation options projection: MainViewModel.AutomationOptionsSnapshot.cs
     // Device-selection automation: MainViewModel.AutomationDeviceSelection.cs; audio-input automation: MainViewModel.AutomationAudioInputSelection.cs
-    // Capture settings automation: MainViewModel.AutomationCaptureSettings.cs
+    // Capture settings automation: MainViewModel.AutomationCaptureSettings.cs; capture-mode transactions: MainViewModel.CaptureModeTransactions.cs
     // UI-only automation: MainViewModel.AutomationUi.cs; stats/overlay automation: MainViewModel.AutomationStatsUi.cs
     // Recording settings automation: MainViewModel.AutomationRecordingSettings.cs
     // UI dispatch policy: MainViewModelUiDispatchController.cs; adapter/fan-out: MainViewModel.Dispatching.cs
@@ -131,7 +131,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device management: MainViewModel.DeviceManagement.cs
     // Device selection reactions: MainViewModel.DeviceSelection.cs
     // Device format probe reconciliation: MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs
-    // Capture option visibility: MainViewModel.CaptureOptionVisibility.cs
+    // Capture mode transactions: MainViewModel.CaptureModeTransactions.cs
     // Frame-rate selection: MainViewModel.FrameRateOptions.cs; rebuild: MainViewModel.FrameRateOptionRebuild.cs
     // Runtime wiring/bootstrap/timer/capture-event ingress: MainViewModelRuntimeLifecycleController.cs
     // Automatic frame-rate selection policy: MainViewModel.FrameRateAutoSelectionPolicy.cs

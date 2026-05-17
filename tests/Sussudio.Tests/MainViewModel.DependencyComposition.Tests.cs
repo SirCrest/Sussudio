@@ -6,6 +6,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var stateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewState.cs").Replace("\r\n", "\n");
         var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
@@ -47,7 +48,8 @@ static partial class Program
         AssertContains(stateText, "public partial bool IsStatsVisible");
         AssertContains(stateText, "public partial bool IsSettingsVisible");
         AssertContains(stateText, "public partial string StatusText");
-        AssertContains(stateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
+        AssertDoesNotContain(stateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
+        AssertContains(captureModeTransactionsText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
         AssertDoesNotContain(stateText, "public partial bool IsPreviewing");
         AssertDoesNotContain(stateText, "public event EventHandler? PreviewStartRequested");
         AssertContains(previewStateText, "public partial bool IsPreviewing");

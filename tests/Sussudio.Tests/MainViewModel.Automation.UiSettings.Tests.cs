@@ -26,7 +26,7 @@ static partial class Program
         var settingsPartialText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Settings.cs").Replace("\r\n", "\n");
         var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
         var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.cs").Replace("\r\n", "\n");
-        var captureOptionVisibilityText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureOptionVisibility.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? ShowAllCaptureOptions { get; set; }");
@@ -51,8 +51,8 @@ static partial class Program
         AssertDoesNotContain(settingsPartialText, "private void LoadSettings()");
         AssertDoesNotContain(settingsPartialText, "private void SaveSettings()");
         AssertContains(settingsPartialText, "partial void OnIsStatsVisibleChanged(bool value)");
-        AssertContains(captureOptionVisibilityText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
-        AssertContains(captureOptionVisibilityText, "RebuildResolutionOptions();\n        SaveSettings();");
+        AssertContains(captureModeTransactionsText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
+        AssertContains(captureModeTransactionsText, "RebuildResolutionOptions();\n        SaveSettings();");
         AssertDoesNotContain(settingsPartialText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
         AssertDoesNotContain(settingsPartialText, "RebuildResolutionOptions();\n        SaveSettings();");
 

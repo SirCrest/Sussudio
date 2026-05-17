@@ -6,7 +6,7 @@ static partial class Program
     {
         var automationHdrText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationHdr.cs")
             .Replace("\r\n", "\n");
-        var hdrModeChangesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.HdrModeChanges.cs")
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(automationHdrText, "public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
@@ -17,24 +17,24 @@ static partial class Program
         AssertContains(automationHdrText, "public Task SetTrueHdrPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationHdrText, "throw new InvalidOperationException(\"True HDR preview cannot be changed while recording.\");");
         AssertContains(automationHdrText, "IsTrueHdrPreviewEnabled = enabled;");
-        AssertContains(hdrModeChangesText, "partial void OnIsHdrEnabledChanged(bool value)");
-        AssertContains(hdrModeChangesText, "if (_isRevertingHdrToggle)");
-        AssertContains(hdrModeChangesText, "_pendingSdrAutoSelectionForDeviceChange = false;");
-        AssertContains(hdrModeChangesText, "_pendingSdrAutoFriendlyFrameRateBucket = null;");
-        AssertContains(hdrModeChangesText, "IsHdrEnabled = !value;");
-        AssertContains(hdrModeChangesText, "StatusText = HdrToggleBlockedWhileRecordingMessage;");
-        AssertContains(hdrModeChangesText, "ResetModeSelectionState();");
-        AssertContains(hdrModeChangesText, "RebuildResolutionOptions();");
-        AssertContains(hdrModeChangesText, "RebuildRecordingFormatOptions();");
-        AssertContains(hdrModeChangesText, "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");");
-        AssertContains(hdrModeChangesText, "SaveSettings();");
-        AssertOccursBefore(hdrModeChangesText, "if (_isRevertingHdrToggle)", "if (value)");
-        AssertOccursBefore(hdrModeChangesText, "if (value)", "if (IsRecording)");
-        AssertOccursBefore(hdrModeChangesText, "StatusText = HdrToggleBlockedWhileRecordingMessage;", "if (!_isChangingDevice)");
-        AssertOccursBefore(hdrModeChangesText, "ResetModeSelectionState();", "RebuildResolutionOptions();");
-        AssertOccursBefore(hdrModeChangesText, "RebuildResolutionOptions();", "RebuildRecordingFormatOptions();");
-        AssertOccursBefore(hdrModeChangesText, "RebuildRecordingFormatOptions();", "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");");
-        AssertOccursBefore(hdrModeChangesText, "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");", "SaveSettings();");
+        AssertContains(captureModeTransactionsText, "partial void OnIsHdrEnabledChanged(bool value)");
+        AssertContains(captureModeTransactionsText, "if (_isRevertingHdrToggle)");
+        AssertContains(captureModeTransactionsText, "_pendingSdrAutoSelectionForDeviceChange = false;");
+        AssertContains(captureModeTransactionsText, "_pendingSdrAutoFriendlyFrameRateBucket = null;");
+        AssertContains(captureModeTransactionsText, "IsHdrEnabled = !value;");
+        AssertContains(captureModeTransactionsText, "StatusText = HdrToggleBlockedWhileRecordingMessage;");
+        AssertContains(captureModeTransactionsText, "ResetModeSelectionState();");
+        AssertContains(captureModeTransactionsText, "RebuildResolutionOptions();");
+        AssertContains(captureModeTransactionsText, "RebuildRecordingFormatOptions();");
+        AssertContains(captureModeTransactionsText, "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");");
+        AssertContains(captureModeTransactionsText, "SaveSettings();");
+        AssertOccursBefore(captureModeTransactionsText, "if (_isRevertingHdrToggle)", "if (value)");
+        AssertOccursBefore(captureModeTransactionsText, "if (value)", "if (IsRecording)");
+        AssertOccursBefore(captureModeTransactionsText, "StatusText = HdrToggleBlockedWhileRecordingMessage;", "if (!_isChangingDevice)");
+        AssertOccursBefore(captureModeTransactionsText, "ResetModeSelectionState();", "RebuildResolutionOptions();");
+        AssertOccursBefore(captureModeTransactionsText, "RebuildResolutionOptions();", "RebuildRecordingFormatOptions();");
+        AssertOccursBefore(captureModeTransactionsText, "RebuildRecordingFormatOptions();", "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");");
+        AssertOccursBefore(captureModeTransactionsText, "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");", "SaveSettings();");
 
         return Task.CompletedTask;
     }

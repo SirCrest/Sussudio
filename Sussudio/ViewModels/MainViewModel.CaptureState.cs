@@ -69,15 +69,12 @@ public partial class MainViewModel
     private string? _lastKnownResolutionKey;
     private bool _pendingSdrAutoSelectionForDeviceChange;
     private int? _pendingSdrAutoFriendlyFrameRateBucket;
-    private bool _pendingModeOptionsRefresh;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private int? _lastTelemetryAgeBucket;
     private long _deviceScanGeneration;
 
     // Flag to prevent reinitialization during initial device setup.
     private bool _isChangingDevice;
-    private bool _suppressFormatChangeReinitialize;
-    private bool _isRevertingHdrToggle;
     private bool _isLoadingSettings;
     private string? _pendingSavedDeviceId;
 

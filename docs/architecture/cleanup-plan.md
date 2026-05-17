@@ -3103,8 +3103,9 @@ Remaining `tools/Common` ownership:
    `MainViewModel.ModeSelectionState.cs`. Source-rate filtering and
    `ShowAllCaptureOptions` unlock policy live in
    `MainViewModel.FrameRateSourceFilterPolicy.cs`, while `ShowAllCaptureOptions`
-   change handling and deferred rebuild behavior live in
-   `MainViewModel.CaptureOptionVisibility.cs`. Pure frame-rate timing family,
+   change handling, deferred rebuild behavior, duplicate-reinit suppression,
+   and the active capture-mode automation gate live in
+   `MainViewModel.CaptureModeTransactions.cs`. Pure frame-rate timing family,
    timing-variant projection, rational parsing, friendly/exact frame-rate
    matching, and preferred-format ranking now live in
    `Sussudio/ViewModels/FrameRateTimingPolicy.cs`, while
@@ -3126,9 +3127,9 @@ Remaining `tools/Common` ownership:
    recording-format option mutation lives in
    `MainViewModel.RecordingFormatOptions.cs`. `MainViewModel.FormatSelection.cs`
    keeps pixel-format option mutation and selected capture-format policy, while
-   `MainViewModel.HdrModeChanges.cs` owns HDR toggle side effects: recording-time
-   revert/status, mode option rebuilds, immediate reinitialize scheduling, and
-   settings persistence.
+   `MainViewModel.CaptureModeTransactions.cs` owns HDR toggle side effects:
+   recording-time revert/status, mode option rebuilds, immediate reinitialize
+   scheduling, and settings persistence.
     Late-arriving device format probe reconciliation, collection mutation,
     selected-device capability refresh, enqueue/failure logging, UI-side
     late-probe retarget application, session mismatch checks, and active-capture
@@ -3214,9 +3215,10 @@ Remaining `tools/Common` ownership:
    The automation recording desired-state bridge enters through
    `MainViewModel.RecordingLifecycle.cs` and is serialized by
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`.
-   Capture resolution, frame-rate, video-format, MJPEG decoder worker-count
-   automation, and the shared capture-mode reinitialization gate now live in
-   `MainViewModel.AutomationCaptureSettings.cs`.
+   Capture resolution, frame-rate, video-format, and MJPEG decoder worker-count
+   automation mutators now live in `MainViewModel.AutomationCaptureSettings.cs`;
+   the shared capture-mode reinitialization gate now lives in
+   `MainViewModel.CaptureModeTransactions.cs`.
    Startup FFmpeg capability probes for recording formats and split-encode modes
    now live in `MainViewModel.RecordingCapabilityRefresh.cs`.
    The old `MainViewModel.Automation.cs` catch-all has been retired.
