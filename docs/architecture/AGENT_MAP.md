@@ -1674,12 +1674,12 @@ Primary current owners:
   diagnostic-session, unified-video, MJPEG, D3D pending-frame, and recording
   queue check registration.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.RecordingModels.cs` coordinates
-  recording/model check registration; focused
-  `HarnessCheckCatalog.RecordingModels.*.cs` partials own LibAv sink,
-  capture runtime, recording contracts/artifacts/stats, capture settings,
-  Flashback buffer, recording context, device/media models, automation
-  contracts, runtime paths, source-signal telemetry, and HDR policy
-  registration groups.
+  recording/model check registration and owns compact registration groups for
+  LibAv sink, capture runtime, recording contracts/artifacts/stats, capture
+  settings, recording context, device/media models, automation contracts,
+  source-signal telemetry, and HDR policy checks.
+  `HarnessCheckCatalog.RecordingModels.FlashbackBuffer.cs` owns the large
+  Flashback buffer registration group.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.cs` coordinates Flashback
   check registration; `HarnessCheckCatalog.Flashback.*.cs` partials own model,
   playback, decoder, encoder sink, and exporter registration groups.
