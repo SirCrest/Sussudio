@@ -1,20 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
 using Sussudio.Models;
 
 namespace Sussudio.Tools;
-
-public enum AutomationCommandPathPolicy
-{
-    None,
-    ReadFile,
-    WriteFile,
-    Directory
-}
 
 public enum AutomationPayloadFieldType
 {
@@ -42,33 +32,11 @@ public sealed record AutomationCommandMetadata(
     string CliHelp,
     string McpDescription);
 
-public sealed record AutomationManifest(
-    int SchemaVersion,
-    IReadOnlyList<AutomationManifestCommand> Commands);
-
-public sealed record AutomationManifestCommand(
-    int Id,
-    string Name,
-    string PayloadShape,
-    IReadOnlyList<AutomationManifestPayloadField> PayloadFields,
-    int ResponseTimeoutMs,
-    bool RequiresReadyDevices,
-    string PathPolicy,
-    string CliHelp,
-    string McpDescription);
-
-public sealed record AutomationManifestPayloadField(
-    string Name,
-    string Type,
-    bool Required);
-
 // Shared command metadata used to keep the app server, ssctl, MCP, and raw
 // automation client from drifting on readiness gates, path-bearing payloads,
 // and long-running command timeout policy.
-public static class AutomationCommandCatalog
+public static partial class AutomationCommandCatalog
 {
-    private static readonly JsonSerializerOptions ManifestJsonOptions = new();
-
     public static IReadOnlyList<AutomationCommandMetadata> Entries { get; } =
         BuildEntries()
             .OrderBy(entry => (int)entry.Kind)
@@ -87,30 +55,6 @@ public static class AutomationCommandCatalog
         throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown automation command kind.");
     }
 
-    public static AutomationManifest CreateManifest()
-        => new(
-            SchemaVersion: 1,
-            Commands: Entries
-                .Select(entry => new AutomationManifestCommand(
-                    Id: (int)entry.Kind,
-                    Name: entry.Name,
-                    PayloadShape: entry.PayloadShape,
-                    PayloadFields: entry.PayloadFields
-                        .Select(field => new AutomationManifestPayloadField(
-                            field.Name,
-                            field.Type.ToString(),
-                            field.Required))
-                        .ToArray(),
-                    ResponseTimeoutMs: entry.ResponseTimeoutMs,
-                    RequiresReadyDevices: entry.RequiresReadyDevices,
-                    PathPolicy: entry.PathPolicy.ToString(),
-                    CliHelp: entry.CliHelp,
-                    McpDescription: entry.McpDescription))
-                .ToArray());
-
-    public static string CreateManifestJson()
-        => JsonSerializer.Serialize(CreateManifest(), ManifestJsonOptions);
-
     public static bool TryGet(string commandName, out AutomationCommandMetadata metadata)
     {
         if (TryResolveKind(commandName, out var kind))
@@ -121,59 +65,6 @@ public static class AutomationCommandCatalog
 
         metadata = null!;
         return false;
-    }
-
-    public static string ValidatePath(
-        AutomationCommandKind kind,
-        string payloadKey,
-        string path)
-    {
-        var metadata = Get(kind);
-        if (metadata.PathPolicy == AutomationCommandPathPolicy.None)
-        {
-            return path;
-        }
-
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            throw new InvalidOperationException($"{metadata.Name} requires non-empty path payload '{payloadKey}'.");
-        }
-
-        string fullPath;
-        try
-        {
-            fullPath = Path.GetFullPath(path);
-        }
-        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException or UnauthorizedAccessException)
-        {
-            throw new InvalidOperationException($"{metadata.Name} payload '{payloadKey}' is not a valid path: {ex.Message}", ex);
-        }
-
-        switch (metadata.PathPolicy)
-        {
-            case AutomationCommandPathPolicy.WriteFile:
-            {
-                var directory = Path.GetDirectoryName(fullPath);
-                if (string.IsNullOrWhiteSpace(directory))
-                {
-                    throw new InvalidOperationException($"{metadata.Name} payload '{payloadKey}' must include a writable file path.");
-                }
-
-                Directory.CreateDirectory(directory);
-                break;
-            }
-            case AutomationCommandPathPolicy.Directory:
-                Directory.CreateDirectory(fullPath);
-                break;
-            case AutomationCommandPathPolicy.ReadFile:
-                if (!File.Exists(fullPath))
-                {
-                    throw new InvalidOperationException($"{metadata.Name} payload '{payloadKey}' must reference an existing file: '{fullPath}'.");
-                }
-                break;
-        }
-
-        return path;
     }
 
     private static bool TryResolveKind(string commandName, out AutomationCommandKind kind)

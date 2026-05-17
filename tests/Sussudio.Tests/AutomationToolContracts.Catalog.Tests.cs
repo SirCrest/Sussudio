@@ -9,6 +9,12 @@ static partial class Program
     private static Task AutomationCommandCatalog_CoversCommandsAndPolicyMetadata()
     {
         var catalogType = RequireType("Sussudio.Tools.AutomationCommandCatalog");
+        var catalogText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
+            .Replace("\r\n", "\n");
+        var manifestText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.Manifest.cs")
+            .Replace("\r\n", "\n");
+        var pathValidationText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.PathValidation.cs")
+            .Replace("\r\n", "\n");
         var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
         var pathPolicyType = RequireType("Sussudio.Tools.AutomationCommandPathPolicy");
         var entriesProperty = catalogType.GetProperty("Entries", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
@@ -33,6 +39,15 @@ static partial class Program
             AssertNotEmpty(mcpDescription, $"Catalog MCP description for {enumValue}");
             AssertEqual(false, mcpDescription == $"Automation command {enumValue}.", $"Catalog explicit MCP description for {enumValue}");
         }
+
+        AssertContains(catalogText, "public static partial class AutomationCommandCatalog");
+        AssertContains(catalogText, "private static IReadOnlyList<AutomationCommandMetadata> BuildEntries()");
+        AssertDoesNotContain(catalogText, "public static AutomationManifest CreateManifest()");
+        AssertDoesNotContain(catalogText, "public static string ValidatePath(");
+        AssertContains(manifestText, "public static AutomationManifest CreateManifest()");
+        AssertContains(manifestText, "public static string CreateManifestJson()");
+        AssertContains(pathValidationText, "public enum AutomationCommandPathPolicy");
+        AssertContains(pathValidationText, "public static string ValidatePath(");
 
         AssertCatalogMetadata(
             catalogType,

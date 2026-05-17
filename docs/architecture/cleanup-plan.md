@@ -19,6 +19,8 @@ Changed ownership:
 
 - `AutomationCommandKind.cs`
 - `AutomationCommandCatalog.cs`
+- `AutomationCommandCatalog.Manifest.cs`
+- `AutomationCommandCatalog.PathValidation.cs`
 - `AutomationPipeProtocol.cs`
 - `AutomationPipeSecurityPolicy.cs`
 

@@ -48,8 +48,12 @@ Entry points:
 
 - `AutomationCommandKind.cs` owns numeric command IDs. Append only; never
   renumber or reuse values.
-- `AutomationCommandCatalog.cs` owns command metadata, payload shape, readiness
-  gating, timeout policy, path policy, CLI help, and MCP descriptions.
+- `AutomationCommandCatalog.cs` owns command metadata table, payload shape,
+  readiness gating, timeout policy, CLI help, and MCP descriptions.
+- `AutomationCommandCatalog.Manifest.cs` owns manifest DTO projection and stable
+  manifest JSON serialization.
+- `AutomationCommandCatalog.PathValidation.cs` owns path-policy types and path
+  validation for path-bearing automation commands.
 - `AutomationPipeProtocol.cs` owns pipe names, auth env var, manifest revision,
   command resolution, and request envelope shape.
 - `AutomationPipeSecurityPolicy.cs` owns the fallback-security predicate shared

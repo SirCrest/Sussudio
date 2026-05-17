@@ -13,6 +13,8 @@ static partial class Program
         {
             "AutomationCommandKind.cs",
             "AutomationCommandCatalog.cs",
+            "AutomationCommandCatalog.Manifest.cs",
+            "AutomationCommandCatalog.PathValidation.cs",
             "AutomationPipeProtocol.cs",
             "AutomationPipeSecurityPolicy.cs"
         })
