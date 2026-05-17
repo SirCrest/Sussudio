@@ -2196,7 +2196,7 @@ Primary current owners:
   owns late device-format probe event ingress, UI enqueue/generation checks,
   selected-device capability refresh, UI-side retarget application, session
   mismatch checks, and active-capture restore.
-  `MainViewModel.DiskSpacePresentation.cs` owns the DiskSpaceInfo assignment bridge,
+  `MainViewModel.RecordingRuntime.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge,
   while `Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs` owns output drive probing,
   fallback, formatting, and suppressed-warning logging.
   `MainViewModel.RecordingRuntime.cs` owns
@@ -2246,7 +2246,7 @@ Primary current owners:
   current-operation checks, progress/cancellation handoff, and CTS cleanup.
   `MainViewModel.FlashbackExportAutomation.cs` owns automation-facing Flashback
   export command execution, linked cancellation, and dispatcher cleanup.
-  `MainViewModel.FlashbackSegments.cs` owns read-only Flashback segment
+  `MainViewModel.FlashbackPlayback.cs` also owns read-only Flashback segment
   projection for UI, CLI, and MCP callers.
   `MainViewModel.FrameRateOptions.cs` owns frame-rate selection reactions and
   auto-selection entry points. `MainViewModel.FrameRateOptionRebuild.cs` owns

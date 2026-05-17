@@ -44,6 +44,11 @@ public partial class MainViewModel
         RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : "--";
     }
 
+    private void UpdateDiskSpace()
+    {
+        DiskSpaceInfo = OutputDriveSpacePresentationBuilder.Build(OutputPath);
+    }
+
     private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)
     {
         if (samples.Count < 2)

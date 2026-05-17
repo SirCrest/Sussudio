@@ -57,14 +57,12 @@ static partial class Program
         var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
         var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExportOperation.cs"];
         var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExportAutomation.cs"];
-        var flashbackSegmentsText = viewModelFiles["MainViewModel.FlashbackSegments.cs"];
         var flashbackPlaybackText = viewModelFiles["MainViewModel.FlashbackPlayback.cs"];
         var flashbackPlaybackCommandsText = viewModelFiles["MainViewModel.FlashbackPlaybackCommands.cs"];
         var flashbackAutomationText = automationFlashbackText
             + "\n" + flashbackExportText
             + "\n" + flashbackExportOperationText
             + "\n" + flashbackExportAutomationText
-            + "\n" + flashbackSegmentsText
             + "\n" + flashbackPlaybackText
             + "\n" + flashbackPlaybackCommandsText;
         var disposalText = viewModelFiles["MainViewModel.Disposal.cs"];
@@ -204,7 +202,7 @@ static partial class Program
         AssertDoesNotContain(
             flashbackExportText + "\n" + flashbackExportOperationText + "\n" + flashbackExportAutomationText,
             "exportCts.Dispose();");
-        AssertMemberContains(flashbackSegmentsText, "GetFlashbackSegments", "_sessionCoordinator.GetFlashbackSegments()");
+        AssertMemberContains(flashbackPlaybackText, "GetFlashbackSegments", "_sessionCoordinator.GetFlashbackSegments()");
         AssertMemberContains(automationFlashbackText, "SetFlashbackEnabledAsync", "_sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken)");
         AssertMemberContains(automationFlashbackText, "RestartFlashbackAsync", "InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken)");
         AssertMemberContains(automationFlashbackText, "RestartFlashbackAsync", "_sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken)");

@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
 
@@ -11,6 +14,12 @@ public partial class MainViewModel
 {
     internal FlashbackPlaybackSnapshot GetFlashbackPlaybackSnapshot()
         => _sessionCoordinator.GetFlashbackPlaybackSnapshot();
+
+    public IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
+        => _sessionCoordinator.GetFlashbackSegments();
+
+    public Task<IReadOnlyList<FlashbackSegmentInfo>> GetFlashbackSegmentsAsync(CancellationToken cancellationToken = default)
+        => FromSynchronousSnapshot(GetFlashbackSegments, cancellationToken);
 
     /// <summary>
     /// Updates flashback buffer status properties from the buffer manager.

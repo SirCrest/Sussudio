@@ -3028,10 +3028,10 @@ Remaining `tools/Common` ownership:
    initial source-telemetry/HDR/live-info/timer/disk-space bootstrap now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`,
    output drive free-space assignment now lives in
-   `MainViewModel.DiskSpacePresentation.cs`, while output drive probing,
+   `MainViewModel.RecordingRuntime.cs`, while output drive probing,
    fallback, formatting, and suppressed-warning logging now live in
-   `OutputDriveSpacePresentationBuilder.cs`, recording size/bitrate
-   projection and recording-state reset reactions still live in
+   `OutputDriveSpacePresentationBuilder.cs`. Recording size/bitrate
+   projection and recording-state reset reactions also live in
    `MainViewModel.RecordingRuntime.cs`, and
    live-capture info projection from runtime snapshots now lives in
    `MainViewModel.LiveSignalPresentation.cs`, including audio-preview activity
@@ -3070,7 +3070,8 @@ Remaining `tools/Common` ownership:
    plus rejection status projection now live in
    `MainViewModel.FlashbackPlaybackCommands.cs`; read-only Flashback playback
    snapshot access plus buffer, bitrate, playback-state, in/out marker, and
-   gap-from-live UI projection live in `MainViewModel.FlashbackPlayback.cs`.
+   gap-from-live UI projection, and read-only segment projection for UI, CLI,
+   and MCP callers live in `MainViewModel.FlashbackPlayback.cs`.
    Flashback UI export commands, save-picker flow, active-export guard, and
    user-facing export result/status handling now live in
    `MainViewModel.FlashbackExport.cs`. Shared Flashback export operation
@@ -3079,9 +3080,7 @@ Remaining `tools/Common` ownership:
    now lives in `MainViewModel.FlashbackExportOperation.cs`.
    Automation-facing Flashback export command execution, linked cancellation,
    and dispatcher cleanup now live in
-   `MainViewModel.FlashbackExportAutomation.cs`. Read-only Flashback segment
-   projection for UI, CLI, and MCP callers now lives in
-   `MainViewModel.FlashbackSegments.cs`. Frame-rate selection reactions and
+   `MainViewModel.FlashbackExportAutomation.cs`. Frame-rate selection reactions and
    auto-selection entry points now live in `MainViewModel.FrameRateOptions.cs`,
    while frame-rate option rebuilding and observable collection mutation live in
    `MainViewModel.FrameRateOptionRebuild.cs`. Pure

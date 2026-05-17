@@ -137,7 +137,7 @@ static partial class Program
         var mainViewModelUiDispatchControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelUiDispatchController.cs"));
         var mainViewModelDeviceFormatProbeControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceFormatProbeController.cs"));
         var mainViewModelRuntimeLifecycleControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeLifecycleController.cs"));
-        var mainViewModelDiskSpacePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DiskSpacePresentation.cs"));
+        var mainViewModelRecordingRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingRuntime.cs"));
         var outputDriveSpacePresentationBuilderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "OutputDriveSpacePresentationBuilder.cs"));
         var mainViewModelLiveSignalPresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.LiveSignalPresentation.cs"));
         var mainViewModelDisposalText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Disposal.cs"));
@@ -178,8 +178,8 @@ static partial class Program
         AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedAudioInputDeviceChanged");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private void SetupTimer()");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.UpdateDiskSpace();");
-        AssertContains(mainViewModelDiskSpacePresentationText, "private void UpdateDiskSpace()");
-        AssertContains(mainViewModelDiskSpacePresentationText, "DiskSpaceInfo = OutputDriveSpacePresentationBuilder.Build(OutputPath);");
+        AssertContains(mainViewModelRecordingRuntimeText, "private void UpdateDiskSpace()");
+        AssertContains(mainViewModelRecordingRuntimeText, "DiskSpaceInfo = OutputDriveSpacePresentationBuilder.Build(OutputPath);");
         AssertContains(outputDriveSpacePresentationBuilderText, "new DriveInfo(Path.GetPathRoot(outputPath) ?? \"C:\");");
         AssertContains(outputDriveSpacePresentationBuilderText, "return $\"Free: {freeGb:F1} GB\";");
         AssertContains(outputDriveSpacePresentationBuilderText, "Suppressed exception in MainViewModel.RefreshDiskSpace");
@@ -222,10 +222,10 @@ static partial class Program
         AssertContains(mainViewModelDisposalText, "_runtimeLifecycleController.StopForDispose();");
         AssertDoesNotContain(mainViewModelDisposalText, "PowerModeChanged -=");
         AssertDoesNotContain(mainViewModelDisposalText, "AudioLevelUpdated -=");
-        AssertDoesNotContain(mainViewModelDiskSpacePresentationText, "OnSystemPowerModeChanged");
-        AssertDoesNotContain(mainViewModelDiskSpacePresentationText, "new DriveInfo(");
-        AssertDoesNotContain(mainViewModelDiskSpacePresentationText, "Path.GetPathRoot(");
-        AssertDoesNotContain(mainViewModelDiskSpacePresentationText, "Trace.TraceWarning(");
+        AssertDoesNotContain(mainViewModelRecordingRuntimeText, "OnSystemPowerModeChanged");
+        AssertDoesNotContain(mainViewModelRecordingRuntimeText, "new DriveInfo(");
+        AssertDoesNotContain(mainViewModelRecordingRuntimeText, "Path.GetPathRoot(");
+        AssertDoesNotContain(mainViewModelRecordingRuntimeText, "Trace.TraceWarning(");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private void OnCaptureStatusChanged(object? sender, string status)");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private void OnCaptureError(object? sender, Exception ex)");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private void OnCapturePreCleanupRequested()");

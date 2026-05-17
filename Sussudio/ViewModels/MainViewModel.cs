@@ -143,7 +143,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Auto resolution options: MainViewModel.AutoResolutionOptions.cs; state-backed selection: MainViewModel.ResolutionOptions.cs
     // Resolution selection policy: MainViewModel.ResolutionSelectionPolicy.cs
     // Disposal / teardown: MainViewModel.Disposal.cs
-    // Recording runtime status: MainViewModel.RecordingRuntime.cs
+    // Recording runtime status and output drive presentation: MainViewModel.RecordingRuntime.cs
     // Live-signal presentation: MainViewModel.LiveSignalPresentation.cs
     // Source telemetry: MainViewModel.Telemetry.cs
     // Target/HDR presentation: MainViewModel.TargetPresentation.cs
