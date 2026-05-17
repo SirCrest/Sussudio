@@ -1938,6 +1938,11 @@ snap/position/marker/CTI refresh order, playback state polling start/stop,
 buffer-fill/position/marker refresh order, and position-label updates with CTI
 re-anchor gating.
 
+Flashback export progress presentation now lives in
+`Sussudio/Controllers/Flashback/FlashbackExportProgressPresentationController.cs`:
+progress-bar value, visibility, and reset-on-complete semantics.
+`MainWindow.Flashback.cs` wires the Flashback presentation controllers.
+
 Flashback command semantics now live in
 `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`: in/out point commands,
 clear, play/pause, Go Live, fullscreen keyboard shortcuts including left/right

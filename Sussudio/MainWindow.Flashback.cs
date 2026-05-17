@@ -5,12 +5,13 @@ namespace Sussudio;
 
 // Flashback timeline presentation glue. Command behavior lives in
 // FlashbackCommandController; playback UI sequencing lives in
-// FlashbackPlaybackUiCoordinator, and scrub/playhead, markers, playback, export,
+// FlashbackPlaybackUiCoordinator, and scrub/playhead, markers, playback,
 // and settings each have their own focused controller or adapter partial.
 public sealed partial class MainWindow
 {
     private FlashbackPlaybackPresentationController _flashbackPlaybackPresentationController = null!;
     private FlashbackPlaybackUiCoordinator _flashbackPlaybackUiCoordinator = null!;
+    private FlashbackExportProgressPresentationController _flashbackExportProgressPresentationController = null!;
 
     private void InitializeFlashbackPlaybackPresentationController()
     {
@@ -39,6 +40,15 @@ public sealed partial class MainWindow
         });
     }
 
+    private void InitializeFlashbackExportProgressPresentationController()
+    {
+        _flashbackExportProgressPresentationController = new FlashbackExportProgressPresentationController(
+            new FlashbackExportProgressPresentationControllerContext
+            {
+                FlashbackExportProgressBar = FlashbackExportProgressBar,
+            });
+    }
+
     private void FlashbackTrack_SizeChanged(object sender, SizeChangedEventArgs e)
         => _flashbackPlaybackUiCoordinator.HandleTrackSizeChanged(e.NewSize.Width, e.NewSize.Height);
 
@@ -53,4 +63,10 @@ public sealed partial class MainWindow
 
     private void UpdateFlashbackBufferPresentation()
         => _flashbackPlaybackUiCoordinator.UpdateBufferPresentation();
+
+    private void UpdateFlashbackExportProgress(double progress)
+        => _flashbackExportProgressPresentationController.UpdateProgress(progress);
+
+    private void UpdateFlashbackExportingPresentation(bool isExporting)
+        => _flashbackExportProgressPresentationController.UpdateExporting(isExporting);
 }

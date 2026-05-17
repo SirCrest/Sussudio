@@ -7,14 +7,14 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackExportProgressPresentation.cs").Replace("\r\n", "\n");
+        var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackExportProgressPresentationController.cs").Replace("\r\n", "\n");
 
-        AssertContains(adapterText, "private FlashbackExportProgressPresentationController _flashbackExportProgressPresentationController = null!;");
-        AssertContains(adapterText, "private void InitializeFlashbackExportProgressPresentationController()");
-        AssertContains(adapterText, "FlashbackExportProgressBar = FlashbackExportProgressBar,");
-        AssertContains(adapterText, "=> _flashbackExportProgressPresentationController.UpdateProgress(progress);");
-        AssertContains(adapterText, "=> _flashbackExportProgressPresentationController.UpdateExporting(isExporting);");
+        AssertContains(flashbackText, "private FlashbackExportProgressPresentationController _flashbackExportProgressPresentationController = null!;");
+        AssertContains(flashbackText, "private void InitializeFlashbackExportProgressPresentationController()");
+        AssertContains(flashbackText, "FlashbackExportProgressBar = FlashbackExportProgressBar,");
+        AssertContains(flashbackText, "=> _flashbackExportProgressPresentationController.UpdateProgress(progress);");
+        AssertContains(flashbackText, "=> _flashbackExportProgressPresentationController.UpdateExporting(isExporting);");
         AssertContains(mainWindowText, "InitializeFlashbackExportProgressPresentationController();");
         AssertContains(propertyChangedText, "TryHandleFlashbackPropertyChanged(propertyName)");
         AssertContains(flashbackPropertyChangedText, "HandleFlashbackExportProgressChanged();");

@@ -1920,8 +1920,8 @@ Primary current owners:
   preserves the XAML event-handler surface as a thin adapter.
 - `Sussudio/Controllers/Flashback/FlashbackExportProgressPresentationController.cs` owns
   Flashback export progress-bar value, visibility, and reset-on-complete
-  semantics. `MainWindow.FlashbackExportProgressPresentation.cs` is the
-  XAML-facing adapter.
+  semantics. `MainWindow.Flashback.cs` wires the export progress presentation
+  controller with the rest of the Flashback presentation surface.
 - `Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs` owns Flashback
   settings-control initialization, GPU decode toggle binding/sync, buffer
   duration combo selection/sync, and buffer-duration change logging.
