@@ -18,12 +18,10 @@ static partial class Program
             "tools/Common/AutomationSnapshotFormatter.DisplayValues.cs",
             "tools/Common/AutomationSnapshotFormatter.Flashback.cs",
             "tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs",
-            "tools/Common/AutomationSnapshotFormatter.AvSync.cs",
             "tools/Common/AutomationSnapshotFormatter.Preview.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs",
-            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs",
-            "tools/Common/AutomationSnapshotFormatter.Source.cs"
+            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs"
         };
         var parts = new string[files.Length];
         for (var i = 0; i < files.Length; i++)

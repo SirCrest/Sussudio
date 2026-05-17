@@ -19,12 +19,10 @@ static partial class Program
         var sharedFormatterDisplayValuesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.DisplayValues.cs");
         var sharedFormatterFlashbackSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Flashback.cs");
         var sharedFormatterMjpegTimingSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs");
-        var sharedFormatterAvSyncSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.AvSync.cs");
         var sharedFormatterPreviewSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Preview.cs");
         var sharedFormatterPreviewD3DSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs");
         var sharedFormatterPreviewD3DSlowFramesSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs");
         var sharedFormatterThreadHealthSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs");
-        var sharedFormatterSourceSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.Source.cs");
         AssertContains(sharedFormatterRootSource, "AppendStateSection(builder, snapshot);");
         AssertContains(sharedFormatterRootSource, "AppendCaptureSettingsSection(builder, snapshot);");
         AssertContains(sharedFormatterRootSource, "AppendAudioSection(builder, snapshot);");
@@ -112,8 +110,8 @@ static partial class Program
         AssertContains(sharedFormatterThreadHealthSource, "WasapiPlaybackQueueDurationMs");
         AssertContains(sharedFormatterMjpegTimingSource, "private static void AppendMjpegTimingSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterMjpegTimingSource, "var mjpegDecodeSamples = Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
-        AssertContains(sharedFormatterAvSyncSource, "private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterAvSyncSource, "var avSyncDrift = Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
+        AssertContains(sharedFormatterCaptureCadenceSource, "private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterCaptureCadenceSource, "var avSyncDrift = Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
         AssertContains(sharedFormatterPreviewSource, "private static void AppendPreviewSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterPreviewSource, "AppendPreviewD3DSection(builder, snapshot);");
         AssertDoesNotContain(sharedFormatterPreviewSource, "AppendPreviewSlowFrameDiagnostics(builder, snapshot);");
@@ -146,8 +144,8 @@ static partial class Program
         AssertContains(sharedFormatterPreviewD3DSlowFramesSource, "internal static void AppendPreviewSlowFrameDiagnostics(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterPreviewD3DSlowFramesSource, "private static string FormatDiagnosticMs(JsonElement element, string propertyName)");
         AssertContains(sharedFormatterPreviewD3DSlowFramesSource, "D3D Slow Frames:");
-        AssertContains(sharedFormatterSourceSource, "private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterSourceSource, "var sourceFrameRate = Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
+        AssertContains(sharedFormatterCaptureCadenceSource, "private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)");
+        AssertContains(sharedFormatterCaptureCadenceSource, "var sourceFrameRate = Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
         AssertContains(sharedFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
         AssertContains(sharedFormatterSource, "CaptureCommandMaxQueueLatencyMs");
         AssertContains(sharedFormatterSource, "CaptureCommandCommandsCoalesced");

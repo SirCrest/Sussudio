@@ -149,12 +149,10 @@ public sealed class ToolFormatterContractsTests
             "tools/Common/AutomationSnapshotFormatter.DisplayValues.cs",
             "tools/Common/AutomationSnapshotFormatter.Flashback.cs",
             "tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs",
-            "tools/Common/AutomationSnapshotFormatter.AvSync.cs",
             "tools/Common/AutomationSnapshotFormatter.Preview.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs",
             "tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs",
-            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs",
-            "tools/Common/AutomationSnapshotFormatter.Source.cs"
+            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs"
         });
 
     private static string ReadSsctlSnapshotFormatterSource()

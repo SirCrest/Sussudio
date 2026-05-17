@@ -3099,7 +3099,8 @@ Primary owners:
   working-set/private/managed memory, GC, and thread-pool text.
   `tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs` owns capture
   cadence, low-FPS, jitter/drop, MJPEG packet fingerprint, sampled visual
-  cadence, and routing to MJPEG/AV-sync/preview/source sections.
+  cadence, AV-sync text, source-signal text, and routing to MJPEG/preview
+  sections.
   `tools/Common/AutomationSnapshotFormatter.Values.cs` owns tolerant JSON
   accessors and typed JSON coercion.
   `tools/Common/AutomationSnapshotFormatter.DisplayValues.cs` owns shared
@@ -3108,13 +3109,11 @@ Primary owners:
   gate, header, subsection ordering, encoder, buffer, cache, queue, failure,
   backpressure, GPU queue, playback, and export text. The
   `tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs`,
-  `tools/Common/AutomationSnapshotFormatter.AvSync.cs`,
   `tools/Common/AutomationSnapshotFormatter.Preview.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs`,
   `tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs`,
-  `tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs`, and
-  `tools/Common/AutomationSnapshotFormatter.Source.cs` own the named snapshot
-  sections. Within the D3D formatter family, `.PreviewD3D.cs` keeps
+  and `tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs` own the named
+  snapshot sections. Within the D3D formatter family, `.PreviewD3D.cs` keeps
   routing/header order plus CPU timing, pipeline-latency, frame-ownership,
   frame-latency wait, and DXGI frame-stat text, while `.SlowFrames.cs` owns
   reusable slow-frame diagnostics and diagnostic millisecond formatting.

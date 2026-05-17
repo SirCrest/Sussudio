@@ -20,4 +20,45 @@ internal static partial class AutomationSnapshotFormatter
         AppendPreviewSection(builder, snapshot);
         AppendSourceSection(builder, snapshot);
     }
+
+    private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)
+    {
+        var avSyncDrift = Get(snapshot, "AvSyncCaptureDriftMs", string.Empty);
+        var avSyncRate = Get(snapshot, "AvSyncCaptureDriftRateMsPerSec", string.Empty);
+        var avSyncEncoder = Get(snapshot, "AvSyncEncoderDriftMs", string.Empty);
+        var avSyncCorrectionSamples = Get(snapshot, "AvSyncEncoderCorrectionSamples", string.Empty);
+        if (string.IsNullOrWhiteSpace(avSyncDrift) && string.IsNullOrWhiteSpace(avSyncEncoder))
+        {
+            return;
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("== AV Sync ==");
+        builder.AppendLine(
+            $"Capture Drift: {(string.IsNullOrWhiteSpace(avSyncDrift) ? "N/A" : avSyncDrift + "ms")} | " +
+            $"Rate: {(string.IsNullOrWhiteSpace(avSyncRate) ? "N/A" : avSyncRate + "ms/s")}");
+        if (string.IsNullOrWhiteSpace(avSyncEncoder))
+        {
+            return;
+        }
+
+        builder.AppendLine(
+            $"Encoder Drift: {avSyncEncoder}ms | " +
+            $"Correction Samples: {(string.IsNullOrWhiteSpace(avSyncCorrectionSamples) ? "N/A" : avSyncCorrectionSamples)}");
+    }
+
+    private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine();
+        builder.AppendLine("== Source ==");
+        var sourceFrameRate = Get(snapshot, "DetectedSourceFrameRate", string.Empty);
+        var sourceFrameRateArg = Get(snapshot, "DetectedSourceFrameRateArg", string.Empty);
+        var sourceFpsSummary = !string.IsNullOrWhiteSpace(sourceFrameRateArg)
+            ? $"{sourceFrameRate}fps ({sourceFrameRateArg})"
+            : !string.IsNullOrWhiteSpace(sourceFrameRate)
+                ? $"{sourceFrameRate}fps"
+                : "N/A";
+        builder.AppendLine($"Source: {Get(snapshot, "SourceWidth")} x {Get(snapshot, "SourceHeight")} @ {sourceFpsSummary} HDR={Get(snapshot, "SourceIsHdr")}");
+        builder.AppendLine($"Telemetry: {Get(snapshot, "SourceTelemetryAvailability")} ({Get(snapshot, "SourceTelemetryConfidence")})");
+    }
 }
