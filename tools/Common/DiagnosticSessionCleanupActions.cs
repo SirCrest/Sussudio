@@ -2,6 +2,8 @@ using System.Text.Json;
 
 namespace Sussudio.Tools;
 
+internal readonly record struct DiagnosticSessionCleanupResult(bool StoppedRecordingForVerification);
+
 internal static partial class DiagnosticSessionCleanupActions
 {
     internal static async Task<DiagnosticSessionCleanupResult> RunAsync(

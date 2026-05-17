@@ -2917,7 +2917,7 @@ Primary owners:
   Flashback playback go-live restore, preview stop, and Flashback enable-state
   restore through typed `AutomationCommandKind.FlashbackAction`,
   `SetPreviewEnabled`, and `SetFlashbackEnabled` sends.
-- `tools/Common/DiagnosticSessionCleanupActions.Models.cs` owns the cleanup
+- `tools/Common/DiagnosticSessionCleanupActions.cs` also owns the cleanup
   result handoff record.
 - `tools/Common/DiagnosticSessionRecordingChecks.cs` owns post-cleanup
   diagnostic-session recording checks: deferred Flashback recording-settings

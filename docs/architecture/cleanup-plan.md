@@ -2646,8 +2646,8 @@ cleanup flow and ordering. Recording stop for verification lives in
 preview stop, and Flashback enable-state restore live beside it in
 `DiagnosticSessionCleanupActions.StateRestore.cs` through typed
 `AutomationCommandKind.FlashbackAction`, `SetPreviewEnabled`, and
-`SetFlashbackEnabled` sends. The cleanup result record lives in
-`DiagnosticSessionCleanupActions.Models.cs`, while
+`SetFlashbackEnabled` sends. The cleanup result record lives with the public
+cleanup flow in `DiagnosticSessionCleanupActions.cs`, while
 `DiagnosticSessionCleanupPolicy.cs` remains the post-cleanup warning validator.
 
 Diagnostic-session recording checks now live in
@@ -2856,7 +2856,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionCleanupActions.cs`
 - `DiagnosticSessionCleanupActions.Recording.cs`
 - `DiagnosticSessionCleanupActions.StateRestore.cs`
-- `DiagnosticSessionCleanupActions.Models.cs`
 - `DiagnosticSessionCleanupPolicy.cs`
 - `DiagnosticSessionRecordingChecks.cs`
 - `DiagnosticSessionRecordingVerification.cs`
