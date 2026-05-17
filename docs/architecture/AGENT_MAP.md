@@ -1907,13 +1907,12 @@ Primary current owners:
   text formatting. `MainWindow.FlashbackMarkers.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs` owns
   Flashback play/pause glyph policy, Go Live enabled state, buffer-duration
-  text, and floating playhead label text. `MainWindow.FlashbackPlaybackPresentation.cs`
-  wires the XAML controls.
+  text, and floating playhead label text. `MainWindow.Flashback.cs` wires the
+  playback presentation controller and playback UI coordinator.
 - `Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs` owns Flashback
   playback UI sequencing: track-resize snap/position/marker/CTI refresh order,
   playback state polling start/stop, buffer-fill/position/marker refresh order,
-  and position-label updates with CTI re-anchor gating. `MainWindow.Flashback.cs`
-  is the adapter.
+  and position-label updates with CTI re-anchor gating.
 - `Sussudio/Controllers/Flashback/FlashbackCommandController.cs` owns Flashback command
   semantics for in/out points, clear, play/pause, Go Live, fullscreen keyboard
   shortcuts including left/right nudge rejection logging, export, save-last-5m,

@@ -8,17 +8,16 @@ static partial class Program
     {
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlaybackPresentation.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
 
-        AssertContains(adapterText, "private FlashbackPlaybackPresentationController _flashbackPlaybackPresentationController = null!;");
-        AssertContains(adapterText, "private void InitializeFlashbackPlaybackPresentationController()");
-        AssertContains(adapterText, "PlayPauseIcon = FlashbackPlayPauseIcon,");
-        AssertContains(adapterText, "GoLiveButton = FlashbackGoLiveButton,");
-        AssertContains(adapterText, "BufferDurationText = FlashbackBufferDurationText,");
-        AssertContains(adapterText, "PlayheadTimeText = FlashbackPlayheadTimeText,");
+        AssertContains(flashbackText, "private FlashbackPlaybackPresentationController _flashbackPlaybackPresentationController = null!;");
+        AssertContains(flashbackText, "private void InitializeFlashbackPlaybackPresentationController()");
+        AssertContains(flashbackText, "PlayPauseIcon = FlashbackPlayPauseIcon,");
+        AssertContains(flashbackText, "GoLiveButton = FlashbackGoLiveButton,");
+        AssertContains(flashbackText, "BufferDurationText = FlashbackBufferDurationText,");
+        AssertContains(flashbackText, "PlayheadTimeText = FlashbackPlayheadTimeText,");
         AssertContains(mainWindowText, "InitializeFlashbackPlaybackPresentationController();");
         AssertContains(controllerText, "internal sealed class FlashbackPlaybackPresentationController");
         AssertContains(controllerText, "public static string GetPlayPauseGlyph(FlashbackPlaybackState state)");

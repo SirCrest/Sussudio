@@ -9,7 +9,19 @@ namespace Sussudio;
 // and settings each have their own focused controller or adapter partial.
 public sealed partial class MainWindow
 {
+    private FlashbackPlaybackPresentationController _flashbackPlaybackPresentationController = null!;
     private FlashbackPlaybackUiCoordinator _flashbackPlaybackUiCoordinator = null!;
+
+    private void InitializeFlashbackPlaybackPresentationController()
+    {
+        _flashbackPlaybackPresentationController = new FlashbackPlaybackPresentationController(new FlashbackPlaybackPresentationControllerContext
+        {
+            PlayPauseIcon = FlashbackPlayPauseIcon,
+            GoLiveButton = FlashbackGoLiveButton,
+            BufferDurationText = FlashbackBufferDurationText,
+            PlayheadTimeText = FlashbackPlayheadTimeText,
+        });
+    }
 
     private void InitializeFlashbackPlaybackUiCoordinator()
     {

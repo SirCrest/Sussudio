@@ -1929,15 +1929,14 @@ in/out marker visibility, selection-region layout, and `m:ss` formatting.
 Flashback playback presentation now lives in
 `Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs`: play/pause
 glyph policy, Go Live enabled state, buffer-duration text, and floating
-playhead label text. `MainWindow.FlashbackPlaybackPresentation.cs` wires the
-XAML controls.
+playhead label text. `MainWindow.Flashback.cs` wires the playback presentation
+controller and playback UI coordinator.
 
 Flashback playback UI sequencing now lives in
 `Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs`: track-resize
 snap/position/marker/CTI refresh order, playback state polling start/stop,
 buffer-fill/position/marker refresh order, and position-label updates with CTI
 re-anchor gating.
-`MainWindow.Flashback.cs` is the adapter.
 
 Flashback command semantics now live in
 `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`: in/out point commands,
