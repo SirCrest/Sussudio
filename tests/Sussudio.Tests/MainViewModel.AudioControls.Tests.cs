@@ -52,6 +52,7 @@ static partial class Program
         AssertNotNull(viewModelType.GetMethod("SavePreviewVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SavePreviewVolume");
 
         var monitoringCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs");
+        var audioInputSelectionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs");
         var transitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs");
         var previewChanged = ExtractMemberCode(monitoringCode, "OnPreviewVolumeChanged");
         var handlePreviewChanged = ExtractMemberCode(transitionCode, "HandlePreviewVolumeChanged");
@@ -61,7 +62,7 @@ static partial class Program
         var restoreTransition = ExtractMemberCode(transitionCode, "RestoreAfterUnavailableAudio");
         var monitoringTransition = ExtractMemberCode(monitoringCode, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
         var audioPreviewChanged = ExtractMemberCode(monitoringCode, "OnIsAudioPreviewEnabledChanged");
-        var applyAudioInputSelection = ExtractMemberCode(monitoringCode, "ApplyAudioInputSelectionAsync");
+        var applyAudioInputSelection = ExtractMemberCode(audioInputSelectionCode, "ApplyAudioInputSelectionAsync");
 
         AssertContains(monitoringCode, "get => _previewAudioVolumeTransitionController.SuppressVolumeSave;");
         AssertContains(monitoringCode, "set => _previewAudioVolumeTransitionController.SuppressVolumeSave = value;");
@@ -107,6 +108,8 @@ static partial class Program
         AssertContains(audioPreviewChanged, "if (!value && !IsRecording)");
         AssertContains(audioPreviewChanged, "if (IsPreviewing && IsInitialized)");
         AssertContains(audioPreviewChanged, "SetAudioMonitoringEnabledWithVolumeTransitionAsync(value, description, teardownCapture: false)");
+        AssertDoesNotContain(monitoringCode, "private async Task ApplyAudioInputSelectionAsync");
+        AssertContains(audioInputSelectionCode, "private async Task ApplyAudioInputSelectionAsync");
         AssertOccursBefore(audioPreviewChanged, "if (value && !IsAudioEnabled)", "IsAudioPreviewEnabled = false;");
         AssertOccursBefore(audioPreviewChanged, "if (_suppressAudioPreviewEnabledChangeOperation)", "if (!value && !IsRecording)");
         AssertOccursBefore(audioPreviewChanged, "if (!value && !IsRecording)", "ResetAudioMeter();");

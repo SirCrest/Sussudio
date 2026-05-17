@@ -2920,7 +2920,9 @@ Remaining `tools/Common` ownership:
    behavior there instead of growing the root facade file. Audio ramp trace
    buffering/sampling now lives in `AudioRampTraceRecorder.cs`, with
    `MainViewModel.AudioRampTrace.cs` kept as the automation-facing adapter; keep
-   the preview monitoring call sites in `MainViewModel.AudioMonitoring.cs`.
+   preview monitoring call sites and coordinator sequencing in
+   `MainViewModel.AudioMonitoring.cs`, while audio input retargeting and
+   preview-monitoring ramp handoff live in `MainViewModel.AudioInputSelection.cs`.
    Microphone endpoint volume synchronization and persistence now live in
    `MainViewModel.MicrophoneVolume.cs`; device-native audio-control support
    probing, readback, and pending saved-state reconciliation now live in

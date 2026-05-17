@@ -2138,8 +2138,9 @@ Primary current owners:
   keeps the automation-facing adapter methods. `PreviewAudioVolumeTransitionController`
   owns preview-volume save suppression/override state plus the preview-audio
   ramp constants, easing, priming, restoring, and property-to-session volume
-  forwarding. Keep preview monitoring call sites, audio input retargeting, and
-  coordinator sequencing in `MainViewModel.AudioMonitoring.cs`.
+  forwarding. `MainViewModel.AudioMonitoring.cs` owns preview monitoring
+  call sites and coordinator sequencing. `MainViewModel.AudioInputSelection.cs`
+  owns audio input retargeting and preview-monitoring ramp handoff.
   `MainViewModel.MicrophoneVolume.cs` owns microphone endpoint volume
   synchronization and persistence.
   `MainViewModel.DeviceAudioRefresh.cs` owns device-native audio-control support
