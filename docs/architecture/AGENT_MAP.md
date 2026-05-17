@@ -1359,11 +1359,10 @@ Primary current owners:
   hot diagnostics refresh paths.
 - Keep new automation diagnostics projection ownership assertions in the focused
   owner files:
-  `DiagnosticsProjection.Snapshot.Tests.cs`, `DiagnosticsProjection.Audio.Tests.cs`,
-  `DiagnosticsProjection.Capture.Tests.cs`, `DiagnosticsProjection.Mjpeg.Tests.cs`,
-  `DiagnosticsProjection.Recording.Tests.cs`, `DiagnosticsProjection.System.Tests.cs`,
-  `DiagnosticsProjection.Preview.Tests.cs`, and
-  `DiagnosticsProjection.Flashback.Tests.cs`.
+  `MainViewModel.Automation.DiagnosticsProjection.Snapshot.Tests.cs`,
+  `.Audio.Tests.cs`, `.Capture.Tests.cs`, `.Mjpeg.Tests.cs`,
+  `.Recording.Tests.cs`, `.System.Tests.cs`, `.Preview.Tests.cs`, and
+  `.Flashback.Tests.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RuntimeSafety.Tests.cs` owns
   automation timeout, recording failure propagation, safe close, screenshot,
   preview-stop surface, process supervisor, and emergency-stop assertions.
@@ -1664,12 +1663,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter*.Tests.cs`
   owns the shared/ssctl snapshot formatter contract family: typed accessors,
   core section formatting, section-order, and Flashback opt-in smoke checks
-  stay in `.Tests.cs`, response accessor checks live in
-  `.ResponseAccessors.Tests.cs`, Flashback output rendering lives in
-  `.Flashback.Tests.cs`, Preview D3D output rendering lives in
-  `.PreviewD3D.Tests.cs`, shared formatter source ownership lives in
-  `.Ownership.Tests.cs`, shared-vs-ssctl field parity lives in
-  `.Parity.Tests.cs`, and MJPEG timing rendering lives in `.MjpegTiming.Tests.cs`.
+  stay in `.Tests.cs`; Flashback output rendering lives in `.Flashback.Tests.cs`,
+  Preview D3D output rendering lives in `.PreviewD3D.Tests.cs`, and shared
+  formatter source ownership lives in `.Ownership.Tests.cs`.
 - `tests/Sussudio.Tests/Formatters.Tests.cs` owns ssctl formatted snapshot
   output smoke checks. `tests/Sussudio.Tests/Formatters.SnapshotOwnership.Tests.cs`
   owns ssctl formatter source ownership assertions, while

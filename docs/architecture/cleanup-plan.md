@@ -519,11 +519,10 @@ harness stays focused on pipe-failure contracts, tool delegation, script
 freshness, and response-state parsing. Automation tool contract coverage is
 otherwise split into catalog/manifest/path-policy contracts, reliability-gates
 script checks, shared/ssctl snapshot formatter contracts, and PresentMon parser
-contracts. Shared formatter tests now mirror the formatter
-partials: the root snapshot-formatter test owns accessors, invalid-response
-handling, section ordering, and the Flashback opt-in gate; Flashback output,
-Preview D3D output, MJPEG timing, response accessors, source ownership, and
-shared-vs-ssctl field parity live in focused
+contracts. Shared formatter tests now mirror the formatter partials: the root
+snapshot-formatter test owns accessors, invalid-response handling, section
+ordering, core section formatting, and the Flashback opt-in gate; Flashback
+output, Preview D3D output, and source ownership live in focused
 `AutomationToolContracts.SnapshotFormatter.*.Tests.cs` owners registered with
 the offline harness. ssctl formatter output smoke checks stay in
 `Formatters.Tests.cs`, while `Formatters.SnapshotOwnership.Tests.cs` owns ssctl
@@ -1094,7 +1093,8 @@ LibAv encoder video setup now lives in
 context configuration, NVENC private option application, and video bitstream-filter
 initialization there. D3D11/CUDA hardware frames setup and ArraySize=1 texture-pool
 creation now live in `Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs`.
-Leave rotation and finalization in `LibAvEncoder.cs`.
+Output rotation now lives in `LibAvEncoder.OutputRotation.cs`; final close and
+native cleanup now live in `LibAvEncoder.ResourceCleanup.cs`.
 
 LibAv encoder video submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep CPU packed
