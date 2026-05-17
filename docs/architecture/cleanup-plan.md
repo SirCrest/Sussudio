@@ -467,12 +467,26 @@ guards also live in `CommandHandlers.SourceOwnership.Tests.cs`; they require
 labels and wire IDs catalog-backed, with the dynamic diagnostic-session runner
 channel intentionally remaining string-based.
 `tests/Sussudio.Tests/ArchitectureDocs.Tests.cs` is now only the
-architecture-doc test family marker shell. AGENT_MAP reference resolution,
-literal `ReadRepoFile` source-shape path resolution, test-owner code-span
-coverage, automation consumer checklist coverage, UI/presentation ownership
-coverage, shared tool automation path coverage, and AGENT_MAP token/consumer
-helper logic live in focused
-`ArchitectureDocs.AgentMap*.cs` owners.
+architecture-doc test family marker shell.
+`tests/Sussudio.Tests/ArchitectureDocs.AgentMapReferences.Tests.cs` owns
+AGENT_MAP reference resolution.
+`tests/Sussudio.Tests/ArchitectureDocs.SourceReferencePaths.Tests.cs` owns
+literal `ReadRepoFile` source-shape path resolution.
+`tests/Sussudio.Tests/ArchitectureDocs.AgentMapOwnershipPaths.Tests.cs` owns
+test-owner code-span coverage.
+`tests/Sussudio.Tests/ArchitectureDocs.AgentMapAutomation.Tests.cs` owns
+automation consumer checklist coverage.
+`tests/Sussudio.Tests/ArchitectureDocs.AgentMapPresentation.Tests.cs` owns
+UI/presentation ownership coverage.
+`tests/Sussudio.Tests/ArchitectureDocs.AgentMapCaptureRuntime.Tests.cs` owns
+CaptureService ownership coverage.
+`tests/Sussudio.Tests/ArchitectureDocs.AgentMapToolAutomation.Tests.cs` owns
+shared tool automation path coverage.
+`tests/Sussudio.Tests/ArchitectureDocs.CleanupPlanReferences.Tests.cs` owns
+cleanup-plan file/folder reference drift checks and architecture-doc test-family
+coverage.
+`tests/Sussudio.Tests/ArchitectureDocs.AgentMapHelpers.cs` owns the shared
+AGENT_MAP token, consumer, and file-family helper logic.
 Shared tool assembly loading and stale-build detection now live in
 `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` so the legacy harness body
 no longer owns tool DLL resolution or freshness policy.

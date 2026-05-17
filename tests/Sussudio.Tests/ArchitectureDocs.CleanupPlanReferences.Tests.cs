@@ -37,6 +37,24 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task ArchitectureCleanupPlan_CoversArchitectureDocsTestFamily()
+    {
+        var repoRoot = GetRepoRoot();
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
+        var missing = EnumerateArchitectureDocsTestFiles(repoRoot)
+            .Where(file => !CleanupPlanContainsExactCodeSpan(cleanupPlanText, file))
+            .ToArray();
+
+        if (missing.Length > 0)
+        {
+            throw new InvalidOperationException(
+                "cleanup-plan.md is missing ArchitectureDocs test-family owner entries: " +
+                string.Join(", ", missing));
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static IEnumerable<string> EnumerateCleanupPlanPathTokens(string markdown)
     {
         foreach (Match match in MarkdownCodeSpanRegex.Matches(markdown))
@@ -68,5 +86,14 @@ static partial class Program
         var normalized = token.TrimEnd('/');
         return files.Contains(normalized, StringComparer.OrdinalIgnoreCase) ||
             directories.Contains(normalized);
+    }
+
+    private static bool CleanupPlanContainsExactCodeSpan(string cleanupPlanText, string relativePath)
+    {
+        var normalizedPath = NormalizeProjectInclude(relativePath);
+        var fileName = GetRepoFileName(normalizedPath);
+
+        return cleanupPlanText.Contains($"`{normalizedPath}`", StringComparison.Ordinal) ||
+            cleanupPlanText.Contains($"`{fileName}`", StringComparison.Ordinal);
     }
 }

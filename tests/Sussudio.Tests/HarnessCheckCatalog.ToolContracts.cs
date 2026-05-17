@@ -39,6 +39,9 @@ static partial class Program
             "Architecture cleanup plan references existing repo files",
             ArchitectureCleanupPlan_FileReferencesResolve);
         await AddCheckAsync(results,
+            "Architecture cleanup plan covers architecture-doc test family",
+            ArchitectureCleanupPlan_CoversArchitectureDocsTestFamily);
+        await AddCheckAsync(results,
             "Architecture agent map test-owner paths use resolving code spans",
             ArchitectureAgentMap_TestOwnerPathsUseCodeSpansAndResolve);
         await AddCheckAsync(results,
