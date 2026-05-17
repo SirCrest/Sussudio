@@ -140,8 +140,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Runtime status/timers: MainViewModel.Runtime.cs, MainViewModel.CaptureRuntimeEvents.cs, and MainViewModel.RecordingRuntime.cs
     // Live-signal presentation: MainViewModel.LiveSignalPresentation.cs
     // Source telemetry: MainViewModel.Telemetry.cs
-    // HDR runtime presentation: MainViewModel.HdrRuntimePresentation.cs
-    // Target-summary presentation: MainViewModel.TargetSummaryPresentation.cs
+    // Target/HDR presentation: MainViewModel.TargetPresentation.cs
     // Settings lifecycle/reactions: MainViewModel.Settings.cs; adapter: MainViewModel.SettingsPersistence.cs; projection: MainViewModelSettingsPersistenceProjection.cs
     // Flashback settings reactions: encoder: MainViewModel.FlashbackEncoderSettings.cs; buffer/GPU: MainViewModel.FlashbackSettings.cs
     // Recording capability refresh: MainViewModel.RecordingCapabilityRefresh.cs

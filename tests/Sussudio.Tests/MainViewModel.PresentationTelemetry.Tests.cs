@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -77,8 +78,7 @@ static partial class Program
     private static Task SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
     {
         var telemetryText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Telemetry.cs").Replace("\r\n", "\n");
-        var hdrRuntimePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.HdrRuntimePresentation.cs").Replace("\r\n", "\n");
-        var targetSummaryPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.TargetSummaryPresentation.cs").Replace("\r\n", "\n");
+        var targetPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.TargetPresentation.cs").Replace("\r\n", "\n");
         var autoResolutionPresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutoResolutionPresentation.cs").Replace("\r\n", "\n");
         var builderText = ReadRepoFile("Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs").Replace("\r\n", "\n");
 
@@ -86,18 +86,26 @@ static partial class Program
         AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(snapshot, DateTimeOffset.UtcNow);");
         AssertContains(telemetryText, "UpdateTargetSummary();");
         AssertDoesNotContain(telemetryText, "private void UpdateHdrRuntimeStatusFromCapture(");
-        AssertContains(hdrRuntimePresentationText, "private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
-        AssertContains(hdrRuntimePresentationText, "HdrRuntimeState = runtime.HdrRuntimeState;");
-        AssertContains(hdrRuntimePresentationText, "HdrReadinessReason = runtime.HdrReadinessReason;");
-        AssertContains(hdrRuntimePresentationText, "UpdateTargetSummary();");
+        AssertContains(targetPresentationText, "private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
+        AssertContains(targetPresentationText, "HdrRuntimeState = runtime.HdrRuntimeState;");
+        AssertContains(targetPresentationText, "HdrReadinessReason = runtime.HdrReadinessReason;");
+        AssertContains(targetPresentationText, "UpdateTargetSummary();");
         AssertDoesNotContain(telemetryText, "private void UpdateTargetSummary()");
         AssertDoesNotContain(telemetryText, "SourceTelemetryPresentationBuilder.BuildTargetSummary(");
-        AssertContains(targetSummaryPresentationText, "private void UpdateTargetSummary()");
-        AssertContains(targetSummaryPresentationText, "SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(");
-        AssertContains(targetSummaryPresentationText, "GetSelectedResolutionDisplayText(),");
-        AssertContains(targetSummaryPresentationText, "SelectedFriendlyFrameRate,");
-        AssertContains(targetSummaryPresentationText, "SelectedExactFrameRate,");
-        AssertContains(targetSummaryPresentationText, "SelectedExactFrameRateArg,");
+        AssertContains(targetPresentationText, "private void UpdateTargetSummary()");
+        AssertContains(targetPresentationText, "SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(");
+        AssertContains(targetPresentationText, "GetSelectedResolutionDisplayText(),");
+        AssertContains(targetPresentationText, "SelectedFriendlyFrameRate,");
+        AssertContains(targetPresentationText, "SelectedExactFrameRate,");
+        AssertContains(targetPresentationText, "SelectedExactFrameRateArg,");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.HdrRuntimePresentation.cs")),
+            "old HDR runtime presentation file removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.TargetSummaryPresentation.cs")),
+            "old target summary presentation file removed");
         AssertContains(autoResolutionPresentationText, "private string GetSelectedResolutionDisplayText()");
         AssertDoesNotContain(telemetryText, "private static string BuildSourceTelemetrySummaryText(");
         AssertDoesNotContain(telemetryText, "private static string BuildTelemetryAgeText(");
