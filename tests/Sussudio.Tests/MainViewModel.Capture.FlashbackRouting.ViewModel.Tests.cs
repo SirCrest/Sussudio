@@ -154,6 +154,8 @@ static partial class Program
         AssertContains(disposalText, "Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(disposalText, "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
         AssertContains(disposalText, "CancelFlashbackExportCts(exportCts);");
+        AssertContains(rawDisposalText, "DetachRuntimeWiring();");
+        AssertOccursBefore(rawDisposalText, "DetachRuntimeWiring();", "var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(");
         AssertContains(rawDisposalText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
         AssertContains(viewModelFlashbackStateText, "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
         AssertContains(viewModelCaptureStateText, "private const int PreviewReinitializeDebounceMs = 250;");

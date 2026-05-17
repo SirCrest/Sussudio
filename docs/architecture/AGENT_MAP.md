@@ -2242,7 +2242,7 @@ Primary current owners:
   is the XAML-facing adapter.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.cs` owns compatibility-facade
-  construction, dependency assignment, event subscription, and small bridge
+  construction, dependency assignment, collaborator construction, and small bridge
   methods. `MainViewModel.State.cs` owns shared shell/status/live-info flags
   and non-preview coordination gates; `MainViewModel.PreviewState.cs` owns
   preview lifecycle flags, preview reinitialize coordination, and preview
@@ -2284,6 +2284,8 @@ Primary current owners:
   `MainViewModel.Dispatching.cs` owns shared
   dispatcher enqueue/invoke helpers and preview event fan-out for the partial
   family. `MainViewModel.Runtime.cs` owns periodic timer refresh orchestration.
+  `MainViewModel.RuntimeWiring.cs` owns runtime event subscription/unsubscription
+  plus initial source-telemetry, HDR, live-info, timer, and disk-space bootstrap.
   `MainViewModel.DiskSpacePresentation.cs` owns the DiskSpaceInfo assignment bridge,
   while `Sussudio/ViewModels/OutputDriveSpacePresentationBuilder.cs` owns output drive probing,
   fallback, formatting, and suppressed-warning logging.
@@ -2312,7 +2314,7 @@ Primary current owners:
   operation execution and failure/cancellation state repair.
   `MainViewModel.RecordingState.cs` owns recording option selections, output
   path, counters, and transition flags.
-  `MainViewModel.Disposal.cs` owns bounded teardown, event unsubscription, and
+  `MainViewModel.Disposal.cs` owns bounded teardown, watcher disposal, and
   export-cancellation cleanup.
   `MainViewModel.AutomationSnapshots.cs` owns automation-facing capture runtime,
   health, and recording snapshot projection. `MainViewModel.AutomationProbes.cs`

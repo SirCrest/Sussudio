@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Dispatching;
-using Microsoft.Win32;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
@@ -48,7 +47,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     internal MainViewModel(MainViewModelDependencies dependencies)
     {
         _deviceService = dependencies.DeviceService;
-        _deviceService.FormatProbeCompleted += OnDeviceFormatProbeCompleted;
         _captureService = dependencies.CaptureService;
         _sessionCoordinator = dependencies.SessionCoordinator;
         _audioRampTraceRecorder = new AudioRampTraceRecorder(
@@ -74,33 +72,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             });
         _deviceAudioControlService = dependencies.DeviceAudioControlService;
         _dispatcherQueue = dependencies.DispatcherQueue;
-
-        _captureService.StatusChanged += OnCaptureStatusChanged;
-        _captureService.ErrorOccurred += OnCaptureError;
-        _captureService.PreCleanupRequested += OnCapturePreCleanupRequested;
-
-        // Subscribe to system power events to recover capture after sleep/hibernate
-        // resume. SystemEvents.PowerModeChanged is the standard .NET desktop API for
-        // S3/S4 wake notifications — Microsoft.Windows.System.Power.PowerManager has
-        // no Resuming event (only battery/display/effective-power-mode changes), so
-        // this is the only managed surface that delivers the wake signal we need.
-        // The event fires on a system thread-pool thread; the handler dispatches the
-        // actual reinit to the UI thread via EnqueueUiOperation.
-        SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;
-        _captureService.FrameCaptured += OnFrameCaptured;
-        _captureService.AudioLevelUpdated += OnAudioLevelUpdated;
-        _captureService.MicrophoneAudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
-        _captureService.SourceTelemetryUpdated += OnSourceTelemetryUpdated;
-        _latestSourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();
-        ApplySourceTelemetrySnapshot(_latestSourceTelemetry, allowAutoRetarget: false);
-        UpdateHdrRuntimeStatusFromCapture();
-        UpdateLiveCaptureInfo();
-
         _audioDeviceWatcher = dependencies.AudioDeviceWatcher;
-        _audioDeviceWatcher.DevicesChanged += OnAudioDevicesChanged;
 
-        SetupTimer();
-        UpdateDiskSpace();
+        AttachRuntimeWiring();
+        InitializeRuntimePresentation();
     }
     public void SetWindowHandle(IntPtr handle)
     {
@@ -143,6 +118,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device format probes: MainViewModel.DeviceFormatProbes.cs
     // Capture option visibility: MainViewModel.CaptureOptionVisibility.cs
     // Frame-rate selection: MainViewModel.FrameRateOptions.cs; rebuild: MainViewModel.FrameRateOptionRebuild.cs
+    // Runtime wiring/bootstrap: MainViewModel.RuntimeWiring.cs
     // Automatic frame-rate selection policy: MainViewModel.FrameRateAutoSelectionPolicy.cs
     // Frame-rate/mode selection state: MainViewModel.ModeSelectionState.cs
     // Frame-rate timing state wrappers: MainViewModel.FrameRateTiming.cs; pure timing policy: FrameRateTimingPolicy.cs

@@ -3084,7 +3084,7 @@ Remaining `tools/Common` ownership:
    source, and HDR state, `MainViewModel.AudioState.cs` owns audio/microphone/
    device-audio state, and `MainViewModel.FlashbackState.cs` owns Flashback
    timeline/export state. Keep the root `MainViewModel.cs` focused on the
-   compatibility facade, dependency assignment, event subscription, and small
+   compatibility facade, dependency assignment, collaborator construction, and small
    bridge methods. Audio capture/preview property handlers now live in
    `MainViewModel.AudioPropertyChanges.cs`, custom audio input handlers live in
    `MainViewModel.AudioInputPropertyChanges.cs`, microphone monitor/device
@@ -3094,6 +3094,8 @@ Remaining `tools/Common` ownership:
    handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
    dispatcher enqueue/invoke helpers now live in `MainViewModel.Dispatching.cs`,
    periodic timer refresh orchestration now lives in `MainViewModel.Runtime.cs`,
+   runtime event subscription/unsubscription and initial source-telemetry/HDR/live-info/
+   timer/disk-space bootstrap now live in `MainViewModel.RuntimeWiring.cs`,
    output drive free-space assignment now lives in
    `MainViewModel.DiskSpacePresentation.cs`, while output drive probing,
    fallback, formatting, and suppressed-warning logging now live in
@@ -3121,7 +3123,7 @@ Remaining `tools/Common` ownership:
    Concrete recording start/stop operation execution and failure/cancellation
    state repair live in `MainViewModel.RecordingOperations.cs`. Recording option selections, output
    path, counters, and transition flags now live in
-   `MainViewModel.RecordingState.cs`. Bounded teardown and event unsubscription now live
+   `MainViewModel.RecordingState.cs`. Bounded teardown and watcher disposal now live
    in `MainViewModel.Disposal.cs`. Automation-facing capture runtime, health,
    and recording snapshot projection now lives in
    `MainViewModel.AutomationSnapshots.cs`; source/preview probes and preview

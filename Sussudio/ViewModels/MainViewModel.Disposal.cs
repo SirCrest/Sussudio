@@ -1,13 +1,12 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Win32;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// View-model teardown, event unsubscription, and bounded disposal policy.
+/// View-model teardown and bounded disposal policy.
 /// </summary>
 public partial class MainViewModel
 {
@@ -31,16 +30,7 @@ public partial class MainViewModel
         _deviceAudioModeCts?.Cancel();
         _deviceAudioRefreshCts?.Cancel();
         _timer?.Stop();
-        _deviceService.FormatProbeCompleted -= OnDeviceFormatProbeCompleted;
-        SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;
-        _captureService.StatusChanged -= OnCaptureStatusChanged;
-        _captureService.ErrorOccurred -= OnCaptureError;
-        _captureService.PreCleanupRequested -= OnCapturePreCleanupRequested;
-        _captureService.FrameCaptured -= OnFrameCaptured;
-        _captureService.AudioLevelUpdated -= OnAudioLevelUpdated;
-        _captureService.MicrophoneAudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
-        _captureService.SourceTelemetryUpdated -= OnSourceTelemetryUpdated;
-        _audioDeviceWatcher.DevicesChanged -= OnAudioDevicesChanged;
+        DetachRuntimeWiring();
         _audioDeviceWatcher.Dispose();
         var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "SUSSUDIO_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
