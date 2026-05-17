@@ -1359,9 +1359,7 @@ tracking live in
 root exporter keeps shared native state, constants, and fields only.
 
 Flashback exporter lock policy now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.ExportLock.cs`. Shared
-cancelled/disposed result creation lives in
-`Sussudio/Services/Flashback/FlashbackExporter.Results.cs`. Completed-output
+`Sussudio/Services/Flashback/FlashbackExporter.ExportLock.cs`. Completed-output
 length validation lives in
 `Sussudio/Services/Flashback/FlashbackExporter.OutputValidation.cs`, normalized
 path comparison and output path validation live in
@@ -1370,7 +1368,7 @@ export-range validation plus segment/export-range overlap classification live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentSelection.cs`. Native
 input/output cleanup lives in
 `Sussudio/Services/Flashback/FlashbackExporter.NativeState.cs`, linked export
-cancellation-source helpers live in
+cancellation-source helpers plus shared cancelled/disposed result creation live in
 `Sussudio/Services/Flashback/FlashbackExporter.Cancellation.cs`, FFmpeg error
 string formatting/throwing lives in
 `Sussudio/Services/Flashback/FlashbackExporter.LibAvErrors.cs`, and timestamp

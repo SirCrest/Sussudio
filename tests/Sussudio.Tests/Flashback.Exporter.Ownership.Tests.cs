@@ -40,8 +40,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var exportLockText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.ExportLock.cs")
             .Replace("\r\n", "\n");
-        var resultsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Results.cs")
-            .Replace("\r\n", "\n");
         var outputValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.OutputValidation.cs")
             .Replace("\r\n", "\n");
         var pathValidationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PathValidation.cs")
@@ -158,8 +156,8 @@ static partial class Program
         AssertContains(exportLockText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)");
         AssertContains(exportLockText, "private void ReleaseExportLockBestEffort(string operation)");
         AssertContains(exportLockText, "private void DisposeExportLockBestEffort()");
-        AssertContains(resultsText, "private static FinalizeResult CreateCancelledExportResult(string outputPath)");
-        AssertContains(resultsText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
+        AssertContains(cancellationText, "private static FinalizeResult CreateCancelledExportResult(string outputPath)");
+        AssertContains(cancellationText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
         AssertContains(outputValidationText, "private static long GetFileLengthBestEffort(string path)");
         AssertContains(outputValidationText, "private static bool TryValidateCompletedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
         AssertContains(pathValidationText, "private static bool IsSamePath(string? left, string? right)");
