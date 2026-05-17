@@ -2867,9 +2867,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackMetrics.Export.cs`
 - `DiagnosticSessionFlashbackMetrics.Models.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackSession.Audio.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackSession.Decode.cs`
-- `DiagnosticSessionFlashbackMetrics.PlaybackSession.LowPercentile.cs`
 - `DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`
 - `DiagnosticSessionFlashbackMetrics.Recording.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`

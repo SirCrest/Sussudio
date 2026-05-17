@@ -7,9 +7,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackMetrics.Models.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs",
-            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.LowPercentile.cs",
-            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Decode.cs",
-            "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.Audio.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs",
             "tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs"
         };
