@@ -175,19 +175,18 @@ static partial class Program
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var recordingPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.RecordButtonAnimations.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs").Replace("\r\n", "\n");
         var recordingPresentationText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
 
-        AssertContains(adapterText, "private RecordingButtonChromeController _recordingButtonChromeController = null!;");
-        AssertContains(adapterText, "private void InitializeRecordingButtonChromeController()");
-        AssertContains(adapterText, "RecordingGlowBorder = RecordingGlowBorder,");
-        AssertContains(adapterText, "RecordingGlowPulseStoryboard = RecordingGlowPulseStoryboard,");
-        AssertContains(adapterText, "RecPulseStoryboard = RecPulseStoryboard,");
-        AssertContains(adapterText, "RecordButton = RecordButton,");
-        AssertContains(adapterText, "RecordButtonNormalContent = RecordButtonNormalContent,");
-        AssertContains(adapterText, "RecordButtonStartingContent = RecordButtonStartingContent,");
-        AssertContains(adapterText, "RecordButtonRecordingContent = RecordButtonRecordingContent,");
+        AssertContains(recordingPropertyChangedText, "private RecordingButtonChromeController _recordingButtonChromeController = null!;");
+        AssertContains(recordingPropertyChangedText, "private void InitializeRecordingButtonChromeController()");
+        AssertContains(recordingPropertyChangedText, "RecordingGlowBorder = RecordingGlowBorder,");
+        AssertContains(recordingPropertyChangedText, "RecordingGlowPulseStoryboard = RecordingGlowPulseStoryboard,");
+        AssertContains(recordingPropertyChangedText, "RecPulseStoryboard = RecPulseStoryboard,");
+        AssertContains(recordingPropertyChangedText, "RecordButton = RecordButton,");
+        AssertContains(recordingPropertyChangedText, "RecordButtonNormalContent = RecordButtonNormalContent,");
+        AssertContains(recordingPropertyChangedText, "RecordButtonStartingContent = RecordButtonStartingContent,");
+        AssertContains(recordingPropertyChangedText, "RecordButtonRecordingContent = RecordButtonRecordingContent,");
         AssertContains(mainWindowText, "InitializeRecordingButtonChromeController();");
         AssertContains(propertyChangedText, "TryHandleRecordingPropertyChanged(propertyName)");
         AssertContains(recordingPropertyChangedText, "HandleRecordingChanged();");
@@ -246,7 +245,7 @@ static partial class Program
         AssertDoesNotContain(recordingPresentationText, "_context.RecordButtonStartingContent.");
         AssertDoesNotContain(recordingPresentationText, "_context.RecordingGlowPulseStoryboard.");
         AssertDoesNotContain(recordingPresentationText, "_context.RecPulseStoryboard.");
-        AssertDoesNotContain(adapterText, "Storyboard.SetTarget(anim, RecordButton);");
+        AssertDoesNotContain(recordingPropertyChangedText, "Storyboard.SetTarget(anim, RecordButton);");
 
         return Task.CompletedTask;
     }

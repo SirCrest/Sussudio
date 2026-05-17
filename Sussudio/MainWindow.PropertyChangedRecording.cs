@@ -7,6 +7,7 @@ namespace Sussudio;
 // owns ViewModel-derived recording lockouts and delegates record-button chrome.
 public sealed partial class MainWindow
 {
+    private RecordingButtonChromeController _recordingButtonChromeController = null!;
     private RecordingStatePresentationController _recordingStatePresentationController = null!;
 
     private bool TryHandleRecordingPropertyChanged(string propertyName)
@@ -28,6 +29,20 @@ public sealed partial class MainWindow
             default:
                 return false;
         }
+    }
+
+    private void InitializeRecordingButtonChromeController()
+    {
+        _recordingButtonChromeController = new RecordingButtonChromeController(new RecordingButtonChromeControllerContext
+        {
+            RecordingGlowBorder = RecordingGlowBorder,
+            RecordingGlowPulseStoryboard = RecordingGlowPulseStoryboard,
+            RecPulseStoryboard = RecPulseStoryboard,
+            RecordButton = RecordButton,
+            RecordButtonNormalContent = RecordButtonNormalContent,
+            RecordButtonStartingContent = RecordButtonStartingContent,
+            RecordButtonRecordingContent = RecordButtonRecordingContent,
+        });
     }
 
     private void InitializeRecordingStatePresentationController()

@@ -2121,7 +2121,8 @@ Demo-visible record-button chrome now lives in
 `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs`: recording glow,
 Rec pulse, starting spinner, normal/recording content, padding, enabled-state
 application, and the circle/pill width morph.
-`MainWindow.RecordButtonAnimations.cs` is the XAML-facing adapter.
+`MainWindow.PropertyChangedRecording.cs` wires the chrome controller with the
+recording-state presentation adapter.
 
 Recording button command execution and preview-state logging after a recording
 start now live in `Sussudio/Controllers/Recording/Button/RecordingButtonActionController.cs`.
