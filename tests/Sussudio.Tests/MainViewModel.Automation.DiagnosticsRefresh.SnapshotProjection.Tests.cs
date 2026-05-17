@@ -86,8 +86,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionAudioText, "var audioSignalProjection = BuildAudioSignalProjection(viewModelSnapshot, audioSignal);");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "var captureIngest = BuildCaptureIngestProjection(captureRuntime);");
         AssertContains(diagnostics.SnapshotProjectionAudioText, "var wasapiAudio = BuildWasapiAudioProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionAudioSignalText, "private static AudioSignalProjection BuildAudioSignalProjection(");
-        AssertContains(diagnostics.SnapshotProjectionAudioSignalText, "Peak = viewModelSnapshot.AudioPeak,");
+        AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioSignalProjection BuildAudioSignalProjection(");
+        AssertContains(diagnostics.SnapshotProjectionAudioText, "Peak = viewModelSnapshot.AudioPeak,");
         AssertContains(diagnostics.SnapshotProjectionCaptureIngestText, "private static CaptureIngestProjection BuildCaptureIngestProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.SnapshotProjectionCaptureIngestText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
         AssertContains(diagnostics.SnapshotProjectionWasapiAudioText, "private static WasapiAudioProjection BuildWasapiAudioProjection(CaptureRuntimeSnapshot captureRuntime)");
