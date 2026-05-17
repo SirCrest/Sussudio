@@ -242,26 +242,12 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs`
   owns diagnostic lane text orchestration and lane DTOs used by diagnostic
   verdicts.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Source.cs`
-  owns source, MJPEG decode, and source telemetry diagnostic lane text
-  formatting.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Preview.cs`
-  owns preview scheduler diagnostic lane text formatting.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewRender.cs`
-  owns preview renderer diagnostic lane text formatting.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewPresent.cs`
-  owns preview present/display diagnostic lane text formatting.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewVisual.cs`
-  owns preview visual cadence diagnostic lane text formatting.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Recording.cs`
-  owns recording and audio integrity diagnostic lane text formatting.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Realtime.cs`
+  owns source, MJPEG decode/source-signal, preview scheduler/render/present/
+  visual, recording, and audio diagnostic lane text formatting.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs`
-  owns Flashback recording diagnostic lane text formatting.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.FlashbackExport.cs`
-  owns Flashback export and temp-cache diagnostic lane text formatting.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.FlashbackPlayback.cs`
-  owns Flashback playback-command and playback performance diagnostic lane text
-  formatting.
+  owns Flashback recording, export, temp-cache, playback-command, and playback
+  performance diagnostic lane text formatting.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` owns
   performance scoring.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.EvaluationPolicy.cs`
