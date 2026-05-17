@@ -87,6 +87,9 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.DiagnosticCommands.cs`
   owns diagnostic readback command bodies for recent events, performance
   timeline, and audio ramp traces behind the custom command router.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.DeviceCommands.cs`
+  owns device refresh, capture-device selection, audio-input selection, and
+  capture-options readback command bodies behind the custom command router.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs`
   owns Flashback action/export/segment/restart/enable command bodies behind the
   custom command router.

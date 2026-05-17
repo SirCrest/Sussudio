@@ -245,6 +245,9 @@ payloads, special response shapes, or capture/Flashback routing.
 `AutomationCommandDispatcher.DiagnosticCommands.cs` owns diagnostic readback
 command bodies for recent events, performance timeline, and audio ramp traces
 behind the custom command router.
+`AutomationCommandDispatcher.DeviceCommands.cs` owns device refresh,
+capture-device selection, audio-input selection, and capture-options readback
+command bodies behind the custom command router.
 `AutomationCommandDispatcher.FlashbackCommands.cs` owns Flashback action,
 export, segment, restart, and enable command bodies behind the custom command
 router.

@@ -54,6 +54,9 @@ static partial class Program
             "Automation dispatcher manifest command is read-only and readiness-independent",
             AutomationCommandDispatcher_GetAutomationManifest_IsReadOnlyAndReadinessIndependent);
         await AddCheckAsync(results,
+            "Automation dispatcher device commands live in focused partial",
+            AutomationCommandDispatcher_DeviceCommands_LiveInFocusedPartial);
+        await AddCheckAsync(results,
             "Automation dispatcher flashback failures return playback diagnostics",
             AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics);
         await AddCheckAsync(results,

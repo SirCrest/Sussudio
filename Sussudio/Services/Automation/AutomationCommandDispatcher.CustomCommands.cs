@@ -46,30 +46,16 @@ public sealed partial class AutomationCommandDispatcher
                 return ExecuteGetDiagnosticsCommand(payload, correlationId);
 
             case AutomationCommandKind.RefreshDevices:
-                await _viewModel.RefreshDevicesForAutomationAsync(cancellationToken).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, "Device list refresh requested.");
+                return await ExecuteRefreshDevicesCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.SelectDevice:
-            {
-                var deviceId = GetString(payload, "deviceId");
-                var deviceName = GetString(payload, "deviceName");
-                await _viewModel.SelectDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, "Capture device selection requested.");
-            }
+                return await ExecuteSelectDeviceCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.SelectAudioInputDevice:
-            {
-                var deviceId = GetString(payload, "deviceId");
-                var deviceName = GetString(payload, "deviceName");
-                await _viewModel.SelectAudioInputDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
-                return CreateAcknowledgedResponse(correlationId, "Audio input device selection requested.");
-            }
+                return await ExecuteSelectAudioInputDeviceCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.GetCaptureOptions:
-            {
-                var options = await _viewModel.GetAutomationOptionsSnapshotAsync(cancellationToken).ConfigureAwait(false);
-                return CreateResponse(correlationId, "Capture options retrieved.", data: options);
-            }
+                return await ExecuteGetCaptureOptionsCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.SetMjpegDecoderCount:
             {
