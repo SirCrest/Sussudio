@@ -140,22 +140,27 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("\"pipe-connect-failed\"", pipeClientConnectErrorsText);
         Assert.Contains("public string ErrorCode { get; }", sharedClientText);
 
-        Assert.Contains("catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))", ssctlPipeText);
-        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex)", ssctlPipeText);
+        Assert.Contains("AutomationCommandTransport.SendCommandAsync(", ssctlPipeText);
+        Assert.Contains("unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException", ssctlPipeText);
         Assert.Contains("throw new UsageException(ex.Message);", ssctlPipeText);
+        Assert.DoesNotContain("AutomationPipeClient.SendCommandWithResultAsync", ssctlPipeText);
         Assert.DoesNotContain("catch (AutomationPipeConnectException ex)", ssctlPipeText);
         Assert.DoesNotContain("AutomationSyntheticErrorResponse.Create(ex.Message, ex.ErrorCode)", ssctlPipeText);
         Assert.DoesNotContain("private static JsonElement CreateSyntheticError", ssctlPipeText);
         Assert.DoesNotContain("Sussudio is not running or not responding. Start the app and try again.", ssctlPipeText);
 
-        Assert.Contains("catch (ArgumentException ex)", mcpPipeText);
-        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, \"unknown-command\")", mcpPipeText);
-        Assert.Contains("catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))", mcpPipeText);
-        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex)", mcpPipeText);
+        Assert.Contains("AutomationCommandTransport.SendCommandAsync(", mcpPipeText);
+        Assert.Contains("unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError", mcpPipeText);
+        Assert.DoesNotContain("AutomationPipeClient.SendCommandWithResultAsync", mcpPipeText);
         Assert.DoesNotContain("catch (AutomationPipeConnectException ex)", mcpPipeText);
         Assert.DoesNotContain("AutomationSyntheticErrorResponse.Create(ex.Message, ex.ErrorCode)", mcpPipeText);
         Assert.DoesNotContain("private static JsonElement CreateSyntheticError", mcpPipeText);
         Assert.DoesNotContain("Sussudio is not running or not responding. Start the app and try again.", mcpPipeText);
+        Assert.Contains("internal static class AutomationCommandTransport", sharedClientText);
+        Assert.Contains("internal enum AutomationUnknownCommandHandling", sharedClientText);
+        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, \"unknown-command\")", sharedClientText);
+        Assert.Contains("catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))", sharedClientText);
+        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex)", sharedClientText);
         Assert.Contains("internal static class AutomationSyntheticErrorResponse", sharedClientText);
         Assert.Contains("[\"CommandLifecycle\"] = \"failed\"", sharedClientText);
         Assert.Contains("[\"Snapshot\"] = null", sharedClientText);
@@ -228,6 +233,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
                 "tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs",
                 "tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs",
                 "tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs",
+                "tools/Common/AutomationPipeClient/AutomationCommandTransport.cs",
                 "tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs",
                 "tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs",
                 "tools/Common/AutomationPipeClient/AutomationSyntheticErrorResponse.cs"

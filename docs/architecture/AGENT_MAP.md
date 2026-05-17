@@ -2416,14 +2416,16 @@ Primary owners:
   pipe connect failure classification and exact CLI/MCP diagnostic error codes.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs` owns
   command envelope sending and `not_ready` retry behavior.
+- `tools/Common/AutomationPipeClient/AutomationCommandTransport.cs` owns
+  command-specific timeout selection, shared response-element validation,
+  synthetic error shaping, and explicit ssctl/MCP unknown-command policy mode.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs` owns
   tolerant response state parsing.
 - `tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs` owns pipe
   command result and exception types.
 - `tools/Common/AutomationPipeClient/AutomationSyntheticErrorResponse.cs` owns
   the shared structured error-envelope factory and common transport/protocol
-  exception-to-envelope mapper used by ssctl and MCP adapters. Adapter-specific
-  unknown-command policy stays at the ssctl/MCP edges.
+  exception-to-envelope mapper used by the shared command transport.
 - Fixed MCP routes whose commands exist in `AutomationCommandKind` should call
   the typed MCP `PipeClient.SendCommandAsync(AutomationCommandKind, ...)`
   overload at the pipe seam. Do not list converted routes here; the shared

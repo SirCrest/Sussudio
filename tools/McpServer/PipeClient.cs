@@ -1,4 +1,3 @@
-using System.IO;
 using System.Text.Json;
 using Sussudio.Models;
 using Sussudio.Tools;
@@ -26,36 +25,16 @@ public sealed class PipeClient
             : configuredPipeName;
     }
 
-    public async Task<JsonElement> SendCommandAsync(
+    public Task<JsonElement> SendCommandAsync(
         string commandName,
         Dictionary<string, object?>? payload = null,
         int? responseTimeoutMs = null)
-    {
-        var effectiveResponseTimeoutMs = responseTimeoutMs ?? AutomationPipeProtocol.GetDefaultResponseTimeout(commandName);
-
-        try
-        {
-            var result = await AutomationPipeClient.SendCommandWithResultAsync(
-                    _pipeName,
-                    commandName,
-                    payload,
-                    AutomationPipeProtocol.DefaultConnectTimeoutMs,
-                    effectiveResponseTimeoutMs,
-                    includeResponseElement: true)
-                .ConfigureAwait(false);
-
-            return result.ResponseElement
-                ?? throw new JsonException("Automation pipe returned invalid JSON.");
-        }
-        catch (ArgumentException ex)
-        {
-            return AutomationSyntheticErrorResponse.Create(ex.Message, "unknown-command");
-        }
-        catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))
-        {
-            return AutomationSyntheticErrorResponse.Create(ex);
-        }
-    }
+        => AutomationCommandTransport.SendCommandAsync(
+            _pipeName,
+            commandName,
+            payload,
+            responseTimeoutMs: responseTimeoutMs,
+            unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError);
 
     public Task<JsonElement> SendCommandAsync(
         AutomationCommandKind kind,

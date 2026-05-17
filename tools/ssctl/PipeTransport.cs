@@ -29,25 +29,16 @@ internal sealed class PipeTransport
         Dictionary<string, object?>? payload = null,
         int? responseTimeoutMs = null)
     {
-        var effectiveTimeoutMs = responseTimeoutMs
-            ?? _responseTimeoutOverrideMs
-            ?? AutomationPipeProtocol.GetDefaultResponseTimeout(commandName);
-
         try
         {
-            var result = await AutomationPipeClient.SendCommandWithResultAsync(
+            return await AutomationCommandTransport.SendCommandAsync(
                     _pipeName,
                     commandName,
                     payload,
-                    AutomationPipeProtocol.DefaultConnectTimeoutMs,
-                    effectiveTimeoutMs,
-                    includeResponseElement: true)
+                    responseTimeoutOverrideMs: _responseTimeoutOverrideMs,
+                    responseTimeoutMs: responseTimeoutMs,
+                    unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException)
                 .ConfigureAwait(false);
-
-            return result.ResponseElement
-                ?? AutomationSyntheticErrorResponse.Create(
-                    "Automation pipe returned invalid JSON.",
-                    "pipe-invalid-json");
         }
         catch (ArgumentException ex)
         {
@@ -55,10 +46,6 @@ internal sealed class PipeTransport
             // help rather than a structured failure result. Only non-transport
             // exception class that should propagate.
             throw new UsageException(ex.Message);
-        }
-        catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))
-        {
-            return AutomationSyntheticErrorResponse.Create(ex);
         }
     }
 
