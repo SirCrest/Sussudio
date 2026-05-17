@@ -80,6 +80,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Audio.cs")
             .Replace("\r\n", "\n");
+        var audioQueueText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs")
+            .Replace("\r\n", "\n");
         var audioInitializationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs")
             .Replace("\r\n", "\n");
         var audioSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs")
@@ -93,6 +95,16 @@ static partial class Program
 
         AssertContains(audioSubmissionText, "public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)");
         AssertContains(audioSubmissionText, "public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)");
+        AssertContains(audioText, "private unsafe struct AudioStreamState");
+        AssertContains(audioText, "private void DrainStreamEncoderPackets(ref AudioStreamState s)");
+        AssertContains(audioText, "private void WriteStreamPacket(ref AudioStreamState s, AVPacket* packet)");
+        AssertContains(audioText, "private void FlushPendingStreamSamples(ref AudioStreamState s, string streamLabel,");
+        AssertContains(audioText, "private void CopyToAccumulator(ref AudioStreamState s, ReadOnlySpan<byte> source, int destinationOffset)");
+        AssertContains(audioQueueText, "private void EncodeStreamChunk(ref AudioStreamState s, byte* inputPtr, int inputSamples,");
+        AssertContains(audioQueueText, "private void DrainBufferedFrames(ref AudioStreamState s, bool flushPartialFrame)");
+        AssertContains(audioQueueText, "private void SendPreparedStreamFrame(ref AudioStreamState s, int sampleCount)");
+        AssertContains(audioQueueText, "private void CopyQueuedSamplesToStreamFrame(ref AudioStreamState s, int sampleCount)");
+        AssertContains(audioQueueText, "private void RemoveQueuedStreamSamples(ref AudioStreamState s, int sampleCount)");
         AssertContains(audioInitializationText, "private void InitializeAudioIfNeeded(LibAvEncoderOptions options)");
         AssertContains(audioInitializationText, "private void InitializeMicrophoneIfNeeded(LibAvEncoderOptions options)");
         AssertContains(audioInitializationText, "ffmpeg.avcodec_find_encoder(AVCodecID.AV_CODEC_ID_AAC)");
@@ -111,6 +123,10 @@ static partial class Program
         AssertDoesNotContain(audioText, "public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)");
         AssertDoesNotContain(audioText, "private void InitializeAudioIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(audioText, "private void InitializeMicrophoneIfNeeded(LibAvEncoderOptions options)");
+        AssertDoesNotContain(audioText, "private void EncodeStreamChunk(ref AudioStreamState s, byte* inputPtr, int inputSamples,");
+        AssertDoesNotContain(audioSubmissionText, "private void EncodeStreamChunk(ref AudioStreamState s, byte* inputPtr, int inputSamples,");
+        AssertDoesNotContain(audioQueueText, "private void FlushPendingStreamSamples(ref AudioStreamState s, string streamLabel,");
+        AssertDoesNotContain(audioQueueText, "private void CopyToAccumulator(ref AudioStreamState s, ReadOnlySpan<byte> source, int destinationOffset)");
         AssertDoesNotContain(rootText, "private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)");
         AssertDoesNotContain(rootText, "private void InitializeAudioResampler(LibAvEncoderOptions options)");
         AssertDoesNotContain(rootText, "private void AllocateAudioFrame()");

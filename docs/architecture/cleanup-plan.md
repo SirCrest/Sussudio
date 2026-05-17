@@ -1093,9 +1093,12 @@ D3D11 device-removed checks there.
 
 LibAv encoder audio stream handling now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone
-stream state, public status properties, packet writing, pending-sample flush,
-and sample queue/drain helpers there; leave rotation and finalization in
-`LibAvEncoder.cs`.
+stream state, public status properties, interleaved packet writes,
+pending-sample flush, and accumulator ingress there.
+Audio queue/drain mechanics now live in
+`Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs`; keep sample
+queue/drain helpers, drift-corrected encode chunks, planar sample copies, and
+prepared-frame drains there.
 
 LibAv encoder audio submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs`. Keep the public

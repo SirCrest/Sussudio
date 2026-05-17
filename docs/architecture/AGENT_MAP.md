@@ -748,7 +748,10 @@ Entry points:
 - `LibAvEncoder.Initialization.cs` owns FFmpeg initialization forwarding and
   encoder open/setup orchestration.
 - `LibAvEncoder.Audio.cs` owns audio/microphone stream state, public status
-  properties, packet writing, and pending-sample drain helpers.
+  properties, interleaved packet writes, pending-sample flush, and accumulator
+  ingress.
+- `LibAvEncoder.AudioQueue.cs` owns audio sample queueing, drift-corrected
+  encode chunks, planar sample copies, and prepared-frame drains.
 - `LibAvEncoder.AudioSubmission.cs` owns public audio/microphone sample entry
   points, payload alignment checks, accumulator handoff, and stream-chunk
   submission.
