@@ -2063,7 +2063,7 @@ Primary current owners:
   synchronization.
 - `Sussudio/MainWindow.PropertyChangedShell.cs` owns shell visibility
   property-change routing for stats and settings chrome.
-- `Sussudio/MainWindow.PropertyChangedLiveSignal.cs` owns the live source-signal
+- `Sussudio/MainWindow.LiveSignalInfo.cs` owns the live source-signal
   property-change router for the live signal pill.
 - `Sussudio/MainWindow.PropertyChangedFlashback.cs` owns Flashback-specific
   property-change routing for timeline lockout, markers, playhead updates,

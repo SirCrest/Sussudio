@@ -52,6 +52,8 @@ static partial class Program
         AssertContains(liveSignalAdapterText, "ViewModel.LiveResolution,");
         AssertContains(liveSignalAdapterText, "private void StopLiveSignalInfoTimers()");
         AssertContains(liveSignalAdapterText, "=> _liveSignalInfoController.StopTimers();");
+        AssertContains(liveSignalAdapterText, "private bool TryHandleLiveSignalPropertyChanged(string propertyName)");
+        AssertContains(liveSignalAdapterText, "case nameof(MainViewModel.LiveResolution):");
         AssertContains(mainWindowText, "InitializeLiveSignalInfoController();");
         AssertContains(bindingsText, "UpdateLiveSignalInfoVisibility();");
         AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");

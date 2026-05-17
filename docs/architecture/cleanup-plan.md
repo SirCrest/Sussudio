@@ -2226,7 +2226,7 @@ property-name routing now live in focused adapters:
 `Sussudio/MainWindow.OutputPathDisplay.cs`,
 `Sussudio/MainWindow.PropertyChangedCaptureOptions.cs`,
 `Sussudio/MainWindow.PropertyChangedShell.cs`, and
-`Sussudio/MainWindow.PropertyChangedLiveSignal.cs`. Keep the root dispatcher
+`Sussudio/MainWindow.LiveSignalInfo.cs`. Keep the root dispatcher
 limited to route order, and add new property-name cases to the nearest focused
 partial.
 

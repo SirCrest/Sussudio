@@ -14,7 +14,7 @@ static partial class Program
         var captureOptionText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedCaptureOptions.cs").Replace("\r\n", "\n");
         var audioText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var shellText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedShell.cs").Replace("\r\n", "\n");
-        var liveSignalText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedLiveSignal.cs").Replace("\r\n", "\n");
+        var liveSignalText = ReadRepoFile("Sussudio/MainWindow.LiveSignalInfo.cs").Replace("\r\n", "\n");
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
 
         AssertContains(rootText, "var propertyName = e.PropertyName ?? string.Empty;");
