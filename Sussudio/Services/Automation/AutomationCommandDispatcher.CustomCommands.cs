@@ -3,7 +3,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Sussudio.Tools;
 
 namespace Sussudio.Services.Automation;
 
@@ -18,17 +17,10 @@ public sealed partial class AutomationCommandDispatcher
         switch (request.Command)
         {
             case AutomationCommandKind.GetSnapshot:
-            {
-                var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
-                return CreateResponse(correlationId, "Snapshot retrieved.", snapshot: snapshot);
-            }
+                return await ExecuteGetSnapshotCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);
 
             case AutomationCommandKind.GetAutomationManifest:
-                return CreateResponse(
-                    correlationId,
-                    "Automation manifest retrieved.",
-                    data: AutomationCommandCatalog.CreateManifest(),
-                    includeSnapshot: false);
+                return ExecuteGetAutomationManifestCommand(correlationId);
 
             case AutomationCommandKind.SetFullScreenEnabled:
                 return await ExecuteSetFullScreenEnabledCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);

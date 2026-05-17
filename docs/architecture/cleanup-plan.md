@@ -251,6 +251,8 @@ recording-response snapshot refresh, behind the custom command router.
 `AutomationCommandDispatcher.DiagnosticCommands.cs` owns diagnostic readback
 command bodies for recent events, performance timeline, and audio ramp traces
 behind the custom command router.
+`AutomationCommandDispatcher.IntrospectionCommands.cs` owns read-only snapshot
+and manifest response command bodies behind the custom command router.
 `AutomationCommandDispatcher.DeviceCommands.cs` owns device refresh,
 capture-device selection, audio-input selection, and capture-options readback
 command bodies behind the custom command router.
