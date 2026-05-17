@@ -9,7 +9,6 @@ static partial class Program
         var scrubText = ReadRepoFile("Sussudio/MainWindow.FlashbackScrub.cs").Replace("\r\n", "\n");
         var scrubControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs").Replace("\r\n", "\n");
         var playheadText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.cs").Replace("\r\n", "\n");
-        var ctiMotionText = ReadRepoFile("Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs").Replace("\r\n", "\n");
         var pollingAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackPolling.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
@@ -20,9 +19,10 @@ static partial class Program
         AssertContains(playheadText, "IsScrubbing = () => _flashbackScrubInteractionController.IsScrubbing,");
         AssertContains(playheadText, "private void RequestFlashbackPlayheadSnapOnNextUpdate()");
         AssertContains(playheadText, "private void PositionFlashbackMagneticPlayhead(double x, double trackWidth)");
-        AssertContains(ctiMotionText, "XAML-facing Flashback CTI motion adapter");
-        AssertContains(ctiMotionText, "=> _flashbackPlayheadMotionController.RefreshCtiMotion(reason);");
-        AssertContains(ctiMotionText, "=> _flashbackPlayheadMotionController.StopCtiAnchorTimer();");
+        AssertContains(playheadText, "private void RefreshFlashbackCtiMotion(string reason)");
+        AssertContains(playheadText, "=> _flashbackPlayheadMotionController.RefreshCtiMotion(reason);");
+        AssertContains(playheadText, "private void StopFlashbackCtiAnchorTimer()");
+        AssertContains(playheadText, "=> _flashbackPlayheadMotionController.StopCtiAnchorTimer();");
         AssertContains(mainWindowText, "InitializeFlashbackPlayheadMotionController();");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackScrubInteractionController();", "InitializeFlashbackPlayheadMotionController();");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackPlayheadMotionController();", "InitializeFlashbackTimelineController();");
@@ -48,12 +48,8 @@ static partial class Program
         AssertContains(pollingAdapterText, "StopFlashbackCtiAnchorTimer();");
         AssertContains(playbackCoordinatorText, "_context.RequestPlayheadSnapOnNextUpdate();");
         AssertDoesNotContain(playheadText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
-        AssertDoesNotContain(playheadText, "private void RefreshFlashbackCtiMotion(string reason)");
         AssertDoesNotContain(playheadText, "private void StartLinearPlayheadExtrapolation(");
         AssertDoesNotContain(playheadText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
-        AssertDoesNotContain(ctiMotionText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
-        AssertDoesNotContain(ctiMotionText, "private void StartLinearPlayheadExtrapolation(");
-        AssertDoesNotContain(ctiMotionText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
         AssertDoesNotContain(flashbackText, "private enum FlashbackPlayheadMotion");
         AssertDoesNotContain(flashbackText, "private Visual? _flashbackPlayheadVisual;");
         AssertDoesNotContain(flashbackText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");

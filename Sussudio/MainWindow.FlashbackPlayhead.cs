@@ -29,4 +29,10 @@ public sealed partial class MainWindow
 
     private void PositionFlashbackMagneticPlayhead(double x, double trackWidth)
         => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth);
+
+    private void RefreshFlashbackCtiMotion(string reason)
+        => _flashbackPlayheadMotionController.RefreshCtiMotion(reason);
+
+    private void StopFlashbackCtiAnchorTimer()
+        => _flashbackPlayheadMotionController.StopCtiAnchorTimer();
 }

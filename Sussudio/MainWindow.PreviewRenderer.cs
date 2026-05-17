@@ -4,8 +4,8 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // XAML-facing preview renderer host adapter. PreviewRendererHostController owns
-// the D3D renderer, CPU fallback source, frame counters, and reinit disposal
-// path; MainWindow supplies UI elements and startup side-effect adapters.
+// the D3D renderer, CPU fallback source, frame counters, and public/reinit
+// disposal path; MainWindow supplies UI elements and startup side-effect adapters.
 public sealed partial class MainWindow
 {
     private PreviewRendererHostController _previewRendererHostController = null!;
@@ -56,4 +56,10 @@ public sealed partial class MainWindow
 
     private void StopPreviewForShutdown()
         => _previewRendererHostController.StopForShutdown();
+
+    public long RendererReinitUnsafeWindows
+        => _previewRendererHostController.RendererReinitUnsafeWindows;
+
+    private void DisposeD3DPreviewRendererForReinit()
+        => _previewRendererHostController.DisposeD3DPreviewRendererForReinit();
 }

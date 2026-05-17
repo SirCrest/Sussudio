@@ -53,7 +53,6 @@ static partial class Program
                     .Select(File.ReadAllText))
             .Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
-        var previewRendererReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewRendererReinit.cs").Replace("\r\n", "\n");
         var previewRendererHostControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs").Replace("\r\n", "\n");
         var previewRendererHostLifecycleText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Lifecycle.cs").Replace("\r\n", "\n");
         var previewRendererHostD3dText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.D3D.cs").Replace("\r\n", "\n");
@@ -182,8 +181,8 @@ static partial class Program
         AssertContains(cleanupPlanText, "PreviewRendererHostController.D3D.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.Cpu.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.Reinit.cs");
-        AssertContains(previewRendererReinitText, "=> _previewRendererHostController.RendererReinitUnsafeWindows;");
-        AssertContains(previewRendererReinitText, "=> _previewRendererHostController.DisposeD3DPreviewRendererForReinit();");
+        AssertContains(previewRendererText, "=> _previewRendererHostController.RendererReinitUnsafeWindows;");
+        AssertContains(previewRendererText, "=> _previewRendererHostController.DisposeD3DPreviewRendererForReinit();");
 
         AssertContains(previewRendererStartupPlanBuilderText, "internal sealed record PreviewRendererStartupPlan(");
         AssertContains(previewRendererStartupPlanBuilderText, "internal static class PreviewRendererStartupPlanBuilder");

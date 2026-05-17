@@ -717,8 +717,7 @@ startup and event/failure handling.
 fallback attachment. `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Reinit.cs`
 owns D3D reinit disposal, unsafe-window telemetry, stop tick accounting, fresh
 SwapChainPanel replacement, and retired-renderer handoff during D3D renderer
-mode switches. `MainWindow.PreviewRenderer.cs` is the XAML-facing host adapter,
-and `Sussudio/MainWindow.PreviewRendererReinit.cs` keeps the small public/reinit
+mode switches. `MainWindow.PreviewRenderer.cs` is the XAML-facing host/reinit
 adapter surface.
 `Sussudio/MainWindow.PreviewRuntimeSnapshotDispatch.cs` is the stable automation
 preview snapshot adapter over MainWindow UI dispatching.
@@ -1954,8 +1953,7 @@ Flashback CTI/playhead compositor motion now lives in
 `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`. It owns visual
 setup, snap placement, magnetic scrub movement, long-horizon linear playhead
 extrapolation, snap-on-open state, and CTI anchor timing.
-`Sussudio/MainWindow.FlashbackPlayhead.cs` and
-`Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs` are XAML-facing adapters;
+`Sussudio/MainWindow.FlashbackPlayhead.cs` is the XAML-facing adapter;
 command handling and toggle/apply workflows now live in the command controller.
 
 Flashback marker placement and compact duration text now live in

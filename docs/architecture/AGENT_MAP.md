@@ -1001,9 +1001,7 @@ Primary current owners:
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Reinit.cs` owns D3D
   reinit disposal, unsafe-window telemetry, stop tick accounting, and fresh
   SwapChainPanel replacement. `MainWindow.PreviewRenderer.cs` is the XAML-facing
-  host adapter, while
-  `MainWindow.PreviewRendererReinit.cs` keeps the small public/reinit adapter
-  surface.
+  host/reinit adapter surface.
   `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs` owns preview
   surface content-fit sizing and GPU panel visibility.
   `Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs` owns
@@ -2000,9 +1998,7 @@ Primary current owners:
   current-time-indicator compositor motion: visual setup, snap placement,
   magnetic pointer-scrub movement, long-horizon linear playhead extrapolation,
   snap-on-open state, and CTI anchor timing.
-  `Sussudio/MainWindow.FlashbackPlayhead.cs` and
-  `Sussudio/MainWindow.FlashbackPlayhead.CtiMotion.cs` are the XAML-facing
-  adapters.
+  `Sussudio/MainWindow.FlashbackPlayhead.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Flashback/FlashbackMarkerPresentationController.cs` owns
   Flashback marker placement, selection-region layout, and compact duration
   text formatting. `MainWindow.FlashbackMarkers.cs` is the XAML-facing adapter.
