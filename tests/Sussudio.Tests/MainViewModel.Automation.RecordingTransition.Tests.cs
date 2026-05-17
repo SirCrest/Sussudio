@@ -14,6 +14,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingFormat.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationOutputPath.cs")

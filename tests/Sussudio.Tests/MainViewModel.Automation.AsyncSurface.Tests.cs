@@ -58,6 +58,8 @@ static partial class Program
             + "\n" + automationRecordingLifecycleText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingFormat.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationOutputPath.cs")
@@ -192,8 +194,13 @@ static partial class Program
         AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
         var automationRecordingSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
             .Replace("\r\n", "\n");
+        var automationRecordingFormatText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingFormat.cs")
+            .Replace("\r\n", "\n");
         var automationOutputPathText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationOutputPath.cs")
             .Replace("\r\n", "\n");
+        AssertContains(automationRecordingFormatText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
+        AssertContains(automationRecordingFormatText, "RecordingFormatSelectionPolicy.IsHdrCompatible(matched)");
+        AssertDoesNotContain(automationRecordingSettingsText, "public async Task SetRecordingFormatAsync");
         AssertContains(automationOutputPathText, "public Task SetOutputPathAsync(string outputPath, CancellationToken cancellationToken = default)");
         AssertContains(automationOutputPathText, "Directory.CreateDirectory(outputPath);");
         AssertContains(automationOutputPathText, "OutputPath = outputPath;");
