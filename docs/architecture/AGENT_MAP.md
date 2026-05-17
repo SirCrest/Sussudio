@@ -1433,8 +1433,6 @@ Primary current owners:
   assertions.
 - `tests/Sussudio.Tests/MainViewModel.AudioRuntime.Tests.cs` owns audio
   monitoring visual state and audio-ramp trace telemetry ownership assertions.
-- `tests/Sussudio.Tests/DeviceModels.Tests.cs` is the device model marker
-  shell.
 - `tests/Sussudio.Tests/DeviceModels.AudioInput.Tests.cs` owns audio input
   model display-name contract checks.
 - `tests/Sussudio.Tests/DeviceModels.AudioLevel.Tests.cs` owns audio level
@@ -1820,17 +1818,14 @@ Primary current owners:
   `CommandRouting.Verification` owner files. Captured command-ID assertions use
   the shared `AssertAutomationCommandId` helper so the golden command table is
   the only test-owned numeric ID list.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is the
-  diagnostic-session MCP surface index shell.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Tests.cs` owns
   MCP `run_diagnostic_session` success/failure artifact contract tests.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`
   owns diagnostic-session helper ownership assertions for core runner,
   scenario, cleanup, sampling, and metric collaborators.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.InfrastructureOwnership.Tests.cs`
-  is the diagnostic-session infrastructure ownership marker shell. Keep
-  runner/initial-snapshot checks in the adjacent `InfrastructureOwnership.Runner`
-  test file, pipe retry and command-channel checks in `InfrastructureOwnership.CommandChannel`,
+- Diagnostic-session infrastructure ownership checks live in focused files:
+  runner/initial-snapshot checks in `InfrastructureOwnership.Runner`, pipe
+  retry and command-channel checks in `InfrastructureOwnership.CommandChannel`,
   run-state/live-state/context/bootstrap/output-lock checks in
   `InfrastructureOwnership.RunContext`, and scenario/completion phase checks in
   `InfrastructureOwnership.Execution`.

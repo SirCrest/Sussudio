@@ -103,7 +103,14 @@ static partial class Program
         var emptyMarkerShells = Directory.EnumerateFiles(testRoot, "*.cs", SearchOption.TopDirectoryOnly)
             .Where(path =>
             {
-                var normalized = File.ReadAllText(path).Replace("\r\n", "\n").Trim();
+                var normalized = string.Join(
+                    "\n",
+                    File.ReadAllLines(path)
+                        .Select(line => line.Trim())
+                        .Where(line =>
+                            line.Length > 0 &&
+                            !line.StartsWith("//", StringComparison.Ordinal) &&
+                            !line.StartsWith("using ", StringComparison.Ordinal)));
                 return normalized == "static partial class Program\n{\n}";
             })
             .Select(path => Path.GetRelativePath(repoRoot, path).Replace('\\', '/'))

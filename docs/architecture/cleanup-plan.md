@@ -449,15 +449,14 @@ that formatter directly. Tests that
 reason about formatter source use `ReadAutomationSnapshotFormatterSource()` so
 ownership checks cover the full partial family.
 
-`tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` is now only
-the diagnostic-session MCP surface index shell. Diagnostic-session coverage is
-split into `McpToolSurface.DiagnosticSession.Tool.Tests.cs` for MCP tool
+Diagnostic-session MCP surface coverage is split into
+`McpToolSurface.DiagnosticSession.Tool.Tests.cs` for MCP tool
 artifact contracts, `McpToolSurface.DiagnosticSession.Ownership.Tests.cs` for
 core helper ownership assertions,
 `McpToolSurface.DiagnosticSession.Flashback.*.Tests.cs` for Flashback
 scenario/metrics/wait/export ownership assertions,
-`McpToolSurface.DiagnosticSession.InfrastructureOwnership.Tests.cs` as a marker
-shell for focused infrastructure ownership tests, and
+`McpToolSurface.DiagnosticSession.InfrastructureOwnership.*.Tests.cs` for
+focused infrastructure ownership tests, and
 `McpToolSurface.DiagnosticSession.Runner.*.Tests.cs` for focused reflective
 runner behavior tests. The runner behavior files now own
 final-snapshot artifact failures, sparse source-cadence health tolerance,
