@@ -1630,14 +1630,15 @@ Primary current owners:
   assembly loading, isolated load contexts, freshness checks, and tool build
   command mapping used by the legacy harness and xUnit slices.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.cs` owns ordered offline harness
-  topic sequencing and shared catalog registration helpers. Keep `Program.cs`
-  as the runner, not the assertion registry.
+  topic sequencing, shared catalog registration helpers, and the pass-through
+  routing for automation diagnostics, presentation preview, MCP diagnostics,
+  and Flashback catalog groups. Keep `Program.cs` as the runner, not the
+  assertion registry.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.CoreRuntime.cs` owns runtime,
   telemetry, recording verifier, LibAv encoder, and basic app contract check
   registration.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.AutomationDiagnostics.cs`
-  coordinates automation-diagnostics check registration; focused
-  `HarnessCheckCatalog.AutomationDiagnostics.*.cs` partials own app shell,
+- Focused `tests/Sussudio.Tests/HarnessCheckCatalog.AutomationDiagnostics.*.cs`
+  partials own automation-diagnostics app shell,
   MainWindow surface, dispatcher, pipe/auth, ViewModel/Flashback UI,
   capture/Flashback routing, and snapshot projection registration groups.
 - `tests/Sussudio.Tests/ServiceNamespace.Tests.cs` owns the harness-visible
@@ -1660,18 +1661,14 @@ Primary current owners:
 - `tests/Sussudio.Tests/ServiceNamespace.ServiceContracts.Tests.cs` owns the
   app-service contract boundary assertions that keep `Sussudio/Services/Contracts`
   separate from `Sussudio.Automation.Contracts` wire/protocol ownership.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.PresentationPreview.cs` coordinates
-  presentation-preview check registration; the focused
-  `HarnessCheckCatalog.PresentationPreview.*.cs` partials own capture/root
+- Focused `tests/Sussudio.Tests/HarnessCheckCatalog.PresentationPreview.*.cs`
+  partials own presentation-preview capture/root
   policy, MainViewModel, MainWindow, stats, D3D renderer, and preview pacing
   registration groups.
 - `tests/Sussudio.Tests/PreviewPacingOwnership.Tests.cs` owns preview pacing
   classifier source ownership and automation-snapshot wiring assertions;
   `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns behavioral
   classifier cases.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.McpDiagnosticsPipeline.cs` owns MCP,
-  diagnostic-session, unified-video, MJPEG, D3D pending-frame, and recording
-  queue check registration.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.RecordingModels.cs` coordinates
   recording/model check registration and owns compact registration groups for
   LibAv sink, capture runtime, recording contracts/artifacts/stats, capture
@@ -1679,9 +1676,9 @@ Primary current owners:
   source-signal telemetry, and HDR policy checks.
   `HarnessCheckCatalog.RecordingModels.FlashbackBuffer.cs` owns the large
   Flashback buffer registration group.
-- `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.cs` coordinates Flashback
-  check registration; `HarnessCheckCatalog.Flashback.*.cs` partials own model,
-  playback, decoder, encoder sink, and exporter registration groups.
+- Focused `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.*.cs` partials
+  own Flashback model, playback, decoder, encoder sink, and exporter
+  registration groups.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.ToolContracts.cs` owns recording
   pipeline, NVML, capture-session/process, automation protocol, tool formatter,
   and RTK probe check registration.
