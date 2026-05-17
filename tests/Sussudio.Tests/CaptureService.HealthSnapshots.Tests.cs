@@ -10,7 +10,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields");
@@ -37,7 +37,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs")
             .Replace("\r\n", "\n");
@@ -69,7 +69,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs")
             .Replace("\r\n", "\n");
@@ -95,7 +95,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs")
             .Replace("\r\n", "\n");
@@ -146,7 +146,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var flashbackQueueText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackQueues.cs")
             .Replace("\r\n", "\n");
@@ -173,7 +173,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs")
             .Replace("\r\n", "\n");
@@ -232,7 +232,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var sourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs")
             .Replace("\r\n", "\n");
@@ -257,7 +257,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var captureCadenceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotCaptureCadence.cs")
             .Replace("\r\n", "\n");
@@ -280,7 +280,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var mjpegText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs")
             .Replace("\r\n", "\n");
@@ -312,7 +312,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var avSyncSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAvSync.cs")
             .Replace("\r\n", "\n");

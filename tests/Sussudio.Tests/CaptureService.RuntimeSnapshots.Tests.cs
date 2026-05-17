@@ -172,7 +172,7 @@ static partial class Program
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
-        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var ingestAudioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs")
             .Replace("\r\n", "\n");
@@ -200,7 +200,7 @@ static partial class Program
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
-        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
@@ -226,9 +226,9 @@ static partial class Program
         AssertContains(assemblerText, "AvSyncCaptureDriftMs = fields.RuntimeAvSyncDriftMs,");
 
         AssertContains(agentMapText, "`CaptureService.RuntimeSnapshots.cs` samples runtime snapshot inputs consumed by UI,");
-        AssertContains(agentMapText, "`CaptureService.SnapshotAssemblers.cs` owns final `CaptureRuntimeSnapshot` DTO construction");
+        AssertContains(agentMapText, "`CaptureService.RuntimeSnapshotAssembler.cs` owns final `CaptureRuntimeSnapshot` DTO construction");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples");
-        AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs` owns final");
+        AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final");
 
         return Task.CompletedTask;
     }
@@ -237,7 +237,7 @@ static partial class Program
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
-        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var ingestAudioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotIngestAudio.cs")
             .Replace("\r\n", "\n");
@@ -275,7 +275,7 @@ static partial class Program
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
-        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs")
             .Replace("\r\n", "\n");
@@ -302,7 +302,7 @@ static partial class Program
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
-        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var sourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs")
             .Replace("\r\n", "\n");
@@ -330,7 +330,7 @@ static partial class Program
     {
         var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
-        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAssemblers.cs")
+        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
         var recordingIntegrityText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshotRecordingIntegrity.cs")
             .Replace("\r\n", "\n");
