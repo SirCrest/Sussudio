@@ -95,9 +95,12 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationLanesSourceText, "private static string BuildDecodeLane(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesSourceText, "private static string BuildSourceSignalLane(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesPreviewText, "private static string BuildPreviewLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesPreviewText, "private static DiagnosticEvaluationRenderLane BuildRenderLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesPreviewText, "private static string BuildPresentLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesPreviewText, "private static string BuildVisualLane(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesPreviewRenderText, "private static DiagnosticEvaluationRenderLane BuildRenderLane(");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesPreviewPresentText, "private static string BuildPresentLane(");
+        AssertContains(diagnostics.DiagnosticEvaluationLanesPreviewVisualText, "private static string BuildVisualLane(CaptureHealthSnapshot health)");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesPreviewText, "private static DiagnosticEvaluationRenderLane BuildRenderLane(");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesPreviewText, "private static string BuildPresentLane(");
+        AssertDoesNotContain(diagnostics.DiagnosticEvaluationLanesPreviewText, "private static string BuildVisualLane(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesRecordingText, "private static string BuildRecordingLane(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesRecordingText, "private static string BuildAudioLane(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesFlashbackText, "private static string BuildFlashbackRecordingLane(CaptureHealthSnapshot health)");

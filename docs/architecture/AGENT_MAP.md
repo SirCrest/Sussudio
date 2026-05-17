@@ -245,8 +245,13 @@ Automation diagnostics ownership:
   owns source, MJPEG decode, and source telemetry diagnostic lane text
   formatting.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Preview.cs`
-  owns preview scheduler, renderer, present/display, and visual cadence
-  diagnostic lane text formatting.
+  owns preview scheduler diagnostic lane text formatting.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewRender.cs`
+  owns preview renderer diagnostic lane text formatting.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewPresent.cs`
+  owns preview present/display diagnostic lane text formatting.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewVisual.cs`
+  owns preview visual cadence diagnostic lane text formatting.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Recording.cs`
   owns recording and audio integrity diagnostic lane text formatting.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs`

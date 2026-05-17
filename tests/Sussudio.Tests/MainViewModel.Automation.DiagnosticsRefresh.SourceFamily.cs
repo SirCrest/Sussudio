@@ -31,6 +31,9 @@ static partial class Program
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs"),
             DiagnosticEvaluationLanesSourceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Source.cs"),
             DiagnosticEvaluationLanesPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Preview.cs"),
+            DiagnosticEvaluationLanesPreviewRenderText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewRender.cs"),
+            DiagnosticEvaluationLanesPreviewPresentText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewPresent.cs"),
+            DiagnosticEvaluationLanesPreviewVisualText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewVisual.cs"),
             DiagnosticEvaluationLanesRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Recording.cs"),
             DiagnosticEvaluationLanesFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs"),
             DiagnosticEvaluationLanesFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluationLanes.FlashbackExport.cs"),
@@ -151,6 +154,9 @@ static partial class Program
         public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesSourceText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesPreviewText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesPreviewRenderText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesPreviewPresentText { get; init; } = string.Empty;
+        public string DiagnosticEvaluationLanesPreviewVisualText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesRecordingText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesFlashbackText { get; init; } = string.Empty;
         public string DiagnosticEvaluationLanesFlashbackExportText { get; init; } = string.Empty;
@@ -263,6 +269,9 @@ static partial class Program
                 DiagnosticEvaluationLanesText,
                 DiagnosticEvaluationLanesSourceText,
                 DiagnosticEvaluationLanesPreviewText,
+                DiagnosticEvaluationLanesPreviewRenderText,
+                DiagnosticEvaluationLanesPreviewPresentText,
+                DiagnosticEvaluationLanesPreviewVisualText,
                 DiagnosticEvaluationLanesRecordingText,
                 DiagnosticEvaluationLanesFlashbackText,
                 DiagnosticEvaluationLanesFlashbackExportText,

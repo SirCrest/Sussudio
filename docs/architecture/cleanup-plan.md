@@ -270,8 +270,13 @@ orchestration and lane DTOs used by diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Source.cs` owns source,
 MJPEG decode, and source telemetry diagnostic lane text formatting.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Preview.cs` owns preview
-scheduler, renderer, present/display, and visual cadence diagnostic lane text
-formatting.
+scheduler diagnostic lane text formatting.
+`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewRender.cs` owns
+preview renderer diagnostic lane text formatting.
+`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewPresent.cs` owns
+preview present/display diagnostic lane text formatting.
+`AutomationDiagnosticsHub.DiagnosticEvaluationLanes.PreviewVisual.cs` owns
+preview visual cadence diagnostic lane text formatting.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Recording.cs` owns recording
 and audio integrity diagnostic lane text formatting.
 `AutomationDiagnosticsHub.DiagnosticEvaluationLanes.Flashback.cs` owns
