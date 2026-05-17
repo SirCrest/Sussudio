@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Sussudio.Models;
 
@@ -9,6 +10,13 @@ namespace Sussudio.ViewModels;
 /// </summary>
 public partial class MainViewModel
 {
+    private AutoCaptureSelection? ResolveAutoCaptureSelection(IReadOnlyList<ResolutionOption> options)
+        => AutoCaptureSelectionPolicy.Select(new AutoCaptureSelectionRequest(
+            options,
+            _resolutionToFormats,
+            _latestSourceTelemetry,
+            IsHdrEnabled));
+
     private void RebuildResolutionOptions()
     {
         var previousSelection = SelectedResolution;

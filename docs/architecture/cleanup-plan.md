@@ -3137,7 +3137,7 @@ Remaining `tools/Common` ownership:
     runtime-flag assertions stay near their matching policy owners.
     Automatic resolution dropdown option construction now lives in
     `MainViewModel.AutoResolutionOptions.cs`; automatic resolution-selection
-    state adaptation now lives in `MainViewModel.AutoResolutionSelection.cs`,
+    state adaptation now lives in `MainViewModel.ResolutionOptions.cs`,
     while automatic resolution ranking and source-aware frame-rate selection now
     live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; effective Source resolution state,
    auto-value detection, and effective resolution query helpers live in
