@@ -9,7 +9,7 @@ public partial class MainViewModel
 {
     private void RebuildRecordingFormatOptions()
     {
-        var selection = RecordingFormatSelectionPolicy.Select(
+        var selection = RecordingSettingsSelectionPolicy.Select(
             _detectedRecordingFormats,
             AvailableRecordingFormats,
             SelectedRecordingFormat,
@@ -31,7 +31,7 @@ public partial class MainViewModel
             OnPropertyChanged(nameof(SelectedRecordingFormat));
         }
 
-        if (IsHdrEnabled && !RecordingFormatSelectionPolicy.IsHdrCompatible(SelectedRecordingFormat))
+        if (IsHdrEnabled && !RecordingSettingsSelectionPolicy.IsHdrCompatible(SelectedRecordingFormat))
         {
             StatusText = "HDR recording requires HEVC or AV1 (10-bit).";
         }

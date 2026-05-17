@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Sussudio.Models;
 
 namespace Sussudio.ViewModels;
 
-internal static class RecordingFormatSelectionPolicy
+internal static class RecordingSettingsSelectionPolicy
 {
     /// <summary>
     /// H.264 is intentionally excluded from HDR recording: the nvenc H.264
@@ -15,6 +16,33 @@ internal static class RecordingFormatSelectionPolicy
         => !string.IsNullOrWhiteSpace(format) &&
            (format.Contains("HEVC", StringComparison.OrdinalIgnoreCase) ||
             format.Contains("AV1", StringComparison.OrdinalIgnoreCase));
+
+    internal static RecordingFormat ParseRecordingFormat(string? format)
+    {
+        return format switch
+        {
+            "HEVC" => RecordingFormat.HevcMp4,
+            "AV1" => RecordingFormat.Av1Mp4,
+            _ => RecordingFormat.H264Mp4
+        };
+    }
+
+    internal static VideoQuality ParseVideoQuality(string? value)
+    {
+        return value switch
+        {
+            "Auto" => VideoQuality.Auto,
+            "Low" => VideoQuality.Low,
+            "Medium" => VideoQuality.Medium,
+            "High" => VideoQuality.High,
+            "Super High" => VideoQuality.SuperHigh,
+            "Custom" => VideoQuality.Custom,
+            _ => VideoQuality.High
+        };
+    }
+
+    internal static double ClampCustomBitrateMbps(double bitrateMbps)
+        => Math.Clamp(bitrateMbps, 1, 300);
 
     internal static RecordingFormatSelection Select(
         IReadOnlyCollection<string> detectedFormats,

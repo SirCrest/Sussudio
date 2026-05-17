@@ -3107,8 +3107,9 @@ Remaining `tools/Common` ownership:
    `MainViewModel.AudioDeviceDiscovery.cs`. Pure audio-device filtering and
    previous/saved/default audio and microphone selection fallback policy now
    lives in `Sussudio/ViewModels/AudioDeviceSelectionPolicy.cs`. Pure
-   recording codec filtering and selected-codec fallback policy now live in
-   `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs`, while observable
+   recording codec filtering, selected-codec fallback policy, string-to-model
+   format/quality parsing, and custom bitrate clamp policy now live in
+   `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs`, while observable
    recording-format option mutation lives in
    `MainViewModel.RecordingFormatOptions.cs`. `MainViewModel.FormatSelection.cs`
    keeps pixel-format option mutation and selected capture-format policy, while

@@ -197,13 +197,13 @@ static partial class Program
         var automationRecordingSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
             .Replace("\r\n", "\n");
         AssertContains(automationRecordingSettingsText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
-        AssertContains(automationRecordingSettingsText, "RecordingFormatSelectionPolicy.IsHdrCompatible(matched)");
+        AssertContains(automationRecordingSettingsText, "RecordingSettingsSelectionPolicy.IsHdrCompatible(matched)");
         AssertContains(automationRecordingSettingsText, "public async Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)");
-        AssertContains(automationRecordingSettingsText, "ParseVideoQuality(SelectedQuality)");
+        AssertContains(automationRecordingSettingsText, "RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality)");
         AssertContains(automationRecordingSettingsText, "public async Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)");
         AssertContains(automationRecordingSettingsText, "splitEncodeMode: settings.SplitEncodeMode");
         AssertContains(automationRecordingSettingsText, "public async Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)");
-        AssertContains(automationRecordingSettingsText, "CustomBitrateMbps = Math.Clamp(bitrateMbps, 1, 300);");
+        AssertContains(automationRecordingSettingsText, "CustomBitrateMbps = RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps);");
         AssertContains(automationRecordingSettingsText, "public async Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)");
         AssertContains(automationRecordingSettingsText, "SelectedPreset = matched;");
         AssertContains(automationRecordingSettingsText, "public Task SetOutputPathAsync(string outputPath, CancellationToken cancellationToken = default)");

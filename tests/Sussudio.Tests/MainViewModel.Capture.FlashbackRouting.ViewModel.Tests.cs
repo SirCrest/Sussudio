@@ -212,7 +212,7 @@ static partial class Program
         AssertContains(rawFlashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),\n                \"recording format\");");
         AssertContains(viewModelFlashbackStateText, "private bool _suppressFlashbackFormatCycle;");
         AssertMemberContains(automationRecordingFormatText, "SetRecordingFormatAsync", "_suppressFlashbackFormatCycle = true;");
-        AssertMemberContains(automationRecordingFormatText, "SetRecordingFormatAsync", "RecordingFormat.Av1Mp4");
+        AssertMemberContains(automationRecordingFormatText, "SetRecordingFormatAsync", "RecordingSettingsSelectionPolicy.ParseRecordingFormat(matched)");
         AssertMemberContains(automationRecordingFormatText, "SetRecordingFormatAsync", "await _sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
         AssertDoesNotContain(automationFlashbackText, "public async Task SetRecordingFormatAsync");
         AssertMemberContains(automationRecordingQualityText, "SetQualityAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
@@ -222,7 +222,7 @@ static partial class Program
         AssertMemberContains(automationSplitEncodeModeText, "SetSplitEncodeModeAsync", "SplitEncodeMode: SelectedSplitEncodeMode");
         AssertMemberContains(automationSplitEncodeModeText, "SetSplitEncodeModeAsync", "splitEncodeMode: settings.SplitEncodeMode");
         AssertMemberContains(automationCustomBitrateText, "SetCustomBitrateAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
-        AssertMemberContains(automationCustomBitrateText, "SetCustomBitrateAsync", "CustomBitrateMbps = Math.Clamp(bitrateMbps, 1, 300);");
+        AssertMemberContains(automationCustomBitrateText, "SetCustomBitrateAsync", "CustomBitrateMbps = RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps);");
         AssertMemberContains(automationCustomBitrateText, "SetCustomBitrateAsync", "customBitrateMbps: settings.Bitrate");
         AssertMemberContains(automationEncoderPresetText, "SetPresetAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
         AssertMemberContains(automationEncoderPresetText, "SetPresetAsync", "SelectedPreset = matched;");
@@ -243,7 +243,7 @@ static partial class Program
         AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedQualityChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedPresetChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedSplitEncodeModeChanged", "TrackFlashbackEncoderSettingsCycle(");
-        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "quality: ParseVideoQuality(SelectedQuality)");
+        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality)");
         AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "customBitrateMbps: CustomBitrateMbps");
         AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "nvencPreset: SelectedPreset");
         AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "splitEncodeMode: SelectedSplitEncodeMode");

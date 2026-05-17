@@ -10,23 +10,8 @@ public partial class MainViewModel
 {
     private CaptureSettings BuildCaptureSettings()
     {
-        var format = SelectedRecordingFormat switch
-        {
-            "HEVC" => RecordingFormat.HevcMp4,
-            "AV1" => RecordingFormat.Av1Mp4,
-            _ => RecordingFormat.H264Mp4
-        };
-
-        var quality = SelectedQuality switch
-        {
-            "Auto" => VideoQuality.Auto,
-            "Low" => VideoQuality.Low,
-            "Medium" => VideoQuality.Medium,
-            "High" => VideoQuality.High,
-            "Super High" => VideoQuality.SuperHigh,
-            "Custom" => VideoQuality.Custom,
-            _ => VideoQuality.High
-        };
+        var format = RecordingSettingsSelectionPolicy.ParseRecordingFormat(SelectedRecordingFormat);
+        var quality = RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality);
 
         var effectiveResolutionKnown = TryGetEffectiveResolutionSelection(out _, out var effectiveWidth, out var effectiveHeight);
         var runtime = _captureService.GetRuntimeSnapshot();

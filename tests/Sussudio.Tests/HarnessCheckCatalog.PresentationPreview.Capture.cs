@@ -72,8 +72,8 @@ static partial class Program
             "Frame-rate timing policy preserves pure timing behavior",
             FrameRateTimingPolicy_PreservesPureTimingBehavior);
         await AddCheckAsync(results,
-            "Recording format selection policy lives in focused helper",
-            RecordingFormatSelectionPolicy_LivesInFocusedHelper);
+            "Recording settings selection policy lives in focused helper",
+            RecordingSettingsSelectionPolicy_LivesInFocusedHelper);
         await AddCheckAsync(results,
             "Diagnostics loop does not rebuild automation options each poll",
             DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll);

@@ -134,7 +134,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task RecordingFormatSelectionPolicy_PreservesHdrAndSdrChoices()
+    private static Task RecordingSettingsSelectionPolicy_PreservesHdrAndSdrChoices()
     {
         AssertRecordingFormatSelection(
             "HDR filters H.264 and falls back to HEVC",
@@ -202,6 +202,49 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task RecordingSettingsSelectionPolicy_ParsesModelValues()
+    {
+        var policyType = RequireType("Sussudio.ViewModels.RecordingSettingsSelectionPolicy");
+        var parseRecordingFormat = policyType.GetMethod("ParseRecordingFormat", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("RecordingSettingsSelectionPolicy.ParseRecordingFormat missing.");
+        var parseVideoQuality = policyType.GetMethod("ParseVideoQuality", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("RecordingSettingsSelectionPolicy.ParseVideoQuality missing.");
+        var clampCustomBitrate = policyType.GetMethod("ClampCustomBitrateMbps", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps missing.");
+
+        AssertEqual(
+            ParseEnum("Sussudio.Models.RecordingFormat", "H264Mp4"),
+            parseRecordingFormat.Invoke(null, new object?[] { "H.264" }),
+            "RecordingSettingsSelectionPolicy maps H.264 to H264Mp4");
+        AssertEqual(
+            ParseEnum("Sussudio.Models.RecordingFormat", "HevcMp4"),
+            parseRecordingFormat.Invoke(null, new object?[] { "HEVC" }),
+            "RecordingSettingsSelectionPolicy maps HEVC to HevcMp4");
+        AssertEqual(
+            ParseEnum("Sussudio.Models.RecordingFormat", "Av1Mp4"),
+            parseRecordingFormat.Invoke(null, new object?[] { "AV1" }),
+            "RecordingSettingsSelectionPolicy maps AV1 to Av1Mp4");
+
+        AssertEqual(
+            ParseEnum("Sussudio.Models.VideoQuality", "Auto"),
+            parseVideoQuality.Invoke(null, new object?[] { "Auto" }),
+            "RecordingSettingsSelectionPolicy maps Auto quality");
+        AssertEqual(
+            ParseEnum("Sussudio.Models.VideoQuality", "SuperHigh"),
+            parseVideoQuality.Invoke(null, new object?[] { "Super High" }),
+            "RecordingSettingsSelectionPolicy maps Super High quality");
+        AssertEqual(
+            ParseEnum("Sussudio.Models.VideoQuality", "High"),
+            parseVideoQuality.Invoke(null, new object?[] { "unexpected" }),
+            "RecordingSettingsSelectionPolicy keeps unknown quality fallback");
+
+        AssertEqual(1d, (double)clampCustomBitrate.Invoke(null, new object?[] { -5d })!, "RecordingSettingsSelectionPolicy clamps low bitrate");
+        AssertEqual(42d, (double)clampCustomBitrate.Invoke(null, new object?[] { 42d })!, "RecordingSettingsSelectionPolicy keeps in-range bitrate");
+        AssertEqual(300d, (double)clampCustomBitrate.Invoke(null, new object?[] { 999d })!, "RecordingSettingsSelectionPolicy clamps high bitrate");
+
+        return Task.CompletedTask;
+    }
+
     private static void AssertRecordingFormatSelection(
         string fieldName,
         string[] detectedFormats,
@@ -211,9 +254,9 @@ static partial class Program
         string[] expectedFormats,
         string expectedSelectedFormat)
     {
-        var policyType = RequireType("Sussudio.ViewModels.RecordingFormatSelectionPolicy");
+        var policyType = RequireType("Sussudio.ViewModels.RecordingSettingsSelectionPolicy");
         var select = policyType.GetMethod("Select", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("RecordingFormatSelectionPolicy.Select missing.");
+            ?? throw new InvalidOperationException("RecordingSettingsSelectionPolicy.Select missing.");
         var selection = select.Invoke(
                 null,
                 new object?[]
@@ -226,7 +269,7 @@ static partial class Program
                     "HEVC",
                     "AV1"
                 })
-            ?? throw new InvalidOperationException("RecordingFormatSelectionPolicy.Select returned null.");
+            ?? throw new InvalidOperationException("RecordingSettingsSelectionPolicy.Select returned null.");
         var availableFormats = ((IEnumerable)selection.GetType().GetProperty("AvailableFormats")!.GetValue(selection)!)
             .Cast<string>()
             .ToArray();

@@ -2279,8 +2279,9 @@ Primary current owners:
   application to observable state. `MainViewModel.HdrModeChanges.cs` owns
   HDR toggle side effects: recording-time revert/status, mode option rebuilds,
   immediate reinitialize scheduling, and settings persistence.
-  `Sussudio/ViewModels/RecordingFormatSelectionPolicy.cs` owns pure recording
-  codec filtering and selected-codec fallback policy shared by UI and automation.
+  `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs` owns pure recording
+  codec filtering, selected-codec fallback policy, string-to-model format/quality
+  parsing, and custom bitrate clamp policy shared by UI and automation.
   Video device enumeration and collection replacement stay in
   `MainViewModel.DeviceManagement.cs`; selected capture-device reactions,
   capability projection, source telemetry reset, and device-native audio-control

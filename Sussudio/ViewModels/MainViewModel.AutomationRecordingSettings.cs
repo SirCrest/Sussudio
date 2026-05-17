@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Sussudio.Models;
 
 namespace Sussudio.ViewModels;
 
@@ -22,7 +21,7 @@ public partial class MainViewModel
             {
                 throw new InvalidOperationException($"Recording format '{format}' is not available.");
             }
-            if (IsHdrEnabled && !RecordingFormatSelectionPolicy.IsHdrCompatible(matched))
+            if (IsHdrEnabled && !RecordingSettingsSelectionPolicy.IsHdrCompatible(matched))
             {
                 throw new InvalidOperationException("HDR recording requires HEVC or AV1 (10-bit).");
             }
@@ -37,12 +36,7 @@ public partial class MainViewModel
                 _suppressFlashbackFormatCycle = false;
             }
 
-            return matched switch
-            {
-                "HEVC" => RecordingFormat.HevcMp4,
-                "AV1" => RecordingFormat.Av1Mp4,
-                _ => RecordingFormat.H264Mp4
-            };
+            return RecordingSettingsSelectionPolicy.ParseRecordingFormat(matched);
         }, cancellationToken).ConfigureAwait(false);
 
         await _sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)
@@ -70,7 +64,7 @@ public partial class MainViewModel
                 _suppressFlashbackEncoderSettingsCycle = false;
             }
 
-            return (Quality: ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset);
+            return (Quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset);
         }, cancellationToken).ConfigureAwait(false);
 
         await _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
@@ -102,7 +96,7 @@ public partial class MainViewModel
                 _suppressFlashbackEncoderSettingsCycle = false;
             }
 
-            return (Quality: ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset, SplitEncodeMode: SelectedSplitEncodeMode);
+            return (Quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset, SplitEncodeMode: SelectedSplitEncodeMode);
         }, cancellationToken).ConfigureAwait(false);
 
         await _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
@@ -121,14 +115,14 @@ public partial class MainViewModel
             _suppressFlashbackEncoderSettingsCycle = true;
             try
             {
-                CustomBitrateMbps = Math.Clamp(bitrateMbps, 1, 300);
+                CustomBitrateMbps = RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps);
             }
             finally
             {
                 _suppressFlashbackEncoderSettingsCycle = false;
             }
 
-            return (Quality: ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset);
+            return (Quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset);
         }, cancellationToken).ConfigureAwait(false);
 
         await _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
@@ -160,7 +154,7 @@ public partial class MainViewModel
                 _suppressFlashbackEncoderSettingsCycle = false;
             }
 
-            return (Quality: ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset);
+            return (Quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset);
         }, cancellationToken).ConfigureAwait(false);
 
         await _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(

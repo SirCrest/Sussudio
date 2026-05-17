@@ -1,6 +1,4 @@
 using System.Threading.Tasks;
-using Sussudio.Models;
-using Sussudio.Services.Recording;
 
 namespace Sussudio.ViewModels;
 
@@ -18,12 +16,7 @@ public partial class MainViewModel
         // a rapid codec-to-resolution change sequence can race with reinit.
         if (IsPreviewing && !IsRecording && _isLoadingSettings is false && _suppressFlashbackFormatCycle is false)
         {
-            var format = value switch
-            {
-                "HEVC" => RecordingFormat.HevcMp4,
-                "AV1" => RecordingFormat.Av1Mp4,
-                _ => RecordingFormat.H264Mp4
-            };
+            var format = RecordingSettingsSelectionPolicy.ParseRecordingFormat(value);
             TrackPendingFlashbackCycleTask(
                 _sessionCoordinator.UpdateRecordingFormatAsync(format),
                 "recording format");
@@ -44,7 +37,7 @@ public partial class MainViewModel
     private void TrackFlashbackEncoderSettingsCycle(string description)
     {
         var task = _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
-            quality: ParseVideoQuality(SelectedQuality),
+            quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality),
             customBitrateMbps: CustomBitrateMbps,
             nvencPreset: SelectedPreset,
             splitEncodeMode: SelectedSplitEncodeMode);
@@ -71,20 +64,6 @@ public partial class MainViewModel
                     Logger.Log($"CycleFlashbackEncoder({description}) canceled");
                 }
             });
-    }
-
-    private static VideoQuality ParseVideoQuality(string value)
-    {
-        return value switch
-        {
-            "Auto" => VideoQuality.Auto,
-            "Low" => VideoQuality.Low,
-            "Medium" => VideoQuality.Medium,
-            "High" => VideoQuality.High,
-            "Super High" => VideoQuality.SuperHigh,
-            "Custom" => VideoQuality.Custom,
-            _ => VideoQuality.High
-        };
     }
 
     partial void OnSelectedQualityChanged(string value)

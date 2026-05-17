@@ -229,7 +229,7 @@ static partial class Program
                  string.Equals(fileName, "DeviceFormatProbeRetargetPolicy.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "DeviceAudioGainMapper.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "LiveSignalTextPresentationBuilder.cs", StringComparison.Ordinal) ||
-                 string.Equals(fileName, "RecordingFormatSelectionPolicy.cs", StringComparison.Ordinal) ||
+                 string.Equals(fileName, "RecordingSettingsSelectionPolicy.cs", StringComparison.Ordinal) ||
                  string.Equals(fileName, "SourceTelemetryPresentationBuilder.cs", StringComparison.Ordinal))) ||
             ((string.Equals(directory, "Sussudio/Controllers", StringComparison.OrdinalIgnoreCase) ||
               directory.StartsWith("Sussudio/Controllers/", StringComparison.OrdinalIgnoreCase)) &&
