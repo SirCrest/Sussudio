@@ -1269,7 +1269,7 @@ remaining queued video/audio/microphone/GPU buffer return and depth reset there.
 
 Flashback encoder loop orchestration now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs`. Keep the
-background encode loop, drain ordering, force-rotate drain orchestration,
+background encode loop, normal drain ordering, force-rotate dispatch,
 cancellation handling, fatal cleanup, and final segment registration there.
 
 Flashback encoder packet drains now live in
@@ -1287,6 +1287,12 @@ Flashback encoder export force-rotation now lives in
 force-rotate state/status/idle waits, `ForceRotateForExport`, the
 `ForceRotateRequest` state machine, request timeout/cancellation handling,
 pending-request cleanup, and force-rotate drain abort classification there.
+
+Flashback encoder force-rotate execution now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs`.
+Keep encoding-thread force-rotate request capture, queue drain-to-rotate
+ordering, commit/rotation execution, result completion, failure logging, and
+draining-gate cleanup there.
 
 Flashback encoder producer entry points now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs`. Keep raw/lease/GPU

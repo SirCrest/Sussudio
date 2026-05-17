@@ -38,7 +38,7 @@ static partial class Program
         AssertContains(flashbackSource, "supersededRequest = _forceRotateRequest;");
         AssertContains(flashbackSource, "FLASHBACK_SINK_FORCE_ROTATE_SUPERSEDED");
         AssertContains(flashbackSource, "supersededRequest.TryCancel();");
-        AssertContains(flashbackSource, "if (!RotateSegment(currentPts))\n                            {\n                                localRequest.CompleteEmpty();\n                                madeProgress = true;\n                                continue;\n                            }");
+        AssertContains(flashbackSource, "if (!RotateSegment(currentPts))\n                {\n                    localRequest.CompleteEmpty();\n                    return true;\n                }");
         AssertContains(flashbackSource, "private bool RotateSegment(TimeSpan currentPts)");
         AssertContains(flashbackSource, "return true;\n        }\n        catch (Exception ex)");
         AssertContains(flashbackSource, "Logger.Log($\"FLASHBACK_SINK_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}\");\n            return false;");

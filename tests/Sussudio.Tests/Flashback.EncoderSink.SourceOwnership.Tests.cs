@@ -82,6 +82,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs")
             .Replace("\r\n", "\n");
+        var forceRotateExecutionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(forceRotateText, "public FlashbackForceRotateResult ForceRotateForExport(");
         AssertContains(forceRotateText, "public bool IsForceRotateActive =>");
@@ -96,6 +98,15 @@ static partial class Program
         AssertContains(forceRotateText, "private sealed class ForceRotateRequest");
         AssertContains(forceRotateText, "private const int ForceRotateCommittedGraceMs = 1_000;");
         AssertContains(forceRotateText, "private static bool ShouldAbortForceRotateDrain(");
+        AssertContains(forceRotateExecutionText, "private bool ProcessPendingForceRotate(");
+        AssertContains(forceRotateExecutionText, "Volatile.Write(ref _forceRotateDraining, true);");
+        AssertContains(forceRotateExecutionText, "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
+        AssertContains(forceRotateExecutionText, "while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))");
+        AssertContains(forceRotateExecutionText, "while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))");
+        AssertContains(forceRotateExecutionText, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))");
+        AssertContains(forceRotateExecutionText, "if (!localRequest.TryBeginCommit())");
+        AssertContains(forceRotateExecutionText, "if (!RotateSegment(currentPts))");
+        AssertContains(forceRotateExecutionText, "localRequest.Complete(_bufferManager.GetValidSegmentPaths(localIn, localOut));");
         AssertDoesNotContain(rootText, "public FlashbackForceRotateResult ForceRotateForExport(");
         AssertDoesNotContain(rootText, "public bool IsForceRotateActive =>");
         AssertDoesNotContain(rootText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
@@ -105,6 +116,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "private bool _forceRotateDraining;");
         AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
         AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
+        AssertDoesNotContain(forceRotateText, "private bool ProcessPendingForceRotate(");
 
         return Task.CompletedTask;
     }

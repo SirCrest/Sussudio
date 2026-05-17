@@ -101,11 +101,17 @@ static partial class Program
         var sourceText = ReadFlashbackEncoderSinkSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n");
         var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs").Replace("\r\n", "\n");
+        var forceRotateExecutionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotateExecution.cs").Replace("\r\n", "\n");
+        var loopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n");
 
         var loopBlock = ExtractTextBetween(
-            sourceText,
+            loopText,
             "if (Volatile.Read(ref _forceRotateRequested))",
-            "                    madeProgress = true;\n                }");
+            "                if (videoQueue.Reader.Completion.IsCompleted");
+        var executionBlock = ExtractTextBetween(
+            forceRotateExecutionText,
+            "private bool ProcessPendingForceRotate(",
+            "    }\n}");
 
         AssertContains(sourceText, "private sealed class ForceRotateRequest");
         AssertContains(forceRotateText, "private sealed class ForceRotateRequest");
@@ -115,39 +121,41 @@ static partial class Program
         AssertContains(forceRotateText, "public void Complete(IReadOnlyList<string> paths)");
         AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
         AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(loopBlock, "localRequest = _forceRotateRequest;\n                        _forceRotateRequest = null;");
-        AssertContains(loopBlock, "if (localRequest == null)\n                        {\n                            Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request\");\n                            madeProgress = true;\n                            continue;\n                        }");
-        AssertOccursBefore(loopBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request", "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
-        AssertContains(loopBlock, "if (localRequest.IsCompleted)\n                        {\n                            Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed\");\n                            madeProgress = true;\n                            continue;\n                        }");
-        AssertOccursBefore(loopBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed", "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
-        AssertContains(loopBlock, "var forceRotateDrainAborted = ShouldAbortForceRotateDrain(localRequest, \"before_drain\", inFlightCount);");
+        AssertContains(loopBlock, "if (ProcessPendingForceRotate(videoQueue, audioQueue, microphoneQueue, gpuQueue))");
+        AssertContains(loopBlock, "madeProgress = true;\n                        continue;");
+        AssertContains(executionBlock, "localRequest = _forceRotateRequest;\n            _forceRotateRequest = null;");
+        AssertContains(executionBlock, "if (localRequest == null)\n            {\n                Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request\");\n                return true;\n            }");
+        AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request", "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
+        AssertContains(executionBlock, "if (localRequest.IsCompleted)\n            {\n                Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed\");\n                return true;\n            }");
+        AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed", "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
+        AssertContains(executionBlock, "var forceRotateDrainAborted = ShouldAbortForceRotateDrain(localRequest, \"before_drain\", inFlightCount);");
         AssertContains(sourceText, "private const int AudioDrainBatchLimit = 128;");
-        AssertContains(loopBlock, "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
-        AssertContains(loopBlock, "while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))");
-        AssertContains(loopBlock, "while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))");
-        AssertContains(loopBlock, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))");
-        AssertDoesNotContain(loopBlock, "while (DrainGpuPackets(gpuQueue.Reader))");
-        AssertDoesNotContain(loopBlock, "while (DrainVideoPackets(videoQueue.Reader))");
-        AssertContains(loopBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"audio\", inFlightCount))");
-        AssertContains(loopBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"microphone\", inFlightCount))");
-        AssertContains(loopBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"gpu\", inFlightCount))");
-        AssertContains(loopBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"video\", inFlightCount))");
-        AssertContains(loopBlock, "if (forceRotateDrainAborted)\n                        {\n                            madeProgress = true;\n                            continue;\n                        }");
-        AssertOccursBefore(loopBlock, "if (forceRotateDrainAborted)\n                        {\n                            madeProgress = true;\n                            continue;\n                        }", "var currentPts = ResolveEncoderPts();");
-        AssertContains(loopBlock, "if (localRequest.IsCompleted)\n                        {\n                            Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain\");\n                            madeProgress = true;\n                            continue;\n                        }");
-        AssertOccursBefore(loopBlock, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))", "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain");
-        AssertOccursBefore(loopBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain", "var currentPts = ResolveEncoderPts();");
-        AssertContains(loopBlock, "if (!localRequest.TryBeginCommit())\n                            {\n                                Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_before_rotate\");\n                                madeProgress = true;\n                                continue;\n                            }");
-        AssertOccursBefore(loopBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_before_rotate", "if (!RotateSegment(currentPts))");
+        AssertContains(executionBlock, "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
+        AssertContains(executionBlock, "while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))");
+        AssertContains(executionBlock, "while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))");
+        AssertContains(executionBlock, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))");
+        AssertDoesNotContain(executionBlock, "while (DrainGpuPackets(gpuQueue.Reader))");
+        AssertDoesNotContain(executionBlock, "while (DrainVideoPackets(videoQueue.Reader))");
+        AssertContains(executionBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"audio\", inFlightCount))");
+        AssertContains(executionBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"microphone\", inFlightCount))");
+        AssertContains(executionBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"gpu\", inFlightCount))");
+        AssertContains(executionBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"video\", inFlightCount))");
+        AssertContains(executionBlock, "if (forceRotateDrainAborted)\n            {\n                return true;\n            }");
+        AssertOccursBefore(executionBlock, "if (forceRotateDrainAborted)\n            {\n                return true;\n            }", "var currentPts = ResolveEncoderPts();");
+        AssertContains(executionBlock, "if (localRequest.IsCompleted)\n            {\n                Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain\");\n                return true;\n            }");
+        AssertOccursBefore(executionBlock, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))", "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain");
+        AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain", "var currentPts = ResolveEncoderPts();");
+        AssertContains(executionBlock, "if (!localRequest.TryBeginCommit())\n                {\n                    Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_before_rotate\");\n                    return true;\n                }");
+        AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_before_rotate", "if (!RotateSegment(currentPts))");
         AssertContains(sourceText, "private static bool ShouldAbortForceRotateDrain(");
         AssertContains(sourceText, "if (!request.IsCompleted)");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_SINK_FORCE_ROTATE_ABORT_DRAIN phase={phase} in_flight_rounds={inFlightRounds}\");");
         AssertContains(sourceText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(sourceText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(sourceText, "while (drainedCount < maxPackets && reader.TryRead(out var packet))");
-        AssertContains(loopBlock, "catch (Exception ex)\n                    {\n                        Logger.Log($\"FLASHBACK_SINK_FORCE_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}\");\n                        localRequest?.CompleteEmpty();\n                        throw;\n                    }");
-        AssertOccursBefore(loopBlock, "localRequest?.CompleteEmpty();\n                        throw;", "finally\n                    {\n                        lock (_videoQueueSync)");
-        AssertContains(loopBlock, "finally\n                    {\n                        lock (_videoQueueSync)\n                        {\n                            Volatile.Write(ref _forceRotateDraining, false);\n                        }\n                    }");
+        AssertContains(executionBlock, "catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_SINK_FORCE_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}\");\n            localRequest?.CompleteEmpty();\n            throw;\n        }");
+        AssertOccursBefore(executionBlock, "localRequest?.CompleteEmpty();\n            throw;", "finally\n        {\n            lock (_videoQueueSync)");
+        AssertContains(executionBlock, "finally\n        {\n            lock (_videoQueueSync)\n            {\n                Volatile.Write(ref _forceRotateDraining, false);\n            }\n        }");
 
         var forceRotateBlock = ExtractTextBetween(
             sourceText,
