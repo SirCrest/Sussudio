@@ -1127,9 +1127,10 @@ rather than DTO storage.
 
 LibAv encoder video setup now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs`. Keep video codec
-context configuration, NVENC private option application, D3D11/CUDA hardware
-frames setup, texture-pool creation, and video bitstream-filter initialization
-there; leave rotation and finalization in `LibAvEncoder.cs`.
+context configuration, NVENC private option application, and video bitstream-filter
+initialization there. D3D11/CUDA hardware frames setup and ArraySize=1 texture-pool
+creation now live in `Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs`.
+Leave rotation and finalization in `LibAvEncoder.cs`.
 
 LibAv encoder video submission now lives in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep CPU packed
