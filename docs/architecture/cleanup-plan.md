@@ -1262,8 +1262,12 @@ shared helpers.
 
 Flashback encoder queue helpers now live in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs`. Keep queue
-completion/signaling, queue-depth accounting, enqueue rejection guards/logging,
-and hot audio packet enqueue there.
+completion/signaling, shared queue-depth accounting, force-rotate audio queue
+guard policy, failure notification, and hot audio packet enqueue there.
+Flashback encoder video/GPU queue admission now lives in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.cs`.
+Keep video/GPU enqueue acceptance/rejection, TryWrite depth accounting, queue
+full classification, and rejection telemetry there.
 
 Flashback encoder queued-buffer cleanup now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.QueueCleanup.cs`. Keep

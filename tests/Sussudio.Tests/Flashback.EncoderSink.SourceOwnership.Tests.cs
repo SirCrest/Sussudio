@@ -51,8 +51,22 @@ static partial class Program
     {
         var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs")
             .Replace("\r\n", "\n");
+        var videoQueueSubmissionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.cs")
+            .Replace("\r\n", "\n");
         var queueCleanupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.QueueCleanup.cs")
             .Replace("\r\n", "\n");
+
+        AssertContains(videoQueueSubmissionText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertContains(videoQueueSubmissionText, "private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertContains(videoQueueSubmissionText, "private string? GetVideoEnqueueRejectReason(bool isGpu)");
+        AssertContains(videoQueueSubmissionText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertContains(videoQueueSubmissionText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertContains(videoQueueSubmissionText, "TrackVideoQueueRejected(\"queue_full\");");
+        AssertContains(videoQueueSubmissionText, "TrackGpuQueueRejected(\"queue_full\");");
+        AssertDoesNotContain(queuesText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertDoesNotContain(queuesText, "private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertDoesNotContain(queuesText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertDoesNotContain(queuesText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
 
         AssertContains(queueCleanupText, "private void ReturnAllRemainingQueuedBuffers()");
         AssertContains(queueCleanupText, "private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)");
@@ -72,6 +86,8 @@ static partial class Program
         AssertContains(queuesText, "private void SignalWork(string operation)");
         AssertContains(queuesText, "private bool WaitForCancellation(TimeSpan timeout)");
         AssertContains(queuesText, "private void FailEncoding(Exception ex)");
+        AssertContains(queuesText, "private bool TryEnqueueAudioPacket(");
+        AssertContains(queuesText, "private static bool TryWriteAudioPacket(");
 
         return Task.CompletedTask;
     }
