@@ -56,4 +56,43 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task ArchitectureAgentMap_ToolsCommonOwnershipEntriesAreUnique()
+    {
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
+        var ownerBulletRegex = new Regex(
+            @"^\s*-\s+`(?<path>tools/Common/[^`]+\.cs)`\s+(?:also\s+owns|owns|is)\b",
+            RegexOptions.CultureInvariant);
+        var firstLineByPath = new Dictionary<string, int>(StringComparer.Ordinal);
+        var duplicates = new List<string>();
+        var lines = agentMapText.Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i].TrimEnd('\r');
+            var match = ownerBulletRegex.Match(line);
+            if (!match.Success)
+            {
+                continue;
+            }
+
+            var path = match.Groups["path"].Value;
+            var lineNumber = i + 1;
+            if (firstLineByPath.TryGetValue(path, out var firstLineNumber))
+            {
+                duplicates.Add($"{path} first={firstLineNumber} duplicate={lineNumber}");
+                continue;
+            }
+
+            firstLineByPath[path] = lineNumber;
+        }
+
+        if (duplicates.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "AGENT_MAP.md has duplicate tools/Common ownership bullets: " +
+                string.Join(" | ", duplicates));
+        }
+
+        return Task.CompletedTask;
+    }
 }

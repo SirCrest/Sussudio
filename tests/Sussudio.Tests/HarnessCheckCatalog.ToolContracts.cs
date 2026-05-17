@@ -48,6 +48,9 @@ static partial class Program
             "Architecture agent map covers architecture-doc test family",
             ArchitectureAgentMap_CoversArchitectureDocsTestFamily);
         await AddCheckAsync(results,
+            "Architecture agent map has unique tools/Common ownership entries",
+            ArchitectureAgentMap_ToolsCommonOwnershipEntriesAreUnique);
+        await AddCheckAsync(results,
             "Architecture agent map covers automation consumer checklist",
             ArchitectureAgentMap_CoversAutomationConsumerChecklist);
         await AddCheckAsync(results,
