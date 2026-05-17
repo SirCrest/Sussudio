@@ -1,7 +1,5 @@
 using System;
 using System.IO;
-using System.Linq;
-using Sussudio.Models;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.ViewModels;
@@ -17,120 +15,22 @@ public partial class MainViewModel
         try
         {
             var settings = SettingsService.Load();
+            var loadPlan = MainViewModelSettingsPersistenceProjection.BuildLoadPlan(
+                settings,
+                new MainViewModelSettingsLoadInput(
+                    AvailableRecordingFormats,
+                    AvailableQualities,
+                    AvailablePresets,
+                    AvailableSplitEncodeModes,
+                    AvailableDeviceAudioModes,
+                    Directory.Exists));
 
-            if (!string.IsNullOrWhiteSpace(settings.OutputPath) && Directory.Exists(settings.OutputPath))
+            if (!string.IsNullOrWhiteSpace(loadPlan.UnavailableRecordingFormat))
             {
-                OutputPath = settings.OutputPath;
+                Logger.Log($"SETTINGS_LOAD: saved format '{loadPlan.UnavailableRecordingFormat}' not available, using default.");
             }
 
-            if (!string.IsNullOrWhiteSpace(settings.SelectedRecordingFormat) &&
-                AvailableRecordingFormats.Contains(settings.SelectedRecordingFormat))
-            {
-                SelectedRecordingFormat = settings.SelectedRecordingFormat;
-            }
-            else if (!string.IsNullOrWhiteSpace(settings.SelectedRecordingFormat))
-            {
-                Logger.Log($"SETTINGS_LOAD: saved format '{settings.SelectedRecordingFormat}' not available, using default.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(settings.SelectedQuality) &&
-                AvailableQualities.Contains(settings.SelectedQuality))
-            {
-                SelectedQuality = settings.SelectedQuality;
-            }
-
-            if (!string.IsNullOrWhiteSpace(settings.SelectedPreset) &&
-                AvailablePresets.Contains(settings.SelectedPreset))
-            {
-                SelectedPreset = settings.SelectedPreset;
-            }
-
-            if (!string.IsNullOrWhiteSpace(settings.SelectedSplitEncodeMode) &&
-                AvailableSplitEncodeModes.Contains(settings.SelectedSplitEncodeMode))
-            {
-                SelectedSplitEncodeMode = settings.SelectedSplitEncodeMode;
-            }
-
-            if (settings.CustomBitrateMbps.HasValue)
-            {
-                CustomBitrateMbps = settings.CustomBitrateMbps.Value;
-            }
-
-            if (settings.IsHdrEnabled.HasValue)
-            {
-                IsHdrEnabled = settings.IsHdrEnabled.Value;
-            }
-
-            if (settings.IsAudioEnabled.HasValue)
-            {
-                IsAudioEnabled = settings.IsAudioEnabled.Value;
-            }
-
-            if (settings.IsAudioPreviewEnabled.HasValue)
-            {
-                IsAudioPreviewEnabled = settings.IsAudioPreviewEnabled.Value;
-            }
-
-            if (settings.IsCustomAudioInputEnabled.HasValue)
-            {
-                IsCustomAudioInputEnabled = settings.IsCustomAudioInputEnabled.Value;
-            }
-
-            if (settings.IsMicrophoneEnabled.HasValue)
-            {
-                IsMicrophoneEnabled = settings.IsMicrophoneEnabled.Value;
-            }
-
-            if (settings.MicrophoneVolume.HasValue)
-            {
-                var savedMicrophoneVolume = Math.Clamp(settings.MicrophoneVolume.Value, 0.0, 100.0);
-                MicrophoneVolume = savedMicrophoneVolume;
-                _pendingSavedMicrophoneVolume = savedMicrophoneVolume;
-                _pendingSavedMicrophoneVolumeDeviceId = settings.SelectedMicrophoneDeviceId;
-            }
-
-            if (settings.PreviewVolume.HasValue)
-            {
-                PreviewVolume = Math.Clamp(settings.PreviewVolume.Value, 0.0, 1.0);
-            }
-
-            if (settings.ShowAllCaptureOptions.HasValue)
-            {
-                ShowAllCaptureOptions = settings.ShowAllCaptureOptions.Value;
-            }
-
-            if (settings.IsStatsVisible.HasValue)
-            {
-                IsStatsVisible = settings.IsStatsVisible.Value;
-            }
-
-            if (!string.IsNullOrWhiteSpace(settings.SelectedDeviceAudioMode) &&
-                AvailableDeviceAudioModes.Contains(settings.SelectedDeviceAudioMode, StringComparer.OrdinalIgnoreCase))
-            {
-                SelectedDeviceAudioMode = settings.SelectedDeviceAudioMode;
-            }
-
-            if (settings.AnalogAudioGainPercent.HasValue)
-            {
-                AnalogAudioGainPercent = Math.Clamp(settings.AnalogAudioGainPercent.Value, 0.0, 100.0);
-            }
-
-            if (settings.FlashbackGpuDecode.HasValue)
-            {
-                FlashbackGpuDecode = settings.FlashbackGpuDecode.Value;
-            }
-
-            if (settings.FlashbackBufferMinutes.HasValue)
-            {
-                FlashbackBufferMinutes = Math.Clamp(settings.FlashbackBufferMinutes.Value, 1, 30);
-            }
-
-            // Defer device selection until RefreshDevicesAsync populates the device list
-            _pendingSavedDeviceId = settings.SelectedDeviceId;
-            _pendingSavedAudioDeviceId = settings.SelectedAudioInputDeviceId;
-            _pendingSavedMicrophoneDeviceId = settings.SelectedMicrophoneDeviceId;
-            _pendingSavedDeviceAudioMode = settings.SelectedDeviceAudioMode;
-            _pendingSavedAnalogAudioGainPercent = settings.AnalogAudioGainPercent;
+            ApplySettingsLoadPlan(loadPlan);
         }
         catch (Exception ex)
         {
@@ -151,31 +51,30 @@ public partial class MainViewModel
 
         try
         {
-            var settings = new UserSettings
-            {
-                SelectedDeviceId = SelectedDevice?.Id,
-                OutputPath = OutputPath,
-                SelectedRecordingFormat = SelectedRecordingFormat,
-                SelectedQuality = SelectedQuality,
-                SelectedPreset = SelectedPreset,
-                SelectedSplitEncodeMode = SelectedSplitEncodeMode,
-                CustomBitrateMbps = CustomBitrateMbps,
-                IsHdrEnabled = IsHdrEnabled,
-                IsAudioEnabled = IsAudioEnabled,
-                IsAudioPreviewEnabled = IsAudioPreviewEnabled,
-                IsCustomAudioInputEnabled = IsCustomAudioInputEnabled,
-                SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,
-                IsMicrophoneEnabled = IsMicrophoneEnabled,
-                SelectedMicrophoneDeviceId = SelectedMicrophoneDevice?.Id,
-                MicrophoneVolume = MicrophoneVolume,
-                PreviewVolume = VolumeSaveOverride ?? PreviewVolume,
-                ShowAllCaptureOptions = ShowAllCaptureOptions,
-                IsStatsVisible = IsStatsVisible,
-                SelectedDeviceAudioMode = SelectedDeviceAudioMode,
-                AnalogAudioGainPercent = AnalogAudioGainPercent,
-                FlashbackGpuDecode = FlashbackGpuDecode,
-                FlashbackBufferMinutes = FlashbackBufferMinutes,
-            };
+            var settings = MainViewModelSettingsPersistenceProjection.BuildSaveSettings(
+                new MainViewModelSettingsSaveInput(
+                    SelectedDevice?.Id,
+                    OutputPath,
+                    SelectedRecordingFormat,
+                    SelectedQuality,
+                    SelectedPreset,
+                    SelectedSplitEncodeMode,
+                    CustomBitrateMbps,
+                    IsHdrEnabled,
+                    IsAudioEnabled,
+                    IsAudioPreviewEnabled,
+                    IsCustomAudioInputEnabled,
+                    SelectedAudioInputDevice?.Id,
+                    IsMicrophoneEnabled,
+                    SelectedMicrophoneDevice?.Id,
+                    MicrophoneVolume,
+                    VolumeSaveOverride ?? PreviewVolume,
+                    ShowAllCaptureOptions,
+                    IsStatsVisible,
+                    SelectedDeviceAudioMode,
+                    AnalogAudioGainPercent,
+                    FlashbackGpuDecode,
+                    FlashbackBufferMinutes));
 
             SettingsService.Save(settings);
         }
@@ -183,5 +82,112 @@ public partial class MainViewModel
         {
             Logger.Log($"SETTINGS_SAVE: unexpected error: {ex.Message}");
         }
+    }
+
+    private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)
+    {
+        if (loadPlan.OutputPath is not null)
+        {
+            OutputPath = loadPlan.OutputPath;
+        }
+
+        if (loadPlan.SelectedRecordingFormat is not null)
+        {
+            SelectedRecordingFormat = loadPlan.SelectedRecordingFormat;
+        }
+
+        if (loadPlan.SelectedQuality is not null)
+        {
+            SelectedQuality = loadPlan.SelectedQuality;
+        }
+
+        if (loadPlan.SelectedPreset is not null)
+        {
+            SelectedPreset = loadPlan.SelectedPreset;
+        }
+
+        if (loadPlan.SelectedSplitEncodeMode is not null)
+        {
+            SelectedSplitEncodeMode = loadPlan.SelectedSplitEncodeMode;
+        }
+
+        if (loadPlan.CustomBitrateMbps.HasValue)
+        {
+            CustomBitrateMbps = loadPlan.CustomBitrateMbps.Value;
+        }
+
+        if (loadPlan.IsHdrEnabled.HasValue)
+        {
+            IsHdrEnabled = loadPlan.IsHdrEnabled.Value;
+        }
+
+        if (loadPlan.IsAudioEnabled.HasValue)
+        {
+            IsAudioEnabled = loadPlan.IsAudioEnabled.Value;
+        }
+
+        if (loadPlan.IsAudioPreviewEnabled.HasValue)
+        {
+            IsAudioPreviewEnabled = loadPlan.IsAudioPreviewEnabled.Value;
+        }
+
+        if (loadPlan.IsCustomAudioInputEnabled.HasValue)
+        {
+            IsCustomAudioInputEnabled = loadPlan.IsCustomAudioInputEnabled.Value;
+        }
+
+        if (loadPlan.IsMicrophoneEnabled.HasValue)
+        {
+            IsMicrophoneEnabled = loadPlan.IsMicrophoneEnabled.Value;
+        }
+
+        if (loadPlan.MicrophoneVolume.HasValue)
+        {
+            MicrophoneVolume = loadPlan.MicrophoneVolume.Value;
+            _pendingSavedMicrophoneVolume = loadPlan.MicrophoneVolume.Value;
+            _pendingSavedMicrophoneVolumeDeviceId = loadPlan.PendingMicrophoneVolumeDeviceId;
+        }
+
+        if (loadPlan.PreviewVolume.HasValue)
+        {
+            PreviewVolume = loadPlan.PreviewVolume.Value;
+        }
+
+        if (loadPlan.ShowAllCaptureOptions.HasValue)
+        {
+            ShowAllCaptureOptions = loadPlan.ShowAllCaptureOptions.Value;
+        }
+
+        if (loadPlan.IsStatsVisible.HasValue)
+        {
+            IsStatsVisible = loadPlan.IsStatsVisible.Value;
+        }
+
+        if (loadPlan.SelectedDeviceAudioMode is not null)
+        {
+            SelectedDeviceAudioMode = loadPlan.SelectedDeviceAudioMode;
+        }
+
+        if (loadPlan.AnalogAudioGainPercent.HasValue)
+        {
+            AnalogAudioGainPercent = loadPlan.AnalogAudioGainPercent.Value;
+        }
+
+        if (loadPlan.FlashbackGpuDecode.HasValue)
+        {
+            FlashbackGpuDecode = loadPlan.FlashbackGpuDecode.Value;
+        }
+
+        if (loadPlan.FlashbackBufferMinutes.HasValue)
+        {
+            FlashbackBufferMinutes = loadPlan.FlashbackBufferMinutes.Value;
+        }
+
+        // Defer device selection until RefreshDevicesAsync populates the device list.
+        _pendingSavedDeviceId = loadPlan.PendingDeviceId;
+        _pendingSavedAudioDeviceId = loadPlan.PendingAudioDeviceId;
+        _pendingSavedMicrophoneDeviceId = loadPlan.PendingMicrophoneDeviceId;
+        _pendingSavedDeviceAudioMode = loadPlan.PendingDeviceAudioMode;
+        _pendingSavedAnalogAudioGainPercent = loadPlan.PendingAnalogAudioGainPercent;
     }
 }

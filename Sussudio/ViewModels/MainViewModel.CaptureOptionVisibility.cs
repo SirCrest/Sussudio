@@ -1,9 +1,9 @@
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// User-facing capture-option visibility changes. Settings persistence stays
-/// in MainViewModel.SettingsPersistence.cs; source-rate unlock policy stays in
-/// MainViewModel.FrameRateSourceFilterPolicy.cs.
+/// User-facing capture-option visibility changes. Settings persistence flows
+/// through MainViewModelSettingsPersistenceProjection; source-rate unlock policy
+/// stays in MainViewModel.FrameRateSourceFilterPolicy.cs.
 /// </summary>
 public partial class MainViewModel
 {

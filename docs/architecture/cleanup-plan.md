@@ -3223,9 +3223,11 @@ Remaining `tools/Common` ownership:
    projection lives in `MainViewModel.HdrRuntimePresentation.cs`; keep snapshot
    application and source-aware auto-retargeting in `MainViewModel.Telemetry.cs`.
    Settings initialization and simple persistence reactions stay in
-   `MainViewModel.Settings.cs`; load/save projection between persisted user
-   settings and ViewModel state now lives in
-   `MainViewModel.SettingsPersistence.cs`; active Flashback reactions to recording format
+   `MainViewModel.Settings.cs`; the impure settings load/save adapter stays in
+   `MainViewModel.SettingsPersistence.cs`, while
+   `MainViewModelSettingsPersistenceProjection.cs` owns persisted-settings
+   validation, clamping, deferred-selection handoff, and save DTO projection;
+   active Flashback reactions to recording format
    and encoder quality/preset/split/bitrate now live in
    `MainViewModel.FlashbackEncoderSettings.cs`; buffer/GPU decode reactions stay
    in `MainViewModel.FlashbackSettings.cs`.
