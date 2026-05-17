@@ -106,9 +106,9 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "SelectedDeviceId = viewModelSnapshot.SelectedDeviceId,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "SelectedFriendlyFrameRate = viewModelSnapshot.SelectedFriendlyFrameRate ?? Math.Round(viewModelSnapshot.SelectedFrameRate),");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var recordingSettings = BuildRecordingSettingsProjection(userSettings);");
-        AssertContains(diagnostics.SnapshotProjectionRecordingSettingsText, "private static RecordingSettingsProjection BuildRecordingSettingsProjection(UserSettingsProjection userSettings)");
-        AssertContains(diagnostics.SnapshotProjectionRecordingSettingsText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
-        AssertContains(diagnostics.SnapshotProjectionRecordingSettingsText, "CustomBitrateMbps = userSettings.CustomBitrateMbps");
+        AssertContains(diagnostics.SnapshotProjectionUserSettingsText, "private static RecordingSettingsProjection BuildRecordingSettingsProjection(UserSettingsProjection userSettings)");
+        AssertContains(diagnostics.SnapshotProjectionUserSettingsText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
+        AssertContains(diagnostics.SnapshotProjectionUserSettingsText, "CustomBitrateMbps = userSettings.CustomBitrateMbps");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionCompositionText, "CustomBitrateMbps = userSettings.CustomBitrateMbps,");
         AssertContains(diagnostics.SnapshotProjectionCompositionText, "var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime);");
