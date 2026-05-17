@@ -194,6 +194,8 @@ static partial class Program
         var source = ReadFlashbackBufferManagerSource();
         var cleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
             .Replace("\r\n", "\n");
+        var budgetSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupSessionCacheBudget.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(source, "var maxTicks = Math.Max(0, _options.BufferDuration.Ticks);");
         AssertContains(source, "var duration = NonNegativeDeltaTicks(ptsTicks, startTicks);");
@@ -207,8 +209,9 @@ static partial class Program
         AssertContains(source, "var evictTicks = ToNonNegativeLongSaturated(excessBytes / bytesPerTick);");
         AssertContains(source, "var newStart = AddNonNegativeSaturated(Math.Max(0, startTicks), evictTicks);");
         AssertContains(cleanupSource, "directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);");
-        AssertContains(cleanupSource, "totalCacheBytes = AddNonNegativeSaturated(totalCacheBytes, directoryBytes);");
-        AssertContains(cleanupSource, "totalCacheBytes = SubtractNonNegative(totalCacheBytes, candidate.SizeBytes);");
+        AssertContains(budgetSource, "directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);");
+        AssertContains(budgetSource, "totalCacheBytes = AddNonNegativeSaturated(totalCacheBytes, directoryBytes);");
+        AssertContains(budgetSource, "totalCacheBytes = SubtractNonNegative(totalCacheBytes, candidate.SizeBytes);");
 
         return Task.CompletedTask;
     }

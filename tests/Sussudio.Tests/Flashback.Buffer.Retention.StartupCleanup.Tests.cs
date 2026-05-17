@@ -174,7 +174,7 @@ static partial class Program
             File.SetLastWriteTimeUtc(Path.Combine(oldSession, "fb_old_0001.ts"), now - TimeSpan.FromHours(2));
             File.SetLastWriteTimeUtc(Path.Combine(recentSession, "fb_recent_0001.ts"), now - TimeSpan.FromMinutes(5));
 
-            var cleanupType = RequireType("Sussudio.Services.Flashback.FlashbackStartupCacheCleanup");
+            var cleanupType = RequireType("Sussudio.Services.Flashback.FlashbackStartupSessionCacheBudget");
             var cleanup = cleanupType.GetMethod("CleanupSessionCacheBudget", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
                 ?? throw new InvalidOperationException("CleanupSessionCacheBudget not found.");
 

@@ -78,10 +78,10 @@ internal sealed partial class FlashbackBufferManager
             FlashbackExporter.CleanupOrphanedTempFiles(tempDirectory);
             FlashbackStartupCacheCleanup.CleanupStaleRootSegmentFiles(tempDirectory);
             FlashbackStartupCacheCleanup.CleanupStaleSessionDirectories(tempDirectory, sessionDirectory);
-            var cacheCleanup = FlashbackStartupCacheCleanup.CleanupSessionCacheBudget(
+            var cacheCleanup = FlashbackStartupSessionCacheBudget.CleanupSessionCacheBudget(
                 tempDirectory,
                 sessionDirectory,
-                FlashbackStartupCacheCleanup.CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));
+                FlashbackStartupSessionCacheBudget.CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));
 
             _activeSegmentPath = null;
             Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);

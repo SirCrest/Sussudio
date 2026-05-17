@@ -9,6 +9,8 @@ static partial class Program
         var bufferText = ReadFlashbackBufferManagerSource();
         var cleanupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
             .Replace("\r\n", "\n");
+        var budgetText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupSessionCacheBudget.cs")
+            .Replace("\r\n", "\n");
         var scannerText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackSessionRecoveryScanner.cs")
             .Replace("\r\n", "\n");
         var playbackSegmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs")
@@ -17,16 +19,16 @@ static partial class Program
         // Constants/definitions now live in the extracted helper classes
         AssertContains(cleanupText, "internal static readonly TimeSpan StaleSessionMinAge = TimeSpan.FromHours(12);");
         AssertContains(cleanupText, "private const int MaxStaleSessionDirectoryScansPerInit = 64;");
-        AssertContains(cleanupText, "private const int MaxStartupCacheSessionDirectoryScansPerInit = 256;");
-        AssertContains(cleanupText, "private const int MaxStartupCacheSessionDirectoriesPerInit = 32;");
-        AssertContains(cleanupText, "private const long StartupCacheBudgetMultiplier = 2;");
+        AssertContains(budgetText, "private const int MaxStartupCacheSessionDirectoryScansPerInit = 256;");
+        AssertContains(budgetText, "private const int MaxStartupCacheSessionDirectoriesPerInit = 32;");
+        AssertContains(budgetText, "private const long StartupCacheBudgetMultiplier = 2;");
         AssertContains(cleanupText, "private const int MaxStaleRootSegmentFileScansPerInit = 512;");
 
         // Call sites remain in the FlashbackBufferManager partial family (now qualified)
         AssertContains(bufferText, "FlashbackStartupCacheCleanup.CleanupStaleRootSegmentFiles(tempDirectory);");
         AssertContains(bufferText, "FlashbackStartupCacheCleanup.CleanupStaleSessionDirectories(tempDirectory, sessionDirectory);");
-        AssertContains(bufferText, "var cacheCleanup = FlashbackStartupCacheCleanup.CleanupSessionCacheBudget(");
-        AssertContains(bufferText, "FlashbackStartupCacheCleanup.CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));");
+        AssertContains(bufferText, "var cacheCleanup = FlashbackStartupSessionCacheBudget.CleanupSessionCacheBudget(");
+        AssertContains(bufferText, "FlashbackStartupSessionCacheBudget.CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));");
         AssertContains(bufferText, "var sessionDirectory = FlashbackSessionRecoveryScanner.BuildSessionDirectory(tempDirectory, sessionId);");
 
         // Session directory helper definitions now in FlashbackSessionRecoveryScanner
@@ -48,11 +50,11 @@ static partial class Program
         // Log strings remain in the cleanup class
         AssertContains(cleanupText, "FLASHBACK_STALE_SESSION_SKIP reason=reparse_point");
         AssertContains(cleanupText, "FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir");
-        AssertContains(cleanupText, "FLASHBACK_CACHE_BUDGET_SKIP reason=outside_temp");
-        AssertContains(cleanupText, "FLASHBACK_SESSION_STATS_SKIP reason=reparse_point");
+        AssertContains(budgetText, "FLASHBACK_CACHE_BUDGET_SKIP reason=outside_temp");
+        AssertContains(budgetText, "FLASHBACK_SESSION_STATS_SKIP reason=reparse_point");
         AssertContains(cleanupText, "if (string.Equals(fullPath, currentFullPath, StringComparison.OrdinalIgnoreCase))");
-        AssertContains(cleanupText, "FLASHBACK_CACHE_BUDGET_PRESERVE_SKIP");
-        AssertContains(cleanupText, "FLASHBACK_CACHE_BUDGET_CLEANUP");
+        AssertContains(budgetText, "FLASHBACK_CACHE_BUDGET_PRESERVE_SKIP");
+        AssertContains(budgetText, "FLASHBACK_CACHE_BUDGET_CLEANUP");
         AssertContains(cleanupText, "info.EnumerateFiles(\"fb_*\", SearchOption.TopDirectoryOnly)");
         AssertContains(cleanupText, "Directory.EnumerateFiles(tempDirectory, \"fb_*\", SearchOption.TopDirectoryOnly)");
         AssertContains(cleanupText, "Directory.Delete(fullPath, recursive: true);");

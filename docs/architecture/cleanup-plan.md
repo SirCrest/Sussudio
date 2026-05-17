@@ -1373,6 +1373,15 @@ Flashback buffer saturated math, PTS range clamps, completed-segment byte
 summation, and normalized segment-path comparisons now live in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Math.cs`.
 
+Flashback startup cleanup now lives in
+`Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs`. Keep stale root
+segment cleanup, stale session-directory cleanup, recovery-preserve marker
+skips, and temp-drive free-space probing there. Startup session-cache budget
+enforcement now lives in
+`Sussudio/Services/Flashback/FlashbackStartupSessionCacheBudget.cs`. Keep
+startup cache budget calculation, session-directory stats, preserved-session
+skips, oldest-session deletion, and cache-budget cleanup telemetry there.
+
 Flashback exporter request routing now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Requests.cs`. Keep the public
 `ExportAsync` null/disposed guards, segment path normalization, adaptive
