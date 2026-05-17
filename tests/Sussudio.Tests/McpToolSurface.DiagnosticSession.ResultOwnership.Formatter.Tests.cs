@@ -7,6 +7,14 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
+        var overviewText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Overview.cs")
+            .Replace("\r\n", "\n");
+        var captureModeText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs")
+            .Replace("\r\n", "\n");
+        var recordingVerificationText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.RecordingVerification.cs")
+            .Replace("\r\n", "\n");
+        var presentMonText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.PresentMon.cs")
+            .Replace("\r\n", "\n");
         var flashbackRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Flashback.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackCommandsText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs")
@@ -31,11 +39,26 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewVisualCadenceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.VisualCadence.cs")
             .Replace("\r\n", "\n");
+        var processPerformanceText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.ProcessPerformance.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(formatterText, "public static partial class DiagnosticSessionResultFormatter");
         AssertContains(formatterText, "public static string Format(DiagnosticSessionResult result)");
         AssertContains(formatterText, "== Diagnostic Session:");
         AssertContains(formatterText, "private static void AppendOverview(");
+        AssertContains(overviewText, "private static void AppendOverview(");
+        AssertContains(captureModeText, "private static void AppendCaptureMode(");
+        AssertContains(captureModeText, "\"Capture Mode: \"");
+        AssertContains(recordingVerificationText, "private static void AppendRecordingVerification(");
+        AssertContains(recordingVerificationText, "\"Recording Verification: ");
+        AssertContains(presentMonText, "private static void AppendPresentMon(");
+        AssertContains(presentMonText, "\"PresentMon: ");
+        AssertContains(processPerformanceText, "private static void AppendProcessPerformance(");
+        AssertContains(processPerformanceText, "\"Process Perf: \"");
+        AssertDoesNotContain(overviewText, "\"Capture Mode: \"");
+        AssertDoesNotContain(overviewText, "\"Recording Verification: ");
+        AssertDoesNotContain(overviewText, "\"PresentMon: ");
+        AssertDoesNotContain(overviewText, "\"Process Perf: \"");
         AssertContains(formatterText, "private static void AppendFlashbackSections(");
         AssertContains(formatterText, "private static void AppendPreviewSections(");
         AssertContains(formatterText, "private static void AppendArtifacts(");

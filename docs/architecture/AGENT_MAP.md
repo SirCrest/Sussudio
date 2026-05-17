@@ -2847,8 +2847,16 @@ Primary owners:
   callbacks.
 - `tools/Common/DiagnosticSessionResultFormatter.cs` owns the public
   human-readable diagnostic-session text flow used by ssctl and MCP.
-- `tools/Common/DiagnosticSessionResultFormatter.Overview.cs` owns header,
-  capture-mode, recording-verification, PresentMon, and process sections.
+- `tools/Common/DiagnosticSessionResultFormatter.Overview.cs` owns the
+  diagnostic-session header, summary, and evidence section.
+- `tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs` owns
+  capture-mode text.
+- `tools/Common/DiagnosticSessionResultFormatter.RecordingVerification.cs`
+  owns recording-verification text.
+- `tools/Common/DiagnosticSessionResultFormatter.PresentMon.cs` owns PresentMon
+  text.
+- `tools/Common/DiagnosticSessionResultFormatter.ProcessPerformance.cs` owns
+  process-performance text.
 - `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs` owns Flashback
   diagnostic-session text section ordering.
   `DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs` owns

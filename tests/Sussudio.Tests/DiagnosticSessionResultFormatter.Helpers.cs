@@ -5,6 +5,9 @@ static partial class Program
                 "\n",
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Overview.cs"),
+                ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.CaptureMode.cs"),
+                ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.RecordingVerification.cs"),
+                ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.PresentMon.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Flashback.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Commands.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Performance.cs"),
@@ -17,6 +20,7 @@ static partial class Program
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.D3DPerformance.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.D3DCpuTiming.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Preview.VisualCadence.cs"),
+                ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.ProcessPerformance.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Artifacts.cs"),
                 ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.Helpers.cs"))
             .Replace("\r\n", "\n");
