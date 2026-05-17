@@ -108,6 +108,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeFlashbackPlaybackPresentationController();
         InitializeFlashbackPlaybackUiCoordinator();
         InitializeFlashbackExportProgressPresentationController();
+        InitializeFlashbackPropertyChangedController();
     }
 
     private void InitializeShellPresentationControllers()

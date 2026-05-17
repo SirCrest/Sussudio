@@ -2236,8 +2236,10 @@ limited to route order, and add new property-name cases to the nearest focused
 partial.
 
 Flashback-specific ViewModel property adapter dispatch now lives in
-`Sussudio/MainWindow.PropertyChangedFlashback.cs`: timeline lockout, marker and
-playhead refresh, export progress, and Flashback settings-control sync.
+`Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs`:
+timeline lockout, marker and playhead refresh, export progress, and Flashback
+settings-control sync. `Sussudio/MainWindow.PropertyChangedFlashback.cs` is the
+XAML/MainWindow adapter that composes the route table callbacks.
 
 Audio and microphone-specific ViewModel property projections now live in
 `Sussudio/Controllers/Audio/AudioControlPresentationController.cs`: audio toggles,

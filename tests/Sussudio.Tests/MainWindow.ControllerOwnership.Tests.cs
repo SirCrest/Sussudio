@@ -16,6 +16,7 @@ static partial class Program
         var shellText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedShell.cs").Replace("\r\n", "\n");
         var liveSignalText = ReadRepoFile("Sussudio/MainWindow.LiveSignalInfo.cs").Replace("\r\n", "\n");
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
+        var flashbackControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs").Replace("\r\n", "\n");
 
         AssertContains(rootText, "var propertyName = e.PropertyName ?? string.Empty;");
         AssertContains(rootText, "TryHandleCaptureSelectionPropertyChanged(propertyName)");
@@ -103,7 +104,9 @@ static partial class Program
         AssertContains(liveSignalText, "private bool TryHandleLiveSignalPropertyChanged(string propertyName)");
         AssertContains(liveSignalText, "case nameof(MainViewModel.LiveResolution):");
         AssertContains(flashbackText, "private bool TryHandleFlashbackPropertyChanged(string propertyName)");
-        AssertContains(flashbackText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):");
+        AssertContains(flashbackText, "=> _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName);");
+        AssertContains(flashbackControllerText, "internal sealed class FlashbackPropertyChangedController");
+        AssertContains(flashbackControllerText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):");
 
         return Task.CompletedTask;
     }

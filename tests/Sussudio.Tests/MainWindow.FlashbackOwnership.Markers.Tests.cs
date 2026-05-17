@@ -11,6 +11,7 @@ static partial class Program
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
+        var flashbackPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private FlashbackMarkerPresentationController _flashbackMarkerPresentationController = null!;");
         AssertContains(adapterText, "private void InitializeFlashbackMarkerPresentationController()");
@@ -33,9 +34,10 @@ static partial class Program
         AssertContains(flashbackText, "UpdateMarkers = UpdateFlashbackMarkers,");
         AssertContains(playbackCoordinatorText, "_context.UpdateMarkers();");
         AssertContains(propertyChangedText, "TryHandleFlashbackPropertyChanged(propertyName)");
-        AssertContains(flashbackPropertyChangedText, "HandleFlashbackRangeChanged();");
-        AssertContains(flashbackPropertyChangedText, "Flashback-specific ViewModel property projections");
-        AssertContains(flashbackPropertyChangedText, "UpdateFlashbackMarkers();");
+        AssertContains(flashbackPropertyChangedText, "UpdateRangeMarkers = UpdateFlashbackMarkers,");
+        AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackInPoint):");
+        AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackOutPoint):");
+        AssertContains(flashbackPropertyChangedControllerText, "_context.UpdateRangeMarkers();");
         AssertDoesNotContain(flashbackText, "private void UpdateFlashbackMarkers()");
         AssertDoesNotContain(flashbackText, "private static string FormatFlashbackDuration(TimeSpan ts)");
         AssertDoesNotContain(adapterText, "private static string FormatFlashbackDuration(TimeSpan ts)");

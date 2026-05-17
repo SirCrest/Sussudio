@@ -11,6 +11,7 @@ static partial class Program
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackPresentationController.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
+        var flashbackPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs").Replace("\r\n", "\n");
 
         AssertContains(flashbackText, "private FlashbackPlaybackPresentationController _flashbackPlaybackPresentationController = null!;");
         AssertContains(flashbackText, "private void InitializeFlashbackPlaybackPresentationController()");
@@ -43,7 +44,10 @@ static partial class Program
         AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdatePosition(");
         AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"position_change\");");
         AssertContains(flashbackText, "private void UpdateFlashbackBufferPresentation()\n        => _flashbackPlaybackUiCoordinator.UpdateBufferPresentation();");
-        AssertContains(flashbackPropertyChangedText, "private void HandleFlashbackBufferChanged()\n    {\n        UpdateFlashbackBufferPresentation();\n    }");
+        AssertContains(flashbackPropertyChangedText, "UpdateBuffer = UpdateFlashbackBufferPresentation,");
+        AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackBufferFillPercent):");
+        AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackBufferDiskBytes):");
+        AssertContains(flashbackPropertyChangedControllerText, "_context.UpdateBuffer();");
         AssertDoesNotContain(flashbackPropertyChangedText, "UpdateFlashbackBufferFill();\n        UpdateFlashbackPositionUI();");
         AssertDoesNotContain(flashbackText, "_flashbackPlaybackPresentationController.UpdateState(state);");
         AssertDoesNotContain(flashbackText, "if (state == FlashbackPlaybackState.Playing)");

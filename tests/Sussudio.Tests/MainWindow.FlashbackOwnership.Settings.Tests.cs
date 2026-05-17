@@ -9,6 +9,7 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
         var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
+        var flashbackPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackSettingsBindings.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs").Replace("\r\n", "\n");
         var commandAdapterText = ReadRepoFile("Sussudio/MainWindow.FlashbackCommands.cs").Replace("\r\n", "\n");
@@ -55,10 +56,12 @@ static partial class Program
         AssertContains(controllerText, "_context.ViewModel.FlashbackBufferMinutes = minutes;");
         AssertContains(controllerText, "FLASHBACK_UI_BUFFER_DURATION_CHANGED");
         AssertContains(propertyChangedText, "TryHandleFlashbackPropertyChanged(propertyName)");
-        AssertContains(flashbackPropertyChangedText, "case nameof(MainViewModel.FlashbackGpuDecode):\n                HandleFlashbackGpuDecodeChanged();");
-        AssertContains(flashbackPropertyChangedText, "case nameof(MainViewModel.FlashbackBufferMinutes):\n                HandleFlashbackBufferMinutesChanged();");
-        AssertContains(flashbackPropertyChangedText, "=> SyncFlashbackGpuDecodeSetting();");
-        AssertContains(flashbackPropertyChangedText, "=> SyncFlashbackBufferDurationSetting();");
+        AssertContains(flashbackPropertyChangedText, "SyncGpuDecodeSetting = SyncFlashbackGpuDecodeSetting,");
+        AssertContains(flashbackPropertyChangedText, "SyncBufferDurationSetting = SyncFlashbackBufferDurationSetting");
+        AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackGpuDecode):");
+        AssertContains(flashbackPropertyChangedControllerText, "_context.SyncGpuDecodeSetting();");
+        AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackBufferMinutes):");
+        AssertContains(flashbackPropertyChangedControllerText, "_context.SyncBufferDurationSetting();");
 
         AssertContains(commandAdapterText, "private FlashbackCommandController _flashbackCommandController = null!;");
         AssertContains(commandAdapterText, "private void InitializeFlashbackCommandController()");
