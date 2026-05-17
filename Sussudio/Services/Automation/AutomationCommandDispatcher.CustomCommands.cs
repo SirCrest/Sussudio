@@ -124,4 +124,15 @@ public sealed partial class AutomationCommandDispatcher
                     status: AutomationResponseStatus.Error);
         }
     }
+
+    private async Task<AutomationCommandResponse> ExecuteSetStatsSectionVisibleCommandAsync(
+        JsonElement payload,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var section = RequireString(payload, "section");
+        var visible = RequireBool(payload, "visible");
+        await _viewModel.SetStatsSectionVisibleAsync(section, visible, cancellationToken).ConfigureAwait(false);
+        return CreateAcknowledgedResponse(correlationId, $"Stats section '{section}' {(visible ? "expanded" : "collapsed")}.");
+    }
 }

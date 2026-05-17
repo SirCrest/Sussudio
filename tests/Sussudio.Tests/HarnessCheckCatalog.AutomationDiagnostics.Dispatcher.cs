@@ -54,8 +54,8 @@ static partial class Program
             "Automation dispatcher introspection commands live in focused partial",
             AutomationCommandDispatcher_IntrospectionCommands_LiveInFocusedPartial);
         await AddCheckAsync(results,
-            "Automation dispatcher UI settings commands live in focused partial",
-            AutomationCommandDispatcher_UiSettingsCommands_LiveInFocusedPartial);
+            "Automation dispatcher custom router owns stats section visibility command",
+            AutomationCommandDispatcher_CustomCommands_OwnStatsSectionVisibilityCommand);
         await AddCheckAsync(results,
             "Automation dispatcher window close waits for completion",
             AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion);

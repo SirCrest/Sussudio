@@ -256,7 +256,8 @@ Automation command dispatch now keeps the root router focused on the command
 envelope: manifest revision checks, auth/readiness gates, trivial-handler
 dispatch, and error shaping. `AutomationCommandDispatcher.CustomCommands.cs`
 owns the custom command switch/router for commands that need multi-field
-payloads, special response shapes, or capture/Flashback routing.
+payloads, special response shapes, capture/Flashback routing, or singleton UI
+settings command bodies that do not justify their own focused partial.
 `AutomationCommandDispatcher.AudioControlCommands.cs` owns device-audio mode,
 analog audio gain, and microphone-enable command bodies behind the custom
 command router.
@@ -271,8 +272,6 @@ and manifest response command bodies behind the custom command router.
 `AutomationCommandDispatcher.DeviceCommands.cs` owns device refresh,
 capture-device selection, audio-input selection, and capture-options readback
 command bodies behind the custom command router.
-`AutomationCommandDispatcher.UiSettingsCommands.cs` owns UI settings command
-bodies, including stats section visibility, behind the custom command router.
 `AutomationCommandDispatcher.FlashbackCommands.cs` owns Flashback action,
 export, segment, restart, and enable command bodies behind the custom command
 router.
