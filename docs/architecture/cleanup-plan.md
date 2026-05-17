@@ -156,14 +156,8 @@ automation snapshot DTO.
 frame-statistics success/failure, missed-refresh, and present-count projection
 consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs` owns preview
-frame counters, estimated pipeline latency, GPU playback state, preview HDR
-state, and preview color-context projection consumed by the automation snapshot
-DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntimeCadence.cs` owns
-preview display-cadence interval, jitter, slow-frame, and low-FPS projection
-consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntimeStartup.cs` owns
-preview startup/readiness signals, recovery, blank/stall, and renderer-mode
+frame counters, estimated pipeline latency, display-cadence, startup/readiness,
+GPU playback state, preview HDR state, renderer mode, and preview color-context
 projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs` owns process
 memory, CPU, GC, and thread-pool projection consumed by the automation snapshot

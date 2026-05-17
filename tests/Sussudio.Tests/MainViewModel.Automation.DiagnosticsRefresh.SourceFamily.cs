@@ -67,8 +67,6 @@ static partial class Program
             SnapshotProjectionPreviewD3DFrameLatencyWaitText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DFrameLatencyWait.cs"),
             SnapshotProjectionPreviewD3DFrameStatsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewD3DFrameStats.cs"),
             SnapshotProjectionPreviewRuntimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs"),
-            SnapshotProjectionPreviewRuntimeCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntimeCadence.cs"),
-            SnapshotProjectionPreviewRuntimeStartupText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntimeStartup.cs"),
             SnapshotProjectionProcessResourcesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.ProcessResources.cs"),
             SnapshotProjectionRecordingIntegrityText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs"),
             SnapshotProjectionRecordingBackendText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.RecordingBackend.cs"),
@@ -161,8 +159,6 @@ static partial class Program
         public string SnapshotProjectionPreviewD3DFrameLatencyWaitText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewD3DFrameStatsText { get; init; } = string.Empty;
         public string SnapshotProjectionPreviewRuntimeText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewRuntimeCadenceText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewRuntimeStartupText { get; init; } = string.Empty;
         public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingIntegrityText { get; init; } = string.Empty;
         public string SnapshotProjectionRecordingBackendText { get; init; } = string.Empty;
@@ -261,8 +257,6 @@ static partial class Program
                 TimelineProjectionText,
                 SnapshotProjectionPreviewD3DCpuTimingText,
                 SnapshotProjectionPreviewD3DFrameFlowText,
-                SnapshotProjectionPreviewRuntimeCadenceText,
-                SnapshotProjectionPreviewRuntimeStartupText,
                 SnapshotProjectionMjpegTimingText,
             });
     }
