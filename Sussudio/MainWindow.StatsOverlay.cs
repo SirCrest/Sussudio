@@ -1,36 +1,17 @@
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// XAML-facing stats overlay adapter. Dedicated stats controllers own the dock graph,
-// snapshot provider, frame-time presentation, and section chrome behavior.
+// XAML-facing stats overlay adapter. StatsOverlayCompositionController owns the
+// stats controller graph and construction order behind this surface.
 public sealed partial class MainWindow
 {
-    private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;
-    private StatsOverlayController _statsOverlayController = null!;
-    private StatsDockControllerGraph _statsDockControllerGraph = null!;
-    private StatsSnapshotProvider _statsSnapshotProvider = null!;
-    private StatsSectionChromeController _statsSectionChromeController = null!;
+    private StatsOverlayCompositionController _statsOverlayCompositionController = null!;
 
-    private void InitializeStatsSnapshotProvider()
+    private void InitializeStatsOverlayCompositionController()
     {
-        _statsSnapshotProvider = new StatsSnapshotProvider(new StatsSnapshotProviderContext
-        {
-            GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,
-            GetRenderer = () => _previewRendererHostController.Renderer,
-            GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs,
-            IsPreviewing = () => ViewModel.IsPreviewing,
-            IsRecording = () => ViewModel.IsRecording
-        });
-    }
-
-    private void InitializeStatsOverlayController()
-    {
-        InitializeFrameTimeOverlayPresentationController();
-        InitializeStatsDockControllerGraph();
-        _statsOverlayController = new StatsOverlayController(new StatsOverlayControllerContext
+        _statsOverlayCompositionController = new StatsOverlayCompositionController(new StatsOverlayCompositionControllerContext
         {
             DispatcherQueue = _dispatcherQueue,
             StatsToggle = StatsToggle,
@@ -39,31 +20,13 @@ public sealed partial class MainWindow
             FrameTimeOverlayToggle = FrameTimeOverlayToggle,
             IsWindowClosing = () => _isWindowClosing,
             SetStatsVisible = visible => ViewModel.IsStatsVisible = visible,
-            GetStatsSnapshot = GetStatsSnapshot,
-            UpdateStatsDock = _statsDockControllerGraph.RefreshDock,
-            UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,
-            Log = message => Logger.Log(message)
-        });
-    }
-
-    private void InitializeStatsSectionChromeController()
-    {
-        _statsSectionChromeController = new StatsSectionChromeController(new StatsSectionChromeControllerContext
-        {
-            StatsDockPanel = StatsDockPanel,
+            GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,
+            GetRenderer = () => _previewRendererHostController.Renderer,
+            GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs,
+            IsPreviewing = () => ViewModel.IsPreviewing,
+            IsRecording = () => ViewModel.IsRecording,
+            Log = message => Logger.Log(message),
             DiagnosticsContent = Diagnostics_Content,
-            RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection
-        });
-    }
-
-    private void InitializeStatsDockControllerGraph()
-    {
-        _statsDockControllerGraph = new StatsDockControllerGraph(new StatsDockControllerGraphContext
-        {
-            IsWindowClosing = () => _isWindowClosing,
-            StatsDockPanel = StatsDockPanel,
-            DiagnosticsContent = Diagnostics_Content,
-            GetStatsSnapshot = GetStatsSnapshot,
             SessionStateValue = Stats_SessionStateValue,
             SummaryCaptureValue = Stats_SummaryCaptureValue,
             SummaryPreviewValue = Stats_SummaryPreviewValue,
@@ -110,69 +73,52 @@ public sealed partial class MainWindow
             GpuContent = GPU_Content,
             GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,
             GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,
-            GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot()
-        });
-    }
-
-    private void InitializeFrameTimeOverlayPresentationController()
-    {
-        _frameTimeOverlayPresentationController = new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext
-        {
-            SourceValue = FrameTime_SourceValue,
-            VisualValue = FrameTime_VisualValue,
-            PreviewValue = FrameTime_PreviewValue,
-            LatencyValue = FrameTime_LatencyValue,
-            StatusValue = FrameTime_StatusValue,
-            Canvas = FrameTime_Canvas,
-            VisualLine = FrameTime_VisualLine,
-            PreviewLine = FrameTime_PreviewLine,
-            ExpectedLine = FrameTime_ExpectedLine
+            GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot(),
+            FrameTimeSourceValue = FrameTime_SourceValue,
+            FrameTimeVisualValue = FrameTime_VisualValue,
+            FrameTimePreviewValue = FrameTime_PreviewValue,
+            FrameTimeLatencyValue = FrameTime_LatencyValue,
+            FrameTimeStatusValue = FrameTime_StatusValue,
+            FrameTimeCanvas = FrameTime_Canvas,
+            FrameTimeVisualLine = FrameTime_VisualLine,
+            FrameTimePreviewLine = FrameTime_PreviewLine,
+            FrameTimeExpectedLine = FrameTime_ExpectedLine
         });
     }
 
     private void AttachStatsOverlayToggleBindings()
-        => _statsOverlayController.AttachToggleBindings();
+        => _statsOverlayCompositionController.AttachToggleBindings();
 
     private void DetachStatsOverlayToggleBindings()
-        => _statsOverlayController.DetachToggleBindings();
+        => _statsOverlayCompositionController.DetachToggleBindings();
 
     private void ApplyStatsVisibility(bool visible, bool immediate = false)
-        => _statsOverlayController.SyncStatsVisibility(visible, immediate);
+        => _statsOverlayCompositionController.ApplyStatsVisibility(visible, immediate);
 
     private void SetFrameTimeOverlayVisible(bool visible)
-        => _statsOverlayController.SetFrameTimeOverlayVisible(visible);
+        => _statsOverlayCompositionController.SetFrameTimeOverlayVisible(visible);
 
     private bool IsFrameTimeOverlayVisible()
-        => _statsOverlayController.IsFrameTimeOverlayVisible;
-
-    private void UpdateFrameTimeOverlay(StatsSnapshot snapshot)
-    {
-        if (!IsFrameTimeOverlayVisible())
-        {
-            return;
-        }
-
-        _frameTimeOverlayPresentationController.Apply(snapshot);
-    }
+        => _statsOverlayCompositionController.IsFrameTimeOverlayVisible;
 
     private void StartStatsDockPolling()
-        => _statsOverlayController.StartPolling();
+        => _statsOverlayCompositionController.StartPolling();
 
     private void StopStatsDockPolling()
-        => _statsOverlayController.StopPolling();
+        => _statsOverlayCompositionController.StopPolling();
 
     private void ShowStatsDockPanel()
-        => _statsOverlayController.ShowDockPanel();
+        => _statsOverlayCompositionController.ShowDockPanel();
 
     private void HideStatsDockPanel(bool immediate = false)
-        => _statsOverlayController.HideDockPanel(immediate);
+        => _statsOverlayCompositionController.HideDockPanel(immediate);
 
     private StatsSnapshot GetStatsSnapshot()
-        => _statsSnapshotProvider.GetSnapshot();
+        => _statsOverlayCompositionController.GetStatsSnapshot();
 
     private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)
-        => _statsSectionChromeController.ToggleFromHeader(sender);
+        => _statsOverlayCompositionController.ToggleSectionFromHeader(sender);
 
     private void SetStatsSectionVisible(string section, bool visible)
-        => _statsSectionChromeController.SetVisible(section, visible);
+        => _statsOverlayCompositionController.SetSectionVisible(section, visible);
 }

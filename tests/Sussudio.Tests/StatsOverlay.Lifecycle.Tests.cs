@@ -3,8 +3,8 @@ static partial class Program
     private static Task StatsOverlayLifecycle_LivesInController()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var statsOverlayCompositionText = statsOverlayText;
-        var frameTimeOverlayText = statsOverlayText;
+        var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
+        var frameTimeOverlayText = statsOverlayCompositionText;
         var statsDockGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
@@ -15,35 +15,46 @@ static partial class Program
         var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
         var frameTimeGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayCompositionText, "private StatsOverlayController _statsOverlayController = null!;");
-        AssertContains(statsOverlayCompositionText, "private void InitializeStatsOverlayController()");
-        AssertContains(statsOverlayCompositionText, "InitializeFrameTimeOverlayPresentationController();");
-        AssertContains(statsOverlayCompositionText, "InitializeStatsDockControllerGraph();");
-        AssertContains(statsOverlayCompositionText, "StatsToggle = StatsToggle,");
-        AssertContains(statsOverlayCompositionText, "IsWindowClosing = () => _isWindowClosing,");
-        AssertContains(statsOverlayCompositionText, "SetStatsVisible = visible => ViewModel.IsStatsVisible = visible,");
+        AssertContains(statsOverlayText, "private StatsOverlayCompositionController _statsOverlayCompositionController = null!;");
+        AssertContains(statsOverlayText, "private void InitializeStatsOverlayCompositionController()");
+        AssertContains(statsOverlayCompositionText, "internal sealed class StatsOverlayCompositionController");
+        AssertContains(statsOverlayCompositionText, "private readonly StatsOverlayController _statsOverlayController;");
+        AssertContains(statsOverlayCompositionText, "private readonly StatsDockControllerGraph _statsDockControllerGraph;");
+        AssertContains(statsOverlayCompositionText, "private readonly StatsSnapshotProvider _statsSnapshotProvider;");
+        AssertContains(statsOverlayCompositionText, "private readonly FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController;");
+        AssertContains(statsOverlayCompositionText, "private readonly StatsSectionChromeController _statsSectionChromeController;");
+        AssertContains(statsOverlayCompositionText, "_statsSnapshotProvider = CreateSnapshotProvider(context);");
+        AssertContains(statsOverlayCompositionText, "_frameTimeOverlayPresentationController = CreateFrameTimeOverlayPresentationController(context);");
+        AssertContains(statsOverlayCompositionText, "_statsDockControllerGraph = CreateDockControllerGraph(context);");
+        AssertContains(statsOverlayCompositionText, "_statsOverlayController = CreateOverlayController(context);");
+        AssertContains(statsOverlayCompositionText, "_statsSectionChromeController = CreateSectionChromeController(context);");
+        AssertContains(statsOverlayText, "StatsToggle = StatsToggle,");
+        AssertContains(statsOverlayText, "IsWindowClosing = () => _isWindowClosing,");
+        AssertContains(statsOverlayText, "SetStatsVisible = visible => ViewModel.IsStatsVisible = visible,");
         AssertContains(statsOverlayCompositionText, "UpdateStatsDock = _statsDockControllerGraph.RefreshDock,");
+        AssertContains(statsOverlayCompositionText, "UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,");
         AssertContains(statsDockGraphText, "internal sealed class StatsDockControllerGraph");
         AssertContains(statsDockGraphText, "public void RefreshDock()");
         AssertContains(bindingsText, "AttachStatsOverlayToggleBindings();");
         AssertContains(bindingsText, "ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);");
         AssertDoesNotContain(bindingsText, "_statsOverlayController.SyncStatsVisibility(ViewModel.IsStatsVisible");
         AssertContains(statsOverlayText, "private void AttachStatsOverlayToggleBindings()");
-        AssertContains(statsOverlayText, "=> _statsOverlayController.AttachToggleBindings();");
+        AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.AttachToggleBindings();");
         AssertContains(statsOverlayText, "private void DetachStatsOverlayToggleBindings()");
-        AssertContains(statsOverlayText, "=> _statsOverlayController.DetachToggleBindings();");
+        AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.DetachToggleBindings();");
         AssertContains(shutdownCleanupText, "DetachStatsOverlayToggleBindings();");
         AssertOccursBefore(shutdownCleanupText, "DetachStatsOverlayToggleBindings();", "StopStatsDockPolling();");
         AssertContains(shutdownCleanupControllerText, "_context.StopStatsOverlay();");
-        AssertContains(statsOverlayText, "=> _statsOverlayController.SyncStatsVisibility(visible, immediate);");
-        AssertContains(statsOverlayText, "=> _statsOverlayController.SetFrameTimeOverlayVisible(visible);");
-        AssertContains(frameTimeOverlayText, "private FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController = null!;");
-        AssertContains(frameTimeOverlayText, "private void InitializeFrameTimeOverlayPresentationController()");
-        AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController = new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext");
-        AssertContains(frameTimeOverlayText, "ExpectedLine = FrameTime_ExpectedLine");
+        AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.ApplyStatsVisibility(visible, immediate);");
+        AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.SetFrameTimeOverlayVisible(visible);");
+        AssertContains(frameTimeOverlayText, "private readonly FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController;");
+        AssertContains(frameTimeOverlayText, "private static FrameTimeOverlayPresentationController CreateFrameTimeOverlayPresentationController(");
+        AssertContains(frameTimeOverlayText, "return new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext");
+        AssertContains(frameTimeOverlayText, "ExpectedLine = context.FrameTimeExpectedLine");
         AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
-        AssertContains(mainWindowText, "InitializeStatsOverlayController();");
-        AssertOccursBefore(mainWindowText, "InitializeStatsOverlayController();", "InitializeStatsSectionChromeController();");
+        AssertContains(mainWindowText, "InitializeStatsOverlayCompositionController();");
+        AssertDoesNotContain(mainWindowText, "InitializeStatsOverlayController();");
+        AssertDoesNotContain(mainWindowText, "InitializeStatsSectionChromeController();");
         AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _statsPollTimer;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _statsDockStoryboard;");
         AssertContains(controllerText, "internal sealed partial class StatsOverlayController");
@@ -109,7 +120,10 @@ static partial class Program
         AssertDoesNotContain(controllerText, "private Storyboard? _statsDockStoryboard;");
         AssertDoesNotContain(controllerText, "private Storyboard CreateStatsDockStoryboard(");
         AssertDoesNotContain(statsOverlayText, "line.Points.Clear();");
-        AssertDoesNotContain(frameTimeOverlayText, "line.Points.Clear();");
+        AssertDoesNotContain(statsOverlayCompositionText, "line.Points.Clear();");
+        AssertDoesNotContain(statsOverlayText, "new StatsOverlayControllerContext");
+        AssertDoesNotContain(statsOverlayText, "new StatsDockControllerGraphContext");
+        AssertDoesNotContain(statsOverlayText, "new StatsSnapshotProviderContext");
 
         return Task.CompletedTask;
     }
@@ -117,15 +131,16 @@ static partial class Program
     private static Task StatsSectionChrome_LivesInFocusedPartial()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSectionChromeController.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsOverlayText, "private StatsSectionChromeController _statsSectionChromeController = null!;");
-        AssertContains(statsOverlayText, "private void InitializeStatsSectionChromeController()");
+        AssertContains(statsOverlayCompositionText, "private readonly StatsSectionChromeController _statsSectionChromeController;");
+        AssertContains(statsOverlayCompositionText, "private StatsSectionChromeController CreateSectionChromeController(");
         AssertContains(statsOverlayText, "private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)");
         AssertContains(statsOverlayText, "private void SetStatsSectionVisible(string section, bool visible)");
-        AssertContains(statsOverlayText, "=> _statsSectionChromeController.ToggleFromHeader(sender);");
-        AssertContains(statsOverlayText, "=> _statsSectionChromeController.SetVisible(section, visible);");
+        AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.ToggleSectionFromHeader(sender);");
+        AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.SetSectionVisible(section, visible);");
         AssertContains(controllerText, "internal sealed class StatsSectionChromeControllerContext");
         AssertContains(controllerText, "internal sealed class StatsSectionChromeController");
         AssertContains(controllerText, "public void ToggleFromHeader(object sender)");
@@ -136,8 +151,8 @@ static partial class Program
         AssertContains(controllerText, "rotate.Angle = expanded ? 0 : -90;");
         AssertContains(controllerText, "_context.RefreshDiagnosticsSection();");
         AssertContains(mainWindowText, "ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;");
-        AssertContains(mainWindowText, "InitializeStatsSectionChromeController();");
-        AssertContains(statsOverlayText, "RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection");
+        AssertContains(mainWindowText, "InitializeStatsOverlayCompositionController();");
+        AssertContains(statsOverlayCompositionText, "RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection");
         AssertDoesNotContain(statsOverlayText, "StatsDockPanel.FindName(contentName)");
         AssertDoesNotContain(statsOverlayText, "rotate.Angle =");
         AssertDoesNotContain(statsOverlayText, "UpdateDiagnosticsSection(snapshot");

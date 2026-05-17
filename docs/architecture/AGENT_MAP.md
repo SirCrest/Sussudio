@@ -1053,9 +1053,13 @@ Primary current owners:
   orchestration, stats/frame-time toggle event hookup and checked/unchecked
   handling, stats toggle-to-view model sync, frame-time overlay visibility, and
   polling lifetime.
+  `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns the
+  stats overlay composition graph: snapshot provider, frame-time presentation,
+  dock graph, overlay controller, section chrome controller, and the required
+  construction order between them.
   `Sussudio/MainWindow.StatsOverlay.cs` owns the stats overlay XAML adapter,
-  binding setup, visibility commands, and composition of the frame-time and
-  stats dock graph owners beside the overlay controller.
+  binding setup, and visibility commands delegated to the composition
+  controller.
   `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs` owns stats dock
   presentation, diagnostic row, hardware row, and refresh-controller graph
   construction because the dock is only driven by the overlay controller.
@@ -1078,8 +1082,9 @@ Primary current owners:
   orchestration from capture-health, renderer metrics, and view state, including
   renderer cadence/recent-sample acquisition and null fallback policy.
   `Sussudio/MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats
-  snapshot provider composition, stats overlay composition, stats dock
-  visibility, polling, section chrome, and refresh-controller hooks.
+  visibility, polling, and section chrome commands; stats provider/controller
+  composition lives in
+  `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
 - `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` owns legacy harness
   contract checks for stats overlay lifecycle wiring and stats section chrome.
 - `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs` owns legacy harness

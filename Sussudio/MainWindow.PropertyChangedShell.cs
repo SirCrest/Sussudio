@@ -23,5 +23,5 @@ public sealed partial class MainWindow
     }
 
     private void HandleStatsVisibleChanged()
-        => _statsOverlayController.SyncStatsVisibility(ViewModel.IsStatsVisible);
+        => ApplyStatsVisibility(ViewModel.IsStatsVisible);
 }

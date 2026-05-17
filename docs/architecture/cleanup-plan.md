@@ -1797,7 +1797,10 @@ source/audio drift calculations and encoder drift/correction projection there.
 
 Stats dock, stats toggle, and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/Stats/StatsOverlayController.cs`. Stats overlay controller
-graph construction now lives in `Sussudio/MainWindow.StatsOverlay.cs`;
+composition graph construction now lives in
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`: it owns the
+snapshot provider, frame-time presentation, dock graph, overlay controller,
+section chrome controller, and construction order between them;
 stats dock presentation/diagnostic/hardware/refresh controller graph wiring
 now lives in `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs`;
 the overlay partial is the XAML-facing adapter for stats overlay binding setup,
@@ -1819,7 +1822,8 @@ Stats dock metric value, visibility, and status brush application now live in
 Stats section expand/collapse chrome and automation-visible section application
 now live in `Sussudio/Controllers/Stats/StatsSectionChromeController.cs`.
 `Sussudio/MainWindow.StatsOverlay.cs` is the XAML/automation adapter for the
-stats shell wiring.
+stats shell wiring and delegates controller/provider composition to
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
 Detached stats-window metric text now lives in
 `Sussudio/Controllers/Stats/StatsWindowPresentationController.cs`, while dynamic
 telemetry-detail clearing, empty state, group headers, and row rendering live
@@ -1839,8 +1843,9 @@ Frame-time overlay compact text application and graph-line mutation now live in
 frame-time canvas sizing, sample projection, and expected-line geometry live in
 `Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs`;
 `Sussudio/MainWindow.StatsOverlay.cs` is the XAML-facing compact overlay
-adapter and owns the presentation-controller composition beside the stats
-overlay visibility route, while
+adapter beside the stats overlay visibility route, while
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns
+presentation-controller composition and
 `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` keeps the stats dock
 projection refresh adapter.
 Decode and GPU hardware stats row refresh/application over presentation inputs

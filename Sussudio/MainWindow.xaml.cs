@@ -33,9 +33,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             this);
         InitializePreviewReinitTransitionController();
         InitializePreviewRendererHostController();
-        InitializeStatsSnapshotProvider();
-        InitializeStatsOverlayController();
-        InitializeStatsSectionChromeController();
+        InitializeStatsOverlayCompositionController();
         InitializeWindowShutdownCleanupController();
 
         var appWindow = InitializeNativeShellWindow();

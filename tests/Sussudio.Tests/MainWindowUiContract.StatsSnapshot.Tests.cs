@@ -5,6 +5,7 @@ static partial class Program
     private static Task StatsSnapshotConstruction_LivesInFocusedBuilder()
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSnapshotProvider.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs").Replace("\r\n", "\n");
@@ -17,15 +18,17 @@ static partial class Program
         AssertContains(statsSnapshotBuilderText, "internal readonly record struct StatsSnapshotViewState(");
         AssertContains(statsSnapshotBuilderText, "return new StatsSnapshot(");
         AssertContains(statsSnapshotText, "public sealed record StatsSnapshot(");
-        AssertContains(mainWindowText, "InitializeStatsSnapshotProvider();");
+        AssertContains(mainWindowText, "InitializeStatsOverlayCompositionController();");
         AssertContains(statsOverlayText, "private StatsSnapshot GetStatsSnapshot()");
-        AssertContains(statsOverlayText, "private StatsSnapshotProvider _statsSnapshotProvider = null!;");
+        AssertContains(statsOverlayCompositionText, "private readonly StatsSnapshotProvider _statsSnapshotProvider;");
         AssertContains(statsOverlayText, "GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,");
         AssertContains(statsOverlayText, "GetRenderer = () => _previewRendererHostController.Renderer,");
         AssertContains(statsOverlayText, "GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs");
         AssertContains(statsOverlayText, "IsPreviewing = () => ViewModel.IsPreviewing,");
         AssertContains(statsOverlayText, "IsRecording = () => ViewModel.IsRecording");
-        AssertContains(statsOverlayText, "=> _statsSnapshotProvider.GetSnapshot();");
+        AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.GetStatsSnapshot();");
+        AssertContains(statsOverlayCompositionText, "private static StatsSnapshotProvider CreateSnapshotProvider(");
+        AssertContains(statsOverlayCompositionText, "=> _statsSnapshotProvider.GetSnapshot();");
         AssertContains(statsSnapshotProviderText, "internal sealed class StatsSnapshotProvider");
         AssertDoesNotContain(statsSnapshotProviderText, "internal sealed partial class StatsSnapshotProvider");
         AssertContains(statsSnapshotProviderText, "private const int RecentSampleCount = 180;");

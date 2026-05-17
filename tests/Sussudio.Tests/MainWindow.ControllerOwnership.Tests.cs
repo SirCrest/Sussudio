@@ -98,9 +98,9 @@ static partial class Program
         AssertContains(audioText, "case nameof(MainViewModel.IsAudioPreviewActive):");
         AssertContains(shellText, "private bool TryHandleShellPropertyChanged(string propertyName)");
         AssertContains(shellText, "case nameof(MainViewModel.IsStatsVisible):");
-        AssertContains(shellText, "=> _statsOverlayController.SyncStatsVisibility(ViewModel.IsStatsVisible);");
+        AssertContains(shellText, "=> ApplyStatsVisibility(ViewModel.IsStatsVisible);");
         AssertDoesNotContain(shellText, "StatsToggle.IsChecked = ViewModel.IsStatsVisible;");
-        AssertDoesNotContain(shellText, "ApplyStatsVisibility(ViewModel.IsStatsVisible);");
+        AssertDoesNotContain(shellText, "_statsOverlayController.SyncStatsVisibility(ViewModel.IsStatsVisible);");
         AssertContains(liveSignalText, "private bool TryHandleLiveSignalPropertyChanged(string propertyName)");
         AssertContains(liveSignalText, "case nameof(MainViewModel.LiveResolution):");
         AssertContains(flashbackText, "private bool TryHandleFlashbackPropertyChanged(string propertyName)");
