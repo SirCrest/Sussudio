@@ -7,6 +7,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs",
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs",
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs",
+            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackExport.cs",
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs",
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs",
             "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs"

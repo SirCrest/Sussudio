@@ -2962,7 +2962,10 @@ Primary owners:
   owns Flashback preview-cycle diagnostic task registration, priorities, task
   labels, and started action strings.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Flashback.cs`
-  owns normal Flashback preview stop/restart diagnostic flow.
+  owns normal Flashback preview stop/restart diagnostic flow and preview state
+  checks.
+- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.FlashbackExport.cs`
+  owns normal Flashback preview-cycle export-while-preview-off verification.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs`
   owns playback-under-preview-stop diagnostic flow and preview state checks.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.PlaybackExport.cs`
