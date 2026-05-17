@@ -19,7 +19,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "internal sealed partial class DiagnosticSessionBackgroundTasks");
         AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionRunState");
         AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionLiveStateWriter");
-        AssertContains(diagnosticSessionText, "internal sealed class DiagnosticSessionRunContext : IDisposable");
+        AssertContains(diagnosticSessionText, "internal sealed partial class DiagnosticSessionRunContext : IDisposable");
         AssertContains(diagnosticSessionText, "RunState = new DiagnosticSessionRunState(");
         AssertContains(diagnosticSessionText, "_liveStateWriter = new DiagnosticSessionLiveStateWriter(");
         AssertContains(diagnosticSessionText, "backgroundTasks.AwaitScenarioTasksAsync()");

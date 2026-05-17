@@ -56,12 +56,14 @@ static partial class Program
     {
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
+        var contextRootText = ReadDiagnosticSessionRunContextRootSource();
+        var contextPhaseText = ReadDiagnosticSessionRunContextPhaseContextsSource();
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n");
 
-        AssertContains(contextText, "internal sealed class DiagnosticSessionRunContext : IDisposable");
+        AssertContains(contextRootText, "internal sealed partial class DiagnosticSessionRunContext : IDisposable");
         AssertContains(contextText, "RunBootstrap = DiagnosticSessionRunBootstrap.Create(options);");
         AssertContains(contextText, "Actions = [];");
         AssertContains(contextText, "Warnings = [];");
@@ -69,8 +71,11 @@ static partial class Program
         AssertContains(contextText, "ScenarioCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(runCancellationToken);");
         AssertContains(contextText, "CommandChannel = new DiagnosticSessionCommandChannel(sendCommandAsync, ScenarioCancellationToken, Warnings);");
         AssertContains(contextText, "InitialSnapshot = unknownSnapshot.Snapshot;");
-        AssertContains(contextText, "internal DiagnosticSessionScenarioPhaseContext CreateScenarioPhaseContext(");
-        AssertContains(contextText, "internal DiagnosticSessionCompletionContext CreateCompletionContext(");
+        AssertContains(contextPhaseText, "internal DiagnosticSessionScenarioPhaseContext CreateScenarioPhaseContext(");
+        AssertContains(contextPhaseText, "internal DiagnosticSessionCompletionContext CreateCompletionContext(");
+        AssertContains(contextPhaseText, "GetLastStage = () => RunState.LastStage,");
+        AssertDoesNotContain(contextRootText, "internal DiagnosticSessionScenarioPhaseContext CreateScenarioPhaseContext(");
+        AssertDoesNotContain(contextRootText, "internal DiagnosticSessionCompletionContext CreateCompletionContext(");
         AssertContains(contextText, "CommandChannel.Dispose();");
         AssertContains(contextText, "ScenarioCancellationSource.Dispose();");
 
@@ -84,7 +89,9 @@ static partial class Program
         AssertDoesNotContain(executionText, "new DiagnosticSessionLiveStateWriter(");
 
         AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session mutable run infrastructure");
+        AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs` owns diagnostic-session scenario/completion context construction");
         AssertContains(cleanupPlanText, "`DiagnosticSessionRunContext.cs` owns mutable per-run infrastructure");
+        AssertContains(cleanupPlanText, "`DiagnosticSessionRunContext.PhaseContexts.cs` owns scenario/completion context construction");
 
         return Task.CompletedTask;
     }
