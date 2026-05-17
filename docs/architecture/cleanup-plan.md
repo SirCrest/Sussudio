@@ -2393,7 +2393,7 @@ explicit phase context/state/result records.
 post-sampling completion: live-state sampling setup, sample-loop invocation,
 scenario background task awaits, recording-settings deferred await,
 rejected-export handling, PresentMon await, and background-task fault drain.
-`DiagnosticSessionRunExecution.ResultRequest.cs` owns the final result-build
+`DiagnosticSessionRunExecution.Completion.cs` owns the final result-build
 request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
 DTO root owns core session metadata, terminal state, artifacts, actions, and
@@ -2944,7 +2944,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunExecution.Completion.cs`
 - `DiagnosticSessionScenarioPhaseRunner.cs`
 - `DiagnosticSessionScenarioPhaseRunner.Models.cs`
-- `DiagnosticSessionRunExecution.ResultRequest.cs`
 - `ToolJsonOptions.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`
 - `tools/Common/PresentMon/PresentMonProbe.Paths.cs`
