@@ -41,7 +41,7 @@ static partial class Program
         AssertContains(captureServiceSource, "libAvSink.OnEncodingFailed = OnRecordingBackendFatalError");
         AssertContains(captureServiceSource, "OnFlashbackBackendFatalError,");
         AssertContains(flashbackBackendSource, "flashbackSink.SetFatalErrorCallback(request.FatalErrorCallback)");
-        AssertContains(captureServiceSource, "newSink.SetFatalErrorCallback(OnFlashbackBackendFatalError)");
+        AssertContains(flashbackBackendSource, "newSink.SetFatalErrorCallback(request.FatalErrorCallback)");
         AssertContains(captureServiceSource, "if (sink == null && controller is { IsDisposed: false, IsInitialized: true })");
         AssertContains(captureServiceSource, "controller.PrepareForPreviewDetach();");
         AssertOccursBefore(captureServiceSource, "controller.PrepareForPreviewDetach();", "_unifiedVideoCapture?.SetPreviewSink(sink);");
@@ -140,6 +140,7 @@ static partial class Program
             "await _artifactManager.RollbackAsync(rollback.RecordingContext)");
         AssertDoesNotContain(captureServiceSource, "System.Diagnostics.Trace.TraceWarning($\"Suppressed exception in CaptureService.StartRecordingAsync");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_CYCLE_OK mode=preserve_rebuild");
+        AssertContains(captureServiceSource, "_flashbackBackend.CycleSinkOnlyAsync(");
         AssertContains(flashbackBackendSource, "FLASHBACK_BUFFER_CLEANUP_PURGE_WARN");
         AssertDoesNotContain(captureServiceSource, "FLASHBACK_BUFFER_DEFERRED_PURGE_SKIP");
         AssertContains(captureServiceSource, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n            {\n                throw;\n            }");
@@ -322,44 +323,45 @@ static partial class Program
             captureServiceSource,
             "private async Task CycleFlashbackBufferAsync",
             "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync");
+        var backendCycleFlashbackBuffer = ExtractSourceBlock(
+            flashbackBackendSource,
+            "public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync",
+            "private async Task RollBackPreviewBackendStartAsync");
         AssertContains(cycleFlashbackBuffer, "var committedCycleToken = CancellationToken.None;");
-        AssertContains(cycleFlashbackBuffer, "FLASHBACK_CYCLE_STOP_CANCEL_DEFERRED");
-        AssertContains(cycleFlashbackBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
+        AssertContains(backendCycleFlashbackBuffer, "FLASHBACK_CYCLE_STOP_CANCEL_DEFERRED");
+        AssertContains(backendCycleFlashbackBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
         AssertDoesNotContain(cycleFlashbackBuffer, "cancellationToken: cancellationToken");
         AssertOccursBefore(
-            cycleFlashbackBuffer,
+            backendCycleFlashbackBuffer,
             "await oldSink.DisposeAsync().ConfigureAwait(false);",
-            "_flashbackBackend.ClearSinkAndSettings();");
-        AssertContains(cycleFlashbackBuffer, "var oldPlaybackController = _flashbackBackend.TakePlaybackController();");
-        AssertContains(cycleFlashbackBuffer, "oldPlaybackController.GoLive();");
-        AssertContains(cycleFlashbackBuffer, "oldPlaybackController.Dispose();");
+            "ClearSinkAndSettings();");
+        AssertContains(backendCycleFlashbackBuffer, "var oldPlaybackController = TakePlaybackController();");
+        AssertContains(backendCycleFlashbackBuffer, "oldPlaybackController.GoLive();");
+        AssertContains(backendCycleFlashbackBuffer, "oldPlaybackController.Dispose();");
         AssertOccursBefore(
-            cycleFlashbackBuffer,
+            backendCycleFlashbackBuffer,
             "oldPlaybackController.Dispose();",
             "bufferManager.PurgeCompletedSegments();");
         AssertOccursBefore(
-            cycleFlashbackBuffer,
+            backendCycleFlashbackBuffer,
             "oldPlaybackController.Dispose();",
-            "_flashbackBackend.DetachProducers(");
-        AssertContains(cycleFlashbackBuffer, "_flashbackBackend.DetachProducers(");
-        AssertContains(cycleFlashbackBuffer, "\"FLASHBACK_CYCLE_DETACH_WARN\"");
-        var cycleNewSinkStart = ExtractSourceBlock(
-            cycleFlashbackBuffer,
-            "var newSink = new FlashbackEncoderSink(bufferManager);",
-            "finally");
+            "DetachProducers(");
+        AssertContains(backendCycleFlashbackBuffer, "DetachProducers(");
+        AssertContains(backendCycleFlashbackBuffer, "\"FLASHBACK_CYCLE_DETACH_WARN\"");
+        var cycleNewSinkStart = backendCycleFlashbackBuffer;
         AssertContains(cycleNewSinkStart, "committedCycleToken,");
-        AssertContains(cycleNewSinkStart, "_flashbackBackend.AttachProducers(");
+        AssertContains(cycleNewSinkStart, "AttachProducers(");
         AssertContains(cycleNewSinkStart, "new FlashbackProducerAttachRequest(");
         AssertContains(cycleNewSinkStart, "\"buffer_cycle\"");
         AssertContains(cycleNewSinkStart, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
-        AssertContains(cycleNewSinkStart, "newSink.FrameEncoded -= OnFlashbackFrameEncoded;");
-        AssertContains(cycleNewSinkStart, "unifiedVideoCapture.SetFlashbackSink(null);");
-        AssertContains(cycleNewSinkStart, "_wasapiAudioCapture?.DetachFlashbackSink();");
-        AssertContains(cycleNewSinkStart, "_microphoneCapture?.SetAudioWriter(null);");
-        AssertContains(cycleNewSinkStart, "var playbackController = new FlashbackPlaybackController(bufferManager);");
-        AssertContains(cycleNewSinkStart, "playbackController.GpuDecodeEnabled = _currentSettings.FlashbackGpuDecode;");
-        AssertContains(cycleNewSinkStart, "playbackController.Initialize(_previewFrameSink, unifiedVideoCapture, _wasapiAudioPlayback, _wasapiAudioCapture);");
-        AssertContains(cycleNewSinkStart, "_flashbackPlaybackController = playbackController;");
+        AssertContains(cycleNewSinkStart, "newSink.FrameEncoded -= request.FrameEncodedHandler;");
+        AssertContains(cycleNewSinkStart, "request.VideoCapture.SetFlashbackSink(null);");
+        AssertContains(cycleNewSinkStart, "request.AudioCapture?.DetachFlashbackSink();");
+        AssertContains(cycleNewSinkStart, "request.MicrophoneCapture?.SetAudioWriter(null);");
+        AssertContains(cycleNewSinkStart, "new FlashbackPlaybackController(bufferManager)");
+        AssertContains(cycleNewSinkStart, "GpuDecodeEnabled = request.Settings.FlashbackGpuDecode");
+        AssertContains(cycleNewSinkStart, "request.PreviewFrameSink");
+        AssertContains(cycleNewSinkStart, "PlaybackController = playbackController;");
         AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_DETACH_WARN");
         AssertContains(captureServiceSource, "request.PurgeSegments");

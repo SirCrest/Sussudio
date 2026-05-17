@@ -97,6 +97,7 @@ static partial class Program
         var previewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs");
         var disposalText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackendDisposal.cs");
         var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs");
+        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
 
         AssertContains(controlsText, "public Task RestartFlashbackAsync(");
         AssertContains(controlsText, "private async Task RestartFlashbackCoreAsync(");
@@ -106,6 +107,8 @@ static partial class Program
         AssertContains(disposalText, "private readonly record struct FlashbackPreviewBackendDisposalRequest(");
         AssertContains(disposalText, "private async Task DisposeFlashbackPreviewBackendCoreAsync(");
         AssertContains(bufferCycleText, "private async Task CycleFlashbackBufferAsync(");
+        AssertContains(bufferCycleText, "_flashbackBackend.CycleSinkOnlyAsync(");
+        AssertContains(backendResourcesText, "public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync(");
         AssertDoesNotContain(controlsText, "private async Task EnsureFlashbackAudioInputsAsync(");
         AssertDoesNotContain(controlsText, "private async Task EnsureFlashbackPreviewBackendAsync(");
         AssertDoesNotContain(controlsText, "private async Task DisposeFlashbackPreviewBackendAsync(");

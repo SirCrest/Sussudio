@@ -111,7 +111,7 @@ static partial class Program
         var disposeBackendCore = ExtractTextBetween(
             captureServiceText,
             "private async Task DisposeFlashbackPreviewBackendCoreAsync",
-            "    /// <summary>\n    /// Cycles the flashback encoder sink after recording stops.");
+            "    private async Task CycleFlashbackBufferAsync");
         AssertContains(disposeBackendCore, "FlashbackPreviewBackendDisposalRequest request)");
         AssertContains(disposeBackendCore, "request.ExportOperationLockAlreadyHeld");
         AssertContains(disposeBackendCore, "request.PurgeSegments ? \"preview_backend_dispose_purge\" : \"preview_backend_dispose\"");

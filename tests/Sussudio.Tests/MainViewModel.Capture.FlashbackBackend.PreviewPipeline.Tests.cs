@@ -180,8 +180,9 @@ static partial class Program
         AssertContains(captureServiceText, "await _flashbackBackend.StartPreviewBackendAsync(");
         AssertContains(captureServiceText, "new FlashbackPreviewBackendStartRequest(");
         AssertContains(captureServiceText, "CloneCaptureSettings(settings),");
-        AssertContains(captureServiceText, "_flashbackBackendSettings = CloneCaptureSettings(_currentSettings)");
-        AssertContains(captureServiceText, "_flashbackBackend.ClearSinkAndSettings();");
+        AssertContains(captureServiceText, "CloneCaptureSettings(currentSettings)");
+        AssertContains(flashbackBackendResourcesText, "SettingsSnapshot = request.SettingsSnapshot;");
+        AssertContains(flashbackBackendResourcesText, "ClearSinkAndSettings();");
         AssertContains(captureServiceText, "_flashbackBackend.Clear();");
         AssertContains(flashbackBackendResourcesText, "public async Task<FlashbackPlaybackController> StartPreviewBackendAsync(");
         AssertContains(flashbackBackendResourcesText, "var bufferManager = new FlashbackBufferManager(");

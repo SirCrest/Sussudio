@@ -37,6 +37,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportFailureClassification.cs")
                 .Replace("\r\n", "\n");
+        var flashbackBackendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
+            .Replace("\r\n", "\n");
         var flashbackText = string.Join("\n", flashbackTexts);
 
         AssertNoRegex(
@@ -111,20 +113,24 @@ static partial class Program
             captureServiceText,
             "private async Task CycleFlashbackBufferAsync",
             "    private void OnFlashbackFrameEncoded");
+        var backendCycleBuffer = ExtractTextBetween(
+            flashbackBackendResourcesText,
+            "public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync",
+            "    private async Task RollBackPreviewBackendStartAsync");
         AssertContains(cycleBuffer, "await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(cycleBuffer, "exportOperationLockAlreadyHeld: true");
         AssertContains(cycleBuffer, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
-        AssertContains(cycleBuffer, "var preservedInPoint = !effectivePurgeSegments ? oldPlaybackController?.InPoint : null;");
-        AssertContains(cycleBuffer, "var preservedOutPoint = !effectivePurgeSegments ? oldPlaybackController?.OutPoint : null;");
-        AssertContains(cycleBuffer, "var preservedInPointFilePts = !effectivePurgeSegments ? oldPlaybackController?.InPointFilePts : null;");
-        AssertContains(cycleBuffer, "var preservedOutPointFilePts = !effectivePurgeSegments ? oldPlaybackController?.OutPointFilePts : null;");
-        AssertDoesNotContain(cycleBuffer, "var preservedInPoint = oldPlaybackController?.InPoint;");
-        AssertDoesNotContain(cycleBuffer, "var preservedOutPoint = oldPlaybackController?.OutPoint;");
-        AssertContains(cycleBuffer, "playbackController.RestoreInOutPoints(");
-        AssertContains(cycleBuffer, "preservedInPoint,");
-        AssertContains(cycleBuffer, "preservedOutPoint,");
-        AssertContains(cycleBuffer, "preservedInPointFilePts,");
-        AssertContains(cycleBuffer, "preservedOutPointFilePts);");
+        AssertContains(backendCycleBuffer, "var preservedInPoint = !request.PurgeSegments ? oldPlaybackController?.InPoint : null;");
+        AssertContains(backendCycleBuffer, "var preservedOutPoint = !request.PurgeSegments ? oldPlaybackController?.OutPoint : null;");
+        AssertContains(backendCycleBuffer, "var preservedInPointFilePts = !request.PurgeSegments ? oldPlaybackController?.InPointFilePts : null;");
+        AssertContains(backendCycleBuffer, "var preservedOutPointFilePts = !request.PurgeSegments ? oldPlaybackController?.OutPointFilePts : null;");
+        AssertDoesNotContain(backendCycleBuffer, "var preservedInPoint = oldPlaybackController?.InPoint;");
+        AssertDoesNotContain(backendCycleBuffer, "var preservedOutPoint = oldPlaybackController?.OutPoint;");
+        AssertContains(backendCycleBuffer, "playbackController.RestoreInOutPoints(");
+        AssertContains(backendCycleBuffer, "preservedInPoint,");
+        AssertContains(backendCycleBuffer, "preservedOutPoint,");
+        AssertContains(backendCycleBuffer, "preservedInPointFilePts,");
+        AssertContains(backendCycleBuffer, "preservedOutPointFilePts);");
         var ensureFlashbackPreviewBackend = ExtractTextBetween(
             captureServiceText,
             "private async Task EnsureFlashbackPreviewBackendAsync",
@@ -195,19 +201,19 @@ static partial class Program
         AssertContains(ensureFlashbackPreviewBackend, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
         AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_CANCELLED");
         AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_FAIL");
-        AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN");
-        AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN");
-        AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
-        AssertContains(cycleBuffer, "var committedCycleToken = CancellationToken.None;");
-        AssertContains(cycleBuffer, "await oldSink.StopAsync(committedCycleToken)");
-        AssertContains(cycleBuffer, "await newSink.StartAsync(");
-        AssertContains(cycleBuffer, "CreateFlashbackSessionContext(unifiedVideoCapture, _currentSettings),");
-        AssertContains(cycleBuffer, "committedCycleToken,");
-        AssertContains(cycleBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
+        AssertContains(backendCycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN");
+        AssertContains(backendCycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN");
+        AssertContains(backendCycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+        AssertContains(backendCycleBuffer, "var committedCycleToken = CancellationToken.None;");
+        AssertContains(backendCycleBuffer, "await oldSink.StopAsync(committedCycleToken)");
+        AssertContains(backendCycleBuffer, "await newSink.StartAsync(");
+        AssertContains(backendCycleBuffer, "request.CreateSessionContext(),");
+        AssertContains(backendCycleBuffer, "committedCycleToken,");
+        AssertContains(backendCycleBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
         AssertOccursBefore(
-            cycleBuffer,
+            backendCycleBuffer,
             "await oldSink.DisposeAsync().ConfigureAwait(false);",
-            "_flashbackBackend.ClearSinkAndSettings();");
+            "ClearSinkAndSettings();");
 
         return Task.CompletedTask;
     }

@@ -170,6 +170,11 @@ static partial class Program
         AssertContains(backendSource, "string WarningToken,");
         AssertContains(backendSource, "bool DetachMicrophoneWriter);");
         AssertContains(backendSource, "public void DetachProducers(FlashbackProducerDetachRequest request)");
+        AssertContains(backendSource, "internal readonly record struct FlashbackBufferCycleRequest(");
+        AssertContains(backendSource, "public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync(");
+        AssertContains(backendSource, "newSink.SetFatalErrorCallback(request.FatalErrorCallback);");
+        AssertContains(backendSource, "newSink.FrameEncoded += request.FrameEncodedHandler;");
+        AssertContains(backendSource, "SettingsSnapshot = request.SettingsSnapshot;");
         AssertContains(backendSource, "public void ClearSinkAndSettings()");
         AssertContains(backendSource, "public void Clear()");
 
@@ -183,15 +188,16 @@ static partial class Program
         AssertContains(captureSource, "_flashbackBackend.StartPreviewBackendAsync(");
         AssertContains(backendSource, "Install(");
         AssertDoesNotContain(captureSource, "_flashbackBackend.Install(");
-        AssertContains(captureSource, "_flashbackBackend.TakePlaybackController()");
-        AssertContains(captureSource, "_flashbackBackend.AttachProducers(");
-        AssertContains(captureSource, "new FlashbackProducerAttachRequest(");
-        AssertContains(captureSource, "_flashbackBackend.DetachProducers(");
+        AssertContains(captureSource, "_flashbackBackend.CycleSinkOnlyAsync(");
+        AssertContains(backendSource, "TakePlaybackController()");
+        AssertContains(backendSource, "AttachProducers(");
+        AssertContains(backendSource, "new FlashbackProducerAttachRequest(");
+        AssertContains(backendSource, "DetachProducers(");
         AssertContains(captureSource, "_flashbackBackend.ResolveSegmentPurge(");
         AssertContains(captureSource, "_flashbackBackend.PreserveRecoverySegments(");
         AssertContains(backendSource, "ClearRecoveryPreserve();");
         AssertContains(captureSource, "_flashbackBackend.FinalizeRecordingAsync(");
-        AssertContains(captureSource, "_flashbackBackend.ClearSinkAndSettings();");
+        AssertContains(backendSource, "ClearSinkAndSettings();");
         AssertContains(captureSource, "_flashbackBackend.Clear();");
         AssertDoesNotContain(captureSource, "var bufferManager = new FlashbackBufferManager(");
         AssertDoesNotContain(captureSource, "FlashbackPlaybackController? playbackController = null;");

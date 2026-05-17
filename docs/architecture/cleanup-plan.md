@@ -941,8 +941,9 @@ recording topology validation. Preview-backend producer wiring now belongs to
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
 video/audio/microphone attach and detach request shapes used by preview startup,
 buffer cycling, and teardown. That owner also owns backend artifact cleanup
-request/retry/dispose/purge mechanics while `CaptureService` supplies the
-service-level export-lock adapter.
+request/retry/dispose/purge mechanics and sink-only buffer-cycle mechanics
+while `CaptureService` supplies the service-level export-lock adapter and full
+rebuild fallback orchestration.
 
 Recording start lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`. That file owns
@@ -3321,8 +3322,8 @@ Remaining `tools/Common` ownership:
    pipeline lifetime. `FlashbackBackendResources.cs` now owns the preview
    backend resource set, producer attach/detach wiring, startup construction,
    install/playback initialization, startup rollback cleanup, and backend
-   artifact cleanup mechanics. Keep later Flashback backend mechanics there
-   before inventing another small owner;
+   artifact cleanup mechanics plus sink-only buffer-cycle mechanics. Keep later
+   Flashback backend mechanics there before inventing another small owner;
    `CaptureService.FlashbackPreviewBackend.cs` should stay the transition
    coordinator for AV1 probing, readiness waiting, and cleanup handoff.
 
