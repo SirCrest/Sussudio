@@ -1364,8 +1364,12 @@ normalization, and single-export lock release there.
 
 Flashback exporter multi-segment packet-copy/remux behavior now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Segments.cs`. Keep segment
-validation dispatch, per-segment packet buffering, continuous timestamp repair,
-and segment-export lock release there. Per-segment export range/window
+validation dispatch, temp-output preparation, final output replacement, and
+segment-export lock release there. Segment packet writing now lives in
+`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs`; keep
+output-template initialization, per-segment packet buffering, continuous
+timestamp repair, EOF buffered-packet rescue, progress reporting, and
+requested-segment skip validation there. Per-segment export range/window
 projection and empty effective-range skip classification live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentRangeProjection.cs`.
 Skipped-requested-segment classification and failure-message policy live in

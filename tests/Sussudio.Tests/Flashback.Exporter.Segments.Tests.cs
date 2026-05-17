@@ -111,6 +111,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
+        var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
+            .Replace("\r\n", "\n");
         var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
             .Replace("\r\n", "\n");
 
@@ -121,10 +123,13 @@ static partial class Program
         AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
         AssertContains(packetBuffersText, "FLASHBACK_EXPORT_PACKET_CLONE_FAIL operation={operation}");
         AssertContains(singleFileText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
-        AssertContains(segmentsText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
+        AssertContains(segmentsText, "WriteSegmentPacketsToActiveOutput(");
+        AssertDoesNotContain(segmentsText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
+        AssertContains(segmentPacketWritingText, "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
+        AssertContains(segmentPacketWritingText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
 
         var segmentLoopBlock = ExtractTextBetween(
-            sourceText,
+            segmentPacketWritingText,
             "var segmentVideoFrameDurUs = 33333L;",
             "// Update cross-segment offset:");
         // The inline flush body was extracted into a local function FlushSegmentBufferedPackets
@@ -133,11 +138,11 @@ static partial class Program
         AssertContains(segmentLoopBlock, "totalPackets += FlushSegmentBufferedPackets(out var stopFlushing);");
         AssertContains(segmentLoopBlock, "totalPackets += FlushSegmentBufferedPackets(out _);");
         // The local function's finally block must release buffered packets.
-        AssertContains(segmentLoopBlock, "finally\n                        {\n                            FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                        }");
+        AssertContains(segmentLoopBlock, "finally\n                    {\n                        FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                    }");
         AssertOccursBefore(
             segmentLoopBlock,
             "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), \"av_interleaved_write_frame\");",
-            "finally\n                        {\n                            FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                        }");
+            "finally\n                    {\n                        FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                    }");
         // EOF rescue: when Phase 1 never completed because some configured stream never
         // produced packets, flush whatever is buffered using a fallback base of 0 so we
         // do not silently discard video. (Was: bare FreeBufferedPackets that dropped video.)

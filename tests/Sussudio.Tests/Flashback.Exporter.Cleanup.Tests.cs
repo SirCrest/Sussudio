@@ -80,10 +80,11 @@ static partial class Program
         var segmentExportBlock = ExtractTextBetween(
             sourceText,
             "private FinalizeResult ExportSegmentsCore(",
-            "    private static long ResolveFrameDurationUs");
+            "    private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
         AssertContains(segmentExportBlock, "var tmpPath = outputPath + \".tmp\";");
         AssertDoesNotContain(segmentExportBlock, "CleanupOrphanedTempFilesNearOutput(outputPath);");
         AssertContains(segmentExportBlock, "TryPrepareTempOutputFile(tmpPath, outputPath, out var tempOutputFailure)");
+        AssertContains(segmentExportBlock, "WriteSegmentPacketsToActiveOutput(");
 
         return Task.CompletedTask;
     }

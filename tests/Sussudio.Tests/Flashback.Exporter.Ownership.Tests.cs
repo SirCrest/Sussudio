@@ -14,6 +14,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
+        var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
+            .Replace("\r\n", "\n");
         var segmentRangeProjectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentRangeProjection.cs")
             .Replace("\r\n", "\n");
         var segmentSkipTrackingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentSkipTracking.cs")
@@ -68,14 +70,18 @@ static partial class Program
         AssertContains(segmentsText, "private FinalizeResult ExportSegmentsCore(");
         AssertContains(segmentsText, "TryValidateSegmentExportInputs(");
         AssertContains(segmentsText, "TryEstimateSegmentExportReadableBytes(");
-        AssertContains(segmentsText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
-        AssertContains(segmentsText, "var segmentExportWindow = ProjectSegmentExportWindow(segment, inPoint, outPoint, outPtsLimitUs);");
+        AssertContains(segmentsText, "WriteSegmentPacketsToActiveOutput(");
+        AssertDoesNotContain(segmentsText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
+        AssertDoesNotContain(segmentsText, "var segmentExportWindow = ProjectSegmentExportWindow(segment, inPoint, outPoint, outPtsLimitUs);");
+        AssertContains(segmentPacketWritingText, "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
+        AssertContains(segmentPacketWritingText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
+        AssertContains(segmentPacketWritingText, "var segmentExportWindow = ProjectSegmentExportWindow(segment, inPoint, outPoint, outPtsLimitUs);");
         AssertDoesNotContain(segmentsText, "var segmentOutDelta =");
         AssertDoesNotContain(segmentsText, "SaturatingSubtract(\n                            (segment.EndPts.HasValue && segment.EndPts.Value < outPoint) ? segment.EndPts.Value : outPoint,");
         AssertContains(segmentRangeProjectionText, "private readonly record struct SegmentExportWindow(");
         AssertContains(segmentRangeProjectionText, "private static SegmentExportWindow ProjectSegmentExportWindow(");
         AssertContains(segmentRangeProjectionText, "SkipBecauseEmpty: segmentOutDelta <= TimeSpan.Zero");
-        AssertContains(segmentsText, "TryOpenSegmentInputForExport(");
+        AssertContains(segmentPacketWritingText, "TryOpenSegmentInputForExport(");
         AssertDoesNotContain(segmentsText, "avformat_find_stream_info(_activeInputContext, null)");
         AssertContains(segmentSkipTrackingText, "private struct RequestedSegmentSkipTracker");
         AssertContains(segmentSkipTrackingText, "public void Track(FlashbackExportSegment segment, string reason)");
@@ -126,6 +132,7 @@ static partial class Program
         AssertDoesNotContain(segmentsText, "av_write_trailer(_activeOutputContext)");
         AssertDoesNotContain(segmentsText, "CloseOutputIo();\n\n            if (!TryFinalizeTempOutputFile");
         AssertContains(segmentsText, "if (!TryFinalizeActiveOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
+        AssertDoesNotContain(segmentPacketWritingText, "TryFinalizeActiveOutputFile(");
         AssertContains(exportLockText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)");
         AssertContains(exportLockText, "private void ReleaseExportLockBestEffort(string operation)");
         AssertContains(exportLockText, "private void DisposeExportLockBestEffort()");
