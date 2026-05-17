@@ -5,6 +5,11 @@ namespace Sussudio.Controllers;
 
 internal sealed partial class CaptureSelectionBindingController
 {
+    public void AttachDeviceSelectionChangedBinding()
+    {
+        _context.DeviceComboBox.SelectionChanged += (_, _) => UpdateDeviceApplyButtonState();
+    }
+
     public void EnsureDeviceSelection()
     {
         if (_context.ViewModel.Devices.Count == 0)

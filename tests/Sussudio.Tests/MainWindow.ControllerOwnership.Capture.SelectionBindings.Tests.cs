@@ -35,6 +35,8 @@ static partial class Program
         AssertContains(adapterText, "AnalogAudioGainValueTextBlock = AnalogAudioGainValueTextBlock");
         AssertContains(adapterText, "private void EnsureDeviceSelection()");
         AssertContains(adapterText, "=> _captureSelectionBindingController.EnsureDeviceSelection();");
+        AssertContains(adapterText, "private void AttachDeviceSelectionChangedBinding()");
+        AssertContains(adapterText, "=> _captureSelectionBindingController.AttachDeviceSelectionChangedBinding();");
         AssertContains(adapterText, "private void HandleSelectedDevicePropertyChanged()");
         AssertContains(adapterText, "=> _captureSelectionBindingController.HandleSelectedDevicePropertyChanged();");
         AssertContains(adapterText, "private void HandleAvailableResolutionsPropertyChanged()");
@@ -82,6 +84,7 @@ static partial class Program
         AssertOccursBefore(propertyChangesText, "case nameof(MainViewModel.AvailableSplitEncodeModes):", "case nameof(MainViewModel.SelectedSplitEncodeMode):");
         AssertContains(mainWindowText, "InitializeCaptureSelectionBindingController();");
         AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
+        AssertContains(bindingsText, "AttachDeviceSelectionChangedBinding();");
         AssertContains(propertyChangedText, "if (TryHandleCaptureSelectionPropertyChanged(propertyName))");
         AssertContains(controllerText, "internal sealed partial class CaptureSelectionBindingController");
         AssertContains(controllerText, "private readonly CaptureSelectionBindingControllerContext _context;");
@@ -121,6 +124,8 @@ static partial class Program
         AssertDoesNotContain(selectionControllerFamilyText, "private static void AttachStringSelection(");
         AssertDoesNotContain(selectionControllerFamilyText, "AttachStringSelection(_context.FormatComboBox");
         AssertContains(deviceSelectionText, "public void EnsureDeviceSelection()");
+        AssertContains(deviceSelectionText, "public void AttachDeviceSelectionChangedBinding()");
+        AssertContains(deviceSelectionText, "_context.DeviceComboBox.SelectionChanged += (_, _) => UpdateDeviceApplyButtonState();");
         AssertContains(deviceSelectionText, "public void HandleSelectedDevicePropertyChanged()");
         AssertContains(audioSelectionText, "public void EnsureAudioInputSelection()");
         AssertContains(audioSelectionText, "public void EnsureMicrophoneSelection()");
@@ -148,6 +153,7 @@ static partial class Program
         AssertContains(deviceSelectionText, "UpdateDeviceApplyButtonState();");
         AssertContains(deviceSelectionText, "public bool HasPendingDeviceSelection()");
         AssertContains(deviceSelectionText, "public void UpdateDeviceApplyButtonState()");
+        AssertDoesNotContain(bindingsText, "DeviceComboBox.SelectionChanged +=");
         AssertDoesNotContain(controllerText, "public bool HasPendingDeviceSelection()");
         AssertDoesNotContain(controllerText, "public void UpdateDeviceApplyButtonState()");
         AssertContains(propertyChangesText, "HandleSelectedDevicePropertyChanged();");

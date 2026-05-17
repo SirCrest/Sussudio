@@ -1007,8 +1007,10 @@ Primary current owners:
   XAML event handlers. `Sussudio/MainWindow.Dispatching.cs` keeps the stable
   private MainWindow adapter names for callers.
 - `Sussudio/MainWindow.Bindings.cs` owns the root `SetupBindings()`
-  orchestration and leaves feature-specific binding clusters in focused
-  partials or controllers, including initial status-strip projection.
+  startup binding sequence and leaves feature-specific binding clusters in
+  focused partials or controllers, including initial recording lockout,
+  device-selection change hooks, stats visibility sync, and status-strip
+  projection.
 - `Sussudio/MainWindow.PreviewActions.cs` owns only the preview button XAML
   command adapter. `PreviewButtonActionController` owns the preview
   fade/reinit/start/stop command behavior. One-line XAML command bridges for

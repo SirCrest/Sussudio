@@ -36,6 +36,9 @@ public sealed partial class MainWindow
     private void AttachCaptureSelectionBindings()
         => _captureSelectionBindingController.AttachCollectionBindings();
 
+    private void AttachDeviceSelectionChangedBinding()
+        => _captureSelectionBindingController.AttachDeviceSelectionChangedBinding();
+
     private bool TryHandleCaptureSelectionPropertyChanged(string? propertyName)
         => _captureSelectionBindingController.TryHandlePropertyChanged(propertyName);
 

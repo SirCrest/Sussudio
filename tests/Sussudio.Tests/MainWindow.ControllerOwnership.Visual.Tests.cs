@@ -253,6 +253,7 @@ static partial class Program
     private static Task RecordingStatePresentation_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationPolicy.cs").Replace("\r\n", "\n");
@@ -266,6 +267,7 @@ static partial class Program
         AssertContains(adapterText, "=> _recordingStatePresentationController.HandleRecordingChanged();");
         AssertContains(adapterText, "=> _recordingStatePresentationController.HandleRecordingTransitioningChanged();");
         AssertContains(adapterText, "=> _recordingStatePresentationController.HandleFfmpegMissingChanged();");
+        AssertContains(bindingsText, "HandleFfmpegMissingChanged();");
         AssertContains(mainWindowText, "InitializeRecordingStatePresentationController();");
         AssertContains(controllerText, "internal sealed class RecordingStatePresentationController");
         AssertContains(controllerText, "public void HandleRecordingChanged()");
@@ -294,6 +296,7 @@ static partial class Program
         AssertDoesNotContain(adapterText, "AnimateRecordButtonWidth = AnimateRecordButtonWidth,");
         AssertDoesNotContain(adapterText, "AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled");
         AssertDoesNotContain(adapterText, "RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing");
+        AssertDoesNotContain(bindingsText, "RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing");
         AssertDoesNotContain(controllerText, "_context.RecordButton.");
         AssertDoesNotContain(controllerText, "_context.RecordButtonStartingContent.");
         AssertDoesNotContain(controllerText, "_context.RecordingGlowPulseStoryboard.");

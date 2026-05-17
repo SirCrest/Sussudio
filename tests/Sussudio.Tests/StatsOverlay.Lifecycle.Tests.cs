@@ -26,6 +26,8 @@ static partial class Program
         AssertContains(statsDockGraphText, "internal sealed class StatsDockControllerGraph");
         AssertContains(statsDockGraphText, "public void RefreshDock()");
         AssertContains(bindingsText, "AttachStatsOverlayToggleBindings();");
+        AssertContains(bindingsText, "ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);");
+        AssertDoesNotContain(bindingsText, "_statsOverlayController.SyncStatsVisibility(ViewModel.IsStatsVisible");
         AssertContains(statsOverlayText, "private void AttachStatsOverlayToggleBindings()");
         AssertContains(statsOverlayText, "=> _statsOverlayController.AttachToggleBindings();");
         AssertContains(statsOverlayText, "private void DetachStatsOverlayToggleBindings()");
