@@ -23,29 +23,55 @@ internal readonly record struct DiagnosticSessionScenarioPlan(
     bool RunFlashbackExportRejected,
     bool RunCombined)
 {
-    internal static DiagnosticSessionScenarioPlan From(string scenario)
+    internal static DiagnosticSessionScenarioPlan Create(
+        bool runFlashbackPlayback = false,
+        bool runFlashbackStress = false,
+        bool runFlashbackScrubStress = false,
+        bool runFlashbackRestartCycle = false,
+        bool runFlashbackEncoderCycle = false,
+        bool runFlashbackExportPlayback = false,
+        bool runFlashbackSegmentPlayback = false,
+        bool runFlashbackRangeExport = false,
+        bool runFlashbackRangeExportAudioSwitch = false,
+        bool runFlashbackLifecycle = false,
+        bool runFlashbackExportConcurrent = false,
+        bool runFlashbackDisableDuringExport = false,
+        bool runFlashbackRotatedExport = false,
+        bool runFlashbackPreviewCycle = false,
+        bool runFlashbackPlaybackPreviewCycle = false,
+        bool runFlashbackRecording = false,
+        bool runFlashbackRecordingPreviewCycle = false,
+        bool runFlashbackRecordingSettingsDeferred = false,
+        bool runFlashbackRecordingExportRejected = false,
+        bool runFlashbackExportRejected = false,
+        bool runCombined = false)
         => new(
-            scenario == DiagnosticSessionScenarios.FlashbackPlayback,
-            scenario == DiagnosticSessionScenarios.FlashbackStress,
-            scenario == DiagnosticSessionScenarios.FlashbackScrubStress,
-            scenario == DiagnosticSessionScenarios.FlashbackRestartCycle,
-            scenario == DiagnosticSessionScenarios.FlashbackEncoderCycle,
-            scenario == DiagnosticSessionScenarios.FlashbackExportPlayback,
-            scenario == DiagnosticSessionScenarios.FlashbackSegmentPlayback,
-            scenario == DiagnosticSessionScenarios.FlashbackRangeExport,
-            scenario == DiagnosticSessionScenarios.FlashbackRangeExportAudioSwitch,
-            scenario == DiagnosticSessionScenarios.FlashbackLifecycle,
-            scenario == DiagnosticSessionScenarios.FlashbackExportConcurrent,
-            scenario == DiagnosticSessionScenarios.FlashbackDisableDuringExport,
-            scenario == DiagnosticSessionScenarios.FlashbackRotatedExport,
-            scenario == DiagnosticSessionScenarios.FlashbackPreviewCycle,
-            scenario == DiagnosticSessionScenarios.FlashbackPlaybackPreviewCycle,
-            scenario == DiagnosticSessionScenarios.FlashbackRecording,
-            scenario == DiagnosticSessionScenarios.FlashbackRecordingPreviewCycle,
-            scenario == DiagnosticSessionScenarios.FlashbackRecordingSettingsDeferred,
-            scenario == DiagnosticSessionScenarios.FlashbackRecordingExportRejected,
-            scenario == DiagnosticSessionScenarios.FlashbackExportRejected,
-            scenario == DiagnosticSessionScenarios.Combined);
+            runFlashbackPlayback,
+            runFlashbackStress,
+            runFlashbackScrubStress,
+            runFlashbackRestartCycle,
+            runFlashbackEncoderCycle,
+            runFlashbackExportPlayback,
+            runFlashbackSegmentPlayback,
+            runFlashbackRangeExport,
+            runFlashbackRangeExportAudioSwitch,
+            runFlashbackLifecycle,
+            runFlashbackExportConcurrent,
+            runFlashbackDisableDuringExport,
+            runFlashbackRotatedExport,
+            runFlashbackPreviewCycle,
+            runFlashbackPlaybackPreviewCycle,
+            runFlashbackRecording,
+            runFlashbackRecordingPreviewCycle,
+            runFlashbackRecordingSettingsDeferred,
+            runFlashbackRecordingExportRejected,
+            runFlashbackExportRejected,
+            runCombined);
+
+    internal static DiagnosticSessionScenarioPlan From(string scenario)
+        => DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry)
+            ? entry.Plan
+            : default;
 
     internal bool RequiresFlashbackRecordingReadiness
         => RunFlashbackRecording ||

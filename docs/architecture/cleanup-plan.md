@@ -33,9 +33,10 @@ Changed ownership:
 - `AutomationPipeProtocol.cs`
 - `AutomationPipeSecurityPolicy.cs`
 
-Diagnostic session scenario names and scenario-level metadata now live in
-`tools/Common/DiagnosticSessionScenarios.cs`; the runner still owns execution
-flow and summary writing.
+Diagnostic session scenario names still live in
+`tools/Common/DiagnosticSessionScenarios.cs`, while scenario-level metadata now
+lives in `tools/Common/DiagnosticSessionScenarioCatalog.cs`; the runner still
+owns execution flow and summary writing.
 
 Automation diagnostics now have named partial owners instead of one large hub
 body. `AutomationDiagnosticsHub.cs` is the compact field/constructor owner.
@@ -2636,9 +2637,11 @@ Diagnostic-session post-run snapshot fetches now live in
 timeline artifact input and final health snapshot refresh while the runner
 keeps the high-level post-cleanup phase order.
 
-Diagnostic-session scenario flagging now lives in
-`tools/Common/DiagnosticSessionScenarioPlan.cs`. It owns normalized scenario
-booleans plus grouped warning/validation policy switches, including the
+Diagnostic-session scenario metadata now lives in
+`tools/Common/DiagnosticSessionScenarioCatalog.cs`. It owns scenario ordering,
+setup requirements, export verification filenames, and the plan assigned to
+each normalized scenario. `tools/Common/DiagnosticSessionScenarioPlan.cs` owns
+the plan DTO plus grouped warning/validation policy switches, including the
 preview-cycle grouped predicate, so the runner does not grow direct scenario
 string comparisons.
 
@@ -2706,8 +2709,9 @@ surfaces with focused coverage.
 
 Diagnostic-session Flashback preview-cycle scenarios now live in a focused
 partial family. `.Registrations.cs` owns task registration, priority,
-task-label, and started-action wiring while preview-cycle grouping stays in
-`DiagnosticSessionScenarioPlan.cs`.
+task-label, and started-action wiring while preview-cycle scenario selection
+stays in `DiagnosticSessionScenarioCatalog.cs` and grouped preview-cycle policy
+stays in `DiagnosticSessionScenarioPlan.cs`.
 `.Flashback.cs`, `.Playback.cs`, and `.Recording.cs` own preview stop/restart
 flows for normal Flashback, playback, and recording-backed diagnostics. Normal
 Flashback and playback-preview-cycle export-while-preview-off verification live
@@ -2932,6 +2936,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionRunBootstrap.cs`
 - `DiagnosticSessionRunContext.PhaseContexts.cs`
 - `DiagnosticSessionSampler.cs`
+- `DiagnosticSessionScenarioCatalog.cs`
 - `DiagnosticSessionScenarioPlan.cs`
 - `DiagnosticSessionScenarioSetup.cs`
 - `DiagnosticSessionScenarioStartup.cs`

@@ -24,7 +24,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "_liveStateWriter = new DiagnosticSessionLiveStateWriter(");
         AssertContains(diagnosticSessionText, "backgroundTasks.AwaitScenarioTasksAsync()");
         AssertContains(diagnosticSessionText, "backgroundTasks.ObserveAfterFaultAsync(");
-        AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<string> All { get; }");
+        AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<string> All => DiagnosticSessionScenarioCatalog.Names;");
+        AssertContains(diagnosticScenariosText, "internal static class DiagnosticSessionScenarioCatalog");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackPlayback = \"flashback-playback\";");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackStress = \"flashback-stress\";");
         AssertContains(diagnosticScenariosText, "internal const string FlashbackScrubStress = \"flashback-scrub-stress\";");

@@ -111,10 +111,12 @@ static partial class Program
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionCommandChannel.WaitConditions.cs")
                 + "\n" + ReadDiagnosticSessionResultFormatterSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionSampler.cs")
+                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionOptionalTextFormatter.cs"),
             ReadDiagnosticSessionModelsSource(),
-            ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarios.cs"));
+            ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarios.cs")
+                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs"));
     }
 
     private static DiagnosticSessionToolSurfaceSourceFamily ReadDiagnosticSessionToolSurfaceSourceFamily()

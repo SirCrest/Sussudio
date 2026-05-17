@@ -39,10 +39,14 @@ static partial class Program
         AssertContains(diagnosticSessionText, "recording verification skipped: scenario does not produce a recording or export artifact");
         AssertContains(diagnosticSessionText, "verificationCommand = \"VerifyFile\"");
         AssertContains(diagnosticSessionText, "[\"verificationProfile\"] = \"flashback-export\"");
-        AssertContains(diagnosticScenariosText, "FlashbackRangeExport => Path.Combine(outputDirectory, \"flashback-range-export.mp4\")");
-        AssertContains(diagnosticScenariosText, "FlashbackRangeExportAudioSwitch => Path.Combine(outputDirectory, \"flashback-range-export-audio-switch.mp4\")");
-        AssertContains(diagnosticScenariosText, "FlashbackExportConcurrent => Path.Combine(outputDirectory, \"flashback-concurrent-a.mp4\")");
-        AssertContains(diagnosticScenariosText, "FlashbackRotatedExport => Path.Combine(outputDirectory, \"flashback-rotated-export.mp4\")");
+        AssertContains(diagnosticScenariosText, "DiagnosticSessionScenarios.FlashbackRangeExport,");
+        AssertContains(diagnosticScenariosText, "FlashbackExportVerificationFileName: \"flashback-range-export.mp4\"");
+        AssertContains(diagnosticScenariosText, "DiagnosticSessionScenarios.FlashbackRangeExportAudioSwitch,");
+        AssertContains(diagnosticScenariosText, "FlashbackExportVerificationFileName: \"flashback-range-export-audio-switch.mp4\"");
+        AssertContains(diagnosticScenariosText, "DiagnosticSessionScenarios.FlashbackExportConcurrent,");
+        AssertContains(diagnosticScenariosText, "FlashbackExportVerificationFileName: \"flashback-concurrent-a.mp4\"");
+        AssertContains(diagnosticScenariosText, "DiagnosticSessionScenarios.FlashbackRotatedExport,");
+        AssertContains(diagnosticScenariosText, "FlashbackExportVerificationFileName: \"flashback-rotated-export.mp4\"");
         AssertContains(diagnosticScenariosText, "return exportPath.Length > 0;");
         AssertDoesNotContain(diagnosticScenariosText, "return exportPath.Length > 0 && File.Exists(exportPath);");
         AssertContains(diagnosticSessionText, "expected BufferInactive failure kind");

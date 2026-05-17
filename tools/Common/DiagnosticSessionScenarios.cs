@@ -28,36 +28,9 @@ internal static class DiagnosticSessionScenarios
     internal const string FlashbackExportRejected = "flashback-export-rejected";
     internal const string Combined = "combined";
 
-    internal static IReadOnlyList<string> All { get; } =
-    [
-        Observe,
-        PreviewOnly,
-        RecordingOnly,
-        Flashback,
-        FlashbackPlayback,
-        FlashbackStress,
-        FlashbackScrubStress,
-        FlashbackRestartCycle,
-        FlashbackEncoderCycle,
-        FlashbackExportPlayback,
-        FlashbackSegmentPlayback,
-        FlashbackRangeExport,
-        FlashbackRangeExportAudioSwitch,
-        FlashbackLifecycle,
-        FlashbackExportConcurrent,
-        FlashbackDisableDuringExport,
-        FlashbackRotatedExport,
-        FlashbackPreviewCycle,
-        FlashbackPlaybackPreviewCycle,
-        FlashbackRecording,
-        FlashbackRecordingPreviewCycle,
-        FlashbackRecordingSettingsDeferred,
-        FlashbackRecordingExportRejected,
-        FlashbackExportRejected,
-        Combined
-    ];
+    internal static IReadOnlyList<string> All => DiagnosticSessionScenarioCatalog.Names;
 
-    internal static string HelpList { get; } = string.Join("|", All);
+    internal static string HelpList => DiagnosticSessionScenarioCatalog.HelpList;
 
     internal static string Normalize(string? scenario)
     {
@@ -65,7 +38,7 @@ internal static class DiagnosticSessionScenarios
             ? Observe
             : scenario.Trim().ToLowerInvariant();
 
-        if (All.Contains(normalized, StringComparer.Ordinal))
+        if (DiagnosticSessionScenarioCatalog.TryGetEntry(normalized, out _))
         {
             return normalized;
         }
@@ -74,45 +47,23 @@ internal static class DiagnosticSessionScenarios
     }
 
     internal static bool NeedsPreview(string scenario)
-        => scenario is PreviewOnly or Flashback or FlashbackPlayback or FlashbackStress or FlashbackScrubStress or
-            FlashbackRestartCycle or FlashbackEncoderCycle or FlashbackExportPlayback or FlashbackSegmentPlayback or
-            FlashbackRangeExport or FlashbackRangeExportAudioSwitch or FlashbackLifecycle or FlashbackExportConcurrent or
-            FlashbackDisableDuringExport or FlashbackRotatedExport or FlashbackPreviewCycle or FlashbackPlaybackPreviewCycle or
-            FlashbackRecording or FlashbackRecordingPreviewCycle or FlashbackRecordingSettingsDeferred or
-            FlashbackRecordingExportRejected or Combined;
+        => DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry) && entry.RequiresPreview;
 
     internal static bool NeedsRecording(string scenario)
-        => scenario is RecordingOnly or FlashbackRecording or FlashbackRecordingPreviewCycle or
-            FlashbackRecordingSettingsDeferred or FlashbackRecordingExportRejected or Combined;
+        => DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry) && entry.RequiresRecording;
 
     internal static bool NeedsFlashback(string scenario)
-        => scenario is Flashback or FlashbackPlayback or FlashbackStress or FlashbackScrubStress or
-            FlashbackRestartCycle or FlashbackEncoderCycle or FlashbackExportPlayback or FlashbackSegmentPlayback or
-            FlashbackRangeExport or FlashbackRangeExportAudioSwitch or FlashbackLifecycle or FlashbackExportConcurrent or
-            FlashbackDisableDuringExport or FlashbackRotatedExport or FlashbackPreviewCycle or FlashbackPlaybackPreviewCycle or
-            FlashbackRecording or FlashbackRecordingPreviewCycle or FlashbackRecordingSettingsDeferred or
-            FlashbackRecordingExportRejected or Combined;
+        => DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry) && entry.RequiresFlashback;
 
     internal static bool TryGetFlashbackExportVerificationPath(
         string scenario,
         string outputDirectory,
         out string exportPath)
     {
-        exportPath = scenario switch
-        {
-            Flashback or FlashbackStress => Path.Combine(outputDirectory, "flashback-stress-export.mp4"),
-            FlashbackRestartCycle => Path.Combine(outputDirectory, "flashback-restart-cycle-export.mp4"),
-            FlashbackEncoderCycle => Path.Combine(outputDirectory, "flashback-encoder-cycle-export.mp4"),
-            FlashbackExportPlayback => Path.Combine(outputDirectory, "flashback-export-playback.mp4"),
-            FlashbackRangeExport => Path.Combine(outputDirectory, "flashback-range-export.mp4"),
-            FlashbackRangeExportAudioSwitch => Path.Combine(outputDirectory, "flashback-range-export-audio-switch.mp4"),
-            FlashbackExportConcurrent => Path.Combine(outputDirectory, "flashback-concurrent-a.mp4"),
-            FlashbackDisableDuringExport => Path.Combine(outputDirectory, "flashback-disable-during-export.mp4"),
-            FlashbackRotatedExport => Path.Combine(outputDirectory, "flashback-rotated-export.mp4"),
-            FlashbackPreviewCycle => Path.Combine(outputDirectory, "flashback-preview-off-export.mp4"),
-            FlashbackPlaybackPreviewCycle => Path.Combine(outputDirectory, "flashback-playback-preview-cycle.mp4"),
-            _ => string.Empty
-        };
+        var fileName = DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry)
+            ? entry.FlashbackExportVerificationFileName
+            : null;
+        exportPath = fileName is null ? string.Empty : Path.Combine(outputDirectory, fileName);
 
         return exportPath.Length > 0;
     }

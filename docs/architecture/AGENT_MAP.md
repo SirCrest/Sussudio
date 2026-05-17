@@ -3075,11 +3075,13 @@ Primary owners:
   diagnostic-session wait command helpers, `WaitForCondition` payload shaping,
   and routing that fixed wait command through the channel's
   `AutomationCommandKind` overload.
-- `tools/Common/DiagnosticSessionScenarioPlan.cs` owns normalized scenario
-  flags and grouped warning/validation policies, including the preview-cycle
-  grouped predicate, used by the runner. Keep new scenario booleans there
-  instead of adding string comparisons in
-  `DiagnosticSessionRunner`.
+- `tools/Common/DiagnosticSessionScenarioCatalog.cs` owns diagnostic-session
+  scenario ordering, setup requirements, export verification filenames, and the
+  plan assigned to each normalized scenario.
+- `tools/Common/DiagnosticSessionScenarioPlan.cs` owns the scenario plan DTO and
+  grouped warning/validation policies, including the preview-cycle grouped
+  predicate, used by the runner. Keep new scenario booleans there instead of
+  adding string comparisons in `DiagnosticSessionRunner`.
 - `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon option/result,
   summary, swap-chain, correlation, and metric DTOs.
 - `tools/Common/PresentMon/PresentMonProbe.ResultMessage.cs` owns PresentMon result-message
@@ -3154,8 +3156,9 @@ Invariants:
 - Preserve pipe error-code semantics when refactoring diagnostic-session retry:
   `pipe-access-denied` is permanent, while connect failed/timeout are retried.
 - Add new diagnostic-session scenario names in
-  `tools/Common/DiagnosticSessionScenarios.cs` before wiring scenario behavior
-  into `DiagnosticSessionRunner`.
-- Keep diagnostic-session scenario flag derivation in
+  `tools/Common/DiagnosticSessionScenarios.cs`, then add their requirements and
+  plan metadata in `tools/Common/DiagnosticSessionScenarioCatalog.cs` before
+  wiring scenario behavior into `DiagnosticSessionRunner`.
+- Keep diagnostic-session grouped policy derivation in
   `tools/Common/DiagnosticSessionScenarioPlan.cs`; the runner should consume
   named properties instead of comparing normalized scenario strings directly.
