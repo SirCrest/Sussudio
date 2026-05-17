@@ -957,10 +957,8 @@ playback preservation, and recording microphone capture wiring.
 Recording
 stop lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs`, including
-normal stop routing and the emergency stop overload that feeds finalization.
-`Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs` owns
-the stop/finalize dispatcher: active backend selection, fallback status,
-emergency flag, cancellation-token handoff, and shared result routing.
+normal stop routing, the emergency stop overload that feeds finalization, and
+the stop/finalize dispatcher for active Flashback and LibAv backends.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs`
 owns active Flashback recording backend finalization: live-edge finalize/export
 handoff, finalize-in-progress choreography, Flashback recording-integrity

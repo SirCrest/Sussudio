@@ -13,7 +13,6 @@ static partial class Program
 
     private static readonly string[] CaptureServiceRecordingFinalizationFiles =
     {
-        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackendReconcile.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs",
@@ -198,7 +197,7 @@ static partial class Program
 
     private static Task CaptureService_RecordingFinalizationLivesInFocusedPartials()
     {
-        var recordFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeRecord.cs");
+        var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs");
         var flashbackBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs");
         var flashbackBackendReconcileText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackendReconcile.cs");
         var libAvBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs");
@@ -207,9 +206,9 @@ static partial class Program
         var flashbackBoundaryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBoundary.cs");
         var outcomeStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs");
 
-        AssertContains(recordFinalizationText, "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(");
-        AssertContains(recordFinalizationText, "StopAndDisposeFlashbackRecordingBackendAsync(cancellationToken)");
-        AssertContains(recordFinalizationText, "StopAndDisposeLibAvRecordingBackendAsync(fallbackStatusMessage, emergency, cancellationToken)");
+        AssertContains(stopLifecycleText, "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(");
+        AssertContains(stopLifecycleText, "StopAndDisposeFlashbackRecordingBackendAsync(cancellationToken)");
+        AssertContains(stopLifecycleText, "StopAndDisposeLibAvRecordingBackendAsync(fallbackStatusMessage, emergency, cancellationToken)");
         AssertContains(flashbackBackendFinalizationText, "private async Task<FinalizeResult> StopAndDisposeFlashbackRecordingBackendAsync(");
         AssertContains(flashbackBackendFinalizationText, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
         AssertContains(flashbackBackendFinalizationText, "ReconcileFlashbackBackendAfterRecordingFinalizeAsync(");
@@ -250,13 +249,13 @@ static partial class Program
         AssertDoesNotContain(flashbackFinalizationText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
         AssertContains(outcomeStateText, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
         AssertContains(outcomeStateText, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
-        AssertDoesNotContain(recordFinalizationText, "private sealed class FlashbackRecordingBoundarySnapshot");
-        AssertDoesNotContain(recordFinalizationText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
-        AssertDoesNotContain(recordFinalizationText, "Unified video recording stop failed");
-        AssertDoesNotContain(recordFinalizationText, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
-        AssertDoesNotContain(recordFinalizationText, "_lastOutputPath = result.OutputPath;");
-        AssertDoesNotContain(recordFinalizationText, "_lastFinalizeStatus = result.StatusMessage;");
-        AssertDoesNotContain(recordFinalizationText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
+        AssertDoesNotContain(stopLifecycleText, "private sealed class FlashbackRecordingBoundarySnapshot");
+        AssertDoesNotContain(stopLifecycleText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
+        AssertDoesNotContain(stopLifecycleText, "Unified video recording stop failed");
+        AssertDoesNotContain(stopLifecycleText, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
+        AssertDoesNotContain(stopLifecycleText, "_lastOutputPath = result.OutputPath;");
+        AssertDoesNotContain(stopLifecycleText, "_lastFinalizeStatus = result.StatusMessage;");
+        AssertDoesNotContain(stopLifecycleText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
 
         return Task.CompletedTask;
     }
