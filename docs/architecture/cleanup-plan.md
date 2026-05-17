@@ -129,11 +129,8 @@ Flashback export progress, failure, force-rotate fallback, and last-result
 projection consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs` owns
 Flashback recording, buffer, backend, and encoder configuration projection,
-including the export verification and codec-downgrade fallback policy consumed
-by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecordingStartupCache.cs`
-owns Flashback temp-drive and startup cache projection consumed by the
-automation snapshot DTO.
+including the export verification, codec-downgrade fallback, temp-drive, and
+startup cache policy consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecordingQueues.cs` owns
 Flashback video, GPU, and audio queue/backpressure projection consumed by the
 automation snapshot DTO.

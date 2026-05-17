@@ -54,8 +54,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingProjection BuildFlashbackRecordingProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "var startupCache = BuildFlashbackRecordingStartupCacheProjection(health);");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "StartupCache = startupCache,");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingStartupCacheText, "private static FlashbackRecordingStartupCacheProjection BuildFlashbackRecordingStartupCacheProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingStartupCacheText, "OverBudget = health.FlashbackStartupCacheOverBudget");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingStartupCacheProjection BuildFlashbackRecordingStartupCacheProjection(");
+        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "OverBudget = health.FlashbackStartupCacheOverBudget");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "var queues = BuildFlashbackRecordingQueuesProjection(health);");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "Queues = queues,");
         AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingQueuesText, "private static FlashbackRecordingQueuesProjection BuildFlashbackRecordingQueuesProjection(");
