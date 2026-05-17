@@ -1784,8 +1784,8 @@ Source telemetry snapshot policy now lives in
 backend labels, frame-rate origin labels, suppression/circuit-state mapping,
 request/telemetry alignment, and HDR warmup state classification there.
 
-A/V sync snapshot policy and drift baseline state now live in
-`Sussudio/Services/Capture/CaptureService.SnapshotAvSync.cs`. Keep live
+A/V sync snapshot policy, health field projection, and drift baseline state now
+live in `Sussudio/Services/Capture/CaptureService.SnapshotAvSync.cs`. Keep live
 source/audio drift calculations and encoder drift/correction projection there.
 
 Stats dock, stats toggle, and frame-time overlay lifecycle now live in

@@ -314,8 +314,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
-        var avSyncHealthText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.AvSync.cs")
-            .Replace("\r\n", "\n");
         var avSyncSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotAvSync.cs")
             .Replace("\r\n", "\n");
 
@@ -326,10 +324,16 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertDoesNotContain(healthSnapshotText, "var (avSyncDriftMs, avSyncDriftRate) = ComputeAvSyncDrift();");
         AssertDoesNotContain(healthSnapshotText, "var (avSyncEncoderDriftMs, avSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();");
 
-        AssertContains(avSyncHealthText, "private AvSyncHealthSnapshotFields CaptureAvSyncHealthSnapshotFields()");
-        AssertContains(avSyncHealthText, "var (captureDriftMs, captureDriftRateMsPerSec) = ComputeAvSyncDrift();");
-        AssertContains(avSyncHealthText, "var (encoderDriftMs, encoderCorrectionSamples) = GetEncoderAvSyncDrift();");
-        AssertContains(avSyncHealthText, "private readonly record struct AvSyncHealthSnapshotFields");
+        Assert.False(File.Exists(Path.Combine(
+            FindRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.HealthSnapshots.AvSync.cs")));
+        AssertContains(avSyncSnapshotText, "private AvSyncHealthSnapshotFields CaptureAvSyncHealthSnapshotFields()");
+        AssertContains(avSyncSnapshotText, "var (captureDriftMs, captureDriftRateMsPerSec) = ComputeAvSyncDrift();");
+        AssertContains(avSyncSnapshotText, "var (encoderDriftMs, encoderCorrectionSamples) = GetEncoderAvSyncDrift();");
+        AssertContains(avSyncSnapshotText, "private readonly record struct AvSyncHealthSnapshotFields");
         AssertContains(avSyncSnapshotText, "private double _avSyncBaselineDriftMs = double.NaN;");
         AssertContains(avSyncSnapshotText, "private double _avSyncPrevDriftMs;");
         AssertContains(avSyncSnapshotText, "private long _avSyncPrevDriftTick;");
