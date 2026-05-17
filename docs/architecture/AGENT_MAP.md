@@ -801,9 +801,10 @@ Entry points:
 
 - `FlashbackBackendResources.cs` owns preview backend resource grouping,
   startup construction/install/playback initialization, rollback cleanup,
-  backend artifact cleanup request/retry/dispose/purge mechanics, sink-only
-  buffer-cycle mechanics, and producer attach/detach request shaping for
-  video, audio, and microphone feeds. It
+  sink-only buffer-cycle mechanics, and producer attach/detach request shaping
+  for video, audio, and microphone feeds.
+  `FlashbackBackendResources.ArtifactCleanup.cs` owns backend artifact cleanup
+  request/retry/dispose/purge mechanics. The backend resource owner
   receives export-lock wait/release delegates from `CaptureService` rather than
   owning service semaphores directly during preview backend startup, cycling,
   and teardown. `CaptureService`

@@ -97,7 +97,8 @@ static partial class Program
         var previewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs");
         var disposalText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackendDisposal.cs");
         var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackBufferCycle.cs");
-        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
+        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
 
         AssertContains(controlsText, "public Task RestartFlashbackAsync(");
         AssertContains(controlsText, "private async Task RestartFlashbackCoreAsync(");

@@ -901,7 +901,8 @@ Deferred capture cleanup now lives in
 the Flashback artifact cleanup adapter handoff and export-lock delegation,
 deferred unified-video cleanup after LibAv drains, and the pending LibAv drain
 reentry guard. Flashback backend artifact cleanup request/retry/dispose/purge
-mechanics live in `Sussudio/Services/Flashback/FlashbackBackendResources.cs`.
+mechanics live in
+`Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs`.
 
 Capture read-only automation probes now live in
 `Sussudio/Services/Capture/CaptureService.Probes.cs`. Video source probing,
@@ -939,10 +940,11 @@ rational inference, codec/HDR guardrails, encoded-frame forwarding, and
 recording topology validation. Preview-backend producer wiring now belongs to
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
 video/audio/microphone attach and detach request shapes used by preview startup,
-buffer cycling, and teardown. That owner also owns backend artifact cleanup
-request/retry/dispose/purge mechanics and sink-only buffer-cycle mechanics
-while `CaptureService` supplies the service-level export-lock adapter and full
-rebuild fallback orchestration.
+buffer cycling, and teardown. That owner also owns sink-only buffer-cycle
+mechanics, while `Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs`
+owns backend artifact cleanup request/retry/dispose/purge mechanics.
+`CaptureService` supplies the service-level export-lock adapter and full rebuild
+fallback orchestration.
 
 Recording start lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`. That file owns
@@ -3319,9 +3321,10 @@ Remaining `tools/Common` ownership:
    audio graph, recording controller, Flashback backend resources, and video
    pipeline lifetime. `FlashbackBackendResources.cs` now owns the preview
    backend resource set, producer attach/detach wiring, startup construction,
-   install/playback initialization, startup rollback cleanup, and backend
-   artifact cleanup mechanics plus sink-only buffer-cycle mechanics. Keep later
-   Flashback backend mechanics there before inventing another small owner;
+   install/playback initialization, startup rollback cleanup, and sink-only
+   buffer-cycle mechanics. `FlashbackBackendResources.ArtifactCleanup.cs` owns
+   backend artifact cleanup mechanics. Keep later Flashback backend mechanics
+   there before inventing another small owner;
    `CaptureService.FlashbackPreviewBackend.cs` should stay the transition
    coordinator for AV1 probing, readiness waiting, and cleanup handoff.
 

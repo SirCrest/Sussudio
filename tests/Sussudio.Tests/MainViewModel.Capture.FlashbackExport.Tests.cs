@@ -22,7 +22,9 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
                 .Replace("\r\n", "\n");
-        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
+        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
