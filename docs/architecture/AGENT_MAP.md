@@ -1136,8 +1136,8 @@ Primary current owners:
 - `Sussudio/ViewModels/CaptureModeOptionsBuilder.cs` owns pure resolution and
   video-format option construction, HDR mode enablement, and source aspect-ratio
   filtering. Shell files bind and display those options.
-- `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` is the stats
-  presentation contract marker shell.
+- `tests/Sussudio.Tests/StatsPresentation.Contract.Tests.cs` owns stats
+  presentation display-repeat visual cadence contract checks.
   `tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs` owns
   builder/controller/DTO source-shape assertions,
   `tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs` owns HDMI
@@ -1177,8 +1177,9 @@ Primary current owners:
   MainWindow controller-adapter ownership assertions for control bar, shell
   elevation, preview-transition, preview startup overlay, preview fade-in, and
   recording-button chrome controller.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` is the
-  MainWindow controller-adapter ownership marker shell.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` owns
+  MainWindow property-change routing ownership assertions across focused
+  controller adapters.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs`
   owns MainWindow controller-adapter ownership assertions for recording action,
   live signal info, status-strip presentation, preview audio fade, microphone
