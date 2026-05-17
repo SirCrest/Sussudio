@@ -42,8 +42,10 @@ body. `AutomationDiagnosticsHub.cs` is the compact field/constructor owner.
 `AutomationDiagnosticsHub.Counters.cs` owns recent-counter baseline state and
 delta updates used by diagnostics evaluation. `AutomationDiagnosticsHub.Snapshots.cs` owns snapshot
 refresh and read-only snapshot access. `AutomationDiagnosticsHub.SnapshotProjection.cs`
-owns snapshot projection orchestration from runtime/view-model snapshots and
-diagnostic classifiers. `AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs`
+owns the `BuildAutomationSnapshot` shell and dispatch into projection
+composition/flattening. `AutomationDiagnosticsHub.SnapshotProjection.Composition.cs`
+owns projection-set composition from runtime/view-model snapshots and diagnostic
+classifiers. `AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs`
 owns the final `AutomationSnapshot` DTO initializer that flattens the named
 projection records into the automation wire snapshot. `AutomationDiagnosticsHub.SnapshotState.cs`
 owns stateful snapshot bookkeeping for audio mute suspicion and recording file

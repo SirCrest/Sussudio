@@ -141,8 +141,12 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SnapshotsText, "var previewHdrInputDetected =");
         AssertContains(diagnostics.SnapshotsText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnostics.SnapshotProjectionText, "private AutomationSnapshot BuildAutomationSnapshot(");
-        AssertContains(diagnostics.SnapshotProjectionText, "return BuildAutomationSnapshotFromProjections(");
+        AssertContains(diagnostics.SnapshotProjectionText, "var projections = BuildAutomationSnapshotProjectionSet(");
+        AssertContains(diagnostics.SnapshotProjectionText, "return BuildAutomationSnapshotFromProjections(projections);");
+        AssertContains(diagnostics.SnapshotProjectionCompositionText, "private AutomationSnapshotProjectionSet BuildAutomationSnapshotProjectionSet(");
+        AssertContains(diagnostics.SnapshotProjectionCompositionText, "private readonly record struct AutomationSnapshotProjectionSet(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "private static AutomationSnapshot BuildAutomationSnapshotFromProjections(");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AutomationSnapshotProjectionSet projections");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "new AutomationSnapshot");
     }
 }

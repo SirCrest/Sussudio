@@ -5,35 +5,37 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationDiagnosticsHub
 {
     private static AutomationSnapshot BuildAutomationSnapshotFromProjections(
-        SnapshotStatusProjection snapshotStatus,
-        SnapshotEvaluationProjection snapshotEvaluation,
-        AudioAndIngestProjection audioAndIngest,
-        AudioDropsProjection audioDrops,
-        CaptureCommandProjection captureCommands,
-        UserSettingsProjection userSettings,
-        RecordingSettingsProjection recordingSettings,
-        RecordingIntegrityProjection recordingIntegrity,
-        CaptureFormatProjection captureFormat,
-        SourceSignalProjection sourceSignal,
-        SourceTelemetryProjection sourceTelemetry,
-        RecordingOutputProjection recordingOutput,
-        ProcessResourceProjection processResourceProjection,
-        AvSyncProjection avSync,
-        CaptureTransportProjection captureTransport,
-        PreviewRuntimeProjection previewSummary,
-        RecordingBackendProjection recordingBackend,
-        RecordingPipelineProjection recordingPipeline,
-        CaptureCadenceProjection captureCadence,
-        VisualCadenceProjection visualCadence,
-        MjpegProjection mjpeg,
-        PreviewD3DProjection previewD3D,
-        HdrPipelineProjection hdrPipeline,
-        HdrTruthProjection hdrTruth,
-        FlashbackExportProjection flashbackExport,
-        FlashbackExportLastResultProjection flashbackExportLastResult,
-        FlashbackRecordingProjection flashbackRecording,
-        FlashbackPlaybackProjection flashbackPlayback)
+        AutomationSnapshotProjectionSet projections)
     {
+        var snapshotStatus = projections.SnapshotStatus;
+        var snapshotEvaluation = projections.SnapshotEvaluation;
+        var audioAndIngest = projections.AudioAndIngest;
+        var audioDrops = projections.AudioDrops;
+        var captureCommands = projections.CaptureCommands;
+        var userSettings = projections.UserSettings;
+        var recordingSettings = projections.RecordingSettings;
+        var recordingIntegrity = projections.RecordingIntegrity;
+        var captureFormat = projections.CaptureFormat;
+        var sourceSignal = projections.SourceSignal;
+        var sourceTelemetry = projections.SourceTelemetry;
+        var recordingOutput = projections.RecordingOutput;
+        var processResourceProjection = projections.ProcessResourceProjection;
+        var avSync = projections.AvSync;
+        var captureTransport = projections.CaptureTransport;
+        var previewSummary = projections.PreviewSummary;
+        var recordingBackend = projections.RecordingBackend;
+        var recordingPipeline = projections.RecordingPipeline;
+        var captureCadence = projections.CaptureCadence;
+        var visualCadence = projections.VisualCadence;
+        var mjpeg = projections.Mjpeg;
+        var previewD3D = projections.PreviewD3D;
+        var hdrPipeline = projections.HdrPipeline;
+        var hdrTruth = projections.HdrTruth;
+        var flashbackExport = projections.FlashbackExport;
+        var flashbackExportLastResult = projections.FlashbackExportLastResult;
+        var flashbackRecording = projections.FlashbackRecording;
+        var flashbackPlayback = projections.FlashbackPlayback;
+
         return new AutomationSnapshot
         {
             TimestampUtc = snapshotStatus.TimestampUtc,
