@@ -110,7 +110,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "IsCaptureOnePercentLowDegraded(\n                snapshot.ExpectedCaptureFrameRate");
         AssertContains(diagnostics.SourceFamilyText, "IsPreviewOnePercentLowDegraded(\n                snapshot.PreviewCadenceExpectedIntervalMs");
         AssertContains(diagnostics.SourceFamilyText, "\"Source/capture 1% low is below target, but sampled visual cadence confirms source-rate output.\"");
-        AssertContains(diagnostics.SourceFamilyText, "$\"{sourceLane} | {visualLane}\"");
+        AssertContains(diagnostics.SourceFamilyText, "$\"{lanes.Source} | {lanes.Visual}\"");
         AssertContains(diagnostics.SourceFamilyText, "captureCadenceExpectedFrameRate: health.ExpectedFrameRate");
         AssertContains(diagnostics.SourceFamilyText, "captureCadenceOnePercentLowFps: health.CaptureCadenceOnePercentLowFps");
         AssertContains(diagnostics.SourceFamilyText, "previewCadenceExpectedIntervalMs: previewRuntime.DisplayCadenceExpectedIntervalMs");
@@ -222,7 +222,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "renderSubmit={frame.RenderSubmitCpuMs:0.##}ms");
         AssertContains(diagnostics.SourceFamilyText, "var unsyncedPresentCallSlow =\n            previewRuntime.D3DPresentSyncInterval == 0 &&\n            previewRuntime.D3DPresentCallP95Ms > 4.0;");
         AssertContains(diagnostics.SourceFamilyText, "if (presentCadenceOverBudget ||\n            unsyncedPresentCallSlow)");
-        AssertContains(diagnostics.SourceFamilyText, "if (captureOnePercentLowDegraded)");
+        AssertContains(diagnostics.SourceFamilyText, "if (!captureOnePercentLowDegraded)");
         AssertContains(diagnostics.SourceFamilyText, "\"Source/capture 1% low is below target.\"");
         AssertContains(diagnostics.SourceFamilyText, "if (previewOnePercentLowDegraded)");
         AssertContains(diagnostics.SourceFamilyText, "var visualCadenceHealthy =\n            IsVisualCadenceHealthy(");
@@ -236,7 +236,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "var mjpegDuplicateCadenceDetected = IsMjpegDuplicateCadenceDetected(health);");
         AssertContains(diagnostics.SourceFamilyText, "\"source_signal\"");
         AssertContains(diagnostics.SourceFamilyText, "\"Captured HFR MJPEG cadence contains repeated source frames.\"");
-        AssertContains(diagnostics.SourceFamilyText, "$\"{mjpegDuplicateLane} | {visualLane} | {sourceSignalLane}\"");
+        AssertContains(diagnostics.SourceFamilyText, "$\"{lanes.MjpegDuplicate} | {lanes.Visual} | {lanes.SourceSignal}\"");
         AssertContains(diagnostics.SourceFamilyText, "!visualCadenceHealthy &&\n            IsPreviewOnePercentLowDegraded(");
         AssertContains(diagnostics.SourceFamilyText, "private static bool IsVisualCadenceHealthy(");
         AssertContains(diagnostics.SourceFamilyText, "changeObservedFps >= targetFrameRate * PreviewOnePercentLowWarningRatio");
@@ -246,7 +246,7 @@ static partial class Program
         AssertContains(countersText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
         AssertContains(diagnostics.SourceFamilyText, "var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick);");
         AssertContains(diagnostics.SourceFamilyText, "recentDropped={recentMjpeg.TotalDropped} recentFailures={recentMjpeg.Failures}");
-        AssertContains(diagnostics.SourceFamilyText, "recentMjpeg.TotalDropped > 0");
+        AssertContains(diagnostics.SourceFamilyText, "recentMjpeg.TotalDropped <= 0");
         AssertContains(diagnostics.SourceFamilyText, "if (recentRendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&\n            recentRendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)");
         AssertDoesNotContain(diagnostics.SourceFamilyText, "rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||\n            previewRuntime.DisplayCadenceSlowFramePercent > 1.0");
     }

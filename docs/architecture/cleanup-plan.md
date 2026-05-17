@@ -238,9 +238,16 @@ and stalled Flashback export diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Playback.cs` owns
 Flashback playback command, performance, frametime, and submission diagnostic
 verdicts.
-`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs` owns idle, warmup,
-recording/audio, source/capture, source-signal, and MJPEG decode/reorder
+`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs` owns realtime
 diagnostic verdict ordering.
+`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.State.cs` owns idle and
+warmup diagnostic verdicts.
+`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Recording.cs` owns
+recording integrity and audio integrity diagnostic verdicts.
+`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Source.cs` owns
+source/capture cadence diagnostic verdicts.
+`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Mjpeg.cs` owns MJPEG
+duplicate source-signal and decode/reorder diagnostic verdicts.
 `AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs` owns preview
 scheduler, renderer pacing, present/display cadence, and preview display 1% low
 diagnostic verdicts.
