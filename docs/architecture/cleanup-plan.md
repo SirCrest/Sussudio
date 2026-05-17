@@ -3185,12 +3185,10 @@ Remaining `tools/Common` ownership:
    visibility, and show-all capture options now live in
    `MainViewModel.AutomationUi.cs`; stats dock/section visibility and
    frame-time overlay display now live in `MainViewModel.AutomationStatsUi.cs`.
-   Automation command entry points for audio, audio-preview, and preview-volume
-   clamp/persist now live in `MainViewModel.AutomationAudio.cs`;
-   device-native audio mode/gain automation application now lives in
-   `MainViewModel.AutomationDeviceAudio.cs`; microphone enablement with
-   recording-time refusal/idempotent handling now lives in
-   `MainViewModel.AutomationMicrophone.cs`.
+   Automation command entry points for audio enablement, audio-preview
+   enablement, preview-volume clamp/persist, device-native mode/gain
+   application, and microphone enablement with recording-time
+   refusal/idempotent handling now live in `MainViewModel.AutomationAudio.cs`.
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
    `MainViewModel.AutomationPreview.cs`.
