@@ -1617,6 +1617,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`
   owns runtime projection ownership for ingest/audio, reader transport, HDR
   pipeline, source telemetry, and recording integrity.
+- `tests/Sussudio.Tests/RecordingIntegrity.Contracts.Tests.cs` owns recording
+  integrity summary defaults, automation snapshot field contracts, and
+  automation projection ownership checks.
+- `tests/Sussudio.Tests/RecordingIntegrity.Tests.cs` owns recording integrity
+  summary policy, Flashback recording scoped sequence gaps, CaptureService
+  focused-partial ownership, and shared formatter rendering checks.
 - `tests/Sussudio.Tests/CaptureService.Snapshots.Tests.cs` owns CaptureService
   diagnostics-snapshot compatibility, recording format/profile helper, HDR
   warmup-state, and recording-stats ownership assertions.
