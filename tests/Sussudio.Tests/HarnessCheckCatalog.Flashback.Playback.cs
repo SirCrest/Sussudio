@@ -82,6 +82,9 @@ static partial class Program
             "Flashback seek slots preserve control command barriers",
             FlashbackPlaybackController_SeekSlots_PreserveControlCommandBarriers);
         await AddCheckAsync(results,
+            "Flashback seek slots preserve slot state after rejected barriers",
+            FlashbackPlaybackController_SeekSlots_PreserveSlotStateAfterRejectedBarriers);
+        await AddCheckAsync(results,
             "Flashback playback transitions use best-effort audio preview guards",
             FlashbackPlaybackController_PlaybackTransitions_UseBestEffortAudioPreviewGuards);
         await AddCheckAsync(results,
