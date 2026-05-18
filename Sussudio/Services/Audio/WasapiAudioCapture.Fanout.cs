@@ -48,6 +48,74 @@ internal sealed partial class WasapiAudioCapture
         string target)
         => CompleteHotAudioWrite(writer(samples), target);
 
+    private bool DispatchConvertedAudioPacket(ConvertedAudioPacket converted)
+    {
+        var convertedBuffer = converted.Buffer;
+        if (convertedBuffer == null || converted.Length <= 0 || converted.Frames <= 0)
+        {
+            return false;
+        }
+
+        var samples = new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length);
+        var audioWriter = Volatile.Read(ref _audioWriter);
+        if (audioWriter != null)
+        {
+            try
+            {
+                InvokeHotAudioWriter(audioWriter, samples, "delegate");
+                Interlocked.Add(ref _audioFramesWrittenToSink, converted.Frames);
+            }
+            catch (Exception ex)
+            {
+                Volatile.Write(ref _audioWriter, null);
+                Interlocked.Exchange(ref _stopRequested, 1);
+                _captureEvent?.Set();
+                throw new InvalidOperationException("WASAPI audio delegate write failed.", ex);
+            }
+        }
+        else
+        {
+            var sink = Volatile.Read(ref _recordingSink);
+            if (sink != null)
+            {
+                try
+                {
+                    WriteAudioToSinkOnCaptureThread(sink, samples, "recording");
+                    Interlocked.Add(ref _audioFramesWrittenToSink, converted.Frames);
+                }
+                catch (Exception ex)
+                {
+                    Volatile.Write(ref _recordingSink, null);
+                    Interlocked.Exchange(ref _stopRequested, 1);
+                    _captureEvent?.Set();
+                    throw new InvalidOperationException("WASAPI audio sink write failed.", ex);
+                }
+            }
+        }
+
+        var flashbackSink = Volatile.Read(ref _flashbackSink);
+        if (flashbackSink != null)
+        {
+            try
+            {
+                WriteAudioToSinkOnCaptureThread(flashbackSink, samples, "flashback");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"WASAPI_FLASHBACK_AUDIO_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            }
+        }
+
+        var playback = Volatile.Read(ref _playback);
+        if (playback == null)
+        {
+            return false;
+        }
+
+        playback.EnqueuePooledSamples(convertedBuffer, converted.Length);
+        return true;
+    }
+
     private static void WriteAudioToSinkOnCaptureThread(
         IRecordingSink sink,
         ReadOnlyMemory<byte> samples,

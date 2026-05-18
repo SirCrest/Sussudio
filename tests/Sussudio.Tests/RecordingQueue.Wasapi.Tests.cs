@@ -23,10 +23,18 @@ static partial class Program
             captureLoopSource,
             "private void DrainCapturePackets()",
             "private void OnCaptureFailed");
-        AssertContains(drainBlock, "InvokeHotAudioWriter(");
-        AssertContains(drainBlock, "WriteAudioToSinkOnCaptureThread(");
+        AssertContains(drainBlock, "handoffToPlayback = DispatchConvertedAudioPacket(converted);");
+        AssertDoesNotContain(drainBlock, "InvokeHotAudioWriter(");
+        AssertDoesNotContain(drainBlock, "WriteAudioToSinkOnCaptureThread(");
         AssertDoesNotContain(drainBlock, ".GetAwaiter()");
+        AssertDoesNotContain(drainBlock, "Volatile.Read(ref _recordingSink)");
         AssertContains(captureLoopSource, "private void CaptureThreadMain()");
+        AssertContains(fanoutSource, "private bool DispatchConvertedAudioPacket(ConvertedAudioPacket converted)");
+        AssertContains(fanoutSource, "var audioWriter = Volatile.Read(ref _audioWriter);");
+        AssertContains(fanoutSource, "var sink = Volatile.Read(ref _recordingSink);");
+        AssertContains(fanoutSource, "var flashbackSink = Volatile.Read(ref _flashbackSink);");
+        AssertContains(fanoutSource, "var playback = Volatile.Read(ref _playback);");
+        AssertContains(fanoutSource, "playback.EnqueuePooledSamples(convertedBuffer, converted.Length);");
         AssertContains(fanoutSource, "private static void InvokeHotAudioWriter(");
         AssertContains(fanoutSource, "private static void WriteAudioToSinkOnCaptureThread(");
         AssertContains(fanoutSource, "private static void CompleteHotAudioWrite(Task task, string target)");

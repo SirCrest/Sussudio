@@ -96,70 +96,7 @@ internal sealed partial class WasapiAudioCapture
                 var convertedBuffer = converted.Buffer;
                 RaiseAudioLevelIfDue(convertedBuffer.AsSpan(0, converted.Length));
 
-                var audioWriter = Volatile.Read(ref _audioWriter);
-                if (audioWriter != null)
-                {
-                    try
-                    {
-                        InvokeHotAudioWriter(
-                            audioWriter,
-                            new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length),
-                            "delegate");
-                        Interlocked.Add(ref _audioFramesWrittenToSink, converted.Frames);
-                    }
-                    catch (Exception ex)
-                    {
-                        Volatile.Write(ref _audioWriter, null);
-                        Interlocked.Exchange(ref _stopRequested, 1);
-                        _captureEvent?.Set();
-                        throw new InvalidOperationException("WASAPI audio delegate write failed.", ex);
-                    }
-                }
-                else
-                {
-                    var sink = Volatile.Read(ref _recordingSink);
-                    if (sink != null)
-                    {
-                        try
-                        {
-                            WriteAudioToSinkOnCaptureThread(
-                                sink,
-                                new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length),
-                                "recording");
-                            Interlocked.Add(ref _audioFramesWrittenToSink, converted.Frames);
-                        }
-                        catch (Exception ex)
-                        {
-                            Volatile.Write(ref _recordingSink, null);
-                            Interlocked.Exchange(ref _stopRequested, 1);
-                            _captureEvent?.Set();
-                            throw new InvalidOperationException("WASAPI audio sink write failed.", ex);
-                        }
-                    }
-                }
-
-                var flashbackSink = Volatile.Read(ref _flashbackSink);
-                if (flashbackSink != null)
-                {
-                    try
-                    {
-                        WriteAudioToSinkOnCaptureThread(
-                            flashbackSink,
-                            new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length),
-                            "flashback");
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log($"WASAPI_FLASHBACK_AUDIO_FAIL type={ex.GetType().Name} msg={ex.Message}");
-                    }
-                }
-
-                var playback = Volatile.Read(ref _playback);
-                if (playback != null)
-                {
-                    playback.EnqueuePooledSamples(convertedBuffer, converted.Length);
-                    handoffToPlayback = true;
-                }
+                handoffToPlayback = DispatchConvertedAudioPacket(converted);
             }
             finally
             {
