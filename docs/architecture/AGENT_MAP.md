@@ -1210,14 +1210,12 @@ Primary current owners:
   filtering. Shell files bind and display those options.
 - `tests/Sussudio.Tests/XUnit.StatsPresentationTests.cs` owns xUnit stats
   presentation behavior checks: display-repeat visual cadence, detached-window
-  formatting, dock encoder formatting, frame-time range, and frame-time graph
-  geometry.
+  formatting, dock encoder formatting, compact preview summary, frame-time
+  range, and frame-time graph geometry.
   `tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs` owns
   builder/controller/DTO source-shape assertions,
   `tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs` owns HDMI
   source telemetry panel projection checks,
-  `tests/Sussudio.Tests/StatsPresentation.FrameTime.Tests.cs` owns compact
-  preview summary and frame-time source-shape checks,
   `tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs` owns hardware row
   presentation/input behavior checks, and
   `tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs` owns disk

@@ -27,8 +27,5 @@ static partial class Program
         await AddCheckAsync(results,
             "Stats snapshot builder maps health and renderer metrics",
             StatsSnapshotBuilder_MapsHealthAndRendererMetrics);
-        await AddCheckAsync(results,
-            "Stats live summary shows current preview frame time and 1 percent low",
-            StatsLiveSummary_ShowsCurrentPreviewFrameTimeAndOnePercentLow);
     }
 }

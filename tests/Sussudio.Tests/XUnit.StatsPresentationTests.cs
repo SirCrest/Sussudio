@@ -225,8 +225,66 @@ public class StatsPresentationTests
         AssertNearlyEqual(62.5, GetDoubleProperty(expectedLine, "Y"), 0.0001);
     }
 
+    [Fact]
+    public void CompactPreviewSummary_UsesCurrentFrameTimeAndOnePercentLow()
+    {
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs");
+        var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
+        var dockPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockPresentationController.cs");
+        var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSnapshotProvider.cs");
+        var frameTimeOverlayControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs");
+        var frameTimeOverlayGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs");
+        var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs");
+        var statsPresentationFrameTimeText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.FrameTime.cs");
+        var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs");
+        var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs");
+        var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml");
+        var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs");
+
+        Assert.Contains("PreviewOnePercentLowFps: presentCadence?.OnePercentLowFps ?? 0", statsSnapshotProviderText);
+        Assert.Contains("PreviewOnePercentLowFps: StatsPresentationBuilder.Sanitize(renderer.PreviewOnePercentLowFps)", statsSnapshotBuilderText);
+        AssertStatsPresentationPreviewFormattingLivesInBuilder(
+            statsPresentationFrameTimeText,
+            statsPresentationText,
+            statsOverlayText,
+            statsOverlayCompositionText,
+            frameTimeOverlayControllerText);
+        Assert.Contains("internal static class FrameTimeOverlayGeometry", frameTimeOverlayGeometryText);
+        Assert.Contains("SetMetricBrush(_context.SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);", dockPresentationControllerText);
+        Assert.Contains("SetTextIfChanged(_context.PreviewFpsValue, presentation.PreviewFps);", dockPresentationControllerText);
+        Assert.DoesNotContain("SetMetricBrush(Stats_SummaryRendererFpsValue", statsOverlayText);
+        Assert.Contains("double PreviewOnePercentLowFps", statsSnapshotText);
+        Assert.DoesNotContain("double PreviewFivePercentLowFps", statsWindowText);
+        Assert.Contains("x:Name=\"Stats_SummaryRendererFpsValue\"", mainWindowXaml);
+        Assert.Contains("TextWrapping=\"NoWrap\"", mainWindowXaml);
+        Assert.Contains("MaxLines=\"1\"", mainWindowXaml);
+    }
+
     private static Type RequireType(string typeName)
         => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+
+    private static string ReadRepoFile(string relativePath)
+    {
+        var path = Path.Combine(FindRepoRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar));
+        return File.ReadAllText(path).Replace("\r\n", "\n");
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(Environment.CurrentDirectory);
+        while (dir != null)
+        {
+            var gitPath = Path.Combine(dir.FullName, ".git");
+            if (Directory.Exists(gitPath) || File.Exists(gitPath))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        return Environment.CurrentDirectory;
+    }
 
     private static object CreateUninitializedObject(Type type)
         => RuntimeHelpers.GetUninitializedObject(type);
@@ -256,4 +314,26 @@ public class StatsPresentationTests
         => Assert.True(
             Math.Abs(expected - actual) <= tolerance,
             $"Expected {expected:0.####}, got {actual:0.####}; tolerance {tolerance:0.####}.");
+
+    private static void AssertStatsPresentationPreviewFormattingLivesInBuilder(
+        string statsPresentationFrameTimeText,
+        string statsPresentationText,
+        string statsOverlayText,
+        string frameTimeOverlayText,
+        string frameTimeOverlayControllerText)
+    {
+        Assert.Contains("private static string FormatPreviewCadenceSummary(StatsSnapshot snapshot)", statsPresentationFrameTimeText);
+        Assert.Contains("private static double ResolveCurrentPreviewFrameTimeMs(StatsSnapshot snapshot)", statsPresentationFrameTimeText);
+        Assert.Contains("ResolveCurrentPreviewFrameTimeMs(snapshot)", statsPresentationFrameTimeText);
+        Assert.Contains("1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps", statsPresentationFrameTimeText);
+        Assert.Contains("return $\"{currentFrameTime} | {onePercentLow}\";", statsPresentationFrameTimeText);
+        Assert.DoesNotContain("private static string FormatPreviewCadenceSummary(", statsPresentationText);
+        Assert.DoesNotContain("private static double ResolveCurrentPreviewFrameTimeMs(", statsPresentationText);
+        Assert.DoesNotContain("private static string FormatPreviewCadenceSummary(", statsOverlayText);
+        Assert.DoesNotContain("private static double ResolveCurrentPreviewFrameTimeMs(", statsOverlayText);
+        Assert.DoesNotContain("private static string FormatPreviewCadenceSummary(", frameTimeOverlayText);
+        Assert.DoesNotContain("private static double ResolveCurrentPreviewFrameTimeMs(", frameTimeOverlayText);
+        Assert.DoesNotContain("private static string FormatPreviewCadenceSummary(", frameTimeOverlayControllerText);
+        Assert.DoesNotContain("private static double ResolveCurrentPreviewFrameTimeMs(", frameTimeOverlayControllerText);
+    }
 }
