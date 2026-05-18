@@ -15,6 +15,12 @@ static partial class Program
             "Automation UI settings persist through the settings path",
             AutomationUiSettings_PersistThroughSettingsPath);
         await AddCheckAsync(results,
+            "Settings persistence projection load plan preserves saved semantics",
+            SettingsPersistenceProjection_LoadPlanPreservesSavedSemantics);
+        await AddCheckAsync(results,
+            "Settings persistence projection save settings maps persisted values",
+            SettingsPersistenceProjection_SaveSettingsMapsPersistedValues);
+        await AddCheckAsync(results,
             "Automation device selection routes through apply reinit",
             AutomationDeviceSelection_RoutesThroughApplyReinit);
         await AddCheckAsync(results,

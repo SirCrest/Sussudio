@@ -1,3 +1,5 @@
+using System;
+using System.Reflection;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -34,12 +36,21 @@ static partial class Program
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
         AssertContains(settingsPersistenceText, "private void LoadSettings()");
         AssertContains(settingsPersistenceText, "private void SaveSettings()");
+        AssertContains(settingsPersistenceText, "SettingsService.Load()");
+        AssertContains(settingsPersistenceText, "SettingsService.Save(settings)");
+        AssertContains(settingsPersistenceText, "Directory.Exists");
+        AssertContains(settingsPersistenceText, "_isLoadingSettings = true;");
+        AssertContains(settingsPersistenceText, "_isLoadingSettings = false;");
         AssertContains(settingsPersistenceText, "MainViewModelSettingsPersistenceProjection.BuildLoadPlan(");
         AssertContains(settingsPersistenceText, "MainViewModelSettingsPersistenceProjection.BuildSaveSettings(");
         AssertContains(settingsPersistenceText, "private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
         AssertContains(settingsProjectionText, "internal static class MainViewModelSettingsPersistenceProjection");
         AssertContains(settingsProjectionText, "internal static MainViewModelSettingsLoadPlan BuildLoadPlan(");
         AssertContains(settingsProjectionText, "internal static UserSettings BuildSaveSettings(");
+        AssertDoesNotContain(settingsProjectionText, "SettingsService");
+        AssertDoesNotContain(settingsProjectionText, "Logger");
+        AssertDoesNotContain(settingsProjectionText, "Directory.");
+        AssertDoesNotContain(settingsProjectionText, "MainViewModel.");
         AssertContains(settingsProjectionText, "ShowAllCaptureOptions: settings.ShowAllCaptureOptions,");
         AssertContains(settingsProjectionText, "IsStatsVisible: settings.IsStatsVisible,");
         AssertContains(settingsProjectionText, "ShowAllCaptureOptions = input.ShowAllCaptureOptions,");
@@ -60,5 +71,220 @@ static partial class Program
         AssertDoesNotContain(settingsPersistenceText, "RebuildResolutionOptions();\n        SaveSettings();");
 
         return Task.CompletedTask;
+    }
+
+    private static Task SettingsPersistenceProjection_LoadPlanPreservesSavedSemantics()
+    {
+        var settings = CreateSettings(
+            ("SelectedDeviceId", "device-1"),
+            ("OutputPath", "C:\\Rejected"),
+            ("SelectedRecordingFormat", "AV1"),
+            ("SelectedQuality", "High"),
+            ("SelectedPreset", "P7"),
+            ("SelectedSplitEncodeMode", "Auto"),
+            ("CustomBitrateMbps", 42d),
+            ("IsHdrEnabled", true),
+            ("IsAudioEnabled", false),
+            ("IsAudioPreviewEnabled", true),
+            ("IsCustomAudioInputEnabled", true),
+            ("SelectedAudioInputDeviceId", "audio-1"),
+            ("IsMicrophoneEnabled", true),
+            ("SelectedMicrophoneDeviceId", "mic-1"),
+            ("MicrophoneVolume", 150d),
+            ("PreviewVolume", -0.25d),
+            ("ShowAllCaptureOptions", true),
+            ("IsStatsVisible", false),
+            ("SelectedDeviceAudioMode", "Analog"),
+            ("AnalogAudioGainPercent", -5d),
+            ("FlashbackGpuDecode", true),
+            ("FlashbackBufferMinutes", 99));
+
+        var plan = BuildSettingsLoadPlan(
+            settings,
+            availableRecordingFormats: new[] { "H264", "HEVC" },
+            outputDirectoryExists: path => path == "C:\\Accepted");
+
+        AssertEqual(null, GetPropertyValue(plan, "OutputPath"), "settings load invalid output path");
+        AssertEqual(null, GetPropertyValue(plan, "SelectedRecordingFormat"), "settings load unavailable recording format");
+        AssertEqual("AV1", GetPropertyValue(plan, "UnavailableRecordingFormat"), "settings load unavailable recording format marker");
+        AssertEqual("High", GetPropertyValue(plan, "SelectedQuality"), "settings load selected quality");
+        AssertEqual("P7", GetPropertyValue(plan, "SelectedPreset"), "settings load selected preset");
+        AssertEqual("Auto", GetPropertyValue(plan, "SelectedSplitEncodeMode"), "settings load selected split encode mode");
+        AssertEqual(42d, GetPropertyValue(plan, "CustomBitrateMbps"), "settings load custom bitrate");
+        AssertEqual(true, GetPropertyValue(plan, "IsHdrEnabled"), "settings load hdr enabled");
+        AssertEqual(false, GetPropertyValue(plan, "IsAudioEnabled"), "settings load audio enabled");
+        AssertEqual(true, GetPropertyValue(plan, "IsAudioPreviewEnabled"), "settings load audio preview enabled");
+        AssertEqual(true, GetPropertyValue(plan, "IsCustomAudioInputEnabled"), "settings load custom audio input enabled");
+        AssertEqual(true, GetPropertyValue(plan, "IsMicrophoneEnabled"), "settings load microphone enabled");
+        AssertEqual(100d, GetPropertyValue(plan, "MicrophoneVolume"), "settings load microphone volume clamp");
+        AssertEqual("mic-1", GetPropertyValue(plan, "PendingMicrophoneVolumeDeviceId"), "settings load microphone volume device");
+        AssertEqual(0d, GetPropertyValue(plan, "PreviewVolume"), "settings load preview volume clamp");
+        AssertEqual(true, GetPropertyValue(plan, "ShowAllCaptureOptions"), "settings load show all options");
+        AssertEqual(false, GetPropertyValue(plan, "IsStatsVisible"), "settings load stats visible");
+        AssertEqual("Analog", GetPropertyValue(plan, "SelectedDeviceAudioMode"), "settings load selected device audio mode");
+        AssertEqual(0d, GetPropertyValue(plan, "AnalogAudioGainPercent"), "settings load analog gain clamp");
+        AssertEqual(true, GetPropertyValue(plan, "FlashbackGpuDecode"), "settings load flashback gpu decode");
+        AssertEqual(30, GetPropertyValue(plan, "FlashbackBufferMinutes"), "settings load flashback buffer clamp");
+        AssertEqual("device-1", GetPropertyValue(plan, "PendingDeviceId"), "settings load pending device");
+        AssertEqual("audio-1", GetPropertyValue(plan, "PendingAudioDeviceId"), "settings load pending audio device");
+        AssertEqual("mic-1", GetPropertyValue(plan, "PendingMicrophoneDeviceId"), "settings load pending microphone device");
+        AssertEqual("Analog", GetPropertyValue(plan, "PendingDeviceAudioMode"), "settings load pending audio mode");
+        AssertEqual(-5d, GetPropertyValue(plan, "PendingAnalogAudioGainPercent"), "settings load pending analog gain");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task SettingsPersistenceProjection_SaveSettingsMapsPersistedValues()
+    {
+        var settings = BuildSettingsSaveSettings(
+            selectedDeviceId: "device-2",
+            outputPath: "C:\\Capture",
+            selectedRecordingFormat: "HEVC",
+            selectedQuality: "Balanced",
+            selectedPreset: "P5",
+            selectedSplitEncodeMode: "Disabled",
+            customBitrateMbps: 55d,
+            isHdrEnabled: true,
+            isAudioEnabled: true,
+            isAudioPreviewEnabled: false,
+            isCustomAudioInputEnabled: true,
+            selectedAudioInputDeviceId: "audio-2",
+            isMicrophoneEnabled: true,
+            selectedMicrophoneDeviceId: "mic-2",
+            microphoneVolume: 75d,
+            previewVolume: 0.625d,
+            showAllCaptureOptions: true,
+            isStatsVisible: true,
+            selectedDeviceAudioMode: "Embedded",
+            analogAudioGainPercent: 33d,
+            flashbackGpuDecode: false,
+            flashbackBufferMinutes: 12);
+
+        AssertEqual("device-2", GetPropertyValue(settings, "SelectedDeviceId"), "settings save selected device");
+        AssertEqual("C:\\Capture", GetPropertyValue(settings, "OutputPath"), "settings save output path");
+        AssertEqual("HEVC", GetPropertyValue(settings, "SelectedRecordingFormat"), "settings save recording format");
+        AssertEqual("Balanced", GetPropertyValue(settings, "SelectedQuality"), "settings save quality");
+        AssertEqual("P5", GetPropertyValue(settings, "SelectedPreset"), "settings save preset");
+        AssertEqual("Disabled", GetPropertyValue(settings, "SelectedSplitEncodeMode"), "settings save split encode mode");
+        AssertEqual(55d, GetPropertyValue(settings, "CustomBitrateMbps"), "settings save custom bitrate");
+        AssertEqual(true, GetPropertyValue(settings, "IsHdrEnabled"), "settings save hdr enabled");
+        AssertEqual(true, GetPropertyValue(settings, "IsAudioEnabled"), "settings save audio enabled");
+        AssertEqual(false, GetPropertyValue(settings, "IsAudioPreviewEnabled"), "settings save audio preview enabled");
+        AssertEqual(true, GetPropertyValue(settings, "IsCustomAudioInputEnabled"), "settings save custom audio input enabled");
+        AssertEqual("audio-2", GetPropertyValue(settings, "SelectedAudioInputDeviceId"), "settings save selected audio input");
+        AssertEqual(true, GetPropertyValue(settings, "IsMicrophoneEnabled"), "settings save microphone enabled");
+        AssertEqual("mic-2", GetPropertyValue(settings, "SelectedMicrophoneDeviceId"), "settings save selected microphone");
+        AssertEqual(75d, GetPropertyValue(settings, "MicrophoneVolume"), "settings save microphone volume");
+        AssertEqual(0.625d, GetPropertyValue(settings, "PreviewVolume"), "settings save preview volume");
+        AssertEqual(true, GetPropertyValue(settings, "ShowAllCaptureOptions"), "settings save show all options");
+        AssertEqual(true, GetPropertyValue(settings, "IsStatsVisible"), "settings save stats visible");
+        AssertEqual("Embedded", GetPropertyValue(settings, "SelectedDeviceAudioMode"), "settings save selected device audio mode");
+        AssertEqual(33d, GetPropertyValue(settings, "AnalogAudioGainPercent"), "settings save analog gain");
+        AssertEqual(false, GetPropertyValue(settings, "FlashbackGpuDecode"), "settings save flashback gpu decode");
+        AssertEqual(12, GetPropertyValue(settings, "FlashbackBufferMinutes"), "settings save flashback buffer minutes");
+
+        return Task.CompletedTask;
+    }
+
+    private static object CreateSettings(params (string Property, object? Value)[] values)
+    {
+        var settings = CreateInstance("Sussudio.Services.Runtime.UserSettings");
+        foreach (var (property, value) in values)
+        {
+            SetPropertyOrBackingField(settings, property, value);
+        }
+
+        return settings;
+    }
+
+    private static object BuildSettingsLoadPlan(
+        object settings,
+        string[] availableRecordingFormats,
+        Func<string, bool> outputDirectoryExists)
+    {
+        var inputType = RequireType("Sussudio.ViewModels.MainViewModelSettingsLoadInput");
+        var input = InvokeSingleConstructor(inputType,
+            availableRecordingFormats,
+            new[] { "High", "Balanced" },
+            new[] { "P7", "P5" },
+            new[] { "Auto", "Disabled" },
+            new[] { "Embedded", "Analog" },
+            outputDirectoryExists);
+
+        var projectionType = RequireType("Sussudio.ViewModels.MainViewModelSettingsPersistenceProjection");
+        var buildLoadPlan = projectionType.GetMethod(
+            "BuildLoadPlan",
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("BuildLoadPlan was not found.");
+
+        return buildLoadPlan.Invoke(null, new[] { settings, input })
+               ?? throw new InvalidOperationException("BuildLoadPlan returned null.");
+    }
+
+    private static object BuildSettingsSaveSettings(
+        string? selectedDeviceId,
+        string outputPath,
+        string selectedRecordingFormat,
+        string selectedQuality,
+        string selectedPreset,
+        string selectedSplitEncodeMode,
+        double customBitrateMbps,
+        bool isHdrEnabled,
+        bool isAudioEnabled,
+        bool isAudioPreviewEnabled,
+        bool isCustomAudioInputEnabled,
+        string? selectedAudioInputDeviceId,
+        bool isMicrophoneEnabled,
+        string? selectedMicrophoneDeviceId,
+        double microphoneVolume,
+        double previewVolume,
+        bool showAllCaptureOptions,
+        bool isStatsVisible,
+        string selectedDeviceAudioMode,
+        double analogAudioGainPercent,
+        bool flashbackGpuDecode,
+        int flashbackBufferMinutes)
+    {
+        var inputType = RequireType("Sussudio.ViewModels.MainViewModelSettingsSaveInput");
+        var input = InvokeSingleConstructor(inputType,
+            selectedDeviceId,
+            outputPath,
+            selectedRecordingFormat,
+            selectedQuality,
+            selectedPreset,
+            selectedSplitEncodeMode,
+            customBitrateMbps,
+            isHdrEnabled,
+            isAudioEnabled,
+            isAudioPreviewEnabled,
+            isCustomAudioInputEnabled,
+            selectedAudioInputDeviceId,
+            isMicrophoneEnabled,
+            selectedMicrophoneDeviceId,
+            microphoneVolume,
+            previewVolume,
+            showAllCaptureOptions,
+            isStatsVisible,
+            selectedDeviceAudioMode,
+            analogAudioGainPercent,
+            flashbackGpuDecode,
+            flashbackBufferMinutes);
+
+        var projectionType = RequireType("Sussudio.ViewModels.MainViewModelSettingsPersistenceProjection");
+        var buildSaveSettings = projectionType.GetMethod(
+            "BuildSaveSettings",
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("BuildSaveSettings was not found.");
+
+        return buildSaveSettings.Invoke(null, new[] { input })
+               ?? throw new InvalidOperationException("BuildSaveSettings returned null.");
+    }
+
+    private static object InvokeSingleConstructor(Type type, params object?[] arguments)
+    {
+        var constructor = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .Single(candidate => candidate.GetParameters().Length == arguments.Length);
+
+        return constructor.Invoke(arguments);
     }
 }
