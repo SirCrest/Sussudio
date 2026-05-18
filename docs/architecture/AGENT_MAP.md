@@ -2048,7 +2048,11 @@ Primary current owners:
   `CommandQueue.ScrubCoalescing`, and
   `CommandQueue.SeekSlots` owner files.
 - `tests/Sussudio.Tests/Flashback.Playback.Cadence.Tests.cs` owns Flashback
-  playback cadence, submit-failure, fMP4 reopen, and metrics reset tests.
+  playback frame-duration, decoded-PTS cadence telemetry, and metrics reset
+  tests.
+- `tests/Sussudio.Tests/Flashback.Playback.SubmissionAndReopen.Tests.cs` owns
+  Flashback playback decoded-frame submit-failure and fMP4 reopen/seek recovery
+  tests.
 - `tests/Sussudio.Tests/Flashback.Decoder.Tests.cs` owns Flashback decoder
   audio, timestamp, stream-bound, validation, lifetime, and callback tests.
 - `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
