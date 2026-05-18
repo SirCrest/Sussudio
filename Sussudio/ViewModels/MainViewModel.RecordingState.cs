@@ -17,7 +17,6 @@ public partial class MainViewModel
     private const string DefaultRecordingFormat = "H.264";
     private const string HevcRecordingFormat = "HEVC";
     private const string Av1RecordingFormat = "AV1";
-    private List<string> _detectedRecordingFormats = new();
 
     [ObservableProperty]
     public partial bool IsRecordingTransitioning { get; set; }

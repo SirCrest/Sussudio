@@ -33,6 +33,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelRecordingTransitionController _recordingTransitionController;
     private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
     private readonly MainViewModelDeviceAudioRequestController _deviceAudioRequestController;
+    private readonly MainViewModelRecordingCapabilityController _recordingCapabilityController;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -135,6 +136,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _recordingTransitionController = new MainViewModelRecordingTransitionController(this);
         _previewLifecycleController = new MainViewModelPreviewLifecycleController(this);
         _deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(this);
+        _recordingCapabilityController = new MainViewModelRecordingCapabilityController(this);
         _deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);
         _runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);
 
@@ -191,5 +193,5 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Source telemetry: MainViewModel.Telemetry.cs
     // Settings lifecycle/reactions and adapter: MainViewModel.SettingsPersistence.cs; projection: MainViewModelSettingsPersistenceProjection.cs
     // Flashback settings reactions: encoder: MainViewModel.FlashbackEncoderSettings.cs; enable/restart/buffer/GPU: MainViewModel.FlashbackSettings.cs
-    // Recording capability refresh and option application: MainViewModel.RecordingCapabilityRefresh.cs
+    // Recording capability refresh and option application: MainViewModelRecordingCapabilityController.cs
 }

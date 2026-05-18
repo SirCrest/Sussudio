@@ -299,9 +299,9 @@ static partial class Program
         AssertContains(
             File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Telemetry.cs")),
             "SOURCE_TELEMETRY_UI_ENQUEUE_FAILED");
-        var recordingCapabilityRefreshText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingCapabilityRefresh.cs"));
-        AssertContains(recordingCapabilityRefreshText, "RECORDING_FORMATS_UI_ENQUEUE_FAILED");
-        AssertContains(recordingCapabilityRefreshText, "SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED");
+        var recordingCapabilityControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRecordingCapabilityController.cs"));
+        AssertContains(recordingCapabilityControllerText, "RECORDING_FORMATS_UI_ENQUEUE_FAILED");
+        AssertContains(recordingCapabilityControllerText, "SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED");
         AssertDoesNotContain(
             File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.SettingsPersistence.cs")),
             "RECORDING_FORMATS_UI_ENQUEUE_FAILED");

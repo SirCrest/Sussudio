@@ -11,7 +11,7 @@ static partial class Program
     {
         var settingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs")
             .Replace("\r\n", "\n");
-        var recordingCapabilityRefreshText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingCapabilityRefresh.cs")
+        var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs")
             .Replace("\r\n", "\n");
         var deviceManagementText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceManagement.cs")
             .Replace("\r\n", "\n");
@@ -23,18 +23,20 @@ static partial class Program
         AssertDoesNotContain(initialize, "await Task.WhenAll");
         AssertOccursBefore(initialize, "LoadSettings();", "StartRecordingCapabilityRefresh();");
 
-        var startupRefresh = ExtractMemberCode(recordingCapabilityRefreshText, "StartRecordingCapabilityRefresh");
+        var startupRefresh = ExtractMemberCode(recordingCapabilityControllerText, "Start");
         AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshRecordingFormatCapabilitiesAsync(), \"recording formats\");");
         AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshSplitEncodeCapabilitiesAsync(), \"split encode modes\");");
         AssertDoesNotContain(settingsText, "private void StartRecordingCapabilityRefresh()");
+        AssertContains(recordingCapabilityControllerText, "private void StartRecordingCapabilityRefresh()");
+        AssertContains(recordingCapabilityControllerText, "=> _recordingCapabilityController.Start();");
 
-        var recordingFormatRefresh = ExtractMemberCode(recordingCapabilityRefreshText, "RefreshRecordingFormatCapabilitiesAsync");
+        var recordingFormatRefresh = ExtractMemberCode(recordingCapabilityControllerText, "RefreshRecordingFormatCapabilitiesAsync");
         AssertContains(recordingFormatRefresh, "support.HasH264Nvenc");
         AssertContains(recordingFormatRefresh, "support.HasHevcNvenc");
         AssertContains(recordingFormatRefresh, "support.HasAv1Nvenc");
         AssertDoesNotContain(recordingFormatRefresh, "support.HasAv1)");
 
-        var splitEncodeRefresh = ExtractMemberCode(recordingCapabilityRefreshText, "RefreshSplitEncodeCapabilitiesAsync");
+        var splitEncodeRefresh = ExtractMemberCode(recordingCapabilityControllerText, "RefreshSplitEncodeCapabilitiesAsync");
         AssertContains(splitEncodeRefresh, "if (!support.Supports2Way)");
         AssertContains(splitEncodeRefresh, "modes.Remove(\"2-way\");");
         AssertContains(splitEncodeRefresh, "if (!support.Supports3Way)");
