@@ -64,7 +64,9 @@ static partial class Program
                 agentMapText.Contains("`tools/send-automation-command.ps1` owns the PowerShell helper wrapper", StringComparison.Ordinal),
             "tests/Sussudio.Tests/" =>
                 agentMapText.Contains("`tests/Sussudio.Tests/Program.cs`", StringComparison.Ordinal) &&
-                agentMapText.Contains("`tests/Sussudio.Tests/HarnessCheckCatalog*.cs`", StringComparison.Ordinal),
+                agentMapText.Contains("`tests/Sussudio.Tests/HarnessCheckCatalog*.cs`", StringComparison.Ordinal) &&
+                agentMapText.Contains("xUnit slices", StringComparison.Ordinal) &&
+                agentMapText.Contains("focused contract tests", StringComparison.Ordinal),
             _ => agentMapText.Contains($"`{consumer}`", StringComparison.Ordinal)
         };
 

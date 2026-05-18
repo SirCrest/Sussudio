@@ -1,9 +1,9 @@
 # Sussudio.Tests Migration Plan
 
-The test project ran ~400 cases through a hand-rolled `Program.cs` runner that
-loaded `Sussudio.dll` via reflection. Cluster `test-framework-migration` opens
-the dual-stack path: keep the legacy runner, add xUnit alongside, and port
-incrementally.
+The test project runs a large legacy check catalog through a hand-rolled
+`Program.cs` runner that loads `Sussudio.dll` via reflection. Cluster
+`test-framework-migration` opens the dual-stack path: keep the legacy runner,
+add xUnit alongside, and port incrementally.
 
 ## What's in place
 
@@ -51,7 +51,7 @@ backing fields.
 
 ## How to run
 
-- Legacy runner (existing 400 cases):
+- Legacy runner:
   `dotnet run --project tests/Sussudio.Tests -- "<path-to-Sussudio.dll>"`
 - xUnit cases:
   `dotnet test tests/Sussudio.Tests/Sussudio.Tests.csproj`
@@ -85,8 +85,9 @@ every check has a `[Fact]`/`[Theory]` equivalent:
 
 ## Conventions for ported tests
 
-- Class per source-file-area, named `XUnit.<Area>Tests.cs` while migration is
-  in progress so `git mv` later is mechanical.
+- Prefer a class per source-file-area. New migration-only owner files may use
+  `XUnit.<Area>Tests.cs`; existing focused xUnit files can keep their area
+  names when that is clearer than renaming churn.
 - Use `Assert.Equal/True/False/Contains/Empty`. Avoid `Assert.Equal(expected,
   actual, comparer)` overloads unless the type genuinely needs custom equality.
 - For HDR/P010 paths, prefer behavioural tests that drive the encoder against a
