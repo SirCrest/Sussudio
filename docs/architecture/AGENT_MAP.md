@@ -2656,31 +2656,25 @@ Primary owners:
   Memory/GC embedded snapshot text.
 - `tools/ssctl/Formatters.Snapshot.CaptureSettings.cs` owns capture settings
   text and friendly/exact frame-rate summary formatting.
-- `tools/ssctl/Formatters.Snapshot.VideoPipeline.cs` owns video ingest,
-  recording queue, encoder failure, GPU/CUDA queue, freshness, and video
-  diagnostic snapshot text.
 - `tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs` owns diagnostic health,
   summary, evidence, and frame-lane snapshot text.
-- `tools/ssctl/Formatters.Snapshot.CaptureCadence.cs` owns capture cadence,
-  packet fingerprint, and visual-cadence snapshot text.
-- `tools/ssctl/Formatters.Snapshot.AvSync.cs` owns embedded snapshot AV-sync
-  drift text.
 - `tools/ssctl/Formatters.Snapshot.Flashback.cs` owns Flashback snapshot
   active/failure gating, section ordering, encoder, buffer, temp-cache,
   queue-latency, backpressure, failure, GPU queue, playback state,
   command-queue, cadence, decode, frame, stage, A/V drift, and export
   progress/result snapshot text.
 - `tools/ssctl/Formatters.Snapshot.Mjpeg.cs` owns MJPEG timing snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Preview.cs` owns preview renderer-mode
-  routing, GPU-media-source text, and non-D3D preview fallback text.
 - `tools/ssctl/Formatters.Snapshot.PreviewD3D.cs` owns D3D preview renderer
   snapshot text: routing/header order, CPU timing, pipeline-latency,
   frame-ownership, frame-latency wait, DXGI frame-stat text, and delegation to
   the shared slow-frame formatter.
+- `tools/ssctl/Formatters.Snapshot.Runtime.cs` owns runtime snapshot sections:
+  source telemetry, video ingest/recording queue/encoder/GPU-CUDA/freshness
+  text, capture cadence and visual-cadence text, embedded AV-sync drift text,
+  preview renderer-mode routing, GPU-media-source text, and non-D3D preview
+  fallback text.
 - `tools/ssctl/Formatters.Snapshot.ThreadHealth.cs` owns source-reader and
   WASAPI thread-health snapshot text.
-- `tools/ssctl/Formatters.Snapshot.Source.cs` owns source telemetry snapshot
-  text.
 - `tools/ssctl/Formatters.Diagnostics.cs` owns recent diagnostic-event output.
 - `tools/ssctl/Formatters.Options.cs` owns capture option and device lists.
 - `tools/ssctl/Formatters.Timeline.cs` owns performance timeline response

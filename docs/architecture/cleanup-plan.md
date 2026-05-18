@@ -359,20 +359,17 @@ The `tools/ssctl/Formatters.*.cs` partial family is only the projection facade
 for console output. Keep app snapshot orchestration and section ordering in `Formatters.Snapshot.cs`,
 state/capture-command, audio, recording, legacy performance, and Memory/GC text
 in `Formatters.Snapshot.CoreSections.cs`, capture settings and friendly/exact
-frame-rate text in `Formatters.Snapshot.CaptureSettings.cs`, video-pipeline
-text in `Formatters.Snapshot.VideoPipeline.cs`, diagnostic health/frame-lane
-text in `Formatters.Snapshot.DiagnosticLanes.cs`, capture cadence text in
-`Formatters.Snapshot.CaptureCadence.cs`, Flashback snapshot gating/order,
-encoder/buffer/queue, playback/cadence/drift, and export text in
-`Formatters.Snapshot.Flashback.cs`, embedded snapshot AV-sync drift text in
-`Formatters.Snapshot.AvSync.cs`, MJPEG timing text in
-`Formatters.Snapshot.Mjpeg.cs`, preview renderer-mode routing and non-D3D
-fallback text in `Formatters.Snapshot.Preview.cs`, D3D preview renderer text in
+frame-rate text in `Formatters.Snapshot.CaptureSettings.cs`, runtime source,
+video-pipeline, capture cadence, embedded AV-sync drift, and preview
+renderer-mode routing/non-D3D fallback text in `Formatters.Snapshot.Runtime.cs`,
+diagnostic health/frame-lane text in `Formatters.Snapshot.DiagnosticLanes.cs`,
+Flashback snapshot gating/order, encoder/buffer/queue, playback/cadence/drift,
+and export text in `Formatters.Snapshot.Flashback.cs`, MJPEG timing text in
+`Formatters.Snapshot.Mjpeg.cs`, D3D preview renderer text in
 `Formatters.Snapshot.PreviewD3D.cs` including routing/header order, CPU timing,
 pipeline latency, frame ownership, frame-latency wait, DXGI frame-stat text, and
 delegation to the shared slow-frame formatter, thread-health text in
-`Formatters.Snapshot.ThreadHealth.cs`, source telemetry snapshot text in
-`Formatters.Snapshot.Source.cs`, diagnostic-event text in
+`Formatters.Snapshot.ThreadHealth.cs`, diagnostic-event text in
 `Formatters.Diagnostics.cs`, capture option/device text in `Formatters.Options.cs`,
 performance timeline orchestration in `Formatters.Timeline.cs`, timeline row
 projection in `Formatters.Timeline.Rows.cs`, the private row model in
