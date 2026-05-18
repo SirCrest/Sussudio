@@ -1597,10 +1597,13 @@ Primary current owners:
   CaptureService recording lifecycle, recording-stop finalization failure
   propagation, rollback, active recording backend resource aggregate ownership,
   and recording outcome-state file-ownership assertions.
-- `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Tests.cs` owns LibAv recording
-  sink output validation, try-enqueue, video-session setup, video-queue
-  submission, queue-cleanup, drain-loop, encoding-loop, startup sequencing,
-  stop-lifecycle, and lifetime-helper ownership assertions.
+- `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Queue.Tests.cs` owns LibAv
+  recording sink try-enqueue, video-queue submission, audio queue, and
+  queue-cleanup ownership assertions.
+- `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Lifecycle.Tests.cs` owns
+  LibAv recording sink output validation, video-session setup, drain-loop,
+  encoding-loop, startup sequencing, stop-lifecycle, and lifetime-helper
+  ownership assertions.
 - `tests/Sussudio.Tests/RecordingQueue.Wasapi.Tests.cs` owns WASAPI capture-loop, hot-write,
   conversion, diagnostics, COM contract, and bounded stop assertions.
 - `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` owns

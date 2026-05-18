@@ -1153,6 +1153,8 @@ LibAv recording sink queue ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs`. Keep public
 video/GPU/CUDA enqueue entry points, caller-side validation, and shared
 work-signal/fatal-failure/queue-depth-underflow helpers there.
+`tests/Sussudio.Tests/RecordingQueue.LibAvSink.Queue.Tests.cs` owns the queue,
+submission, and cleanup assertions for this family.
 Video/GPU/CUDA queue admission policy, TryWrite depth accounting, overload
 fatal signaling, and video packet records now live in
 `LibAvRecordingSink.VideoQueueSubmission.cs`. Video/GPU/CUDA queue cleanup,
@@ -1186,7 +1188,9 @@ drain ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.PacketDrain.cs`. Keep bounded
 video/GPU/CUDA drain batches, unbounded LibAv audio/microphone drains,
 frame-encoded event dispatch, GPU texture release, CUDA frame free, and pooled
-buffer returns there.
+buffer returns there. `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Lifecycle.Tests.cs`
+owns the LibAv sink lifecycle, output-validation, drain-loop, and packet-drain
+assertions.
 
 Recording verifier ownership is split across focused partials. Keep strict
 verification orchestration in `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`,
