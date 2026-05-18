@@ -72,6 +72,8 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
                 .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs")
+                .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExportOperation.cs")
@@ -203,19 +205,28 @@ static partial class Program
         AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
         var automationRecordingSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs")
             .Replace("\r\n", "\n");
-        AssertContains(automationRecordingSettingsText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
-        AssertContains(automationRecordingSettingsText, "RecordingSettingsSelectionPolicy.IsHdrCompatible(matched)");
-        AssertContains(automationRecordingSettingsText, "public async Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)");
-        AssertContains(automationRecordingSettingsText, "RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality)");
-        AssertContains(automationRecordingSettingsText, "public async Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)");
-        AssertContains(automationRecordingSettingsText, "splitEncodeMode: settings.SplitEncodeMode");
-        AssertContains(automationRecordingSettingsText, "public async Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)");
-        AssertContains(automationRecordingSettingsText, "CustomBitrateMbps = RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps);");
-        AssertContains(automationRecordingSettingsText, "public async Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)");
-        AssertContains(automationRecordingSettingsText, "SelectedPreset = matched;");
+        var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(automationRecordingSettingsText, "public Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
+        AssertContains(automationRecordingSettingsText, "=> _recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken);");
+        AssertContains(automationRecordingSettingsText, "public Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)");
+        AssertContains(automationRecordingSettingsText, "=> _recordingSettingsAutomationController.SetQualityAsync(quality, cancellationToken);");
+        AssertContains(automationRecordingSettingsText, "public Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)");
+        AssertContains(automationRecordingSettingsText, "=> _recordingSettingsAutomationController.SetSplitEncodeModeAsync(splitEncodeMode, cancellationToken);");
+        AssertContains(automationRecordingSettingsText, "public Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)");
+        AssertContains(automationRecordingSettingsText, "=> _recordingSettingsAutomationController.SetCustomBitrateAsync(bitrateMbps, cancellationToken);");
+        AssertContains(automationRecordingSettingsText, "public Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)");
+        AssertContains(automationRecordingSettingsText, "=> _recordingSettingsAutomationController.SetPresetAsync(preset, cancellationToken);");
         AssertContains(automationRecordingSettingsText, "public Task SetOutputPathAsync(string outputPath, CancellationToken cancellationToken = default)");
-        AssertContains(automationRecordingSettingsText, "Directory.CreateDirectory(outputPath);");
-        AssertContains(automationRecordingSettingsText, "OutputPath = outputPath;");
+        AssertContains(automationRecordingSettingsText, "=> _recordingSettingsAutomationController.SetOutputPathAsync(outputPath, cancellationToken);");
+        AssertContains(recordingSettingsAutomationControllerText, "private sealed class MainViewModelRecordingSettingsAutomationController");
+        AssertContains(recordingSettingsAutomationControllerText, "RecordingSettingsSelectionPolicy.IsHdrCompatible(matched)");
+        AssertContains(recordingSettingsAutomationControllerText, "RecordingSettingsSelectionPolicy.ParseVideoQuality(_viewModel.SelectedQuality)");
+        AssertContains(recordingSettingsAutomationControllerText, "splitEncodeMode: settings.SplitEncodeMode");
+        AssertContains(recordingSettingsAutomationControllerText, "_viewModel.CustomBitrateMbps = RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps);");
+        AssertContains(recordingSettingsAutomationControllerText, "_viewModel.SelectedPreset = matched;");
+        AssertContains(recordingSettingsAutomationControllerText, "Directory.CreateDirectory(outputPath);");
+        AssertContains(recordingSettingsAutomationControllerText, "_viewModel.OutputPath = outputPath;");
         foreach (var stalePath in new[]
         {
             "MainViewModel.AutomationRecordingFormat.cs",

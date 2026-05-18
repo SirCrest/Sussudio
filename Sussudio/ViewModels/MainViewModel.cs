@@ -34,6 +34,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
     private readonly MainViewModelDeviceAudioRequestController _deviceAudioRequestController;
     private readonly MainViewModelRecordingCapabilityController _recordingCapabilityController;
+    private readonly MainViewModelRecordingSettingsAutomationController _recordingSettingsAutomationController;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -137,6 +138,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _previewLifecycleController = new MainViewModelPreviewLifecycleController(this);
         _deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(this);
         _recordingCapabilityController = new MainViewModelRecordingCapabilityController(this);
+        _recordingSettingsAutomationController = new MainViewModelRecordingSettingsAutomationController(this);
         _deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);
         _runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);
 
@@ -166,7 +168,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device and audio-input selection automation: MainViewModel.AutomationDeviceSelection.cs
     // Capture settings automation: MainViewModel.AutomationCaptureSettings.cs; preview automation: MainViewModelPreviewLifecycleController.cs; capture-mode transactions: MainViewModel.CaptureModeTransactions.cs
     // UI-only automation: MainViewModel.AutomationUi.cs
-    // Recording settings automation: MainViewModel.AutomationRecordingSettings.cs
+    // Recording settings automation: facade: MainViewModel.AutomationRecordingSettings.cs; controller: MainViewModelRecordingSettingsAutomationController.cs
     // UI dispatch policy: MainViewModelUiDispatchController.cs; adapter/fan-out: MainViewModel.Dispatching.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs
     // Audio input selection/property changes: MainViewModel.AudioInputSelection.cs

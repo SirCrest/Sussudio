@@ -2411,10 +2411,12 @@ Primary current owners:
   frame-rate, video-format, and MJPEG decoder worker-count automation mutators.
   `MainViewModel.CaptureModeTransactions.cs` owns the shared reinitialization
   gate used after active capture-mode changes.
-  `MainViewModel.AutomationRecordingSettings.cs` owns recording format
-  automation, HDR compatibility enforcement, recording encoder quality,
-  NVENC split-encode mode, custom encoder bitrate clamp policy, encoder
-  preset, and output-path automation mutation.
+  `MainViewModel.AutomationRecordingSettings.cs` keeps the stable automation
+  facade for recording format, encoder, and output-path settings.
+  `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`
+  owns the UI-thread setting mutations, HDR compatibility enforcement,
+  Flashback cycle suppression, coordinator side effects, bitrate clamp policy,
+  encoder preset, and output-path directory creation.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`
   owns startup FFmpeg capability probes for recording formats and split-encode
   modes plus observable recording-format option rebuilds.

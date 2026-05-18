@@ -7,7 +7,8 @@ static partial class Program
     {
         var formatSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FormatSelection.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs").Replace("\r\n", "\n");
-        var automationRecordingFormatText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs").Replace("\r\n", "\n");
+        var automationRecordingSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs").Replace("\r\n", "\n");
+        var automationRecordingControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs").Replace("\r\n", "\n");
         var recordingSettingsPolicyText = ReadRepoFile("Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(recordingCapabilityControllerText, "private void RebuildRecordingFormatOptions()");
@@ -19,11 +20,12 @@ static partial class Program
         AssertContains(recordingCapabilityControllerText, "Logger.Log($\"Selected recording format: {_viewModel.SelectedRecordingFormat}\");");
         AssertDoesNotContain(formatSelectionText, "private void RebuildRecordingFormatOptions()");
         AssertDoesNotContain(formatSelectionText, "RecordingSettingsSelectionPolicy.Select(");
-        AssertContains(automationRecordingFormatText, "RecordingSettingsSelectionPolicy.IsHdrCompatible(matched)");
-        AssertContains(automationRecordingFormatText, "RecordingSettingsSelectionPolicy.ParseRecordingFormat(matched)");
-        AssertContains(automationRecordingFormatText, "RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality)");
-        AssertContains(automationRecordingFormatText, "RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps)");
-        AssertContains(automationRecordingFormatText, "public async Task SetRecordingFormatAsync");
+        AssertContains(automationRecordingSettingsText, "=> _recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken);");
+        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.IsHdrCompatible(matched)");
+        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseRecordingFormat(matched)");
+        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseVideoQuality(_viewModel.SelectedQuality)");
+        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps)");
+        AssertContains(automationRecordingControllerText, "public async Task SetRecordingFormatAsync");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationRecordingFormat.cs")),

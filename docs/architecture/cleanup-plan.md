@@ -3267,10 +3267,12 @@ Remaining `tools/Common` ownership:
    Automation device refresh, capture-device selection, audio-input selection,
    and custom audio-input enablement now live in
    `MainViewModel.AutomationDeviceSelection.cs`.
-   Recording format automation, HDR compatibility enforcement, encoder
-   quality, NVENC split-encode mode, custom bitrate clamp policy, encoder
-   preset, and output-path automation now live in
-   `MainViewModel.AutomationRecordingSettings.cs`.
+   Recording format, encoder, and output-path automation entry points now stay
+   in the `MainViewModel.AutomationRecordingSettings.cs` compatibility facade,
+   while UI-thread mutations, HDR compatibility enforcement, Flashback cycle
+   suppression, coordinator side effects, custom bitrate clamping, encoder
+   preset, and output-path directory creation live in
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`.
    The automation recording desired-state bridge enters through
    `MainViewModel.cs` and is serialized by
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`.
