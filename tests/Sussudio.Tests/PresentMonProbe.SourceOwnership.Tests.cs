@@ -8,6 +8,7 @@ static partial class Program
             => ReadRepoFile($"tools/Common/PresentMon/{fileName}").Replace("\r\n", "\n");
 
         var rootText = ReadPresentMonProbeFile("PresentMonProbe.cs");
+        var optionsText = ReadPresentMonProbeFile("PresentMonProbe.Options.cs");
         var modelsText = ReadPresentMonProbeFile("PresentMonProbe.Models.cs");
         var formatText = ReadPresentMonProbeFile("PresentMonProbe.Format.cs");
         var csvText = ReadPresentMonProbeFile("PresentMonProbe.Csv.cs");
@@ -34,6 +35,18 @@ static partial class Program
         AssertContains(rootText, "var run = await RunProcessAsync(");
         AssertContains(rootText, "summary = ParseCsv(outputPath, options.ExpectedSwapChainAddress, options, captureStartUtcUnixMs);");
         AssertContains(rootText, "TryDelete(outputPath);");
+
+        AssertContains(optionsText, "public readonly record struct PresentMonProbeCorrelation(");
+        AssertContains(optionsText, "public static PresentMonProbeOptions CreateOptions(");
+        AssertContains(optionsText, "ExpectedSwapChainAddress = string.IsNullOrWhiteSpace(swapChainAddress)");
+        AssertContains(optionsText, "AppPresentId = appPresentId ?? correlation.PresentId");
+        AssertContains(optionsText, "public static PresentMonProbeCorrelation ReadPreviewCorrelation(JsonElement snapshot)");
+        AssertContains(optionsText, "PreviewD3DSwapChainAddress");
+        AssertContains(optionsText, "PreviewD3DLastRenderedPreviewPresentId");
+        AssertContains(optionsText, "PreviewD3DLastRenderedSourceSequenceNumber");
+        AssertContains(optionsText, "PreviewD3DLastRenderedUtcUnixMs");
+        AssertContains(optionsText, "private static long? GetPositiveLong(");
+        AssertContains(optionsText, "private static long? GetNonNegativeLong(");
 
         AssertContains(modelsText, "public sealed class PresentMonProbeOptions");
         AssertContains(modelsText, "public sealed class PresentMonProbeResult");
@@ -92,6 +105,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static IReadOnlyList<PresentMonSwapChainSummary> BuildSwapChainSummaries(");
         AssertDoesNotContain(rootText, "private static PresentMonMetricSummary Summarize(");
         AssertDoesNotContain(rootText, "public static string Format(PresentMonProbeResult result)");
+        AssertDoesNotContain(modelsText, "PreviewD3DSwapChainAddress");
 
         return Task.CompletedTask;
     }

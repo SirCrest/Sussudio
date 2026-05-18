@@ -25,7 +25,7 @@ public static partial class PresentMonTools
         [Description("Ask PresentMon to track GPU video engine metrics when supported.")] bool trackGpuVideo = true)
     {
         var resolved = await TryResolvePreviewPresentCorrelationAsync(pipeClient).ConfigureAwait(false);
-        var result = await PresentMonProbe.RunAsync(CreatePresentMonProbeOptions(
+        var result = await PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(
             seconds,
             processId,
             processName,
@@ -33,11 +33,11 @@ public static partial class PresentMonTools
             appPresentId,
             appSourceSequenceNumber,
             appPresentUtcUnixMs,
-            presentMonPath,
-            outputPath,
-            keepCsv,
-            trackGpuVideo,
-            resolved))
+            presentMonPath: presentMonPath,
+            outputFile: outputPath,
+            keepCsv: keepCsv,
+            trackGpuVideo: trackGpuVideo,
+            correlation: resolved))
             .ConfigureAwait(false);
 
         return McpToolResultFactory.FromText(PresentMonProbe.Format(result));
@@ -59,7 +59,7 @@ public static partial class PresentMonTools
         [Description("Ask PresentMon to track GPU video engine metrics when supported.")] bool trackGpuVideo = true)
     {
         var resolved = await TryResolvePreviewPresentCorrelationAsync(pipeClient).ConfigureAwait(false);
-        return await PresentMonProbe.RunAsync(CreatePresentMonProbeOptions(
+        return await PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(
             seconds,
             processId,
             processName,
@@ -67,41 +67,11 @@ public static partial class PresentMonTools
             appPresentId,
             appSourceSequenceNumber,
             appPresentUtcUnixMs,
-            presentMonPath,
-            outputPath,
-            keepCsv,
-            trackGpuVideo,
-            resolved))
+            presentMonPath: presentMonPath,
+            outputFile: outputPath,
+            keepCsv: keepCsv,
+            trackGpuVideo: trackGpuVideo,
+            correlation: resolved))
             .ConfigureAwait(false);
-    }
-
-    private static PresentMonProbeOptions CreatePresentMonProbeOptions(
-        int seconds,
-        int? processId,
-        string processName,
-        string? swapChainAddress,
-        long? appPresentId,
-        long? appSourceSequenceNumber,
-        long? appPresentUtcUnixMs,
-        string? presentMonPath,
-        string? outputPath,
-        bool keepCsv,
-        bool trackGpuVideo,
-        PresentMonCorrelation resolved)
-    {
-        return new PresentMonProbeOptions
-        {
-            DurationSeconds = seconds,
-            ProcessId = processId,
-            ProcessName = processName,
-            ExpectedSwapChainAddress = swapChainAddress ?? resolved.SwapChainAddress,
-            AppPresentId = appPresentId ?? resolved.PresentId,
-            AppSourceSequenceNumber = appSourceSequenceNumber ?? resolved.SourceSequenceNumber,
-            AppPresentUtcUnixMs = appPresentUtcUnixMs ?? resolved.PresentUtcUnixMs,
-            PresentMonPath = presentMonPath,
-            OutputFile = outputPath,
-            KeepCsv = keepCsv,
-            TrackGpuVideo = trackGpuVideo
-        };
     }
 }

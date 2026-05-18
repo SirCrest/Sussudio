@@ -212,12 +212,13 @@ static partial class Program
         AssertContains(presentMonStartupText, "if (!options.IncludePresentMon)");
         AssertContains(presentMonStartupText, "var correlationSnapshotResponse = await sendAsync(\"GetSnapshot\", null, null)");
         AssertContains(presentMonStartupText, "TryGetSnapshot(correlationSnapshotResponse, out var correlationSnapshot)");
-        AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(PresentMonProbe.RunAsync(new PresentMonProbeOptions");
-        AssertContains(presentMonStartupText, "ProcessName = \"Sussudio\"");
-        AssertContains(presentMonStartupText, "OutputFile = Path.Combine(outputDirectory, \"presentmon.csv\")");
-        AssertContains(presentMonStartupText, "ExpectedSwapChainAddress = GetString(correlationSnapshot, \"PreviewD3DSwapChainAddress\")");
-        AssertContains(presentMonStartupText, "AppPresentId = GetNullableLong(correlationSnapshot, \"PreviewD3DLastRenderedPreviewPresentId\")");
+        AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(");
+        AssertContains(presentMonStartupText, "processName: \"Sussudio\"");
+        AssertContains(presentMonStartupText, "outputFile: Path.Combine(outputDirectory, \"presentmon.csv\")");
+        AssertContains(presentMonStartupText, "correlation: PresentMonProbe.ReadPreviewCorrelation(correlationSnapshot)");
         AssertContains(presentMonStartupText, "actions.Add(\"presentmon capture started\")");
+        AssertDoesNotContain(presentMonStartupText, "new PresentMonProbeOptions");
+        AssertDoesNotContain(presentMonStartupText, "PreviewD3DSwapChainAddress");
         AssertContains(startupText, "DiagnosticSessionPresentMonStartup.StartAsync(");
         AssertDoesNotContain(startupText, "PresentMonProbe.RunAsync(new PresentMonProbeOptions");
         AssertDoesNotContain(startupText, "PreviewD3DSwapChainAddress");

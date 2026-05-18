@@ -20,29 +20,28 @@ internal static partial class CommandHandlers
         var keepCsv = ConsumeFlag(context.Rest, "--keep-csv");
         var noGpuVideo = ConsumeFlag(context.Rest, "--no-gpu-video");
         EnsureNoArgs(context.Rest, "presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--app-present-id N] [--app-source-seq N] [--app-present-utc-ms N] [--capture-start-utc-ms N] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
-        swapChainAddress ??= await TryResolvePreviewSwapChainAddressAsync(context).ConfigureAwait(false);
+        var resolved = await TryResolvePreviewPresentCorrelationAsync(context).ConfigureAwait(false);
 
-        var result = await PresentMonProbe.RunAsync(new PresentMonProbeOptions
-        {
-            ProcessId = pid,
-            ProcessName = processName,
-            DurationSeconds = seconds,
-            PresentMonPath = presentMonPath,
-            OutputFile = outputPath,
-            ExpectedSwapChainAddress = swapChainAddress,
-            AppPresentId = appPresentId,
-            AppSourceSequenceNumber = appSourceSequenceNumber,
-            AppPresentUtcUnixMs = appPresentUtcUnixMs,
-            CaptureStartUtcUnixMs = captureStartUtcUnixMs,
-            KeepCsv = keepCsv,
-            TrackGpuVideo = !noGpuVideo
-        }).ConfigureAwait(false);
+        var result = await PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(
+            seconds,
+            pid,
+            processName,
+            swapChainAddress,
+            appPresentId,
+            appSourceSequenceNumber,
+            appPresentUtcUnixMs,
+            captureStartUtcUnixMs,
+            presentMonPath,
+            outputPath,
+            keepCsv,
+            !noGpuVideo,
+            resolved)).ConfigureAwait(false);
 
         Console.WriteLine(json ? PrettyJson(result) : PresentMonProbe.Format(result));
         return result.Success ? 0 : 3;
     }
 
-    private static async Task<string?> TryResolvePreviewSwapChainAddressAsync(CommandContext context)
+    private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(CommandContext context)
     {
         try
         {
@@ -50,15 +49,14 @@ internal static partial class CommandHandlers
             if (!AutomationSnapshotFormatter.IsSuccess(response) ||
                 !response.TryGetProperty("Snapshot", out var snapshot))
             {
-                return null;
+                return default;
             }
 
-            var address = AutomationSnapshotFormatter.Get(snapshot, "PreviewD3DSwapChainAddress", string.Empty);
-            return string.IsNullOrWhiteSpace(address) ? null : address;
+            return PresentMonProbe.ReadPreviewCorrelation(snapshot);
         }
         catch
         {
-            return null;
+            return default;
         }
     }
 }

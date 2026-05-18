@@ -70,11 +70,13 @@ static partial class Program
         AssertEqual(false, GetBoolProperty(rawResult!, "Success"), "capture_presentmon_raw missing process success");
         AssertEqual("No running process matched pid=-1 name='AnotherMissingProcess'.", GetStringProperty(rawResult!, "Message"), "capture_presentmon_raw no-process message");
 
-        AssertPresentMonOptionsFallbackAndPrecedence(presentMonTools);
+        AssertPresentMonOptionsFallbackAndPrecedence();
 
         var rootText = ReadRepoFile("tools/McpServer/Tools/PresentMonTools.cs")
             .Replace("\r\n", "\n");
         var correlationText = ReadRepoFile("tools/McpServer/Tools/PresentMonTools.Correlation.cs")
+            .Replace("\r\n", "\n");
+        var optionsText = ReadRepoFile("tools/Common/PresentMon/PresentMonProbe.Options.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "[McpServerToolType]");
@@ -83,34 +85,33 @@ static partial class Program
         AssertContains(rootText, "public static async Task<object> capture_presentmon_raw");
         AssertContains(rootText, "[McpServerTool(UseStructuredContent = true)");
         AssertContains(rootText, "PresentMonProbe.Format(result)");
-        AssertContains(rootText, "PresentMonProbe.RunAsync(CreatePresentMonProbeOptions(");
-        AssertContains(rootText, "ExpectedSwapChainAddress = swapChainAddress ?? resolved.SwapChainAddress");
-        AssertContains(rootText, "AppPresentId = appPresentId ?? resolved.PresentId");
-        AssertContains(rootText, "AppSourceSequenceNumber = appSourceSequenceNumber ?? resolved.SourceSequenceNumber");
-        AssertContains(rootText, "AppPresentUtcUnixMs = appPresentUtcUnixMs ?? resolved.PresentUtcUnixMs");
-        AssertContains(rootText, "TrackGpuVideo = trackGpuVideo");
+        AssertContains(rootText, "PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(");
+        AssertContains(rootText, "correlation: resolved");
+        AssertDoesNotContain(rootText, "new PresentMonProbeOptions");
+        AssertDoesNotContain(rootText, "ExpectedSwapChainAddress =");
+        AssertDoesNotContain(rootText, "AppPresentId = appPresentId");
         AssertDoesNotContain(rootText, "SendCommandAsync(\"GetSnapshot\")");
         AssertDoesNotContain(rootText, "GetPositiveLong(");
 
-        AssertContains(correlationText, "private readonly record struct PresentMonCorrelation(");
-        AssertContains(correlationText, "private static async Task<PresentMonCorrelation> TryResolvePreviewPresentCorrelationAsync(");
+        AssertContains(correlationText, "private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(");
         AssertContains(correlationText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
-        AssertContains(correlationText, "PreviewD3DSwapChainAddress");
-        AssertContains(correlationText, "PreviewD3DLastRenderedPreviewPresentId");
-        AssertContains(correlationText, "PreviewD3DLastRenderedSourceSequenceNumber");
-        AssertContains(correlationText, "PreviewD3DLastRenderedUtcUnixMs");
-        AssertContains(correlationText, "GetPositiveLong(snapshot, \"PreviewD3DLastRenderedPreviewPresentId\")");
-        AssertContains(correlationText, "GetNonNegativeLong(snapshot, \"PreviewD3DLastRenderedSourceSequenceNumber\")");
+        AssertContains(correlationText, "return PresentMonProbe.ReadPreviewCorrelation(snapshot);");
         AssertContains(correlationText, "catch (JsonException ex)");
         AssertContains(correlationText, "catch (IOException ex)");
+        AssertDoesNotContain(correlationText, "private readonly record struct PresentMonCorrelation(");
+        AssertDoesNotContain(correlationText, "GetPositiveLong(");
+
+        AssertContains(optionsText, "public readonly record struct PresentMonProbeCorrelation(");
+        AssertContains(optionsText, "public static PresentMonProbeOptions CreateOptions(");
+        AssertContains(optionsText, "public static PresentMonProbeCorrelation ReadPreviewCorrelation(JsonElement snapshot)");
     }
 
-    private static void AssertPresentMonOptionsFallbackAndPrecedence(Type presentMonTools)
+    private static void AssertPresentMonOptionsFallbackAndPrecedence()
     {
-        var createOptions = presentMonTools.GetMethod("CreatePresentMonProbeOptions", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("PresentMonTools.CreatePresentMonProbeOptions was not found.");
-        var correlationType = presentMonTools.GetNestedType("PresentMonCorrelation", BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("PresentMonTools.PresentMonCorrelation was not found.");
+        var presentMonProbe = RequireMcpType("Sussudio.Tools.PresentMonProbe");
+        var createOptions = presentMonProbe.GetMethod("CreateOptions", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PresentMonProbe.CreateOptions was not found.");
+        var correlationType = RequireMcpType("Sussudio.Tools.PresentMonProbeCorrelation");
         var resolved = Activator.CreateInstance(
                 correlationType,
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
@@ -124,6 +125,7 @@ static partial class Program
             5,
             123,
             "Sussudio",
+            null,
             null,
             null,
             null,
@@ -156,6 +158,7 @@ static partial class Program
             99L,
             1001L,
             1700000000999L,
+            null,
             null,
             null,
             false,

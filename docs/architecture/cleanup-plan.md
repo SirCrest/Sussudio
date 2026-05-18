@@ -2676,10 +2676,11 @@ keep report section layout in `PreviewFrameCaptureTools.Rendering.cs`; keep
 keep anomaly diagnosis policy and aspect checks in
 `PreviewFrameCaptureTools.Diagnosis.cs`.
 PresentMon MCP stays intentionally shallow: keep `capture_presentmon`,
-`capture_presentmon_raw`, structured-content shape, option precedence, and
-`PresentMonProbe.RunAsync` invocation in `PresentMonTools.cs`; keep only
-snapshot-derived correlation fallback and preview-present field extraction in
-`PresentMonTools.Correlation.cs`.
+`capture_presentmon_raw`, structured-content shape, and `PresentMonProbe.RunAsync`
+invocation in `PresentMonTools.cs`; keep only the app-snapshot request and
+malformed snapshot/pipe-failure fallback in `PresentMonTools.Correlation.cs`.
+Shared option precedence and preview-present field extraction belong to
+`tools/Common/PresentMon/PresentMonProbe.Options.cs`.
 
 Diagnostic-session pipe retry/error classification now lives in
 `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`, keeping access-denied as a
@@ -2758,7 +2759,9 @@ startup and keeps the setup/sampling/cleanup/summary phase flow.
 Diagnostic-session PresentMon startup now lives in
 `tools/Common/DiagnosticSessionPresentMonStartup.cs`. It owns optional
 PresentMon launch, correlation snapshot capture, and `presentmon.csv` output
-selection while scenario startup keeps scenario task registration.
+selection while delegating option/correlation policy to
+`tools/Common/PresentMon/PresentMonProbe.Options.cs`; scenario startup keeps
+scenario task registration.
 
 Diagnostic-session scenario setup now lives in
 `tools/Common/DiagnosticSessionScenarioSetup.cs`. It owns initial state
@@ -2951,7 +2954,10 @@ response-state reader shared by the pipe client and tool surfaces.
 
 PresentMon model ownership and result formatting are split from the probe runner.
 `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon options, result,
-summary, swap-chain, correlation, and metric DTOs.
+summary, swap-chain, app-correlation summary, and metric DTOs.
+`tools/Common/PresentMon/PresentMonProbe.Options.cs` owns the shared
+`PresentMonProbeCorrelation` handoff, option precedence/defaulting, and
+app-snapshot preview correlation field extraction.
 `tools/Common/PresentMon/PresentMonProbe.Format.cs` owns result text formatting while
 `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns CSV parse overloads, selected-row
 filtering, summary assembly, and handoff to row/swap-chain/warning/correlation

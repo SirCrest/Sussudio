@@ -2778,10 +2778,10 @@ Primary owners:
   dark, bright, letterbox, pillarbox, low-contrast, and aspect-ratio diagnosis
   policy.
 - `tools/McpServer/Tools/PresentMonTools.cs` owns public PresentMon MCP entry
-  points, structured-content shape, option precedence, and probe invocation.
+  points, structured-content shape, and probe invocation.
   `tools/McpServer/Tools/PresentMonTools.Correlation.cs` owns app-snapshot
-  correlation fallback, preview-present field extraction, and malformed
-  snapshot/pipe-failure fallback behavior.
+  request/fallback behavior; shared option precedence and preview-present field
+  extraction live in `tools/Common/PresentMon/PresentMonProbe.Options.cs`.
 - `tools/Common/DiagnosticSessionOptions.cs` owns diagnostic session run
   options plus the shared tool invocation defaults and ssctl usage string.
 - `tools/Common/DiagnosticSessionScenarios.cs` owns scenario name constants,
@@ -3158,7 +3158,10 @@ Primary owners:
   predicate, used by the runner. Keep new scenario booleans there instead of
   adding string comparisons in `DiagnosticSessionRunner`.
 - `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon option/result,
-  summary, swap-chain, correlation, and metric DTOs.
+  summary, swap-chain, app-correlation summary, and metric DTOs.
+- `tools/Common/PresentMon/PresentMonProbe.Options.cs` owns
+  `PresentMonProbeCorrelation`, shared option precedence/defaulting, and
+  preview snapshot correlation field extraction.
 - `tools/Common/PresentMon/PresentMonProbe.Format.cs` owns PresentMon result text rendering
   used by diagnostic-session output surfaces.
 - `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns PresentMon CSV parse overloads,
