@@ -41,8 +41,8 @@ public partial class CaptureService
 
         if (_isRecording)
         {
-            Volatile.Write(ref _wasapiAudioCaptureFaulted, true);
-            Volatile.Write(ref _wasapiAudioCaptureFaultMessage, $"{source}: {ex.Message}");
+            Volatile.Write(ref _previewAudioGraph.CaptureFaulted, true);
+            Volatile.Write(ref _previewAudioGraph.CaptureFaultMessage, $"{source}: {ex.Message}");
         }
 
         Logger.Log($"WASAPI_CAPTURE_FAILED source={source} type={ex.GetType().Name} hr=0x{ex.HResult:X8} message={ex.Message} recording={_isRecording}");

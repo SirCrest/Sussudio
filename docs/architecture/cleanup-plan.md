@@ -803,10 +803,13 @@ audio input switching lives in
 microphone monitoring lives in
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`, and WASAPI
 playback attach/detach ordering lives in
-`Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs`. These files
-preserve the root service transition lock while keeping preview lifecycle,
-input switching, mic cleanup, post-recording mic monitor restart, and playback
-routing from collapsing back into a general audio partial.
+`Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs`. The root service
+now keeps those live audio objects in a nested `PreviewAudioGraphResources`
+resource-state holder rather than scattering raw WASAPI/microphone/playback
+fields through the root. These files preserve the root service transition lock
+while keeping preview lifecycle, input switching, mic cleanup, post-recording
+mic monitor restart, and playback routing from collapsing back into a general
+audio partial.
 
 Explicit capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.Cleanup.cs`. That file owns the

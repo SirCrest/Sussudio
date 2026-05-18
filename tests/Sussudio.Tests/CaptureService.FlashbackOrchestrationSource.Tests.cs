@@ -150,12 +150,26 @@ static partial class Program
 
     private static Task CaptureService_AudioOwnershipLivesInFocusedPartials()
     {
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
         var audioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Audio.cs");
         var audioPreviewText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs");
         var audioInputSwitchingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs");
         var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs");
         var playbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs");
 
+        AssertContains(rootText, "private readonly PreviewAudioGraphResources _previewAudioGraph = new();");
+        AssertContains(rootText, "private sealed class PreviewAudioGraphResources");
+        AssertContains(rootText, "public WasapiAudioCapture? ProgramCapture;");
+        AssertContains(rootText, "public WasapiAudioCapture? MicrophoneCapture;");
+        AssertContains(rootText, "public WasapiAudioPlayback? Playback;");
+        AssertContains(rootText, "public float PreviewVolume = 1.0f;");
+        AssertContains(rootText, "public bool CaptureFaulted;");
+        AssertContains(rootText, "public string? CaptureFaultMessage;");
+        AssertContains(rootText, "get => _previewAudioGraph.ProgramCapture;");
+        AssertContains(rootText, "get => _previewAudioGraph.MicrophoneCapture;");
+        AssertContains(rootText, "get => _previewAudioGraph.Playback;");
+        AssertDoesNotContain(rootText, "private bool _wasapiAudioCaptureFaulted;");
+        AssertDoesNotContain(rootText, "private string? _wasapiAudioCaptureFaultMessage;");
         AssertContains(audioText, "public void SetPreviewVolume(");
         AssertContains(audioText, "public void SetMonitoringMuted(");
         AssertContains(audioText, "private void OnWasapiAudioLevelUpdated(");

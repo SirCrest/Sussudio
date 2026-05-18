@@ -33,8 +33,8 @@ public partial class CaptureService
                     _wasapiAudioCapture = wasapiCapture;
                     createdCaptureForAudioPreview = true;
                     ResetAvSyncDriftBaseline();
-                    Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
-                    Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
+                    Volatile.Write(ref _previewAudioGraph.CaptureFaulted, false);
+                    Volatile.Write(ref _previewAudioGraph.CaptureFaultMessage, null);
                 }
                 else
                 {

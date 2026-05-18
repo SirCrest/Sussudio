@@ -418,6 +418,10 @@ Important entry points:
   telemetry refresh, NTSC frame-rate correction, and initialized status event.
 - `CaptureService.Audio.cs` owns preview volume/mute plus WASAPI audio-level
   and capture-failure event projection.
+- `CaptureService.cs` owns the nested `PreviewAudioGraphResources` resource-state
+  holder for live program WASAPI capture, microphone capture, playback, preview
+  volume/mute state, and capture-fault telemetry. Keep audio policy in focused
+  partials unless the resource owner becomes a real lifecycle owner too.
 - `CaptureService.AudioPreviewLifecycle.cs` owns audio-preview start/stop
   lifecycle, late WASAPI capture startup, playback start, preview rollback, and
   optional capture teardown.

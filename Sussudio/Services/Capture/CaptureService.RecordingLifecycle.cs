@@ -31,8 +31,8 @@ public partial class CaptureService
             _micMonitorDeviceName = settings.MicrophoneDeviceName;
 
             var rollback = new RecordingStartRollbackState();
-            Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
-            Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
+            Volatile.Write(ref _previewAudioGraph.CaptureFaulted, false);
+            Volatile.Write(ref _previewAudioGraph.CaptureFaultMessage, null);
             ThrowIfPendingLibAvDrainTaskBlocksReentry();
             try
             {

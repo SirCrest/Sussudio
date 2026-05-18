@@ -193,10 +193,10 @@ public partial class CaptureService
             }
         }
 
-        var wasapiAudioCaptureFaulted = Volatile.Read(ref _wasapiAudioCaptureFaulted);
-        var wasapiAudioCaptureFaultMessage = Volatile.Read(ref _wasapiAudioCaptureFaultMessage);
-        Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
-        Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
+        var wasapiAudioCaptureFaulted = Volatile.Read(ref _previewAudioGraph.CaptureFaulted);
+        var wasapiAudioCaptureFaultMessage = Volatile.Read(ref _previewAudioGraph.CaptureFaultMessage);
+        Volatile.Write(ref _previewAudioGraph.CaptureFaulted, false);
+        Volatile.Write(ref _previewAudioGraph.CaptureFaultMessage, null);
         if (wasapiAudioCaptureFaulted && cancellationException == null && result.Succeeded)
         {
             var statusMessage = string.IsNullOrWhiteSpace(wasapiAudioCaptureFaultMessage)

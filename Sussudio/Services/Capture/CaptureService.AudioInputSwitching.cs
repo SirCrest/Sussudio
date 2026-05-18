@@ -70,8 +70,8 @@ public partial class CaptureService
                 _wasapiAudioCapture = newCapture;
                 _audioDeviceId = audioDeviceId;
                 _audioDeviceName = audioDeviceName;
-                Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
-                Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
+                Volatile.Write(ref _previewAudioGraph.CaptureFaulted, false);
+                Volatile.Write(ref _previewAudioGraph.CaptureFaultMessage, null);
 
                 AttachFlashbackAudioIfSupported(newCapture, "audio_input_switch");
 
