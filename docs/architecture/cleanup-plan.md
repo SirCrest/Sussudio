@@ -2923,6 +2923,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.Playback.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Range.cs`
+- `DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`
 - `DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Registrations.cs`
 - `DiagnosticSessionFlashbackExportScenarios.Rotated.cs`

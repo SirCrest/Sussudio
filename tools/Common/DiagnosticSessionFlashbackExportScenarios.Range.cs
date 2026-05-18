@@ -1,11 +1,8 @@
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackExports;
-using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
 using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;
-using static Sussudio.Tools.DiagnosticSessionMetrics;
-using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;
 
 namespace Sussudio.Tools;
 
@@ -22,70 +19,18 @@ internal static partial class DiagnosticSessionFlashbackExportScenarios
         int outPointMs = 5_000,
         bool switchAudioDuringExport = false)
     {
-        const int liveEdgeSafetyMarginMs = 5_000;
-        const int leftEdgeSafetyMarginMs = 10_000;
-        var requiredBufferedDurationMs = Math.Max(
-            20_000,
-            outPointMs + liveEdgeSafetyMarginMs + leftEdgeSafetyMarginMs);
-        var requiredEncodedFrames = Math.Max(240, (long)Math.Ceiling(requiredBufferedDurationMs / 1000.0 * 60.0));
-        if (!await WaitForFlashbackStressBufferReadyAsync(
+        var selection = await PrepareFlashbackSelectionRangeAsync(
+                outPointMs,
+                scenarioLabel,
+                actions,
+                warnings,
                 sendCommandAsync,
-                cancellationToken,
-                requiredBufferedDurationMs,
-                requiredEncodedFrames,
-                TimeSpan.FromSeconds(45)).ConfigureAwait(false))
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (selection is null)
         {
-            warnings.Add(
-                $"{scenarioLabel}: Flashback buffer did not become range-ready " +
-                $"within 45s bufferedMs>={requiredBufferedDurationMs} encodedFrames>={requiredEncodedFrames}");
             return;
         }
-
-        var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
-        TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
-        var bufferedDurationMs = GetNullableLong(baselineSnapshot, "FlashbackBufferedDurationMs") ?? 0;
-        var rangeEndMs = (int)Math.Clamp(bufferedDurationMs - liveEdgeSafetyMarginMs, 0, int.MaxValue);
-        var rangeStartMs = Math.Max(0, rangeEndMs - outPointMs);
-        if (rangeStartMs < leftEdgeSafetyMarginMs)
-        {
-            warnings.Add(
-                $"{scenarioLabel}: insufficient near-live range headroom " +
-                $"bufferedMs={bufferedDurationMs} startMs={rangeStartMs} endMs={rangeEndMs} " +
-                $"requiredStartMs>={leftEdgeSafetyMarginMs}");
-            return;
-        }
-
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "clear-in-out-points" }, null)
-            .ConfigureAwait(false);
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
-            .ConfigureAwait(false);
-        await sendCommandAsync(
-                "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = rangeStartMs },
-                null)
-            .ConfigureAwait(false);
-        if (!await WaitForFlashbackPlaybackPositionAsync(sendCommandAsync, rangeStartMs, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false))
-        {
-            warnings.Add($"{scenarioLabel}: playback did not reach in-point seek before marking range");
-        }
-
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "set-in-point" }, null)
-            .ConfigureAwait(false);
-        actions.Add($"{scenarioLabel} in point set positionMs={rangeStartMs}");
-
-        await sendCommandAsync(
-                "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = rangeEndMs },
-                null)
-            .ConfigureAwait(false);
-        if (!await WaitForFlashbackPlaybackPositionAsync(sendCommandAsync, rangeEndMs, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false))
-        {
-            warnings.Add($"{scenarioLabel}: playback did not reach out-point seek before marking range");
-        }
-
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "set-out-point" }, null)
-            .ConfigureAwait(false);
-        actions.Add($"{scenarioLabel} out point set positionMs={rangeEndMs}");
 
         var exportPath = Path.Combine(outputDirectory, exportFileName);
         var exportTask = sendCommandAsync(
@@ -104,7 +49,7 @@ internal static partial class DiagnosticSessionFlashbackExportScenarios
         {
             audioSwitchTask = ToggleAudioEnabledDuringFlashbackExportAsync(
                 exportTask,
-                baselineSnapshot,
+                selection.Value.BaselineSnapshot,
                 actions,
                 warnings,
                 sendCommandAsync,
@@ -154,7 +99,7 @@ internal static partial class DiagnosticSessionFlashbackExportScenarios
         actions.Add($"{scenarioLabel} cleared range and went live");
 
         await ValidateFlashbackRangeExportCleanupAsync(
-                baselineSnapshot,
+                selection.Value.BaselineSnapshot,
                 scenarioLabel,
                 warnings,
                 sendCommandAsync,

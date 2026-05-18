@@ -2919,7 +2919,10 @@ Primary owners:
   owns rotated export, `tools/Common/DiagnosticSessionFlashbackExportScenarios.Playback.cs`
   owns export-during-playback, and
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.Range.cs` owns
-  selection-range export.
+  selection-range export orchestration.
+  `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeSelection.cs`
+  owns range buffer-readiness waits, near-live range projection, playback
+  seeking, and in/out marker mutation.
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeValidation.cs`
   owns range duration/status validation, and
   `tools/Common/DiagnosticSessionFlashbackExportScenarios.RangeCleanup.cs`

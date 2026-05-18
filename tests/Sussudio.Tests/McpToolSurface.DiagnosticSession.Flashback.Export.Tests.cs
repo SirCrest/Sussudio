@@ -21,6 +21,13 @@ static partial class Program
         AssertContains(scenariosText, "internal static async Task RunFlashbackExportPlaybackAsync(");
         AssertContains(scenariosText, "flashback export during playback verified");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
+        AssertContains(scenariosText, "private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(");
+        AssertContains(scenariosText, "private static async Task MarkFlashbackSelectionPointAsync(");
+        AssertContains(scenariosText, "private readonly record struct FlashbackSelectionRange(");
+        AssertContains(scenariosText, "WaitForFlashbackStressBufferReadyAsync(");
+        AssertContains(scenariosText, "\"clear-in-out-points\"");
+        AssertContains(scenariosText, "\"set-in-point\"");
+        AssertContains(scenariosText, "\"set-out-point\"");
         AssertContains(scenariosText, "[\"useSelectionRange\"] = true");
         AssertContains(scenariosText, "private static void ValidateFlashbackRangeExportResult(");
         AssertContains(scenariosText, "private static async Task ValidateFlashbackRangeExportCleanupAsync(");
