@@ -1,10 +1,15 @@
 using System;
+using System.Collections.Concurrent;
 using System.Threading;
 
 namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private readonly ManualResetEventSlim _frameReadyEvent = new(false);
+    private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();
+    private int _pendingFrameCount;
+
     private void EnqueuePendingFrame(PendingFrame frame)
     {
         lock (_lifecycleLock)

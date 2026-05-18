@@ -6,6 +6,9 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private long _lastPresentTick;
+    private int _presentCadenceBaselinePending;
+
     private double TrackPresentCadence(bool countSample)
     {
         var nowTick = Stopwatch.GetTimestamp();

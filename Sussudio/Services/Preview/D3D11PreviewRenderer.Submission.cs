@@ -10,6 +10,9 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private bool _loggedNv12ShaderMissing;
+    private int _lastNv12IsHdr = -1; // tri-state: -1 = unset, 0 = SDR, 1 = HDR
+
     public void SubmitRawFrame(
         IntPtr data,
         int dataLength,

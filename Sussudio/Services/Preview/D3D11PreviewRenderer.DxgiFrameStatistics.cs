@@ -6,6 +6,23 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private readonly object _dxgiFrameStatisticsLock = new();
+    private long _dxgiFrameStatisticsSampleCount;
+    private long _dxgiFrameStatisticsSuccessCount;
+    private long _dxgiFrameStatisticsFailureCount;
+    private string _dxgiFrameStatisticsLastError = string.Empty;
+    private long _dxgiFrameStatisticsPresentCount = -1;
+    private long _dxgiFrameStatisticsPresentRefreshCount = -1;
+    private long _dxgiFrameStatisticsSyncRefreshCount = -1;
+    private long _dxgiFrameStatisticsSyncQpcTime;
+    private long _dxgiFrameStatisticsLastPresentDelta;
+    private long _dxgiFrameStatisticsLastPresentRefreshDelta;
+    private long _dxgiFrameStatisticsLastSyncRefreshDelta;
+    private long _dxgiFrameStatisticsMissedRefreshCount;
+    private long _dxgiFrameStatisticsFrameCounter;
+    private long _dxgiFrameStatisticsLastSampleFrameCounter;
+    private bool _dxgiFrameStatisticsHasBaseline;
+
     public DxgiFrameStatisticsMetrics GetDxgiFrameStatisticsMetrics()
     {
         lock (_dxgiFrameStatisticsLock)

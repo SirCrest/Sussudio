@@ -6,6 +6,31 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private int _swapChainBound; // 0=unbound, 1=bound; use Interlocked.CompareExchange to claim unbind
+    private int _compositionTransformDirty;
+    private int _panelPixelWidth = 1;
+    private int _panelPixelHeight = 1;
+    private double _panelLogicalWidth = 1.0;
+    private double _panelLogicalHeight = 1.0;
+    private double _rasterizationScale = 1.0;
+
+    public void OnPanelSizeChanged(double logicalWidth, double logicalHeight, double rasterizationScale)
+    {
+        if (logicalWidth <= 0 || logicalHeight <= 0 || rasterizationScale <= 0) return;
+
+        Volatile.Write(ref _panelLogicalWidth, logicalWidth);
+        Volatile.Write(ref _panelLogicalHeight, logicalHeight);
+        var pixelWidth = Math.Max(1, (int)(logicalWidth * rasterizationScale));
+        var pixelHeight = Math.Max(1, (int)(logicalHeight * rasterizationScale));
+
+        Volatile.Write(ref _panelPixelWidth, pixelWidth);
+        Volatile.Write(ref _panelPixelHeight, pixelHeight);
+        Volatile.Write(ref _rasterizationScale, rasterizationScale);
+        Interlocked.Exchange(ref _compositionTransformDirty, 1);
+        SignalFrameReady("panel_size_changed");
+        Logger.Log($"D3D11 preview resize requested width={pixelWidth} height={pixelHeight} scale={rasterizationScale}.");
+    }
+
     private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)
     {
         // ISwapChainPanelNative.SetSwapChain must be called on the UI thread

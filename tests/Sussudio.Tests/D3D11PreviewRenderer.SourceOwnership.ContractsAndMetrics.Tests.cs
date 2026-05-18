@@ -76,17 +76,29 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_FrameOwnershipLivesInFocusedPartial()
     {
+        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
         var ownershipText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(ownershipText, "private long _framesSubmitted;");
+        AssertContains(ownershipText, "private long _framesRendered;");
+        AssertContains(ownershipText, "private long _framesDropped;");
+        AssertContains(ownershipText, "private long _submissionGeneration;");
+        AssertContains(ownershipText, "private long _lastSubmittedPreviewPresentId;");
+        AssertContains(ownershipText, "private long _lastRenderedSchedulerToPresentTicks;");
+        AssertContains(ownershipText, "private long _lastDroppedUtcUnixMs;");
+        AssertContains(ownershipText, "private string _submissionGenerationDropReason = \"transition\";");
         AssertContains(ownershipText, "public FrameOwnershipMetrics GetFrameOwnershipMetrics()");
         AssertContains(ownershipText, "private void TrackFrameSubmitted(PendingFrame frame)");
         AssertContains(ownershipText, "private void TrackFramePresented(PendingFrame frame, long presentReturnTick, long estimatedVisibleTick)");
         AssertContains(ownershipText, "private void TrackFrameDropped(PendingFrame frame, string reason)");
         AssertContains(ownershipText, "Interlocked.Exchange(ref _lastRenderedSourcePtsTicks, frame.SourcePtsTicks);");
         AssertContains(ownershipText, "Volatile.Write(ref _lastDropReason, reason);");
+        AssertDoesNotContain(rootText, "private long _framesSubmitted;");
+        AssertDoesNotContain(rootText, "private long _submissionGeneration;");
         AssertDoesNotContain(metricsText, "public FrameOwnershipMetrics GetFrameOwnershipMetrics()");
         AssertDoesNotContain(metricsText, "private void TrackFrameSubmitted(PendingFrame frame)");
         AssertDoesNotContain(metricsText, "private void TrackFrameDropped(PendingFrame frame, string reason)");
@@ -96,11 +108,19 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_DxgiFrameStatisticsLiveInFocusedPartial()
     {
+        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
         var dxgiText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(dxgiText, "private readonly object _dxgiFrameStatisticsLock = new();");
+        AssertContains(dxgiText, "private long _dxgiFrameStatisticsSampleCount;");
+        AssertContains(dxgiText, "private long _dxgiFrameStatisticsMissedRefreshCount;");
+        AssertContains(dxgiText, "private long _dxgiFrameStatisticsLastSampleFrameCounter;");
+        AssertContains(dxgiText, "private long _dxgiFrameStatisticsPresentCount = -1;");
+        AssertContains(dxgiText, "private bool _dxgiFrameStatisticsHasBaseline;");
         AssertContains(dxgiText, "public DxgiFrameStatisticsMetrics GetDxgiFrameStatisticsMetrics()");
         AssertContains(dxgiText, "private void TrackDxgiFrameStatistics()");
         AssertContains(dxgiText, "private long EstimateVisibleTick(long presentReturnTick)");
@@ -108,6 +128,8 @@ static partial class Program
         AssertContains(dxgiText, "public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)");
         AssertContains(dxgiText, "_ = DwmFlush();");
         AssertContains(dxgiText, "_swapChain.GetFrameStatistics(out var stats)");
+        AssertDoesNotContain(rootText, "private readonly object _dxgiFrameStatisticsLock = new();");
+        AssertDoesNotContain(rootText, "private long _dxgiFrameStatisticsPresentCount = -1;");
         AssertDoesNotContain(metricsText, "public DxgiFrameStatisticsMetrics GetDxgiFrameStatisticsMetrics()");
         AssertDoesNotContain(metricsText, "private void TrackDxgiFrameStatistics()");
         AssertDoesNotContain(metricsText, "private long EstimateVisibleTick(long presentReturnTick)");
@@ -118,17 +140,23 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_SlowFrameDiagnosticsLiveInFocusedPartial()
     {
+        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
         var slowFrameDiagnosticsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.SlowFrameDiagnostics.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(slowFrameDiagnosticsText, "private readonly object _slowFrameDiagnosticsLock = new();");
+        AssertContains(slowFrameDiagnosticsText, "private readonly PreviewSlowFrameDiagnostic[] _slowFrameDiagnostics = new PreviewSlowFrameDiagnostic[64];");
         AssertContains(slowFrameDiagnosticsText, "public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(int maxEntries = 16)");
         AssertContains(slowFrameDiagnosticsText, "private void RecordSlowFrameDiagnostic(");
         AssertContains(slowFrameDiagnosticsText, "private static string BuildSlowFrameDiagnosticReason(");
         AssertContains(slowFrameDiagnosticsText, "private static void AppendSlowFrameReason(");
         AssertContains(slowFrameDiagnosticsText, "DxgiMissedRefreshCount = missedRefreshCount");
         AssertContains(slowFrameDiagnosticsText, "\"dxgi_refresh_slip\"");
+        AssertDoesNotContain(rootText, "private readonly object _slowFrameDiagnosticsLock = new();");
+        AssertDoesNotContain(rootText, "new PreviewSlowFrameDiagnostic[64]");
         AssertDoesNotContain(metricsText, "public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(");
         AssertDoesNotContain(metricsText, "private void RecordSlowFrameDiagnostic(");
         AssertDoesNotContain(metricsText, "private static string BuildSlowFrameDiagnosticReason(");
@@ -138,14 +166,25 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_MetricTrackingLivesInFocusedPartial()
     {
+        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
         var trackingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.MetricsTracking.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(metricsText, "private readonly object _presentCadenceLock = new();");
+        AssertContains(metricsText, "private double[] _presentIntervalWindowMs = new double[1200];");
+        AssertContains(metricsText, "private readonly object _pipelineLatencyLock = new();");
+        AssertContains(metricsText, "private double[] _pipelineLatencyWindowMs = new double[1200];");
+        AssertContains(metricsText, "private readonly object _renderCpuTimingLock = new();");
+        AssertContains(metricsText, "private readonly object _frameLatencyWaitTimingLock = new();");
+        AssertContains(metricsText, "private long _frameLatencyWaitCallCount;");
         AssertContains(metricsText, "public PresentCadenceMetrics GetPresentCadenceMetrics(double expectedIntervalMs)");
         AssertContains(metricsText, "public RenderCpuTimingMetrics GetRenderCpuTimingMetrics()");
         AssertContains(metricsText, "public FrameLatencyWaitMetrics GetFrameLatencyWaitMetrics()");
+        AssertContains(trackingText, "private long _lastPresentTick;");
+        AssertContains(trackingText, "private int _presentCadenceBaselinePending;");
         AssertContains(trackingText, "private double TrackPresentCadence(bool countSample)");
         AssertContains(trackingText, "private void TrackPipelineLatency(long arrivalTick, long estimatedVisibleTick)");
         AssertContains(trackingText, "private void TrackRenderCpuTiming(");
@@ -155,6 +194,8 @@ static partial class Program
         AssertDoesNotContain(metricsText, "private double TrackPresentCadence(");
         AssertDoesNotContain(metricsText, "private void TrackRenderCpuTiming(");
         AssertDoesNotContain(metricsText, "private void ResetPresentCadence()");
+        AssertDoesNotContain(rootText, "private readonly object _presentCadenceLock = new();");
+        AssertDoesNotContain(rootText, "private long _lastPresentTick;");
 
         return Task.CompletedTask;
     }

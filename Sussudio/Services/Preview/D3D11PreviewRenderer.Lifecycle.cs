@@ -7,6 +7,16 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private readonly object _lifecycleLock = new();
+    private Thread? _renderThread;
+    private int _disposed;
+    private int _stopRequested;
+    private int _isRendering;
+    private int _inNativeCall; // 1 while render thread is between guard-check and Present return
+    private int _startupWidth;
+    private int _startupHeight;
+    private double _startupFps = 60.0;
+
     public void Start(int width, int height, double fps, bool isHdr)
     {
         ThrowIfDisposed();

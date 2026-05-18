@@ -6,9 +6,16 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
+        var pendingFramesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs")
+            .Replace("\r\n", "\n");
         var submissionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(submissionText, "private bool _loggedNv12ShaderMissing;");
+        AssertContains(submissionText, "private int _lastNv12IsHdr = -1;");
+        AssertContains(pendingFramesText, "private readonly ManualResetEventSlim _frameReadyEvent = new(false);");
+        AssertContains(pendingFramesText, "private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();");
+        AssertContains(pendingFramesText, "private int _pendingFrameCount;");
         AssertContains(submissionText, "public void SubmitRawFrame(");
         AssertContains(submissionText, "public void SubmitRawFrameLease(");
         AssertContains(submissionText, "public void SubmitTexture(");
@@ -19,6 +26,10 @@ static partial class Program
         AssertDoesNotContain(rootText, "public void SubmitRawFrameLease(");
         AssertDoesNotContain(rootText, "public void SubmitTexture(");
         AssertDoesNotContain(rootText, "public void SubmitNv12PlaneTextures(");
+        AssertDoesNotContain(rootText, "private readonly ManualResetEventSlim _frameReadyEvent = new(false);");
+        AssertDoesNotContain(rootText, "private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();");
+        AssertDoesNotContain(rootText, "private bool _loggedNv12ShaderMissing;");
+        AssertDoesNotContain(rootText, "private int _lastNv12IsHdr = -1;");
 
         return Task.CompletedTask;
     }
@@ -30,6 +41,11 @@ static partial class Program
         var lifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(lifecycleText, "private readonly object _lifecycleLock = new();");
+        AssertContains(lifecycleText, "private Thread? _renderThread;");
+        AssertContains(lifecycleText, "private int _disposed;");
+        AssertContains(lifecycleText, "private int _inNativeCall;");
+        AssertContains(lifecycleText, "private double _startupFps = 60.0;");
         AssertContains(lifecycleText, "public void Start(int width, int height, double fps, bool isHdr)");
         AssertContains(lifecycleText, "public void StopRenderThread()");
         AssertContains(lifecycleText, "public void Stop()");
@@ -40,6 +56,8 @@ static partial class Program
         AssertDoesNotContain(rootText, "public void Start(int width, int height, double fps, bool isHdr)");
         AssertDoesNotContain(rootText, "public void StopRenderThread()");
         AssertDoesNotContain(rootText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
+        AssertDoesNotContain(rootText, "private readonly object _lifecycleLock = new();");
+        AssertDoesNotContain(rootText, "private Thread? _renderThread;");
 
         return Task.CompletedTask;
     }

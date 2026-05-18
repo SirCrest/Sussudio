@@ -6,6 +6,30 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private long _framesSubmitted;
+    private long _framesRendered;
+    private long _framesDropped;
+    private long _lastSubmittedPreviewPresentId;
+    private long _lastSubmittedSourceSequenceNumber = -1;
+    private long _lastSubmittedSourcePtsTicks;
+    private long _lastSubmittedQpc;
+    private long _lastSubmittedUtcUnixMs;
+    private long _lastRenderedPreviewPresentId;
+    private long _lastRenderedSourceSequenceNumber = -1;
+    private long _lastRenderedSourcePtsTicks;
+    private long _lastRenderedQpc;
+    private long _lastRenderedUtcUnixMs;
+    private long _lastRenderedSchedulerToPresentTicks;
+    private long _lastRenderedPipelineLatencyTicks;
+    private long _lastDroppedPreviewPresentId;
+    private long _lastDroppedSourceSequenceNumber = -1;
+    private long _lastDroppedSourcePtsTicks;
+    private long _lastDroppedQpc;
+    private long _lastDroppedUtcUnixMs;
+    private long _submissionGeneration;
+    private string _lastDropReason = string.Empty;
+    private string _submissionGenerationDropReason = "transition";
+
     public FrameOwnershipMetrics GetFrameOwnershipMetrics()
     {
         var schedulerToPresentTicks = Interlocked.Read(ref _lastRenderedSchedulerToPresentTicks);

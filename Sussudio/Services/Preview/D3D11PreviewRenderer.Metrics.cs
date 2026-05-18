@@ -5,6 +5,32 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private readonly object _presentCadenceLock = new();
+    private double[] _presentIntervalWindowMs = new double[1200];
+    private int _presentIntervalCount;
+    private int _presentIntervalIndex;
+    private readonly object _pipelineLatencyLock = new();
+    private double[] _pipelineLatencyWindowMs = new double[1200];
+    private int _pipelineLatencyCount;
+    private int _pipelineLatencyIndex;
+    private readonly object _renderCpuTimingLock = new();
+    private double[] _inputUploadCpuTimingWindowMs = new double[1200];
+    private double[] _renderSubmitCpuTimingWindowMs = new double[1200];
+    private double[] _presentCallTimingWindowMs = new double[1200];
+    private double[] _renderTotalCpuTimingWindowMs = new double[1200];
+    private int _renderCpuTimingCount;
+    private int _renderCpuTimingIndex;
+    private readonly object _frameLatencyWaitTimingLock = new();
+    private double[] _frameLatencyWaitTimingWindowMs = new double[1200];
+    private int _frameLatencyWaitTimingCount;
+    private int _frameLatencyWaitTimingIndex;
+    private long _frameLatencyWaitCallCount;
+    private long _frameLatencyWaitSignaledCount;
+    private long _frameLatencyWaitTimeoutCount;
+    private long _frameLatencyWaitUnexpectedResultCount;
+    private long _frameLatencyWaitLastResult;
+    private long _frameLatencyWaitLastTicks;
+
     public PresentCadenceMetrics GetPresentCadenceMetrics(double expectedIntervalMs)
     {
         double[] samples;

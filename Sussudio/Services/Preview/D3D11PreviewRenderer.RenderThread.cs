@@ -6,6 +6,12 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private int _firstFrameRaised;
+    private string _lastRenderThreadFailureType = string.Empty;
+    private string _lastRenderThreadFailureMessage = string.Empty;
+    private int _lastRenderThreadFailureHResult;
+    private long _renderThreadFailureCount;
+
     private void RenderThreadMain()
     {
         Interlocked.Exchange(ref _isRendering, 1);

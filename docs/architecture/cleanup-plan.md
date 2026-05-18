@@ -1412,20 +1412,29 @@ D3D preview renderer metrics now live in
 present cadence, pipeline latency, render CPU timing, frame-latency wait metric
 snapshots, recent sample copies, and timing summaries there. Render-loop metric
 window updates, expected-frame-rate window resizing, and metric reset logic now
-live in `D3D11PreviewRenderer.MetricsTracking.cs`. Keep slow-frame diagnostic
-ring/write logic in `D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, lifecycle in
-`D3D11PreviewRenderer.Lifecycle.cs`, render-thread orchestration in
-`D3D11PreviewRenderer.RenderThread.cs`, queueing in
-`D3D11PreviewRenderer.PendingFrames.cs`, VideoProcessor work in
+live in `D3D11PreviewRenderer.MetricsTracking.cs`. Renderer implementation
+fields should live with the partial that mutates or projects them: keep
+slow-frame diagnostic ring/write state in
+`D3D11PreviewRenderer.SlowFrameDiagnostics.cs`, lifecycle state in
+`D3D11PreviewRenderer.Lifecycle.cs`, render-thread failure and first-frame state
+in `D3D11PreviewRenderer.RenderThread.cs`, queue state and signaling in
+`D3D11PreviewRenderer.PendingFrames.cs`, D3D device/swap-chain resources in
+`D3D11PreviewRenderer.Resources.cs`, input texture resources in
+`D3D11PreviewRenderer.InputResources.cs`, swap-chain panel binding state in
+`D3D11PreviewRenderer.PanelBinding.cs`, waitable frame-latency state in
+`D3D11PreviewRenderer.FrameLatency.cs`, VideoProcessor work in
 `D3D11PreviewRenderer.Rendering.cs`, shared present accounting in
-`D3D11PreviewRenderer.Present.cs`, and shader drawing in
-`D3D11PreviewRenderer.ShaderRendering.cs`.
+`D3D11PreviewRenderer.Present.cs`, and shader resource/cache state in
+`D3D11PreviewRenderer.ShaderRendering.cs`. Do not re-centralize renderer
+implementation state in `D3D11PreviewRenderer.cs`; the root should keep the
+public facade, construction references, constants, user-facing accessors, and
+public state toggles.
 
 D3D preview renderer nested frame and metrics model types now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.FrameTypes.cs`. Keep the
 `PendingFrame` lifetime wrapper and renderer metric record structs there so the
-root renderer stays focused on construction, public state, panel sizing, and
-user-facing state changes.
+root renderer stays focused on construction, constants, user-facing state
+accessors, and public state changes.
 
 D3D preview renderer runtime knobs now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Configuration.cs`. Keep the

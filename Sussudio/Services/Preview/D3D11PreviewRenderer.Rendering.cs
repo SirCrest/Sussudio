@@ -8,6 +8,8 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private bool _loggedHdrShaderFallback;
+
     private void RenderFrame(PendingFrame frame)
     {
         ApplySwapChainColorSpaceIfDirty();

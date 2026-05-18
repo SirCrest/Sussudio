@@ -9,6 +9,7 @@ internal sealed partial class D3D11PreviewRenderer
 {
     private const uint WaitObject0 = 0;
     private const uint WaitTimeout = 258;
+    private IntPtr _frameLatencyWaitHandle;
 
     private void ConfigureFrameLatencyWaitableObject()
     {

@@ -7,6 +7,17 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private ID3D11Texture2D? _inputTexture;
+    private ID3D11Texture2D? _stagingTexture;
+    private ID3D11VideoProcessorInputView? _inputView;
+    private ID3D11Texture2D? _hdrInputTexture;
+    private ID3D11Texture2D? _hdrStagingTexture;
+    private ID3D11ShaderResourceView? _hdrYPlaneSRV;
+    private ID3D11ShaderResourceView? _hdrUVPlaneSRV;
+    private int _hdrInputConfiguredWidth;
+    private int _hdrInputConfiguredHeight;
+    private bool _hdrPlaneViewsUnavailable;
+
     private void EnsureInputResources(int width, int height, bool isHdr)
     {
         if (_device == null || _videoDevice == null || _videoProcessorEnumerator == null)

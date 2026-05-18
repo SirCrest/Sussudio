@@ -4,11 +4,16 @@ static partial class Program
 {
     private static Task D3D11PreviewRenderer_RenderThreadLivesInFocusedPartial()
     {
+        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
         var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
             .Replace("\r\n", "\n");
         var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(renderThreadText, "private int _firstFrameRaised;");
+        AssertContains(renderThreadText, "private string _lastRenderThreadFailureType = string.Empty;");
+        AssertContains(renderThreadText, "private long _renderThreadFailureCount;");
         AssertContains(renderThreadText, "private void RenderThreadMain()");
         AssertContains(renderThreadText, "private void NotifyRenderThreadFailed(Exception ex)");
         AssertContains(renderThreadText, "MmcssThreadRegistration.TryRegister");
@@ -24,6 +29,8 @@ static partial class Program
             throw new InvalidOperationException("Render thread must wait for frame-latency signal before rendering the frame.");
         }
 
+        AssertDoesNotContain(rootText, "private int _firstFrameRaised;");
+        AssertDoesNotContain(rootText, "private string _lastRenderThreadFailureType = string.Empty;");
         AssertDoesNotContain(renderingText, "private void RenderThreadMain()");
         AssertDoesNotContain(renderingText, "private void NotifyRenderThreadFailed(Exception ex)");
 

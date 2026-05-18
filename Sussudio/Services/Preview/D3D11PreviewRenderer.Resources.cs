@@ -8,6 +8,24 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private ID3D11Device? _device;
+    private ID3D11DeviceContext? _deviceContext;
+    private ID3D11Device3? _device3;
+    private ID3D11Multithread? _multithread;
+    private ID3D11VideoDevice? _videoDevice;
+    private ID3D11VideoContext? _videoContext;
+    private ID3D11VideoContext1? _videoContext1;
+    private IDXGIFactory2? _factory;
+    private IDXGISwapChain1? _swapChain;
+    private IDXGISwapChain2? _swapChain2;
+    private IDXGISwapChain3? _swapChain3;
+    private long _swapChainAddress;
+    private ID3D11Texture2D? _swapChainBackBuffer;
+    private ID3D11RenderTargetView? _swapChainRTV;
+    private ID3D11VideoProcessorEnumerator? _videoProcessorEnumerator;
+    private ID3D11VideoProcessor? _videoProcessor;
+    private ID3D11VideoProcessorOutputView? _outputView;
+
     private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)
     {
         if (_swapChain == null || _videoDevice == null || _videoContext == null || _videoContext1 == null)

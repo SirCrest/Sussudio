@@ -6,6 +6,11 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private readonly object _slowFrameDiagnosticsLock = new();
+    private readonly PreviewSlowFrameDiagnostic[] _slowFrameDiagnostics = new PreviewSlowFrameDiagnostic[64];
+    private int _slowFrameDiagnosticsCount;
+    private int _slowFrameDiagnosticsIndex;
+
     public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(int maxEntries = 16)
     {
         lock (_slowFrameDiagnosticsLock)

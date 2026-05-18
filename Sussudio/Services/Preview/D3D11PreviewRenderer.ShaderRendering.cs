@@ -11,6 +11,26 @@ namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private ID3D11VertexShader? _fullscreenVS;
+    private ID3D11PixelShader? _nv12PS;
+    private ID3D11ShaderResourceView? _nv12YSRV;
+    private ID3D11ShaderResourceView? _nv12UVSRV;
+    private IntPtr _nv12LastYPtr;
+    private IntPtr _nv12LastUVPtr;
+    private ID3D11PixelShader? _hdrTonemapPS;
+    private ID3D11PixelShader? _hdrPassthroughPS;
+    private ID3D11SamplerState? _linearSampler;
+    private ID3D11Buffer? _viewportCB;
+
+    // Pre-allocated arrays to avoid per-frame GC pressure (720+ allocs/s at 120fps)
+    private readonly VideoProcessorStream[] _vpStreamArray = new VideoProcessorStream[1];
+    private readonly ID3D11RenderTargetView[] _rtvArray = new ID3D11RenderTargetView[1];
+    private readonly Viewport[] _viewportArray = new Viewport[1];
+    private readonly ID3D11SamplerState[] _samplerArray = new ID3D11SamplerState[1];
+    private readonly ID3D11ShaderResourceView[] _srvArray2 = new ID3D11ShaderResourceView[2];
+    private readonly ID3D11ShaderResourceView[] _srvNullArray2 = { null!, null! };
+    private readonly ID3D11Buffer[] _cbArray = new ID3D11Buffer[1];
+
     // Reused at every shader bind in the per-frame render path; the LINQ-friendly
     // overloads on Vortice's device context allocate an IReadOnlyList wrapper from
     // Array.Empty<T>() each call, which adds up at 60-120 fps.
