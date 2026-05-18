@@ -12,9 +12,8 @@ public partial class CaptureService
     {
         _recordingBackend.ClearPendingLibAvDrainIfCompletedSuccessfully();
 
-        var unifiedVideoCapture = _unifiedVideoCapture;
+        var unifiedVideoCapture = _videoPipeline.TakeCapture();
         var videoCaptureCleanupDeferred = false;
-        _unifiedVideoCapture = null;
         if (unifiedVideoCapture != null)
         {
             CacheMjpegTimingMetrics(unifiedVideoCapture);

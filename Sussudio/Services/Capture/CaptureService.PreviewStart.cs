@@ -136,7 +136,7 @@ public partial class CaptureService
                 {
                     unifiedVideoCapture.SetSkipCpuReadback(true);
                 }
-                _unifiedVideoCapture = unifiedVideoCapture;
+                _videoPipeline.InstallCapture(unifiedVideoCapture);
                 _lastMfSourceReaderFramesDelivered = 0;
                 _lastMfSourceReaderFramesDropped = 0;
                 _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
@@ -165,7 +165,7 @@ public partial class CaptureService
                 Logger.Log($"Unified preview start failed: {ex.Message}");
                 var previewStartRollbackToken = CancellationToken.None;
                 await DisposeFlashbackPreviewBackendAsync(previewStartRollbackToken).ConfigureAwait(false);
-                _unifiedVideoCapture = null;
+                _videoPipeline.ClearCapture();
                 if (unifiedVideoCapture != null)
                 {
                     DetachUnifiedVideoCapture(unifiedVideoCapture);

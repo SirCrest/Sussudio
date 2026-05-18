@@ -297,6 +297,8 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
+        var videoPipelineResourcesText = ReadRepoFile("Sussudio/Services/Capture/CaptureVideoPipelineResources.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var mjpegHealth = CaptureMjpegHealthSnapshotFields(unifiedVideoCapture);");
         AssertContains(healthSnapshotAssemblerText, "MjpegDecodeSampleCount = mjpegHealth.Timing.DecodeSampleCount,");
@@ -304,7 +306,8 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotAssemblerText, "VisualCadenceSampleCount = mjpegHealth.VisualCadence.SampleCount,");
         AssertContains(healthSnapshotAssemblerText, "MjpegPerDecoder = mjpegHealth.PerDecoder,");
         AssertContains(healthSnapshotText, "private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(");
-        AssertContains(healthSnapshotText, "GetMjpegPipelineTimingSnapshot()");
+        AssertContains(healthSnapshotText, "_videoPipeline.GetMjpegTimingSnapshot(unifiedVideoCapture)");
+        AssertContains(videoPipelineResourcesText, "GetMjpegPipelineTimingSnapshot()");
         AssertContains(healthSnapshotText, "GetMjpegPreviewJitterMetrics()");
         AssertContains(healthSnapshotText, "GetPreviewVisualCadenceMetrics()");
         AssertContains(healthSnapshotText, "FrameFingerprintCadenceTracker.Empty");

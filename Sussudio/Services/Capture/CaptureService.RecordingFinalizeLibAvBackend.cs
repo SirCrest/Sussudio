@@ -140,7 +140,7 @@ public partial class CaptureService
 
         if (!_isVideoPreviewActive)
         {
-            _unifiedVideoCapture = null;
+            unifiedVideoCapture = _videoPipeline.TakeCapture();
             if (unifiedVideoCapture != null)
             {
                 try

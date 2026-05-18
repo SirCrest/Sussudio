@@ -87,7 +87,7 @@ public partial class CaptureService
             _lastMfSourceReaderFramesDelivered = rollback.OwnedUnifiedVideoCapture.VideoFramesArrived;
             _lastMfSourceReaderFramesDropped = rollback.OwnedUnifiedVideoCapture.VideoFramesDropped;
             _lastMfSourceReaderNegotiatedFormat = rollback.OwnedUnifiedVideoCapture.NegotiatedFormat;
-            _unifiedVideoCapture = null;
+            _videoPipeline.ClearCapture();
         }
 
         _recordingBackend.ClearContextAndSettings();

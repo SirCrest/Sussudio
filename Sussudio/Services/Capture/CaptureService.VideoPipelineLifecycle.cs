@@ -7,13 +7,15 @@ namespace Sussudio.Services.Capture;
 
 public partial class CaptureService
 {
-    private IPreviewFrameSink? _previewFrameSink;
-    private UnifiedVideoCapture.MjpegPipelineTimingMetrics _lastMjpegPipelineTimingMetrics;
-    private ParallelMjpegDecodePipeline.PipelineTimingMetrics? _lastFullMjpegPipelineTimingMetrics;
+    private IPreviewFrameSink? _previewFrameSink
+    {
+        get => _videoPipeline.PreviewFrameSink;
+        set => _videoPipeline.PreviewFrameSink = value;
+    }
 
-    public int GetNegotiatedVideoWidth() => _unifiedVideoCapture?.Width ?? 0;
-    public int GetNegotiatedVideoHeight() => _unifiedVideoCapture?.Height ?? 0;
-    public double GetNegotiatedVideoFps() => _unifiedVideoCapture?.Fps ?? 0;
+    public int GetNegotiatedVideoWidth() => _videoPipeline.NegotiatedVideoWidth;
+    public int GetNegotiatedVideoHeight() => _videoPipeline.NegotiatedVideoHeight;
+    public double GetNegotiatedVideoFps() => _videoPipeline.NegotiatedVideoFps;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -23,42 +25,34 @@ public partial class CaptureService
             controller.PrepareForPreviewDetach();
         }
 
-        _previewFrameSink = sink;
-        _unifiedVideoCapture?.SetPreviewSink(sink);
-        TryApplySharedPreviewDevice(_unifiedVideoCapture, sink);
+        _videoPipeline.SetPreviewFrameSink(sink);
+        var unifiedVideoCapture = _unifiedVideoCapture;
+        TryApplySharedPreviewDevice(unifiedVideoCapture, sink);
         // Late-initialize playback controller if it was created before the renderer
-        if (controller is { IsDisposed: false, IsInitialized: false } && sink != null && _unifiedVideoCapture != null)
+        if (controller is { IsDisposed: false, IsInitialized: false } && sink != null && unifiedVideoCapture != null)
         {
-            controller.Initialize(sink, _unifiedVideoCapture, _wasapiAudioPlayback, _wasapiAudioCapture);
+            controller.Initialize(sink, unifiedVideoCapture, _wasapiAudioPlayback, _wasapiAudioCapture);
             Logger.Log("FLASHBACK_PLAYBACK_LATE_INIT via SetPreviewFrameSink");
         }
         else if (controller is { IsDisposed: false, IsInitialized: true })
         {
-            controller.UpdatePreviewComponents(sink, _unifiedVideoCapture);
+            controller.UpdatePreviewComponents(sink, unifiedVideoCapture);
         }
     }
 
     private void CacheMjpegTimingMetrics(UnifiedVideoCapture? unifiedVideoCapture)
     {
-        if (unifiedVideoCapture == null)
-        {
-            return;
-        }
-
-        var timingSnapshot = unifiedVideoCapture.GetMjpegPipelineTimingSnapshot();
-        _lastMjpegPipelineTimingMetrics = timingSnapshot.Summary;
-        _lastFullMjpegPipelineTimingMetrics = timingSnapshot.Details;
+        _videoPipeline.CacheMjpegTimingMetrics(unifiedVideoCapture);
     }
 
     private void ResetCachedMjpegTimingMetrics()
     {
-        _lastMjpegPipelineTimingMetrics = default;
-        _lastFullMjpegPipelineTimingMetrics = null;
+        _videoPipeline.ResetCachedMjpegTimingMetrics();
     }
 
     internal ParallelMjpegDecodePipeline.PipelineTimingMetrics? GetMjpegPipelineTimingDetails()
     {
-        return _unifiedVideoCapture?.GetFullMjpegPipelineTimingMetrics() ?? _lastFullMjpegPipelineTimingMetrics;
+        return _videoPipeline.GetMjpegPipelineTimingDetails();
     }
 
     private void AttachUnifiedVideoCapture(UnifiedVideoCapture unifiedVideoCapture)

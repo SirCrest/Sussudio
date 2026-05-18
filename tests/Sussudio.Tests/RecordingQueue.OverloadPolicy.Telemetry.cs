@@ -16,7 +16,7 @@ static partial class Program
         AssertContains(unifiedVideoCaptureSource, "if (accepted)");
         AssertContains(unifiedVideoCaptureSource, "public MjpegPipelineTimingSnapshot GetMjpegPipelineTimingSnapshot()");
         AssertContains(unifiedVideoCaptureSource, "private static MjpegPipelineTimingMetrics CreateMjpegPipelineTimingSummary");
-        AssertContains(captureServiceSource, "var timingSnapshot = unifiedVideoCapture.GetMjpegPipelineTimingSnapshot();");
+        AssertContains(captureServiceSource, "var timingSnapshot = capture?.GetMjpegPipelineTimingSnapshot();");
         AssertContains(captureServiceSource, "RecordLastRecordingFailure");
         AssertContains(captureServiceSource, "RecordLastFlashbackFailure");
         AssertContains(captureServiceSource, "ClearLastRecordingFailure");
@@ -24,7 +24,7 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "GetLastFailureTelemetry");
         AssertContains(captureSnapshotsSource, "IsFlashbackRecordingBackendOwnedByRecording()");
         AssertContains(captureHealthSnapshotRootSource, "var mjpegHealth = CaptureMjpegHealthSnapshotFields(unifiedVideoCapture);");
-        AssertContains(captureSnapshotsSource, "var timingSnapshot = unifiedVideoCapture?.GetMjpegPipelineTimingSnapshot();");
+        AssertContains(captureSnapshotsSource, "var timingSnapshot = _videoPipeline.GetMjpegTimingSnapshot(unifiedVideoCapture);");
         AssertContains(captureSnapshotsSource, "private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(");
         AssertDoesNotContain(captureSnapshotsSource, "unifiedVideoCapture?.GetMjpegPipelineTimingMetrics()");
         AssertDoesNotContain(captureSnapshotsSource, "unifiedVideoCapture?.GetFullMjpegPipelineTimingMetrics()");

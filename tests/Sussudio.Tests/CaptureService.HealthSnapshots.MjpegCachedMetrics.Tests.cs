@@ -11,9 +11,11 @@ static partial class Program
 
         await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
 
+        var videoPipeline = GetPrivateField(captureService, "_videoPipeline")
+            ?? throw new InvalidOperationException("CaptureService video pipeline resources were missing.");
         SetPrivateField(
-            captureService,
-            "_lastMjpegPipelineTimingMetrics",
+            videoPipeline,
+            "<LastMjpegPipelineTimingMetrics>k__BackingField",
             CreateMjpegTimingMetrics(
                 decodeSampleCount: 7,
                 decodeAvgMs: 1.5,
@@ -28,8 +30,8 @@ static partial class Program
                 callbackP95Ms: 8.5,
                 callbackMaxMs: 9.5));
         SetPrivateField(
-            captureService,
-            "_lastFullMjpegPipelineTimingMetrics",
+            videoPipeline,
+            "<LastFullMjpegPipelineTimingMetrics>k__BackingField",
             CreateFullMjpegPipelineTimingMetrics(
                 decoderCount: 3,
                 decodeSampleCount: 17,
@@ -55,7 +57,7 @@ static partial class Program
                     CreatePerDecoderMetrics(1, 33, 4.2, 4.7, 5.3),
                     CreatePerDecoderMetrics(2, 35, 4.1, 4.8, 5.4)
                 }));
-        SetPrivateField(captureService, "_unifiedVideoCapture", null);
+        SetPropertyOrBackingField(videoPipeline, "Capture", null);
 
         var snapshot = InvokeInstanceMethod(captureService, "GetHealthSnapshot");
         AssertEqual(7L, GetLongProperty(snapshot, "MjpegDecodeSampleCount"), "MjpegDecodeSampleCount");
@@ -96,9 +98,11 @@ static partial class Program
 
         await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
 
+        var videoPipeline = GetPrivateField(captureService, "_videoPipeline")
+            ?? throw new InvalidOperationException("CaptureService video pipeline resources were missing.");
         SetPrivateField(
-            captureService,
-            "_lastMjpegPipelineTimingMetrics",
+            videoPipeline,
+            "<LastMjpegPipelineTimingMetrics>k__BackingField",
             CreateMjpegTimingMetrics(
                 decodeSampleCount: 11,
                 decodeAvgMs: 10.1,
@@ -113,8 +117,8 @@ static partial class Program
                 callbackP95Ms: 12.2,
                 callbackMaxMs: 12.3));
         SetPrivateField(
-            captureService,
-            "_lastFullMjpegPipelineTimingMetrics",
+            videoPipeline,
+            "<LastFullMjpegPipelineTimingMetrics>k__BackingField",
             CreateFullMjpegPipelineTimingMetrics(
                 decoderCount: 4,
                 decodeSampleCount: 40,
@@ -141,7 +145,7 @@ static partial class Program
                     CreatePerDecoderMetrics(2, 99, 6.2, 7.2, 8.3),
                     CreatePerDecoderMetrics(3, 100, 6.4, 7.4, 8.5)
                 }));
-        SetPrivateField(captureService, "_unifiedVideoCapture", null);
+        SetPropertyOrBackingField(videoPipeline, "Capture", null);
 
         var snapshot = InvokeInstanceMethod(captureService, "GetDiagnosticsSnapshot");
         AssertEqual(11L, GetLongProperty(snapshot, "MjpegDecodeSampleCount"), "MjpegDecodeSampleCount");

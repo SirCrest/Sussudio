@@ -71,7 +71,7 @@ public partial class CaptureService
             rollback.OwnedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _previewFrameSink : null);
             TryApplySharedPreviewDevice(rollback.OwnedUnifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
             unifiedVideoCapture = rollback.OwnedUnifiedVideoCapture;
-            _unifiedVideoCapture = rollback.OwnedUnifiedVideoCapture;
+            _videoPipeline.InstallCapture(rollback.OwnedUnifiedVideoCapture);
         }
         else if (unifiedVideoCapture.IsP010 != requireP010)
         {

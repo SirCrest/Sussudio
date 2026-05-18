@@ -66,8 +66,7 @@ public partial class CaptureService
         }
 
         var pendingLibAvDrainTask = _pendingLibAvDrainTask;
-        var unifiedVideoCapture = _unifiedVideoCapture;
-        _unifiedVideoCapture = null;
+        var unifiedVideoCapture = _videoPipeline.TakeCapture();
         if (unifiedVideoCapture != null)
         {
             try

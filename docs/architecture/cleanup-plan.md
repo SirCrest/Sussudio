@@ -978,9 +978,11 @@ force-rotate fallback counters, and completion status projection there.
 Shared video-pipeline lifecycle handoff now lives in
 `Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs`. That file
 owns preview-frame sink attachment, late Flashback playback preview wiring,
-shared D3D preview-device handoff, negotiated video getters, cached MJPEG
-pipeline timing details, fatal/pixel callback attach/detach, deferred
-unified-video cleanup after LibAv drains.
+shared D3D preview-device handoff, fatal/pixel callback attach/detach, and
+deferred unified-video cleanup after LibAv drains. Active video capture storage,
+preview-frame sink storage, negotiated video getters, and cached MJPEG pipeline
+timing snapshots now live in
+`Sussudio/Services/Capture/CaptureVideoPipelineResources.cs`.
 
 Preview lifecycle now lives in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.PreviewStart.cs` owns video-preview
@@ -3359,8 +3361,8 @@ Remaining `tools/Common` ownership:
 
    The policy is now the legality/steady-state owner. Recent capture slices
    kept it authoritative while introducing smaller owners for the audio graph,
-   Flashback backend resources, and active recording backend resources; video
-   pipeline lifetime remains the next larger resource-owner candidate.
+   Flashback backend resources, active recording backend resources, and active
+   video pipeline resources.
    `FlashbackBackendResources.cs` now owns the preview backend resource set and
    producer attach/detach wiring.
    `FlashbackBackendResources.Startup.cs` owns startup construction,

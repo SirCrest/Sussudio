@@ -134,7 +134,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private int _flashbackRecordingStartInProgress;
     private int _flashbackRecordingFinalizeInProgress;
     private long _sessionGeneration;
-    private UnifiedVideoCapture? _unifiedVideoCapture;
+    private readonly CaptureVideoPipelineResources _videoPipeline = new();
+    private UnifiedVideoCapture? _unifiedVideoCapture
+    {
+        get => _videoPipeline.Capture;
+        set => _videoPipeline.Capture = value;
+    }
+
     private Task? _pendingLibAvDrainTask
     {
         get => _recordingBackend.PendingLibAvDrainTask;

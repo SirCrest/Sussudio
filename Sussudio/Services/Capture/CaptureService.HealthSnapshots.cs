@@ -108,11 +108,11 @@ public partial class CaptureService
     private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(
         UnifiedVideoCapture? unifiedVideoCapture)
     {
-        var timingSnapshot = unifiedVideoCapture?.GetMjpegPipelineTimingSnapshot();
-        var fullTiming = timingSnapshot?.Details ?? _lastFullMjpegPipelineTimingMetrics;
+        var timingSnapshot = _videoPipeline.GetMjpegTimingSnapshot(unifiedVideoCapture);
+        var fullTiming = timingSnapshot.Details;
 
         return new MjpegHealthSnapshotFields(
-            timingSnapshot?.Summary ?? _lastMjpegPipelineTimingMetrics,
+            timingSnapshot.Summary,
             fullTiming,
             unifiedVideoCapture?.GetMjpegPreviewJitterMetrics()
                 ?? default(MjpegPreviewJitterBuffer.Metrics),
