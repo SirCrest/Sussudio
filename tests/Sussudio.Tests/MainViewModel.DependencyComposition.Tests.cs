@@ -10,6 +10,7 @@ static partial class Program
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.PreviewState.cs").Replace("\r\n", "\n");
         var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
+        var deviceAudioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs").Replace("\r\n", "\n");
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs").Replace("\r\n", "\n");
         var deviceFormatProbeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
@@ -66,6 +67,12 @@ static partial class Program
         AssertContains(previewStateText, "public event Func<Task>? PreviewRendererStopRequested;");
         AssertContains(captureStateText, "public partial ObservableCollection<CaptureDevice> Devices");
         AssertContains(audioStateText, "public partial bool IsAudioPreviewActive");
+        AssertContains(deviceAudioStateText, "public partial ObservableCollection<string> AvailableDeviceAudioModes");
+        AssertContains(deviceAudioStateText, "public partial bool IsDeviceAudioControlSupported");
+        AssertContains(deviceAudioStateText, "public partial string SelectedDeviceAudioMode");
+        AssertContains(deviceAudioStateText, "public partial double AnalogAudioGainPercent");
+        AssertDoesNotContain(audioStateText, "SelectedDeviceAudioMode");
+        AssertDoesNotContain(audioStateText, "AnalogAudioGainPercent");
         AssertContains(flashbackStateText, "partial void OnIsFlashbackEnabledChanged(bool value)");
         AssertContains(uiDispatchControllerText, "internal sealed class MainViewModelUiDispatchControllerContext");
         AssertContains(uiDispatchControllerText, "public required DispatcherQueue DispatcherQueue { get; init; }");

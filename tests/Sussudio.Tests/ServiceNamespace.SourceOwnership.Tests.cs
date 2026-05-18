@@ -105,10 +105,18 @@ static partial class Program
         AssertContains(captureServiceTelemetryText, "Telemetry poll start deferred until canceled poll exits");
 
         var audioControlsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioControls.cs"));
+        var audioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
+        var deviceAudioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs"));
         var deviceAudioModeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioMode.cs"));
         var deviceAudioRefreshText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRefresh.cs"));
         var analogAudioGainText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs"));
         var deviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.cs"));
+        AssertContains(deviceAudioStateText, "public partial ObservableCollection<string> AvailableDeviceAudioModes");
+        AssertContains(deviceAudioStateText, "public partial bool IsDeviceAudioControlSupported");
+        AssertContains(deviceAudioStateText, "public partial string SelectedDeviceAudioMode");
+        AssertContains(deviceAudioStateText, "public partial double AnalogAudioGainPercent");
+        AssertDoesNotContain(audioStateText, "SelectedDeviceAudioMode");
+        AssertDoesNotContain(audioStateText, "AnalogAudioGainPercent");
         AssertContains(deviceAudioRefreshText, "RefreshDeviceAudioControlsAsync(");
         AssertContains(deviceAudioRefreshText, "ReadStateAsync(device, cancellationToken)");
         AssertContains(deviceAudioRefreshText, "NATIVEXU_AUDIO_RESTORE_READ_ONLY");

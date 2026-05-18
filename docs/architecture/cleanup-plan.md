@@ -3061,9 +3061,10 @@ Remaining `tools/Common` ownership:
    flags and non-preview coordination gates, `MainViewModel.PreviewState.cs`
    owns preview lifecycle flags, preview reinitialize coordination, and preview
    request events, `MainViewModel.CaptureState.cs` owns capture-selection,
-   source, and HDR state, `MainViewModel.AudioState.cs` owns audio/microphone/
-   device-audio state, and `MainViewModel.FlashbackState.cs` owns Flashback
-   timeline/export state. Keep the root `MainViewModel.cs` focused on the
+   source, and HDR state, `MainViewModel.AudioState.cs` owns audio/microphone
+   state, `MainViewModel.DeviceAudioState.cs` owns device-native audio/XU UI
+   state, and `MainViewModel.FlashbackState.cs` owns Flashback timeline/export
+   state. Keep the root `MainViewModel.cs` focused on the
    compatibility facade, dependency assignment, collaborator construction, and small
    bridge methods. Audio capture/preview property handlers now live in
    `MainViewModel.AudioPropertyChanges.cs`, microphone monitor/device

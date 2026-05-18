@@ -29,9 +29,6 @@ public partial class MainViewModel
     private string? _pendingSavedMicrophoneDeviceId;
     private double? _pendingSavedMicrophoneVolume;
     private string? _pendingSavedMicrophoneVolumeDeviceId;
-    private string? _pendingSavedDeviceAudioMode;
-    private double? _pendingSavedAnalogAudioGainPercent;
-    private bool _isRefreshingDeviceAudioControls;
     private int _audioEnabledChangeGeneration;
     private bool _suppressAudioPreviewEnabledChangeOperation;
     private bool _suppressMicrophoneMonitorUpdate;
@@ -50,22 +47,6 @@ public partial class MainViewModel
 
     [ObservableProperty]
     public partial double MicrophoneVolume { get; set; } = 100.0;
-
-    [ObservableProperty]
-    public partial ObservableCollection<string> AvailableDeviceAudioModes { get; set; } = new()
-    {
-        DeviceAudioMode.Hdmi,
-        DeviceAudioMode.Analog
-    };
-
-    [ObservableProperty]
-    public partial bool IsDeviceAudioControlSupported { get; set; }
-
-    [ObservableProperty]
-    public partial string SelectedDeviceAudioMode { get; set; } = DeviceAudioMode.Hdmi;
-
-    [ObservableProperty]
-    public partial double AnalogAudioGainPercent { get; set; } = 50;
 
     [ObservableProperty]
     public partial double AudioPeak { get; set; }

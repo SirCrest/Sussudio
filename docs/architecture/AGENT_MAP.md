@@ -2189,9 +2189,10 @@ Primary current owners:
   and non-preview coordination gates; `MainViewModel.PreviewState.cs` owns
   preview lifecycle flags, preview reinitialize coordination, and preview
   request events; `MainViewModel.CaptureState.cs` owns capture-selection, source
-  telemetry, and HDR state; `MainViewModel.AudioState.cs` owns audio,
-  microphone, and device-audio state; `MainViewModel.FlashbackState.cs` owns
-  Flashback timeline/export state. `MainViewModel.AudioMeters.cs` owns live
+  telemetry, and HDR state; `MainViewModel.AudioState.cs` owns audio and
+  microphone state; `MainViewModel.DeviceAudioState.cs` owns device-native
+  audio/XU UI state; `MainViewModel.FlashbackState.cs` owns Flashback
+  timeline/export state. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets
   out of the root facade file. `AudioRampTraceRecorder.cs` owns the audio ramp
   diagnostic ring buffer and sampler, while `MainViewModel.AudioRampTrace.cs`
