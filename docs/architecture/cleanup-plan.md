@@ -38,6 +38,13 @@ routing through `LoggingJsonContext`, and fatal breadcrumbs. Keep WMI/system
 evidence and JSON payload routing out of the writer root so the saturation and
 shutdown behavior remains easy to audit.
 
+FFmpeg runtime location is split from capability probing without changing the
+public locator surface. `Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs` owns
+app-local, Program Files, and PATH-based runtime/tool resolution.
+`FfmpegRuntimeLocator.Probes.cs` owns cached encoder and split-encode capability
+probes, including the bounded `ProcessSupervisor` calls and timeout policy used
+by startup recording capability checks.
+
 Automation contracts have been extracted into `Sussudio.Automation.Contracts/`.
 This removes the old linked-source arrangement where app and tools compiled
 protocol/catalog files from `tools/Common`.

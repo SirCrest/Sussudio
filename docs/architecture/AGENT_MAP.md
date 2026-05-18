@@ -1740,6 +1740,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns RuntimePaths,
   FFmpeg runtime location, bounded external process supervision, MMCSS
   registration, ProcessSpec, and ProcessRunResult contract checks.
+  `FfmpegRuntimeLocator.cs` owns app-local/PATH runtime and tool resolution,
+  while `FfmpegRuntimeLocator.Probes.cs` owns cached FFmpeg encoder/split-encode
+  capability probes through bounded `ProcessSupervisor` calls.
 - `tests/Sussudio.Tests/ProjectBuildContracts.Tests.cs` owns project-file build
   and publish policy contract checks.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording

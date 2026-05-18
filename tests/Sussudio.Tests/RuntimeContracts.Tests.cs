@@ -83,14 +83,21 @@ public sealed class RuntimeContractsTests
     {
         var ffmpegText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs")
             .Replace("\r\n", "\n");
+        var ffmpegProbeText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeLocator.Probes.cs")
+            .Replace("\r\n", "\n");
         var hdrText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Recording/HdrValidationRunner.cs")
             .Replace("\r\n", "\n");
 
-        Assert.Contains("private const int ProbeTimeoutMs = 10_000;", ffmpegText);
-        Assert.Contains("new ProcessSupervisor().RunAsync", ffmpegText);
-        Assert.Contains("TimeoutMs = ProbeTimeoutMs", ffmpegText);
-        Assert.Contains("if (!result.Started || result.TimedOut || result.ExitCode != 0)", ffmpegText);
-        Assert.Contains("return result.Started && !result.TimedOut && result.ExitCode == 0;", ffmpegText);
+        Assert.Contains("internal static partial class FfmpegRuntimeLocator", ffmpegText);
+        Assert.Contains("internal static partial class FfmpegRuntimeLocator", ffmpegProbeText);
+        Assert.Contains("internal static bool TryResolveNativeRuntimeRoot", ffmpegText);
+        Assert.Contains("internal static string FindToolPath", ffmpegText);
+        Assert.Contains("private const int ProbeTimeoutMs = 10_000;", ffmpegProbeText);
+        Assert.Contains("new ProcessSupervisor().RunAsync", ffmpegProbeText);
+        Assert.Contains("TimeoutMs = ProbeTimeoutMs", ffmpegProbeText);
+        Assert.Contains("if (!result.Started || result.TimedOut || result.ExitCode != 0)", ffmpegProbeText);
+        Assert.Contains("return result.Started && !result.TimedOut && result.ExitCode == 0;", ffmpegProbeText);
+        Assert.DoesNotContain("new ProcessSupervisor().RunAsync", ffmpegText);
         Assert.Contains("private const int ValidationTimeoutMs = 30_000;", hdrText);
         Assert.Contains("new ProcessSupervisor().RunAsync", hdrText);
         Assert.Contains("validator-timeout", hdrText);
