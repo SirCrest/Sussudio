@@ -2065,7 +2065,12 @@ Primary current owners:
   Flashback exporter final-output replacement, overwrite refusal/force
   behavior, and final validation cleanup tests.
 - `tests/Sussudio.Tests/Flashback.Playback.State.Tests.cs` owns Flashback
-  playback state, position, snap-live, and no-op command tests.
+  playback initial state, pre-initialize command no-ops, successful no-op
+  failure clearing, and coalesced command state tests.
+- `tests/Sussudio.Tests/Flashback.Playback.SourceShape.Tests.cs` owns
+  Flashback playback command-position clamping, saturating timestamp arithmetic,
+  segment-open recovery, near-live snap, snap-live identity cleanup,
+  pause-from-live display, and paused nudge source-shape tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Markers.Tests.cs` owns Flashback
   playback in/out marker API, normalization, disposal, and marker clamp tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Thread.Tests.cs` owns Flashback
