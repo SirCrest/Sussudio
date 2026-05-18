@@ -1604,8 +1604,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/CaptureService.FlashbackOrchestrationSource.Tests.cs`
   owns the source family helper for Flashback backend orchestration partials
   and recording finalization partials plus the focused-partial ownership
-  contracts, including LibAv live-preview restoration, post-recording
-  microphone monitor restart, and recording outcome-state ownership.
+  contracts, including LibAv live-preview restoration and recording
+  outcome-state ownership.
+- `tests/Sussudio.Tests/CaptureService.AudioOwnershipSource.Tests.cs` owns
+  CaptureService audio source-family helpers, audio focused-partial ownership,
+  PreviewAudioGraphResources ownership, and post-recording microphone monitor
+  restart assertions.
 - `tests/Sussudio.Tests/CaptureCadence.Tests.cs` owns packet-hash duplicate
   cadence and visual-cadence crop sampling assertions.
 - `tests/Sussudio.Tests/UnifiedVideoCapture.Runtime.Tests.cs` owns
