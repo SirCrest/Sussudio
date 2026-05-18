@@ -3190,11 +3190,12 @@ Remaining `tools/Common` ownership:
     `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.*.cs` family so
     frame-rate, resolution, mode-selection, late-probe, recording-format, and
     runtime-flag assertions stay near their matching policy owners.
-    The resolution option lifecycle now lives in
-    `MainViewModel.ResolutionOptions.cs`: automatic resolution dropdown option
-    construction, automatic resolution-selection adaptation, effective Source
-    resolution state, state-backed delegates to the pure selection policy, and
-    resolution dropdown mutation.
+    Resolution option rebuilds now live in
+    `MainViewModel.ResolutionOptionRebuild.cs`: automatic resolution dropdown
+    option construction, automatic resolution-selection adaptation,
+    auto-resolution state refresh, and resolution dropdown mutation. Effective
+    Source resolution state and state-backed delegates to the pure selection
+    policy live in `MainViewModel.ResolutionOptions.cs`.
     Automatic resolution ranking and source-aware frame-rate selection now
     live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; auto-resolution
     display text used by status and telemetry presentation lives in
@@ -3210,9 +3211,10 @@ Remaining `tools/Common` ownership:
    selection, `CaptureResolutionSelectionPolicy.Sdr.cs` owns SDR auto/fallback
    selection, and `CaptureResolutionSelectionPolicy.Models.cs` owns the
    request/result records.
-   State-backed delegates for callers that still live across the partial
-   family, dropdown rebuild, collection mutation, and property notifications
-   live together in `MainViewModel.ResolutionOptions.cs`.
+   State-backed delegates for callers that still live across the partial family
+   stay in `MainViewModel.ResolutionOptions.cs`, while dropdown rebuild,
+   collection mutation, and property notifications live in
+   `MainViewModel.ResolutionOptionRebuild.cs`.
    Source telemetry summary, telemetry age, and target-summary display text
    formatting now live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`;
    HDR runtime state/readiness projection and target-summary property

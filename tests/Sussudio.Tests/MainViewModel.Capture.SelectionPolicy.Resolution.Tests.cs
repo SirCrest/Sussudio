@@ -5,6 +5,7 @@ static partial class Program
     private static Task ResolutionSelectionPolicy_LivesInFocusedPartial()
     {
         var resolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptions.cs").Replace("\r\n", "\n");
+        var resolutionOptionRebuildText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptionRebuild.cs").Replace("\r\n", "\n");
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CapturePresentation.cs").Replace("\r\n", "\n");
         var autoCaptureSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs").Replace("\r\n", "\n");
         var helperText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
@@ -16,15 +17,15 @@ static partial class Program
         var modelsPolicyText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Models.cs").Replace("\r\n", "\n");
         var policyFamilyText = helperText + sourcePolicyText + hdrPolicyText + sdrPolicyText + supportPolicyText + rankingPolicyText + modelsPolicyText;
 
-        AssertContains(resolutionOptionsText, "private void RebuildResolutionOptions()");
-        AssertContains(resolutionOptionsText, "private AutoCaptureSelection? ResolveAutoCaptureSelection(");
-        AssertContains(resolutionOptionsText, "AutoCaptureSelectionPolicy.Select(new AutoCaptureSelectionRequest(");
-        AssertContains(resolutionOptionsText, "CaptureModeOptionsBuilder.BuildResolutionOptions(");
-        AssertContains(resolutionOptionsText, "AvailableResolutions.Clear();");
-        AssertContains(resolutionOptionsText, "AvailableResolutions.Add(option);");
+        AssertContains(resolutionOptionRebuildText, "private void RebuildResolutionOptions()");
+        AssertContains(resolutionOptionRebuildText, "private AutoCaptureSelection? ResolveAutoCaptureSelection(");
+        AssertContains(resolutionOptionRebuildText, "AutoCaptureSelectionPolicy.Select(new AutoCaptureSelectionRequest(");
+        AssertContains(resolutionOptionRebuildText, "CaptureModeOptionsBuilder.BuildResolutionOptions(");
+        AssertContains(resolutionOptionRebuildText, "AvailableResolutions.Clear();");
+        AssertContains(resolutionOptionRebuildText, "AvailableResolutions.Add(option);");
         AssertDoesNotContain(resolutionOptionsText, "private string GetSelectedResolutionDisplayText()");
-        AssertContains(resolutionOptionsText, "private ResolutionOption CreateAutoResolutionOption()");
-        AssertContains(resolutionOptionsText, "private bool ShouldSelectAutoResolutionOption(");
+        AssertContains(resolutionOptionRebuildText, "private ResolutionOption CreateAutoResolutionOption()");
+        AssertContains(resolutionOptionRebuildText, "private bool ShouldSelectAutoResolutionOption(");
         AssertDoesNotContain(resolutionOptionsText, "private ResolutionOption? SelectBestAutoResolutionCandidate(");
         AssertEqual(
             false,
@@ -42,10 +43,11 @@ static partial class Program
         AssertContains(autoCaptureSelectionPolicyText, "private static MediaFormat SelectPreferredFrameRateFormat(");
         AssertDoesNotContain(autoCaptureSelectionPolicyText, "AvailableResolutions.Clear();");
         AssertDoesNotContain(autoCaptureSelectionPolicyText, "SelectedResolution =");
-        AssertContains(resolutionOptionsText, "/// Resolution option building and dropdown mutation.");
-        AssertContains(resolutionOptionsText, "private void UpdateAutoResolutionState(AutoCaptureSelection? selection)");
-        AssertContains(resolutionOptionsText, "AutoResolvedWidth = selection?.Resolution.Width;");
-        AssertContains(resolutionOptionsText, "private void ClearAutoResolutionState()");
+        AssertContains(resolutionOptionsText, "/// Effective resolution state and selection-policy delegates.");
+        AssertContains(resolutionOptionRebuildText, "/// Resolution option rebuilding and observable dropdown mutation.");
+        AssertContains(resolutionOptionRebuildText, "private void UpdateAutoResolutionState(AutoCaptureSelection? selection)");
+        AssertContains(resolutionOptionRebuildText, "AutoResolvedWidth = selection?.Resolution.Width;");
+        AssertContains(resolutionOptionRebuildText, "private void ClearAutoResolutionState()");
         AssertContains(capturePresentationText, "/// Capture presentation adapters that apply runtime/source state to ViewModel labels.");
         AssertContains(capturePresentationText, "private string GetSelectedResolutionDisplayText()");
         AssertContains(capturePresentationText, "return $\"{AutoResolutionValue} ({GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value)} @ {friendlyRate.Value:0} fps)\";");
@@ -54,7 +56,7 @@ static partial class Program
         AssertContains(resolutionOptionsText, "private string? GetEffectiveResolutionKey(");
         AssertContains(resolutionOptionsText, "private bool TryGetEffectiveResolutionSelection(");
         AssertDoesNotContain(resolutionOptionsText, "private ResolutionOption? SelectHdrResolutionOption(");
-        AssertContains(resolutionOptionsText, "CaptureResolutionSelectionPolicy.Select(new CaptureResolutionSelectionRequest(");
+        AssertContains(resolutionOptionRebuildText, "CaptureResolutionSelectionPolicy.Select(new CaptureResolutionSelectionRequest(");
         AssertContains(resolutionOptionsText, "CaptureResolutionSelectionPolicy.TryParseResolutionKey(");
         AssertContains(resolutionOptionsText, "CaptureResolutionSelectionPolicy.ResolutionSupportsFriendlyFrameRate(");
         AssertContains(resolutionOptionsText, "CaptureResolutionSelectionPolicy.BuildHdrSupportHint(");

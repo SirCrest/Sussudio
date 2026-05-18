@@ -2353,11 +2353,12 @@ Primary current owners:
   `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`
   owns the pure late-probe decision policy for HDR retarget, SDR NV12 retarget,
   MJPG HFR preservation, session mismatch, and active-capture restore.
-  `MainViewModel.ResolutionOptions.cs` owns the resolution option lifecycle:
+  `MainViewModel.ResolutionOptionRebuild.cs` owns resolution option rebuilds:
   automatic resolution dropdown option construction, automatic
-  resolution-selection adaptation over current ViewModel state, effective
-  Source resolution state, state-backed delegates to the pure selection policy,
-  and resolution dropdown mutation.
+  resolution-selection adaptation over current ViewModel state,
+  auto-resolution state refresh, and resolution dropdown mutation.
+  `MainViewModel.ResolutionOptions.cs` owns effective Source resolution state
+  and state-backed delegates to the pure selection policy.
   `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs` owns automatic resolution
   ranking and source-aware frame-rate selection.
   `Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs` owns the pure
@@ -2371,7 +2372,8 @@ Primary current owners:
   selection, and `CaptureResolutionSelectionPolicy.Models.cs` owns the policy
   request/result records.
   State-backed capability queries for callers that live across the ViewModel
-  partial family stay in `MainViewModel.ResolutionOptions.cs`.
+  partial family stay in `MainViewModel.ResolutionOptions.cs`; observable
+  resolution dropdown mutation stays in `MainViewModel.ResolutionOptionRebuild.cs`.
   `MainViewModel.Telemetry.cs` owns source telemetry projection and
   source-aware auto-retargeting hints.
   `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
