@@ -90,6 +90,9 @@ static partial class Program
             "Preview reinit transition controller preserves transition state contracts",
             PreviewReinitTransitionController_PreservesTransitionStateContracts);
         await AddCheckAsync(results,
+            "Preview reinitialization waits for pending Flashback cycles",
+            PreviewReinitialization_WaitsForPendingFlashbackCycle);
+        await AddCheckAsync(results,
             "Preview startup signal formatter preserves string contracts",
             PreviewStartupSignalFormatter_PreservesSignalStrings);
         await AddCheckAsync(results,

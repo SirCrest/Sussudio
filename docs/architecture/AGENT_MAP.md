@@ -1386,7 +1386,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Watchdog.Tests.cs`
   owns preview startup watchdog timeout and failure-stop contract assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs`
-  owns preview startup session-state and reinitialize-transition assertions.
+  owns preview startup session-state, reinitialize-transition, and pending
+  Flashback-cycle wait assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Signals.Tests.cs`
   owns readiness-signal controller and startup/failure formatter assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs`
@@ -1395,8 +1396,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
   Flashback export backend-lease and export-operation lock assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`
-  owns MainViewModel Flashback coordinator-routing assertions, including the
-  Flashback settings owner for automation enable/restart entry points.
+  owns MainViewModel Flashback coordinator-routing assertions, Flashback export
+  view-model lifecycle assertions, and the Flashback settings owner for
+  automation enable/restart entry points.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Scrub.Tests.cs`
   owns Flashback scrub, release/cancel/capture-lost, and fullscreen Flashback
   bridge assertions: shortcut gating, timeline visibility, and scrub-end
