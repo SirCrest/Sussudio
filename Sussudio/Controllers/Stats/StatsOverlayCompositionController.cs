@@ -14,6 +14,15 @@ namespace Sussudio.Controllers;
 
 internal sealed class StatsOverlayCompositionControllerContext
 {
+    public required StatsOverlayShellContext Shell { get; init; }
+    public required StatsOverlaySnapshotSourceContext SnapshotSources { get; init; }
+    public required StatsOverlayDockTargetsContext DockTargets { get; init; }
+    public required StatsOverlayHardwareSourceContext HardwareSources { get; init; }
+    public required StatsOverlayFrameTimeTargetsContext FrameTimeTargets { get; init; }
+}
+
+internal sealed class StatsOverlayShellContext
+{
     public required DispatcherQueue DispatcherQueue { get; init; }
     public required ToggleButton StatsToggle { get; init; }
     public required Border StatsDockPanel { get; init; }
@@ -21,12 +30,20 @@ internal sealed class StatsOverlayCompositionControllerContext
     public required ToggleButton FrameTimeOverlayToggle { get; init; }
     public required Func<bool> IsWindowClosing { get; init; }
     public required Action<bool> SetStatsVisible { get; init; }
+    public required Action<string> Log { get; init; }
+}
+
+internal sealed class StatsOverlaySnapshotSourceContext
+{
     public required Func<CaptureHealthSnapshot> GetCaptureHealthSnapshot { get; init; }
     public required Func<D3D11PreviewRenderer?> GetRenderer { get; init; }
     public required Func<double> GetPreviewMinPresentationIntervalMs { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
     public required Func<bool> IsRecording { get; init; }
-    public required Action<string> Log { get; init; }
+}
+
+internal sealed class StatsOverlayDockTargetsContext
+{
     public required StackPanel DiagnosticsContent { get; init; }
     public required TextBlock SessionStateValue { get; init; }
     public required TextBlock SummaryCaptureValue { get; init; }
@@ -72,9 +89,17 @@ internal sealed class StatsOverlayCompositionControllerContext
     public required UIElement DecodeSection { get; init; }
     public required StackPanel DecodeContent { get; init; }
     public required StackPanel GpuContent { get; init; }
+}
+
+internal sealed class StatsOverlayHardwareSourceContext
+{
     public required Func<ParallelMjpegDecodePipeline.PipelineTimingMetrics?> GetMjpegPipelineTimingDetails { get; init; }
     public required Func<int?> GetPendingPreviewFrameCount { get; init; }
     public required Func<NvmlSnapshot?> GetNvmlSnapshot { get; init; }
+}
+
+internal sealed class StatsOverlayFrameTimeTargetsContext
+{
     public required TextBlock FrameTimeSourceValue { get; init; }
     public required TextBlock FrameTimeVisualValue { get; init; }
     public required TextBlock FrameTimePreviewValue { get; init; }
@@ -166,11 +191,11 @@ internal sealed class StatsOverlayCompositionController
     {
         return new StatsSnapshotProvider(new StatsSnapshotProviderContext
         {
-            GetCaptureHealthSnapshot = context.GetCaptureHealthSnapshot,
-            GetRenderer = context.GetRenderer,
-            GetPreviewMinPresentationIntervalMs = context.GetPreviewMinPresentationIntervalMs,
-            IsPreviewing = context.IsPreviewing,
-            IsRecording = context.IsRecording
+            GetCaptureHealthSnapshot = context.SnapshotSources.GetCaptureHealthSnapshot,
+            GetRenderer = context.SnapshotSources.GetRenderer,
+            GetPreviewMinPresentationIntervalMs = context.SnapshotSources.GetPreviewMinPresentationIntervalMs,
+            IsPreviewing = context.SnapshotSources.IsPreviewing,
+            IsRecording = context.SnapshotSources.IsRecording
         });
     }
 
@@ -178,17 +203,17 @@ internal sealed class StatsOverlayCompositionController
     {
         return new StatsOverlayController(new StatsOverlayControllerContext
         {
-            DispatcherQueue = context.DispatcherQueue,
-            StatsToggle = context.StatsToggle,
-            StatsDockPanel = context.StatsDockPanel,
-            FrameTimeOverlay = context.FrameTimeOverlay,
-            FrameTimeOverlayToggle = context.FrameTimeOverlayToggle,
-            IsWindowClosing = context.IsWindowClosing,
-            SetStatsVisible = context.SetStatsVisible,
+            DispatcherQueue = context.Shell.DispatcherQueue,
+            StatsToggle = context.Shell.StatsToggle,
+            StatsDockPanel = context.Shell.StatsDockPanel,
+            FrameTimeOverlay = context.Shell.FrameTimeOverlay,
+            FrameTimeOverlayToggle = context.Shell.FrameTimeOverlayToggle,
+            IsWindowClosing = context.Shell.IsWindowClosing,
+            SetStatsVisible = context.Shell.SetStatsVisible,
             GetStatsSnapshot = GetStatsSnapshot,
             UpdateStatsDock = _statsDockControllerGraph.RefreshDock,
             UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,
-            Log = context.Log
+            Log = context.Shell.Log
         });
     }
 
@@ -196,8 +221,8 @@ internal sealed class StatsOverlayCompositionController
     {
         return new StatsSectionChromeController(new StatsSectionChromeControllerContext
         {
-            StatsDockPanel = context.StatsDockPanel,
-            DiagnosticsContent = context.DiagnosticsContent,
+            StatsDockPanel = context.Shell.StatsDockPanel,
+            DiagnosticsContent = context.DockTargets.DiagnosticsContent,
             RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection
         });
     }
@@ -206,57 +231,57 @@ internal sealed class StatsOverlayCompositionController
     {
         return new StatsDockControllerGraph(new StatsDockControllerGraphContext
         {
-            IsWindowClosing = context.IsWindowClosing,
-            StatsDockPanel = context.StatsDockPanel,
-            DiagnosticsContent = context.DiagnosticsContent,
+            IsWindowClosing = context.Shell.IsWindowClosing,
+            StatsDockPanel = context.Shell.StatsDockPanel,
+            DiagnosticsContent = context.DockTargets.DiagnosticsContent,
             GetStatsSnapshot = GetStatsSnapshot,
-            SessionStateValue = context.SessionStateValue,
-            SummaryCaptureValue = context.SummaryCaptureValue,
-            SummaryPreviewValue = context.SummaryPreviewValue,
-            SummaryRendererFpsValue = context.SummaryRendererFpsValue,
-            SummaryVisualFpsValue = context.SummaryVisualFpsValue,
-            SummaryLatencyValue = context.SummaryLatencyValue,
-            SourceResolutionValue = context.SourceResolutionValue,
-            SourceFrameRateValue = context.SourceFrameRateValue,
-            SourceHdrValue = context.SourceHdrValue,
-            SourceFormatValue = context.SourceFormatValue,
-            TelemetryOriginValue = context.TelemetryOriginValue,
-            AdcOnOffValue = context.AdcOnOffValue,
-            AdcGainValue = context.AdcGainValue,
-            SourceFpsValue = context.SourceFpsValue,
-            SourceExpectedFpsValue = context.SourceExpectedFpsValue,
-            SourceAvgValue = context.SourceAvgValue,
-            SourceP95Value = context.SourceP95Value,
-            SourceJitterValue = context.SourceJitterValue,
-            SourceGapsValue = context.SourceGapsValue,
-            SourceDropsValue = context.SourceDropsValue,
-            PreviewFpsValue = context.PreviewFpsValue,
-            PreviewAvgValue = context.PreviewAvgValue,
-            PreviewP95Value = context.PreviewP95Value,
-            PreviewSlowValue = context.PreviewSlowValue,
-            VisualFpsValue = context.VisualFpsValue,
-            VisualMotionValue = context.VisualMotionValue,
-            PipelineLatencyValue = context.PipelineLatencyValue,
-            SourceDeliveredValue = context.SourceDeliveredValue,
-            SourceDroppedValue = context.SourceDroppedValue,
-            RendererRenderedValue = context.RendererRenderedValue,
-            RendererDroppedValue = context.RendererDroppedValue,
-            PerformanceScoreValue = context.PerformanceScoreValue,
-            AvSyncDriftValue = context.AvSyncDriftValue,
-            AvSyncDriftRateValue = context.AvSyncDriftRateValue,
-            AvSyncEncoderRow = context.AvSyncEncoderRow,
-            AvSyncEncoderValue = context.AvSyncEncoderValue,
-            EncoderSection = context.EncoderSection,
-            EncoderCodecValue = context.EncoderCodecValue,
-            EncoderResolutionValue = context.EncoderResolutionValue,
-            EncoderFrameRateValue = context.EncoderFrameRateValue,
-            EncoderBitrateValue = context.EncoderBitrateValue,
-            DecodeSection = context.DecodeSection,
-            DecodeContent = context.DecodeContent,
-            GpuContent = context.GpuContent,
-            GetMjpegPipelineTimingDetails = context.GetMjpegPipelineTimingDetails,
-            GetPendingPreviewFrameCount = context.GetPendingPreviewFrameCount,
-            GetNvmlSnapshot = context.GetNvmlSnapshot
+            SessionStateValue = context.DockTargets.SessionStateValue,
+            SummaryCaptureValue = context.DockTargets.SummaryCaptureValue,
+            SummaryPreviewValue = context.DockTargets.SummaryPreviewValue,
+            SummaryRendererFpsValue = context.DockTargets.SummaryRendererFpsValue,
+            SummaryVisualFpsValue = context.DockTargets.SummaryVisualFpsValue,
+            SummaryLatencyValue = context.DockTargets.SummaryLatencyValue,
+            SourceResolutionValue = context.DockTargets.SourceResolutionValue,
+            SourceFrameRateValue = context.DockTargets.SourceFrameRateValue,
+            SourceHdrValue = context.DockTargets.SourceHdrValue,
+            SourceFormatValue = context.DockTargets.SourceFormatValue,
+            TelemetryOriginValue = context.DockTargets.TelemetryOriginValue,
+            AdcOnOffValue = context.DockTargets.AdcOnOffValue,
+            AdcGainValue = context.DockTargets.AdcGainValue,
+            SourceFpsValue = context.DockTargets.SourceFpsValue,
+            SourceExpectedFpsValue = context.DockTargets.SourceExpectedFpsValue,
+            SourceAvgValue = context.DockTargets.SourceAvgValue,
+            SourceP95Value = context.DockTargets.SourceP95Value,
+            SourceJitterValue = context.DockTargets.SourceJitterValue,
+            SourceGapsValue = context.DockTargets.SourceGapsValue,
+            SourceDropsValue = context.DockTargets.SourceDropsValue,
+            PreviewFpsValue = context.DockTargets.PreviewFpsValue,
+            PreviewAvgValue = context.DockTargets.PreviewAvgValue,
+            PreviewP95Value = context.DockTargets.PreviewP95Value,
+            PreviewSlowValue = context.DockTargets.PreviewSlowValue,
+            VisualFpsValue = context.DockTargets.VisualFpsValue,
+            VisualMotionValue = context.DockTargets.VisualMotionValue,
+            PipelineLatencyValue = context.DockTargets.PipelineLatencyValue,
+            SourceDeliveredValue = context.DockTargets.SourceDeliveredValue,
+            SourceDroppedValue = context.DockTargets.SourceDroppedValue,
+            RendererRenderedValue = context.DockTargets.RendererRenderedValue,
+            RendererDroppedValue = context.DockTargets.RendererDroppedValue,
+            PerformanceScoreValue = context.DockTargets.PerformanceScoreValue,
+            AvSyncDriftValue = context.DockTargets.AvSyncDriftValue,
+            AvSyncDriftRateValue = context.DockTargets.AvSyncDriftRateValue,
+            AvSyncEncoderRow = context.DockTargets.AvSyncEncoderRow,
+            AvSyncEncoderValue = context.DockTargets.AvSyncEncoderValue,
+            EncoderSection = context.DockTargets.EncoderSection,
+            EncoderCodecValue = context.DockTargets.EncoderCodecValue,
+            EncoderResolutionValue = context.DockTargets.EncoderResolutionValue,
+            EncoderFrameRateValue = context.DockTargets.EncoderFrameRateValue,
+            EncoderBitrateValue = context.DockTargets.EncoderBitrateValue,
+            DecodeSection = context.DockTargets.DecodeSection,
+            DecodeContent = context.DockTargets.DecodeContent,
+            GpuContent = context.DockTargets.GpuContent,
+            GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,
+            GetPendingPreviewFrameCount = context.HardwareSources.GetPendingPreviewFrameCount,
+            GetNvmlSnapshot = context.HardwareSources.GetNvmlSnapshot
         });
     }
 
@@ -265,15 +290,15 @@ internal sealed class StatsOverlayCompositionController
     {
         return new FrameTimeOverlayPresentationController(new FrameTimeOverlayPresentationControllerContext
         {
-            SourceValue = context.FrameTimeSourceValue,
-            VisualValue = context.FrameTimeVisualValue,
-            PreviewValue = context.FrameTimePreviewValue,
-            LatencyValue = context.FrameTimeLatencyValue,
-            StatusValue = context.FrameTimeStatusValue,
-            Canvas = context.FrameTimeCanvas,
-            VisualLine = context.FrameTimeVisualLine,
-            PreviewLine = context.FrameTimePreviewLine,
-            ExpectedLine = context.FrameTimeExpectedLine
+            SourceValue = context.FrameTimeTargets.FrameTimeSourceValue,
+            VisualValue = context.FrameTimeTargets.FrameTimeVisualValue,
+            PreviewValue = context.FrameTimeTargets.FrameTimePreviewValue,
+            LatencyValue = context.FrameTimeTargets.FrameTimeLatencyValue,
+            StatusValue = context.FrameTimeTargets.FrameTimeStatusValue,
+            Canvas = context.FrameTimeTargets.FrameTimeCanvas,
+            VisualLine = context.FrameTimeTargets.FrameTimeVisualLine,
+            PreviewLine = context.FrameTimeTargets.FrameTimePreviewLine,
+            ExpectedLine = context.FrameTimeTargets.FrameTimeExpectedLine
         });
     }
 }

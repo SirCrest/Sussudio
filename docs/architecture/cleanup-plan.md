@@ -1920,7 +1920,9 @@ Stats dock, stats toggle, and frame-time overlay lifecycle now live in
 composition graph construction now lives in
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`: it owns the
 snapshot provider, frame-time presentation, dock graph, overlay controller,
-section chrome controller, and construction order between them;
+section chrome controller, and construction order between them. Its context is
+grouped into shell controls, snapshot sources, dock targets, hardware sources,
+and frame-time targets instead of a flat dependency bag;
 stats dock presentation/diagnostic/hardware/refresh controller graph wiring
 now lives in `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs`;
 the overlay partial is the XAML-facing adapter for stats overlay binding setup,

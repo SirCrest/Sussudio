@@ -1128,7 +1128,10 @@ Primary current owners:
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns the
   stats overlay composition graph: snapshot provider, frame-time presentation,
   dock graph, overlay controller, section chrome controller, and the required
-  construction order between them.
+  construction order between them. Its composition context is grouped into
+  shell controls, snapshot sources, dock targets, hardware sources, and
+  frame-time targets so the XAML adapter stays auditable without tiny context
+  files.
   `Sussudio/MainWindow.StatsOverlay.cs` owns the stats overlay XAML adapter,
   binding setup, and visibility commands delegated to the composition
   controller.
