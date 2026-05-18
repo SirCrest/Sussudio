@@ -2424,8 +2424,9 @@ open-recordings button workflows now live in
 `Sussudio/Controllers/Recording/Output/OutputPathController.cs`; pure truncation
 text policy stays in
 `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs`.
-`MainWindow.OutputPath.cs` is the XAML-facing adapter used by binding setup,
-property changes, and button events.
+`OutputPathController` also owns the output-path property-change route;
+`MainWindow.OutputPath.cs` is the XAML-facing adapter used by binding setup and
+button events.
 
 Diagnostic session DTOs live in model files without tiny property-only shards:
 `tools/Common/DiagnosticSessionOptions.cs`,

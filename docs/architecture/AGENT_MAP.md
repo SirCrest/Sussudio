@@ -2116,9 +2116,9 @@ Primary current owners:
   adapter. Recording-specific property-name routing, record-button, glow, pulse,
   and recording-time lockout projection live in
   `RecordingStatePresentationController` and `RecordingStatePresentationPolicy`.
-- `Sussudio/MainWindow.OutputPath.cs` owns the output-path property-change
-  router and XAML-facing button/display adapter, delegating output-path textbox
-  updates and browse/open commands to `OutputPathController`.
+- `Sussudio/MainWindow.OutputPath.cs` is the XAML-facing output-path
+  button/display adapter. `OutputPathController` owns output-path property-
+  change routing, textbox updates, and browse/open commands.
 - `Sussudio/MainWindow.CaptureOptionBindings.cs` is the XAML-facing adapter
   for capture option setup, event binding, and capture-option/source-signal
   property-change routing; the property-name router lives in

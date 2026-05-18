@@ -74,7 +74,7 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeCaptureOptionPresentationController();");
         AssertContains(propertyChangedText, "TryHandleOutputPropertyChanged(propertyName)");
         AssertContains(propertyChangedText, "TryHandleCaptureOptionPropertyChanged(propertyName)");
-        AssertContains(outputPathDisplayText, "UpdateOutputPathDisplay();");
+        AssertContains(outputPathDisplayText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");
         AssertContains(captureOptionBindingsText, "private bool TryHandleCaptureOptionPropertyChanged(string propertyName)");
         AssertContains(captureOptionPropertyChangedMethod, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");
         AssertDoesNotContain(captureOptionPropertyChangedMethod, "ApplyAudioClipVisibility();");

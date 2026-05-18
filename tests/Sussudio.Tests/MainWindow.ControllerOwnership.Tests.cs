@@ -12,6 +12,7 @@ static partial class Program
         var recordingText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
         var recordingStatePresentationControllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
         var outputText = ReadRepoFile("Sussudio/MainWindow.OutputPath.cs").Replace("\r\n", "\n");
+        var outputPathControllerText = ReadRepoFile("Sussudio/Controllers/Recording/Output/OutputPathController.cs").Replace("\r\n", "\n");
         var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
         var captureOptionBindingControllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
         var audioText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
@@ -96,7 +97,10 @@ static partial class Program
         AssertContains(recordingStatePresentationControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
         AssertContains(recordingStatePresentationControllerText, "case nameof(MainViewModel.IsRecording):");
         AssertContains(outputText, "private bool TryHandleOutputPropertyChanged(string propertyName)");
-        AssertContains(outputText, "case nameof(MainViewModel.OutputPath):");
+        AssertContains(outputText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");
+        AssertDoesNotContain(outputText, "case nameof(MainViewModel.OutputPath):");
+        AssertContains(outputPathControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
+        AssertContains(outputPathControllerText, "case nameof(MainViewModel.OutputPath):");
         AssertContains(captureOptionBindingsText, "private bool TryHandleCaptureOptionPropertyChanged(string propertyName)");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");
         AssertContains(captureOptionBindingControllerText, "public bool TryHandlePropertyChanged(string propertyName)");

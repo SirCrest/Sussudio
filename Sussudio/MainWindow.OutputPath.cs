@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Sussudio.Controllers;
-using Sussudio.ViewModels;
 
 namespace Sussudio;
 
@@ -46,15 +45,5 @@ public sealed partial class MainWindow
     }
 
     private bool TryHandleOutputPropertyChanged(string propertyName)
-    {
-        switch (propertyName)
-        {
-            case nameof(MainViewModel.OutputPath):
-                UpdateOutputPathDisplay();
-                return true;
-
-            default:
-                return false;
-        }
-    }
+        => _outputPathController.TryHandlePropertyChanged(propertyName);
 }

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Controls;
+using Sussudio.ViewModels;
 using Windows.Storage.Pickers;
 
 namespace Sussudio.Controllers;
@@ -41,6 +42,19 @@ internal sealed class OutputPathController
 
         var availableWidth = _context.OutputPathTextBox.ActualWidth;
         _context.OutputPathTextBox.Text = OutputPathDisplayTextFormatter.Format(path, availableWidth);
+    }
+
+    public bool TryHandlePropertyChanged(string propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.OutputPath):
+                UpdateDisplay();
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     public async Task BrowseAsync()

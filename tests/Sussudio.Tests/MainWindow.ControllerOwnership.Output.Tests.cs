@@ -24,11 +24,14 @@ static partial class Program
         AssertContains(bindingsText, "AttachOutputPathDisplay();");
         AssertContains(propertyChangedText, "TryHandleOutputPropertyChanged(propertyName)");
         AssertContains(adapterText, "private bool TryHandleOutputPropertyChanged(string propertyName)");
-        AssertContains(adapterText, "case nameof(MainViewModel.OutputPath):");
-        AssertContains(adapterText, "UpdateOutputPathDisplay();");
+        AssertContains(adapterText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");
+        AssertDoesNotContain(adapterText, "case nameof(MainViewModel.OutputPath):");
         AssertContains(controllerText, "internal sealed class OutputPathController");
         AssertContains(controllerText, "public void AttachDisplay()");
         AssertContains(controllerText, "public void UpdateDisplay()");
+        AssertContains(controllerText, "public bool TryHandlePropertyChanged(string propertyName)");
+        AssertContains(controllerText, "case nameof(MainViewModel.OutputPath):");
+        AssertContains(controllerText, "UpdateDisplay();");
         AssertContains(controllerText, "ToolTipService.SetToolTip(_context.OutputPathTextBox, path);");
         AssertContains(controllerText, "OutputPathDisplayTextFormatter.Format(path, availableWidth);");
         AssertContains(formatterText, "internal static class OutputPathDisplayTextFormatter");
@@ -123,8 +126,7 @@ static partial class Program
         AssertContains(controllerText, "return _context.OpenRecordingsFolderAsync();");
         AssertDoesNotContain(adapterText, "ViewModel.BrowseOutputPathAsync()");
         AssertDoesNotContain(adapterText, "System.IO.Directory.Exists(path)");
-        AssertDoesNotContain(controllerText, "Sussudio.ViewModels");
-        AssertDoesNotContain(controllerText, "MainViewModel");
+        AssertContains(controllerText, "case nameof(MainViewModel.OutputPath):");
 
         return Task.CompletedTask;
     }
