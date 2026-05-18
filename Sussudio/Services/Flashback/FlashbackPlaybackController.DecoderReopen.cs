@@ -85,16 +85,12 @@ internal sealed partial class FlashbackPlaybackController
                 $"FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK reason={reason} " +
                 $"from='{System.IO.Path.GetFileName(currentPath)}' next='{System.IO.Path.GetFileName(nextPath)}' " +
                 $"target_ms={(long)seekTarget.TotalMilliseconds} effective_ms={(long)effectiveSeekTarget.TotalMilliseconds}");
-            if (decoder.IsOpen)
-            {
-                decoder.CloseFile();
-            }
-
-            fileOpen = false;
-            decoder.OpenFile(nextPath);
-            fileOpen = true;
-            _currentOpenFilePath = nextPath;
-            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
+            ReopenDecoderPlaybackFile(
+                decoder,
+                nextPath,
+                ref fileOpen,
+                updateCurrentOpenPath: true,
+                closeOnlyWhenOpen: true);
             cancellationToken.ThrowIfCancellationRequested();
             if (SeekToWithCapTelemetry(decoder, effectiveSeekTarget, reason, cancellationToken))
             {
@@ -116,9 +112,7 @@ internal sealed partial class FlashbackPlaybackController
         {
             SetReopenFailure(reason, ex.GetType().Name, effectiveSeekTarget);
             Logger.Log($"FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK_ERROR reason={reason} path='{nextPath}' type={ex.GetType().Name} msg='{ex.Message}'");
-            _decoderHwAccel = "N/A";
-            fileOpen = false;
-            _currentOpenFilePath = null;
+            MarkDecoderPlaybackFileClosed(ref fileOpen);
             return false;
         }
     }
@@ -142,16 +136,12 @@ internal sealed partial class FlashbackPlaybackController
         try
         {
             Logger.Log($"FLASHBACK_PLAYBACK_REOPEN reason={reason} offset_ms={(long)seekTarget.TotalMilliseconds}");
-            if (decoder.IsOpen)
-            {
-                decoder.CloseFile();
-            }
-
-            fileOpen = false;
-            decoder.OpenFile(currentPath);
-            fileOpen = true;
-            _currentOpenFilePath = currentPath;
-            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
+            ReopenDecoderPlaybackFile(
+                decoder,
+                currentPath,
+                ref fileOpen,
+                updateCurrentOpenPath: true,
+                closeOnlyWhenOpen: true);
             cancellationToken.ThrowIfCancellationRequested();
             if (SeekToWithCapTelemetry(decoder, seekTarget, reason, cancellationToken))
             {
@@ -170,9 +160,7 @@ internal sealed partial class FlashbackPlaybackController
         {
             SetReopenFailure(reason, ex.GetType().Name, seekTarget);
             Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'");
-            _decoderHwAccel = "N/A";
-            fileOpen = false;
-            _currentOpenFilePath = null;
+            MarkDecoderPlaybackFileClosed(ref fileOpen);
             return false;
         }
     }
@@ -196,16 +184,12 @@ internal sealed partial class FlashbackPlaybackController
         try
         {
             Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME reason={reason} offset_ms={(long)seekTarget.TotalMilliseconds}");
-            if (decoder.IsOpen)
-            {
-                decoder.CloseFile();
-            }
-
-            fileOpen = false;
-            decoder.OpenFile(currentPath);
-            fileOpen = true;
-            _currentOpenFilePath = currentPath;
-            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
+            ReopenDecoderPlaybackFile(
+                decoder,
+                currentPath,
+                ref fileOpen,
+                updateCurrentOpenPath: true,
+                closeOnlyWhenOpen: true);
             cancellationToken.ThrowIfCancellationRequested();
             if (decoder.SeekToKeyframe(seekTarget, cancellationToken))
             {
@@ -224,9 +208,7 @@ internal sealed partial class FlashbackPlaybackController
         {
             SetReopenFailure(reason, ex.GetType().Name, seekTarget);
             Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'");
-            _decoderHwAccel = "N/A";
-            fileOpen = false;
-            _currentOpenFilePath = null;
+            MarkDecoderPlaybackFileClosed(ref fileOpen);
             return false;
         }
     }
@@ -246,24 +228,17 @@ internal sealed partial class FlashbackPlaybackController
         Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN_BEFORE_SEGMENT_SWITCH pos_ms={(long)playbackPosition.TotalMilliseconds} resumePts_ms={(long)lastFrameAbsPts.TotalMilliseconds} nextStart_ms={(long)nextSegmentStart.TotalMilliseconds}");
         try
         {
-            decoder.CloseFile();
-            fileOpen = false;
-            decoder.OpenFile(currentOpenFilePath);
-            fileOpen = true;
-            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
-            var preReopenLastAudioPts = Interlocked.Read(ref _lastAudioPtsTicks);
-            Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);
-            decoder.AudioChunkCallback = null;
+            ReopenDecoderPlaybackFile(
+                decoder,
+                currentOpenFilePath,
+                ref fileOpen,
+                updateCurrentOpenPath: false,
+                closeOnlyWhenOpen: false);
+            var preReopenLastAudioPts = SuppressAudioForFmp4Reopen(decoder);
             cancellationToken.ThrowIfCancellationRequested();
             if (SeekToWithCapTelemetry(decoder, lastFrameAbsPts, "fmp4_reopen_before_segment_switch", cancellationToken))
             {
-                // Gate audio at the post-seek video PTS (seek target), not at
-                // _lastAudioPtsTicks. _lastAudioPtsTicks reflects pre-seek state;
-                // using it suppresses audio if the seek lands earlier, or creates
-                // a gap if it lands later, causing WASAPI underruns and A/V desync.
-                var audioGateTicks = lastFrameAbsPts.Ticks;
-                Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_AUDIO_GATE gate_ms={(long)lastFrameAbsPts.TotalMilliseconds} source=PostSeekVideoPts last_audio_ms={preReopenLastAudioPts / TimeSpan.TicksPerMillisecond} seek_target_ms={(long)lastFrameAbsPts.TotalMilliseconds}");
-                RestoreAudioCallback(decoder, audioGateTicks);
+                RestoreAudioAfterFmp4Reopen(decoder, lastFrameAbsPts, preReopenLastAudioPts);
                 pacingStopwatch.Restart();
                 return true;
             }
@@ -298,14 +273,13 @@ internal sealed partial class FlashbackPlaybackController
         Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN pos_ms={(long)playbackPosition.TotalMilliseconds} resumePts_ms={(long)resumeTarget.TotalMilliseconds}");
         try
         {
-            decoder.CloseFile();
-            fileOpen = false;
-            decoder.OpenFile(currentOpenFilePath);
-            fileOpen = true;
-            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
-            var preReopenLastAudioPts = Interlocked.Read(ref _lastAudioPtsTicks);
-            Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);
-            decoder.AudioChunkCallback = null;
+            ReopenDecoderPlaybackFile(
+                decoder,
+                currentOpenFilePath,
+                ref fileOpen,
+                updateCurrentOpenPath: false,
+                closeOnlyWhenOpen: false);
+            var preReopenLastAudioPts = SuppressAudioForFmp4Reopen(decoder);
             cancellationToken.ThrowIfCancellationRequested();
             if (!SeekToWithCapTelemetry(decoder, resumeTarget, "fmp4_reopen", cancellationToken))
             {
@@ -314,13 +288,7 @@ internal sealed partial class FlashbackPlaybackController
                 RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "fmp4_reopen_seek_failed");
                 return false;
             }
-            // Gate audio at the post-seek video PTS (seek target), not at
-            // _lastAudioPtsTicks. _lastAudioPtsTicks reflects pre-seek state;
-            // using it suppresses audio if the seek lands earlier, or creates
-            // a gap if it lands later, causing WASAPI underruns and A/V desync.
-            var audioGateTicks = resumeTarget.Ticks;
-            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_AUDIO_GATE gate_ms={(long)resumeTarget.TotalMilliseconds} source=PostSeekVideoPts last_audio_ms={preReopenLastAudioPts / TimeSpan.TicksPerMillisecond} seek_target_ms={(long)resumeTarget.TotalMilliseconds}");
-            RestoreAudioCallback(decoder, audioGateTicks);
+            RestoreAudioAfterFmp4Reopen(decoder, resumeTarget, preReopenLastAudioPts);
             pacingStopwatch.Restart();
             return true;
         }
@@ -334,6 +302,58 @@ internal sealed partial class FlashbackPlaybackController
             SnapToLiveOnError(decoder, ex, ref fileOpen);
             return false;
         }
+    }
+
+    private void ReopenDecoderPlaybackFile(
+        FlashbackDecoder decoder,
+        string path,
+        ref bool fileOpen,
+        bool updateCurrentOpenPath,
+        bool closeOnlyWhenOpen)
+    {
+        if (!closeOnlyWhenOpen || decoder.IsOpen)
+        {
+            decoder.CloseFile();
+        }
+
+        fileOpen = false;
+        decoder.OpenFile(path);
+        fileOpen = true;
+        if (updateCurrentOpenPath)
+        {
+            _currentOpenFilePath = path;
+        }
+
+        _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
+    }
+
+    private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)
+    {
+        _decoderHwAccel = "N/A";
+        fileOpen = false;
+        _currentOpenFilePath = null;
+    }
+
+    private long SuppressAudioForFmp4Reopen(FlashbackDecoder decoder)
+    {
+        var preReopenLastAudioPts = Interlocked.Read(ref _lastAudioPtsTicks);
+        Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);
+        decoder.AudioChunkCallback = null;
+        return preReopenLastAudioPts;
+    }
+
+    private void RestoreAudioAfterFmp4Reopen(
+        FlashbackDecoder decoder,
+        TimeSpan resumeTarget,
+        long preReopenLastAudioPts)
+    {
+        // Gate audio at the post-seek video PTS (seek target), not at
+        // _lastAudioPtsTicks. _lastAudioPtsTicks reflects pre-seek state;
+        // using it suppresses audio if the seek lands earlier, or creates
+        // a gap if it lands later, causing WASAPI underruns and A/V desync.
+        var audioGateTicks = resumeTarget.Ticks;
+        Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_AUDIO_GATE gate_ms={(long)resumeTarget.TotalMilliseconds} source=PostSeekVideoPts last_audio_ms={preReopenLastAudioPts / TimeSpan.TicksPerMillisecond} seek_target_ms={(long)resumeTarget.TotalMilliseconds}");
+        RestoreAudioCallback(decoder, audioGateTicks);
     }
 
     private bool ShouldSkipActiveFmp4ReopenNearLive(TimeSpan seekTarget, string reason)

@@ -203,7 +203,7 @@ static partial class Program
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_FMP4_REOPEN_ERROR path='{currentOpenFilePath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            SnapToLiveOnError(decoder, ex, ref fileOpen);\n            return false;");
         AssertContains(sourceText, "if (nextFile != null && !IsSamePlaybackPath(nextFile, currentOpenFilePath))");
         AssertContains(sourceText, "_currentOpenFilePath = nextFile;\n                    _decoderHwAccel = decoder.IsD3D11HwAccelerated ? \"D3D11VA\" : \"Software\";");
-        AssertContains(sourceText, "decoder.OpenFile(currentOpenFilePath);\n            fileOpen = true;\n            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? \"D3D11VA\" : \"Software\";");
+        AssertContains(sourceText, "ReopenDecoderPlaybackFile(\n                decoder,\n                currentOpenFilePath,\n                ref fileOpen,\n                updateCurrentOpenPath: false,\n                closeOnlyWhenOpen: false);");
         AssertContains(sourceText, "CheckNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false)");
         AssertOccursBefore(
             sourceText,
