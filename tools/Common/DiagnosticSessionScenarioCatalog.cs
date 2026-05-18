@@ -139,8 +139,6 @@ internal static class DiagnosticSessionScenarioCatalog
 
     internal static IReadOnlyList<string> Names { get; } = Entries.Select(static entry => entry.Name).ToArray();
 
-    internal static string HelpList { get; } = string.Join("|", Names);
-
     internal static bool TryGetEntry(string scenario, out DiagnosticSessionScenarioCatalogEntry entry)
     {
         foreach (var candidate in Entries)

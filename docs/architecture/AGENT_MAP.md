@@ -2664,7 +2664,10 @@ Primary owners:
   correlation fallback, preview-present field extraction, and malformed
   snapshot/pipe-failure fallback behavior.
 - `tools/Common/DiagnosticSessionOptions.cs` owns diagnostic session run
-  options.
+  options plus the shared tool invocation defaults and ssctl usage string.
+- `tools/Common/DiagnosticSessionScenarios.cs` owns scenario name constants,
+  MCP-compatible scenario description text, the CLI help-list constant, and
+  scenario requirement/export-verification queries over the catalog.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic-session summary DTO
   fields: core metadata, artifact paths, terminal state, actions, warnings,
   overview, capture/source, preview, Flashback recording, and Flashback export.

@@ -33,7 +33,7 @@ internal static partial class SsctlHelpWriter
         writer.WriteLine("  memory [--json]");
         WriteCatalogHelpLine(writer, AutomationCommandKind.GetAudioRampTrace, "[--json]");
         writer.WriteLine("  presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--app-present-id N] [--app-source-seq N] [--app-present-utc-ms N] [--capture-start-utc-ms N] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
-        writer.WriteLine($"  diagnostic-session [--scenario {DiagnosticSessionScenarios.HelpList}] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
+        writer.WriteLine($"  {DiagnosticSessionOptions.CliUsage}");
         writer.WriteLine();
     }
 

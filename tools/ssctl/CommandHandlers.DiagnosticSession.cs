@@ -7,15 +7,15 @@ internal static partial class CommandHandlers
     private static async Task<int> HandleDiagnosticSessionAsync(CommandContext context)
     {
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
-        var scenario = ParseOptionalStringFlag(context.Rest, "--scenario") ?? "observe";
-        var seconds = ParseOptionalIntFlag(context.Rest, "--seconds") ?? 10;
-        var sampleIntervalMs = ParseOptionalIntFlag(context.Rest, "--sample-ms") ?? 1000;
+        var scenario = ParseOptionalStringFlag(context.Rest, "--scenario") ?? DiagnosticSessionOptions.DefaultScenario;
+        var seconds = ParseOptionalIntFlag(context.Rest, "--seconds") ?? DiagnosticSessionOptions.DefaultDurationSeconds;
+        var sampleIntervalMs = ParseOptionalIntFlag(context.Rest, "--sample-ms") ?? DiagnosticSessionOptions.DefaultSampleIntervalMs;
         var outputDirectory = ParseOptionalStringFlag(context.Rest, "--output");
         var presentMonPath = ParseOptionalStringFlag(context.Rest, "--presentmon-path");
         var includePresentMon = ConsumeFlag(context.Rest, "--presentmon");
         var verify = ConsumeFlag(context.Rest, "--verify");
         var leaveRunning = ConsumeFlag(context.Rest, "--leave-running");
-        EnsureNoArgs(context.Rest, $"diagnostic-session [--scenario {DiagnosticSessionScenarios.HelpList}] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
+        EnsureNoArgs(context.Rest, DiagnosticSessionOptions.CliUsage);
 
         var result = await DiagnosticSessionRunner.RunAsync(
                 new DiagnosticSessionOptions

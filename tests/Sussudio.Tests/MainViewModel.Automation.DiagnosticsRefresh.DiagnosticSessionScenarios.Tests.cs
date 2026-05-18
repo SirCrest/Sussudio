@@ -3,6 +3,7 @@ static partial class Program
     private static void AssertDiagnosticSessionFlashbackScenarioOwnership(DiagnosticSessionSourceFamily diagnosticSessionSources)
     {
         var diagnosticSessionText = diagnosticSessionSources.SourceFamilyText;
+        var diagnosticModelsText = diagnosticSessionSources.ModelsText;
         var diagnosticScenariosText = diagnosticSessionSources.ScenariosText;
 
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackStressAsync(");
@@ -200,7 +201,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashbackWarningsSucceeded,");
         AssertContains(diagnosticScenariosText, "internal static class DiagnosticSessionScenarioCatalog");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");
-        AssertContains(diagnosticScenariosText, "internal static string HelpList { get; } = string.Join(\"|\", Names);");
+        AssertContains(diagnosticScenariosText, "internal const string HelpList =");
+        AssertContains(diagnosticScenariosText, "internal const string Description =");
+        AssertContains(diagnosticModelsText, "internal const string CliUsage =");
+        AssertContains(diagnosticModelsText, "DiagnosticSessionScenarios.HelpList");
         AssertContains(diagnosticScenariosText, "DiagnosticSessionScenarioCatalog.TryGetEntry(normalized, out _)");
         AssertContains(diagnosticScenariosText, "DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry) && entry.RequiresPreview");
         AssertContains(diagnosticScenariosText, "entry.FlashbackExportVerificationFileName");

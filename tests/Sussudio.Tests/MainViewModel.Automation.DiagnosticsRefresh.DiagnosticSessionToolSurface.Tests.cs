@@ -9,20 +9,18 @@ static partial class Program
         var mcpDiagnosticSessionText = diagnosticSessionToolSources.McpDiagnosticSessionText;
         AssertContains(ssctlProgramText, "SsctlHelpWriter.Write(Console.Out);");
         AssertDoesNotContain(ssctlProgramText, "DiagnosticSessionScenarios.HelpList");
-        AssertContains(ssctlHelpText, "DiagnosticSessionScenarios.HelpList");
-        AssertContains(ssctlCommandHandlersText, "DiagnosticSessionScenarios.HelpList");
-        AssertContains(mcpDiagnosticSessionText, "flashback-export-playback");
-        AssertContains(mcpDiagnosticSessionText, "flashback-playback");
-        AssertContains(mcpDiagnosticSessionText, "flashback-segment-playback");
-        AssertContains(mcpDiagnosticSessionText, "flashback-encoder-cycle");
-        AssertContains(mcpDiagnosticSessionText, "flashback-range-export");
-        AssertContains(mcpDiagnosticSessionText, "flashback-range-export-audio-switch");
-        AssertContains(mcpDiagnosticSessionText, "flashback-disable-during-export");
-        AssertContains(mcpDiagnosticSessionText, "flashback-rotated-export");
-        AssertContains(mcpDiagnosticSessionText, "flashback-preview-cycle");
-        AssertContains(mcpDiagnosticSessionText, "flashback-playback-preview-cycle");
-        AssertContains(mcpDiagnosticSessionText, "flashback-recording-preview-cycle");
-        AssertContains(mcpDiagnosticSessionText, "flashback-recording-settings-deferred");
-        AssertContains(mcpDiagnosticSessionText, "flashback-recording-export-rejected");
+        AssertContains(ssctlHelpText, "DiagnosticSessionOptions.CliUsage");
+        AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.CliUsage");
+        AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.DefaultScenario");
+        AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.DefaultDurationSeconds");
+        AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.DefaultSampleIntervalMs");
+        AssertContains(mcpDiagnosticSessionText, "DiagnosticSessionScenarios.Description");
+        AssertContains(mcpDiagnosticSessionText, "DiagnosticSessionOptions.DefaultScenario");
+        AssertContains(mcpDiagnosticSessionText, "DiagnosticSessionOptions.DefaultDurationSeconds");
+        AssertContains(mcpDiagnosticSessionText, "DiagnosticSessionOptions.DefaultSampleIntervalMs");
+        AssertDoesNotContain(mcpDiagnosticSessionText, "Session scenario: observe,");
+        AssertDoesNotContain(mcpDiagnosticSessionText, "string scenario = \"observe\"");
+        AssertDoesNotContain(mcpDiagnosticSessionText, "int seconds = 10");
+        AssertDoesNotContain(mcpDiagnosticSessionText, "int sampleIntervalMs = 1000");
     }
 }

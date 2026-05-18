@@ -2384,7 +2384,11 @@ Diagnostic session DTOs live in model files without tiny property-only shards:
 `tools/Common/DiagnosticSessionOptions.cs`,
 `tools/Common/DiagnosticSessionResult.cs`,
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.cs`,
-`tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionRunner.cs` owns the
+`tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionOptions.cs` also owns
+shared tool invocation defaults and the ssctl diagnostic-session usage string,
+while `DiagnosticSessionScenarios.cs` owns scenario name constants, the
+MCP-compatible scenario description, and the CLI help-list constant.
+`DiagnosticSessionRunner.cs` owns the
 public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
 visible run phase sequence around context creation, initial snapshot, scenario
 execution, cleanup, and completion handoff. `DiagnosticSessionRunContext.cs` owns mutable per-run infrastructure: bootstrap, actions, warnings, samples,

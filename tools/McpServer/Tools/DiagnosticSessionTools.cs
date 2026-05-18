@@ -12,9 +12,9 @@ public static class DiagnosticSessionTools
     [McpServerTool, Description("Run a timed capture diagnostic session, write snapshot/frame-ledger/timeline artifacts, and optionally verify recording or capture PresentMon.")]
     public static async Task<CallToolResult> run_diagnostic_session(
         PipeClient pipeClient,
-        [Description("Session scenario: observe, preview-only, recording-only, flashback, flashback-playback, flashback-stress, flashback-scrub-stress, flashback-restart-cycle, flashback-encoder-cycle, flashback-export-playback, flashback-segment-playback, flashback-range-export, flashback-range-export-audio-switch, flashback-lifecycle, flashback-export-concurrent, flashback-disable-during-export, flashback-rotated-export, flashback-preview-cycle, flashback-playback-preview-cycle, flashback-recording, flashback-recording-preview-cycle, flashback-recording-settings-deferred, flashback-recording-export-rejected, flashback-export-rejected, or combined.")] string scenario = "observe",
-        [Description("Session duration in seconds. Use 0 for a single snapshot sample.")] int seconds = 10,
-        [Description("Snapshot sample interval in milliseconds.")] int sampleIntervalMs = 1000,
+        [Description(DiagnosticSessionScenarios.Description)] string scenario = DiagnosticSessionOptions.DefaultScenario,
+        [Description("Session duration in seconds. Use 0 for a single snapshot sample.")] int seconds = DiagnosticSessionOptions.DefaultDurationSeconds,
+        [Description("Snapshot sample interval in milliseconds.")] int sampleIntervalMs = DiagnosticSessionOptions.DefaultSampleIntervalMs,
         [Description("Optional artifact output directory. Defaults to temp/diagnostic-sessions/<timestamp>.")] string? outputDirectory = null,
         [Description("Capture PresentMon during the session.")] bool presentMon = false,
         [Description("Optional PresentMon executable path.")] string? presentMonPath = null,
