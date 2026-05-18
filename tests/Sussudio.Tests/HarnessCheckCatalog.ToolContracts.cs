@@ -5,13 +5,6 @@ static partial class Program
 {
     private static async Task AddToolContractChecksAsync(List<CheckResult> results)
     {
-        await AddCheckAsync(results,
-            "Recording pipeline options preserve defaults and capacity bounds",
-            RecordingPipelineOptions_DefaultsAndCapacityBounds);
-        await AddCheckAsync(results,
-            "RecordingPipelineOptions resolves video queue capacity from frame rate",
-            RecordingPipelineOptions_ResolvesVideoQueueCapacity);
-
         // --- NvmlSnapshot computed properties ---
         await AddCheckAsync(results,
             "NvmlSnapshot computed properties convert units correctly",

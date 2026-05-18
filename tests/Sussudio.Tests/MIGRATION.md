@@ -36,8 +36,8 @@ add xUnit alongside, and port incrementally.
 - `XUnit.SmallContractsTests.cs` owns the former legacy audio input, audio
   level event, capture device, and automation window action small contracts.
 - `XUnit.CaptureConfigurationModelsTests.cs` owns the former legacy capture
-  mode options, capture settings, recording selection policy, and encoder
-  support contract checks.
+  mode options, capture settings, recording selection policy, encoder support,
+  and recording pipeline option contract checks.
 - `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer,
   session, playback-state, export progress, export segment, and export request
   model contract checks.

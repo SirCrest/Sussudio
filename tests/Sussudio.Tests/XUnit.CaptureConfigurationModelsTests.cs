@@ -540,6 +540,60 @@ public class CaptureConfigurationModelsTests
         Assert.False((bool)method.Invoke(null, new object?[] { "MJPG", 1920u, 1080u, 60.0, false, false })!);
     }
 
+    [Fact]
+    public void RecordingPipelineOptions_DefaultsAndCapacityBounds()
+    {
+        var asm = SussudioAssembly.Load();
+        var optionsType = RequireType(asm, "Sussudio.Models.RecordingPipelineOptions");
+        var dropPolicyType = RequireType(asm, "Sussudio.Models.VideoFrameDropPolicy");
+        AssertEnumValues(dropPolicyType, ("DropOldest", 0), ("DropNewest", 1));
+        AssertDeclaredProperties(
+            optionsType,
+            new[]
+            {
+                Property("TargetVideoLatencyMs", typeof(int), SetterExpectation.Set),
+                Property("MinBufferedVideoFrames", typeof(int), SetterExpectation.Set),
+                Property("MaxBufferedVideoFrames", typeof(int), SetterExpectation.Set),
+                Property("VideoDropPolicy", dropPolicyType, SetterExpectation.Set)
+            });
+
+        var options = CreateInstance(optionsType);
+        var resolve = RequireMethod(optionsType, "ResolveVideoQueueCapacity", ReflectionFlags.Instance);
+        Assert.Equal(250, Get<int>(options, "TargetVideoLatencyMs"));
+        Assert.Equal(4, Get<int>(options, "MinBufferedVideoFrames"));
+        Assert.Equal(30, Get<int>(options, "MaxBufferedVideoFrames"));
+        Assert.Equal(ParseEnum(asm, "Sussudio.Models.VideoFrameDropPolicy", "DropOldest"), Get(options, "VideoDropPolicy"));
+        Assert.Equal(15, (int)resolve.Invoke(options, new object[] { 60d })!);
+        Assert.Equal(15, (int)resolve.Invoke(options, new object[] { -1d })!);
+
+        Set(options, "TargetVideoLatencyMs", 1);
+        Assert.Equal(4, (int)resolve.Invoke(options, new object[] { 60d })!);
+
+        Set(options, "MinBufferedVideoFrames", 0);
+        Set(options, "MaxBufferedVideoFrames", 2);
+        Assert.Equal(1, (int)resolve.Invoke(options, new object[] { 10d })!);
+
+        Set(options, "TargetVideoLatencyMs", 250);
+        Set(options, "MinBufferedVideoFrames", 8);
+        Set(options, "MaxBufferedVideoFrames", 4);
+        Assert.Equal(8, (int)resolve.Invoke(options, new object[] { 120d })!);
+
+        Set(options, "VideoDropPolicy", ParseEnum(asm, "Sussudio.Models.VideoFrameDropPolicy", "DropNewest"));
+        Assert.Equal(ParseEnum(asm, "Sussudio.Models.VideoFrameDropPolicy", "DropNewest"), Get(options, "VideoDropPolicy"));
+    }
+
+    [Fact]
+    public void RecordingPipelineOptions_ResolvesVideoQueueCapacity()
+    {
+        var options = CreateInstance(RequireType(SussudioAssembly.Load(), "Sussudio.Models.RecordingPipelineOptions"));
+        var resolve = RequireMethod(options.GetType(), "ResolveVideoQueueCapacity", ReflectionFlags.Instance);
+
+        Assert.Equal(15, (int)resolve.Invoke(options, new object[] { 60.0 })!);
+        Assert.Equal(30, (int)resolve.Invoke(options, new object[] { 120.0 })!);
+        Assert.Equal(8, (int)resolve.Invoke(options, new object[] { 30.0 })!);
+        Assert.Equal(15, (int)resolve.Invoke(options, new object[] { 0.0 })!);
+    }
+
     private static PropertySpec Property(
         string name,
         Type type,
