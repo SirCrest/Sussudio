@@ -3229,7 +3229,7 @@ Remaining `tools/Common` ownership:
    auto-selection entry points now live in `MainViewModel.FrameRateOptions.cs`.
    `MainViewModel.FrameRateOptionRebuild.cs` keeps the compatibility adapter,
    while frame-rate option rebuilding and observable collection mutation live in
-   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`. Pure
+   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs`. Pure
    frame-rate option choice, including pending SDR bucket preference,
    Source-rate nearest match with timing-family tie-break, generic auto fallback,
    and previous/manual selection fallback, now lives in
@@ -3264,7 +3264,8 @@ Remaining `tools/Common` ownership:
    in `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`. `MainViewModel.FormatSelection.cs`
    keeps selected-format and video-format rebuild compatibility adapters, while
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
-   owns selected-format assignment and pixel-format option collection mutation.
+   owns selected-format assignment, pixel-format option collection mutation, and
+   capture-format request shaping for the controller family.
    `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs` owns the pure
    selected-format and mode-tuple video-format filtering policy.
    `MainViewModel.CaptureModeTransactions.cs` owns HDR toggle side effects:

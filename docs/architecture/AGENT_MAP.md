@@ -2358,8 +2358,10 @@ Primary current owners:
   `MainViewModel.FrameRateOptions.cs` owns frame-rate selection reactions and
   auto-selection entry points. `MainViewModel.FrameRateOptionRebuild.cs` keeps
   the frame-rate rebuild compatibility adapter, while
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
-  owns frame-rate option rebuilding and observable collection mutation.
+  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs`
+  owns the frame-rate option rebuild transaction, source-rate filtering handoff,
+  auto/source option selection, observable frame-rate collection mutation, and
+  selected frame-rate application.
   `MainViewModel.FrameRateAutoSelectionPolicy.cs`
   owns pure frame-rate option choice: pending SDR bucket preference,
   Source-rate nearest match with timing-family tie-break, generic auto fallback,
@@ -2381,7 +2383,8 @@ Primary current owners:
   `MainViewModel.FormatSelection.cs` keeps selected-format and video-format
   rebuild compatibility adapters, while
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
-  owns selected-format assignment and pixel-format option collection mutation.
+  owns selected-format assignment, video-format option collection mutation, and
+  capture-format request shaping for the controller family.
   `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`
   owns pure selected capture-format choice and mode-tuple video-format filtering.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`

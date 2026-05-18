@@ -25,6 +25,7 @@ static partial class Program
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs").Replace("\r\n", "\n");
         var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs").Replace("\r\n", "\n");
         var captureModeOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
+        var captureModeOptionFrameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs").Replace("\r\n", "\n");
         var resolutionOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelResolutionOptionRebuildController.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
         var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
@@ -123,12 +124,14 @@ static partial class Program
         AssertContains(recordingSettingsAutomationControllerText, "private sealed class MainViewModelRecordingSettingsAutomationController");
         AssertContains(recordingSettingsAutomationControllerText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
         AssertContains(recordingSettingsAutomationControllerText, "_viewModel._sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
-        AssertContains(captureModeOptionRebuildControllerText, "private sealed class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(captureModeOptionRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(captureModeOptionFrameRateRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertEqual(
             true,
-            captureModeOptionRebuildControllerText.Split('\n').Length >= 100,
-            "capture mode option rebuild controller is a substantial ownership file");
-        AssertContains(captureModeOptionRebuildControllerText, "public void RebuildFrameRateOptions()");
+            captureModeOptionFrameRateRebuildControllerText.Split('\n').Length >= 100,
+            "capture mode option frame-rate rebuild partial is a substantial ownership file");
+        AssertDoesNotContain(captureModeOptionRebuildControllerText, "public void RebuildFrameRateOptions()");
+        AssertContains(captureModeOptionFrameRateRebuildControllerText, "public void RebuildFrameRateOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void RebuildVideoFormatOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void UpdateSelectedFormat()");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "public void RebuildResolutionOptions()");

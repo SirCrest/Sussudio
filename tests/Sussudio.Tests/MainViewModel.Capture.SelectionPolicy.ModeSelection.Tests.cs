@@ -8,6 +8,7 @@ static partial class Program
         var resolutionOptionRebuildText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptionRebuild.cs").Replace("\r\n", "\n");
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
+        var frameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs").Replace("\r\n", "\n");
         var resolutionOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelResolutionOptionRebuildController.cs").Replace("\r\n", "\n");
         var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs").Replace("\r\n", "\n");
 
@@ -24,7 +25,7 @@ static partial class Program
         AssertDoesNotContain(frameRateOptionsText, "private void ApplyResolvedFrameRateSelection(");
         AssertDoesNotContain(frameRateOptionsText, "private void ResetModeSelectionState()");
         AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selection.Selected, SelectedFrameRate > 0 ? SelectedFrameRate : 60);");
-        AssertContains(captureModeOptionsControllerText, "_viewModel.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
+        AssertContains(frameRateRebuildControllerText, "_viewModel.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
         AssertContains(modeSelectionText, "private void ResetFrameRateSelectionState()");
         AssertContains(modeSelectionText, "_hasUserOverriddenFrameRateForCurrentMode = false;");
         AssertContains(modeSelectionText, "IsAutoFrameRateSelected = true;");
