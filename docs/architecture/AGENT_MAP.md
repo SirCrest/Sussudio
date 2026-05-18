@@ -2035,9 +2035,8 @@ Primary current owners:
   readiness-signal required/received state, missing-signal calculation,
   playback-advance threshold checks, and readiness result snapshots.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalFormatter.cs` owns missing-signal
-  and signal-list string formatting.
-  `Sussudio/Controllers/Preview/Startup/PreviewStartupFailureTextFormatter.cs` owns preview
-  startup timeout reason, timeout status, and failure-stop status text.
+  and signal-list string formatting. `PreviewStartupWatchdogController.cs`
+  owns preview startup timeout reason, timeout status, and failure-stop status text.
   `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for
   preview start/stop/reinit state. `MainWindow.PropertyChangedPreview.cs` is the

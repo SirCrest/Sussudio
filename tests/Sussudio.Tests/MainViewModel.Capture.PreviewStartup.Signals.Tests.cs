@@ -105,13 +105,13 @@ static partial class Program
 
     private static Task PreviewStartupFailureTextFormatter_PreservesFailureStrings()
     {
-        var formatterType = RequireType("Sussudio.Controllers.PreviewStartupFailureTextFormatter");
-        var formatTimeoutReason = formatterType.GetMethod("FormatTimeoutReason", BindingFlags.Public | BindingFlags.Static)
-            ?? throw new InvalidOperationException("PreviewStartupFailureTextFormatter.FormatTimeoutReason was not found.");
-        var formatTimeoutStatusText = formatterType.GetMethod("FormatTimeoutStatusText", BindingFlags.Public | BindingFlags.Static)
-            ?? throw new InvalidOperationException("PreviewStartupFailureTextFormatter.FormatTimeoutStatusText was not found.");
-        var formatFailureStopStatusText = formatterType.GetMethod("FormatFailureStopStatusText", BindingFlags.Public | BindingFlags.Static)
-            ?? throw new InvalidOperationException("PreviewStartupFailureTextFormatter.FormatFailureStopStatusText was not found.");
+        var watchdogType = RequireType("Sussudio.Controllers.PreviewStartupWatchdogController");
+        var formatTimeoutReason = watchdogType.GetMethod("FormatTimeoutReason", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupWatchdogController.FormatTimeoutReason was not found.");
+        var formatTimeoutStatusText = watchdogType.GetMethod("FormatTimeoutStatusText", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupWatchdogController.FormatTimeoutStatusText was not found.");
+        var formatFailureStopStatusText = watchdogType.GetMethod("FormatFailureStopStatusText", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupWatchdogController.FormatFailureStopStatusText was not found.");
 
         AssertEqual(
             "no-visual-confirmation-within-10000ms",

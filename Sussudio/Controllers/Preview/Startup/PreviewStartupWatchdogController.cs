@@ -110,7 +110,7 @@ internal sealed class PreviewStartupWatchdogController
                 Logger.Log($"PREVIEW_START_FAILURE_STOP begin reason={reason} attempt={_context.GetAttemptLabel()}");
                 // Preview startup failed; pipeline state is unclean, so force full teardown.
                 await _context.StopPreviewForFailureAsync(reason).ConfigureAwait(true);
-                _context.SetStatusText(PreviewStartupFailureTextFormatter.FormatFailureStopStatusText(reason));
+                _context.SetStatusText(FormatFailureStopStatusText(reason));
                 Logger.Log($"PREVIEW_START_FAILURE_STOP completed reason={reason} attempt={_context.GetAttemptLabel()}");
             }
             finally
@@ -166,7 +166,7 @@ internal sealed class PreviewStartupWatchdogController
 
         var elapsedMs = _context.GetElapsedMilliseconds();
         _context.SetMissingSignals(_context.BuildMissingSignals());
-        var timeoutReason = PreviewStartupFailureTextFormatter.FormatTimeoutReason(
+        var timeoutReason = FormatTimeoutReason(
             VisualTimeoutMs,
             _context.GetMissingSignals());
         _context.MarkStartupFailed(timeoutReason);
@@ -176,8 +176,21 @@ internal sealed class PreviewStartupWatchdogController
         _context.LogPlaybackSnapshot("timeout");
 
         _context.StopStartupOverlay();
-        _context.SetStatusText(PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(_context.GetMissingSignals()));
+        _context.SetStatusText(FormatTimeoutStatusText(_context.GetMissingSignals()));
         ScheduleFailureStop(timeoutReason);
         return Task.CompletedTask;
     }
+
+    private static string FormatTimeoutReason(int timeoutMs, string? missingSignals)
+        => string.IsNullOrWhiteSpace(missingSignals)
+            ? $"no-visual-confirmation-within-{timeoutMs}ms"
+            : $"no-visual-confirmation-within-{timeoutMs}ms missing:{missingSignals}";
+
+    private static string FormatTimeoutStatusText(string? missingSignals)
+        => string.IsNullOrWhiteSpace(missingSignals)
+            ? "Preview failed to attach to UI (session started but no visual confirmation)."
+            : $"Preview failed to start (missing readiness signal: {missingSignals}).";
+
+    private static string FormatFailureStopStatusText(string reason)
+        => $"Preview startup failed: {reason}";
 }

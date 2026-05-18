@@ -2190,10 +2190,10 @@ result snapshots live in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs`. Missing-signal
 and signal-list string formatting lives in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalFormatter.cs`. Timeout reason,
-timeout status, and failure-stop status text live in
-`Sussudio/Controllers/Preview/Startup/PreviewStartupFailureTextFormatter.cs`. This keeps the
-root shell focused on wiring while leaving the existing startup state machine
-behavior unchanged.
+timeout status, and failure-stop status text live inside
+`Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`, where the timeout
+and failure-stop decisions are made. This keeps the root shell focused on wiring
+while leaving the existing startup state machine behavior unchanged.
 Delayed preview reveal after first visual now lives in
 `Sussudio/Controllers/Preview/PreviewFadeInController.cs`; the adapter remains
 `Sussudio/MainWindow.PreviewTransitions.cs`. Watchdog/timeout recovery remains in

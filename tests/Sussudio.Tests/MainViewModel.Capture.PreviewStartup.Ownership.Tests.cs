@@ -29,8 +29,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupSignalCoordinatorText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs")
             .Replace("\r\n", "\n");
-        var previewStartupFailureText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupFailureTextFormatter.cs")
-            .Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs")
             .Replace("\r\n", "\n");
         var previewRuntimeSnapshotText = ReadRepoFile("Sussudio/MainWindow.PreviewRuntimeSnapshot.cs")
@@ -161,13 +159,22 @@ static partial class Program
         AssertContains(previewStartupReadinessSignalControllerText, "public PreviewStartupPlaybackPositionResult TrackPlaybackPosition(");
         AssertContains(previewStartupReadinessSignalControllerText, "PreviewStartupSignalFormatter.FormatMissingSignals(");
         AssertContains(previewStartupSignalCoordinatorText, "PreviewStartupSignalFormatter.FormatSignalList(");
-        AssertContains(previewStartupFailureText, "internal static class PreviewStartupFailureTextFormatter");
-        AssertContains(previewStartupFailureText, "public static string FormatTimeoutReason(int timeoutMs, string? missingSignals)");
-        AssertContains(previewStartupFailureText, "public static string FormatTimeoutStatusText(string? missingSignals)");
-        AssertContains(previewStartupFailureText, "public static string FormatFailureStopStatusText(string reason)");
-        AssertContains(previewStartupWatchdogControllerText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
-        AssertContains(previewStartupWatchdogControllerText, "PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(");
-        AssertContains(previewStartupWatchdogControllerText, "PreviewStartupFailureTextFormatter.FormatFailureStopStatusText(reason)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(
+                GetRepoRoot(),
+                "Sussudio",
+                "Controllers",
+                "Preview",
+                "Startup",
+                "PreviewStartupFailureTextFormatter.cs")),
+            "preview startup failure text formatter helper");
+        AssertContains(previewStartupWatchdogControllerText, "private static string FormatTimeoutReason(int timeoutMs, string? missingSignals)");
+        AssertContains(previewStartupWatchdogControllerText, "private static string FormatTimeoutStatusText(string? missingSignals)");
+        AssertContains(previewStartupWatchdogControllerText, "private static string FormatFailureStopStatusText(string reason)");
+        AssertContains(previewStartupWatchdogControllerText, "var timeoutReason = FormatTimeoutReason(");
+        AssertContains(previewStartupWatchdogControllerText, "FormatTimeoutStatusText(_context.GetMissingSignals())");
+        AssertContains(previewStartupWatchdogControllerText, "FormatFailureStopStatusText(reason)");
         AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_WATCHDOG_STARTED");
         AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_TIMEOUT_IGNORED reason=user-or-shutdown-stop-requested");
         AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_TIMEOUT attempt={_context.GetAttemptLabel()}");
