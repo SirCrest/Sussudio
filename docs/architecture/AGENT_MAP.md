@@ -1391,9 +1391,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.AlertEvents.Tests.cs`
   owns diagnostics alert/event ownership assertions for UpdateAlerts,
   diagnostic events, signal alerts, and Flashback alert routing.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackAlerts.Tests.cs`
-  owns Flashback alert, counter, completion-event, and diagnostics lane
-  coverage for the diagnostics refresh family.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackAlerts.RecordingAndStorage.Tests.cs`
+  owns Flashback export, storage, recording, and force-rotate alert coverage
+  for the diagnostics refresh family.
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackAlerts.PlaybackAndPreview.Tests.cs`
+  owns Flashback playback, preview cadence, MJPEG, and renderer alert coverage
+  for the diagnostics refresh family.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.FlashbackExport.Tests.cs`
   owns capture-service and dispatcher Flashback export operation ownership
   assertions used by diagnostics refresh.

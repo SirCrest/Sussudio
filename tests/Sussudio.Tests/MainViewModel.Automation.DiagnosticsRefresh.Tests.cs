@@ -13,7 +13,8 @@ static partial class Program
         AssertDiagnosticsSnapshotStatusProjectionOwnership(diagnostics);
         AssertDiagnosticsRefreshSnapshotProjectionOwnership(diagnostics);
         AssertDiagnosticsRefreshPipelineOwnership(diagnostics, dispatcherText);
-        AssertDiagnosticsRefreshFlashbackAlertCoverage(diagnostics, countersText);
+        AssertDiagnosticsRefreshFlashbackRecordingAndStorageAlertCoverage(diagnostics, countersText);
+        AssertDiagnosticsRefreshFlashbackPlaybackAndPreviewAlertCoverage(diagnostics, countersText);
         AssertDiagnosticsRefreshFlashbackExportOwnership(dispatcherText);
         AssertDiagnosticsRefreshSourceReaderOwnership();
 
