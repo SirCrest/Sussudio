@@ -70,6 +70,12 @@ Preview renderer notes:
   `D3D11PreviewRenderer.InputResources.cs`, shader/SRV cleanup in
   `D3D11PreviewRenderer.ShaderRendering.cs`, and preview-frame capture staging
   cleanup in `D3D11PreviewRenderer.ScreenshotCapture.cs`.
+- `Sussudio/Services/Preview/PreviewScreenshotCapture.cs` owns shared
+  preview-frame screenshot pixel analysis and mapped-frame buffer copying.
+  `Sussudio/Services/Preview/PreviewScreenshotCapture.Png.cs` owns 16-bit PNG
+  frame capture, `Sussudio/Services/Preview/PreviewScreenshotCapture.Bmp.cs`
+  owns BMP capture/header writing, and `Sussudio/Services/Preview/PreviewPng16Encoder.cs`
+  owns the PNG container and CRC helpers.
 
 ## Automation
 
@@ -1612,7 +1618,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Cadence.Tests.cs` owns
   NTSC frame-rate tolerance scenarios.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.Geometry.Tests.cs` owns letterbox,
-  black-edge counting, and preview PNG encoder CRC/capture contract tests.
+  screenshot black-edge counting, and preview PNG encoder CRC/capture contract
+  tests.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.Cadence.Tests.cs` owns present
   cadence metric shape and suppression baseline tests.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.Tests.cs`

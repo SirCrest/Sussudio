@@ -69,8 +69,13 @@ static partial class Program
             .Replace("\r\n", "\n");
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
-        var previewScreenshotCaptureText = ReadRepoFile("Sussudio/Services/Preview/PreviewScreenshotCapture.cs")
-            .Replace("\r\n", "\n");
+        var previewScreenshotCaptureText =
+            ReadRepoFile("Sussudio/Services/Preview/PreviewScreenshotCapture.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/PreviewScreenshotCapture.Png.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/PreviewScreenshotCapture.Bmp.cs")
+                .Replace("\r\n", "\n");
         var previewPngEncoderText = ReadRepoFile("Sussudio/Services/Preview/PreviewPng16Encoder.cs")
             .Replace("\r\n", "\n");
 
@@ -84,7 +89,10 @@ static partial class Program
         AssertContains(captureText, "_captureStagingTexture?.Dispose();");
         AssertContains(resourcesText, "DisposeFrameCaptureStagingResources();");
         AssertContains(previewScreenshotCaptureText, "internal static PreviewFrameCaptureResult CaptureMappedFrameToBmp(");
+        AssertContains(previewScreenshotCaptureText, "internal static PreviewFrameCaptureResult CaptureFrameBufferTo16BitPng(");
         AssertContains(previewScreenshotCaptureText, "internal static byte[] CopyMappedFrameToBuffer(");
+        AssertContains(previewScreenshotCaptureText, "private sealed class PreviewScreenshotPixelAnalysis");
+        AssertContains(previewScreenshotCaptureText, "analysis.AnalyzePixel(");
         AssertContains(previewScreenshotCaptureText, "private static void WriteBitmapHeaders(");
         AssertEqual(
             false,

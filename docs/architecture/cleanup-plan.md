@@ -612,10 +612,13 @@ handling now live with the capture implementation in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs`.
 Screenshot error result construction stays with the renderer request lifecycle.
 Preview-frame BMP/PNG pixel conversion, mapped-frame buffer copying, luminance
-analysis, and letterbox/pillarbox measurement live in
-`Sussudio/Services/Preview/PreviewScreenshotCapture.cs`,
-while `Sussudio/Services/Preview/PreviewPng16Encoder.cs` owns the 16-bit PNG
-file container, chunk writing, output-directory creation, and CRC helpers.
+analysis, and letterbox/pillarbox measurement live in the
+`Sussudio/Services/Preview/PreviewScreenshotCapture*.cs` family:
+`PreviewScreenshotCapture.cs` owns mapped-frame copying and shared pixel
+analysis, `PreviewScreenshotCapture.Png.cs` owns 16-bit PNG frame capture,
+`PreviewScreenshotCapture.Bmp.cs` owns BMP capture/header writing, while
+`Sussudio/Services/Preview/PreviewPng16Encoder.cs` owns the 16-bit PNG file
+container, chunk writing, output-directory creation, and CRC helpers.
 
 Window geometry automation and the recordings-folder command now live in
 `Sussudio/Controllers/Window/WindowAutomationController.cs`. Display-area/AppWindow
