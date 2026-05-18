@@ -105,27 +105,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _deviceService = dependencies.DeviceService;
         _captureService = dependencies.CaptureService;
         _sessionCoordinator = dependencies.SessionCoordinator;
-        _audioRampTraceRecorder = new AudioRampTraceRecorder(
-            new AudioRampTraceRecorderContext
-            {
-                GetRuntimeSnapshot = () => _captureService.GetRuntimeSnapshot(),
-                GetPreviewVolume = () => PreviewVolume,
-                GetIsAudioEnabled = () => IsAudioEnabled,
-                GetIsAudioPreviewEnabled = () => IsAudioPreviewEnabled,
-                GetAudioPeak = () => AudioPeak,
-                Log = message => Logger.Log(message),
-            });
-        _previewAudioVolumeTransitionController = new PreviewAudioVolumeTransitionController(
-            new PreviewAudioVolumeTransitionControllerContext
-            {
-                GetPreviewVolume = () => PreviewVolume,
-                SetPreviewVolume = value => PreviewVolume = value,
-                SetSessionPreviewVolume = volume => _sessionCoordinator.SetPreviewVolume(volume),
-                BeginTraceSession = BeginAudioRampTraceSession,
-                CompleteTraceSession = CompleteAudioRampTraceSession,
-                RecordTracePoint = RecordAudioRampTracePoint,
-                Log = (message, caller) => Logger.Log(message, caller),
-            });
+        _audioRampTraceRecorder = CreateAudioRampTraceRecorder();
+        _previewAudioVolumeTransitionController = CreatePreviewAudioVolumeTransitionController();
         _deviceAudioControlService = dependencies.DeviceAudioControlService;
         _dispatcherQueue = dependencies.DispatcherQueue;
         _uiDispatchController = new MainViewModelUiDispatchController(
@@ -179,8 +160,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // UI dispatch policy: MainViewModelUiDispatchController.cs; adapter/fan-out: MainViewModel.Dispatching.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs
     // Audio input selection/property changes: MainViewModel.AudioInputSelection.cs
-    // Audio ramp trace recorder: AudioRampTraceRecorder.cs; adapter: MainViewModel.AudioRampTrace.cs
-    // Preview audio volume transitions: PreviewAudioVolumeTransitionController.cs
+    // Audio ramp trace and preview-volume wiring: MainViewModel.AudioRampTrace.cs
     // Microphone endpoint volume: MainViewModel.MicrophoneVolume.cs
     // Device-native audio controls: request lifetime and property-change adapter: MainViewModelDeviceAudioRequestController.cs; guards: MainViewModel.AudioControls.cs; mode writes: MainViewModel.DeviceAudioMode.cs; refresh: MainViewModel.DeviceAudioRefresh.cs; analog gain writes: MainViewModel.AnalogAudioGain.cs
     // Watcher-driven audio endpoint discovery: MainViewModel.AudioDeviceDiscovery.cs

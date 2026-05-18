@@ -35,6 +35,8 @@ static partial class Program
         AssertContains(rootText, "_deviceService = dependencies.DeviceService;");
         AssertContains(rootText, "_captureService = dependencies.CaptureService;");
         AssertContains(rootText, "_sessionCoordinator = dependencies.SessionCoordinator;");
+        AssertContains(rootText, "_audioRampTraceRecorder = CreateAudioRampTraceRecorder();");
+        AssertContains(rootText, "_previewAudioVolumeTransitionController = CreatePreviewAudioVolumeTransitionController();");
         AssertContains(rootText, "_deviceAudioControlService = dependencies.DeviceAudioControlService;");
         AssertContains(rootText, "_dispatcherQueue = dependencies.DispatcherQueue;");
         AssertContains(rootText, "_uiDispatchController = new MainViewModelUiDispatchController(");
@@ -57,6 +59,8 @@ static partial class Program
         AssertDoesNotContain(rootText, "_sessionCoordinator = new CaptureSessionCoordinator(_captureService);");
         AssertDoesNotContain(rootText, "_deviceAudioControlService = new NativeXuAudioControlService();");
         AssertDoesNotContain(rootText, "_audioDeviceWatcher = new AudioDeviceWatcher();");
+        AssertDoesNotContain(rootText, "new AudioRampTraceRecorderContext");
+        AssertDoesNotContain(rootText, "new PreviewAudioVolumeTransitionControllerContext");
         AssertDoesNotContain(rootText, "_captureService.StatusChanged += OnCaptureStatusChanged;");
         AssertDoesNotContain(rootText, "_captureService.AudioLevelUpdated += OnAudioLevelUpdated;");
         AssertDoesNotContain(rootText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");

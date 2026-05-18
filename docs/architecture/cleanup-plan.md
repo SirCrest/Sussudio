@@ -3141,8 +3141,9 @@ Remaining `tools/Common` ownership:
    now has a named owner in `MainViewModel.AudioMeters.cs`; keep future meter
    behavior there instead of growing the root facade file. Audio ramp trace
    buffering/sampling now lives in `AudioRampTraceRecorder.cs`, with
-   `MainViewModel.AudioRampTrace.cs` kept as the automation-facing adapter; keep
-   preview monitoring coordinator sequencing in
+   `MainViewModel.AudioRampTrace.cs` kept as the automation-facing adapter and
+   trace/preview-volume controller wiring owner; keep preview monitoring
+   coordinator sequencing in
    `MainViewModel.AudioMonitoring.cs`, audio capture/audio-preview property
    handlers in `MainViewModel.AudioPropertyChanges.cs`, while custom audio-input property
    handlers, retargeting, and preview-monitoring ramp handoff live in

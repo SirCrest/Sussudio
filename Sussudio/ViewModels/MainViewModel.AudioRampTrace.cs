@@ -9,6 +9,35 @@ namespace Sussudio.ViewModels;
 /// </summary>
 public partial class MainViewModel
 {
+    private AudioRampTraceRecorder CreateAudioRampTraceRecorder()
+    {
+        return new AudioRampTraceRecorder(
+            new AudioRampTraceRecorderContext
+            {
+                GetRuntimeSnapshot = () => _captureService.GetRuntimeSnapshot(),
+                GetPreviewVolume = () => PreviewVolume,
+                GetIsAudioEnabled = () => IsAudioEnabled,
+                GetIsAudioPreviewEnabled = () => IsAudioPreviewEnabled,
+                GetAudioPeak = () => AudioPeak,
+                Log = message => Logger.Log(message),
+            });
+    }
+
+    private PreviewAudioVolumeTransitionController CreatePreviewAudioVolumeTransitionController()
+    {
+        return new PreviewAudioVolumeTransitionController(
+            new PreviewAudioVolumeTransitionControllerContext
+            {
+                GetPreviewVolume = () => PreviewVolume,
+                SetPreviewVolume = value => PreviewVolume = value,
+                SetSessionPreviewVolume = volume => _sessionCoordinator.SetPreviewVolume(volume),
+                BeginTraceSession = BeginAudioRampTraceSession,
+                CompleteTraceSession = CompleteAudioRampTraceSession,
+                RecordTracePoint = RecordAudioRampTracePoint,
+                Log = (message, caller) => Logger.Log(message, caller),
+            });
+    }
+
     public AudioRampTraceSnapshot GetAudioRampTraceSnapshot(int maxEntries = 512)
         => _audioRampTraceRecorder.GetSnapshot(maxEntries);
 
