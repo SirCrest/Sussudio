@@ -3216,8 +3216,10 @@ Remaining `tools/Common` ownership:
    state, `MainViewModel.DeviceAudioState.cs` owns device-native audio/XU UI
    state, and `MainViewModel.FlashbackState.cs` owns Flashback timeline/export
    state. Keep the root `MainViewModel.cs` focused on the
-   compatibility facade, dependency assignment, collaborator construction, and small
-   bridge methods. Audio capture/preview property handlers now live in
+   compatibility facade, dependency assignment, startup timing, and small
+   bridge methods. `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs`
+   owns controller graph construction and UI-dispatch context wiring, while
+   `MainViewModelDependencies.cs` continues to own service construction. Audio capture/preview property handlers now live in
    `MainViewModel.AudioPropertyChanges.cs`, microphone monitor/device
    selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`,
    capture-mode property handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared

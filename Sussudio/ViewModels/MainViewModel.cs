@@ -108,26 +108,20 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _previewAudioVolumeTransitionController = CreatePreviewAudioVolumeTransitionController();
         _deviceAudioControlService = dependencies.DeviceAudioControlService;
         _dispatcherQueue = dependencies.DispatcherQueue;
-        _uiDispatchController = new MainViewModelUiDispatchController(
-            new MainViewModelUiDispatchControllerContext
-            {
-                DispatcherQueue = _dispatcherQueue,
-                IsDisposing = () => Volatile.Read(ref _disposeState) != 0,
-                Log = message => Logger.Log(message),
-                LogException = exception => Logger.LogException(exception),
-                SetStatusText = value => StatusText = value,
-            });
         _audioDeviceWatcher = dependencies.AudioDeviceWatcher;
-        _recordingTransitionController = new MainViewModelRecordingTransitionController(this);
-        _previewLifecycleController = new MainViewModelPreviewLifecycleController(this);
-        _deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(this);
-        _recordingCapabilityController = new MainViewModelRecordingCapabilityController(this);
-        _captureSettingsAutomationController = new MainViewModelCaptureSettingsAutomationController(this);
-        _recordingSettingsAutomationController = new MainViewModelRecordingSettingsAutomationController(this);
-        _captureModeOptionRebuildController = new MainViewModelCaptureModeOptionRebuildController(this);
-        _deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);
-        _sourceTelemetryController = new MainViewModelSourceTelemetryController(this);
-        _runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);
+
+        var controllerGraph = MainViewModelControllerGraph.Create(this);
+        _uiDispatchController = controllerGraph.UiDispatchController;
+        _recordingTransitionController = controllerGraph.RecordingTransitionController;
+        _previewLifecycleController = controllerGraph.PreviewLifecycleController;
+        _deviceAudioRequestController = controllerGraph.DeviceAudioRequestController;
+        _recordingCapabilityController = controllerGraph.RecordingCapabilityController;
+        _captureSettingsAutomationController = controllerGraph.CaptureSettingsAutomationController;
+        _recordingSettingsAutomationController = controllerGraph.RecordingSettingsAutomationController;
+        _captureModeOptionRebuildController = controllerGraph.CaptureModeOptionRebuildController;
+        _deviceFormatProbeController = controllerGraph.DeviceFormatProbeController;
+        _sourceTelemetryController = controllerGraph.SourceTelemetryController;
+        _runtimeLifecycleController = controllerGraph.RuntimeLifecycleController;
 
         _runtimeLifecycleController.Start();
         _runtimeLifecycleController.InitializePresentation();
@@ -169,6 +163,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device format probe reconciliation: MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs
     // Capture mode transactions: MainViewModel.CaptureModeTransactions.cs
     // Frame-rate selection: MainViewModel.FrameRateOptions.cs; capture option rebuild adapters: MainViewModel.CaptureModeTransactions.cs; rebuild owner: MainViewModelCaptureModeOptionRebuildController.cs
+    // Controller graph construction: MainViewModelControllerGraph.cs
     // Runtime bootstrap/timer: MainViewModelRuntimeLifecycleController.cs; capture-event ingress: MainViewModelRuntimeEventIngressController.cs
     // Automatic frame-rate selection policy: MainViewModel.FrameRateAutoSelectionPolicy.cs
     // Frame-rate/mode selection state: MainViewModel.ModeSelectionState.cs
