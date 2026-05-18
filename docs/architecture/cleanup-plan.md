@@ -724,9 +724,10 @@ activation, initial meter presentation, and device-audio gain/meter resize
 hooks. `Sussudio/MainWindow.AudioBindings.cs` is the XAML-facing adapter;
 video-format collection setup, initial capture/recording option projection, and
 code-attached resolution/frame-rate handlers now live in
-`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs`, with
-`MainWindow.CaptureOptionBindings.cs` left as the XAML-facing capture and
-recording option adapter.
+`Sussudio/Controllers/Capture/CaptureOptionBindingController.Bindings.cs`, with
+`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` keeping the
+adapter context and `MainWindow.CaptureOptionBindings.cs` left as the
+XAML-facing capture and recording option adapter.
 Flashback settings-control initialization, GPU decode binding/sync, and buffer
 duration combo sync now live in
 `Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs`.
@@ -2416,20 +2417,20 @@ Pure HDR readiness hint and FPS telemetry tooltip text policy now lives in
 the existing method names for binding setup, property-change projection, and
 the XAML decoder-count selection event.
 
-Capture option binding setup now lives in
-`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs`. The single
-controller owns the full capture-option binding adapter: XAML/view-model
-context, video-format and initial decoder projection, initial selection
-projection, resolution/frame-rate selection handlers, recording option event
-bindings for format, quality, preset, split-encode, video format, and custom
-bitrate, capture-option/source-signal property-change routing, custom-bitrate
-property-change value projection, HDR/true-HDR click binding and
-ViewModel-to-control sync, preview HDR passthrough forwarding, and
-`ShowAllCaptureOptionsToggle` click binding/sync. The property-change route
-delegates presentation affordances, telemetry tooltips, and source overlay
-refreshes back through the existing MainWindow adapters. This deliberately
-folds the former tiny partial files back into one auditable adapter while
-preserving the same MainWindow-facing method surface.
+Capture option binding setup now lives in the
+`Sussudio/Controllers/Capture/CaptureOptionBindingController.*.cs` family.
+`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` keeps the
+capture-option binding adapter context. `CaptureOptionBindingController.Bindings.cs`
+owns video-format and initial decoder projection, initial selection projection,
+resolution/frame-rate selection handlers, recording option event bindings for
+format, quality, preset, split-encode, video format, and custom bitrate,
+HDR/true-HDR click binding, and `ShowAllCaptureOptionsToggle` click binding.
+`CaptureOptionBindingController.PropertyChanges.cs` owns capture-option/source-
+signal property-change routing, custom-bitrate property-change value
+projection, HDR/true-HDR ViewModel-to-control sync, preview HDR passthrough
+forwarding, and presentation callback routing for option affordances,
+telemetry tooltips, and source overlay refreshes. The split preserves the same
+MainWindow-facing method surface while avoiding tiny responsibility shards.
 `Sussudio/MainWindow.CaptureOptionBindings.cs` now owns the XAML-facing
 binding setup methods and the small property-change forwarding method, so
 there is no separate pass-through partial just for capture-option property
