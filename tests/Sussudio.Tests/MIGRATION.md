@@ -24,8 +24,8 @@ incrementally.
   stats overlay lifecycle and section chrome wiring. The remaining stats
   presentation checks still migrate incrementally from the legacy catalog.
 - `XUnit.StatsPresentationTests.cs` owns the former legacy detached-window,
-  encoder formatting, and expected-display-repeat stats presentation behavior
-  checks.
+  encoder formatting, expected-display-repeat, frame-time range, and
+  frame-time geometry stats presentation behavior checks.
 
 ## Targeting reality
 

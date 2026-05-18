@@ -36,11 +36,5 @@ static partial class Program
         await AddCheckAsync(results,
             "Stats live summary shows current preview frame time and 1 percent low",
             StatsLiveSummary_ShowsCurrentPreviewFrameTimeAndOnePercentLow);
-        await AddCheckAsync(results,
-            "Frame-time overlay uses detected-FPS bounded millisecond range",
-            FrameTimeOverlay_UsesDetectedFpsBoundedRange);
-        await AddCheckAsync(results,
-            "Frame-time overlay geometry projects graph coordinates",
-            FrameTimeOverlayGeometry_ProjectsGraphCoordinates);
     }
 }
