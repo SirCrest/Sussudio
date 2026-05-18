@@ -1593,11 +1593,15 @@ Primary current owners:
   CaptureService `_sessionState` writer-file and writer-count ownership, asserts
   that lifecycle partials route state changes through coordination helpers, and
   keeps the no-session-state-write guard for Flashback backend failure cleanup.
-- `tests/Sussudio.Tests/CaptureService.HealthSnapshots.Tests.cs` owns
-  CaptureService health/diagnostics snapshot behavior scenarios for structured
-  source telemetry and health field ownership for capture cadence, source
-  telemetry, MJPEG, Flashback buffer/backend, Flashback queue state, Flashback
-  export, Flashback playback, AV-sync, and recording.
+- `tests/Sussudio.Tests/CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
+  owns CaptureService health snapshot assembly, capture-cadence, MJPEG, and
+  AV-sync ownership assertions plus shared health snapshot assertion helpers.
+- `tests/Sussudio.Tests/CaptureService.HealthSnapshots.FlashbackOwnership.Tests.cs`
+  owns CaptureService health snapshot Flashback export, buffer/backend, queue,
+  and playback ownership assertions.
+- `tests/Sussudio.Tests/CaptureService.HealthSnapshots.RecordingAndSourceTelemetryOwnership.Tests.cs`
+  owns CaptureService health snapshot recording and source-telemetry ownership
+  assertions plus the structured source telemetry behavior scenario.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.MjpegCachedMetrics.Tests.cs`
   owns cached MJPEG timing propagation for health and diagnostics snapshots.
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns shared

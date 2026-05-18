@@ -484,9 +484,10 @@ SourceTelemetryDetailEntry, and source telemetry automation projection
 contracts.
 
 `tests/Sussudio.Tests/RecordingQueue.Tests.cs` is now the shared recording
-queue source-reader helper shell. Recording queue coverage is split into queue
-overload policy, LibAv sink, WASAPI, and capture fan-out / Flashback backend
-owner files.
+queue source-reader helper shell. Capture health snapshot ownership coverage is
+split into assembly/sampler, Flashback, and recording/source-telemetry files.
+Recording queue coverage is split into queue overload policy, LibAv sink,
+WASAPI, and capture fan-out / Flashback backend owner files.
 
 D3D preview renderer coverage is
 split into geometry/screenshot helper and preview PNG encoder contracts, cadence contracts, the large

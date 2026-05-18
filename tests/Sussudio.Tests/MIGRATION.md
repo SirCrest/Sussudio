@@ -54,8 +54,11 @@ add xUnit alongside, and port incrementally.
 - Additional focused `[Fact]`/`[Theory]` files such as
   `AutomationContracts.ProtocolXunit.Tests.cs`,
   `AutomationToolContracts.ProtocolXunit.Tests.cs`,
-  `RuntimeContracts.Tests.cs`, `WindowSnapRegionLayoutPolicy.Tests.cs`, and
-  `CaptureService.HealthSnapshots.Tests.cs` already run through `dotnet test`.
+  `RuntimeContracts.Tests.cs`, `WindowSnapRegionLayoutPolicy.Tests.cs`,
+  `CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`,
+  `CaptureService.HealthSnapshots.FlashbackOwnership.Tests.cs`, and
+  `CaptureService.HealthSnapshots.RecordingAndSourceTelemetryOwnership.Tests.cs`
+  already run through `dotnet test`.
 
 ## Targeting reality
 
