@@ -1839,8 +1839,11 @@ Primary current owners:
   and Flashback catalog groups. Keep `Program.cs` as the runner, not the
   assertion registry.
 - `tests/Sussudio.Tests/HarnessCheckCatalog.CoreRuntime.cs` owns runtime,
-  telemetry, recording verifier, LibAv encoder, and basic app contract check
-  registration.
+  telemetry, capture-service snapshot, recording-integrity, and basic app
+  contract check registration.
+- `tests/Sussudio.Tests/HarnessCheckCatalog.CoreRuntime.Recording.cs` owns
+  recording verifier, LibAv encoder, Flashback integrity, and recording-facing
+  automation contract registration.
 - `tests/Sussudio.Tests/XUnit.RuntimeHelpersTests.cs` owns pure runtime helper
   contracts for AtomicMax, TelemetryAgeHelper, EnvironmentHelpers, and
   RingBufferHelpers.
