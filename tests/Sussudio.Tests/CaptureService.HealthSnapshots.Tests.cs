@@ -12,15 +12,26 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerModelsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.Models.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields");
         AssertContains(healthSnapshotText, "SessionState = _sessionState,");
         AssertContains(healthSnapshotText, "FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(currentSettings, unifiedVideoCapture),");
         AssertContains(healthSnapshotText, "LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),");
-        AssertContains(healthSnapshotText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
         AssertContains(healthSnapshotAssemblerText, "private static class CaptureHealthSnapshotAssembler");
         AssertContains(healthSnapshotAssemblerText, "public static CaptureHealthSnapshot Build(");
+        AssertContains(healthSnapshotAssemblerModelsText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
+        AssertContains(healthSnapshotAssemblerModelsText, "public CaptureCadenceHealthSnapshotFields CaptureCadence { get; init; }");
+        AssertContains(healthSnapshotAssemblerModelsText, "private readonly record struct CaptureCadenceHealthSnapshotFields(");
+        AssertContains(healthSnapshotAssemblerModelsText, "private readonly record struct MjpegHealthSnapshotFields(");
+        Assert.True(
+            healthSnapshotAssemblerModelsText.Split('\n').Length >= 100,
+            "Capture health snapshot assembler models should stay in one substantial owner instead of tiny per-section files.");
+        AssertDoesNotContain(healthSnapshotText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct MjpegHealthSnapshotFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "LibAvRecordingSink? Sink");
         AssertDoesNotContain(healthSnapshotAssemblerText, "var sink = fields.Sink;");
         AssertDoesNotContain(healthSnapshotAssemblerText, "UnifiedVideoCapture? UnifiedVideoCapture");
@@ -275,7 +286,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotText, "private static CaptureCadenceHealthSnapshotFields BuildCaptureCadenceHealthSnapshotFields(");
         AssertContains(healthSnapshotText, "unifiedVideoCapture?.GetSourceCadenceMetrics()");
         AssertContains(healthSnapshotText, "default(MfSourceReaderVideoCapture.SourceCadenceMetrics)");
-        AssertContains(healthSnapshotText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
+        AssertDoesNotContain(healthSnapshotText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
 
     }
 
@@ -298,7 +309,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotText, "GetPreviewVisualCadenceMetrics()");
         AssertContains(healthSnapshotText, "FrameFingerprintCadenceTracker.Empty");
         AssertContains(healthSnapshotText, "new MjpegDecoderHealthSnapshot(");
-        AssertContains(healthSnapshotText, "private readonly record struct MjpegHealthSnapshotFields");
+        AssertDoesNotContain(healthSnapshotText, "private readonly record struct MjpegHealthSnapshotFields");
 
     }
 

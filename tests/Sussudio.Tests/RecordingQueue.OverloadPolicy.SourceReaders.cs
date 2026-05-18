@@ -52,6 +52,7 @@ static partial class Program
         var captureHealthSnapshotRootSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs");
         var captureSnapshotsSource = captureHealthSnapshotRootSource
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.Models.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecording.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotRecordingActiveBackend.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs")
