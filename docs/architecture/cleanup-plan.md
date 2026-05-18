@@ -3328,7 +3328,13 @@ Remaining `tools/Common` ownership:
    frame-rate option choice, including pending SDR bucket preference,
    Source-rate nearest match with timing-family tie-break, generic auto fallback,
    and previous/manual selection fallback, now lives in
-   `MainViewModel.FrameRateAutoSelectionPolicy.cs`. Shared frame-rate selection reset,
+   `MainViewModel.FrameRateAutoSelectionPolicy.cs`. The ownership checks for
+   frame-rate source filtering, automatic selection, `ShowAllCaptureOptions`, and
+   timing-policy placement live in
+   `MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`, while
+   automatic-selection and pure timing-policy behavior checks live in
+   `MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`.
+   Shared frame-rate selection reset,
    resolved automatic frame-rate application, disabled frame-rate reason
    projection, and capture-mode reset flags live in
    `MainViewModel.ModeSelectionState.cs`. Source-rate filtering and

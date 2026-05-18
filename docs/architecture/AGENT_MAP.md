@@ -1444,9 +1444,11 @@ Primary current owners:
   assertions that output folder picker ownership stays out of `MainViewModel`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
   MainViewModel source-inspection helpers for capture-facing tests.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.Tests.cs`
-  owns frame-rate source filtering, automatic frame-rate choice,
-  `ShowAllCaptureOptions` behavior, and timing-policy ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.Ownership.Tests.cs`
+  owns frame-rate source-filter, automatic-selection, `ShowAllCaptureOptions`,
+  and timing-policy ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`
+  owns automatic frame-rate choice and pure timing-policy behavior assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs`
   owns selected capture-format and mode-tuple video-format filtering policy
   assertions.
