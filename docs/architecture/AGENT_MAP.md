@@ -1303,8 +1303,10 @@ Primary current owners:
   controller adapters.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs`
   owns MainWindow controller-adapter ownership assertions for recording action,
-  preview audio fade, microphone controls, and audio/preview button
-  presentation.
+  preview audio fade, and preview button presentation.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.AudioPresentation.Tests.cs`
+  owns MainWindow controller-adapter ownership assertions for audio control
+  presentation and microphone controls.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs` owns
   MainWindow responsive shell layout controller-adapter and breakpoint/placement
   policy assertions.
