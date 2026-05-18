@@ -47,8 +47,7 @@ static partial class Program
         "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Models.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Summary.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Counters.cs",
-        "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Audio.cs",
-        "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Logging.cs"
+        "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Audio.cs"
     };
 
     private static string ReadCaptureServiceFlashbackOrchestrationSource()

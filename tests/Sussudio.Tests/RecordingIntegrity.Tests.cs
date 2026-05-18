@@ -179,7 +179,6 @@ static partial class Program
         var summaryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Summary.cs");
         var countersText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Counters.cs");
         var audioText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Audio.cs");
-        var loggingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Logging.cs");
 
         AssertContains(rootText, "private RecordingIntegritySummary ResolveRecordingIntegritySummary(");
         AssertDoesNotContain(rootText, "private sealed record RecordingIntegrityCounterSnapshot(");
@@ -192,13 +191,18 @@ static partial class Program
         AssertContains(modelsText, "private sealed record RecordingAudioIntegrityCounterSnapshot(");
         AssertContains(summaryText, "private static RecordingIntegritySummary BuildRecordingIntegritySummary(");
         AssertContains(summaryText, "RecordingIntegrityAvSyncDriftWarningMs");
+        AssertContains(summaryText, "private static void LogRecordingIntegritySummary(");
+        AssertContains(summaryText, "RECORDING_INTEGRITY ");
         AssertContains(countersText, "private RecordingIntegrityCounterSnapshot GetRecordingIntegrityCountersSinceBaseline(");
         AssertContains(countersText, "private RecordingIntegrityCounterSnapshot CaptureFlashbackRecordingIntegrityCountersSinceBaseline(");
         AssertContains(countersText, "private static long DeltaCounter(");
         AssertContains(audioText, "private RecordingAudioIntegrityCounterSnapshot GetRecordingAudioCountersSinceBaseline(");
         AssertContains(audioText, "private RecordingAudioIntegrityCounterSnapshot CaptureRecordingAudioCounters(");
         AssertContains(audioText, "CreateRecordingAudioCounters(");
-        AssertContains(loggingText, "private static void LogRecordingIntegritySummary(");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.Logging.cs")),
+            "old recording integrity logging partial removed");
 
         return Task.CompletedTask;
     }

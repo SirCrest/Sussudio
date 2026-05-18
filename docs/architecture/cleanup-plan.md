@@ -987,11 +987,10 @@ WASAPI disposal, and microphone cleanup.
 Recording integrity policy is now split under
 `Sussudio/Services/Capture/CaptureService.RecordingIntegrity*.cs`. The root
 partial resolves the active backend, `.Models.cs` owns the private counter DTOs,
-`.Summary.cs` owns integrity status/reason classification, `.Counters.cs` owns
-video/backend counter capture and baseline deltas, `.Audio.cs` owns audio
-counter capture and baseline deltas, and `.Logging.cs` owns the structured
-`RECORDING_INTEGRITY` log line. Snapshot partials consume that policy instead
-of containing it.
+`.Summary.cs` owns integrity status/reason classification plus the structured
+`RECORDING_INTEGRITY` log line, `.Counters.cs` owns video/backend counter
+capture and baseline deltas, and `.Audio.cs` owns audio counter capture and
+baseline deltas. Snapshot partials consume that policy instead of containing it.
 
 LibAv encoder codec and options policy now lives in
 `Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs`. Keep option
