@@ -2358,12 +2358,14 @@ controller owns the full capture-option binding adapter: XAML/view-model
 context, video-format and initial decoder projection, initial selection
 projection, resolution/frame-rate selection handlers, recording option event
 bindings for format, quality, preset, split-encode, video format, and custom
-bitrate, custom-bitrate property-change value projection, HDR/true-HDR click
-binding and ViewModel-to-control sync, preview HDR passthrough forwarding, and
-`ShowAllCaptureOptionsToggle` click binding/sync. This deliberately folds the
-former tiny partial files back into one auditable adapter while preserving the
-same MainWindow-facing method surface. The controller delegates presentation
-affordances back through the capture-option presentation adapter.
+bitrate, capture-option/source-signal property-change routing, custom-bitrate
+property-change value projection, HDR/true-HDR click binding and
+ViewModel-to-control sync, preview HDR passthrough forwarding, and
+`ShowAllCaptureOptionsToggle` click binding/sync. The property-change route
+delegates presentation affordances, telemetry tooltips, and source overlay
+refreshes back through the existing MainWindow adapters. This deliberately
+folds the former tiny partial files back into one auditable adapter while
+preserving the same MainWindow-facing method surface.
 `MainWindow.CaptureOptionBindings.cs` keeps the old capture and recording option
 method names used by `SetupBindings()`.
 

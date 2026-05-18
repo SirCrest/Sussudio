@@ -24,6 +24,10 @@ internal sealed class CaptureOptionBindingControllerContext
     public required Action ApplyInitialDecoderCountSelection { get; init; }
     public required Action ApplyBitrateVisibility { get; init; }
     public required Action ApplyHdrToggleEnabledState { get; init; }
+    public required Action ApplyAudioClipVisibility { get; init; }
+    public required Action RefreshHdrHintText { get; init; }
+    public required Action UpdateFpsTelemetryTooltip { get; init; }
+    public required Action UpdateVideoContentOverlays { get; init; }
     public required Action<bool> SetHdrPassthroughEnabled { get; init; }
     public required Action UpdateDecoderCountVisibility { get; init; }
     public required Action EnsureResolutionSelection { get; init; }
@@ -145,6 +149,60 @@ internal sealed class CaptureOptionBindingController
     {
         _context.ShowAllCaptureOptionsToggle.Click += (s, e) =>
             _context.ViewModel.ShowAllCaptureOptions = _context.ShowAllCaptureOptionsToggle.IsChecked == true;
+    }
+
+    public bool TryHandlePropertyChanged(string propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.AudioClipping):
+                _context.ApplyAudioClipVisibility();
+                return true;
+
+            case nameof(MainViewModel.IsHdrAvailable):
+            case nameof(MainViewModel.SourceIsHdr):
+                _context.ApplyHdrToggleEnabledState();
+                return true;
+
+            case nameof(MainViewModel.IsHdrEnabled):
+                HandleHdrEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.IsTrueHdrPreviewEnabled):
+                HandleTrueHdrPreviewEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.HdrResolutionSupportHint):
+            case nameof(MainViewModel.HdrReadinessReason):
+            case nameof(MainViewModel.HdrRuntimeState):
+                _context.RefreshHdrHintText();
+                return true;
+
+            case nameof(MainViewModel.SourceTelemetrySummaryText):
+            case nameof(MainViewModel.SourceTargetSummaryText):
+                _context.UpdateFpsTelemetryTooltip();
+                return true;
+
+            case nameof(MainViewModel.SourceWidth):
+            case nameof(MainViewModel.SourceHeight):
+                _context.UpdateVideoContentOverlays();
+                return true;
+
+            case nameof(MainViewModel.IsCustomBitrateVisible):
+                _context.ApplyBitrateVisibility();
+                return true;
+
+            case nameof(MainViewModel.CustomBitrateMbps):
+                HandleCustomBitratePropertyChanged();
+                return true;
+
+            case nameof(MainViewModel.ShowAllCaptureOptions):
+                HandleShowAllCaptureOptionsChanged();
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     public void HandleCustomBitratePropertyChanged()

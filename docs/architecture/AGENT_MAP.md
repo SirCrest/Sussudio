@@ -2100,10 +2100,9 @@ Primary current owners:
   router and XAML-facing button/display adapter, delegating display updates to
   `OutputPathDisplayController` and browse/open commands to
   `OutputPathActionController`.
-- `Sussudio/MainWindow.PropertyChangedCaptureOptions.cs` owns capture-option
-  and source-signal property-change routing for HDR toggles, telemetry
-  tooltips, source overlay updates, bitrate visibility, and show-all-options
-  synchronization.
+- `Sussudio/MainWindow.PropertyChangedCaptureOptions.cs` is the XAML-facing
+  adapter for capture-option and source-signal property changes; the
+  property-name router lives in `CaptureOptionBindingController`.
 - `Sussudio/MainWindow.PropertyChangedShell.cs` owns shell visibility
   property-change routing for stats and settings chrome.
 - `Sussudio/MainWindow.LiveSignalInfo.cs` owns the live source-signal
@@ -2175,9 +2174,11 @@ Primary current owners:
 - `Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the capture
   option binding adapter in one file: XAML/view-model adapter context,
   initialization, resolution/frame-rate selection, recording option event
-  bindings, HDR/true-HDR forwarding, and show-all option binding, reusing
-  `CaptureComboBoxSelectionNormalizer` for shared frame-rate auto/exact
-  matching.
+  bindings, capture-option/source-signal property-change routing, HDR/
+  true-HDR forwarding, show-all option binding, and delegated presentation
+  callbacks for option affordances, telemetry tooltips, and source overlay
+  refreshes, reusing `CaptureComboBoxSelectionNormalizer` for shared
+  frame-rate auto/exact matching.
   `MainWindow.CaptureOptionBindings.cs` is the XAML-facing capture and
   recording option adapter.
 - `Sussudio/Controllers/Recording/Output/OutputPathDisplayController.cs` owns recording output-

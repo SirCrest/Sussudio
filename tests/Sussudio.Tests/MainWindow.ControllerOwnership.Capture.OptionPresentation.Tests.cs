@@ -74,11 +74,12 @@ static partial class Program
         AssertContains(propertyChangedText, "TryHandleOutputPropertyChanged(propertyName)");
         AssertContains(propertyChangedText, "TryHandleCaptureOptionPropertyChanged(propertyName)");
         AssertContains(outputPathDisplayText, "UpdateOutputPathDisplay();");
-        AssertContains(captureOptionPropertyChangedText, "ApplyAudioClipVisibility();");
-        AssertContains(captureOptionPropertyChangedText, "ApplyHdrToggleEnabledState();");
-        AssertContains(captureOptionPropertyChangedText, "RefreshHdrHintText();");
-        AssertContains(captureOptionPropertyChangedText, "UpdateFpsTelemetryTooltip();");
-        AssertContains(captureOptionPropertyChangedText, "ApplyBitrateVisibility();");
+        AssertContains(captureOptionPropertyChangedText, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");
+        AssertDoesNotContain(captureOptionPropertyChangedText, "ApplyAudioClipVisibility();");
+        AssertDoesNotContain(captureOptionPropertyChangedText, "ApplyHdrToggleEnabledState();");
+        AssertDoesNotContain(captureOptionPropertyChangedText, "RefreshHdrHintText();");
+        AssertDoesNotContain(captureOptionPropertyChangedText, "UpdateFpsTelemetryTooltip();");
+        AssertDoesNotContain(captureOptionPropertyChangedText, "ApplyBitrateVisibility();");
         AssertDoesNotContain(bindingsText, "private void UpdateDecoderCountVisibility()");
         AssertDoesNotContain(bindingsText, "private void DecoderCountComboBox_SelectionChanged(");
         AssertDoesNotContain(bindingsText, "private void RefreshHdrHintText()");
