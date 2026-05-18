@@ -154,13 +154,24 @@ static partial class Program
         AssertContains(validationText, "private static void ValidateContainer(");
         AssertContains(hdrValidationText, "private readonly record struct HdrValidationResult(");
         AssertContains(hdrValidationText, "private static HdrValidationResult ValidateHdrMetadata(");
+        AssertContains(resultsText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
         AssertContains(resultsText, "private static HdrParityResult BuildHdrParityResult(");
+        AssertContains(resultsText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
+        AssertContains(resultsText, "private static string? TryGetMismatchPart(");
         AssertContains(resultsText, "private static RecordingVerificationResult CreateEarlyFailure(");
         AssertDoesNotContain(rootText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
         AssertDoesNotContain(rootText, "private static void ValidateContainer(");
         AssertDoesNotContain(validationText, "private static HdrValidationResult ValidateHdrMetadata(");
+        AssertDoesNotContain(rootText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
         AssertDoesNotContain(rootText, "private static HdrParityResult BuildHdrParityResult(");
+        AssertDoesNotContain(rootText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
+        AssertDoesNotContain(rootText, "private static string? TryGetMismatchPart(");
         AssertDoesNotContain(rootText, "private static RecordingVerificationResult CreateEarlyFailure(");
+        AssertDoesNotContain(validationText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
+        AssertDoesNotContain(validationText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
+        AssertDoesNotContain(hdrValidationText, "private static HdrParityResult BuildHdrParityResult(");
+        AssertDoesNotContain(hdrValidationText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
+        AssertDoesNotContain(hdrValidationText, "private static string? TryGetMismatchPart(");
 
         return Task.CompletedTask;
     }
@@ -171,9 +182,16 @@ static partial class Program
 
         var expectedProps = new[]
         {
-            "Succeeded", "Message", "OutputPath", "FileExists", "FileSizeBytes",
-            "VerificationMode", "DetectedContainer", "DetectedVideoCodec",
-            "DetectedPixelFormat", "DetectedWidth", "DetectedHeight", "DetectedFrameRate",
+            "TimestampUtc", "Succeeded", "Message", "OutputPath", "FileExists", "FileSizeBytes",
+            "VerificationMode", "DetectedContainer", "DetectedVideoCodec", "DetectedPixelFormat",
+            "DetectedColorPrimaries", "DetectedColorTransfer", "DetectedColorSpace",
+            "DetectedHdrSideDataTypes", "HdrMetadataPresent", "HdrColorimetryValid",
+            "HdrMasteringMetadataPresent", "HdrVerificationLevel",
+            "DetectedWidth", "DetectedHeight", "DetectedFrameRate",
+            "CadenceSampleCount", "CadenceObservedFps", "CadenceExpectedIntervalMs",
+            "CadenceAverageIntervalMs", "CadenceP95IntervalMs", "CadenceMaxIntervalMs",
+            "CadenceJitterStdDevMs", "CadenceSevereGapCount", "CadenceSevereGapPercent",
+            "CadenceEstimatedDroppedFrames", "CadenceEstimatedDropPercent",
             "PrimaryMismatchCode", "PrimaryMismatchExpected", "PrimaryMismatchActual",
             "Mismatches", "HdrParity"
         };

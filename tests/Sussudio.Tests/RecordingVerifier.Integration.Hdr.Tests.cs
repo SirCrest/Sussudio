@@ -36,6 +36,14 @@ static partial class Program
 
             AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
             AssertEqual("p010le", GetStringProperty(result, "DetectedPixelFormat"), "DetectedPixelFormat");
+            AssertEqual(true, GetPropertyValue(result, "HdrMetadataPresent"), "HdrMetadataPresent");
+            AssertEqual(true, GetPropertyValue(result, "HdrColorimetryValid"), "HdrColorimetryValid");
+            AssertEqual("ColorimetryOnly", GetStringProperty(result, "HdrVerificationLevel"), "HdrVerificationLevel");
+
+            var hdrParity = GetPropertyValue(result, "HdrParity")!;
+            AssertEqual("Verified", GetStringProperty(hdrParity, "Status"), "HdrParity.Status");
+            AssertEqual(true, GetBoolProperty(hdrParity, "Verified"), "HdrParity.Verified");
+            AssertEqual("ColorimetryOnly", GetStringProperty(hdrParity, "VerificationLevel"), "HdrParity.VerificationLevel");
         }
         finally
         {
@@ -84,6 +92,28 @@ static partial class Program
             var hasColorimetryMismatch = mismatchList.Any(m => m.Contains("colorimetry-mismatch"));
             AssertEqual(true, hasPixfmtMismatch, "Has pixfmt-not-10bit mismatch");
             AssertEqual(true, hasColorimetryMismatch, "Has colorimetry-mismatch");
+
+            AssertEqual(false, GetPropertyValue(result, "HdrMetadataPresent"), "HdrMetadataPresent");
+            AssertEqual(false, GetPropertyValue(result, "HdrColorimetryValid"), "HdrColorimetryValid");
+            AssertEqual("ColorimetryOnly", GetStringProperty(result, "HdrVerificationLevel"), "HdrVerificationLevel");
+
+            var hdrParity = GetPropertyValue(result, "HdrParity")!;
+            AssertEqual("Mismatch", GetStringProperty(hdrParity, "Status"), "HdrParity.Status");
+            AssertEqual(false, GetBoolProperty(hdrParity, "Verified"), "HdrParity.Verified");
+
+            var taxonomy = GetPropertyValue(hdrParity, "MismatchTaxonomy") as System.Collections.IEnumerable;
+            var taxonomyEntries = new List<object>();
+            foreach (var entry in taxonomy!) taxonomyEntries.Add(entry!);
+            var hasHdrError = taxonomyEntries.Any(entry =>
+                GetStringProperty(entry, "Category") == "HDR" &&
+                GetStringProperty(entry, "Code") == "pixfmt-not-10bit" &&
+                GetStringProperty(entry, "Severity") == "Error");
+            var hasColorimetryError = taxonomyEntries.Any(entry =>
+                GetStringProperty(entry, "Category") == "Colorimetry" &&
+                GetStringProperty(entry, "Code") == "colorimetry-mismatch" &&
+                GetStringProperty(entry, "Severity") == "Error");
+            AssertEqual(true, hasHdrError, "HDR mismatch taxonomy is Error severity");
+            AssertEqual(true, hasColorimetryError, "Colorimetry mismatch taxonomy is Error severity");
         }
         finally
         {
