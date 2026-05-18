@@ -1754,10 +1754,12 @@ Primary current owners:
   and `AutomationCommandDispatcher.Helpers.cs` own authorization, manifest,
   Flashback failure response, Flashback command placement, verification command
   placement, command-kind handling, and helper coverage.
-- `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Tests.cs` owns
-  dispatcher JSON payload extraction helper coverage and the trivial-handler
-  payload-field parity check against `AutomationCommandCatalog`, plus the
-  custom `GetAudioRampTrace.maxEntries` metadata guardrail.
+- `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Extraction.Tests.cs`
+  owns dispatcher JSON payload extraction helper coverage.
+- `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Catalog.Tests.cs`
+  owns dispatcher payload defaults, trivial-handler payload-field parity
+  checks against `AutomationCommandCatalog`, and the custom
+  `GetAudioRampTrace.maxEntries` metadata guardrail.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Readiness.Tests.cs` owns
   dispatcher readiness gating, window close, preview health, stale wait-refresh
   cadence guards, and UI automation readiness-independent coverage.
