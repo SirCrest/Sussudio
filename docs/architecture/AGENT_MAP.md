@@ -2267,10 +2267,11 @@ Primary current owners:
   audio/XU UI state; `MainViewModel.FlashbackState.cs` owns Flashback
   timeline/export state. `MainViewModel.AudioMeters.cs` owns live
   audio/microphone meter callback state; keep callback-thread meter targets
-  out of the root facade file. `AudioRampTraceRecorder.cs` owns the audio ramp
-  diagnostic ring buffer and sampler, while `MainViewModel.AudioRampTrace.cs`
-  keeps the automation-facing adapter methods plus trace recorder and
-  preview-volume transition controller wiring. `PreviewAudioVolumeTransitionController`
+  out of the root facade file. `Sussudio/ViewModels/AudioRampTraceRecorder.cs`
+  owns the audio ramp diagnostic ring buffer and sampler, while
+  `Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs` keeps the
+  automation-facing adapter methods plus trace recorder and preview-volume
+  transition controller wiring. `PreviewAudioVolumeTransitionController`
   owns preview-volume save suppression/override state plus the preview-audio
   ramp constants, easing, priming, restoring, and property-to-session volume
   forwarding. `MainViewModel.AudioMonitoring.cs` owns preview monitoring

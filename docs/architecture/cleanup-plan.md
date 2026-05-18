@@ -3153,9 +3153,11 @@ Remaining `tools/Common` ownership:
    or automation contracts. The live audio/microphone meter callback state
    now has a named owner in `MainViewModel.AudioMeters.cs`; keep future meter
    behavior there instead of growing the root facade file. Audio ramp trace
-   buffering/sampling now lives in `AudioRampTraceRecorder.cs`, with
-   `MainViewModel.AudioRampTrace.cs` kept as the automation-facing adapter and
-   trace/preview-volume controller wiring owner; keep preview monitoring
+   buffering/sampling now lives in
+   `Sussudio/ViewModels/AudioRampTraceRecorder.cs`, with
+   `Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs` kept as the
+   automation-facing adapter and trace/preview-volume controller wiring owner;
+   keep preview monitoring
    coordinator sequencing in
    `MainViewModel.AudioMonitoring.cs`, audio capture/audio-preview property
    handlers in `MainViewModel.AudioPropertyChanges.cs`, while custom audio-input property
