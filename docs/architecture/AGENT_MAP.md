@@ -1593,10 +1593,12 @@ Primary current owners:
   recovery, eviction, active-segment, and enqueue-gating assertions.
   `RecordingQueue.OverloadPolicy.Telemetry.cs` owns unified capture, health
   snapshot, and automation formatter telemetry assertions.
-  `CaptureService.RecordingOwnership.Tests.cs` owns
-  CaptureService recording lifecycle, recording-stop finalization failure
-  propagation, rollback, active recording backend resource aggregate ownership,
-  and recording outcome-state file-ownership assertions.
+  `CaptureService.RecordingLifecycleOwnership.Tests.cs` owns CaptureService
+  recording lifecycle, recording-stop finalization failure propagation, and
+  active recording backend resource aggregate ownership assertions.
+  `CaptureService.RecordingOutcomeOwnership.Tests.cs` owns CaptureService
+  recording start rollback and recording outcome-state file-ownership
+  assertions.
 - `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Queue.Tests.cs` owns LibAv
   recording sink try-enqueue, video-queue submission, audio queue, and
   queue-cleanup ownership assertions.
