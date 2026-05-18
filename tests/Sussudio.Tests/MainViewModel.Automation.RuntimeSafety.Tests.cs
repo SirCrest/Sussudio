@@ -2,25 +2,6 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task ExternalProcessProbes_UseBoundedProcessSupervisor()
-    {
-        var ffmpegText = ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs")
-            .Replace("\r\n", "\n");
-        var hdrText = ReadRepoFile("Sussudio/Services/Recording/HdrValidationRunner.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(ffmpegText, "private const int ProbeTimeoutMs = 10_000;");
-        AssertContains(ffmpegText, "new ProcessSupervisor().RunAsync");
-        AssertContains(ffmpegText, "TimeoutMs = ProbeTimeoutMs");
-        AssertContains(ffmpegText, "if (!result.Started || result.TimedOut || result.ExitCode != 0)");
-        AssertContains(ffmpegText, "return result.Started && !result.TimedOut && result.ExitCode == 0;");
-        AssertContains(hdrText, "private const int ValidationTimeoutMs = 30_000;");
-        AssertContains(hdrText, "new ProcessSupervisor().RunAsync");
-        AssertContains(hdrText, "validator-timeout");
-
-        return Task.CompletedTask;
-    }
-
     private static Task AutomationDispatch_CancellationAndTimeoutsStayBounded()
     {
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();

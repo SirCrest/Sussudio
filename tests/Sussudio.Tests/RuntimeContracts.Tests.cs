@@ -78,6 +78,24 @@ public sealed class RuntimeContractsTests
     }
 
     [Fact]
+    public void ExternalProcessProbes_UseBoundedProcessSupervisor()
+    {
+        var ffmpegText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs")
+            .Replace("\r\n", "\n");
+        var hdrText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Recording/HdrValidationRunner.cs")
+            .Replace("\r\n", "\n");
+
+        Assert.Contains("private const int ProbeTimeoutMs = 10_000;", ffmpegText);
+        Assert.Contains("new ProcessSupervisor().RunAsync", ffmpegText);
+        Assert.Contains("TimeoutMs = ProbeTimeoutMs", ffmpegText);
+        Assert.Contains("if (!result.Started || result.TimedOut || result.ExitCode != 0)", ffmpegText);
+        Assert.Contains("return result.Started && !result.TimedOut && result.ExitCode == 0;", ffmpegText);
+        Assert.Contains("private const int ValidationTimeoutMs = 30_000;", hdrText);
+        Assert.Contains("new ProcessSupervisor().RunAsync", hdrText);
+        Assert.Contains("validator-timeout", hdrText);
+    }
+
+    [Fact]
     public void FfmpegRuntimeLocator_PrefersAppLocalRuntimeFolder()
     {
         var tempRoot = Path.Combine(Path.GetTempPath(), $"ec-ffmpeg-locator-{Guid.NewGuid():N}");

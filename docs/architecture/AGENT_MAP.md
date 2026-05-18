@@ -1352,7 +1352,7 @@ Primary current owners:
   `.Recording.Tests.cs`, `.System.Tests.cs`, `.Preview.Tests.cs`, and
   `.Flashback.Tests.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RuntimeSafety.Tests.cs` owns
-  automation dispatch cancellation/timeout and process supervisor assertions.
+  automation dispatch cancellation/timeout assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.FlashbackCleanup.Tests.cs`
   owns Flashback startup-cache and session-recovery cleanup ownership
   assertions that used to live in the automation test catch-all.
@@ -1584,8 +1584,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/GpuTelemetry.Nvml.Tests.cs` owns NVML snapshot
   computed-property and unit-conversion contract checks.
 - `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns RuntimePaths,
-  FFmpeg runtime location, MMCSS registration, ProcessSpec, and
-  ProcessRunResult contract checks.
+  FFmpeg runtime location, bounded external process supervision, MMCSS
+  registration, ProcessSpec, and ProcessRunResult contract checks.
 - `tests/Sussudio.Tests/ProjectBuildContracts.Tests.cs` owns project-file build
   and publish policy contract checks.
 - `tests/Sussudio.Tests/RecordingContracts.Models.Tests.cs` owns recording

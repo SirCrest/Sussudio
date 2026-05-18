@@ -6,9 +6,6 @@ static partial class Program
     private static async Task AddPresentationPreviewCaptureChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "External FFmpeg and HDR probes use bounded process supervision",
-            ExternalProcessProbes_UseBoundedProcessSupervisor);
-        await AddCheckAsync(results,
             "Recording stop propagates unified video stop failures",
             RecordingStop_PropagatesUnifiedVideoStopFailure);
         await AddCheckAsync(results,
