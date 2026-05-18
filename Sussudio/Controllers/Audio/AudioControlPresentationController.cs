@@ -32,6 +32,43 @@ internal sealed class AudioControlPresentationController
         _context = context;
     }
 
+    public bool TryHandlePropertyChanged(string propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.IsCustomAudioInputEnabled):
+                HandleCustomAudioInputEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.IsMicrophoneEnabled):
+                HandleMicrophoneEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.IsAudioEnabled):
+                HandleAudioEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.IsAudioPreviewEnabled):
+                HandleAudioPreviewEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.IsAudioPreviewActive):
+                HandleAudioPreviewActiveChanged();
+                return true;
+
+            case nameof(MainViewModel.PreviewVolume):
+                HandlePreviewVolumeChanged();
+                return true;
+
+            case nameof(MainViewModel.MicrophoneVolume):
+                HandleMicrophoneVolumeChanged();
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
     public void HandleCustomAudioInputEnabledChanged()
     {
         if ((_context.CustomAudioToggle.IsChecked == true) != _context.ViewModel.IsCustomAudioInputEnabled)

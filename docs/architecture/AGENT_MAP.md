@@ -2132,10 +2132,10 @@ Primary current owners:
   `Sussudio/MainWindow.PropertyChangedFlashback.cs` is the XAML/MainWindow
   adapter that composes the route table callbacks.
 - `Sussudio/Controllers/Audio/AudioControlPresentationController.cs` owns audio and
-  microphone property-change projections: audio toggles, monitoring meter
-  state, preview volume slider sync, microphone enablement, and microphone
-  volume sync. `Sussudio/MainWindow.PropertyChangedAudio.cs` owns the audio
-  property-change router and XAML-facing adapter.
+  microphone property-change routing/projections: audio toggles, monitoring
+  meter state, preview volume slider sync, microphone enablement, and microphone
+  volume sync. `Sussudio/MainWindow.PropertyChangedAudio.cs` is the
+  XAML-facing adapter.
 - `Sussudio/Controllers/Audio/MicrophoneControlsController.cs` owns microphone volume
   slider synchronization, save triggers, shelf enablement, and mic-meter row
   animation state. `MainWindow.MicrophoneControls.cs` is the XAML-facing adapter.

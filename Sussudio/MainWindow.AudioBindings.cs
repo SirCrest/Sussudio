@@ -3,8 +3,7 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // XAML-facing adapter for audio and microphone binding setup. Runtime
-// projection remains in MainWindow.PropertyChangedAudio.cs and the feature
-// controllers.
+// projection routing lives with the feature controllers.
 public sealed partial class MainWindow
 {
     private AudioControlBindingController _audioControlBindingController = null!;

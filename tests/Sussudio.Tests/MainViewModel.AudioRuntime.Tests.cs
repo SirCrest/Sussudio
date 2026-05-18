@@ -16,9 +16,9 @@ static partial class Program
 
         AssertContains(mainViewModelStateText, "IsAudioPreviewActive");
         AssertContains(propertyChangedText, "TryHandleAudioPropertyChanged(propertyName)");
-        AssertContains(audioPropertyChangedText, "case nameof(MainViewModel.IsAudioPreviewActive):");
-        AssertContains(audioPropertyChangedText, "HandleAudioPreviewActiveChanged();");
-        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandleAudioPreviewActiveChanged();");
+        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
+        AssertContains(audioControlPresentationControllerText, "case nameof(MainViewModel.IsAudioPreviewActive):");
+        AssertContains(audioControlPresentationControllerText, "HandleAudioPreviewActiveChanged();");
         AssertContains(audioControlPresentationControllerText, "_context.SetAudioMeterMonitoringState(_context.ViewModel.IsAudioPreviewActive);");
         AssertContains(audioMeterText, "private AudioMeterController _audioMeterController = null!;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _audioMeterMonitoringStoryboard;");

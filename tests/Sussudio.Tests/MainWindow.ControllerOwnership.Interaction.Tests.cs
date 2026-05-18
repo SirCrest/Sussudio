@@ -82,8 +82,9 @@ static partial class Program
         AssertContains(propertyChangedText, "TryHandleAudioPropertyChanged(propertyName)");
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
         AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
-        AssertContains(audioPropertyChangedText, "HandlePreviewVolumeChanged();");
-        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandlePreviewVolumeChanged();");
+        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
+        AssertContains(audioControlPresentationControllerText, "case nameof(MainViewModel.PreviewVolume):");
+        AssertContains(audioControlPresentationControllerText, "HandlePreviewVolumeChanged();");
         AssertContains(audioControlPresentationControllerText, "if (_context.IsPreviewAudioFadeInActive())");
         AssertContains(previewLifecycleControllerText, "_context.PrimePreviewAudioFadeIn();");
         AssertContains(controllerText, "internal sealed class PreviewAudioFadeController");
@@ -126,6 +127,14 @@ static partial class Program
 
         AssertContains(controllerText, "internal sealed class AudioControlPresentationControllerContext");
         AssertContains(controllerText, "internal sealed class AudioControlPresentationController");
+        AssertContains(controllerText, "public bool TryHandlePropertyChanged(string propertyName)");
+        AssertContains(controllerText, "case nameof(MainViewModel.IsCustomAudioInputEnabled):");
+        AssertContains(controllerText, "case nameof(MainViewModel.IsMicrophoneEnabled):");
+        AssertContains(controllerText, "case nameof(MainViewModel.IsAudioEnabled):");
+        AssertContains(controllerText, "case nameof(MainViewModel.IsAudioPreviewEnabled):");
+        AssertContains(controllerText, "case nameof(MainViewModel.IsAudioPreviewActive):");
+        AssertContains(controllerText, "case nameof(MainViewModel.PreviewVolume):");
+        AssertContains(controllerText, "case nameof(MainViewModel.MicrophoneVolume):");
         AssertContains(controllerText, "public void HandleCustomAudioInputEnabledChanged()");
         AssertContains(controllerText, "_context.AudioInputComboBox.IsEnabled = _context.ViewModel.IsCustomAudioInputEnabled && !_context.ViewModel.IsRecording;");
         AssertContains(controllerText, "public void HandleMicrophoneEnabledChanged()");
@@ -146,6 +155,8 @@ static partial class Program
         AssertDoesNotContain(audioPropertyChangedText, "AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled");
         AssertDoesNotContain(audioPropertyChangedText, "AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled");
         AssertDoesNotContain(audioPropertyChangedText, "PreviewVolumeLabel.Text = $\"{(int)volumePct}%\";");
+        AssertDoesNotContain(audioPropertyChangedText, "case nameof(MainViewModel.");
+        AssertDoesNotContain(audioPropertyChangedText, "=> _audioControlPresentationController.HandlePreviewVolumeChanged();");
 
         return Task.CompletedTask;
     }
@@ -239,10 +250,11 @@ static partial class Program
         AssertContains(audioControlBindingControllerText, "_context.SetupMicrophoneVolumeBindings();");
         AssertContains(audioControlBindingControllerText, "_context.ApplyInitialMicrophoneControlsVisibility();");
         AssertContains(propertyChangedText, "TryHandleAudioPropertyChanged(propertyName)");
-        AssertContains(audioPropertyChangedText, "HandleMicrophoneEnabledChanged();");
-        AssertContains(audioPropertyChangedText, "HandleMicrophoneVolumeChanged();");
-        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandleMicrophoneEnabledChanged();");
-        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.HandleMicrophoneVolumeChanged();");
+        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
+        AssertContains(audioControlPresentationControllerText, "case nameof(MainViewModel.IsMicrophoneEnabled):");
+        AssertContains(audioControlPresentationControllerText, "case nameof(MainViewModel.MicrophoneVolume):");
+        AssertContains(audioControlPresentationControllerText, "HandleMicrophoneEnabledChanged();");
+        AssertContains(audioControlPresentationControllerText, "HandleMicrophoneVolumeChanged();");
         AssertContains(audioControlPresentationControllerText, "_context.UpdateMicrophoneControlsVisibility();");
         AssertContains(audioControlPresentationControllerText, "_context.SyncMicrophoneVolumeControls(_context.ViewModel.MicrophoneVolume);");
         AssertContains(shutdownCleanupControllerText, "_context.StopRecordingVisuals();");

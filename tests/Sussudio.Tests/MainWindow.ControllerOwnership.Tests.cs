@@ -98,7 +98,8 @@ static partial class Program
         AssertContains(captureOptionBindingControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
         AssertContains(captureOptionBindingControllerText, "case nameof(MainViewModel.IsHdrEnabled):");
         AssertContains(audioText, "private bool TryHandleAudioPropertyChanged(string propertyName)");
-        AssertContains(audioText, "case nameof(MainViewModel.IsAudioPreviewActive):");
+        AssertContains(audioText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
+        AssertDoesNotContain(audioText, "case nameof(MainViewModel.IsAudioPreviewActive):");
         AssertContains(shellText, "private bool TryHandleShellPropertyChanged(string propertyName)");
         AssertContains(shellText, "case nameof(MainViewModel.IsStatsVisible):");
         AssertContains(shellText, "=> ApplyStatsVisibility(ViewModel.IsStatsVisible);");
