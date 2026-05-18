@@ -741,8 +741,12 @@ uses it before entering a transition and delegates steady-state resolution to
 the same pure policy. Named session-state mutation helpers now live in
 `Sussudio/Services/Capture/CaptureService.Coordination.cs`, so cleanup,
 disposal, and fatal cleanup keep their flow ownership without writing
-`_sessionState` directly. Active recording backend resource ownership now lives
-in `Sussudio/Services/Capture/CaptureRecordingBackendResources.cs`.
+`_sessionState` directly. The policy is a transition-entry gate plus
+steady-state resolver, not a full workflow graph: in-place serialized
+mutations may pass the current state to the transition lock, while
+lifecycle-changing operations should pass an explicit target
+`CaptureSessionState`. Active recording backend resource ownership now lives in
+`Sussudio/Services/Capture/CaptureRecordingBackendResources.cs`.
 Capture session coordinator command enums, queue receipt records, session
 snapshots, and Flashback playback/buffer status projections now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs`.

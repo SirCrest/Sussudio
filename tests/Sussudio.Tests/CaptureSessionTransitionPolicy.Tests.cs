@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -15,15 +16,65 @@ static partial class Program
             modifiers: null)
             ?? throw new InvalidOperationException("CaptureSessionTransitionPolicy.CanEnterTransition not found.");
 
-        AssertCanEnterTransition(canEnter, stateType, "Uninitialized", "Initializing", expected: true);
-        AssertCanEnterTransition(canEnter, stateType, "Ready", "Previewing", expected: true);
-        AssertCanEnterTransition(canEnter, stateType, "Previewing", "Recording", expected: true);
-        AssertCanEnterTransition(canEnter, stateType, "Recording", "Ready", expected: true);
-        AssertCanEnterTransition(canEnter, stateType, "Faulted", "CleaningUp", expected: true);
-        AssertCanEnterTransition(canEnter, stateType, "Uninitialized", "Uninitialized", expected: true);
-        AssertCanEnterTransition(canEnter, stateType, "Disposed", "Ready", expected: false);
-        AssertCanEnterTransition(canEnter, stateType, "Ready", "Disposed", expected: false);
-        AssertCanEnterTransition(canEnter, stateType, "Uninitialized", "Recording", expected: false);
+        var states = new[]
+        {
+            "Uninitialized",
+            "Initializing",
+            "Ready",
+            "Previewing",
+            "Recording",
+            "CleaningUp",
+            "Faulted",
+            "Disposed"
+        };
+
+        var allowedTransitions = new HashSet<string>
+        {
+            "Uninitialized->Uninitialized",
+            "Uninitialized->Initializing",
+            "Uninitialized->Ready",
+            "Uninitialized->Previewing",
+            "Uninitialized->CleaningUp",
+            "Initializing->Initializing",
+            "Initializing->Ready",
+            "Initializing->Previewing",
+            "Initializing->CleaningUp",
+            "Ready->Initializing",
+            "Ready->Ready",
+            "Ready->Previewing",
+            "Ready->Recording",
+            "Ready->CleaningUp",
+            "Previewing->Initializing",
+            "Previewing->Ready",
+            "Previewing->Previewing",
+            "Previewing->Recording",
+            "Previewing->CleaningUp",
+            "Recording->Initializing",
+            "Recording->Ready",
+            "Recording->Previewing",
+            "Recording->Recording",
+            "Recording->CleaningUp",
+            "CleaningUp->CleaningUp",
+            "Faulted->Initializing",
+            "Faulted->Ready",
+            "Faulted->Previewing",
+            "Faulted->CleaningUp",
+            "Faulted->Faulted"
+        };
+
+        foreach (var currentState in states)
+        {
+            foreach (var transitionState in states)
+            {
+                var key = $"{currentState}->{transitionState}";
+                AssertCanEnterTransition(
+                    canEnter,
+                    stateType,
+                    currentState,
+                    transitionState,
+                    expected: allowedTransitions.Contains(key));
+            }
+        }
 
         return Task.CompletedTask;
     }
@@ -73,6 +124,43 @@ static partial class Program
         AssertContains(
             serviceText,
             "CaptureSessionTransitionPolicy.ResolveSteadyState(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_InPlaceMutationsUseCurrentStateTransition()
+    {
+        var currentStateTransitionOwners = new[]
+        {
+            "Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs",
+            "Sussudio/Services/Capture/CaptureService.FlashbackBufferSettings.cs",
+            "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs",
+            "Sussudio/Services/Capture/CaptureService.FlashbackEncoderSettings.cs",
+            "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs"
+        };
+
+        foreach (var owner in currentStateTransitionOwners)
+        {
+            var ownerText = ReadRepoFile(owner);
+            AssertContains(ownerText, "RunTransitionAsync(_sessionState,");
+        }
+
+        var lifecycleTransitionOwners = new[]
+        {
+            "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
+            "Sussudio/Services/Capture/CaptureService.Cleanup.cs",
+            "Sussudio/Services/Capture/CaptureService.Initialization.cs",
+            "Sussudio/Services/Capture/CaptureService.PreviewStart.cs",
+            "Sussudio/Services/Capture/CaptureService.PreviewStop.cs",
+            "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs",
+            "Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs"
+        };
+
+        foreach (var owner in lifecycleTransitionOwners)
+        {
+            var ownerText = ReadRepoFile(owner);
+            AssertDoesNotContain(ownerText, "RunTransitionAsync(_sessionState,");
+        }
 
         return Task.CompletedTask;
     }

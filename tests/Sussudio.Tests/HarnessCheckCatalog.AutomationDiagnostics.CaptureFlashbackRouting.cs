@@ -48,6 +48,9 @@ static partial class Program
             "Capture service transition lock uses transition policy",
             CaptureService_RunTransition_UsesTransitionPolicy);
         await AddCheckAsync(results,
+            "Capture service in-place mutations use current-state transitions",
+            CaptureService_InPlaceMutationsUseCurrentStateTransition);
+        await AddCheckAsync(results,
             "Capture service session-state writes route through Coordination",
             CaptureService_SessionStateWritesRouteThroughCoordination);
         await AddCheckAsync(results,

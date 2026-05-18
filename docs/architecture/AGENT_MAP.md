@@ -704,6 +704,9 @@ Invariants:
   `CaptureSessionTransitionPolicy`, not scattered through ad hoc boolean checks.
 - Mutating capture lifecycle state should go through serialized coordinator or
   transition-lock paths.
+- Capture operations that only serialize in-place mutations may pass the
+  current state to `RunTransitionAsync`; lifecycle-changing operations should
+  pass an explicit target `CaptureSessionState`.
 - Snapshot display state should be derived from service/runtime snapshots, not
   hand-updated independently in multiple event handlers.
 
