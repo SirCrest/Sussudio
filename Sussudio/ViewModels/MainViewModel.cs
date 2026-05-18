@@ -92,7 +92,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         => _recordingTransitionController.StopRecordingAndWaitAsync(cancellationToken);
 
     internal Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
-        => _recordingTransitionController.StopRecordingForEmergencyAsync(cancellationToken);
+        => _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);
 
     public MainViewModel()
         : this(MainViewModelDependencies.CreateDefault())

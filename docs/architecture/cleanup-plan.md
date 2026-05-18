@@ -3232,9 +3232,10 @@ Remaining `tools/Common` ownership:
    and gate release. Output folder display plus browse/open-recordings button workflows now live in
    `Sussudio/Controllers/Recording/Output/OutputPathController.cs`.
    Recording facade entry points now stay in `MainViewModel.cs`,
-   while recording toggle serialization, desired-state routing, graceful stop,
-   emergency stop, transition gating, concrete start/stop operation execution,
-   and failure/cancellation state repair now live in
+   including the direct emergency-stop coordinator bridge, while recording
+   toggle serialization, desired-state routing, graceful stop, transition
+   gating, concrete start/stop operation execution, and failure/cancellation
+   state repair now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`.
    Recording option selections, output
    path, counters, and transition flags now live in
@@ -3415,6 +3416,9 @@ Remaining `tools/Common` ownership:
    The automation recording desired-state bridge enters through
    `MainViewModel.cs` and is serialized by
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`.
+   The emergency recording-stop bridge also enters through `MainViewModel.cs`
+   but routes directly to `CaptureSessionCoordinator.StopRecordingForEmergencyAsync`
+   so it keeps bypassing UI-thread dispatch and normal transition gates.
    Capture resolution, frame-rate, video-format, and MJPEG decoder worker-count
    automation entry points now stay in the
    `MainViewModel.AutomationSettings.cs` compatibility facade, while

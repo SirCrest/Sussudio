@@ -42,9 +42,6 @@ public partial class MainViewModel
                 () => SetRecordingDesiredStateOnUiThreadAsync(enabled: false, cancellationToken),
                 cancellationToken);
 
-        public Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
-            => _viewModel._sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);
-
         private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)
         {
             if (enabled == _viewModel.IsRecording)

@@ -1326,9 +1326,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.PreviewVolume.Tests.cs` owns
   preview-volume persistence and automation options surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
-  owns recording-transition routing, failure propagation, emergency-stop
-  routing through the shared lifecycle gate, and recording-setting automation
-  routing for Flashback encoder cycles.
+  owns recording-transition routing, failure propagation, direct emergency-stop
+  coordinator routing, and recording-setting automation routing for Flashback
+  encoder cycles.
 - `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs` owns
   the `IAutomationViewModel` async surface contract plus Flashback/probe
   dispatcher routing and UI-dispatch cancellation disposal assertions.
@@ -2354,11 +2354,12 @@ Primary current owners:
   Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
   and reinit gate release.
   `MainViewModel.cs` owns the stable recording facade:
-  toggle, desired-state, graceful-stop, and emergency-stop entry points.
+  toggle, desired-state, graceful-stop, and the direct emergency-stop
+  coordinator bridge.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`
   owns recording toggle serialization, desired-state routing, graceful stop,
-  emergency stop, transition gating, concrete start/stop operation execution,
-  and failure/cancellation state repair.
+  transition gating, concrete start/stop operation execution, and
+  failure/cancellation state repair.
   `MainViewModel.RecordingState.cs` owns recording option selections, output
   path, counters, and observable transition flags.
   `MainViewModel.Disposal.cs` owns bounded teardown, watcher disposal, and

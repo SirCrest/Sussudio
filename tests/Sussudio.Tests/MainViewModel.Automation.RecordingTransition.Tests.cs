@@ -38,8 +38,8 @@ static partial class Program
         AssertContains(recordingLifecycleText, "internal Task StopRecordingForEmergencyAsync");
         // Fix #12: emergency stop now routes through the coordinator's emergency-flagged path
         // so LibAvRecordingSink applies EmergencyStopTimeoutMs (5s) instead of StopTimeoutMs (30s).
-        AssertContains(recordingLifecycleText, "=> _recordingTransitionController.StopRecordingForEmergencyAsync(cancellationToken);");
-        AssertContains(ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs"), "=> _viewModel._sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);");
+        AssertContains(recordingLifecycleText, "=> _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);");
+        AssertDoesNotContain(ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs"), "StopRecordingForEmergencyAsync");
         AssertContains(appText, "var task = viewModel.StopRecordingForEmergencyAsync();");
         AssertContains(appText, "if (e.IsTerminating || !recoverable)");
         AssertDoesNotContain(appText, "Task.Run(async () =>");
