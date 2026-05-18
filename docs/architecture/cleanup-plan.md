@@ -1959,9 +1959,10 @@ application live in `Sussudio/Controllers/Stats/StatsDiagnosticRowsController.cs
 `StatsDockRefreshController` owns when decode/GPU rows refresh.
 Stats presentation contract checks now live in focused
 `tests/Sussudio.Tests/StatsPresentation.*.Tests.cs` owners for builder
-ownership, source telemetry, detached-window formatting, encoder formatting,
-and frame-time overlay policy instead of expanding the legacy harness body in
-`tests/Sussudio.Tests/Program.cs`.
+ownership, source telemetry, and frame-time overlay policy, plus
+`tests/Sussudio.Tests/XUnit.StatsPresentationTests.cs` for detached-window,
+encoder, and expected-display-repeat behavior instead of expanding the legacy
+harness body in `tests/Sussudio.Tests/Program.cs`.
 Stats diagnostic row construction and source-summary parsing now live in
 `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticRows.cs`; frame-lane
 diagnostic health summary classification now lives in
