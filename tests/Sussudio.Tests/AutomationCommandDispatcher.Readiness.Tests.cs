@@ -76,6 +76,7 @@ static partial class Program
         AssertContains(conditionBlock, "snapshot.PreviewFirstVisualConfirmed");
         AssertContains(conditionBlock, "snapshot.PreviewGpuActive || snapshot.PreviewFramesDisplayed > 0");
         AssertDoesNotContain(conditionBlock, "snapshot.PreviewGpuActive || snapshot.PreviewRendererAttached");
+        AssertDoesNotContain(sourceText, "WaitConditionRefreshCadenceMs");
 
         return Task.CompletedTask;
     }

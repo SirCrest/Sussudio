@@ -1278,7 +1278,7 @@ Primary current owners:
   routing through the shared lifecycle gate.
 - `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs` owns
   the `IAutomationViewModel` async surface contract plus Flashback/probe
-  dispatcher routing assertions.
+  dispatcher routing and UI-dispatch cancellation disposal assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Audio.Tests.cs` owns
   automation audio/microphone command entry-point, microphone monitor
   suppression, and runtime-guard assertions.
@@ -1351,8 +1351,6 @@ Primary current owners:
   `.Audio.Tests.cs`, `.Capture.Tests.cs`, `.Mjpeg.Tests.cs`,
   `.Recording.Tests.cs`, `.System.Tests.cs`, `.Preview.Tests.cs`, and
   `.Flashback.Tests.cs`.
-- `tests/Sussudio.Tests/MainViewModel.Automation.RuntimeSafety.Tests.cs` owns
-  automation dispatch cancellation/timeout assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.FlashbackCleanup.Tests.cs`
   owns Flashback startup-cache and session-recovery cleanup ownership
   assertions that used to live in the automation test catch-all.
@@ -1611,8 +1609,8 @@ Primary current owners:
   payload-field parity check against `AutomationCommandCatalog`, plus the
   custom `GetAudioRampTrace.maxEntries` metadata guardrail.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Readiness.Tests.cs` owns
-  dispatcher readiness gating, window close, preview health, and UI automation
-  readiness-independent coverage.
+  dispatcher readiness gating, window close, preview health, stale wait-refresh
+  cadence guards, and UI automation readiness-independent coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.ReadyIndependent.Tests.cs`
   owns ready-independent no-hardware command coverage and harness payload/fake
   device support.

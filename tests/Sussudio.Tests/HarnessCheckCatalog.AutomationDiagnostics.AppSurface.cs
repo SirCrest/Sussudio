@@ -44,6 +44,9 @@ static partial class Program
             "Automation pipe server gates default security fallback on auth token",
             NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken);
         await AddCheckAsync(results,
+            "Automation pipe server request timeouts use bounded dispatch cancellation",
+            NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation);
+        await AddCheckAsync(results,
             "MainWindow wires automation pipe auth fallback policy",
             MainWindowAutomation_WiresPipeAuthFallbackPolicy);
         await AddCheckAsync(results,

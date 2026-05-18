@@ -7,6 +7,24 @@ using System.Threading.Tasks;
 // Tests for named-pipe automation server framing, auth, and lifecycle behavior.
 static partial class Program
 {
+    private static Task NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation()
+    {
+        var pipeServerText = (
+            ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.Connections.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.Responses.cs"))
+            .Replace("\r\n", "\n");
+
+        AssertContains(pipeServerText, "var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token, cancellationToken);");
+        AssertContains(pipeServerText, "if (await WaitForDispatchCompletionAsync(dispatchTask, requestCancellation.Token).ConfigureAwait(false))");
+        AssertContains(pipeServerText, "using var registration = cancellationToken.Register(");
+        AssertContains(pipeServerText, "ObserveTimedOutDispatch(dispatchTask, request.Command, requestTimeout, requestCancellation);");
+        AssertContains(pipeServerText, "Request timed out after {_requestTimeoutMs} ms.");
+        AssertContains(pipeServerText, "\"request-timeout\"");
+
+        return Task.CompletedTask;
+    }
+
     private static Task NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken()
     {
         AssertPipeSecurityPolicyMatrix();

@@ -48,6 +48,9 @@ static partial class Program
             "Capture service session-state writers stay in lifecycle partials",
             CaptureService_SessionStateWritersStayInLifecyclePartials);
         await AddCheckAsync(results,
+            "Capture session coordinator cancellation and worker tokens stay bounded",
+            CaptureSessionCoordinator_CancellationAndWorkerTokensStayBounded);
+        await AddCheckAsync(results,
             "Capture session coordinator accounts canceled queued commands",
             CaptureSessionCoordinator_CanceledQueuedCommandUpdatesAccounting);
         await AddCheckAsync(results,

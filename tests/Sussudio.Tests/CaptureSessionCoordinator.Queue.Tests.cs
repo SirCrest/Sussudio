@@ -3,6 +3,28 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static Task CaptureSessionCoordinator_CancellationAndWorkerTokensStayBounded()
+    {
+        var coordinatorText = ReadCaptureSessionCoordinatorSource();
+
+        AssertContains(coordinatorText, "return Task.FromCanceled(cancellationToken);");
+        AssertContains(coordinatorText, "CancellationTokenRegistration cancellationRegistration = default;");
+        AssertContains(coordinatorText, "cancellationRegistration = cancellationToken.Register");
+        AssertContains(coordinatorText, "DisposeCancellationRegistrationBestEffort(cancellationRegistration, \"enqueue_failed\");");
+        AssertContains(coordinatorText, "DisposeCancellationRegistrationBestEffort(workItem.CancellationRegistration, \"begin_process\");");
+        AssertContains(coordinatorText, "DisposeCancellationRegistrationBestEffort(pending.CancellationRegistration, \"fail_pending\");");
+        AssertContains(coordinatorText, "CAPTURE_COORD_CANCEL_REG_DISPOSE_WARN");
+        AssertContains(coordinatorText, "CancelWorkerBestEffort();");
+        AssertContains(coordinatorText, "DisposeWorkerCancellationBestEffort(\"worker_completed\");");
+        AssertContains(coordinatorText, "CAPTURE_COORD_WORKER_CANCEL_WARN");
+        AssertContains(coordinatorText, "CAPTURE_COORD_WORKER_CTS_DISPOSE_WARN");
+        AssertContains(coordinatorText, "public bool PropagateCancellationToOperation { get; init; }");
+        AssertContains(coordinatorText, "bool propagateCancellationToOperation = false");
+        AssertContains(coordinatorText, "propagateCancellationToOperation: true");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task CaptureSessionCoordinator_CanceledQueuedCommandUpdatesAccounting()
     {
         var harness = CreateCaptureSessionCoordinatorHarness();

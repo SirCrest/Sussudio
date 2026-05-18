@@ -32,9 +32,6 @@ static partial class Program
         await AddCheckAsync(results,
             "Automation SetRecordingEnabled uses recording-sized client timeout",
             AutomationProtocol_SetRecordingUsesRecordingSizedTimeout);
-        await AddCheckAsync(results,
-            "Automation dispatch cancellation and timeouts stay bounded",
-            AutomationDispatch_CancellationAndTimeoutsStayBounded);
     }
 
     private static async Task AddPresentationPreviewChecksAsync(List<CheckResult> results)
