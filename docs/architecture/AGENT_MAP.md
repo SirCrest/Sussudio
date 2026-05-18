@@ -2235,10 +2235,12 @@ Primary current owners:
   `MainViewModel.Dispatching.cs` owns the stable private adapter names plus
   preview event fan-out for the partial family.
   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`
+  owns periodic timer refresh orchestration and initial
+  source-telemetry/HDR/live-info/timer/disk-space bootstrap, while
+  `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs`
   owns runtime event subscription/unsubscription, system-resume preview rebind
   handling, capture status/error fan-out, capture pre-cleanup renderer stop
-  fan-out, frame-captured callbacks, periodic timer refresh orchestration, and
-  initial source-telemetry/HDR/live-info/timer/disk-space bootstrap.
+  fan-out, and frame-captured callbacks.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`
   owns late device-format probe event ingress, UI enqueue/generation checks,
   selected-device capability refresh, UI-side retarget application, session

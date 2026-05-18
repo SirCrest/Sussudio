@@ -184,7 +184,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device format probe reconciliation: MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs
     // Capture mode transactions: MainViewModel.CaptureModeTransactions.cs
     // Frame-rate selection: MainViewModel.FrameRateOptions.cs; rebuild: MainViewModel.FrameRateOptionRebuild.cs
-    // Runtime wiring/bootstrap/timer/capture-event ingress: MainViewModelRuntimeLifecycleController.cs
+    // Runtime bootstrap/timer: MainViewModelRuntimeLifecycleController.cs; capture-event ingress: MainViewModelRuntimeEventIngressController.cs
     // Automatic frame-rate selection policy: MainViewModel.FrameRateAutoSelectionPolicy.cs
     // Frame-rate/mode selection state: MainViewModel.ModeSelectionState.cs
     // Frame-rate timing state wrappers: MainViewModel.FrameRateTiming.cs; pure timing policy: FrameRateTimingPolicy.cs

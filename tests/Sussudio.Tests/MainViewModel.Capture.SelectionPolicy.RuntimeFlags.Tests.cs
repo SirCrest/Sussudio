@@ -4,7 +4,7 @@ static partial class Program
 {
     private static Task CaptureErrors_RefreshViewModelRuntimeFlags()
     {
-        var mainViewModelText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs")
+        var mainViewModelText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "_viewModel.IsInitialized = _viewModel._captureService.IsInitialized;");

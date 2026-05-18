@@ -3080,11 +3080,13 @@ Remaining `tools/Common` ownership:
    `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`, while
    `MainViewModel.Dispatching.cs` keeps the stable private adapter names and
    preview event fan-out;
-   runtime event subscription/unsubscription, system-resume preview rebind
-   handling, capture status/error fan-out, capture pre-cleanup renderer stop
-   fan-out, frame-captured callbacks, periodic timer refresh orchestration, and
-   initial source-telemetry/HDR/live-info/timer/disk-space bootstrap now live in
+   periodic timer refresh orchestration and initial
+   source-telemetry/HDR/live-info/timer/disk-space bootstrap now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs`,
+   while runtime event subscription/unsubscription, system-resume preview rebind
+   handling, capture status/error fan-out, capture pre-cleanup renderer stop
+   fan-out, and frame-captured callbacks now live in
+   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs`,
    output drive free-space assignment now lives in
    `MainViewModel.RecordingRuntime.cs`, while output drive probing,
    fallback, formatting, and suppressed-warning logging now live in
