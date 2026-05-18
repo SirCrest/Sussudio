@@ -69,6 +69,7 @@ internal static partial class DiagnosticSessionResultBuilder
             FlashbackRecording: BuildFlashbackRecordingResultProjection(analysis),
             FlashbackExport: BuildFlashbackExportResultProjection(analysis),
             Preview: BuildPreviewResultProjection(analysis),
+            PreviewScheduler: BuildPreviewSchedulerResultProjection(analysis),
             PreviewD3D: BuildPreviewD3DResultProjection(analysis),
             PreviewVisualCadence: BuildPreviewVisualCadenceResultProjection(analysis));
     }
@@ -80,6 +81,7 @@ internal static partial class DiagnosticSessionResultBuilder
         DiagnosticSessionFlashbackRecordingResultProjection FlashbackRecording,
         DiagnosticSessionFlashbackExportResultProjection FlashbackExport,
         DiagnosticSessionPreviewResultProjection Preview,
+        DiagnosticSessionPreviewSchedulerResultProjection PreviewScheduler,
         DiagnosticSessionPreviewD3DResultProjection PreviewD3D,
         DiagnosticSessionPreviewVisualCadenceResultProjection PreviewVisualCadence);
 

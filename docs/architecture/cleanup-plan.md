@@ -2451,21 +2451,20 @@ analysis warning text for playback forward-decode caps and export force-rotate
 fallback observations lives in `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`.
 Preview-scheduler analysis handoff values live in
 `DiagnosticSessionResultBuilder.PreviewScheduler.cs`: MJPEG jitter-buffer
-counter/delta reads, last drop/underflow reason and age reads, and
-max/schedule-late aggregation. `DiagnosticSessionResultAnalysis.PreviewScheduler`
-is the single record property that carries those values into
-`DiagnosticSessionResultBuilder.PreviewResult.cs`; the preview result partial
-maps that handoff to `DiagnosticSessionResult` fields without rereading MJPEG
-jitter-buffer snapshot keys. Flashback preview-scheduler validation orchestration
+counter/delta reads, last drop/underflow reason and age reads,
+max/schedule-late aggregation, and preview-scheduler result projection values.
+`DiagnosticSessionResultAnalysis.PreviewScheduler` is the single record
+property that carries those values into the scheduler result projection without
+rereading MJPEG jitter-buffer snapshot keys. Flashback preview-scheduler validation orchestration
 now lives in `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`,
 including target-FPS fallback, visual-cadence tolerance checks, sparse
 deadline/drop tolerance selection, and the call into shared Flashback preview
 validation. Preview D3D frame-stats, slow-frame, and CPU-timing
 result projection values live in `DiagnosticSessionResultBuilder.PreviewD3DResult.cs`
 so D3D summary fields are kept out of the broader preview projection. Preview
-visual-cadence result projection values live in
-`DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs` so visual
-cadence summary fields have the same focused owner.
+cadence and visual-cadence result projection values live together in
+`DiagnosticSessionResultBuilder.PreviewResult.cs` so small cadence DTO
+projections share one focused owner without adding miniature partials.
 Flashback playback result composition lives in the root result builder, while command
 queue, cadence/1% low, decode timing, audio-master/A/V drift, and stage/seek
 DTO projection values live in focused `FlashbackPlayback*Result.cs` partials
@@ -2923,7 +2922,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
 - `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
 - `DiagnosticSessionResultBuilder.PreviewD3DResult.cs`
-- `DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewResult.cs`
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`

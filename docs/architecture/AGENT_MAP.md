@@ -2693,9 +2693,9 @@ Primary owners:
   Flashback-specific analysis warning text for playback forward-decode caps and
   export force-rotate fallback observations.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs` owns
-  diagnostic-session preview-scheduler analysis handoff values: MJPEG
-  jitter-buffer counters, deltas, last drop/underflow reasons, underflow ages,
-  and max schedule-late aggregation.
+  diagnostic-session preview-scheduler analysis handoff and result projection
+  values: MJPEG jitter-buffer counters, deltas, last drop/underflow reasons,
+  underflow ages, and max schedule-late aggregation.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
   owns Flashback preview-scheduler validation orchestration during result
   analysis: target-FPS fallback, visual-cadence tolerance checks, sparse
@@ -2719,16 +2719,13 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs` owns
   preview D3D frame-stats, slow-frame, and CPU-timing DTO projection values
   consumed by the final result initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
-  owns preview visual-cadence DTO projection values consumed by the final
-  result initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs` owns preview
-  cadence and scheduler DTO projection values consumed by the final result
-  initializer. It maps `analysis.PreviewScheduler` and should not reread MJPEG
-  jitter-buffer snapshot keys, D3D metrics, or visual-cadence metrics directly.
+  cadence and visual-cadence DTO projection values consumed by the final result
+  initializer. It should not map scheduler or D3D metrics directly.
 - `tools/Common/DiagnosticSessionResultBuilder.Models.cs` owns the builder
   request record and private analysis handoff record, including the single
-  `PreviewScheduler` record property used by preview result projection.
+  `PreviewScheduler` record property used by preview-scheduler result
+  projection.
 - `tools/Common/DiagnosticSessionSummaryWriter.cs` owns diagnostic-session
   `summary.json` writes and summary-write failure repair of the returned
   result object.

@@ -102,7 +102,6 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackExportResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewD3DResult.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Models.cs");
 
