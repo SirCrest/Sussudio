@@ -923,10 +923,10 @@ outcome field publication is delegated to
 `Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs` and
 post-recording microphone monitor restart mechanics to
 `Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.
-`Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBoundary.cs`
-owns Flashback recording live-edge boundary snapshots, including idempotent
-`EndFlashbackRecordingAccounting()` calls, source-frame counters, recording
-integrity counters, and audio integrity counters.
+`Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs` owns
+Flashback recording export finalization plus live-edge boundary snapshots,
+including idempotent `EndFlashbackRecordingAccounting()` calls, source-frame
+counters, recording integrity counters, and audio integrity counters.
 `Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs` owns the
 helper boundary that publishes recording-start and recording-finalize outcome
 fields (`_lastOutputPath`, `_lastFinalizeStatus`, `_lastFinalizeUtc`, and
