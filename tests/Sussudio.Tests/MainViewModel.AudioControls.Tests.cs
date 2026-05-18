@@ -144,15 +144,15 @@ static partial class Program
             .Replace("\r\n", "\n");
         var deviceAudioRefreshCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioRefresh.cs");
         var analogAudioGainCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs");
-        var deviceAudioRequestsCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.DeviceAudioRequests.cs");
+        var deviceAudioRequestControllerCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs");
         var microphoneVolumeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.MicrophoneVolume.cs");
-        var audioCode = audioControlsCode + "\n" + deviceAudioModeCode + "\n" + deviceAudioRefreshCode + "\n" + analogAudioGainCode + "\n" + deviceAudioRequestsCode + "\n" + microphoneVolumeCode;
+        var audioCode = audioControlsCode + "\n" + deviceAudioModeCode + "\n" + deviceAudioRefreshCode + "\n" + analogAudioGainCode + "\n" + deviceAudioRequestControllerCode + "\n" + microphoneVolumeCode;
         var setMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "SetMicrophoneEndpointVolume");
         var getMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "GetMicrophoneEndpointVolume");
         var refreshDeviceAudioControls = ExtractMemberCode(audioCode, "RefreshDeviceAudioControlsAsync");
         var applyDeviceAudioMode = ExtractMemberCode(audioCode, "ApplyDeviceAudioModeAsync");
         var applyAnalogAudioGain = ExtractMemberCode(audioCode, "ApplyAnalogAudioGainAsync");
-        var requestAnalogGainFlashPersist = ExtractMemberCode(audioCode, "RequestAnalogGainFlashPersist");
+        var requestAnalogGainFlashPersist = ExtractMemberCode(deviceAudioRequestControllerCode, "ScheduleAnalogGainFlashPersist");
         var isCurrentSelectedDevice = ExtractMemberCode(audioCode, "IsCurrentSelectedDevice");
         var suppressedRefresh = ExtractMemberCode(audioCode, "WithAudioControlRefreshSuppressed");
         var normalizeDeviceAudioMode = ExtractMemberCode(audioCode, "NormalizeDeviceAudioMode");
@@ -169,6 +169,9 @@ static partial class Program
         AssertContains(deviceAudioModeText, "Device-native audio mode switching and failure readback.");
         AssertDoesNotContain(audioControlsCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertContains(analogAudioGainCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
+        AssertContains(deviceAudioRequestControllerCode, "private sealed class MainViewModelDeviceAudioRequestController");
+        AssertContains(deviceAudioRequestControllerCode, "partial void OnSelectedDeviceAudioModeChanged(string value)");
+        AssertContains(deviceAudioRequestControllerCode, "partial void OnAnalogAudioGainPercentChanged(double value)");
         AssertDoesNotContain(audioControlsCode, "TryApplyAtDeviceAudioModeAsync");
         AssertDoesNotContain(audioControlsCode, "SetInputSourceAsync");
 

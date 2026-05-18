@@ -3050,7 +3050,9 @@ Remaining `tools/Common` ownership:
    `MainViewModel.AudioInputSelection.cs`.
    Microphone endpoint volume synchronization and persistence now live in
    `MainViewModel.MicrophoneVolume.cs`; device-native audio request lifetime
-   now lives in `MainViewModel.DeviceAudioRequests.cs`; device-native
+   now lives in
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`;
+   device-native
    audio-control support probing, readback, and pending saved-state reconciliation
    now live in `MainViewModel.DeviceAudioRefresh.cs`; mode switching and failure
    readback live in `MainViewModel.DeviceAudioMode.cs`; shared audio-control
@@ -3227,8 +3229,11 @@ Remaining `tools/Common` ownership:
    in `MainViewModel.FlashbackSettings.cs`.
    Pure analog audio gain percent/XU-byte curve mapping now lives in
    `Sussudio/ViewModels/DeviceAudioGainMapper.cs`; device-native audio request
-   lifetime, including flash-persist debounce, stays in
-   `MainViewModel.DeviceAudioRequests.cs`; async native-XU
+   lifetime, including mode/gain property-change adapters, XU debounce,
+   flash-persist debounce, UI enqueue lifetime, and cancellation cleanup, stays
+   in
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`;
+   async native-XU
    device audio-control refresh/readback stays in
    `MainViewModel.DeviceAudioRefresh.cs`, mode switching and failure readback
    live in `MainViewModel.DeviceAudioMode.cs`, shared audio-control guards stay

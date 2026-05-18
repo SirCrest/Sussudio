@@ -25,10 +25,7 @@ public partial class MainViewModel
         {
             DisposeFlashbackExportCtsBestEffort(exportCts, "viewmodel_dispose");
         }
-        _gainFlashDebounceCts?.Cancel();
-        _gainXuDebounceCts?.Cancel();
-        _deviceAudioModeCts?.Cancel();
-        _deviceAudioRefreshCts?.Cancel();
+        _deviceAudioRequestController.CancelPendingAudioControlWork();
         _runtimeLifecycleController.StopForDispose();
         var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "SUSSUDIO_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",

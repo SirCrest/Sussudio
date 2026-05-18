@@ -32,6 +32,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelRuntimeLifecycleController _runtimeLifecycleController;
     private readonly MainViewModelRecordingTransitionController _recordingTransitionController;
     private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
+    private readonly MainViewModelDeviceAudioRequestController _deviceAudioRequestController;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -133,6 +134,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _audioDeviceWatcher = dependencies.AudioDeviceWatcher;
         _recordingTransitionController = new MainViewModelRecordingTransitionController(this);
         _previewLifecycleController = new MainViewModelPreviewLifecycleController(this);
+        _deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(this);
         _deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);
         _runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);
 
@@ -169,7 +171,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Audio ramp trace recorder: AudioRampTraceRecorder.cs; adapter: MainViewModel.AudioRampTrace.cs
     // Preview audio volume transitions: PreviewAudioVolumeTransitionController.cs
     // Microphone endpoint volume: MainViewModel.MicrophoneVolume.cs
-    // Device-native audio controls: requests: MainViewModel.DeviceAudioRequests.cs; guards: MainViewModel.AudioControls.cs; mode writes: MainViewModel.DeviceAudioMode.cs; refresh: MainViewModel.DeviceAudioRefresh.cs; analog gain writes: MainViewModel.AnalogAudioGain.cs
+    // Device-native audio controls: request lifetime and property-change adapter: MainViewModelDeviceAudioRequestController.cs; guards: MainViewModel.AudioControls.cs; mode writes: MainViewModel.DeviceAudioMode.cs; refresh: MainViewModel.DeviceAudioRefresh.cs; analog gain writes: MainViewModel.AnalogAudioGain.cs
     // Watcher-driven audio endpoint discovery: MainViewModel.AudioDeviceDiscovery.cs
     // Audio capture/preview property changes: MainViewModel.AudioPropertyChanges.cs
     // Audio input/microphone property changes: focused partials

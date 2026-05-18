@@ -100,7 +100,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.MicrophonePropertyChanges.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioRequests.cs")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs")
                 .Replace("\r\n", "\n")
             + "\n" + uiDispatchControllerText;
         var coordinatorText = ReadCaptureSessionCoordinatorSource();

@@ -2210,10 +2210,11 @@ Primary current owners:
   preview-monitoring ramp handoff.
   `MainViewModel.MicrophoneVolume.cs` owns microphone endpoint volume
   synchronization and persistence.
-  `MainViewModel.DeviceAudioRequests.cs` owns device-native audio request
-  lifetime: selected-device refresh scheduling, mode/gain property-change
-  request scheduling, analog gain flash-persist debounce, debounce CTS fields,
-  and cancellation cleanup.
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`
+  owns device-native audio request lifetime: selected-device refresh
+  scheduling, mode/gain property-change adapters, UI enqueue lifetime,
+  analog-gain XU and flash-persist debounce, debounce CTS fields, and
+  cancellation cleanup.
   `MainViewModel.DeviceAudioRefresh.cs` owns device-native audio-control support
   probing, readback, and pending saved-state reconciliation.
   `MainViewModel.DeviceAudioMode.cs` owns device-native audio mode switching

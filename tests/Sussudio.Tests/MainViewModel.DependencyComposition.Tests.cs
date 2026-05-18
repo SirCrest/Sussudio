@@ -16,6 +16,7 @@ static partial class Program
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs").Replace("\r\n", "\n");
+        var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
         var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
 
@@ -32,6 +33,7 @@ static partial class Program
         AssertContains(rootText, "_audioDeviceWatcher = dependencies.AudioDeviceWatcher;");
         AssertContains(rootText, "_recordingTransitionController = new MainViewModelRecordingTransitionController(this);");
         AssertContains(rootText, "_previewLifecycleController = new MainViewModelPreviewLifecycleController(this);");
+        AssertContains(rootText, "_deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(this);");
         AssertContains(rootText, "_deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);");
         AssertContains(rootText, "_runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);");
         AssertContains(rootText, "_runtimeLifecycleController.Start();");
@@ -76,6 +78,10 @@ static partial class Program
         AssertContains(previewLifecycleControllerText, "public async Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
         AssertContains(previewLifecycleControllerText, "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
         AssertContains(previewLifecycleControllerText, "public async Task ReinitializeDeviceAsync(string reason)");
+        AssertContains(deviceAudioRequestControllerText, "private sealed class MainViewModelDeviceAudioRequestController");
+        AssertContains(deviceAudioRequestControllerText, "public void HandleSelectedDeviceAudioModeChanged(string value)");
+        AssertContains(deviceAudioRequestControllerText, "public void HandleAnalogAudioGainPercentChanged(double value)");
+        AssertContains(deviceAudioRequestControllerText, "public void CancelPendingAudioControlWork()");
         AssertContains(deviceFormatProbeControllerText, "private sealed class MainViewModelDeviceFormatProbeController");
         AssertContains(deviceFormatProbeControllerText, "public void OnDeviceFormatProbeCompleted");
         AssertContains(deviceFormatProbeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");

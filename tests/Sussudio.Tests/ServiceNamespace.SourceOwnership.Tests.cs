@@ -108,7 +108,7 @@ static partial class Program
         var deviceAudioModeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioMode.cs"));
         var deviceAudioRefreshText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRefresh.cs"));
         var analogAudioGainText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs"));
-        var deviceAudioRequestsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRequests.cs"));
+        var deviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.cs"));
         AssertContains(deviceAudioRefreshText, "RefreshDeviceAudioControlsAsync(");
         AssertContains(deviceAudioRefreshText, "ReadStateAsync(device, cancellationToken)");
         AssertContains(deviceAudioRefreshText, "NATIVEXU_AUDIO_RESTORE_READ_ONLY");
@@ -120,8 +120,9 @@ static partial class Program
         AssertContains(deviceAudioModeText, "CaptureDevice? targetDevice = null");
         AssertContains(analogAudioGainText, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertContains(analogAudioGainText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken)");
-        AssertContains(deviceAudioRequestsText, "private void RequestAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
-        AssertContains(deviceAudioRequestsText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
+        AssertContains(deviceAudioRequestControllerText, "private void RequestAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
+        AssertContains(deviceAudioRequestControllerText, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
+        AssertContains(deviceAudioRequestControllerText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
         AssertDoesNotContain(audioControlsText, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertDoesNotContain(audioControlsText, "private async Task<bool> ApplyDeviceAudioModeAsync");
         AssertContains(audioControlsText, "private bool IsCurrentSelectedDevice(CaptureDevice device)");
@@ -133,7 +134,7 @@ static partial class Program
         var mainViewModelAudioPropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPropertyChanges.cs"));
         var mainViewModelAudioInputSelectionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputSelection.cs"));
         var mainViewModelMicrophonePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.MicrophonePropertyChanges.cs"));
-        var mainViewModelDeviceAudioRequestsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRequests.cs"));
+        var mainViewModelDeviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.cs"));
         var mainViewModelCaptureModePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureModePropertyChanges.cs"));
         var mainViewModelDispatchingText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs"));
         var mainViewModelUiDispatchControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelUiDispatchController.cs"));
@@ -172,10 +173,14 @@ static partial class Program
             "MainViewModel audio-input property-change partial");
         AssertContains(mainViewModelMicrophonePropertyChangesText, "OnIsMicrophoneEnabledChanged");
         AssertContains(mainViewModelMicrophonePropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
-        AssertContains(mainViewModelDeviceAudioRequestsText, "OnSelectedDeviceAudioModeChanged");
-        AssertContains(mainViewModelDeviceAudioRequestsText, "OnAnalogAudioGainPercentChanged");
-        AssertContains(mainViewModelDeviceAudioRequestsText, "RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)");
-        AssertContains(mainViewModelDeviceAudioRequestsText, "allowDuringDispose: true");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRequests.cs")),
+            "MainViewModel device audio request adapter partial");
+        AssertContains(mainViewModelDeviceAudioRequestControllerText, "partial void OnSelectedDeviceAudioModeChanged(string value)");
+        AssertContains(mainViewModelDeviceAudioRequestControllerText, "partial void OnAnalogAudioGainPercentChanged(double value)");
+        AssertContains(mainViewModelDeviceAudioRequestControllerText, "private void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)");
+        AssertContains(mainViewModelDeviceAudioRequestControllerText, "allowDuringDispose: true");
         AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnSelectedResolutionChanged(string? value)");
         AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnSelectedFormatChanged(MediaFormat? value)");
         AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnSelectedVideoFormatChanged(string value)");
@@ -259,13 +264,15 @@ static partial class Program
         AssertDoesNotContain(deviceManagementText, "partial void OnSelectedFormatChanged");
         AssertDoesNotContain(deviceManagementText, "partial void OnSelectedVideoFormatChanged");
         AssertDoesNotContain(deviceManagementText, "partial void OnMjpegDecoderCountChanged");
-        AssertContains(deviceAudioRequestsText, "private void CancelPendingAudioControlWork()");
-        AssertContains(deviceAudioRequestsText, "_gainFlashDebounceCts");
-        AssertContains(deviceAudioRequestsText, "_gainXuDebounceCts");
-        AssertContains(deviceAudioRequestsText, "_deviceAudioModeCts");
-        AssertContains(deviceAudioRequestsText, "_deviceAudioRefreshCts");
+        AssertContains(deviceAudioRequestControllerText, "private void CancelPendingAudioControlWork()");
+        AssertContains(deviceAudioRequestControllerText, "_gainFlashDebounceCts");
+        AssertContains(deviceAudioRequestControllerText, "_gainXuDebounceCts");
+        AssertContains(deviceAudioRequestControllerText, "_deviceAudioModeCts");
+        AssertContains(deviceAudioRequestControllerText, "_deviceAudioRefreshCts");
         AssertDoesNotContain(deviceManagementText, "private void CancelPendingAudioControlWork()");
         AssertDoesNotContain(deviceManagementText, "_deviceAudioModeCts");
+        AssertDoesNotContain(mainViewModelDisposalText, "_gainFlashDebounceCts");
+        AssertContains(mainViewModelDisposalText, "_deviceAudioRequestController.CancelPendingAudioControlWork();");
         AssertContains(audioDeviceDiscoveryText, "private void OnAudioDevicesChanged()");
         AssertContains(audioDeviceDiscoveryText, "private void ApplyStartupAudioDeviceScan(");
         AssertContains(audioDeviceDiscoveryText, "private async Task RefreshAudioDeviceListAsync()");
