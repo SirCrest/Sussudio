@@ -61,77 +61,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainViewModelCapture_RecordingFailuresPropagateToCallers()
-    {
-        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(recordingTransitionControllerText, "Logger.LogException(ex);");
-        AssertContains(recordingTransitionControllerText, "_viewModel.IsRecording = _viewModel._sessionCoordinator.Snapshot.IsRecording;");
-        AssertContains(recordingTransitionControllerText, "catch (OperationCanceledException ex)");
-        AssertContains(recordingTransitionControllerText, "transitionError = ex;");
-        AssertContains(recordingTransitionControllerText, "Logger.Log($\"Recording transition wait canceled: {ex.Message}\");");
-        AssertContains(recordingTransitionControllerText, "if (transitionError is OperationCanceledException transitionCanceled && inFlightTarget == (enabled ? 1 : 0))");
-        AssertContains(recordingTransitionControllerText, "throw transitionCanceled;");
-        AssertContains(recordingTransitionControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
-        AssertContains(recordingTransitionControllerText, "_viewModel.StatusText = \"Recording start canceled\";");
-        AssertContains(recordingTransitionControllerText, "_viewModel.StatusText = \"Stop recording canceled\";");
-        AssertContains(recordingTransitionControllerText, "_viewModel.IsRecording = _viewModel._sessionCoordinator.Snapshot.IsRecording;");
-        AssertContains(recordingTransitionControllerText, "_viewModel.StatusText = $\"Recording failed: {ex.Message}\";");
-        AssertContains(recordingTransitionControllerText, "_viewModel.StatusText = $\"Stop recording failed: {ex.Message}\";");
-        AssertContains(recordingTransitionControllerText, "throw;");
-
-        return Task.CompletedTask;
-    }
-
-    private static Task MainWindowClose_CancelsCloseUntilRecordingStopCompletes()
-    {
-        var windowCtorText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
-            .Replace("\r\n", "\n");
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs")
-            .Replace("\r\n", "\n");
-        var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs")
-            .Replace("\r\n", "\n");
-        var appClosingControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAppClosingController.cs")
-            .Replace("\r\n", "\n");
-        var closeRequestControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRequestController.cs")
-            .Replace("\r\n", "\n");
-        var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(windowCtorText, "RegisterCloseLifecycle(appWindow);");
-        AssertContains(closeLifecycleText, "appWindow.Closing += MainWindow_Closing;");
-        AssertContains(closeLifecycleText, "_windowAppClosingController.HandleClosingAsync(args)");
-        AssertContains(appClosingControllerText, "args.Cancel = true;");
-        AssertContains(closeLifecycleText, "TryStopRecordingBeforeCloseAsync");
-        AssertContains(appClosingControllerText, "if (!_context.IsRecording() && !_context.IsRecordingTransitioning())");
-        AssertContains(closeLifecycleText, "=> _windowCloseRecordingFinalizationController.StopBeforeCloseAsync(");
-        AssertContains(appClosingControllerText, "_context.RequestWindowClose();");
-        AssertContains(closeLifecycleText, "_windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken)");
-        AssertContains(closeLifecycleText, "=> _windowCloseRequestController.RequestClose();");
-        AssertContains(closeRequestControllerText, "_context.CloseWindow();");
-        AssertContains(closeRequestControllerText, "_context.LifecycleController.CompleteRequest();");
-        AssertContains(closeRequestControllerText, "_context.ExitApplication();");
-        AssertContains(appClosingControllerText, "_context.LifecycleController.CompleteRequest(new InvalidOperationException(_context.GetStatusText()))");
-        AssertContains(appClosingControllerText, "_context.LifecycleController.CompleteRequest();");
-        AssertContains(closeLifecycleControllerText, "private Task GetCompletionTask(CancellationToken cancellationToken)");
-        AssertContains(closeLifecycleControllerText, "var enqueueFailure = new InvalidOperationException(\"Failed to enqueue window close action on the UI thread.\");");
-        AssertContains(closeRecordingFinalizationControllerText, "private const int StopBudgetMs = 120_000;");
-        AssertContains(closeRecordingFinalizationControllerText, "var stopTask = viewModel.StopRecordingAndWaitAsync();");
-        AssertContains(closeRecordingFinalizationControllerText, "var completed = await Task.WhenAny(stopTask, Task.Delay(StopBudgetMs));");
-        AssertContains(closeRecordingFinalizationControllerText, "close cancelled to protect recording");
-        AssertContains(closeRecordingFinalizationControllerText, "Still saving recording. Close cancelled.");
-        AssertContains(closeRecordingFinalizationControllerText, "RECORDING_FINALIZE_FAILED_AFTER_CLOSE ");
-        AssertDoesNotContain(closeLifecycleText, "Task.WhenAny(");
-        AssertDoesNotContain(closeLifecycleText, "StopRecordingAndWaitAsync");
-        AssertDoesNotContain(closeLifecycleText, "args.Cancel = true;");
-        AssertDoesNotContain(closeLifecycleText, "MP4 may be truncated.");
-
-        return Task.CompletedTask;
-    }
-
     private static Task ExternalProcessProbes_UseBoundedProcessSupervisor()
     {
         var ffmpegText = ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs")
@@ -147,22 +76,6 @@ static partial class Program
         AssertContains(hdrText, "private const int ValidationTimeoutMs = 30_000;");
         AssertContains(hdrText, "new ProcessSupervisor().RunAsync");
         AssertContains(hdrText, "validator-timeout");
-
-        return Task.CompletedTask;
-    }
-
-    private static Task RecordingStop_PropagatesUnifiedVideoStopFailure()
-    {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(captureServiceText, "Unified video recording stop failed");
-        AssertContains(captureServiceText, "FinalizeResult.Failure(fallbackOutputPath, $\"Unified video recording stop failed: {ex.Message}\");");
-        // Fix #12: sink dispatch became a ternary so the emergency flag can route to libAvSink.StopAsync(emergency, ct).
-        AssertContains(captureServiceText, "var sinkResult = libAvSink != null");
-        AssertContains(captureServiceText, "? await libAvSink.StopAsync(emergency, cancellationToken).ConfigureAwait(false)");
-        AssertContains(captureServiceText, ": await sink.StopAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(captureServiceText, "if (result.Succeeded)\n                {\n                    result = sinkResult;");
 
         return Task.CompletedTask;
     }
@@ -282,36 +195,6 @@ static partial class Program
 
         var teardownMethod = type.GetMethod(teardownMethodName, publicInstance, binder: null, types: new[] { typeof(CancellationToken) }, modifiers: null);
         AssertNotNull(teardownMethod, $"{type.FullName}.{teardownMethodName}(CancellationToken)");
-    }
-
-    private static Task EmergencyRecordingStop_DoesNotDispatchBackToBlockedUiThread()
-    {
-        var appText = ReadRepoFile("Sussudio/App.xaml.cs")
-            .Replace("\r\n", "\n");
-        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(recordingLifecycleText, "internal Task StopRecordingForEmergencyAsync");
-        // Fix #12: emergency stop now routes through the coordinator's emergency-flagged path
-        // so LibAvRecordingSink applies EmergencyStopTimeoutMs (5s) instead of StopTimeoutMs (30s).
-        AssertContains(recordingLifecycleText, "=> _recordingTransitionController.StopRecordingForEmergencyAsync(cancellationToken);");
-        AssertContains(ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs"), "=> _viewModel._sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);");
-        AssertContains(appText, "var task = viewModel.StopRecordingForEmergencyAsync();");
-        AssertContains(appText, "if (e.IsTerminating || !recoverable)");
-        AssertDoesNotContain(appText, "Task.Run(async () =>");
-        AssertDoesNotContain(appText, "StopRecordingAndWaitAsync().ConfigureAwait(false)");
-        AssertDoesNotContain(appText, "viewModel == null || !viewModel.IsRecording");
-        AssertDoesNotContain(recordingLifecycleText, "if (!IsRecording)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
-            "MainViewModel capture lifecycle facade partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.RecordingLifecycle.cs")),
-            "MainViewModel recording lifecycle facade partial");
-
-        return Task.CompletedTask;
     }
 
 }

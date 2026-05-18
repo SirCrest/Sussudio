@@ -1215,8 +1215,8 @@ Primary current owners:
   owns MainWindow preview resize telemetry, preview surface/shadow controller,
   and preview runtime/snapshot ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`
-  owns MainWindow close lifecycle, native bootstrap, and first-frame native
-  reveal ownership assertions.
+  owns MainWindow close lifecycle, recording-stop close protection, native
+  bootstrap, and first-frame native reveal ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs` owns
   MainWindow controller-adapter ownership assertions for control bar, shell
   elevation, preview-transition, preview startup overlay, preview fade-in, and
@@ -1274,7 +1274,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.PreviewVolume.Tests.cs` owns
   preview-volume persistence and automation options surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
-  owns recording-transition routing through the shared lifecycle gate.
+  owns recording-transition routing, failure propagation, and emergency-stop
+  routing through the shared lifecycle gate.
 - `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs` owns
   the `IAutomationViewModel` async surface contract plus Flashback/probe
   dispatcher routing assertions.
@@ -1351,9 +1352,8 @@ Primary current owners:
   `.Recording.Tests.cs`, `.System.Tests.cs`, `.Preview.Tests.cs`, and
   `.Flashback.Tests.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RuntimeSafety.Tests.cs` owns
-  automation cancellation/timeout, recording failure propagation, safe close,
-  preview-stop surface, process supervisor, and emergency-stop
-  assertions.
+  automation cancellation/timeout, preview-stop surface, and process
+  supervisor assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.FlashbackCleanup.Tests.cs`
   owns Flashback startup-cache and session-recovery cleanup ownership
   assertions that used to live in the automation test catch-all.
@@ -1485,8 +1485,9 @@ Primary current owners:
   `RecordingQueue.OverloadPolicy.Telemetry.cs` owns unified capture, health
   snapshot, and automation formatter telemetry assertions.
   `CaptureService.RecordingOwnership.Tests.cs` owns
-  CaptureService recording lifecycle, rollback, and recording outcome-state
-  file-ownership assertions.
+  CaptureService recording lifecycle, recording-stop finalization failure
+  propagation, rollback, and recording outcome-state file-ownership
+  assertions.
 - `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Tests.cs` owns LibAv recording
   sink output validation, try-enqueue, video-session setup, video-queue
   submission, queue-cleanup, drain-loop, encoding-loop, startup sequencing,

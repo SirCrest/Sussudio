@@ -3,6 +3,61 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static Task MainViewModelCapture_RecordingFailuresPropagateToCallers()
+    {
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(recordingTransitionControllerText, "Logger.LogException(ex);");
+        AssertContains(recordingTransitionControllerText, "_viewModel.IsRecording = _viewModel._sessionCoordinator.Snapshot.IsRecording;");
+        AssertContains(recordingTransitionControllerText, "catch (OperationCanceledException ex)");
+        AssertContains(recordingTransitionControllerText, "transitionError = ex;");
+        AssertContains(recordingTransitionControllerText, "Logger.Log($\"Recording transition wait canceled: {ex.Message}\");");
+        AssertContains(recordingTransitionControllerText, "if (transitionError is OperationCanceledException transitionCanceled && inFlightTarget == (enabled ? 1 : 0))");
+        AssertContains(recordingTransitionControllerText, "throw transitionCanceled;");
+        AssertContains(recordingTransitionControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
+        AssertContains(recordingTransitionControllerText, "_viewModel.StatusText = \"Recording start canceled\";");
+        AssertContains(recordingTransitionControllerText, "_viewModel.StatusText = \"Stop recording canceled\";");
+        AssertContains(recordingTransitionControllerText, "_viewModel.IsRecording = _viewModel._sessionCoordinator.Snapshot.IsRecording;");
+        AssertContains(recordingTransitionControllerText, "_viewModel.StatusText = $\"Recording failed: {ex.Message}\";");
+        AssertContains(recordingTransitionControllerText, "_viewModel.StatusText = $\"Stop recording failed: {ex.Message}\";");
+        AssertContains(recordingTransitionControllerText, "throw;");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task EmergencyRecordingStop_DoesNotDispatchBackToBlockedUiThread()
+    {
+        var appText = ReadRepoFile("Sussudio/App.xaml.cs")
+            .Replace("\r\n", "\n");
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(recordingLifecycleText, "internal Task StopRecordingForEmergencyAsync");
+        // Fix #12: emergency stop now routes through the coordinator's emergency-flagged path
+        // so LibAvRecordingSink applies EmergencyStopTimeoutMs (5s) instead of StopTimeoutMs (30s).
+        AssertContains(recordingLifecycleText, "=> _recordingTransitionController.StopRecordingForEmergencyAsync(cancellationToken);");
+        AssertContains(ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs"), "=> _viewModel._sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);");
+        AssertContains(appText, "var task = viewModel.StopRecordingForEmergencyAsync();");
+        AssertContains(appText, "if (e.IsTerminating || !recoverable)");
+        AssertDoesNotContain(appText, "Task.Run(async () =>");
+        AssertDoesNotContain(appText, "StopRecordingAndWaitAsync().ConfigureAwait(false)");
+        AssertDoesNotContain(appText, "viewModel == null || !viewModel.IsRecording");
+        AssertDoesNotContain(recordingLifecycleText, "if (!IsRecording)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
+            "MainViewModel capture lifecycle facade partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.RecordingLifecycle.cs")),
+            "MainViewModel recording lifecycle facade partial");
+
+        return Task.CompletedTask;
+    }
+
     private static Task MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate()
     {
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")

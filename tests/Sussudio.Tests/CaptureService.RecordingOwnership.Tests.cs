@@ -2,6 +2,22 @@
 
 static partial class Program
 {
+    private static Task RecordingStop_PropagatesUnifiedVideoStopFailure()
+    {
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(captureServiceText, "Unified video recording stop failed");
+        AssertContains(captureServiceText, "FinalizeResult.Failure(fallbackOutputPath, $\"Unified video recording stop failed: {ex.Message}\");");
+        // Fix #12: sink dispatch became a ternary so the emergency flag can route to libAvSink.StopAsync(emergency, ct).
+        AssertContains(captureServiceText, "var sinkResult = libAvSink != null");
+        AssertContains(captureServiceText, "? await libAvSink.StopAsync(emergency, cancellationToken).ConfigureAwait(false)");
+        AssertContains(captureServiceText, ": await sink.StopAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(captureServiceText, "if (result.Succeeded)\n                {\n                    result = sinkResult;");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_RecordingLifecycleLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
