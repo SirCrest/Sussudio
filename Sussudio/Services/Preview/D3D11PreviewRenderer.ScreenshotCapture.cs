@@ -183,12 +183,12 @@ internal sealed partial class D3D11PreviewRenderer
                 {
                     if (isPng)
                     {
-                        pngFrameBuffer = CopyMappedFrameToBuffer(mapped, height, pngSourceRowBytes);
+                        pngFrameBuffer = PreviewScreenshotCapture.CopyMappedFrameToBuffer(mapped, height, pngSourceRowBytes);
                         captureResult = default!;
                     }
                     else
                     {
-                        captureResult = CaptureMappedFrameToBmp(
+                        captureResult = PreviewScreenshotCapture.CaptureMappedFrameToBmp(
                             mapped,
                             width,
                             height,
@@ -274,5 +274,16 @@ internal sealed partial class D3D11PreviewRenderer
         _captureStagingTexture = null;
         _captureStagingWidth = 0;
         _captureStagingHeight = 0;
+    }
+
+    private static PreviewFrameCaptureResult CreateFrameCaptureError(string message, string rendererMode = "Unknown")
+    {
+        return new PreviewFrameCaptureResult
+        {
+            Succeeded = false,
+            Message = message,
+            RendererMode = rendererMode,
+            LuminanceHistogram = new int[16]
+        };
     }
 }

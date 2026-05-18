@@ -100,7 +100,7 @@ static partial class Program
             D3D11PreviewRenderer_ViewportHelpersLiveInFocusedPartial);
         await AddCheckAsync(results,
             "D3D preview screenshot encoding lives in focused partial",
-            D3D11PreviewRenderer_ScreenshotEncodingLivesInFocusedPartial);
+            D3D11PreviewRenderer_ScreenshotEncodingLivesWithScreenshotCapture);
         await AddCheckAsync(results,
             "D3D preview device-lost recovery lives in focused partial",
             D3D11PreviewRenderer_DeviceLostRecoveryLivesInFocusedPartial);

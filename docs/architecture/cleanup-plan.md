@@ -609,11 +609,10 @@ enable/disable state.
 Renderer-level preview frame capture request state and timeout/cancellation
 handling now live with the capture implementation in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs`.
-Screenshot BMP/error result construction, mapped-frame buffer copying, and
-capture pixel statistics now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotEncoding.cs`.
-Preview-frame PNG pixel conversion, luminance analysis, and letterbox/pillarbox
-measurement live in `Sussudio/Services/Preview/PreviewScreenshotCapture.cs`,
+Screenshot error result construction stays with the renderer request lifecycle.
+Preview-frame BMP/PNG pixel conversion, mapped-frame buffer copying, luminance
+analysis, and letterbox/pillarbox measurement live in
+`Sussudio/Services/Preview/PreviewScreenshotCapture.cs`,
 while `Sussudio/Services/Preview/PreviewPng16Encoder.cs` owns the 16-bit PNG
 file container, chunk writing, output-directory creation, and CRC helpers.
 
