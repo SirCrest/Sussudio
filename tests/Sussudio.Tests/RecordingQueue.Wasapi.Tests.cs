@@ -124,6 +124,41 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task WasapiAudioPlayback_InitializationLivesInFocusedPartial()
+    {
+        var playbackSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
+            .Replace("\r\n", "\n");
+        var initializationSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.Initialization.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(playbackSource, "internal sealed partial class WasapiAudioPlayback : IDisposable");
+        AssertContains(initializationSource, "internal sealed partial class WasapiAudioPlayback");
+        AssertContains(initializationSource, "public Task InitializeAsync(CancellationToken ct)");
+        AssertContains(initializationSource, "enumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eConsole, out device)");
+        AssertContains(initializationSource, "WasapiComInterop.AllocFloatStereo48kFormat()");
+        AssertContains(initializationSource, "audioClient.IsFormatSupported(");
+        AssertContains(initializationSource, "WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat)");
+        AssertContains(initializationSource, "\"IAudioClient.Initialize(render)\"");
+        AssertContains(initializationSource, "audioClient.GetBufferSize(out _bufferFrameCount)");
+        AssertContains(initializationSource, "audioClient.GetStreamLatency(out var streamLatencyHundredNs)");
+        AssertContains(initializationSource, "audioClient.SetEventHandle(renderEvent.SafeWaitHandle.DangerousGetHandle())");
+        AssertContains(initializationSource, "audioClient.GetService(ref iidRenderClient, out var renderClientObject)");
+        AssertContains(initializationSource, "Interlocked.Exchange(ref _renderCallbackCount, 0)");
+        AssertContains(initializationSource, "Volatile.Write(ref _playbackQueueDepth, 0)");
+        AssertContains(initializationSource, "Interlocked.Exchange(ref _initialized, 1)");
+        AssertContains(initializationSource, "WasapiComInterop.CoTaskMemFree(desiredFormat)");
+        AssertContains(initializationSource, "WasapiComInterop.ReleaseComObject(ref audioRenderClient)");
+        AssertDoesNotContain(playbackSource, "public Task InitializeAsync(CancellationToken ct)");
+        AssertContains(playbackSource, "public void Start()");
+        AssertContains(playbackSource, "public void PauseRendering()");
+        AssertContains(playbackSource, "public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)");
+        AssertContains(playbackSource, "public void Flush()");
+        AssertContains(playbackSource, "public void Stop()");
+        AssertContains(playbackSource, "public void Dispose()");
+
+        return Task.CompletedTask;
+    }
+
     private static Task WasapiAudioCapture_DiagnosticsLivesInFocusedPartial()
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
