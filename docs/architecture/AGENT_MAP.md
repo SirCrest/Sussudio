@@ -2897,11 +2897,13 @@ Primary owners:
 - `tools/Common/DiagnosticSessionFlashbackMetrics.Models.cs` owns session/result
   DTOs. `tools/Common/DiagnosticSessionFlashbackMetrics.Recording.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`,
+  `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs`,
   `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`, and
   `tools/Common/DiagnosticSessionFlashbackMetrics.Export.cs` own read-only
-  recording, playback session metric accumulation, result-copy, and export
-  metric projections. Playback session accumulation includes 1% low window
-  capture, frame/decode maxima, and audio-master maxima.
+  recording, playback session orchestration, playback snapshot observation,
+  result-copy, and export metric projections. Playback observation includes
+  active/relevant snapshot gating, 1% low window capture, frame/decode maxima,
+  and audio-master maxima.
   Export metrics include force-rotate fallback total, delta, and last fallback
   segment count; keep those counters derived outside export-observed relevance gating.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.Registrations.cs`

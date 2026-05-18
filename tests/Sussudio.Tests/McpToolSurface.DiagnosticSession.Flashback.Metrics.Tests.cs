@@ -9,6 +9,10 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var metricsText = ReadDiagnosticSessionFlashbackMetricsSource();
+        var playbackSessionText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs")
+            .Replace("\r\n", "\n");
+        var playbackObservationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(metricsText, "internal static partial class DiagnosticSessionFlashbackMetrics");
         AssertContains(metricsText, "internal sealed class FlashbackRecordingSessionMetrics");
@@ -16,17 +20,21 @@ static partial class Program
         AssertContains(metricsText, "internal sealed class FlashbackPlaybackResultMetrics");
         AssertContains(metricsText, "internal sealed class FlashbackExportSessionMetrics");
         AssertContains(metricsText, "internal static FlashbackRecordingSessionMetrics BuildFlashbackRecordingMetrics(");
-        AssertContains(metricsText, "internal static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(");
-        AssertContains(metricsText, "private static void ObservePlaybackOnePercentLow(");
-        AssertContains(metricsText, "private static void ObservePlaybackFrameAndDecodeMetrics(");
-        AssertContains(metricsText, "private static void ObservePlaybackAudioMasterMetrics(");
+        AssertContains(playbackSessionText, "internal static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(");
+        AssertContains(playbackObservationText, "private static void ObservePlaybackSnapshot(");
+        AssertContains(playbackObservationText, "private static void ObservePlaybackOnePercentLow(");
+        AssertContains(playbackObservationText, "private static void ObservePlaybackFrameAndDecodeMetrics(");
+        AssertContains(playbackObservationText, "private static void ObservePlaybackAudioMasterMetrics(");
         AssertContains(metricsText, "internal static FlashbackPlaybackResultMetrics BuildFlashbackPlaybackResultMetrics(");
         AssertContains(metricsText, "internal static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(");
         AssertContains(metricsText, "public long ForceRotateFallbacksAtEnd { get; set; }");
         AssertContains(metricsText, "metrics.ForceRotateFallbacksAtEnd = GetNullableLong(lastSnapshot, \"FlashbackExportForceRotateFallbacks\") ?? 0;");
         AssertContains(metricsText, "metrics.ForceRotateFallbacksDelta = GetCounterDelta(");
         AssertContains(metricsText, "metrics.LastForceRotateFallbackSegmentsAtEnd =");
-        AssertContains(metricsText, "private static bool IsPlaybackSnapshotActive(");
+        AssertContains(playbackObservationText, "private static bool IsPlaybackSnapshotActive(");
+        AssertDoesNotContain(playbackSessionText, "private static void ObservePlaybackOnePercentLow(");
+        AssertDoesNotContain(playbackSessionText, "private static void ObservePlaybackFrameAndDecodeMetrics(");
+        AssertDoesNotContain(playbackSessionText, "private static void ObservePlaybackAudioMasterMetrics(");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionFlashbackMetrics;");
         AssertContains(builderText, "var playbackResultMetrics = BuildFlashbackPlaybackResultMetrics(playbackSessionMetrics);");
         AssertDoesNotContain(runnerText, "private sealed class FlashbackPlaybackSessionMetrics");
