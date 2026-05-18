@@ -434,8 +434,8 @@ xUnit formatter contracts.
 
 Diagnostic-session MCP surface coverage is split into
 `McpToolSurface.DiagnosticSession.Tool.Tests.cs` for MCP tool
-artifact contracts, `McpToolSurface.DiagnosticSession.Ownership.Tests.cs` for
-core helper ownership assertions,
+artifact contracts, `McpToolSurface.DiagnosticSession.Ownership.*.Tests.cs` for
+planning, execution, teardown, and reporting helper ownership assertions,
 `McpToolSurface.DiagnosticSession.Flashback.*.Tests.cs` for Flashback
 scenario/metrics/wait/export ownership assertions,
 `McpToolSurface.DiagnosticSession.InfrastructureOwnership.*.Tests.cs` for

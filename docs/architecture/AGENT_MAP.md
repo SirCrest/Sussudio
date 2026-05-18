@@ -1891,9 +1891,13 @@ Primary current owners:
   the only test-owned numeric ID list.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Tests.cs` owns
   MCP `run_diagnostic_session` success/failure artifact contract tests.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`
-  owns diagnostic-session helper ownership assertions for core runner,
-  scenario, cleanup, sampling, and metric collaborators.
+- Diagnostic-session helper ownership checks live in focused lifecycle files:
+  planning/setup checks in
+  `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Planning.Tests.cs`,
+  execution/startup/sampling checks in
+  `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Execution.Tests.cs`,
+  and teardown/reporting/metrics checks in
+  `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.TeardownAndReporting.Tests.cs`.
 - Diagnostic-session infrastructure ownership checks live in focused files:
   runner/initial-snapshot checks in `InfrastructureOwnership.Runner`, pipe
   retry and command-channel checks in `InfrastructureOwnership.CommandChannel`,
