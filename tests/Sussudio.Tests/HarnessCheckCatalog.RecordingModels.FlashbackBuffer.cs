@@ -37,6 +37,9 @@ static partial class Program
             "FlashbackBufferManager lifecycle helpers live in focused partial",
             FlashbackBufferManager_LifecycleHelpersLiveInFocusedPartial);
         await AddCheckAsync(results,
+            "FlashbackBufferManager purge helpers live in focused partial",
+            FlashbackBufferManager_PurgeLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "FlashbackBufferManager latest PTS clamps invalid buffer duration",
             FlashbackBufferManager_UpdateLatestPts_ClampsInvalidBufferDuration);
         await AddCheckAsync(results,

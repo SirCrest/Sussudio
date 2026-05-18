@@ -1312,9 +1312,13 @@ allocation now live in
 
 Flashback buffer retention now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs`. Keep segment
-purge, eviction selection, and guarded file deletion there. Eviction pause
-state, recording PTS range capture, and pause-driven disk-warning state now live
-in `FlashbackBufferManager.EvictionPause.cs`. The root buffer manager keeps
+eviction selection, eviction file deletion, and disk-budget/window retention
+policy there. Explicit purge/delete-all lifecycle behavior now lives in
+`Sussudio/Services/Flashback/FlashbackBufferManager.Purge.cs`; keep
+`PurgeCompletedSegments`, `PurgeAllSegments`, `PurgeAllSegmentsCore`, and
+guarded purge deletion there. Eviction pause state, recording PTS range capture,
+and pause-driven disk-warning state now live in
+`FlashbackBufferManager.EvictionPause.cs`. The root buffer manager keeps
 session live counters, byte/PTS accounting helpers, and PTS/disk updates.
 Flashback buffer segment mutation now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.SegmentMutation.cs`. Keep

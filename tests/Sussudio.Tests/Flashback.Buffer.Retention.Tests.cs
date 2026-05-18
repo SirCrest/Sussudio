@@ -267,11 +267,12 @@ static partial class Program
             AssertEqual(0L, GetLongProperty(manager, "TotalDiskBytes"), "Full purge resets total disk bytes");
             AssertEqual(0L, GetLongProperty(manager, "TotalBytesWritten"), "Full purge resets monotonic bytes for a new buffer session");
 
-            var source = ReadFlashbackBufferManagerSource();
+            var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Purge.cs")
+                .Replace("\r\n", "\n");
             var purgeCoreBlock = ExtractTextBetween(
                 source,
                 "private (int Segments, long FreedBytes) PurgeAllSegmentsCore()",
-                "    private void EvictOldestSegments()");
+                "    private bool TryDeleteFile(string filePath)");
             AssertOccursBefore(purgeCoreBlock, "var activeBytes = _activeSegmentPath != null", "if (_activeSegmentPath != null)");
             AssertContains(purgeCoreBlock, "_completedSegmentBytes = GetCompletedSegmentBytesSaturated();");
             AssertContains(purgeCoreBlock, "var retainedActiveBytes = _activeSegmentPath != null ? activeBytes : 0;");

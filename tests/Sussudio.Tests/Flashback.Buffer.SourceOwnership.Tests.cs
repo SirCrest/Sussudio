@@ -94,4 +94,28 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackBufferManager_PurgeLivesInFocusedPartial()
+    {
+        var retentionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs")
+            .Replace("\r\n", "\n");
+        var purgeText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Purge.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(purgeText, "public void PurgeCompletedSegments()");
+        AssertContains(purgeText, "public void PurgeAllSegments()");
+        AssertContains(purgeText, "private (int Segments, long FreedBytes) PurgeAllSegmentsCore()");
+        AssertContains(purgeText, "private bool TryDeleteFile(string filePath)");
+        AssertContains(purgeText, "FLASHBACK_PURGE_PARTIAL");
+        AssertContains(purgeText, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
+        AssertContains(purgeText, "FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session");
+        AssertContains(retentionText, "private void EvictOldestSegments()");
+        AssertContains(retentionText, "private bool DeleteFileForEviction(string filePath, long sizeBytes, string reason)");
+        AssertContains(retentionText, "private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason)");
+        AssertDoesNotContain(retentionText, "public void PurgeCompletedSegments()");
+        AssertDoesNotContain(retentionText, "public void PurgeAllSegments()");
+        AssertDoesNotContain(retentionText, "private (int Segments, long FreedBytes) PurgeAllSegmentsCore()");
+
+        return Task.CompletedTask;
+    }
 }
