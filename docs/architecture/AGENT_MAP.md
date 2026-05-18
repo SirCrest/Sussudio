@@ -48,9 +48,11 @@ Preview renderer notes:
   native-call entry/exit guards, pending-frame shutdown cleanup, and renderer
   disposal.
 - `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs` owns
-  render-pass selection plus VideoProcessor, NV12 shader, and HDR shader pass
-  execution. Keep pass precedence, timing bucket attribution, HDR fallback
-  logging, and consumption of the lifecycle-owned native-call guard there.
+  render-pass selection plus VideoProcessor pass execution. Keep pass
+  precedence, timing bucket attribution, and HDR fallback logging there.
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderPasses.cs` owns NV12 and
+  HDR shader draw execution, including native-call guard consumption,
+  shader-resource binding, draw calls, and shader-mode present messages.
 
 ## Automation
 
