@@ -3175,9 +3175,8 @@ Remaining `tools/Common` ownership:
    tests are split into lease lifecycle, MJPEG jitter policy, MJPEG jitter
    queue behavior, and queued lease release owners. MainWindow shell ownership
    tests are split into chrome, startup, preview runtime, and window lifecycle
-   owners. Flashback buffer segment
-   tests are split between mutation/accounting/disposal coverage and segment
-   lookup/list projection coverage.
+   owners. Flashback buffer segment tests are split between validation,
+   accounting, disposal/recovery, and segment lookup/list projection coverage.
 
 3. Continue converting MainWindow partial concerns into controllers.
 
