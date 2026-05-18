@@ -12,14 +12,11 @@ public partial class CaptureService
 {
     private async Task<FinalizeResult> StopAndDisposeLibAvRecordingBackendAsync(string fallbackStatusMessage, bool emergency, CancellationToken cancellationToken)
     {
-        var sink = _recordingSink;
-        var libAvSink = _libavSink;
-        var recordingContext = _recordingContext;
+        var detachedBackend = _recordingBackend.DetachLibAvBackend();
+        var sink = detachedBackend.Sink;
+        var libAvSink = detachedBackend.LibAvSink;
+        var recordingContext = detachedBackend.Context;
         var fallbackOutputPath = recordingContext?.FinalOutputPath ?? (_lastOutputPath ?? string.Empty);
-
-        _recordingSink = null;
-        _libavSink = null;
-        _pendingLibAvDrainTask = null;
 
         var result = FinalizeResult.Success(fallbackOutputPath, fallbackStatusMessage);
         OperationCanceledException? cancellationException = null;
@@ -228,8 +225,7 @@ public partial class CaptureService
         _recordingStopwatch.Stop();
         _isRecording = false;
         if (!_isVideoPreviewActive) await StopTelemetryPollAsync().ConfigureAwait(false);
-        _recordingContext = null;
-        _activeRecordingSettings = null;
+        _recordingBackend.ClearContextAndSettings();
         _mfConvertersDisabled = false;
 
         cancellationException = await RestoreLibAvPreviewFeaturesAfterRecordingAsync(

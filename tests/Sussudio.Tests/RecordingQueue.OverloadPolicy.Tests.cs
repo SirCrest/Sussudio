@@ -177,7 +177,7 @@ static partial class Program
         AssertContains(flashbackStopRecordingBackend, "BeginFlashbackBackendCleanup(ex);");
         AssertContains(flashbackStopRecordingBackend, "FLASHBACK_MIC_RESTART_WARN type={ex.GetType().Name} error='{ex.Message}'");
         AssertDoesNotContain(flashbackStopRecordingBackend, "libAvSink.StopAsync(emergency, cancellationToken)");
-        AssertContains(libAvStopRecordingBackend, "var sink = _recordingSink;");
+        AssertContains(libAvStopRecordingBackend, "var detachedBackend = _recordingBackend.DetachLibAvBackend();");
         AssertContains(libAvStopRecordingBackend, "await unifiedVideoCapture.StopRecordingAsync()");
         AssertContains(libAvStopRecordingBackend, "? await libAvSink.StopAsync(emergency, cancellationToken).ConfigureAwait(false)");
         AssertContains(libAvStopRecordingBackend, "RestoreLibAvPreviewFeaturesAfterRecordingAsync(");

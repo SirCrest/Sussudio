@@ -16,7 +16,7 @@ public partial class CaptureService
     {
         var cancellationRequested = false;
         var preserveFlashbackSegmentsAfterFailedRecordingFinalize = false;
-        if (_isRecording || _recordingSink != null || _libavSink != null)
+        if (_isRecording || _recordingBackend.HasActiveBackend)
         {
             var stoppingFlashbackRecording = IsFlashbackRecordingBackendActive();
             try
@@ -123,8 +123,7 @@ public partial class CaptureService
         _isInitialized = false;
         _currentDevice = null;
         _currentSettings = null;
-        _activeRecordingSettings = null;
-        _recordingContext = null;
+        _recordingBackend.ClearContextAndSettings();
         ResetAvSyncDriftBaseline();
         ResetSessionStateAfterCleanup();
 

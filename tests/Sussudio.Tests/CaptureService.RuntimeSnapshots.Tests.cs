@@ -129,7 +129,7 @@ static partial class Program
 
         await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
 
-        SetPrivateField(captureService, "_activeRecordingSettings", settings);
+        SetPropertyOrBackingField(captureService, "_activeRecordingSettings", settings);
         SetPrivateField(captureService, "_isRecording", true);
         SetPrivateField(captureService, "_activeVideoInputPixelFormat", "nv12");
 

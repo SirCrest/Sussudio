@@ -7,7 +7,7 @@ namespace Sussudio.Services.Capture;
 
 // Flashback backend failure cleanup ownership. This path preserves recoverable
 // rolling-buffer files on GPU device loss and disposes only the Flashback
-// backend; fatal capture session-state writes remain in FailureCleanup.
+// backend; fatal capture state changes route through Coordination helpers.
 public partial class CaptureService
 {
     private void BeginFlashbackBackendCleanup(Exception ex)

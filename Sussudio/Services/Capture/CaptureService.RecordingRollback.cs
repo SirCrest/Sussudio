@@ -25,9 +25,9 @@ public partial class CaptureService
             }
 
             _unifiedVideoCapture?.EndFlashbackRecordingAccounting();
-            if (ReferenceEquals(_recordingSink, rollback.FlashbackRecordingStartedSink))
+            if (_recordingBackend.IsFlashbackBackend(rollback.FlashbackRecordingStartedSink))
             {
-                _recordingSink = null;
+                _recordingBackend.ClearActiveBackend();
             }
         }
 
@@ -90,8 +90,7 @@ public partial class CaptureService
             _unifiedVideoCapture = null;
         }
 
-        _recordingContext = null;
-        _activeRecordingSettings = null;
+        _recordingBackend.ClearContextAndSettings();
         _recordingIntegrityCounterBaseline = null;
         _recordingIntegrityAudioBaseline = null;
         _isRecording = false;

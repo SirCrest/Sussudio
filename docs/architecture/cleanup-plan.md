@@ -735,7 +735,8 @@ uses it before entering a transition and delegates steady-state resolution to
 the same pure policy. Named session-state mutation helpers now live in
 `Sussudio/Services/Capture/CaptureService.Coordination.cs`, so cleanup,
 disposal, and fatal cleanup keep their flow ownership without writing
-`_sessionState` directly; resource ownership has not moved in this slice.
+`_sessionState` directly. Active recording backend resource ownership now lives
+in `Sussudio/Services/Capture/CaptureRecordingBackendResources.cs`.
 Capture session coordinator command enums, queue receipt records, session
 snapshots, and Flashback playback/buffer status projections now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs`.
@@ -819,7 +820,8 @@ Explicit capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.Cleanup.cs`. That file owns the
 public cleanup transition, shutdown teardown order, failed Flashback recording
 segment preservation, deferred LibAv/unified-video cleanup handoff, WASAPI
-capture disposal, mic teardown, telemetry stop, and final session-state reset.
+capture disposal, mic teardown, telemetry stop, and the call to Coordination's
+final session-state reset helper.
 
 Capture transition coordination now lives in
 `Sussudio/Services/Capture/CaptureService.Coordination.cs`. That file owns
@@ -829,9 +831,9 @@ cleanup paths call those helpers while preserving their special teardown order.
 Best-effort resource release helpers are delegated to
 `Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`.
 
-Disposal-triggered cleanup and final disposed-state writes now live in
-`Sussudio/Services/Capture/CaptureService.DisposalLifecycle.cs`. Coordination
-lock disposal is delegated to
+Disposal-triggered cleanup and dispose flow now live in
+`Sussudio/Services/Capture/CaptureService.DisposalLifecycle.cs`; disposed-state
+writes route through Coordination. Coordination lock disposal is delegated to
 `Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`.
 
 Capture resource release helpers now live in
@@ -860,8 +862,8 @@ fields, lock, mutation helpers, clear helpers, and snapshot reads.
 
 Fatal failure cleanup launch now lives in
 `Sussudio/Services/Capture/CaptureService.FailureCleanup.cs`. That file owns
-the fatal capture cleanup launcher, generation-stale guards, and the
-session-state writes that move the service into cleaning-up/faulted states.
+the fatal capture cleanup launcher and generation-stale guards; cleaning-up and
+faulted state writes route through Coordination helpers.
 Flashback backend failure cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs`.
 That file owns the Flashback backend cleanup launcher, GPU device-lost
@@ -3368,6 +3370,10 @@ Remaining `tools/Common` ownership:
    mechanics there before inventing another small owner;
    `CaptureService.FlashbackPreviewBackend.cs` should stay the transition
    coordinator for AV1 probing, readiness waiting, and cleanup handoff.
+   `CaptureRecordingBackendResources.cs` now owns active recording backend
+   resources: LibAv/Flashback sink identity, active recording context/settings,
+   and pending LibAv drain task tracking. Keep later recording backend resource
+   mechanics there unless the behavior needs a larger, proven boundary.
 
 ## Guardrails
 

@@ -13,12 +13,11 @@ public partial class CaptureService
     private async Task<FinalizeResult> StopAndDisposeFlashbackRecordingBackendAsync(CancellationToken cancellationToken)
     {
         var flashbackSink = _flashbackSink!;
-        var fbRecordingContext = _recordingContext;
+        var fbRecordingContext = _recordingBackend.DetachFlashbackBackend();
         var fbOutputPath = fbRecordingContext?.FinalOutputPath ?? (_lastOutputPath ?? string.Empty);
         var recordingBoundary = new FlashbackRecordingBoundarySnapshot();
 
         Volatile.Write(ref _flashbackRecordingFinalizeInProgress, 1);
-        _recordingSink = null;
         // Don't null _flashbackSink - it continues for the buffer
 
         FinalizeResult fbResult;
@@ -79,8 +78,7 @@ public partial class CaptureService
         _recordingStopwatch.Stop();
         _isRecording = false;
         if (!_isVideoPreviewActive) await StopTelemetryPollAsync().ConfigureAwait(false);
-        _recordingContext = null;
-        _activeRecordingSettings = null;
+        _recordingBackend.ClearContextAndSettings();
         PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);
 
         // Restart mic monitoring if preview is still active

@@ -25,8 +25,8 @@ static partial class Program
             "Settings shelf lifecycle lives in controller",
             SettingsShelfLifecycle_LivesInController);
         await AddCheckAsync(results,
-            "MainWindow property changed routing lives in focused partials",
-            MainWindowPropertyChangedRouting_LivesInFocusedPartials);
+            "MainWindow property changed routing delegates to focused controllers",
+            MainWindowPropertyChangedRouting_DelegatesToFocusedControllers);
         await AddCheckAsync(results,
             "Splash loading phrase catalog and animation ownership are split",
             SplashLoadingPhrases_LiveInController);

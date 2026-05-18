@@ -229,7 +229,7 @@ static partial class Program
             ExtractTextBetween(
                 captureServiceText,
                 "if (_flashbackEnabled && _flashbackSink != null)",
-                "_recordingSink = activeFlashbackSink"),
+                "_recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);"),
             "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,",
             "activeFlashbackSink.BeginRecording");
         AssertContains(ensureFlashbackAudio, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");

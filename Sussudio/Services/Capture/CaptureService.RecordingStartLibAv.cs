@@ -184,10 +184,11 @@ public partial class CaptureService
             rollback.OwnedUnifiedVideoCapture.Start();
         }
 
-        _libavSink = rollback.LibAvSink;
-        _recordingSink = rollback.RecordingSink;
-        _recordingContext = rollback.RecordingContext;
-        _activeRecordingSettings = settings;
+        _recordingBackend.InstallLibAv(
+            rollback.LibAvSink,
+            rollback.RecordingSink,
+            rollback.RecordingContext,
+            settings);
         ClearLastRecordingFailure();
         _isRecording = true;
         _activeVideoInputPixelFormat = videoInputPixelFormat;

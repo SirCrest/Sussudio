@@ -36,10 +36,25 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private CaptureSessionState _sessionState = CaptureSessionState.Uninitialized;
     private CaptureDevice? _currentDevice;
     private CaptureSettings? _currentSettings;
-    private CaptureSettings? _activeRecordingSettings;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
-    private LibAvRecordingSink? _libavSink;
-    private IRecordingSink? _recordingSink;
+    private readonly CaptureRecordingBackendResources _recordingBackend = new();
+    private CaptureSettings? _activeRecordingSettings
+    {
+        get => _recordingBackend.SettingsSnapshot;
+        set => _recordingBackend.SettingsSnapshot = value;
+    }
+
+    private LibAvRecordingSink? _libavSink
+    {
+        get => _recordingBackend.LibAvSink;
+        set => _recordingBackend.LibAvSink = value;
+    }
+
+    private IRecordingSink? _recordingSink
+    {
+        get => _recordingBackend.Sink;
+        set => _recordingBackend.Sink = value;
+    }
     private readonly FlashbackBackendResources _flashbackBackend = new();
     private FlashbackBufferManager? _flashbackBufferManager
     {
@@ -119,9 +134,18 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private int _flashbackRecordingStartInProgress;
     private int _flashbackRecordingFinalizeInProgress;
     private long _sessionGeneration;
-    private Task? _pendingLibAvDrainTask;
     private UnifiedVideoCapture? _unifiedVideoCapture;
-    private RecordingContext? _recordingContext;
+    private Task? _pendingLibAvDrainTask
+    {
+        get => _recordingBackend.PendingLibAvDrainTask;
+        set => _recordingBackend.PendingLibAvDrainTask = value;
+    }
+
+    private RecordingContext? _recordingContext
+    {
+        get => _recordingBackend.Context;
+        set => _recordingBackend.Context = value;
+    }
 
     private readonly Stopwatch _recordingStopwatch = new();
     private RecordingIntegritySummary _lastRecordingIntegrity = RecordingIntegritySummary.NotStarted;

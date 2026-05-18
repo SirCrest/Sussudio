@@ -157,10 +157,7 @@ public partial class CaptureService
             }
 
             _unifiedVideoCapture?.BeginFlashbackRecordingAccounting();
-            _recordingSink = activeFlashbackSink;
-            _libavSink = null;
-            _recordingContext = fbRecordingContext;
-            _activeRecordingSettings = settings;
+            _recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);
             ClearLastRecordingFailure();
             _isRecording = true;
             _flashbackRecordingStartBytes = _flashbackBufferManager?.TotalBytesWritten ?? 0;

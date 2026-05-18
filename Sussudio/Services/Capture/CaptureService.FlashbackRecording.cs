@@ -12,7 +12,7 @@ public partial class CaptureService
 {
     private bool IsFlashbackRecordingBackendActive()
         => _flashbackSink != null &&
-           ReferenceEquals(_recordingSink, _flashbackSink);
+           _recordingBackend.IsFlashbackBackend(_flashbackSink);
 
     private bool IsFlashbackRecordingBackendOwnedByRecording()
         => Volatile.Read(ref _flashbackRecordingStartInProgress) != 0 ||

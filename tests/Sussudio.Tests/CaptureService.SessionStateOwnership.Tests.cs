@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task CaptureService_SessionStateWritersStayInLifecyclePartials()
+    private static Task CaptureService_SessionStateWritesRouteThroughCoordination()
     {
         var captureServiceFiles = Directory
             .GetFiles(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture"), "CaptureService*.cs")

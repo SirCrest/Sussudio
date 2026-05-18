@@ -48,8 +48,8 @@ static partial class Program
             "Capture service transition lock uses transition policy",
             CaptureService_RunTransition_UsesTransitionPolicy);
         await AddCheckAsync(results,
-            "Capture service session-state writers stay in lifecycle partials",
-            CaptureService_SessionStateWritersStayInLifecyclePartials);
+            "Capture service session-state writes route through Coordination",
+            CaptureService_SessionStateWritesRouteThroughCoordination);
         await AddCheckAsync(results,
             "Capture session coordinator cancellation and worker tokens stay bounded",
             CaptureSessionCoordinator_CancellationAndWorkerTokensStayBounded);

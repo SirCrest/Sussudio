@@ -24,6 +24,9 @@ static partial class Program
         AssertContains(snapshotsText, "private static long ComputeTickAge(long tick)");
         AssertContains(recordingStatsText, "public RecordingStats GetRecordingStats()");
         AssertContains(recordingStatsText, "return new RecordingStats(_libavSink.OutputBytes, 0);");
+        AssertContains(
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs"),
+            "private readonly CaptureRecordingBackendResources _recordingBackend = new();");
         AssertContains(recordingStatsText, "IsFlashbackRecordingBackendActive()");
         AssertContains(recordingStatsText, "bufferManager.TotalBytesWritten - _flashbackRecordingStartBytes");
         AssertContains(recordingStatsText, "isFlashbackEstimate: true");
