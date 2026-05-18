@@ -81,8 +81,17 @@ static partial class Program
             "Diagnostics loop does not rebuild automation options each poll",
             DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll);
         await AddCheckAsync(results,
-            "Preview startup ownership lives in controllers",
-            PreviewStartupOwnership_LivesInControllers);
+            "Preview startup session and reinit ownership lives in focused controllers",
+            PreviewStartupSessionReinitOwnership_LivesInFocusedControllers);
+        await AddCheckAsync(results,
+            "Preview startup watchdog ownership lives in focused controller",
+            PreviewStartupWatchdogOwnership_LivesInFocusedController);
+        await AddCheckAsync(results,
+            "Preview startup signal ownership lives in focused controllers",
+            PreviewStartupSignalsOwnership_LivesInFocusedControllers);
+        await AddCheckAsync(results,
+            "Preview startup lifecycle event ownership lives in focused controller",
+            PreviewStartupLifecycleEventOwnership_LivesInFocusedController);
         await AddCheckAsync(results,
             "Preview startup watchdog controller preserves timeout contracts",
             PreviewStartupWatchdogController_PreservesTimeoutContracts);

@@ -7,6 +7,90 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
+    private static Task PreviewStartupWatchdogOwnership_LivesInFocusedController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
+            .Replace("\r\n", "\n");
+        var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
+            .Replace("\r\n", "\n");
+        var previewStartupWatchdogText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupWatchdog.cs")
+            .Replace("\r\n", "\n");
+        var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");
+        AssertContains(previewStartupWatchdogText, "private PreviewStartupWatchdogController _previewStartupWatchdogController = null!;");
+        AssertContains(previewStartupWatchdogText, "private void InitializePreviewStartupWatchdogController()");
+        AssertContains(previewStartupWatchdogText, "private void StartPreviewStartupWatchdog()");
+        AssertContains(previewStartupWatchdogText, "=> _previewStartupWatchdogController.Start();");
+        AssertContains(previewStartupWatchdogText, "private void StopPreviewStartupWatchdog()");
+        AssertContains(previewStartupWatchdogText, "=> _previewStartupWatchdogController.Stop();");
+        AssertContains(previewStartupWatchdogText, "private void SchedulePreviewStartupFailureStop(string reason)");
+        AssertContains(previewStartupWatchdogText, "=> _previewStartupWatchdogController.ScheduleFailureStop(reason);");
+        AssertContains(previewStartupWatchdogText, "private void ResetPreviewStartupFailureStopSchedule()");
+        AssertContains(previewStartupWatchdogText, "=> _previewStartupWatchdogController.ResetFailureStopSchedule();");
+        AssertContains(previewStartupWatchdogText, "private string BuildPreviewStartupTimeoutDiagnosticPayload()");
+        AssertContains(previewStartupWatchdogControllerText, "internal sealed class PreviewStartupWatchdogControllerContext");
+        AssertContains(previewStartupWatchdogControllerText, "internal sealed class PreviewStartupWatchdogController");
+        AssertContains(previewStartupWatchdogControllerText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");
+        AssertContains(previewStartupWatchdogControllerText, "private const int PreviewStartupMinVisualTimeoutMs = 1000;");
+        AssertContains(previewStartupWatchdogControllerText, "private const int PreviewStartupMaxVisualTimeoutMs = 15000;");
+        AssertContains(previewStartupWatchdogControllerText, "private readonly Lazy<int> _visualTimeoutMs = new(static () =>");
+        AssertContains(previewStartupWatchdogControllerText, "private DispatcherQueueTimer? _watchdogTimer;");
+        AssertContains(previewStartupWatchdogControllerText, "private DispatcherQueueTimer? _telemetryTimer;");
+        AssertContains(previewStartupWatchdogControllerText, "private int _failureStopScheduled;");
+        AssertContains(previewStartupWatchdogControllerText, "public int VisualTimeoutMs => _visualTimeoutMs.Value;");
+        AssertContains(previewStartupWatchdogControllerText, "public void Start()");
+        AssertContains(previewStartupWatchdogControllerText, "public void Stop()");
+        AssertContains(previewStartupWatchdogControllerText, "public void ScheduleFailureStop(string reason)");
+        AssertContains(previewStartupWatchdogControllerText, "public void ResetFailureStopSchedule()");
+        AssertContains(previewStartupWatchdogControllerText, "private void TelemetryTimer_Tick(object? sender, object e)");
+        AssertContains(previewStartupWatchdogControllerText, "private async void WatchdogTimer_Tick(object? sender, object e)");
+        AssertContains(previewStartupWatchdogControllerText, "private Task HandleTimeoutAsync()");
+        AssertContains(previewStartupWatchdogControllerText, "private static string FormatTimeoutReason(int timeoutMs, string? missingSignals)");
+        AssertContains(previewStartupWatchdogControllerText, "private static string FormatTimeoutStatusText(string? missingSignals)");
+        AssertContains(previewStartupWatchdogControllerText, "private static string FormatFailureStopStatusText(string reason)");
+        AssertContains(previewStartupWatchdogControllerText, "var timeoutReason = FormatTimeoutReason(");
+        AssertContains(previewStartupWatchdogControllerText, "FormatTimeoutStatusText(_context.GetMissingSignals())");
+        AssertContains(previewStartupWatchdogControllerText, "FormatFailureStopStatusText(reason)");
+        AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_WATCHDOG_STARTED");
+        AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_TIMEOUT_IGNORED reason=user-or-shutdown-stop-requested");
+        AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_TIMEOUT attempt={_context.GetAttemptLabel()}");
+        AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_FAILURE_STOP begin");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(
+                GetRepoRoot(),
+                "Sussudio",
+                "Controllers",
+                "Preview",
+                "Startup",
+                "PreviewStartupFailureTextFormatter.cs")),
+            "preview startup failure text formatter helper");
+        AssertDoesNotContain(mainWindowText, "_previewStartupVisualTimeoutMs");
+        AssertDoesNotContain(mainWindowText, "_previewStartupWatchdogTimer");
+        AssertDoesNotContain(previewStartupWatchdogText, "DispatcherQueueTimer");
+        AssertDoesNotContain(previewStartupWatchdogText, "Interlocked");
+        AssertDoesNotContain(previewStartupWatchdogText, "EnvironmentHelpers.GetIntFromEnv");
+        AssertDoesNotContain(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
+        AssertDoesNotContain(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(");
+        AssertDoesNotContain(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatFailureStopStatusText(");
+        AssertDoesNotContain(previewStartupWatchdogText, "private DispatcherQueueTimer? _previewStartupWatchdogTimer;");
+        AssertDoesNotContain(previewStartupWatchdogText, "private DispatcherQueueTimer? _previewStartupTelemetryTimer;");
+        AssertDoesNotContain(previewStartupWatchdogText, "private int _previewStartupFailureStopScheduled;");
+        AssertDoesNotContain(previewStartupWatchdogText, "private Task HandlePreviewStartupTimeoutAsync()");
+        AssertDoesNotContain(previewStartupText, "_previewStartupFailureStopScheduled");
+        AssertDoesNotContain(previewStartupText, "private void StartPreviewStartupWatchdog()");
+        AssertDoesNotContain(previewStartupText, "private Task HandlePreviewStartupTimeoutAsync()");
+        AssertDoesNotContain(previewStartupText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
+        AssertDoesNotContain(previewStartupText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");
+        AssertDoesNotContain(previewStartupText, "no-visual-confirmation-within-{PreviewStartupVisualTimeoutMs}ms");
+        AssertDoesNotContain(previewStartupText, "Preview failed to attach to UI (session started but no visual confirmation).");
+        AssertDoesNotContain(previewStartupText, "Preview failed to start (missing readiness signal:");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task PreviewStartupWatchdogController_PreservesTimeoutContracts()
     {
         var controllerType = RequireType("Sussudio.Controllers.PreviewStartupWatchdogController");

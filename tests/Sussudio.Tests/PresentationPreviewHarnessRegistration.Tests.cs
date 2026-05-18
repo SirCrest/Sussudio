@@ -42,7 +42,6 @@ static partial class Program
         "tests/Sussudio.Tests/MainViewModel.AudioRuntime.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.AudioMonitoring.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.OutputPath.Tests.cs",
-        "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Ownership.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Signals.Tests.cs",
         "tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs",

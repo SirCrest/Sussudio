@@ -7,6 +7,56 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
+    private static Task PreviewStartupLifecycleEventOwnership_LivesInFocusedController()
+    {
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
+            .Replace("\r\n", "\n");
+        var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
+            .Replace("\r\n", "\n");
+        var previewFadeInText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
+            .Replace("\r\n", "\n");
+        var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewFadeInController.cs")
+            .Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs")
+            .Replace("\r\n", "\n");
+        var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
+            .Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs")
+            .Replace("\r\n", "\n");
+        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(mainWindowText, "InitializePreviewLifecycleEventController();");
+        AssertContains(previewFadeInText, "private PreviewFadeInController _previewFadeInController = null!;");
+        AssertContains(previewFadeInText, "private void InitializePreviewFadeInController()");
+        AssertContains(previewFadeInText, "private void SchedulePreviewFadeIn()");
+        AssertContains(previewFadeInText, "private void StopPreviewFadeInTimer()");
+        AssertContains(previewFadeInControllerText, "private const int PreviewFadeInFrameThreshold = 3;");
+        AssertContains(previewFadeInControllerText, "private DispatcherQueueTimer? _timer;");
+        AssertContains(previewFadeInControllerText, "public void Schedule()");
+        AssertContains(previewFadeInControllerText, "public void Stop()");
+        AssertContains(propertyChangedText, "await TryHandlePreviewPropertyChangedAsync(propertyName)");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStartRequested();");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStopRequested();");
+        AssertContains(previewPropertyChangedText, "Preview-specific ViewModel event adapter");
+        AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
+        AssertContains(previewLifecycleControllerText, "_context.HandlePreviewReinitializingChanged();");
+        AssertContains(previewLifecycleControllerText, "if (_context.ShouldBeginPreviewStartupAttempt())");
+        AssertContains(previewLifecycleControllerText, "_stopRequestedByUser = _stopRequestedByUser || !_context.ViewModel.IsPreviewReinitializing;");
+        AssertContains(previewLifecycleControllerText, "_context.StartPreviewStartupWatchdog();");
+        AssertContains(previewLifecycleControllerText, "_context.ShowStopPreviewButtonPresentation();");
+        AssertContains(previewLifecycleControllerText, "_context.ShowStartPreviewButtonPresentation();");
+        AssertContains(previewLifecycleControllerText, "_context.ApplyHdrToggleEnabledState();");
+        AssertDoesNotContain(previewPropertyChangedText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
+        AssertDoesNotContain(previewPropertyChangedText, "private Task ViewModel_PreviewRendererStopRequested()");
+        AssertDoesNotContain(previewPropertyChangedText, "private void HandlePreviewReinitializingChanged()");
+        AssertDoesNotContain(previewStartupText, "private void SchedulePreviewFadeIn()");
+        AssertDoesNotContain(previewReinitText, "renderer.StopRenderThread();");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewStartup_BeginsDeviceDiscoveryBeforeRecordingCapabilityProbesFinish()
     {
         var settingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs")
