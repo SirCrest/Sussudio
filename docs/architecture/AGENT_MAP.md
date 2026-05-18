@@ -1247,9 +1247,9 @@ Primary current owners:
   owns capture option HDR/FPS tooltip text-policy assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs` owns
   MainWindow output path display/action ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.PreviewScreenshot.Tests.cs`
-  owns MainWindow preview screenshot workflow and text-policy ownership
-  assertions.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Screenshot.Tests.cs`
+  owns MainWindow preview screenshot workflow, preview screenshot text-policy,
+  and whole-window screenshot ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Polling.Tests.cs` owns
   Flashback status/playback polling controller ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Timeline.Tests.cs` owns
@@ -1352,7 +1352,7 @@ Primary current owners:
   `.Flashback.Tests.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RuntimeSafety.Tests.cs` owns
   automation cancellation/timeout, recording failure propagation, safe close,
-  screenshot, preview-stop surface, process supervisor, and emergency-stop
+  preview-stop surface, process supervisor, and emergency-stop
   assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.FlashbackCleanup.Tests.cs`
   owns Flashback startup-cache and session-recovery cleanup ownership

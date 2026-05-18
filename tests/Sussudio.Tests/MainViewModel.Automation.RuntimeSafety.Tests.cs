@@ -167,32 +167,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation()
-    {
-        var windowText = ReadRepoFile("Sussudio/MainWindow.Screenshot.cs")
-            .Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
-            .Replace("\r\n", "\n");
-        var method = ExtractTextBetween(
-            controllerText,
-            "public Task<WindowScreenshotResult> CaptureAsync",
-            "    private WindowScreenshotResult CaptureCore");
-
-        AssertContains(windowText, "public Task<WindowScreenshotResult> CaptureWindowScreenshotAsync");
-        AssertContains(windowText, "=> _windowScreenshotController.CaptureAsync(outputPath, cancellationToken);");
-        AssertContains(method, "if (cancellationToken.IsCancellationRequested)");
-        AssertContains(method, "Message = \"Screenshot canceled.\"");
-        AssertContains(method, "CancellationTokenRegistration cancellationRegistration = default;");
-        AssertContains(method, "cancellationToken.Register(() =>");
-        AssertContains(method, "_ = completion.Task.ContinueWith(");
-        AssertContains(method, "cancellationRegistration.Dispose()");
-        AssertContains(method, "if (!_dispatcherQueue.TryEnqueue(() =>");
-        AssertContains(method, "Message = \"Failed to enqueue screenshot capture on the UI thread.\"");
-        AssertContains(controllerText, "=> WindowScreenshotNativeCapture.Capture(_windowHandleProvider(), outputPath);");
-
-        return Task.CompletedTask;
-    }
-
     private static Task AutomationDispatch_CancellationAndTimeoutsStayBounded()
     {
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
@@ -233,77 +207,6 @@ static partial class Program
         AssertContains(pipeServerText, "Request timed out after {_requestTimeoutMs} ms.");
         AssertContains(pipeServerText, "\"request-timeout\"");
         AssertDoesNotContain(dispatcherText, "WaitConditionRefreshCadenceMs");
-
-        return Task.CompletedTask;
-    }
-
-    private static Task WindowScreenshotNativeCapture_LivesInFocusedHelper()
-    {
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
-            .Replace("\r\n", "\n");
-        var nativeCaptureText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(controllerText, "=> WindowScreenshotNativeCapture.Capture(_windowHandleProvider(), outputPath);");
-        AssertDoesNotContain(controllerText, "[DllImport(");
-        AssertDoesNotContain(controllerText, "PrintWindow(");
-        AssertDoesNotContain(controllerText, "CreateCompatibleBitmap(");
-        AssertDoesNotContain(controllerText, "GetDIBits(");
-        AssertDoesNotContain(controllerText, "struct BITMAPINFOHEADER");
-        AssertContains(nativeCaptureText, "internal static class WindowScreenshotNativeCapture");
-        AssertContains(nativeCaptureText, "internal static WindowScreenshotResult Capture(IntPtr hwnd, string outputPath)");
-        AssertContains(nativeCaptureText, "Message = \"Window handle not available.\"");
-        AssertContains(nativeCaptureText, "Message = \"PrintWindow failed.\"");
-        AssertContains(nativeCaptureText, "var hBitmap = CreateCompatibleBitmap(hdcWindow, width, height);");
-        AssertContains(nativeCaptureText, "GetDIBits(hdcScreen, hBitmap, 0, (uint)height, pixelData, ref bmi, 0);");
-        AssertContains(nativeCaptureText, "WindowScreenshotImageEncoder.WriteToStream(");
-        AssertContains(nativeCaptureText, "Message = $\"Window screenshot saved: {width}x{height}\"");
-
-        return Task.CompletedTask;
-    }
-
-    private static Task WindowScreenshotImageEncoding_LivesInFocusedHelper()
-    {
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs")
-            .Replace("\r\n", "\n");
-        var nativeCaptureText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs")
-            .Replace("\r\n", "\n");
-        var encoderText = ReadRepoFile("Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(controllerText, "WindowScreenshotNativeCapture.Capture(");
-        AssertContains(nativeCaptureText, "WindowScreenshotImageEncoder.WriteToStream(");
-        AssertDoesNotContain(controllerText, "private static void WritePngToStream");
-        AssertDoesNotContain(controllerText, "private static void WriteBmpToStream");
-        AssertContains(encoderText, "internal static class WindowScreenshotImageEncoder");
-        AssertContains(encoderText, "internal static void WritePngToStream");
-        AssertContains(encoderText, "internal static void WriteBmpToStream");
-        AssertContains(encoderText, "internal static uint[] InitCrc32Table()");
-
-        var encoderType = RequireType("Sussudio.Controllers.WindowScreenshotImageEncoder");
-        var writePng = encoderType.GetMethod("WritePngToStream", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("WindowScreenshotImageEncoder.WritePngToStream missing.");
-        var writeBmp = encoderType.GetMethod("WriteBmpToStream", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("WindowScreenshotImageEncoder.WriteBmpToStream missing.");
-        var bgra = new byte[] { 0, 0, 255, 255 };
-
-        using var pngStream = new MemoryStream();
-        writePng.Invoke(null, new object[] { pngStream, 1, 1, bgra });
-        var pngBytes = pngStream.ToArray();
-        AssertSequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, pngBytes.Take(8).ToArray(), "PNG signature");
-        AssertEqual((byte)73, pngBytes[12], "PNG IHDR I");
-        AssertEqual((byte)72, pngBytes[13], "PNG IHDR H");
-        AssertEqual((byte)68, pngBytes[14], "PNG IHDR D");
-        AssertEqual((byte)82, pngBytes[15], "PNG IHDR R");
-
-        using var bmpStream = new MemoryStream();
-        writeBmp.Invoke(null, new object[] { bmpStream, 1, 1, bgra });
-        var bmpBytes = bmpStream.ToArray();
-        AssertEqual((byte)0x42, bmpBytes[0], "BMP signature B");
-        AssertEqual((byte)0x4D, bmpBytes[1], "BMP signature M");
-        AssertEqual(58, bmpBytes.Length, "BMP byte length");
-        AssertEqual(1, BitConverter.ToInt32(bmpBytes, 18), "BMP width");
-        AssertEqual(-1, BitConverter.ToInt32(bmpBytes, 22), "BMP top-down height");
 
         return Task.CompletedTask;
     }

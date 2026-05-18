@@ -23,7 +23,7 @@ static partial class Program
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs",
-        "tests/Sussudio.Tests/MainWindow.ControllerOwnership.PreviewScreenshot.Tests.cs",
+        "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Screenshot.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs",
         "tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs",
