@@ -127,6 +127,9 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("AutomationCommandKind kind", sharedClientText);
         Assert.Contains("=> SendCommandWithResultAsync(\n            pipeName,\n            (int)kind,", sharedClientText);
         Assert.Contains("internal static bool TryReadResponseState(", sharedClientText);
+        Assert.Contains("AutomationResponseState.TryRead(", sharedClientText);
+        Assert.Contains("internal static class AutomationResponseState", sharedClientText);
+        Assert.Contains("internal static bool TryRead(", sharedClientText);
         Assert.Contains("internal readonly record struct AutomationPipeCommandResult(", sharedClientText);
         Assert.Contains("ConnectWithClassifiedErrorsAsync(", pipeClientTransportText);
         Assert.Contains("await writer.WriteLineAsync(requestJson)", pipeClientTransportText);

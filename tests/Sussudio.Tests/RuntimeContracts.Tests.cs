@@ -167,6 +167,7 @@ internal static class RuntimeContractSource
             "tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs",
             "tools/Common/AutomationPipeClient/AutomationCommandTransport.cs",
             "tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs",
+            "tools/Common/AutomationPipeClient/AutomationResponseState.cs",
             "tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs",
             "tools/Common/AutomationPipeClient/AutomationSyntheticErrorResponse.cs"
         });

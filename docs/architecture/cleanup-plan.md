@@ -2854,8 +2854,8 @@ shaping, and explicit ssctl/MCP unknown-command policy mode,
 `AutomationPipeClient.Models.cs` owns command result and exception types,
 `AutomationSyntheticErrorResponse.cs` owns shared structured error-envelope
 creation and common transport/protocol exception mapping for the shared command transport, and
-`AutomationResponseState.cs` owns tolerant response-state DTOs shared by the
-pipe client and tool surfaces.
+`AutomationResponseState.cs` owns the tolerant success/status/retry
+response-state reader shared by the pipe client and tool surfaces.
 
 PresentMon model and text ownership is split from the probe runner.
 `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon options, result,

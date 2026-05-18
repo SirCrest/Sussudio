@@ -2510,8 +2510,9 @@ Primary owners:
   MCP owner bullets, and `McpToolSurface.*` source guards are the source of
   truth. String command names remain only for catalog/manifest-backed dynamic
   batches and diagnostic-session command callbacks.
-- `tools/Common/AutomationPipeClient/AutomationResponseState.cs` owns tolerant
-  response-state DTOs shared by the pipe client and tool surfaces.
+- `tools/Common/AutomationPipeClient/AutomationResponseState.cs` owns the
+  tolerant success/status/retry response-state reader shared by the pipe client
+  and tool surfaces.
 - `tools/AutomationClient/Program.cs` owns the low-level pipe client entry
   flow, cancellation handling, shared-protocol command resolution, timeout
   selection, response printing, and the local options DTO for scripts and ad
