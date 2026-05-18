@@ -250,7 +250,10 @@ Automation diagnostics ownership:
   automation snapshot input projection for preview pacing stage classification.
 - `Sussudio/Services/Automation/PreviewPacingClassificationModels.cs` owns the
   preview pacing classifier DTOs; `PreviewPacingSlowStageClassifier.cs` owns
-  pure slow-stage classification ordering and non-D3D lane policy; and
+  pure slow-stage classification ordering;
+  `PreviewPacingSlowStageClassifier.Lanes.cs` owns non-D3D lane predicates and
+  evidence text for source capture, visual duplicate/low-motion, MJPEG decode,
+  preview jitter, compositor-miss, and renderer-submit stages; and
   `PreviewPacingSlowStageClassifier.D3D.cs` owns D3D stage dominance policy.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.ProcessMetrics.cs`
   owns process CPU, memory, GC, and thread-pool sampling.

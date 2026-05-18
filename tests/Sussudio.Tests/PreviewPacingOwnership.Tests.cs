@@ -14,6 +14,8 @@ public sealed class PreviewPacingOwnershipTests
             .Replace("\r\n", "\n");
         var d3dPolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.D3D.cs")
             .Replace("\r\n", "\n");
+        var lanePolicyText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.Lanes.cs")
+            .Replace("\r\n", "\n");
         var modelText = ReadRepoFile("Sussudio/Services/Automation/PreviewPacingClassificationModels.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
@@ -25,10 +27,22 @@ public sealed class PreviewPacingOwnershipTests
         Assert.DoesNotContain("public readonly record struct PreviewPacingClassification(", classifierText);
         Assert.Contains("var dominantStage = ResolveDominantD3DStage(input, targetFrameMs);", classifierText);
         Assert.DoesNotContain("private static string ResolveDominantD3DStage(", classifierText);
+        Assert.Contains("TryClassifySourceCapture(input, sourceSampleReady, targetFps", classifierText);
+        Assert.Contains("TryClassifyPreviewJitterScheduler(input, targetFrameMs", classifierText);
+        Assert.Contains("TryClassifyRenderSubmit(input, out var renderSubmitClassification)", classifierText);
+        Assert.DoesNotContain("private static bool IsSourceCaptureSuspect(", classifierText);
+        Assert.Contains("private static bool TryClassifySourceCapture(", lanePolicyText);
+        Assert.Contains("private static bool TryClassifyVisualDuplicateOrLowMotion(", lanePolicyText);
+        Assert.Contains("private static bool TryClassifyMjpegDecode(", lanePolicyText);
+        Assert.Contains("private static bool TryClassifyPreviewJitterScheduler(", lanePolicyText);
+        Assert.Contains("private static bool TryClassifyCompositorMiss(", lanePolicyText);
+        Assert.Contains("private static bool TryClassifyRenderSubmit(", lanePolicyText);
+        Assert.Contains("private static bool IsSourceCaptureSuspect(", lanePolicyText);
         Assert.Contains("private static string ResolveDominantD3DStage(", d3dPolicyText);
         Assert.Contains("private static bool IsDominant(", d3dPolicyText);
         Assert.Contains("private static double Positive(double value)", d3dPolicyText);
         Assert.Contains("PreviewPacingSlowStageClassifier.D3D.cs", agentMapText);
+        Assert.Contains("PreviewPacingSlowStageClassifier.Lanes.cs", agentMapText);
     }
 
     [Fact]

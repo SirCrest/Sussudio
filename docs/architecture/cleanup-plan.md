@@ -248,9 +248,11 @@ loop. `AutomationDiagnosticsHub.OutputFiles.cs` owns cached last-output file
 existence and size probing. `AutomationDiagnosticsHub.PreviewPacing.cs` owns
 automation snapshot input projection for preview pacing stage classification.
 `PreviewPacingClassificationModels.cs` owns the preview pacing DTOs,
-`PreviewPacingSlowStageClassifier.cs` owns classification ordering and non-D3D
-lane policy, and `PreviewPacingSlowStageClassifier.D3D.cs` owns D3D stage
-dominance policy.
+`PreviewPacingSlowStageClassifier.cs` owns classification ordering,
+`PreviewPacingSlowStageClassifier.Lanes.cs` owns non-D3D lane predicates and
+evidence text for source capture, visual duplicate/low-motion, MJPEG decode,
+preview jitter, compositor-miss, and renderer-submit stages, and
+`PreviewPacingSlowStageClassifier.D3D.cs` owns D3D stage dominance policy.
 `AutomationDiagnosticsHub.ProcessMetrics.cs` owns process CPU, memory, GC, and
 thread-pool sampling.
 `AutomationDiagnosticsHub.Verification.cs` owns recording/file verification
