@@ -30,7 +30,7 @@ static partial class Program
         AssertContains(clientText, "AutomationPipeProtocol.TryGetCommandName(commandValue, out var canonicalCommandName)");
         AssertContains(clientText, "AutomationPipeProtocol.GetDefaultResponseTimeout(timeoutCommandName)");
         AssertContains(clientText, "public int? ResponseTimeoutMs { get; set; }");
-        var pipeClientText = ReadAutomationPipeClientSource();
+        var pipeClientText = global::Sussudio.Tests.RuntimeContractSource.ReadAutomationPipeClientSource();
         AssertDoesNotContain(pipeClientText, "AlignResponseTimeoutWithServerRequest");
 
         var protocolType = RequireType("Sussudio.Tools.AutomationPipeProtocol");

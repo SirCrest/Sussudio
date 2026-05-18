@@ -106,7 +106,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
     [Fact]
     public void AutomationPipeConnectFailures_AreClassifiedForCliAndMcp()
     {
-        var sharedClientText = ReadAutomationPipeClientSource();
+        var sharedClientText = RuntimeContractSource.ReadAutomationPipeClientSource();
         var pipeClientTransportText = RuntimeContractSource.ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var pipeClientConnectErrorsText = RuntimeContractSource.ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs")
@@ -231,20 +231,6 @@ public sealed class AutomationToolContractsProtocolXunitTests
             expectedRetryAfterMs: null,
             "non-object response");
     }
-
-    private static string ReadAutomationPipeClientSource()
-        => string.Join(
-            "\n",
-            new[]
-            {
-                "tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs",
-                "tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs",
-                "tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs",
-                "tools/Common/AutomationPipeClient/AutomationCommandTransport.cs",
-                "tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs",
-                "tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs",
-                "tools/Common/AutomationPipeClient/AutomationSyntheticErrorResponse.cs"
-            }.Select(file => RuntimeContractSource.ReadRepoFile(file).Replace("\r\n", "\n", StringComparison.Ordinal)));
 
     private static string ReadDiagnosticSessionRunnerSource()
         => string.Join(

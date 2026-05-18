@@ -158,6 +158,18 @@ internal static class RuntimeContractSource
         return File.ReadAllText(path);
     }
 
+    public static string ReadAutomationPipeClientSource()
+        => string.Join(
+                "\n",
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.Transport.cs"),
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.ConnectErrors.cs"),
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.Commands.cs"),
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationCommandTransport.cs"),
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.ResponseState.cs"),
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs"),
+                ReadRepoFile("tools/Common/AutomationPipeClient/AutomationSyntheticErrorResponse.cs"))
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(Environment.CurrentDirectory);

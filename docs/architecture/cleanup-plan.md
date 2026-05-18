@@ -472,8 +472,11 @@ have fast xUnit coverage in
 `tests/Sussudio.Tests/AutomationContracts.ProtocolXunit.Tests.cs`, backed by
 the single golden command table in
 `tests/Sussudio.Tests/AutomationCommandGoldenTable.cs`. The legacy protocol
-harness stays focused on pipe-failure contracts, tool delegation, script
-freshness, and response-state parsing. Automation tool contract coverage is
+harness stays focused on protocol response timeout and command-map alignment
+checks; `tests/Sussudio.Tests/AutomationToolContracts.ProtocolXunit.Tests.cs`
+owns pipe-failure contracts, tool delegation, script freshness, and response-state
+parsing, using `RuntimeContractSource.ReadAutomationPipeClientSource()` for the
+shared AutomationPipeClient source family. Automation tool contract coverage is
 otherwise split into catalog/manifest/path-policy contracts, reliability-gates
 script checks, shared/ssctl snapshot formatter contracts, and PresentMon parser
 contracts. Shared formatter tests now mirror the formatter partials: the root
