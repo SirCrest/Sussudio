@@ -22,6 +22,7 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Models.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.Cuda.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.MuxerOptions.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OutputRotation.cs").Replace("\r\n", "\n"),
