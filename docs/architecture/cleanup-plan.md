@@ -1797,10 +1797,13 @@ backend-specific queue/counter normalization live in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotRecordingActiveBackend.cs`;
 Flashback export diagnostic and derived progress/throughput projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs`.
-Flashback playback health snapshot orchestration, state/frame fields, cadence
-metrics, decode timing, audio-master fallback fields, and command telemetry
-now live together in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`.
+Flashback playback health snapshot orchestration, state/frame sampling, cadence
+metrics, decode timing, audio-master fallback sampling, and command telemetry
+sampling now live together in
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.cs`,
+while the private playback health projection field records live in the single
+substantial model owner
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackPlayback.Models.cs`.
 The general snapshot partial is now the diagnostics-snapshot compatibility
 entry point plus shared tick-age snapshot helper policy. Flashback
 backend-staleness reason policy now stays with the buffer health partial, while

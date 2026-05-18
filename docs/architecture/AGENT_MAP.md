@@ -514,8 +514,12 @@ Important entry points:
   derived progress/throughput projection used by health snapshots.
 - `CaptureService.HealthSnapshotFlashbackPlayback.cs` owns Flashback playback
   health snapshot orchestration, state/frame/segment/PTS/seek-cap/A/V drift
-  projection, playback cadence metrics, decode timing and max-phase metrics,
-  audio-master pacing/fallback fields, and command-queue telemetry fields.
+  sampling, playback cadence metrics, decode timing and max-phase metric
+  sampling, audio-master pacing/fallback sampling, and command-queue telemetry
+  sampling.
+- `CaptureService.HealthSnapshotFlashbackPlayback.Models.cs` owns the private
+  Flashback playback health projection field records as one substantial model
+  owner instead of per-section tiny files.
 - `CaptureService.HealthSnapshotRecording.cs` owns recording health snapshot
   orchestration, LibAv-only CUDA queue projection, and the
   `RecordingHealthSnapshotFields` handoff.
