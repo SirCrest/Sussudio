@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using Sussudio.Models;
-using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Capture;
 
@@ -12,7 +11,7 @@ public partial class DeviceService
     private static string? ResolveNativeXuInterfacePath(string deviceId)
     {
         var probeDevice = new CaptureDevice { Id = deviceId };
-        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(probeDevice, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(probeDevice, out var vendorId, out var productId))
         {
             return null;
         }

@@ -69,7 +69,7 @@ if (args.Length > 0 && string.Equals(args[0], "i2c-probe", StringComparison.Ordi
     Console.WriteLine($"Device: {dev.Name} Id: {dev.Id}");
 
     // Parse vendor/product IDs from device ID string
-    if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(dev, out var vid, out var pid))
+    if (!NativeXuDeviceSupport.TryGetSupported4kXIds(dev, out var vid, out var pid))
     {
         Console.Error.WriteLine("Cannot parse vendor/product IDs");
         return 1;

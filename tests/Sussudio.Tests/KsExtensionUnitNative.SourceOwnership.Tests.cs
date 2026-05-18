@@ -42,7 +42,8 @@ static partial class Program
             @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Interfaces.cs",
             @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Interop.cs",
             @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Topology.cs",
-            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Transfers.cs"
+            @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Transfers.cs",
+            @"..\..\Sussudio\Services\Capture\NativeXu\NativeXuDeviceSupport.cs"
         })
         {
             AssertEqual(1, CountCompileInclude(probeIncludes, include), $"NativeXuAudioProbe links {include}");

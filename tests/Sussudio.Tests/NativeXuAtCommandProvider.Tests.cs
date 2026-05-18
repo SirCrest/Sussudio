@@ -68,6 +68,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var selector4Text = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.Selector4.cs")
             .Replace("\r\n", "\n");
+        var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs")
+            .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
         AssertContains(deviceCommandsText, "public static async Task<bool> SendAtSetCommandAsync(");
@@ -79,6 +81,8 @@ static partial class Program
         AssertContains(audioCommandsText, "public sealed partial class NativeXuAtCommandProvider");
         AssertContains(audioCommandsText, "public static async Task<bool> SwitchAudioInputAsync(");
         AssertContains(audioCommandsText, "public static async Task<bool> SetAnalogGainAsync(");
+        AssertContains(audioCommandsText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
+        AssertContains(audioCommandsText, "NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device)");
         AssertContains(audioCommandsText, "ExecuteAudioSwitch(handle, node.NodeId, analog, gainByte, sourceLabel, ct)");
         AssertContains(audioCommandsText, "ExecuteGainChange(handle, node.NodeId, gainByte, persistFlash, ct)");
         AssertDoesNotContain(audioCommandsText, "private static bool ExecuteGainChange(");
@@ -94,10 +98,14 @@ static partial class Program
         AssertContains(selector4Text, "private static bool SendSelector4Command(");
         AssertContains(selector4Text, "BuildAtWriteFrame(cmdCode, inputData)");
         AssertContains(selector4Text, "TryXuSetViaOutput(handle, nodeId, XuGuid, I2cSelector, payload, out var win32)");
+        AssertContains(deviceSupportText, "internal static class NativeXuDeviceSupport");
+        AssertContains(deviceSupportText, "public static bool TryGetSupported4kXIds(");
+        AssertContains(deviceSupportText, "public static bool IsSupported4kXDevice(");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.AudioCommands.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.AnalogGain.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.AudioSwitch.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.Selector4.cs");
+        AssertContains(probeProjectText, "NativeXuDeviceSupport.cs");
 
         return Task.CompletedTask;
     }

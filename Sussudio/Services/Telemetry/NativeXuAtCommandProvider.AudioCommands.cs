@@ -29,13 +29,12 @@ public sealed partial class NativeXuAtCommandProvider
             return false;
         }
 
-        if (!TryParseVendorProductIds(device.Id, out var vendorId, out var productId) ||
-            !IsSupported4kXDevice(vendorId, productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
         {
             return false;
         }
 
-        if (!HasSelectedNativeXuInterface(device, "SWITCH_AUDIO"))
+        if (!NativeXuDeviceSupport.HasSelectedInterface(device, "SWITCH_AUDIO"))
         {
             return false;
         }
@@ -43,14 +42,16 @@ public sealed partial class NativeXuAtCommandProvider
         var gateAcquired = false;
         try
         {
-            gateAcquired = await CallGate.WaitAsync(GateTimeoutMs * 4, ct).ConfigureAwait(false);
+            gateAcquired = await NativeXuDeviceSupport.TryAcquireTransportGateAsync(
+                NativeXuDeviceSupport.DefaultTransportGateTimeoutMs * 4,
+                ct).ConfigureAwait(false);
             if (!gateAcquired)
             {
                 Logger.Log("NATIVEXU_SWITCH_AUDIO FAILED stage=gate_timeout");
                 return false;
             }
 
-            var interfaces = EnumerateKsInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
             foreach (var ksInterface in interfaces)
             {
                 ct.ThrowIfCancellationRequested();
@@ -98,7 +99,7 @@ public sealed partial class NativeXuAtCommandProvider
         {
             if (gateAcquired)
             {
-                CallGate.Release();
+                NativeXuDeviceSupport.ReleaseTransportGate();
             }
         }
     }
@@ -125,13 +126,12 @@ public sealed partial class NativeXuAtCommandProvider
             return false;
         }
 
-        if (!TryParseVendorProductIds(device.Id, out var vendorId, out var productId) ||
-            !IsSupported4kXDevice(vendorId, productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
         {
             return false;
         }
 
-        if (!HasSelectedNativeXuInterface(device, "SET_GAIN"))
+        if (!NativeXuDeviceSupport.HasSelectedInterface(device, "SET_GAIN"))
         {
             return false;
         }
@@ -139,14 +139,16 @@ public sealed partial class NativeXuAtCommandProvider
         var gateAcquired = false;
         try
         {
-            gateAcquired = await CallGate.WaitAsync(GateTimeoutMs * 4, ct).ConfigureAwait(false);
+            gateAcquired = await NativeXuDeviceSupport.TryAcquireTransportGateAsync(
+                NativeXuDeviceSupport.DefaultTransportGateTimeoutMs * 4,
+                ct).ConfigureAwait(false);
             if (!gateAcquired)
             {
                 Logger.Log("NATIVEXU_SET_GAIN FAILED stage=gate_timeout");
                 return false;
             }
 
-            var interfaces = EnumerateKsInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
             foreach (var ksInterface in interfaces)
             {
                 ct.ThrowIfCancellationRequested();
@@ -194,7 +196,7 @@ public sealed partial class NativeXuAtCommandProvider
         {
             if (gateAcquired)
             {
-                CallGate.Release();
+                NativeXuDeviceSupport.ReleaseTransportGate();
             }
         }
     }

@@ -9,7 +9,7 @@ static partial class NativeXuProbeI2cCommands
     {
         // Verify the AT envelope I2C path actually works by doing SET+readback
         // Tests: read I2C 0x04 â†’ SET I2C 0x04=1 â†’ read I2C 0x04 â†’ restore
-        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(dev, out var vid3, out var pid3))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(dev, out var vid3, out var pid3))
         {
             Console.Error.WriteLine("Cannot parse device IDs");
             return 1;

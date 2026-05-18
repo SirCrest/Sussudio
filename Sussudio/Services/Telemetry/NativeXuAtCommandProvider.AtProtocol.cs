@@ -171,41 +171,6 @@ public sealed partial class NativeXuAtCommandProvider
         return result;
     }
 
-    private static bool TryParseVendorProductIds(string deviceId, out ushort vendorId, out ushort productId)
-    {
-        vendorId = 0;
-        productId = 0;
-        return TryParseHexToken(deviceId, "vid_", out vendorId) &&
-               TryParseHexToken(deviceId, "pid_", out productId);
-    }
-
-    private static bool TryParseHexToken(string value, string token, out ushort result)
-    {
-        result = 0;
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return false;
-        }
-
-        var tokenIndex = value.IndexOf(token, StringComparison.OrdinalIgnoreCase);
-        if (tokenIndex < 0 || tokenIndex + token.Length + 4 > value.Length)
-        {
-            return false;
-        }
-
-        return ushort.TryParse(
-            value.AsSpan(tokenIndex + token.Length, 4),
-            NumberStyles.HexNumber,
-            CultureInfo.InvariantCulture,
-            out result);
-    }
-
-    private static bool IsSupported4kXDevice(ushort vendorId, ushort productId)
-        => vendorId == Elgato4kXVendorId &&
-           (productId == Elgato4kXProductIdOriginal ||
-            productId == Elgato4kXProductIdRevision ||
-            productId == Elgato4kXProductIdAudioMode);
-
     private static bool IsUnsupportedNodeFailure(int? win32Code)
         => win32Code is KsExtensionUnitNative.ErrorNotFound
             or KsExtensionUnitNative.ErrorSetNotFound

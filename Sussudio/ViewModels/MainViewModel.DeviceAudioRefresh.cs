@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Sussudio.Services.Telemetry;
+using Sussudio.Services.Capture;
 
 namespace Sussudio.ViewModels;
 
@@ -40,7 +40,7 @@ public partial class MainViewModel
             return;
         }
 
-        if (NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out _, out _))
+        if (NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             WithAudioControlRefreshSuppressed(() => IsDeviceAudioControlSupported = true);
         }

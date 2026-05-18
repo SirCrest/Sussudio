@@ -11,19 +11,13 @@ namespace Sussudio.Services.Telemetry;
 
 public sealed partial class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 {
-    private static readonly Guid XuGuid = new("961073C7-49F7-44F2-AB42-E940405940C2");
-    private static readonly SemaphoreSlim CallGate = new(1, 1);
+    private static readonly Guid XuGuid = NativeXuDeviceSupport.ExtensionUnitGuid;
 
-    private const int GateTimeoutMs = 500;
     private const int AtPayloadSelector = 1;
     private const int AtTriggerSelector = 2;
     private const int AtFrameHeaderSize = 4;
     private const int AtFrameLrcSize = 1;
     private const int MaxAtResponseFrameSize = 0x200;
-    private const ushort Elgato4kXVendorId = 0x0FD9;
-    private const ushort Elgato4kXProductIdOriginal = 0x009B;
-    private const ushort Elgato4kXProductIdRevision = 0x009C;
-    private const ushort Elgato4kXProductIdAudioMode = 0x009D;
 
     private const int CmdSetAdcOnOff = 0x08;
     private const int CmdSetDacHpOnOff = 0x09;
@@ -82,50 +76,6 @@ public sealed partial class NativeXuAtCommandProvider : ISourceSignalTelemetryPr
     private const int CmdBitError = 0x93;
     private const int CmdHdr2SdrColorParam = 0x9B;
 
-    internal static async Task<bool> TryAcquireTransportGateAsync(CancellationToken cancellationToken = default)
-        => await CallGate.WaitAsync(GateTimeoutMs, cancellationToken).ConfigureAwait(false);
-
-    internal static void ReleaseTransportGate() => CallGate.Release();
-
-    private static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> EnumerateKsInterfaces(
-        ushort vendorId,
-        ushort productId,
-        CaptureDevice? device)
-    {
-        var selectedInterfacePath = device?.NativeXuInterfacePath;
-        if (!string.IsNullOrWhiteSpace(selectedInterfacePath))
-        {
-            return new[] { new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty) };
-        }
-
-        return Array.Empty<KsExtensionUnitNative.KsInterfacePath>();
-    }
-
-    private static bool HasSelectedNativeXuInterface(CaptureDevice? device, string operation)
-    {
-        if (!string.IsNullOrWhiteSpace(device?.NativeXuInterfacePath))
-        {
-            return true;
-        }
-
-        Logger.Log($"NATIVEXU_{operation}_FAILED stage=missing_selected_interface");
-        return false;
-    }
-
-    internal static bool TryGetSupported4kXIds(
-        CaptureDevice? device,
-        out ushort vendorId,
-        out ushort productId)
-    {
-        vendorId = 0;
-        productId = 0;
-
-        return device != null &&
-               !string.IsNullOrWhiteSpace(device.Id) &&
-               TryParseVendorProductIds(device.Id, out vendorId, out productId) &&
-               IsSupported4kXDevice(vendorId, productId);
-    }
-
     public async Task<SourceSignalTelemetrySnapshot> ReadAsync(
         CaptureDevice? device,
         CancellationToken cancellationToken = default)
@@ -136,8 +86,7 @@ public sealed partial class NativeXuAtCommandProvider : ISourceSignalTelemetryPr
             return SourceSignalTelemetrySnapshot.CreateUnavailable("device-unavailable");
         }
 
-        if (!TryParseVendorProductIds(device.Id, out var vendorId, out var productId) ||
-            !IsSupported4kXDevice(vendorId, productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
         {
             return SourceSignalTelemetrySnapshot.CreateUnavailable("nativexu-device-unsupported");
         }
@@ -155,16 +104,18 @@ public sealed partial class NativeXuAtCommandProvider : ISourceSignalTelemetryPr
 
         try
         {
-            gateAcquired = await CallGate.WaitAsync(GateTimeoutMs, cancellationToken).ConfigureAwait(false);
+            gateAcquired = await NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false);
             if (!gateAcquired)
             {
-                return SourceSignalTelemetrySnapshot.CreateUnavailable("nativexu-native-busy", $"{GateTimeoutMs}ms");
+                return SourceSignalTelemetrySnapshot.CreateUnavailable(
+                    "nativexu-native-busy",
+                    $"{NativeXuDeviceSupport.DefaultTransportGateTimeoutMs}ms");
             }
 
             IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> interfaces;
             try
             {
-                interfaces = EnumerateKsInterfaces(vendorId, productId, device);
+                interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
             }
             catch (Exception ex)
             {
@@ -269,7 +220,7 @@ public sealed partial class NativeXuAtCommandProvider : ISourceSignalTelemetryPr
         {
             if (gateAcquired)
             {
-                CallGate.Release();
+                NativeXuDeviceSupport.ReleaseTransportGate();
             }
         }
     }

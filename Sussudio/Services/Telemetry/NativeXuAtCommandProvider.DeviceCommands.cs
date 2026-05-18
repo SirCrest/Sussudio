@@ -22,13 +22,12 @@ public sealed partial class NativeXuAtCommandProvider
             return false;
         }
 
-        if (!TryParseVendorProductIds(device.Id, out var vendorId, out var productId) ||
-            !IsSupported4kXDevice(vendorId, productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
         {
             return false;
         }
 
-        if (!HasSelectedNativeXuInterface(device, "SET"))
+        if (!NativeXuDeviceSupport.HasSelectedInterface(device, "SET"))
         {
             return false;
         }
@@ -36,13 +35,13 @@ public sealed partial class NativeXuAtCommandProvider
         var gateAcquired = false;
         try
         {
-            gateAcquired = await CallGate.WaitAsync(GateTimeoutMs, cancellationToken).ConfigureAwait(false);
+            gateAcquired = await NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false);
             if (!gateAcquired)
             {
                 return false;
             }
 
-            var interfaces = EnumerateKsInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
             foreach (var ksInterface in interfaces)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -89,7 +88,7 @@ public sealed partial class NativeXuAtCommandProvider
         {
             if (gateAcquired)
             {
-                CallGate.Release();
+                NativeXuDeviceSupport.ReleaseTransportGate();
             }
         }
     }
@@ -217,8 +216,7 @@ public sealed partial class NativeXuAtCommandProvider
             return null;
         }
 
-        if (!TryParseVendorProductIds(device.Id, out var vendorId, out var productId) ||
-            !IsSupported4kXDevice(vendorId, productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
         {
             return null;
         }
@@ -231,13 +229,13 @@ public sealed partial class NativeXuAtCommandProvider
         var gateAcquired = false;
         try
         {
-            gateAcquired = await CallGate.WaitAsync(GateTimeoutMs, cancellationToken).ConfigureAwait(false);
+            gateAcquired = await NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false);
             if (!gateAcquired)
             {
                 return null;
             }
 
-            var interfaces = EnumerateKsInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
             foreach (var ksInterface in interfaces)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -283,7 +281,7 @@ public sealed partial class NativeXuAtCommandProvider
         {
             if (gateAcquired)
             {
-                CallGate.Release();
+                NativeXuDeviceSupport.ReleaseTransportGate();
             }
         }
     }

@@ -94,8 +94,9 @@ AudioClient3 initialization.
 `NativeXuAudioControlService.Profiles.cs` owns 4K X selector-3 byte indexes,
 HDMI/Analog reference payloads, gain-profile placeholders, hex parsing, and
 payload decode/confidence helpers. `NativeXuAudioControlService.Transport.cs`
-owns selector-3 XU read/modify/write, candidate enumeration, raw payload
-normalization/rehydration, and transport gate acquisition/release.
+owns selector-3 XU read/modify/write, dev-specific candidate enumeration, raw
+payload normalization/rehydration, and retrying the shared native transport
+gate from `NativeXuDeviceSupport.cs`.
 `NativeXuAudioControlService.cs` owns the public service flow and snapshot DTOs.
 `AutomationDiagnosticsHub.SnapshotProjection.WasapiAudio.cs` owns WASAPI
 capture/playback callback, queue, gap, glitch, and latency projection consumed
@@ -780,9 +781,11 @@ enumeration orchestration in `DeviceService.cs`, format cache serialization in
 
 Native XU Kernel Streaming calls are grouped under
 `Sussudio/Services/Capture/NativeXu/`. Keep constants and DTOs in the root,
-SetupAPI interface enumeration in `.Interfaces.cs`, handle opening in
-`.Handles.cs`, topology node parsing in `.Topology.cs`, XU GET/SET transfer
-shapes in `.Transfers.cs`, and P/Invoke struct declarations in `.Interop.cs`.
+shared 4K X identity, selected-interface projection, and native transport gate
+ownership in `NativeXuDeviceSupport.cs`, SetupAPI interface enumeration in
+`.Interfaces.cs`, handle opening in `.Handles.cs`, topology node parsing in
+`.Topology.cs`, XU GET/SET transfer shapes in `.Transfers.cs`, and P/Invoke
+struct declarations in `.Interop.cs`.
 `tools/NativeXuAudioProbe` links this whole partial family explicitly, so
 update its project file with every new partial.
 
@@ -1185,8 +1188,9 @@ that file.
 Native XU public device commands now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs`.
 Keep generic AT SET/GET wrappers, named SET wrappers, and probe-facing raw AT
-reads there. The root provider remains responsible for selected-interface
-validation and dispatch into telemetry polling.
+reads there. Shared device identity, selected-interface projection, and native
+transport gating live in `Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs`;
+the root provider dispatches through that support into telemetry polling.
 
 Native XU audio command sequences now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioCommands.cs`. Keep
@@ -1199,8 +1203,8 @@ payload writes now live in `NativeXuAtCommandProvider.Selector4.cs`.
 Native XU reference full-snapshot reads now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.FullSnapshot.cs`. Keep
 the legacy all-command AT-command acquisition and full-snapshot logging policy
-there; the root provider owns selected-interface validation and dispatch into
-the active rolling poll path.
+there; the root provider uses shared Native XU device support before dispatching
+into the active rolling poll path.
 
 Native XU active rolling polling now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs`. Keep

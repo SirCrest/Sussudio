@@ -8,7 +8,7 @@ static partial class NativeXuProbeI2cCommands
     public static async Task<int> RunSelectorProbeAsync(CaptureDevice dev)
     {
         // Probe XU selectors with various buffer sizes to find I2C AT transport
-        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(dev, out var vid2, out var pid2))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(dev, out var vid2, out var pid2))
         {
             Console.Error.WriteLine("Cannot parse device IDs");
             return 1;

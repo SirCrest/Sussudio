@@ -19,6 +19,7 @@
     <Compile Include="..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Interop.cs" Link="Shared\Services\Capture\NativeXu\KsExtensionUnitNative.Interop.cs" />
     <Compile Include="..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Topology.cs" Link="Shared\Services\Capture\NativeXu\KsExtensionUnitNative.Topology.cs" />
     <Compile Include="..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.Transfers.cs" Link="Shared\Services\Capture\NativeXu\KsExtensionUnitNative.Transfers.cs" />
+    <Compile Include="..\..\Sussudio\Services\Capture\NativeXu\NativeXuDeviceSupport.cs" Link="Shared\Services\Capture\NativeXu\NativeXuDeviceSupport.cs" />
     <Compile Include="..\..\Sussudio\Services\Contracts\ISourceSignalTelemetryProvider.cs" Link="Shared\Services\Contracts\ISourceSignalTelemetryProvider.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.AnalogGain.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.AnalogGain.cs" />

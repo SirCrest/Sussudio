@@ -9,7 +9,7 @@ static partial class NativeXuProbeI2cCommands
     {
         // Probe XU selectors 18-35, focusing on 0x1B(27) and 0x1C(28)
         // which are the a1 values in rtk_sendI2CATCommand
-        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(dev, out var vidH, out var pidH))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(dev, out var vidH, out var pidH))
         {
             Console.Error.WriteLine("Cannot parse device IDs");
             return 1;

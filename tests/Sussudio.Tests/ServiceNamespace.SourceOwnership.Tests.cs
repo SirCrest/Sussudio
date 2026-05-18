@@ -27,14 +27,27 @@ static partial class Program
 
         var nativeXuAtProviderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.cs"));
         var nativeXuAtRollingPollText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.RollingPoll.cs"));
-        AssertContains(nativeXuAtProviderText, "device?.NativeXuInterfacePath");
-        AssertContains(nativeXuAtProviderText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
-        AssertContains(nativeXuAtProviderText, "return Array.Empty<KsExtensionUnitNative.KsInterfacePath>()");
+        var nativeXuDeviceSupportText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "NativeXu", "NativeXuDeviceSupport.cs"));
+        AssertContains(nativeXuAtProviderText, "device.NativeXuInterfacePath");
+        AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
+        AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device)");
+        AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken)");
+        AssertDoesNotContain(nativeXuAtProviderText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
         AssertContains(nativeXuAtProviderText, "nativexu-interface-ambiguous");
-        AssertContains(nativeXuAtProviderText, "missing_selected_interface");
+        AssertDoesNotContain(nativeXuAtProviderText, "missing_selected_interface");
         AssertContains(nativeXuAtRollingPollText, "_rollingInterfacePath");
         AssertContains(nativeXuAtProviderText, "cancellationToken.ThrowIfCancellationRequested()");
-        AssertContains(nativeXuAtProviderText, "EnumerateKsInterfaces(vendorId, productId, device)");
+        AssertContains(nativeXuDeviceSupportText, "internal static class NativeXuDeviceSupport");
+        AssertContains(nativeXuDeviceSupportText, "public static readonly Guid ExtensionUnitGuid");
+        AssertContains(nativeXuDeviceSupportText, "private static readonly SemaphoreSlim TransportGate");
+        AssertContains(nativeXuDeviceSupportText, "public static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> EnumerateSelectedInterfaces(");
+        AssertContains(nativeXuDeviceSupportText, "public static bool HasSelectedInterface(CaptureDevice? device, string operation)");
+        AssertContains(nativeXuDeviceSupportText, "public static bool TryGetSupported4kXIds(");
+        AssertContains(nativeXuDeviceSupportText, "public static bool TryParseVendorProductIds(");
+        AssertContains(nativeXuDeviceSupportText, "public static bool IsSupported4kXDevice(");
+        AssertContains(nativeXuDeviceSupportText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
+        AssertContains(nativeXuDeviceSupportText, "return Array.Empty<KsExtensionUnitNative.KsInterfacePath>()");
+        AssertContains(nativeXuDeviceSupportText, "missing_selected_interface");
 
         var nativeXuAudioServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Audio", "NativeXuAudioControlService.cs"));
         var nativeXuAudioTransportText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Audio", "NativeXuAudioControlService.Transport.cs"));
@@ -42,7 +55,7 @@ static partial class Program
         AssertContains(nativeXuAudioTransportText, "device?.NativeXuInterfacePath");
         AssertContains(nativeXuAudioTransportText, "missing-selected-interface");
         AssertContains(nativeXuAudioTransportText, "NATIVEXU_AUDIO_PAYLOAD_READ missing-selected-interface");
-        AssertContains(nativeXuAudioTransportText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
+        AssertContains(nativeXuAudioTransportText, "NativeXuDeviceSupport.EnumerateSelectedInterfacePath(selectedInterfacePath)");
         AssertContains(nativeXuAudioTransportText, "EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath)");
 
         var cudaInteropText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.cs"));

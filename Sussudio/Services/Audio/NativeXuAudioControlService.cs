@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Sussudio.Services.Telemetry;
+using Sussudio.Services.Capture;
 
 namespace Sussudio.Services.Audio;
 
@@ -47,7 +47,7 @@ internal sealed partial class NativeXuAudioControlService
     {
         ushort? vendorId = null;
         ushort? productId = null;
-        if (NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out var parsedVendorId, out var parsedProductId))
+        if (NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var parsedVendorId, out var parsedProductId))
         {
             vendorId = parsedVendorId;
             productId = parsedProductId;

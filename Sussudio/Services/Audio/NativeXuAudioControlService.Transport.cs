@@ -5,13 +5,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
-using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Audio;
 
 internal sealed partial class NativeXuAudioControlService
 {
-    private static readonly Guid XuGuid = new("961073C7-49F7-44F2-AB42-E940405940C2");
+    private static readonly Guid XuGuid = NativeXuDeviceSupport.ExtensionUnitGuid;
     private const int SelectorId = 3;
     private const int SelectorBufferSize = 2048;
     private const int RawHeaderBytes = 0;
@@ -23,7 +22,7 @@ internal sealed partial class NativeXuAudioControlService
         Func<byte[], bool> mutator,
         CancellationToken cancellationToken)
     {
-        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
         {
             Logger.Log("NATIVEXU_AUDIO_PAYLOAD device-unsupported");
             return false;
@@ -137,7 +136,7 @@ internal sealed partial class NativeXuAudioControlService
         {
             if (gateAcquired)
             {
-                NativeXuAtCommandProvider.ReleaseTransportGate();
+                NativeXuDeviceSupport.ReleaseTransportGate();
             }
         }
     }
@@ -146,7 +145,7 @@ internal sealed partial class NativeXuAudioControlService
         CaptureDevice? device,
         CancellationToken cancellationToken)
     {
-        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
         {
             return null;
         }
@@ -193,7 +192,7 @@ internal sealed partial class NativeXuAudioControlService
         {
             if (gateAcquired)
             {
-                NativeXuAtCommandProvider.ReleaseTransportGate();
+                NativeXuDeviceSupport.ReleaseTransportGate();
             }
         }
     }
@@ -208,7 +207,7 @@ internal sealed partial class NativeXuAudioControlService
             yield break;
         }
 
-        var orderedInterfaces = new[] { new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty) };
+        var orderedInterfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(selectedInterfacePath);
 
         foreach (var ksInterface in orderedInterfaces)
         {
@@ -284,7 +283,7 @@ internal sealed partial class NativeXuAudioControlService
     {
         for (var attempt = 0; attempt < TransportGateAttempts; attempt++)
         {
-            if (await NativeXuAtCommandProvider.TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false))
+            if (await NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false))
             {
                 return true;
             }

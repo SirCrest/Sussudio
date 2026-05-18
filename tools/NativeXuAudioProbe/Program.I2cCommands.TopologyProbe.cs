@@ -8,7 +8,7 @@ static partial class NativeXuProbeI2cCommands
     public static int RunTopologyProbe(CaptureDevice dev)
     {
         // Dump full topology with node type GUIDs and test each as a property set
-        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(dev, out var vidT, out var pidT))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(dev, out var vidT, out var pidT))
         {
             Console.Error.WriteLine("Cannot parse device IDs");
             return 1;

@@ -17,7 +17,7 @@ static class NativeXuProbeI2cTransport
 
     public static async Task<byte[]?> SendI2cViaAtAsync(CaptureDevice device, int atOpcode, byte[] i2cPayload)
     {
-        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out _, out _))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             return null;
         }
