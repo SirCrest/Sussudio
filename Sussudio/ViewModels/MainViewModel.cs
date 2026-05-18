@@ -34,6 +34,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
     private readonly MainViewModelDeviceAudioRequestController _deviceAudioRequestController;
     private readonly MainViewModelRecordingCapabilityController _recordingCapabilityController;
+    private readonly MainViewModelCaptureSettingsAutomationController _captureSettingsAutomationController;
     private readonly MainViewModelRecordingSettingsAutomationController _recordingSettingsAutomationController;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
@@ -138,6 +139,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _previewLifecycleController = new MainViewModelPreviewLifecycleController(this);
         _deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(this);
         _recordingCapabilityController = new MainViewModelRecordingCapabilityController(this);
+        _captureSettingsAutomationController = new MainViewModelCaptureSettingsAutomationController(this);
         _recordingSettingsAutomationController = new MainViewModelRecordingSettingsAutomationController(this);
         _deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);
         _runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);
@@ -166,7 +168,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Automation snapshots and probes: MainViewModel.AutomationSnapshots.cs
     // Automation options projection: MainViewModel.AutomationOptionsSnapshot.cs
     // Device and audio-input selection automation: MainViewModel.AutomationDeviceSelection.cs
-    // Capture settings automation: MainViewModel.AutomationCaptureSettings.cs; preview automation: MainViewModelPreviewLifecycleController.cs; capture-mode transactions: MainViewModel.CaptureModeTransactions.cs
+    // Capture settings automation: facade: MainViewModel.AutomationCaptureSettings.cs; controller: MainViewModelCaptureSettingsAutomationController.cs; preview automation: MainViewModelPreviewLifecycleController.cs; capture-mode transactions: MainViewModel.CaptureModeTransactions.cs
     // UI-only automation: MainViewModel.AutomationUi.cs
     // Recording settings automation: facade: MainViewModel.AutomationRecordingSettings.cs; controller: MainViewModelRecordingSettingsAutomationController.cs
     // UI dispatch policy: MainViewModelUiDispatchController.cs; adapter/fan-out: MainViewModel.Dispatching.cs

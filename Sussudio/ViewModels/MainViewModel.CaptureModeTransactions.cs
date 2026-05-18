@@ -10,48 +10,9 @@ namespace Sussudio.ViewModels;
 /// </summary>
 public partial class MainViewModel
 {
-    private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);
     private bool _pendingModeOptionsRefresh;
     private bool _suppressFormatChangeReinitialize;
     private bool _isRevertingHdrToggle;
-
-    private async Task SetAutomationCaptureModeAsync(
-        string reason,
-        Action apply,
-        CancellationToken cancellationToken)
-    {
-        await _automationCaptureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            var shouldReinitialize = await InvokeOnUiThreadAsync(() =>
-            {
-                var wasPreviewing = IsPreviewing && IsInitialized && SelectedDevice != null;
-                _suppressFormatChangeReinitialize = true;
-                try
-                {
-                    apply();
-                }
-                finally
-                {
-                    _suppressFormatChangeReinitialize = false;
-                }
-
-                return wasPreviewing && SelectedFormat != null;
-            }, cancellationToken).ConfigureAwait(false);
-
-            if (shouldReinitialize)
-            {
-                await InvokeOnUiThreadAsync(
-                        () => ReinitializeDeviceAsync($"automation {reason}"),
-                        cancellationToken)
-                    .ConfigureAwait(false);
-            }
-        }
-        finally
-        {
-            _automationCaptureModeGate.Release();
-        }
-    }
 
     public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {

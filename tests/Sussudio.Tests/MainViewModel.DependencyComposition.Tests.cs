@@ -20,6 +20,7 @@ static partial class Program
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs").Replace("\r\n", "\n");
         var previewReinitializeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs").Replace("\r\n", "\n");
+        var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs").Replace("\r\n", "\n");
         var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
         var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
@@ -38,6 +39,7 @@ static partial class Program
         AssertContains(rootText, "_recordingTransitionController = new MainViewModelRecordingTransitionController(this);");
         AssertContains(rootText, "_previewLifecycleController = new MainViewModelPreviewLifecycleController(this);");
         AssertContains(rootText, "_deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(this);");
+        AssertContains(rootText, "_captureSettingsAutomationController = new MainViewModelCaptureSettingsAutomationController(this);");
         AssertContains(rootText, "_recordingSettingsAutomationController = new MainViewModelRecordingSettingsAutomationController(this);");
         AssertContains(rootText, "_deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);");
         AssertContains(rootText, "_runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);");
@@ -56,7 +58,7 @@ static partial class Program
         AssertContains(stateText, "public partial bool IsSettingsVisible");
         AssertContains(stateText, "public partial string StatusText");
         AssertDoesNotContain(stateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
-        AssertContains(captureModeTransactionsText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
+        AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");
         AssertDoesNotContain(stateText, "public partial bool IsPreviewing");
         AssertDoesNotContain(stateText, "public event EventHandler? PreviewStartRequested");
         AssertContains(previewStateText, "public partial bool IsPreviewing");
@@ -98,6 +100,17 @@ static partial class Program
         AssertContains(deviceAudioRequestControllerText, "public void HandleSelectedDeviceAudioModeChanged(string value)");
         AssertContains(deviceAudioRequestControllerText, "public void HandleAnalogAudioGainPercentChanged(double value)");
         AssertContains(deviceAudioRequestControllerText, "public void CancelPendingAudioControlWork()");
+        AssertContains(captureSettingsAutomationControllerText, "private sealed class MainViewModelCaptureSettingsAutomationController");
+        AssertEqual(
+            true,
+            captureSettingsAutomationControllerText.Split('\n').Length >= 100,
+            "capture settings automation controller is a substantial ownership file");
+        AssertContains(captureSettingsAutomationControllerText, "private readonly SemaphoreSlim _captureModeGate = new(1, 1);");
+        AssertContains(captureSettingsAutomationControllerText, "public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)");
+        AssertContains(captureSettingsAutomationControllerText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
+        AssertContains(captureSettingsAutomationControllerText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
+        AssertContains(captureSettingsAutomationControllerText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
+        AssertContains(captureSettingsAutomationControllerText, "private async Task SetAutomationCaptureModeAsync(");
         AssertContains(recordingSettingsAutomationControllerText, "private sealed class MainViewModelRecordingSettingsAutomationController");
         AssertContains(recordingSettingsAutomationControllerText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
         AssertContains(recordingSettingsAutomationControllerText, "_viewModel._sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");

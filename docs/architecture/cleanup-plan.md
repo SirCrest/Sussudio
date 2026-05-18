@@ -3288,9 +3288,11 @@ Remaining `tools/Common` ownership:
    `MainViewModel.cs` and is serialized by
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`.
    Capture resolution, frame-rate, video-format, and MJPEG decoder worker-count
-   automation mutators now live in `MainViewModel.AutomationCaptureSettings.cs`;
-   the shared capture-mode reinitialization gate now lives in
-   `MainViewModel.CaptureModeTransactions.cs`.
+   automation entry points now stay in the
+   `MainViewModel.AutomationCaptureSettings.cs` compatibility facade, while
+   UI-thread mutations, validation, MJPEG decoder clamping, and active
+   capture-mode reinitialization routing live in
+   `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs`.
    Startup FFmpeg capability probes for recording formats and split-encode modes
    plus observable recording-format option rebuilds now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`.

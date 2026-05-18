@@ -24,7 +24,7 @@ static partial class Program
             "Automation device selection routes through apply reinit",
             AutomationDeviceSelection_RoutesThroughApplyReinit);
         await AddCheckAsync(results,
-            "Automation capture mode changes await reinitialization",
+            "Automation capture settings route through controller and await reinitialization",
             AutomationCaptureModeChanges_AwaitReinitialization);
         await AddCheckAsync(results,
             "Automation recording transitions use shared lifecycle gate",

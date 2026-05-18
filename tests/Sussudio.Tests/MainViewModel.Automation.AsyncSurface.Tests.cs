@@ -41,6 +41,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs")
             .Replace("\r\n", "\n");
+        var captureSettingsAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCaptureSettings.cs")
+            .Replace("\r\n", "\n");
+        var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs")
+            .Replace("\r\n", "\n");
         var flashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackSettings.cs")
             .Replace("\r\n", "\n");
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
@@ -66,6 +70,8 @@ static partial class Program
         var automationText = automationAudioText
             + "\n" + previewLifecycleControllerText
             + "\n" + captureModeTransactionsText
+            + "\n" + captureSettingsAutomationText
+            + "\n" + captureSettingsAutomationControllerText
             + "\n" + flashbackSettingsText
             + "\n" + recordingLifecycleText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs")
