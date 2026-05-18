@@ -1867,7 +1867,9 @@ primary-context ownership, and fallback-to-staging behavior unchanged.
 
 NVDEC MJPEG decoder ownership is now split around the hot-path boundaries:
 `Sussudio/Services/Gpu/NvdecMjpegDecoder.cs` keeps shared decoder state,
-`NvdecMjpegDecoder.Initialization.cs` owns both context initialization paths,
+`NvdecMjpegDecoder.Initialization.cs` owns standalone CUDA device and
+hardware-frame pool initialization, `NvdecMjpegDecoder.SharedInitialization.cs`
+owns adoption of caller-provided CUDA device/frame contexts,
 `NvdecMjpegDecoder.Decode.cs` owns packet decode and CUDA context access,
 `NvdecMjpegDecoder.Download.cs` owns CPU download/packed-buffer copies, and
 `NvdecMjpegDecoder.Lifetime.cs` owns disposal plus FFmpeg error text. Keep

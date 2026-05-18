@@ -95,6 +95,7 @@ static partial class Program
 
         var nvdecText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.cs"));
         var nvdecInitializationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Initialization.cs"));
+        var nvdecSharedInitializationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.SharedInitialization.cs"));
         var nvdecDecodeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Decode.cs"));
         var nvdecDownloadText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Download.cs"));
         var nvdecLifetimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Lifetime.cs"));
@@ -104,8 +105,14 @@ static partial class Program
         AssertDoesNotContain(nvdecText, "public bool TryDownloadToCpu(");
         AssertDoesNotContain(nvdecText, "public void Dispose()");
         AssertContains(nvdecInitializationText, "public void Initialize(int width, int height)");
-        AssertContains(nvdecInitializationText, "public void Initialize(int width, int height, AVBufferRef* sharedHwDeviceCtx");
+        AssertContains(nvdecInitializationText, "av_hwdevice_ctx_create(&hwDeviceCtx");
+        AssertContains(nvdecInitializationText, "NVDEC_MJPEG_FRAMES_CTX_OK");
+        AssertContains(nvdecSharedInitializationText, "public void Initialize(int width, int height, AVBufferRef* sharedHwDeviceCtx");
+        AssertContains(nvdecSharedInitializationText, "ffmpeg.av_buffer_ref(sharedHwDeviceCtx)");
+        AssertContains(nvdecSharedInitializationText, "NVDEC_MJPEG_DECODER_INIT_SHARED");
+        AssertDoesNotContain(nvdecInitializationText, "public void Initialize(int width, int height, AVBufferRef* sharedHwDeviceCtx");
         AssertContains(nvdecInitializationText, "FfmpegRuntimeInit.EnsureInitialized");
+        AssertContains(nvdecSharedInitializationText, "FfmpegRuntimeInit.EnsureInitialized");
         AssertContains(nvdecDecodeText, "public AVFrame* DecodeFrame(");
         AssertContains(nvdecDecodeText, "public IntPtr GetCudaContext()");
         AssertContains(nvdecDownloadText, "public bool TryDownloadToCpu(");
