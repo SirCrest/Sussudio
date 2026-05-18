@@ -97,6 +97,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackWarnings.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs",
+            "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewResult.cs",

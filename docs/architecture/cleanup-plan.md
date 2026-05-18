@@ -2474,12 +2474,13 @@ CPU-timing result projection values live together in
 projections share one focused owner without adding miniature partials. The D3D
 fields still travel through a distinct `PreviewD3D` projection set member so
 renderer timing semantics stay separate from scheduler/jitter policy.
-Flashback playback result composition lives in the root result builder, while
-playback command queue, cadence/1% low, decode timing, audio-master/A/V drift,
-stage/seek, recording backend/growth/integrity, and export status/progress DTO
-projection values live in `DiagnosticSessionResultBuilder.FlashbackResult.cs`
-so result construction can consume named Flashback projections while
-preserving the existing `summary.json` field shape.
+Flashback playback result composition, command queue, cadence/1% low, decode
+timing, audio-master/A/V drift, and stage/seek DTO projection values live in
+`DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`. Flashback
+recording backend/growth/integrity and export status/progress DTO projection
+values stay grouped in `DiagnosticSessionResultBuilder.FlashbackResult.cs` so
+result construction can consume named Flashback projections while preserving
+the existing `summary.json` field shape.
 Export force-rotate fallback counters now travel with
 `FlashbackExportSessionMetrics` instead of loose analysis record fields.
 Capture selection, negotiated format, source geometry, detected cadence, HDR,
@@ -2922,6 +2923,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
+- `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 - `DiagnosticSessionResultBuilder.FlashbackResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
