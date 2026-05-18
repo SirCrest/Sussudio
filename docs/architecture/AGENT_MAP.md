@@ -1266,7 +1266,8 @@ Primary current owners:
   `tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs` owns HDMI
   source telemetry panel projection checks,
   `tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs` owns hardware row
-  presentation/input behavior checks, and
+  presentation behavior checks, `tests/Sussudio.Tests/XUnit.StatsHardwareRows.InputProvider.Tests.cs`
+  owns hardware row input-provider behavior checks, and
   `tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs` owns disk
   space presentation bridge checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.AutomationIds.Tests.cs` owns
