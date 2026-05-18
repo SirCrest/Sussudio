@@ -513,10 +513,10 @@ empty test marker-shell checks.
 literal `ReadRepoFile` source-shape path resolution.
 `tests/Sussudio.Tests/ArchitectureDocs.CleanupPlanReferences.Tests.cs` owns
 cleanup-plan file/folder reference drift checks and architecture-doc test-family
-coverage.
+coverage plus the xUnit migration inventory guard.
 `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns shared
 Markdown code-span path-token resolution plus AGENT_MAP consumer and file-family
-helper logic.
+helper logic, including xUnit inventory discovery.
 Shared tool assembly loading and stale-build detection now live in
 `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` so the legacy harness body
 no longer owns tool DLL resolution or freshness policy.

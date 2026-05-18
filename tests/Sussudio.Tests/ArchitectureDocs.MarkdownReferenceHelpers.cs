@@ -80,6 +80,9 @@ static partial class Program
     private static IEnumerable<string> EnumerateCleanupPlanPathTokens(string markdown)
         => EnumerateMarkdownPathTokens(markdown, IsCleanupPlanPathToken);
 
+    private static IEnumerable<string> EnumerateMigrationPlanPathTokens(string markdown)
+        => EnumerateMarkdownPathTokens(markdown, IsMigrationPlanPathToken);
+
     private static IEnumerable<string> EnumerateMarkdownPathTokens(
         string markdown,
         Func<string, bool> isPathToken)
@@ -129,6 +132,23 @@ static partial class Program
             token.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool IsMigrationPlanPathToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token) ||
+            token.Contains(" ", StringComparison.Ordinal) ||
+            token.Contains("<", StringComparison.Ordinal) ||
+            token.Contains(">", StringComparison.Ordinal) ||
+            string.Equals(token, "/", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return token.EndsWith("/", StringComparison.Ordinal) ||
+            token.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ||
+            token.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase) ||
+            token.EndsWith(".md", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static bool ResolvesAgentMapToken(
         string token,
         IReadOnlyCollection<string> files,
@@ -140,6 +160,16 @@ static partial class Program
             allowDirectoryPathWithoutTrailingSlash: false);
 
     private static bool ResolvesCleanupPlanToken(
+        string token,
+        IReadOnlyCollection<string> files,
+        IReadOnlySet<string> directories)
+        => ResolvesMarkdownPathToken(
+            token,
+            files,
+            directories,
+            allowDirectoryPathWithoutTrailingSlash: true);
+
+    private static bool ResolvesMigrationPlanToken(
         string token,
         IReadOnlyCollection<string> files,
         IReadOnlySet<string> directories)
@@ -231,10 +261,27 @@ static partial class Program
     }
 
     private static bool AgentMapContainsExactCodeSpan(string agentMapText, string relativePath)
-        => MarkdownContainsExactCodeSpan(agentMapText, relativePath);
+    {
+        var normalizedPath = NormalizeProjectInclude(relativePath);
+        if (normalizedPath.StartsWith("tests/", StringComparison.Ordinal))
+        {
+            return agentMapText.Contains($"`{normalizedPath}`", StringComparison.Ordinal);
+        }
+
+        return MarkdownContainsExactCodeSpan(agentMapText, normalizedPath);
+    }
 
     private static bool CleanupPlanContainsExactCodeSpan(string cleanupPlanText, string relativePath)
         => MarkdownContainsExactCodeSpan(cleanupPlanText, relativePath);
+
+    private static IEnumerable<string> EnumerateXUnitTestFiles(string repoRoot)
+    {
+        var testsDirectory = Path.Combine(repoRoot, "tests", "Sussudio.Tests");
+        return EnumerateSourceFiles(testsDirectory, SearchOption.TopDirectoryOnly)
+            .Select(file => NormalizeRepoRelativePath(repoRoot, file))
+            .Where(file => GetRepoFileName(file).StartsWith("XUnit.", StringComparison.Ordinal))
+            .OrderBy(file => file, StringComparer.OrdinalIgnoreCase);
+    }
 
     private static bool MarkdownContainsExactCodeSpan(string markdownText, string relativePath)
     {

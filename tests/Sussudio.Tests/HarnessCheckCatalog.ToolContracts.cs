@@ -35,6 +35,9 @@ static partial class Program
             "Architecture cleanup plan covers architecture-doc test family",
             ArchitectureCleanupPlan_CoversArchitectureDocsTestFamily);
         await AddCheckAsync(results,
+            "Test migration plan references resolve and names validation commands",
+            TestMigrationPlan_FileReferencesResolveAndNamesValidationCommands);
+        await AddCheckAsync(results,
             "Architecture agent map test-owner paths use resolving code spans",
             ArchitectureAgentMap_TestOwnerPathsUseCodeSpansAndResolve);
         await AddCheckAsync(results,
@@ -46,6 +49,9 @@ static partial class Program
         await AddCheckAsync(results,
             "Test project avoids empty partial marker shells",
             TestProject_DoesNotKeepEmptyPartialMarkerShells);
+        await AddCheckAsync(results,
+            "Test migration plan covers xUnit test inventory",
+            TestMigrationPlan_CoversXUnitInventory);
         await AddCheckAsync(results,
             "Architecture agent map covers automation consumer checklist",
             ArchitectureAgentMap_CoversAutomationConsumerChecklist);

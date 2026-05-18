@@ -18,6 +18,8 @@ add xUnit alongside, and port incrementally.
   uses `Assembly.LoadFrom` against the staged `Sussudio.dll` (the legacy
   runner already does the same), and asserts via xUnit primitives instead
   of the hand-rolled `AssertContains/AssertEqual` helpers.
+- `XUnit.BoolConvertersTests.cs` owns the former legacy bool/visibility
+  converter checks.
 - `XUnit.MediaFormatTests.cs` owns the former legacy MediaFormat equality and
   hash-code checks.
 - `StatsOverlay.Lifecycle.Tests.cs` now owns xUnit source-contract checks for
@@ -30,6 +32,7 @@ add xUnit alongside, and port incrementally.
   row formatting behavior and hardware-row input sampling policy checks.
 - `XUnit.CapturePoliciesTests.cs` owns the former legacy HdrOutputPolicy
   behavior and HDR output environment-switch checks.
+- `XUnit.RuntimeHelpersTests.cs` owns focused runtime helper behavior checks.
 - `XUnit.SnapshotModelsTests.cs` owns the former legacy
   SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source
   telemetry automation projection contract checks.
@@ -41,6 +44,13 @@ add xUnit alongside, and port incrementally.
 - `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer,
   session, playback-state, export progress, export segment, and export request
   model contract checks.
+- `XUnit.ToolFormatterContractsTests.cs` owns focused tool formatter contract
+  checks.
+- Additional focused `[Fact]`/`[Theory]` files such as
+  `AutomationContracts.ProtocolXunit.Tests.cs`,
+  `AutomationToolContracts.ProtocolXunit.Tests.cs`,
+  `RuntimeContracts.Tests.cs`, `WindowSnapRegionLayoutPolicy.Tests.cs`, and
+  `CaptureService.HealthSnapshots.Tests.cs` already run through `dotnet test`.
 
 ## Targeting reality
 
@@ -58,9 +68,9 @@ backing fields.
 ## How to run
 
 - Legacy runner:
-  `dotnet run --project tests/Sussudio.Tests -- "<path-to-Sussudio.dll>"`
+  `dotnet exec tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll "<path-to-Sussudio.dll>"`
 - xUnit cases:
-  `dotnet test tests/Sussudio.Tests/Sussudio.Tests.csproj`
+  `dotnet test tests/Sussudio.Tests/Sussudio.Tests.csproj --no-restore`
 
 Both must stay green during the migration.
 
@@ -70,8 +80,10 @@ Port in roughly this order, then retire the legacy `Program.cs` runner once
 every check has a `[Fact]`/`[Theory]` equivalent:
 
 1. **Pure-data Model tests** (`CaptureSettings`, `MediaFormat`,
-   `RecordingFormat`, `SplitEncodeSupport`, etc.). They have no reflection
-   dependency once `InternalsVisibleTo` is in place.
+   `RecordingFormat`, `SplitEncodeSupport`, etc.). Until the app-facing model
+   types move into a neutral target, xUnit tests still resolve them from the
+   staged `Sussudio.dll`; `InternalsVisibleTo` reduces private-member cracking
+   but does not remove the assembly-loading boundary.
 2. **Contracts tests** (`RecordingContext`, `FinalizeResult`,
    `GpuPipelineHandles`, `IRecordingSink` shape).
 3. **Behavioral service tests** that exercise pure logic
