@@ -1778,14 +1778,13 @@ Primary current owners:
   timing metric factories and the closed-pipeline emit delegate used by
   harness-level MJPEG and snapshot tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` owns shared
-  reflection helpers for capture configuration model contract tests.
-- `tests/Sussudio.Tests/CaptureConfigurationModels.Options.Tests.cs` owns
-  capture mode option display metadata and builder policy tests.
-- `tests/Sussudio.Tests/CaptureConfigurationModels.Settings.Tests.cs` owns
-  capture settings defaults, output path/file naming, bitrate policy,
-  split-encode support, and MJPEG HFR policy tests.
-- `tests/Sussudio.Tests/CaptureConfigurationModels.EncoderSupport.Tests.cs`
-  owns encoder availability and preferred encoder policy tests.
+  reflection helpers for remaining legacy capture configuration model
+  contract tests.
+- `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns xUnit
+  coverage for capture mode option display metadata, option builders,
+  recording selection policy, capture settings defaults, output path/file
+  naming, bitrate policy, split-encode support, MJPEG HFR policy, and encoder
+  availability/preferred encoder policy.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.Flashback.Tests.cs` owns
   Flashback buffer, session, playback, export progress, segment, and request
   DTO contract tests.
