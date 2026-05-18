@@ -186,6 +186,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             .Replace("\r\n", "\n");
+        var lifecycleText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs")
+            .Replace("\r\n", "\n");
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
         var shaderRenderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
@@ -205,11 +207,16 @@ static partial class Program
         AssertContains(renderPassesText, "Volatile.Write(ref _rendererMode, RendererModeHdrPassthrough);");
         AssertContains(renderPassesText, "Volatile.Write(ref _rendererMode, PreviewShaderSources.RendererModeHdr);");
         AssertContains(renderPassesText, "Volatile.Write(ref _rendererMode, RendererModeVideoProcessor);");
-        AssertContains(renderPassesText, "Interlocked.Exchange(ref _inNativeCall, 1);");
+        AssertContains(renderPassesText, "if (!TryEnterNativeRenderCall())");
+        AssertContains(renderPassesText, "ExitNativeRenderCall();");
         AssertContains(renderPassesText, "PresentAndTrackFrame(");
         AssertContains(renderPassesText, "TryEnsureNv12ShaderResources(frame)");
         AssertContains(renderPassesText, "TryResolveInputView(frame, out var inputView, out var disposeInputView)");
         AssertContains(renderPassesText, "D3D11_PREVIEW_HDR_SHADER_FALLBACK");
+        AssertContains(lifecycleText, "private bool TryEnterNativeRenderCall()");
+        AssertContains(lifecycleText, "private void ExitNativeRenderCall()");
+        AssertContains(lifecycleText, "Interlocked.Exchange(ref _inNativeCall, 1);");
+        AssertContains(lifecycleText, "Interlocked.Exchange(ref _inNativeCall, 0);");
         AssertContains(renderThreadText, "RenderFrame(frame);");
         AssertDoesNotContain(rootText, "private void RenderFrame(PendingFrame frame)");
         AssertDoesNotContain(shaderRenderingText, "private void RenderNv12WithShader(PendingFrame frame)");

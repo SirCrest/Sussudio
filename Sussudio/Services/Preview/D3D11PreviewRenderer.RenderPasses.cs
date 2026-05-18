@@ -89,22 +89,13 @@ internal sealed partial class D3D11PreviewRenderer
         long renderTicks = 0;
         long presentTicks = 0;
 
-        // Fence: Stop() spins on _inNativeCall before unbinding the swap chain.
-        // The fence covers the entire render method (EnsurePipeline, input view
-        // resolution, Blt, Present) so Stop() cannot yank D3D resources while
-        // any of those operations are in flight.
-        if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
+        if (!TryEnterNativeRenderCall())
         {
             return;
         }
-        Interlocked.Exchange(ref _inNativeCall, 1);
+
         try
         {
-            if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
-            {
-                return;
-            }
-
             var useExternalTexture = frame.D3DTexture != null;
             EnsurePipeline(frame.Width, frame.Height, frame.IsHdr, useExternalTexture);
 
@@ -150,7 +141,7 @@ internal sealed partial class D3D11PreviewRenderer
         }
         finally
         {
-            Interlocked.Exchange(ref _inNativeCall, 0);
+            ExitNativeRenderCall();
         }
     }
 
@@ -161,18 +152,13 @@ internal sealed partial class D3D11PreviewRenderer
         long renderTicks = 0;
         long presentTicks = 0;
 
-        if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
+        if (!TryEnterNativeRenderCall())
         {
             return;
         }
-        Interlocked.Exchange(ref _inNativeCall, 1);
+
         try
         {
-            if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
-            {
-                return;
-            }
-
             if (_device == null || _deviceContext == null || _swapChain == null)
             {
                 return;
@@ -234,7 +220,7 @@ internal sealed partial class D3D11PreviewRenderer
         }
         finally
         {
-            Interlocked.Exchange(ref _inNativeCall, 0);
+            ExitNativeRenderCall();
         }
     }
 
@@ -245,18 +231,13 @@ internal sealed partial class D3D11PreviewRenderer
         long renderTicks = 0;
         long presentTicks = 0;
 
-        if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
+        if (!TryEnterNativeRenderCall())
         {
             return;
         }
-        Interlocked.Exchange(ref _inNativeCall, 1);
+
         try
         {
-            if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
-            {
-                return;
-            }
-
             if (_device == null || _deviceContext == null || _swapChain == null)
             {
                 return;
@@ -360,7 +341,7 @@ internal sealed partial class D3D11PreviewRenderer
         }
         finally
         {
-            Interlocked.Exchange(ref _inNativeCall, 0);
+            ExitNativeRenderCall();
         }
     }
 }

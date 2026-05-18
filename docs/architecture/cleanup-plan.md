@@ -1470,7 +1470,8 @@ pending-frame adapter there; keep render-thread start/stop and disposal in
 D3D preview renderer lifecycle now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs`. Keep
 render-thread start/stop, reinit stop, native-call drain fencing, pending-frame
-shutdown cleanup, and renderer disposal there.
+shutdown cleanup, renderer disposal, and render-pass native-call entry/exit
+guard helpers there.
 
 D3D preview renderer render-thread orchestration now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs`. Keep the
@@ -1492,7 +1493,7 @@ tracking in `D3D11PreviewRenderer.Present.cs`.
 D3D preview renderer render-pass selection now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`. Keep
 VideoProcessor execution, NV12/HDR shader pass execution, HDR fallback logging,
-native-call fencing, timing bucket attribution, and pass precedence there. Shader
+native-call guard consumption, timing bucket attribution, and pass precedence there. Shader
 resource/cache state now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep shader
 fields, reusable shader class-instance arrays, and NV12 SRV caching there; keep

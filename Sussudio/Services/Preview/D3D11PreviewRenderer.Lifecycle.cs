@@ -195,6 +195,26 @@ internal sealed partial class D3D11PreviewRenderer
         }
     }
 
+    private bool TryEnterNativeRenderCall()
+    {
+        if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
+        {
+            return false;
+        }
+
+        Interlocked.Exchange(ref _inNativeCall, 1);
+        if (Volatile.Read(ref _stopRequested) == 0 && Volatile.Read(ref _swapChainBound) != 0)
+        {
+            return true;
+        }
+
+        ExitNativeRenderCall();
+        return false;
+    }
+
+    private void ExitNativeRenderCall()
+        => Interlocked.Exchange(ref _inNativeCall, 0);
+
     private void ThrowIfDisposed()
     {
         if (Volatile.Read(ref _disposed) != 0)

@@ -41,6 +41,17 @@ mentions the moved files.
 | UI shell | `MainWindow.*.cs` XAML adapters plus `Sussudio/Controllers/*Controller.cs` shell controllers | keep shell adapters thin and start new UI behavior in named controllers/policies with ownership tests |
 | Presentation | `MainViewModel.*.cs` facade/feature partial family plus focused `Sussudio/ViewModels` policy/presentation helpers | keep the root facade stable while moving pure feature state, policy, and presentation logic into named owners |
 
+Preview renderer notes:
+
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs` owns
+  render-thread start/stop, reinit stop, native-call drain fencing, render-pass
+  native-call entry/exit guards, pending-frame shutdown cleanup, and renderer
+  disposal.
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs` owns
+  render-pass selection plus VideoProcessor, NV12 shader, and HDR shader pass
+  execution. Keep pass precedence, timing bucket attribution, HDR fallback
+  logging, and consumption of the lifecycle-owned native-call guard there.
+
 ## Automation
 
 Primary owner: `Sussudio.Automation.Contracts/`
