@@ -2909,11 +2909,9 @@ creation and common transport/protocol exception mapping for the shared command 
 `AutomationResponseState.cs` owns the tolerant success/status/retry
 response-state reader shared by the pipe client and tool surfaces.
 
-PresentMon model and text ownership is split from the probe runner.
+PresentMon model ownership and result formatting are split from the probe runner.
 `tools/Common/PresentMon/PresentMonProbe.Models.cs` owns PresentMon options, result,
 summary, swap-chain, correlation, and metric DTOs.
-`tools/Common/PresentMon/PresentMonProbe.ResultMessage.cs` owns success, expected-swap-chain
-mismatch, and no-frame result-message shaping.
 `tools/Common/PresentMon/PresentMonProbe.Format.cs` owns result text formatting while
 `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns CSV parse overloads, selected-row
 filtering, summary assembly, and handoff to row/swap-chain/warning/correlation
@@ -2927,7 +2925,7 @@ swap-chain normalization, artifact filtering, and selected-chain summaries.
 `tools/Common/PresentMon/PresentMonProbe.Csv.Summary.cs` owns warnings, counted text fields, and
 percentile metric aggregation. `tools/Common/PresentMon/PresentMonProbe.Csv.Models.cs` owns the private
 parsed CSV handoff and row shapes. `tools/Common/PresentMon/PresentMonProbe.cs` keeps the public run
-orchestration, command-line construction, and argument quoting.
+orchestration, command-line construction, argument quoting, and probe-result message shaping.
 `tools/Common/PresentMon/PresentMonProbe.Paths.cs` owns target process,
 PresentMon executable, and output-path resolution. `tools/Common/PresentMon/PresentMonProbe.Process.cs`
 owns process supervision, stdout/stderr drain, timeout kill, and temp CSV
@@ -3062,7 +3060,6 @@ Remaining `tools/Common` ownership:
 - `tools/Common/PresentMon/PresentMonProbe.cs`
 - `tools/Common/PresentMon/PresentMonProbe.Paths.cs`
 - `tools/Common/PresentMon/PresentMonProbe.Process.cs`
-- `tools/Common/PresentMon/PresentMonProbe.ResultMessage.cs`
 
 ## Next Slices
 

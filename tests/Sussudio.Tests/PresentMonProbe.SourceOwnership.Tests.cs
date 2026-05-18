@@ -10,7 +10,6 @@ static partial class Program
         var rootText = ReadPresentMonProbeFile("PresentMonProbe.cs");
         var modelsText = ReadPresentMonProbeFile("PresentMonProbe.Models.cs");
         var formatText = ReadPresentMonProbeFile("PresentMonProbe.Format.cs");
-        var resultMessageText = ReadPresentMonProbeFile("PresentMonProbe.ResultMessage.cs");
         var csvText = ReadPresentMonProbeFile("PresentMonProbe.Csv.cs");
         var csvRowsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Rows.cs");
         var fieldsText = ReadPresentMonProbeFile("PresentMonProbe.Csv.Fields.cs");
@@ -28,6 +27,10 @@ static partial class Program
         AssertContains(rootText, "var arguments = BuildArguments(");
         AssertContains(rootText, "private static string BuildArguments(");
         AssertContains(rootText, "private static string QuoteArgument(");
+        AssertContains(rootText, "private static string BuildResultMessage(");
+        AssertContains(rootText, "Captured {summary.RawSampleCount} PresentMon frame rows");
+        AssertContains(rootText, "expected swap chain {summary.ExpectedSwapChainAddress} was not present");
+        AssertContains(rootText, "PresentMon capture did not produce frame rows.");
         AssertContains(rootText, "var run = await RunProcessAsync(");
         AssertContains(rootText, "summary = ParseCsv(outputPath, options.ExpectedSwapChainAddress, options, captureStartUtcUnixMs);");
         AssertContains(rootText, "TryDelete(outputPath);");
@@ -45,11 +48,6 @@ static partial class Program
         AssertContains(formatText, "private static void AppendAppCorrelation(");
         AssertContains(formatText, "private static void AppendSwapChains(");
         AssertDoesNotContain(formatText, "private static string BuildResultMessage(");
-
-        AssertContains(resultMessageText, "private static string BuildResultMessage(");
-        AssertContains(resultMessageText, "Captured {summary.RawSampleCount} PresentMon frame rows");
-        AssertContains(resultMessageText, "expected swap chain {summary.ExpectedSwapChainAddress} was not present");
-        AssertContains(resultMessageText, "PresentMon capture did not produce frame rows.");
 
         AssertContains(csvText, "private static PresentMonCaptureSummary ParseCsv(");
         AssertContains(csvText, "var csvRows = ReadCsvRows(path);");
@@ -94,7 +92,6 @@ static partial class Program
         AssertDoesNotContain(rootText, "private static IReadOnlyList<PresentMonSwapChainSummary> BuildSwapChainSummaries(");
         AssertDoesNotContain(rootText, "private static PresentMonMetricSummary Summarize(");
         AssertDoesNotContain(rootText, "public static string Format(PresentMonProbeResult result)");
-        AssertDoesNotContain(rootText, "private static string BuildResultMessage(");
 
         return Task.CompletedTask;
     }
