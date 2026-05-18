@@ -1142,8 +1142,8 @@ Primary current owners:
   visibility, polling, and section chrome commands; stats provider/controller
   composition lives in
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
-- `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` owns legacy harness
-  contract checks for stats overlay lifecycle wiring and stats section chrome.
+- `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` owns xUnit contract
+  checks for stats overlay lifecycle wiring and stats section chrome.
 - `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs` owns legacy harness
   contract checks for stats dock refresh orchestration, diagnostic row update
   delegation, hardware row projection, and row chrome pooling.

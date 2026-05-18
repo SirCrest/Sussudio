@@ -20,6 +20,9 @@ incrementally.
   of the hand-rolled `AssertContains/AssertEqual` helpers.
 - `XUnit.MediaFormatTests.cs` owns the former legacy MediaFormat equality and
   hash-code checks.
+- `StatsOverlay.Lifecycle.Tests.cs` now owns xUnit source-contract checks for
+  stats overlay lifecycle and section chrome wiring. The remaining stats
+  presentation checks still migrate incrementally from the legacy catalog.
 
 ## Targeting reality
 

@@ -1,19 +1,24 @@
-static partial class Program
+using Xunit;
+
+namespace Sussudio.Tests;
+
+public class StatsOverlayLifecycleTests
 {
-    private static Task StatsOverlayLifecycle_LivesInController()
+    [Fact]
+    public void StatsOverlayLifecycle_LivesInController()
     {
-        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs");
+        var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
         var frameTimeOverlayText = statsOverlayCompositionText;
-        var statsDockGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs").Replace("\r\n", "\n");
-        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs").Replace("\r\n", "\n");
-        var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
-        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.cs").Replace("\r\n", "\n");
-        var dockAnimationText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.DockAnimation.cs").Replace("\r\n", "\n");
-        var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs").Replace("\r\n", "\n");
-        var frameTimeGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs").Replace("\r\n", "\n");
+        var statsDockGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.Bindings.cs");
+        var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs");
+        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.cs");
+        var dockAnimationText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.DockAnimation.cs");
+        var frameTimeControllerText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayPresentationController.cs");
+        var frameTimeGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs");
 
         AssertContains(statsOverlayText, "private StatsOverlayCompositionController _statsOverlayCompositionController = null!;");
         AssertContains(statsOverlayText, "private void InitializeStatsOverlayCompositionController()");
@@ -127,16 +132,15 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "new StatsOverlayControllerContext");
         AssertDoesNotContain(statsOverlayText, "new StatsDockControllerGraphContext");
         AssertDoesNotContain(statsOverlayText, "new StatsSnapshotProviderContext");
-
-        return Task.CompletedTask;
     }
 
-    private static Task StatsSectionChrome_LivesInFocusedPartial()
+    [Fact]
+    public void StatsSectionChrome_LivesInFocusedPartial()
     {
-        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSectionChromeController.cs").Replace("\r\n", "\n");
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs");
+        var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSectionChromeController.cs");
 
         AssertContains(statsOverlayCompositionText, "private readonly StatsSectionChromeController _statsSectionChromeController;");
         AssertContains(statsOverlayCompositionText, "private StatsSectionChromeController CreateSectionChromeController(");
@@ -159,7 +163,23 @@ static partial class Program
         AssertDoesNotContain(statsOverlayText, "StatsDockPanel.FindName(contentName)");
         AssertDoesNotContain(statsOverlayText, "rotate.Angle =");
         AssertDoesNotContain(statsOverlayText, "UpdateDiagnosticsSection(snapshot");
+    }
 
-        return Task.CompletedTask;
+    private static string ReadRepoFile(string relativePath)
+        => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
+
+    private static void AssertContains(string actual, string expected)
+        => Assert.True(actual.Contains(expected, StringComparison.Ordinal), $"Expected to find: {expected}");
+
+    private static void AssertDoesNotContain(string actual, string unexpected)
+        => Assert.False(actual.Contains(unexpected, StringComparison.Ordinal), $"Did not expect to find: {unexpected}");
+
+    private static void AssertOccursBefore(string actual, string before, string after)
+    {
+        var beforeIndex = actual.IndexOf(before, StringComparison.Ordinal);
+        var afterIndex = actual.IndexOf(after, StringComparison.Ordinal);
+        Assert.True(beforeIndex >= 0, $"Expected to find: {before}");
+        Assert.True(afterIndex >= 0, $"Expected to find: {after}");
+        Assert.True(beforeIndex < afterIndex, $"Expected '{before}' to appear before '{after}'.");
     }
 }

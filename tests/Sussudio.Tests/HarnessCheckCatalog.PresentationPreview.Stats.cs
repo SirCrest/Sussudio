@@ -6,14 +6,8 @@ static partial class Program
     private static async Task AddPresentationPreviewStatsInitialChecksAsync(List<CheckResult> results)
     {
         await AddCheckAsync(results,
-            "Stats overlay lifecycle lives in controller",
-            StatsOverlayLifecycle_LivesInController);
-        await AddCheckAsync(results,
             "Stats dock refresh orchestration lives in controller",
             StatsDockPresentationApplication_LivesInController);
-        await AddCheckAsync(results,
-            "Stats section chrome lives in focused partial",
-            StatsSectionChrome_LivesInFocusedPartial);
         await AddCheckAsync(results,
             "Stats dock row chrome lives in focused controller",
             StatsDockRowChrome_LivesInFocusedController);
