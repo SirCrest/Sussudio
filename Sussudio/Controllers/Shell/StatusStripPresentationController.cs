@@ -76,6 +76,10 @@ internal sealed class StatusStripPresentationController
                 UpdateRecordingBitrate(snapshot.RecordingBitrateInfo);
                 return true;
 
+            case nameof(MainViewModel.FlashbackBitrateInfo):
+                UpdateFlashbackBitrate(snapshot.FlashbackBitrateInfo, snapshot.IsRecording, snapshot.IsFlashbackEnabled);
+                return true;
+
             case nameof(MainViewModel.IsDiskWarningActive):
                 UpdateDiskWarning(snapshot.IsDiskWarningActive);
                 return true;

@@ -62,12 +62,6 @@ public sealed partial class MainWindow
     private void UpdateRecordingBitratePresentation()
         => _statusStripPresentationController.UpdateRecordingBitrate(ViewModel.RecordingBitrateInfo);
 
-    private void UpdateFlashbackBitratePresentation()
-        => _statusStripPresentationController.UpdateFlashbackBitrate(
-            ViewModel.FlashbackBitrateInfo,
-            ViewModel.IsRecording,
-            ViewModel.IsFlashbackEnabled);
-
     private void UpdateDiskWarningPresentation()
         => _statusStripPresentationController.UpdateDiskWarning(ViewModel.IsDiskWarningActive);
 

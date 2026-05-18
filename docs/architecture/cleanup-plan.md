@@ -2306,7 +2306,9 @@ Bottom status-strip projection now lives in
 `Sussudio/MainWindow.StatusStripPresentation.cs` is the XAML-facing adapter and
 builds the ViewModel snapshot passed into the controller. The controller owns
 the status-strip `PropertyChanged` router and preserves the recording-only
-window-title refresh on recording-time updates.
+window-title refresh on recording-time updates. Flashback bitrate presentation
+also routes through this controller so the recording bitrate text keeps one UI
+owner.
 
 Pure recording-state lockout decisions now live in
 `Sussudio/Controllers/Recording/RecordingStatePresentationPolicy.cs`: recording-time

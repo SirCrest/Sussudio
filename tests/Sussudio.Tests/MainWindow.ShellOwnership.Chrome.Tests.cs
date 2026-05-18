@@ -143,7 +143,7 @@ static partial class Program
         AssertContains(adapterText, "private void UpdateDiskSpacePresentation()");
         AssertContains(adapterText, "private void UpdateRecordingSizePresentation()");
         AssertContains(adapterText, "private void UpdateRecordingBitratePresentation()");
-        AssertContains(adapterText, "private void UpdateFlashbackBitratePresentation()");
+        AssertDoesNotContain(adapterText, "private void UpdateFlashbackBitratePresentation()");
         AssertContains(adapterText, "private void UpdateDiskWarningPresentation()");
         AssertContains(adapterText, "private bool TryHandleStatusStripPropertyChanged(string? propertyName)");
         AssertContains(adapterText, "_statusStripPresentationController.TryHandlePropertyChanged(");
@@ -152,8 +152,9 @@ static partial class Program
         AssertContains(mainWindowText, "InitializeStatusStripPresentationController();");
         AssertContains(bindingsText, "ApplyInitialStatusStripPresentation();");
         AssertContains(propertyChangedText, "if (TryHandleStatusStripPropertyChanged(propertyName))");
-        AssertContains(flashbackPropertyChangedText, "UpdateBitrate = UpdateFlashbackBitratePresentation,");
-        AssertContains(flashbackPropertyChangedControllerText, "_context.UpdateBitrate();");
+        AssertDoesNotContain(flashbackPropertyChangedText, "UpdateBitrate = UpdateFlashbackBitratePresentation,");
+        AssertDoesNotContain(flashbackPropertyChangedControllerText, "_context.UpdateBitrate();");
+        AssertDoesNotContain(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackBitrateInfo):");
         AssertContains(controllerText, "internal readonly record struct StatusStripPresentationSnapshot");
         AssertContains(controllerText, "internal sealed class StatusStripPresentationController");
         AssertContains(controllerText, "public void ApplyInitial(StatusStripPresentationSnapshot snapshot)");
@@ -163,6 +164,8 @@ static partial class Program
         AssertContains(controllerText, "case nameof(MainViewModel.DiskSpaceInfo):");
         AssertContains(controllerText, "case nameof(MainViewModel.RecordingSizeInfo):");
         AssertContains(controllerText, "case nameof(MainViewModel.RecordingBitrateInfo):");
+        AssertContains(controllerText, "case nameof(MainViewModel.FlashbackBitrateInfo):");
+        AssertContains(controllerText, "UpdateFlashbackBitrate(snapshot.FlashbackBitrateInfo, snapshot.IsRecording, snapshot.IsFlashbackEnabled);");
         AssertContains(controllerText, "case nameof(MainViewModel.IsDiskWarningActive):");
         AssertContains(controllerText, "if (snapshot.IsRecording)");
         AssertContains(controllerText, "applyWindowTitle();");

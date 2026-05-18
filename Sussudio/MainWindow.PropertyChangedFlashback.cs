@@ -19,7 +19,6 @@ public sealed partial class MainWindow
             ApplyTimelineLockout = ApplyFlashbackTimelineLockout,
             UpdateState = UpdateFlashbackStateUI,
             UpdateBuffer = UpdateFlashbackBufferPresentation,
-            UpdateBitrate = UpdateFlashbackBitratePresentation,
             UpdatePlaybackPosition = UpdateFlashbackPositionUI,
             UpdateRangeMarkers = UpdateFlashbackMarkers,
             UpdateExportProgress = UpdateFlashbackExportProgress,

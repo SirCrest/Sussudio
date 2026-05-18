@@ -12,7 +12,6 @@ internal sealed class FlashbackPropertyChangedControllerContext
     public required Action ApplyTimelineLockout { get; init; }
     public required Action UpdateState { get; init; }
     public required Action UpdateBuffer { get; init; }
-    public required Action UpdateBitrate { get; init; }
     public required Action UpdatePlaybackPosition { get; init; }
     public required Action UpdateRangeMarkers { get; init; }
     public required Action<double> UpdateExportProgress { get; init; }
@@ -49,10 +48,6 @@ internal sealed class FlashbackPropertyChangedController
             case nameof(MainViewModel.FlashbackBufferFillPercent):
             case nameof(MainViewModel.FlashbackBufferDiskBytes):
                 _context.UpdateBuffer();
-                return true;
-
-            case nameof(MainViewModel.FlashbackBitrateInfo):
-                _context.UpdateBitrate();
                 return true;
 
             case nameof(MainViewModel.FlashbackPlaybackPosition):
