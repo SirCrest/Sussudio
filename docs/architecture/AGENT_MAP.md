@@ -2036,8 +2036,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.EncoderSink.ForceRotate.Tests.cs` owns
   Flashback encoder sink force-rotate and segment-registration recovery tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback
-  exporter request-surface smoke tests, export throttle, and failure
-  classifier tests.
+  exporter request-surface smoke tests, path/request validation, and export
+  throttle tests.
+- `tests/Sussudio.Tests/Flashback.Exporter.FailureClassifier.Tests.cs` owns
+  Flashback export failure classifier source ownership and status-message
+  mapping tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Infrastructure.Tests.cs` owns
   Flashback exporter task-wrapper infrastructure tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Ownership.Tests.cs` owns
