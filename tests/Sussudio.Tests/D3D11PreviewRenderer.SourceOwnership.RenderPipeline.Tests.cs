@@ -120,7 +120,7 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_FrameUploadLivesInFocusedPartial()
     {
-        var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
+        var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
         var frameUploadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs")
             .Replace("\r\n", "\n");
@@ -133,9 +133,9 @@ static partial class Program
         AssertContains(frameUploadText, "private unsafe bool UploadRawFrameViaStaging(");
         AssertContains(frameUploadText, "_deviceContext.UpdateSubresource(");
         AssertContains(frameUploadText, "_deviceContext.CopyResource(inputTexture, stagingTexture);");
-        AssertDoesNotContain(renderingText, "private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)");
-        AssertDoesNotContain(renderingText, "private unsafe bool UploadRawFrameViaStaging(");
-        AssertDoesNotContain(renderingText, "private bool _loggedDirectUploadFallback;");
+        AssertDoesNotContain(renderPassesText, "private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)");
+        AssertDoesNotContain(renderPassesText, "private unsafe bool UploadRawFrameViaStaging(");
+        AssertDoesNotContain(renderPassesText, "private bool _loggedDirectUploadFallback;");
 
         return Task.CompletedTask;
     }
@@ -146,7 +146,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
-        var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
+        var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
         var frameLatencyText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.FrameLatency.cs")
             .Replace("\r\n", "\n");
@@ -158,14 +158,14 @@ static partial class Program
         AssertContains(frameLatencyText, "private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);");
         AssertDoesNotContain(rootText, "private IntPtr _frameLatencyWaitHandle;");
         AssertDoesNotContain(resourcesText, "private void WaitForFrameLatencySignal()");
-        AssertDoesNotContain(renderingText, "private static extern uint WaitForSingleObject");
+        AssertDoesNotContain(renderPassesText, "private static extern uint WaitForSingleObject");
 
         return Task.CompletedTask;
     }
 
     private static Task D3D11PreviewRenderer_ViewportHelpersLiveInFocusedPartial()
     {
-        var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
+        var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
         var viewportText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs")
             .Replace("\r\n", "\n");
@@ -174,8 +174,46 @@ static partial class Program
         AssertContains(viewportText, "private void UpdateViewportConstantBuffer(Viewport viewport)");
         AssertContains(viewportText, "private static Vortice.RawRect ComputeLetterboxRect(");
         AssertContains(viewportText, "MapMode.WriteDiscard");
-        AssertDoesNotContain(renderingText, "private Viewport ComputeLetterboxViewport(");
-        AssertDoesNotContain(renderingText, "private static Vortice.RawRect ComputeLetterboxRect(");
+        AssertDoesNotContain(renderPassesText, "private Viewport ComputeLetterboxViewport(");
+        AssertDoesNotContain(renderPassesText, "private static Vortice.RawRect ComputeLetterboxRect(");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_RenderPassesLiveInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
+        var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
+            .Replace("\r\n", "\n");
+        var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
+            .Replace("\r\n", "\n");
+        var shaderRenderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(renderPassesText, "private bool _loggedHdrShaderFallback;");
+        AssertContains(renderPassesText, "private void RenderFrame(PendingFrame frame)");
+        AssertContains(renderPassesText, "private void ApplySwapChainColorSpaceIfDirty()");
+        AssertContains(renderPassesText, "private void RenderFrameWithVideoProcessor(PendingFrame frame)");
+        AssertContains(renderPassesText, "private void RenderNv12WithShader(PendingFrame frame)");
+        AssertContains(renderPassesText, "private void RenderHdrFrameWithShader(PendingFrame frame, ID3D11PixelShader pixelShader)");
+        AssertContains(renderPassesText, "RenderNv12WithShader(frame);");
+        AssertContains(renderPassesText, "RenderHdrFrameWithShader(frame, _hdrPassthroughPS!);");
+        AssertContains(renderPassesText, "RenderHdrFrameWithShader(frame, _hdrTonemapPS);");
+        AssertContains(renderPassesText, "RenderFrameWithVideoProcessor(frame);");
+        AssertContains(renderPassesText, "Volatile.Write(ref _rendererMode, PreviewShaderSources.RendererModeNv12);");
+        AssertContains(renderPassesText, "Volatile.Write(ref _rendererMode, RendererModeHdrPassthrough);");
+        AssertContains(renderPassesText, "Volatile.Write(ref _rendererMode, PreviewShaderSources.RendererModeHdr);");
+        AssertContains(renderPassesText, "Volatile.Write(ref _rendererMode, RendererModeVideoProcessor);");
+        AssertContains(renderPassesText, "Interlocked.Exchange(ref _inNativeCall, 1);");
+        AssertContains(renderPassesText, "PresentAndTrackFrame(");
+        AssertContains(renderPassesText, "TryEnsureNv12ShaderResources(frame)");
+        AssertContains(renderPassesText, "TryResolveInputView(frame, out var inputView, out var disposeInputView)");
+        AssertContains(renderPassesText, "D3D11_PREVIEW_HDR_SHADER_FALLBACK");
+        AssertContains(renderThreadText, "RenderFrame(frame);");
+        AssertDoesNotContain(rootText, "private void RenderFrame(PendingFrame frame)");
+        AssertDoesNotContain(shaderRenderingText, "private void RenderNv12WithShader(PendingFrame frame)");
+        AssertDoesNotContain(shaderRenderingText, "private void RenderHdrFrameWithShader(PendingFrame frame, ID3D11PixelShader pixelShader)");
 
         return Task.CompletedTask;
     }
@@ -184,7 +222,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
+        var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
         var shaderRenderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
             .Replace("\r\n", "\n");
@@ -193,18 +231,14 @@ static partial class Program
         AssertContains(shaderRenderingText, "private ID3D11PixelShader? _nv12PS;");
         AssertContains(shaderRenderingText, "private ID3D11PixelShader? _hdrPassthroughPS;");
         AssertContains(shaderRenderingText, "private readonly VideoProcessorStream[] _vpStreamArray = new VideoProcessorStream[1];");
-        AssertContains(shaderRenderingText, "private void RenderNv12WithShader(PendingFrame frame)");
-        AssertContains(shaderRenderingText, "private void RenderHdrFrameWithShader(PendingFrame frame, ID3D11PixelShader pixelShader)");
         AssertContains(shaderRenderingText, "private bool TryEnsureNv12ShaderResources(PendingFrame frame)");
         AssertContains(shaderRenderingText, "private static readonly ID3D11ClassInstance[] EmptyClassInstances");
-        AssertContains(shaderRenderingText, "PreviewShaderSources.RendererModeNv12");
-        AssertContains(shaderRenderingText, "RendererModeHdrPassthrough");
-        AssertContains(renderingText, "private bool _loggedHdrShaderFallback;");
+        AssertContains(renderPassesText, "PreviewShaderSources.RendererModeNv12");
+        AssertContains(renderPassesText, "RendererModeHdrPassthrough");
+        AssertContains(renderPassesText, "private bool _loggedHdrShaderFallback;");
         AssertDoesNotContain(rootText, "private ID3D11VertexShader? _fullscreenVS;");
         AssertDoesNotContain(rootText, "private readonly VideoProcessorStream[] _vpStreamArray = new VideoProcessorStream[1];");
-        AssertDoesNotContain(renderingText, "private void RenderNv12WithShader(PendingFrame frame)");
-        AssertDoesNotContain(renderingText, "private void RenderHdrFrameWithShader(PendingFrame frame, ID3D11PixelShader pixelShader)");
-        AssertDoesNotContain(renderingText, "private bool TryEnsureNv12ShaderResources(PendingFrame frame)");
+        AssertDoesNotContain(renderPassesText, "private bool TryEnsureNv12ShaderResources(PendingFrame frame)");
         AssertDoesNotContain(shaderRenderingText, "private bool _loggedHdrShaderFallback;");
         AssertDoesNotContain(shaderRenderingText, "private int _lastNv12IsHdr = -1;");
 
@@ -215,7 +249,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var renderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs")
+        var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
         var shaderSourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderSources.cs")
             .Replace("\r\n", "\n");
@@ -241,8 +275,8 @@ static partial class Program
 
         AssertDoesNotContain(rootText, "internal const string FullscreenVertex");
         AssertDoesNotContain(rootText, "static const float PQ_m1");
-        AssertDoesNotContain(renderingText, "internal const string HdrTonemapPixel");
-        AssertDoesNotContain(renderingText, "BT2020_to_BT709");
+        AssertDoesNotContain(renderPassesText, "internal const string HdrTonemapPixel");
+        AssertDoesNotContain(renderPassesText, "BT2020_to_BT709");
         AssertDoesNotContain(shaderSourcesText, "static const float PQ_m1");
         AssertDoesNotContain(shaderSourcesText, "Texture2D<float> yPlane : register(t0);");
 

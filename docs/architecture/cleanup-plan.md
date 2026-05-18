@@ -1426,8 +1426,9 @@ in `D3D11PreviewRenderer.RenderThread.cs`, queue state and signaling in
 `D3D11PreviewRenderer.Resources.cs`, input texture resources in
 `D3D11PreviewRenderer.InputResources.cs`, swap-chain panel binding state in
 `D3D11PreviewRenderer.PanelBinding.cs`, waitable frame-latency state in
-`D3D11PreviewRenderer.FrameLatency.cs`, VideoProcessor work in
-`D3D11PreviewRenderer.Rendering.cs`, shared present accounting in
+`D3D11PreviewRenderer.FrameLatency.cs`, render-pass selection plus
+VideoProcessor/NV12/HDR pass execution in
+`D3D11PreviewRenderer.RenderPasses.cs`, shared present accounting in
 `D3D11PreviewRenderer.Present.cs`, and shader resource/cache state in
 `D3D11PreviewRenderer.ShaderRendering.cs`. Do not re-centralize renderer
 implementation state in `D3D11PreviewRenderer.cs`; the root should keep the
@@ -1465,9 +1466,10 @@ D3D preview renderer render-thread orchestration now lives in
 MMCSS registration, frame-ready wait loop, shared-device reset consumption,
 composition-transform wake handling, pending-frame consumption, stale-generation
 drops, device-lost handoff, final pending-frame drain, frame-capture failure,
-and render-thread failure telemetry there; keep actual VideoProcessor render
-path in `D3D11PreviewRenderer.Rendering.cs`, shared present accounting in
-`D3D11PreviewRenderer.Present.cs`, and shader draw paths in
+and render-thread failure telemetry there; keep render-pass selection and
+VideoProcessor/NV12/HDR pass execution in
+`D3D11PreviewRenderer.RenderPasses.cs`, shared present accounting in
+`D3D11PreviewRenderer.Present.cs`, and shader resource/cache state in
 `D3D11PreviewRenderer.ShaderRendering.cs`.
 
 D3D preview renderer frame upload now lives in
@@ -1476,13 +1478,16 @@ video-processor input view resolution, external texture input-view creation,
 direct raw-frame texture updates, and staging uploads there; keep present
 tracking in `D3D11PreviewRenderer.Present.cs`.
 
-D3D preview renderer shader drawing now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep NV12
-plane shader rendering, HDR tonemap/passthrough shader rendering, reusable
-shader class-instance arrays, and NV12 SRV caching there; keep render-thread
-orchestration in `D3D11PreviewRenderer.RenderThread.cs`, and keep VideoProcessor
-path in `D3D11PreviewRenderer.Rendering.cs`, and keep present accounting and
-slow-frame diagnostic call sites in `D3D11PreviewRenderer.Present.cs`.
+D3D preview renderer render-pass selection now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`. Keep
+VideoProcessor execution, NV12/HDR shader pass execution, HDR fallback logging,
+native-call fencing, timing bucket attribution, and pass precedence there. Shader
+resource/cache state now lives in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep shader
+fields, reusable shader class-instance arrays, and NV12 SRV caching there; keep
+render-thread orchestration in `D3D11PreviewRenderer.RenderThread.cs`, and keep
+present accounting and slow-frame diagnostic call sites in
+`D3D11PreviewRenderer.Present.cs`.
 
 D3D preview renderer slow-frame diagnostics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.SlowFrameDiagnostics.cs`. Keep
@@ -1494,7 +1499,7 @@ D3D preview renderer viewport and letterbox helpers now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs`. Keep
 `ComputeLetterboxViewport`, `UpdateViewportConstantBuffer`, and
 `ComputeLetterboxRect` there; keep shader draw path ordering in
-`D3D11PreviewRenderer.ShaderRendering.cs` and D3D resource creation in
+`D3D11PreviewRenderer.RenderPasses.cs` and D3D resource creation in
 `D3D11PreviewRenderer.Resources.cs`.
 
 D3D preview renderer submitted/rendered/dropped frame ownership tracking now
@@ -1538,15 +1543,16 @@ initial panel binding there.
 
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep
-video-processor setup, swap-chain RTV/output view creation, color-space
-application, and D3D resource disposal there.
+video-processor setup, swap-chain RTV/output view creation, and D3D resource
+disposal there; keep swap-chain color-space application with render-pass
+selection in `D3D11PreviewRenderer.RenderPasses.cs`.
 Raw-frame and HDR shader input texture allocation now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.InputResources.cs`. Keep
 NV12/P010 input textures, staging textures, input views, and HDR plane SRV
 creation there. Device-lost recovery has its own focused owner; keep render
 loop consumption in `D3D11PreviewRenderer.RenderThread.cs`, present paths in
 `D3D11PreviewRenderer.Present.cs`, and shader draw paths in
-`D3D11PreviewRenderer.ShaderRendering.cs`.
+`D3D11PreviewRenderer.RenderPasses.cs`.
 
 D3D preview renderer swap-chain panel binding now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs`. Keep

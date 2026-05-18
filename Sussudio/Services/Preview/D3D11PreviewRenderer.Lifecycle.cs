@@ -195,6 +195,14 @@ internal sealed partial class D3D11PreviewRenderer
         }
     }
 
+    private void ThrowIfDisposed()
+    {
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            throw new ObjectDisposedException(nameof(D3D11PreviewRenderer));
+        }
+    }
+
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;

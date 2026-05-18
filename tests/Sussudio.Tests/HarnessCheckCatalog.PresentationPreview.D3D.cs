@@ -63,7 +63,10 @@ static partial class Program
             "D3D preview frame upload lives in focused partial",
             D3D11PreviewRenderer_FrameUploadLivesInFocusedPartial);
         await AddCheckAsync(results,
-            "D3D preview shader rendering lives in focused partial",
+            "D3D preview render passes live in focused partial",
+            D3D11PreviewRenderer_RenderPassesLiveInFocusedPartial);
+        await AddCheckAsync(results,
+            "D3D preview shader rendering cache lives in focused partial",
             D3D11PreviewRenderer_ShaderRenderingLivesInFocusedPartial);
         await AddCheckAsync(results,
             "D3D preview shader sources live in focused file",
