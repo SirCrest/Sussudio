@@ -354,7 +354,7 @@ static partial class Program
         AssertContains(builderText, "FrameLedgerPath = artifactPaths.FrameLedgerPath");
         AssertContains(builderText, "TimelinePath = artifactPaths.TimelinePath");
         AssertContains(builderText, "runState.SetStage(\"summary\")");
-        AssertContains(builderText, "return await WriteAsync(result, runState, warnings).ConfigureAwait(false);");
+        AssertContains(builderText, "return await WriteSummaryAsync(result, runState, warnings).ConfigureAwait(false);");
         AssertContains(completionText, "DiagnosticSessionResultBuilder.BuildAndWriteAsync(");
         AssertContains(completionText, "CreateResultBuildRequest(");
         AssertContains(runExecutionText, "RunCompletionPhaseAsync(");

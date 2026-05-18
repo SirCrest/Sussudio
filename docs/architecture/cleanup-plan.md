@@ -2530,10 +2530,11 @@ so existing ssctl and MCP callers do not need to know about the formatter owner.
 Diagnostic-session result construction now lives in
 `tools/Common/DiagnosticSessionResultBuilder.cs`. The root owns result phase
 orchestration, artifact-write handoff, summary-write handoff, and final
-summary emission while the runner keeps the phase sequence. It also owns
-final-result orchestration from analysis and artifact paths into the named
-projection set and flattening owner, plus Flashback playback projection
-composition from focused playback projection owners.
+summary emission plus summary-write failure repair while the runner keeps the
+phase sequence. It also owns final-result orchestration from analysis and
+artifact paths into the named projection set and flattening owner, plus
+Flashback playback projection composition from focused playback projection
+owners.
 `DiagnosticSessionResultBuilder.Flattening.cs` owns final
 `DiagnosticSessionResult` DTO assignment from the projection set; keep domain
 projection composition outside this initializer. The root owns projection-set
@@ -2580,10 +2581,6 @@ Export force-rotate fallback counters now travel with
 Capture selection, negotiated format, source geometry, detected cadence, HDR,
 and source-telemetry DTO projection values live in
 `DiagnosticSessionResultBuilder.CaptureResult.cs`.
-
-Diagnostic-session summary writing now lives in
-`tools/Common/DiagnosticSessionSummaryWriter.cs`. It owns `summary.json` writes
-and summary-write failure repair of the returned result object.
 
 Diagnostic-session result artifact setup now lives in
 `tools/Common/DiagnosticSessionResultArtifacts.cs`. It owns result artifact path
@@ -3032,7 +3029,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultFormatter.FlashbackPlayback.Decode.cs`
 - `DiagnosticSessionResultFormatter.Preview.cs`
 - `DiagnosticSessionResultFormatter.Artifacts.cs`
-- `DiagnosticSessionSummaryWriter.cs`
 - `DiagnosticSessionRunState.cs`
 - `DiagnosticSessionLiveStateWriter.cs`
 - `DiagnosticSessionRunBootstrap.cs`

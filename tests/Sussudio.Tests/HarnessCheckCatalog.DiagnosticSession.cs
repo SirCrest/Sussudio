@@ -27,8 +27,8 @@ static partial class Program
             "Diagnostic session result health verdict has a named owner",
             DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesInFocusedPartial);
         await AddCheckAsync(results,
-            "Diagnostic session summary writer has a named owner",
-            DiagnosticSessionSummaryWriter_OwnsSummaryWriteFailures);
+            "Diagnostic session summary write failures have a named owner",
+            DiagnosticSessionResultBuilder_OwnsSummaryWriteFailures);
         await AddCheckAsync(results,
             "Diagnostic session result artifacts have a named owner",
             DiagnosticSessionResultArtifacts_OwnPreSummaryWrites);

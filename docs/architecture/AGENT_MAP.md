@@ -1845,9 +1845,9 @@ Primary current owners:
   `InfrastructureOwnership.RunContext`, and scenario/completion phase checks in
   `InfrastructureOwnership.Execution`.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`
-  owns diagnostic-session model ownership assertions, with builder, formatter,
-  summary-writer/artifact, JSON/shared-text, and infrastructure assertions split
-  into the adjacent `ResultOwnership.*.Tests.cs` files. Builder result
+  owns diagnostic-session model ownership assertions, with builder summary-write
+  failure, formatter, artifact, JSON/shared-text, and infrastructure assertions
+  split into the adjacent `ResultOwnership.*.Tests.cs` files. Builder result
   assertions live together in `ResultOwnership.Builder.Tests.cs`, covering core,
   preview scheduler, overview/capture, Flashback, preview, analysis, diagnostic
   health, and artifact handoff ownership.
@@ -2758,11 +2758,11 @@ Primary owners:
 - `tools/Common/DiagnosticSessionSample.cs` owns sampled snapshot DTOs.
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,
-  final summary emission, and final-result orchestration from analysis and
-  artifact paths into the named projection set and flattening owner. It also
-  owns Flashback playback projection composition from focused playback
-  projection owners. Keep `summary.json` field shape stable in the builder
-  family.
+  final summary emission, summary-write failure repair, and final-result
+  orchestration from analysis and artifact paths into the named projection set
+  and flattening owner. It also owns Flashback playback projection composition
+  from focused playback projection owners. Keep `summary.json` field shape
+  stable in the builder family.
 - `tools/Common/DiagnosticSessionResultBuilder.Flattening.cs` owns final
   `DiagnosticSessionResult` DTO assignment from the projection set. Keep
   domain projection composition in the projection owners and root projection-set
@@ -2813,9 +2813,6 @@ Primary owners:
   request record and private analysis handoff record, including the single
   `PreviewScheduler` record property used by preview-scheduler result
   projection.
-- `tools/Common/DiagnosticSessionSummaryWriter.cs` owns diagnostic-session
-  `summary.json` writes and summary-write failure repair of the returned
-  result object.
 - `tools/Common/DiagnosticSessionResultArtifacts.cs` owns diagnostic-session
   result artifact path construction and pre-summary sample, frame-ledger, and
   timeline artifact writes.

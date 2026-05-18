@@ -86,7 +86,6 @@ static partial class Program
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionPostRunSnapshots.cs")
                 + "\n" + ReadDiagnosticSessionResultBuilderSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionResultArtifacts.cs")
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionSummaryWriter.cs")
                 + "\n" + ReadDiagnosticSessionBackgroundTasksSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunState.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionLiveStateWriter.cs")
