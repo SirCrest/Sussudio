@@ -7,19 +7,8 @@ namespace Sussudio.ViewModels;
 
 public partial class MainViewModel
 {
-    /// <summary>
-    /// Owns resolution option rebuild transactions and auto-resolution state for
-    /// the compatibility ViewModel facade.
-    /// </summary>
-    private sealed class MainViewModelResolutionOptionRebuildController
+    private sealed partial class MainViewModelCaptureModeOptionRebuildController
     {
-        private readonly MainViewModel _viewModel;
-
-        public MainViewModelResolutionOptionRebuildController(MainViewModel viewModel)
-        {
-            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
-        }
-
         public void RebuildResolutionOptions()
         {
             var previousSelection = _viewModel.SelectedResolution;
@@ -179,7 +168,7 @@ public partial class MainViewModel
         }
 
         private void RebuildDependentOptions()
-            => _viewModel._captureModeOptionRebuildController.RebuildFrameRateOptions();
+            => RebuildFrameRateOptions();
 
         private AutoCaptureSelection? ResolveAutoCaptureSelection(IReadOnlyList<ResolutionOption> options)
             => AutoCaptureSelectionPolicy.Select(new AutoCaptureSelectionRequest(

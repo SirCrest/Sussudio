@@ -26,7 +26,7 @@ static partial class Program
         var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs").Replace("\r\n", "\n");
         var captureModeOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var captureModeOptionFrameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs").Replace("\r\n", "\n");
-        var resolutionOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelResolutionOptionRebuildController.cs").Replace("\r\n", "\n");
+        var captureModeOptionResolutionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.Resolution.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
         var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
 
@@ -49,7 +49,8 @@ static partial class Program
         AssertContains(rootText, "_captureSettingsAutomationController = new MainViewModelCaptureSettingsAutomationController(this);");
         AssertContains(rootText, "_recordingSettingsAutomationController = new MainViewModelRecordingSettingsAutomationController(this);");
         AssertContains(rootText, "_captureModeOptionRebuildController = new MainViewModelCaptureModeOptionRebuildController(this);");
-        AssertContains(rootText, "_resolutionOptionRebuildController = new MainViewModelResolutionOptionRebuildController(this);");
+        AssertDoesNotContain(rootText, "_resolutionOptionRebuildController");
+        AssertDoesNotContain(rootText, "new MainViewModelResolutionOptionRebuildController");
         AssertContains(rootText, "_deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);");
         AssertContains(rootText, "_runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);");
         AssertContains(rootText, "_runtimeLifecycleController.Start();");
@@ -139,12 +140,17 @@ static partial class Program
         AssertContains(captureModeOptionRebuildControllerText, "public void RebuildVideoFormatOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void UpdateSelectedFormat()");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "public void RebuildResolutionOptions()");
-        AssertContains(resolutionOptionRebuildControllerText, "private sealed class MainViewModelResolutionOptionRebuildController");
+        AssertContains(captureModeOptionResolutionRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertEqual(
             true,
-            resolutionOptionRebuildControllerText.Split('\n').Length >= 100,
-            "resolution option rebuild controller is a substantial ownership file");
-        AssertContains(resolutionOptionRebuildControllerText, "public void RebuildResolutionOptions()");
+            captureModeOptionResolutionRebuildControllerText.Split('\n').Length >= 100,
+            "capture mode option resolution rebuild partial is a substantial ownership file");
+        AssertContains(captureModeOptionResolutionRebuildControllerText, "public void RebuildResolutionOptions()");
+        AssertContains(captureModeOptionResolutionRebuildControllerText, "=> RebuildFrameRateOptions();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelResolutionOptionRebuildController.cs")),
+            "old standalone resolution option rebuild controller removed");
         AssertContains(deviceFormatProbeControllerText, "private sealed class MainViewModelDeviceFormatProbeController");
         AssertContains(deviceFormatProbeControllerText, "public void OnDeviceFormatProbeCompleted");
         AssertContains(deviceFormatProbeControllerText, "_retargetApplier = new MainViewModelDeviceFormatProbeRetargetApplier(_viewModel);");

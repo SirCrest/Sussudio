@@ -15,7 +15,7 @@ public partial class MainViewModel
     private bool _isRevertingHdrToggle;
 
     private void RebuildResolutionOptions()
-        => _resolutionOptionRebuildController.RebuildResolutionOptions();
+        => _captureModeOptionRebuildController.RebuildResolutionOptions();
 
     private void RebuildFrameRateOptions()
         => _captureModeOptionRebuildController.RebuildFrameRateOptions();

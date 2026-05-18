@@ -38,7 +38,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelCaptureSettingsAutomationController _captureSettingsAutomationController;
     private readonly MainViewModelRecordingSettingsAutomationController _recordingSettingsAutomationController;
     private readonly MainViewModelCaptureModeOptionRebuildController _captureModeOptionRebuildController;
-    private readonly MainViewModelResolutionOptionRebuildController _resolutionOptionRebuildController;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -126,7 +125,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureSettingsAutomationController = new MainViewModelCaptureSettingsAutomationController(this);
         _recordingSettingsAutomationController = new MainViewModelRecordingSettingsAutomationController(this);
         _captureModeOptionRebuildController = new MainViewModelCaptureModeOptionRebuildController(this);
-        _resolutionOptionRebuildController = new MainViewModelResolutionOptionRebuildController(this);
         _deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);
         _sourceTelemetryController = new MainViewModelSourceTelemetryController(this);
         _runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);
@@ -175,7 +173,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Automatic frame-rate selection policy: MainViewModel.FrameRateAutoSelectionPolicy.cs
     // Frame-rate/mode selection state: MainViewModel.ModeSelectionState.cs
     // Frame-rate timing state wrappers: MainViewModel.FrameRateTiming.cs; pure timing policy: FrameRateTimingPolicy.cs
-    // Resolution option rebuild adapter: MainViewModel.CaptureModeTransactions.cs; rebuild owner: MainViewModelResolutionOptionRebuildController.cs; effective resolution state-backed policy delegates: MainViewModel.ResolutionOptions.cs
+    // Resolution option rebuild adapter: MainViewModel.CaptureModeTransactions.cs; rebuild owner: MainViewModelCaptureModeOptionRebuildController.Resolution.cs; effective resolution state-backed policy delegates: MainViewModel.ResolutionOptions.cs
     // Disposal / teardown: MainViewModel.Disposal.cs
     // Recording runtime status and output drive presentation: MainViewModel.RecordingRuntime.cs
     // Capture presentation labels: MainViewModel.CapturePresentation.cs
