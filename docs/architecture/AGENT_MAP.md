@@ -2004,7 +2004,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Buffer.Validation.Tests.cs` owns Flashback
   buffer session-id and segment-extension validation tests.
 - `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs` owns Flashback encoder
-  sink frame-rate, queue, drain-loop, lifecycle, and packet-validation tests.
+  sink frame-rate, option, startup rollback, runtime counter, and PTS guard
+  tests.
+- `tests/Sussudio.Tests/Flashback.EncoderSink.QueuesAndDrain.Tests.cs` owns
+  Flashback encoder sink queue rejection, lifecycle cleanup, packet-validation,
+  and drain-loop ordering tests.
 - `tests/Sussudio.Tests/Flashback.EncoderSink.ForceRotate.Tests.cs` owns
   Flashback encoder sink force-rotate and segment-registration recovery tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback
