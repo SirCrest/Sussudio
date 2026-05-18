@@ -903,12 +903,10 @@ the stop/finalize dispatcher for active Flashback and LibAv backends.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs`
 owns active Flashback recording backend finalization: live-edge finalize/export
 handoff, finalize-in-progress choreography, Flashback recording-integrity
-summaries, cancellation-result classification, outcome publication, and
-Flashback-specific microphone monitor restart.
-`Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackendReconcile.cs`
-owns post-finalize Flashback backend reconciliation: failed-finalize recovery
-preservation, deferred settings apply, buffer cycling, buffer-cycle failure
-classification, recovery preservation, and backend cleanup launch.
+summaries, cancellation-result classification, post-finalize backend
+reconciliation, failed-finalize recovery preservation, deferred settings apply,
+buffer cycling, buffer-cycle failure classification, outcome publication,
+backend cleanup launch, and Flashback-specific microphone monitor restart.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs`
 owns standard LibAv recording finalization: unified-video recording stop and
 optional teardown, WASAPI recording detach/disposal, LibAv sink normal/emergency
