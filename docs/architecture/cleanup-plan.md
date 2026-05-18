@@ -3109,9 +3109,11 @@ Remaining `tools/Common` ownership:
    reinitialization. Preview lifecycle
    implementation now lives in
    `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`:
-   device initialization, preview start/stop, selected-device apply, debounced
-   reinitialization, Flashback-cycle wait-before-reinit, renderer-stop handoff,
-   teardown restart, and gate release. Output folder browse/open-recordings button workflows now live in
+   device initialization, preview start/stop, selected-device apply, and the
+   reinitialize facade. `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
+   owns debounced reinitialization, restart-cancellation state,
+   Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
+   and gate release. Output folder browse/open-recordings button workflows now live in
    `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`.
    Recording facade entry points now stay in `MainViewModel.cs`,
    while recording toggle serialization, desired-state routing, graceful stop,
@@ -3258,7 +3260,8 @@ Remaining `tools/Common` ownership:
    refusal/idempotent handling now live in `MainViewModel.AutomationAudio.cs`.
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
-   `MainViewModelPreviewLifecycleController.cs`, with the stable
+   `MainViewModelPreviewLifecycleController.cs` plus
+   `MainViewModelPreviewReinitializeController.cs`, with the stable
    `MainViewModel.cs` compatibility facade preserving the automation surface.
    Automation HDR and true-HDR preview recording-time guard enforcement and HDR
    availability checks now live in `MainViewModel.CaptureModeTransactions.cs`

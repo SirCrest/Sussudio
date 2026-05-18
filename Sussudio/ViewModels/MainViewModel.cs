@@ -156,7 +156,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // -- Automation methods are split across MainViewModel.Automation*.cs ---------
 
     // -- Partial class references ----
-    // Capture lifecycle facade: this file; preview lifecycle owner: MainViewModelPreviewLifecycleController.cs
+    // Capture lifecycle facade: this file; preview lifecycle owner: MainViewModelPreviewLifecycleController.cs; preview reinitialize transaction: MainViewModelPreviewReinitializeController.cs
     // Recording lifecycle facade: this file; transition owner: MainViewModelRecordingTransitionController.cs
     // Recording state: MainViewModel.RecordingState.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs and CaptureSettingsProjectionBuilder.cs

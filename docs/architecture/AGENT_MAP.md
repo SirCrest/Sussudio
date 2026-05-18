@@ -2267,7 +2267,9 @@ Primary current owners:
   initialization, preview start/stop, selected-device apply, and preview
   reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`
   owns the underlying preview lifecycle operations: device initialization,
-  preview start/stop, selected-device apply, debounced reinitialization,
+  preview start/stop, selected-device apply, and the reinitialize facade.
+  `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
+  owns debounced reinitialization, restart-cancellation state,
   Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
   and reinit gate release.
   `MainViewModel.cs` owns the stable recording facade:

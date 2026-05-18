@@ -13,19 +13,16 @@ public partial class MainViewModel
     private sealed class MainViewModelPreviewLifecycleController
     {
         private readonly MainViewModel _viewModel;
+        private readonly MainViewModelPreviewReinitializeController _previewReinitializeController;
 
         public MainViewModelPreviewLifecycleController(MainViewModel viewModel)
         {
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _previewReinitializeController = new MainViewModelPreviewReinitializeController(_viewModel, this);
         }
 
         public void CancelPendingPreviewRestart()
-        {
-            if (_viewModel.IsPreviewReinitializing)
-            {
-                _viewModel._cancelPreviewRestartAfterReinitialize = true;
-            }
-        }
+            => _previewReinitializeController.CancelPendingPreviewRestart();
 
         public async Task InitializeDeviceAsync(CancellationToken cancellationToken = default)
         {
@@ -68,7 +65,7 @@ public partial class MainViewModel
             cancellationToken.ThrowIfCancellationRequested();
             if (userInitiated)
             {
-                _viewModel._cancelPreviewRestartAfterReinitialize = false;
+                _previewReinitializeController.ResetPendingPreviewRestartCancellation();
             }
 
             _viewModel.PreviewStartRequested?.Invoke(_viewModel, EventArgs.Empty);
@@ -164,7 +161,7 @@ public partial class MainViewModel
             cancellationToken.ThrowIfCancellationRequested();
             if (userInitiated && _viewModel.IsPreviewReinitializing)
             {
-                _viewModel._cancelPreviewRestartAfterReinitialize = true;
+                CancelPendingPreviewRestart();
             }
 
             if (userInitiated && !_viewModel.IsPreviewReinitializing && _viewModel._captureService.IsAudioPreviewActive)
@@ -222,104 +219,7 @@ public partial class MainViewModel
             }
         }
 
-        public async Task ReinitializeDeviceAsync(string reason)
-        {
-            if (_viewModel.SelectedDevice == null || _viewModel.SelectedFormat == null)
-            {
-                return;
-            }
-
-            if (_viewModel.IsRecording)
-            {
-                Logger.Log($"REINIT_REJECTED_RECORDING reason='{reason}' — stop recording before changing capture settings.");
-                _viewModel.StatusText = "Stop recording before changing capture settings.";
-                return;
-            }
-
-            var reinitializeGeneration = Interlocked.Increment(ref _viewModel._previewReinitializeGeneration);
-            await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);
-            if (Volatile.Read(ref _viewModel._previewReinitializeGeneration) != reinitializeGeneration)
-            {
-                Logger.Log($"REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
-                return;
-            }
-
-            var pendingCycle = _viewModel._pendingFlashbackCycleTask;
-            if (pendingCycle != null)
-            {
-                try
-                {
-                    await AwaitWithTimeoutAsync(
-                        pendingCycle,
-                        FlashbackCycleBeforeReinitializeTimeoutMs,
-                        "Flashback encoder settings cycle before reinitialize").ConfigureAwait(false);
-                }
-                catch (TimeoutException ex)
-                {
-                    Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}");
-                    _viewModel.StatusText = $"Failed to apply format: {ex.Message}";
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_FAULT reason={reason} type={ex.GetType().Name} msg='{ex.Message}'");
-                }
-
-                if (ReferenceEquals(_viewModel._pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)
-                {
-                    _viewModel._pendingFlashbackCycleTask = null;
-                }
-            }
-
-            await _viewModel._previewReinitializeGate.WaitAsync();
-            var shouldRestartPreview = _viewModel.IsPreviewing;
-            try
-            {
-                _viewModel.StatusText = "Applying new settings...";
-                Logger.Log($"=== Reinitializing device ({reason}) ===");
-
-                if (shouldRestartPreview)
-                {
-                    _viewModel.IsPreviewReinitializing = true;
-                    _viewModel._cancelPreviewRestartAfterReinitialize = false;
-                    await _viewModel.NotifyPreviewReinitRequestedAsync(reason);
-                    await _viewModel.NotifyRendererStopAsync();
-                }
-
-                if (_viewModel.IsPreviewing)
-                {
-                    await StopPreviewAsync(userInitiated: false, teardownPipeline: true, CancellationToken.None);
-                }
-
-                _viewModel.IsInitialized = false;
-                Logger.LogFatalBreadcrumb($"REINIT phase=init_device reason={reason}");
-                await InitializeDeviceAsync();
-                Logger.LogFatalBreadcrumb($"REINIT phase=init_device_done reason={reason}");
-
-                if (_viewModel.IsInitialized && shouldRestartPreview && !_viewModel._cancelPreviewRestartAfterReinitialize)
-                {
-                    Logger.LogFatalBreadcrumb($"REINIT phase=start_preview reason={reason}");
-                    await StartPreviewAsync(userInitiated: false);
-                    Logger.LogFatalBreadcrumb($"REINIT phase=start_preview_done reason={reason}");
-
-                    _viewModel.StatusText = $"Preview: {_viewModel.SelectedFormat.Width}x{_viewModel.SelectedFormat.Height}@{_viewModel.SelectedFormat.FrameRate}fps";
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogException(ex);
-                _viewModel.StatusText = $"Failed to apply format: {ex.Message}";
-            }
-            finally
-            {
-                _viewModel._cancelPreviewRestartAfterReinitialize = false;
-                if (shouldRestartPreview)
-                {
-                    _viewModel.IsPreviewReinitializing = false;
-                }
-
-                _viewModel._previewReinitializeGate.Release();
-            }
-        }
+        public Task ReinitializeDeviceAsync(string reason)
+            => _previewReinitializeController.ReinitializeDeviceAsync(reason);
     }
 }
