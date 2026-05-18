@@ -29,6 +29,15 @@ handlers, and emergency recording finalization. `Sussudio/App.LaunchLifecycle.cs
 owns the single-instance mutex guard, startup identity logging, and MainWindow
 activation.
 
+Logger diagnostics are split from the nonblocking writer without changing the
+public static logging surface. `Sussudio/Logger.cs` stays the hot-path writer
+owner for initialization, rotation, bounded channel enqueueing, dropped-message
+fallback, direct file writes, and `LogEvent`. `Sussudio/Logger.Diagnostics.cs`
+owns system evidence collection, exception formatting, structured snapshot JSON
+routing through `LoggingJsonContext`, and fatal breadcrumbs. Keep WMI/system
+evidence and JSON payload routing out of the writer root so the saturation and
+shutdown behavior remains easy to audit.
+
 Automation contracts have been extracted into `Sussudio.Automation.Contracts/`.
 This removes the old linked-source arrangement where app and tools compiled
 protocol/catalog files from `tools/Common`.

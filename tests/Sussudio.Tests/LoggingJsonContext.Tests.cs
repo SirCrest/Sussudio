@@ -18,22 +18,36 @@ static partial class Program
         AssertContains(contextText, "internal sealed partial class LoggingJsonContext : JsonSerializerContext");
 
         var loggerText = ReadRepoFile("Sussudio/Logger.cs");
+        var loggerDiagnosticsText = ReadRepoFile("Sussudio/Logger.Diagnostics.cs");
+        AssertContains(loggerText, "public static partial class Logger");
+        AssertContains(loggerText, "Channel.CreateBounded<string>");
+        AssertContains(loggerText, "private static async Task RunLogWriterAsync()");
+        AssertContains(loggerText, "private static void WriteDirect(string entry)");
+        AssertContains(loggerText, "private static void RotatePriorLog()");
+        AssertDoesNotContain(loggerText, "new ManagementObjectSearcher(");
+        AssertDoesNotContain(loggerText, "public static void LogStructured(");
+        AssertDoesNotContain(loggerText, "public static void LogFatalBreadcrumb(");
+        AssertContains(loggerDiagnosticsText, "public static partial class Logger");
+        AssertContains(loggerDiagnosticsText, "public static void LogSystemInfo()");
+        AssertContains(loggerDiagnosticsText, "new ManagementObjectSearcher(");
+        AssertContains(loggerDiagnosticsText, "public static void LogStructured(");
+        AssertContains(loggerDiagnosticsText, "public static void LogFatalBreadcrumb(");
         AssertContains(
-            loggerText,
+            loggerDiagnosticsText,
             "JsonSerializer.Serialize(healthSnapshot, LoggingJsonContext.Default.CaptureHealthSnapshot)");
         AssertContains(
-            loggerText,
+            loggerDiagnosticsText,
             "JsonSerializer.Serialize(diagnosticsSnapshot, LoggingJsonContext.Default.CaptureDiagnosticsSnapshot)");
         AssertOccursBefore(
-            loggerText,
+            loggerDiagnosticsText,
             "CaptureHealthSnapshot healthSnapshot =>",
             "CaptureDiagnosticsSnapshot diagnosticsSnapshot =>");
         AssertOccursBefore(
-            loggerText,
+            loggerDiagnosticsText,
             "CaptureHealthSnapshot healthSnapshot =>",
             "_ when JsonSerializer.IsReflectionEnabledByDefault =>");
         AssertOccursBefore(
-            loggerText,
+            loggerDiagnosticsText,
             "CaptureDiagnosticsSnapshot diagnosticsSnapshot =>",
             "_ when JsonSerializer.IsReflectionEnabledByDefault =>");
 
