@@ -1362,7 +1362,8 @@ Primary current owners:
   owns `ssctl` and MCP diagnostic-session command-surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotProjection.Tests.cs`
   owns diagnostics snapshot projection ownership assertions for
-  snapshot projection source text and named BuildProjection boundaries.
+  snapshot projection source text, snapshot status projection, and named
+  BuildProjection boundaries.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
   owns the diagnostics hub source-family reader used by refresh ownership
   assertions.
@@ -1374,8 +1375,6 @@ Primary current owners:
   ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.PreviewRuntime.Tests.cs`
   owns diagnostics snapshot preview runtime projection ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SnapshotStatus.Tests.cs`
-  owns diagnostics snapshot status projection ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Hdr.Tests.cs`
   owns diagnostics HDR truth verdict behavior.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsLoop.Tests.cs`
