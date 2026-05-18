@@ -2967,7 +2967,7 @@ Remaining `tools/Common` ownership:
 
 ## Next Slices
 
-1. Continue decomposing diagnostic-session runner internals by owner.
+1. Keep diagnostic-session runner internals aligned by owner.
 
    `tools/Common/DiagnosticSessionRunner.cs` is now the small public wrapper,
    while `tools/Common/DiagnosticSessionRunExecution.cs` owns the visible run
@@ -2986,8 +2986,9 @@ Remaining `tools/Common` ownership:
    initial scenario setup, optional scenario
    startup, cleanup mutation ownership, post-cleanup recording checks,
    post-run snapshot fetches, command send/failure plumbing, and result
-   construction are extracted; next, split remaining production runner
-   families or pivot to the next large owner. The
+   construction are extracted; avoid further runner splits unless a new
+   responsibility boundary is clearly larger than the existing focused owners,
+   and otherwise pivot to the next large owner. The
    reflective runner behavior tests are already split by scenario, so keep new
    runner coverage in the focused owner file that matches the behavior. Keep
    JSON summary shape unchanged.

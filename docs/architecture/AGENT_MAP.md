@@ -17,7 +17,7 @@ When splitting or moving code, update this map in the same commit, add or update
 the focused ownership test, and search every `ReadRepoFile(...)` reference that
 mentions the moved files.
 
-| Area | Current large files | Preferred next owner |
+| Area | Current owners / split families | Preferred next owner |
 |------|---------------------|----------------------|
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunExecution.cs`, `tools/Common/DiagnosticSessionRunContext.cs`, `tools/Common/DiagnosticSessionRunContext.PhaseContexts.cs`, `tools/Common/DiagnosticSessionRunExecution.Completion.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.Models.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.Sampling.cs`, `tools/Common/DiagnosticSessionScenarioPhaseCompletion.cs` | public runner compatibility wrapper, phase sequencing, mutable run infrastructure, scenario/completion context construction, post-cleanup completion phase and result-build request handoff, named scenario phase execution/context/state/result, scenario sampling, post-sampling completion order/fault-drain delegation, run bootstrap/options normalization, scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs`, `tests/Sussudio.Tests/HarnessCheckCatalog*.cs` | runner entry point, topic check catalogs, xUnit slices, and focused contract tests such as `StatsPresentation.*.Tests.cs` |
