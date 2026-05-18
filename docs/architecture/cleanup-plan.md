@@ -1962,7 +1962,8 @@ Stats presentation contract checks now live in focused
 ownership, source telemetry, and frame-time overlay policy, plus
 `tests/Sussudio.Tests/XUnit.StatsPresentationTests.cs` for detached-window,
 encoder, expected-display-repeat, frame-time range, and frame-time graph
-geometry behavior instead of expanding the legacy harness body in
+geometry behavior, and `tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs`
+for hardware decode/GPU row behavior instead of expanding the legacy harness body in
 `tests/Sussudio.Tests/Program.cs`.
 Stats diagnostic row construction and source-summary parsing now live in
 `Sussudio/ViewModels/StatsPresentationBuilder.DiagnosticRows.cs`; frame-lane

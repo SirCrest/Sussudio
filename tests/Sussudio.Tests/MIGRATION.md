@@ -26,6 +26,8 @@ incrementally.
 - `XUnit.StatsPresentationTests.cs` owns the former legacy detached-window,
   encoder formatting, expected-display-repeat, frame-time range, and
   frame-time geometry stats presentation behavior checks.
+- `XUnit.StatsHardwareRowsTests.cs` owns the former legacy hardware decode/GPU
+  row formatting behavior and hardware-row input sampling policy checks.
 
 ## Targeting reality
 

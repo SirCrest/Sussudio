@@ -11,12 +11,6 @@ static partial class Program
         await AddCheckAsync(results,
             "Stats dock row chrome lives in focused controller",
             StatsDockRowChrome_LivesInFocusedController);
-        await AddCheckAsync(results,
-            "Stats hardware row presentation formats decode and GPU rows",
-            StatsHardwareRowsBuilder_FormatsDecodeAndGpuRows);
-        await AddCheckAsync(results,
-            "Stats hardware input provider preserves sampling policy",
-            StatsHardwareRowsInputProvider_PreservesSamplingPolicy);
     }
 
     private static async Task AddPresentationPreviewStatsChecksAsync(List<CheckResult> results)

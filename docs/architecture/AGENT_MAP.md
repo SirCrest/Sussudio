@@ -1218,7 +1218,7 @@ Primary current owners:
   source telemetry panel projection checks,
   `tests/Sussudio.Tests/StatsPresentation.FrameTime.Tests.cs` owns compact
   preview summary and frame-time source-shape checks,
-  `tests/Sussudio.Tests/StatsHardwareRowsController.Tests.cs` owns hardware row
+  `tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs` owns hardware row
   presentation/input behavior checks, and
   `tests/Sussudio.Tests/MainViewModel.DiskSpacePresentation.Tests.cs` owns disk
   space presentation bridge checks.
