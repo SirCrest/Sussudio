@@ -2211,7 +2211,7 @@ Primary current owners:
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`
   owns device-native audio request lifetime: selected-device refresh
   scheduling, mode/gain property-change adapters, UI enqueue lifetime,
-  analog-gain XU and flash-persist debounce, debounce CTS fields, and
+  analog-gain UI/XU request debounce, flash-persist debounce, debounce CTS fields, and
   cancellation cleanup.
   `MainViewModel.DeviceAudioRefresh.cs` owns device-native audio-control support
   probing, readback, and pending saved-state reconciliation.

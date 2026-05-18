@@ -152,7 +152,6 @@ static partial class Program
         var refreshDeviceAudioControls = ExtractMemberCode(audioCode, "RefreshDeviceAudioControlsAsync");
         var applyDeviceAudioMode = ExtractMemberCode(audioCode, "ApplyDeviceAudioModeAsync");
         var applyAnalogAudioGain = ExtractMemberCode(audioCode, "ApplyAnalogAudioGainAsync");
-        var requestAnalogGainFlashPersist = ExtractMemberCode(deviceAudioRequestControllerCode, "ScheduleAnalogGainFlashPersist");
         var isCurrentSelectedDevice = ExtractMemberCode(audioCode, "IsCurrentSelectedDevice");
         var suppressedRefresh = ExtractMemberCode(audioCode, "WithAudioControlRefreshSuppressed");
         var normalizeDeviceAudioMode = ExtractMemberCode(audioCode, "NormalizeDeviceAudioMode");
@@ -227,17 +226,10 @@ static partial class Program
         AssertContains(applyAnalogAudioGain, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken)");
         AssertContains(applyAnalogAudioGain, "StatusText =");
         AssertContains(applyAnalogAudioGain, "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = gainPercent);");
-        AssertContains(applyAnalogAudioGain, "RequestAnalogGainFlashPersist(device, gainByte);");
-        AssertContains(requestAnalogGainFlashPersist, "await Task.Delay(300, token).ConfigureAwait(false);");
-        AssertContains(requestAnalogGainFlashPersist, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
-        AssertContains(requestAnalogGainFlashPersist, "if (ReferenceEquals(_gainFlashDebounceCts, cts))");
-        AssertContains(requestAnalogGainFlashPersist, "cts.Dispose();");
         AssertContains(applyAnalogAudioGain, "SaveSettings();");
         AssertOccursBefore(applyAnalogAudioGain, "if (device == null || !IsDeviceAudioControlSupported)", "NativeXuAtCommandProvider.SetAnalogGainAsync");
         AssertOccursBefore(applyAnalogAudioGain, "if (!IsCurrentSelectedDevice(device))", "NativeXuAtCommandProvider.SetAnalogGainAsync");
         AssertOccursBefore(applyAnalogAudioGain, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken)", "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = gainPercent);");
-        AssertOccursBefore(requestAnalogGainFlashPersist, "await Task.Delay(300, token).ConfigureAwait(false);", "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
-        AssertOccursBefore(requestAnalogGainFlashPersist, "if (ReferenceEquals(_gainFlashDebounceCts, cts))", "cts.Dispose();");
         AssertOccursBefore(applyAnalogAudioGain, "if (persistSettings)", "SaveSettings();");
 
         AssertContains(isCurrentSelectedDevice, "string.Equals(selected.Id, device.Id, StringComparison.OrdinalIgnoreCase)");
@@ -250,6 +242,75 @@ static partial class Program
         AssertContains(normalizeDeviceAudioMode, "string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase)");
         AssertContains(normalizeDeviceAudioMode, "? DeviceAudioMode.Analog");
         AssertContains(normalizeDeviceAudioMode, ": DeviceAudioMode.Hdmi;");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task MainViewModelDeviceAudioRequestController_OwnsDeviceAudioRequestLifetime()
+    {
+        var deviceAudioRequestControllerCode = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs")
+            .Replace("\r\n", "\n");
+        var controllerStart = deviceAudioRequestControllerCode.IndexOf(
+            "private sealed class MainViewModelDeviceAudioRequestController",
+            StringComparison.Ordinal);
+        AssertEqual(true, controllerStart >= 0, "device audio request controller class marker");
+        var controllerBody = deviceAudioRequestControllerCode[controllerStart..];
+        var handleModeChange = ExtractMemberCode(controllerBody, "HandleSelectedDeviceAudioModeChanged");
+        var handleGainChange = ExtractMemberCode(controllerBody, "HandleAnalogAudioGainPercentChanged");
+        var refreshControls = ExtractMemberCode(controllerBody, "RequestDeviceAudioControlsRefresh");
+        var flashPersist = ExtractMemberCode(controllerBody, "ScheduleAnalogGainFlashPersist");
+        var cancelWork = ExtractMemberCode(controllerBody, "CancelPendingAudioControlWork");
+
+        AssertContains(deviceAudioRequestControllerCode, "private CancellationTokenSource? _gainFlashDebounceCts;");
+        AssertContains(deviceAudioRequestControllerCode, "private CancellationTokenSource? _gainXuDebounceCts;");
+        AssertContains(deviceAudioRequestControllerCode, "private CancellationTokenSource? _deviceAudioModeCts;");
+        AssertContains(deviceAudioRequestControllerCode, "private CancellationTokenSource? _deviceAudioRefreshCts;");
+        AssertContains(deviceAudioRequestControllerCode, "partial void OnSelectedDeviceAudioModeChanged(string value)");
+        AssertContains(deviceAudioRequestControllerCode, "partial void OnAnalogAudioGainPercentChanged(double value)");
+        AssertContains(deviceAudioRequestControllerCode, "=> _deviceAudioRequestController.ScheduleAnalogGainFlashPersist(device, gainByte);");
+
+        AssertContains(refreshControls, "_deviceAudioRefreshCts = refreshCts;");
+        AssertContains(refreshControls, "RefreshDeviceAudioControlsAsync(targetDevice, applySavedState: true, refreshToken)");
+        AssertContains(refreshControls, "allowDuringDispose: true");
+        AssertContains(refreshControls, "if (ReferenceEquals(_deviceAudioRefreshCts, refreshCts))");
+        AssertContains(refreshControls, "refreshCts.Dispose();");
+
+        AssertContains(handleModeChange, "oldCts?.Cancel();");
+        AssertContains(handleModeChange, "_deviceAudioModeCts = cts;");
+        AssertContains(handleModeChange, "ApplyDeviceAudioModeAsync(\"device audio mode change\", targetDevice: targetDevice, cancellationToken: token)");
+        AssertContains(handleModeChange, "if (ReferenceEquals(_deviceAudioModeCts, cts))");
+        AssertContains(handleModeChange, "cts.Dispose();");
+        AssertContains(handleModeChange, "_viewModel.SaveSettings();");
+
+        AssertContains(handleGainChange, "oldCts?.Cancel();");
+        AssertContains(handleGainChange, "_gainXuDebounceCts = cts;");
+        AssertContains(handleGainChange, "await Task.Delay(200, token).ConfigureAwait(false);");
+        AssertContains(handleGainChange, "ApplyAnalogAudioGainAsync(\"analog audio gain change\", targetDevice: targetDevice, cancellationToken: token)");
+        AssertContains(handleGainChange, "if (ReferenceEquals(_gainXuDebounceCts, cts))");
+        AssertContains(handleGainChange, "cts.Dispose();");
+        AssertContains(handleGainChange, "_viewModel.SaveSettings();");
+
+        AssertContains(flashPersist, "oldCts?.Cancel();");
+        AssertContains(flashPersist, "_gainFlashDebounceCts = cts;");
+        AssertContains(flashPersist, "await Task.Delay(300, token).ConfigureAwait(false);");
+        AssertContains(flashPersist, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
+        AssertContains(flashPersist, "if (ReferenceEquals(_gainFlashDebounceCts, cts))");
+        AssertContains(flashPersist, "cts.Dispose();");
+        AssertOccursBefore(flashPersist, "await Task.Delay(300, token).ConfigureAwait(false);", "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
+        AssertOccursBefore(flashPersist, "if (ReferenceEquals(_gainFlashDebounceCts, cts))", "cts.Dispose();");
+
+        AssertContains(cancelWork, "var flashCts = _gainFlashDebounceCts;");
+        AssertContains(cancelWork, "_gainFlashDebounceCts = null;");
+        AssertContains(cancelWork, "flashCts?.Cancel();");
+        AssertContains(cancelWork, "var xuCts = _gainXuDebounceCts;");
+        AssertContains(cancelWork, "_gainXuDebounceCts = null;");
+        AssertContains(cancelWork, "xuCts?.Cancel();");
+        AssertContains(cancelWork, "var modeCts = _deviceAudioModeCts;");
+        AssertContains(cancelWork, "_deviceAudioModeCts = null;");
+        AssertContains(cancelWork, "modeCts?.Cancel();");
+        AssertContains(cancelWork, "var refreshCts = _deviceAudioRefreshCts;");
+        AssertContains(cancelWork, "_deviceAudioRefreshCts = null;");
+        AssertContains(cancelWork, "refreshCts?.Cancel();");
 
         return Task.CompletedTask;
     }

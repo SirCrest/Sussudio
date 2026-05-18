@@ -52,6 +52,9 @@ static partial class Program
             "MainViewModel audio controls preserve microphone and device guards",
             MainViewModelAudioControls_PreserveMicrophoneVolumeAndDeviceGuards);
         await AddCheckAsync(results,
+            "MainViewModel device-audio request controller owns request lifetime",
+            MainViewModelDeviceAudioRequestController_OwnsDeviceAudioRequestLifetime);
+        await AddCheckAsync(results,
             "MainViewModel audio-device selection policy lives in focused helper",
             AudioDeviceSelectionPolicy_LivesInFocusedHelper);
         await AddCheckAsync(results,
