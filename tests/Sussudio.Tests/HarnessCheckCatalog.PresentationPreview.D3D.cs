@@ -24,6 +24,9 @@ static partial class Program
             "D3D preview PNG CRC table generates 256 entries",
             D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries);
         await AddCheckAsync(results,
+            "D3D preview PNG capture writes 16-bit RGB PNG",
+            D3D11PreviewRenderer_PreviewPngCapture_Writes16BitRgbPng);
+        await AddCheckAsync(results,
             "D3D preview diagnostics expose swap-chain and render timing contract",
             D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming);
         await AddCheckAsync(results,

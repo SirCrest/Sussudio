@@ -458,7 +458,7 @@ overload policy, LibAv sink, WASAPI, and capture fan-out / Flashback backend
 owner files.
 
 D3D preview renderer coverage is
-split into geometry/screenshot helper contracts, cadence contracts, the large
+split into geometry/screenshot helper and preview PNG encoder contracts, cadence contracts, the large
 diagnostics contract, device-lost behavior, and frame-flow/shared-device
 assertions. Source ownership coverage lives in focused ContractsAndMetrics,
 RenderPipeline, RenderThread, RuntimeCapture owner files.
@@ -575,6 +575,10 @@ handling now live with the capture implementation in
 Screenshot BMP/error result construction, mapped-frame buffer copying, and
 capture pixel statistics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotEncoding.cs`.
+Preview-frame PNG pixel conversion, luminance analysis, and letterbox/pillarbox
+measurement live in `Sussudio/Services/Preview/PreviewScreenshotCapture.cs`,
+while `Sussudio/Services/Preview/PreviewPng16Encoder.cs` owns the 16-bit PNG
+file container, chunk writing, output-directory creation, and CRC helpers.
 
 Window geometry automation and the recordings-folder command now live in
 `Sussudio/Controllers/Window/WindowAutomationController.cs`. Display-area/AppWindow

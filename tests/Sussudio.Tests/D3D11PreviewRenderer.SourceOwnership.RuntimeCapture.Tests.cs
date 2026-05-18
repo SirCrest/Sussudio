@@ -68,6 +68,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         var encodingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotEncoding.cs")
             .Replace("\r\n", "\n");
+        var previewScreenshotCaptureText = ReadRepoFile("Sussudio/Services/Preview/PreviewScreenshotCapture.cs")
+            .Replace("\r\n", "\n");
+        var previewPngEncoderText = ReadRepoFile("Sussudio/Services/Preview/PreviewPng16Encoder.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(captureText, "private void TryCaptureFrameBeforePresent(string rendererMode)");
         AssertContains(captureText, "PreviewScreenshotCapture.CaptureFrameBufferTo16BitPng(");
@@ -78,6 +82,14 @@ static partial class Program
         AssertContains(encodingText, "private static PreviewFrameCaptureResult CreateFrameCaptureError(");
         AssertDoesNotContain(captureText, "private static PreviewFrameCaptureResult CaptureMappedFrameToBmp(");
         AssertDoesNotContain(captureText, "private static void WriteBitmapHeaders(");
+        AssertContains(previewScreenshotCaptureText, "PreviewPng16Encoder.WriteCompressedRgb16Png(");
+        AssertContains(previewPngEncoderText, "internal static class PreviewPng16Encoder");
+        AssertContains(previewPngEncoderText, "internal static void WriteCompressedRgb16Png(");
+        AssertContains(previewPngEncoderText, "internal static uint[] InitPngCrc32Table()");
+        AssertContains(previewPngEncoderText, "private static void WritePngChunk(");
+        AssertContains(previewPngEncoderText, "private static uint UpdatePngCrc32(");
+        AssertDoesNotContain(previewScreenshotCaptureText, "private static void WritePngChunk(");
+        AssertDoesNotContain(previewScreenshotCaptureText, "private static uint UpdatePngCrc32(");
 
         return Task.CompletedTask;
     }

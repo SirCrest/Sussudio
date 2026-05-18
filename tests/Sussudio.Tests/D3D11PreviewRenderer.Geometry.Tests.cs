@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -79,9 +80,9 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries()
     {
-        // Extracted to PreviewScreenshotCapture; reflect on the new type.
-        var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
-        var method = captureType.GetMethod("InitPngCrc32Table",
+        // PNG chunk/CRC ownership lives in the preview PNG encoder.
+        var encoderType = RequireType("Sussudio.Services.Preview.PreviewPng16Encoder");
+        var method = encoderType.GetMethod("InitPngCrc32Table",
             BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("InitPngCrc32Table not found.");
 
@@ -94,6 +95,63 @@ static partial class Program
         // All entries should be unique (well-formed CRC table)
         var unique = new HashSet<uint>(table);
         AssertEqual(256, unique.Count, "All 256 entries are unique");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_PreviewPngCapture_Writes16BitRgbPng()
+    {
+        var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
+        var method = captureType.GetMethod(
+            "CaptureFrameBufferTo16BitPng",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException("CaptureFrameBufferTo16BitPng not found.");
+
+        var outputRoot = Path.Combine(Path.GetTempPath(), "sussudio-preview-png-test-" + Guid.NewGuid().ToString("N"));
+        var outputPath = Path.Combine(outputRoot, "preview", "frame.png");
+        try
+        {
+            var format = ParseEnum("Vortice.DXGI.Format", "B8G8R8A8_UNorm");
+            var result = method.Invoke(
+                null,
+                new object[]
+                {
+                    new byte[] { 0x30, 0x20, 0x10, 0xFF },
+                    4,
+                    1,
+                    1,
+                    outputPath,
+                    "UnitTest",
+                    format
+                })
+                ?? throw new InvalidOperationException("CaptureFrameBufferTo16BitPng returned null.");
+
+            AssertEqual(true, GetBoolProperty(result, "Succeeded"), "PNG capture succeeded");
+            AssertEqual(1, GetIntProperty(result, "CapturedWidth"), "PNG captured width");
+            AssertEqual(1, GetIntProperty(result, "CapturedHeight"), "PNG captured height");
+            AssertEqual(outputPath, GetStringProperty(result, "FilePath"), "PNG output path");
+
+            var bytes = File.ReadAllBytes(outputPath);
+            AssertEqual(137, (int)bytes[0], "PNG signature byte 0");
+            AssertEqual(80, (int)bytes[1], "PNG signature byte 1");
+            AssertEqual(78, (int)bytes[2], "PNG signature byte 2");
+            AssertEqual(71, (int)bytes[3], "PNG signature byte 3");
+            AssertEqual((byte)'I', bytes[12], "PNG IHDR I");
+            AssertEqual((byte)'H', bytes[13], "PNG IHDR H");
+            AssertEqual((byte)'D', bytes[14], "PNG IHDR D");
+            AssertEqual((byte)'R', bytes[15], "PNG IHDR R");
+            AssertEqual(1, (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19], "PNG IHDR width");
+            AssertEqual(1, (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23], "PNG IHDR height");
+            AssertEqual(16, (int)bytes[24], "PNG bit depth");
+            AssertEqual(2, (int)bytes[25], "PNG color type");
+        }
+        finally
+        {
+            if (Directory.Exists(outputRoot))
+            {
+                Directory.Delete(outputRoot, recursive: true);
+            }
+        }
 
         return Task.CompletedTask;
     }

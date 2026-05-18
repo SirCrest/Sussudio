@@ -1,6 +1,5 @@
 using System;
 using System.Buffers;
-using System.Buffers.Binary;
 using System.IO;
 using System.IO.Compression;
 using Sussudio.Models;
@@ -10,8 +9,6 @@ namespace Sussudio.Services.Preview;
 
 internal static class PreviewScreenshotCapture
 {
-    private static readonly uint[] PngCrc32Table = InitPngCrc32Table();
-
     internal static PreviewFrameCaptureResult CaptureFrameBufferTo16BitPng(
         byte[] sourceBuffer,
         int sourceRowBytes,
@@ -41,12 +38,6 @@ internal static class PreviewScreenshotCapture
         long nearWhiteCount = 0;
         long pureBlackCount = 0;
         var totalPixels = (long)width * height;
-
-        var directory = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
 
         var sourceRowBuffer = ArrayPool<byte>.Shared.Rent(sourceRowBytes);
         var pngRowBuffer = ArrayPool<byte>.Shared.Rent(pngRowBytes);
@@ -162,36 +153,7 @@ internal static class PreviewScreenshotCapture
                     }
                 }
 
-                using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.Read);
-                using var writer = new BinaryWriter(fileStream, System.Text.Encoding.ASCII, leaveOpen: false);
-
-                writer.Write(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A });
-
-                var ihdrData = new byte[13];
-                BinaryPrimitives.WriteUInt32BigEndian(ihdrData.AsSpan(0, 4), checked((uint)width));
-                BinaryPrimitives.WriteUInt32BigEndian(ihdrData.AsSpan(4, 4), checked((uint)height));
-                ihdrData[8] = 16;
-                ihdrData[9] = 2;
-                ihdrData[10] = 0;
-                ihdrData[11] = 0;
-                ihdrData[12] = 0;
-
-                WritePngChunk(writer, new byte[] { (byte)'I', (byte)'H', (byte)'D', (byte)'R' }, ihdrData);
-                if (compressedDataStream.TryGetBuffer(out var compressedData))
-                {
-                    WritePngChunk(
-                        writer,
-                        new byte[] { (byte)'I', (byte)'D', (byte)'A', (byte)'T' },
-                        compressedData.Array!,
-                        compressedData.Offset,
-                        checked((int)compressedDataStream.Length));
-                }
-                else
-                {
-                    WritePngChunk(writer, new byte[] { (byte)'I', (byte)'D', (byte)'A', (byte)'T' }, compressedDataStream.ToArray());
-                }
-
-                WritePngChunk(writer, new byte[] { (byte)'I', (byte)'E', (byte)'N', (byte)'D' }, Array.Empty<byte>());
+                PreviewPng16Encoder.WriteCompressedRgb16Png(outputPath, width, height, compressedDataStream);
             }
         }
         finally
@@ -248,23 +210,6 @@ internal static class PreviewScreenshotCapture
         };
     }
 
-    internal static uint[] InitPngCrc32Table()
-    {
-        var table = new uint[256];
-        for (uint n = 0; n < 256; n++)
-        {
-            var c = n;
-            for (var k = 0; k < 8; k++)
-            {
-                c = (c & 1) != 0 ? 0xEDB88320u ^ (c >> 1) : c >> 1;
-            }
-
-            table[n] = c;
-        }
-
-        return table;
-    }
-
     internal static int CountLeadingBlackEdges(bool[] values)
     {
         var count = 0;
@@ -285,39 +230,5 @@ internal static class PreviewScreenshotCapture
         }
 
         return count;
-    }
-
-    private static uint UpdatePngCrc32(uint crc, byte[] buffer, int offset, int length)
-    {
-        for (var i = offset; i < offset + length; i++)
-        {
-            crc = PngCrc32Table[(crc ^ buffer[i]) & 0xFF] ^ (crc >> 8);
-        }
-
-        return crc;
-    }
-
-    private static void WritePngChunk(BinaryWriter writer, byte[] chunkType, byte[] data)
-    {
-        WritePngChunk(writer, chunkType, data, 0, data.Length);
-    }
-
-    private static void WritePngChunk(BinaryWriter writer, byte[] chunkType, byte[] data, int dataOffset, int dataLength)
-    {
-        writer.Write(BinaryPrimitives.ReverseEndianness(checked((uint)dataLength)));
-        writer.Write(chunkType);
-        if (dataLength > 0)
-        {
-            writer.Write(data, dataOffset, dataLength);
-        }
-
-        var crc = 0xFFFFFFFFu;
-        crc = UpdatePngCrc32(crc, chunkType, 0, chunkType.Length);
-        if (dataLength > 0)
-        {
-            crc = UpdatePngCrc32(crc, data, dataOffset, dataLength);
-        }
-
-        writer.Write(BinaryPrimitives.ReverseEndianness(crc ^ 0xFFFFFFFFu));
     }
 }
