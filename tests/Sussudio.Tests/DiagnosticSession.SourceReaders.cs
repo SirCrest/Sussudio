@@ -99,6 +99,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.PreviewScheduler.cs",
             "tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs",
+            "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackMetricResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs",
             "tools/Common/DiagnosticSessionResultBuilder.FlashbackResult.cs",
             "tools/Common/DiagnosticSessionResultBuilder.CaptureResult.cs",
