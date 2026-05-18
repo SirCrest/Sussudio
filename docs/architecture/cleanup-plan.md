@@ -48,7 +48,10 @@ composition/flattening. `AutomationDiagnosticsHub.SnapshotProjection.Composition
 owns projection-set composition from runtime/view-model snapshots and diagnostic
 classifiers. `AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs`
 owns the final `AutomationSnapshot` DTO initializer that flattens the named
-projection records into the automation wire snapshot. `AutomationDiagnosticsHub.SnapshotState.cs`
+projection records into the automation wire snapshot. This final flattener is
+intentionally a single `init`-property map: do not split it by adding mutable
+setters or shallow fragment records unless a deliberate snapshot construction
+pattern is introduced first. `AutomationDiagnosticsHub.SnapshotState.cs`
 owns stateful snapshot bookkeeping for audio mute suspicion and recording file
 growth tracking. `AutomationDiagnosticsHub.Timeline.cs`
 owns performance-timeline ring reads and append mechanics.
@@ -1740,7 +1743,10 @@ Capture health snapshot sampling now lives in
 captures current service references, invokes focused field builders, and
 hands final service-state/scalar values to the assembler; pure
 diagnostics/automation DTO construction lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`. MJPEG
+`Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`. The
+assembler is intentionally allocation-neutral final DTO construction from
+captured fields; do not split it into post-construction mutators or shallow
+fragment records just to reduce line count. MJPEG
 timing, jitter, packet-hash, visual-cadence, and per-decoder projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs`;
 source telemetry, backend, suppression, and circuit-state projection lives in

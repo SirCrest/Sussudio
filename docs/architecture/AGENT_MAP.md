@@ -250,7 +250,10 @@ Automation diagnostics ownership:
   diagnostic classifiers.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.cs`
   owns the final `AutomationSnapshot` DTO initializer that flattens named
-  projection records into the automation wire snapshot.
+  projection records into the automation wire snapshot. Keep this final
+  `init`-property wire-contract adapter intact unless a deliberate snapshot
+  construction pattern exists; do not add mutable setters or shallow fragment
+  records just to reduce line count.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SnapshotStatus.cs`
   owns timestamp, view-model lifecycle/audio flags, verification-in-progress,
   session state, and status-text projection consumed by `AutomationSnapshot`.
@@ -492,7 +495,10 @@ Important entry points:
   final service-state/scalar handoff values consumed by diagnostics and
   automation health checks.
 - `CaptureService.HealthSnapshotAssembler.cs` owns final
-  pure `CaptureHealthSnapshot` DTO construction from captured fields.
+  pure `CaptureHealthSnapshot` DTO construction from captured fields. Keep this
+  allocation-neutral `init`-property map intact unless a deliberate snapshot
+  construction pattern exists; sampling and domain projection belong in the
+  focused health snapshot partials, not in post-construction mutators.
 - `CaptureService.HealthSnapshotCaptureCadence.cs` owns source-reader capture
   cadence field projection for health snapshots.
 - `CaptureService.HealthSnapshotFlashbackBuffer.cs` owns Flashback buffer,
