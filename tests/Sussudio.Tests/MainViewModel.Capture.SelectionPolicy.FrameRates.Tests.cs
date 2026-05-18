@@ -9,6 +9,7 @@ static partial class Program
     {
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var frameRateRebuildText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptionRebuild.cs").Replace("\r\n", "\n");
+        var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateSourceFilterPolicy.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var showAllCaptureOptionsChanged = ExtractTextBetween(
@@ -16,8 +17,9 @@ static partial class Program
             "partial void OnShowAllCaptureOptionsChanged(bool value)",
             "\n}");
 
-        AssertContains(frameRateRebuildText, "FrameRateSourceFilterPolicy.Apply(");
-        AssertContains(frameRateRebuildText, "ShowAllCaptureOptions);");
+        AssertContains(frameRateRebuildText, "=> _captureModeOptionRebuildController.RebuildFrameRateOptions();");
+        AssertContains(captureModeOptionsControllerText, "FrameRateSourceFilterPolicy.Apply(");
+        AssertContains(captureModeOptionsControllerText, "_viewModel.ShowAllCaptureOptions);");
         AssertContains(mainViewModelText, "RebuildFrameRateOptions();");
         AssertContains(showAllCaptureOptionsChanged, "if (IsRecording)");
         AssertContains(showAllCaptureOptionsChanged, "_pendingModeOptionsRefresh = true;");
@@ -43,17 +45,21 @@ static partial class Program
     {
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var frameRateRebuildText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptionRebuild.cs").Replace("\r\n", "\n");
+        var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateSourceFilterPolicy.cs").Replace("\r\n", "\n");
         var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs").Replace("\r\n", "\n");
 
         AssertContains(frameRateOptionsText, "/// Frame-rate selection reactions and auto-selection entry points.");
         AssertContains(frameRateOptionsText, "private void SelectAutoFrameRate(bool rebuildOptions)");
         AssertDoesNotContain(frameRateOptionsText, "private void RebuildFrameRateOptions()");
-        AssertContains(frameRateRebuildText, "/// Frame-rate option rebuilding and observable collection mutation.");
+        AssertContains(frameRateRebuildText, "/// Frame-rate option rebuild compatibility adapter.");
         AssertContains(frameRateRebuildText, "private void RebuildFrameRateOptions()");
-        AssertContains(frameRateRebuildText, "var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
-        AssertContains(frameRateRebuildText, "AvailableFrameRates.Clear();");
-        AssertContains(frameRateRebuildText, "ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
+        AssertContains(frameRateRebuildText, "=> _captureModeOptionRebuildController.RebuildFrameRateOptions();");
+        AssertContains(captureModeOptionsControllerText, "private sealed class MainViewModelCaptureModeOptionRebuildController");
+        AssertContains(captureModeOptionsControllerText, "public void RebuildFrameRateOptions()");
+        AssertContains(captureModeOptionsControllerText, "var sourceRate = _viewModel.ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);");
+        AssertContains(captureModeOptionsControllerText, "_viewModel.AvailableFrameRates.Clear();");
+        AssertContains(captureModeOptionsControllerText, "_viewModel.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
         AssertContains(modeSelectionText, "private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)");
         AssertContains(sourceFilterPolicyText, "private static class FrameRateSourceFilterPolicy");
         AssertContains(sourceFilterPolicyText, "internal static FrameRateSourceFilterResult Apply(");
@@ -76,16 +82,17 @@ static partial class Program
     {
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var frameRateRebuildText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptionRebuild.cs").Replace("\r\n", "\n");
+        var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var autoSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateAutoSelectionPolicy.cs").Replace("\r\n", "\n");
         var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs").Replace("\r\n", "\n");
 
         AssertContains(frameRateOptionsText, "FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(");
-        AssertContains(frameRateRebuildText, "FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(");
-        AssertContains(frameRateRebuildText, "AvailableFrameRates.Clear();");
-        AssertContains(frameRateRebuildText, "AvailableFrameRates.Add(option);");
-        AssertContains(frameRateRebuildText, "IsAutoFrameRateSelected = selection.SelectAutoOption;");
-        AssertContains(frameRateRebuildText, "ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
-        AssertContains(frameRateRebuildText, "_pendingSdrAutoSelectionForDeviceChange = false;");
+        AssertContains(captureModeOptionsControllerText, "FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(");
+        AssertContains(captureModeOptionsControllerText, "_viewModel.AvailableFrameRates.Clear();");
+        AssertContains(captureModeOptionsControllerText, "_viewModel.AvailableFrameRates.Add(option);");
+        AssertContains(captureModeOptionsControllerText, "_viewModel.IsAutoFrameRateSelected = selection.SelectAutoOption;");
+        AssertContains(captureModeOptionsControllerText, "_viewModel.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
+        AssertContains(captureModeOptionsControllerText, "_viewModel._pendingSdrAutoSelectionForDeviceChange = false;");
         AssertDoesNotContain(frameRateOptionsText, "OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))");
         AssertDoesNotContain(frameRateRebuildText, "OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))");
         AssertContains(autoSelectionPolicyText, "private static class FrameRateAutoSelectionPolicy");
@@ -218,12 +225,16 @@ static partial class Program
     private static Task FrameRateTimingPolicy_LivesInFocusedPartial()
     {
         var formatSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FormatSelection.cs").Replace("\r\n", "\n");
+        var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var timingText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateTiming.cs").Replace("\r\n", "\n");
         var timingPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(formatSelectionText, "private void UpdateSelectedFormat()");
         AssertContains(formatSelectionText, "private void RebuildVideoFormatOptions()");
+        AssertContains(formatSelectionText, "=> _captureModeOptionRebuildController.UpdateSelectedFormat();");
+        AssertContains(captureModeOptionsControllerText, "public void UpdateSelectedFormat()");
+        AssertContains(captureModeOptionsControllerText, "public void RebuildVideoFormatOptions()");
         AssertDoesNotContain(formatSelectionText, "partial void OnIsHdrEnabledChanged(bool value)");
         AssertContains(captureModeTransactionsText, "/// Capture-mode transactions that coordinate option rebuilds, HDR/SDR changes,");
         AssertContains(captureModeTransactionsText, "partial void OnIsHdrEnabledChanged(bool value)");

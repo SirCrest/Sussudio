@@ -22,6 +22,7 @@ static partial class Program
         var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs").Replace("\r\n", "\n");
         var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs").Replace("\r\n", "\n");
+        var captureModeOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var disposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Disposal.cs").Replace("\r\n", "\n");
         var dependenciesText = ReadRepoFile("Sussudio/ViewModels/MainViewModelDependencies.cs").Replace("\r\n", "\n");
 
@@ -41,6 +42,7 @@ static partial class Program
         AssertContains(rootText, "_deviceAudioRequestController = new MainViewModelDeviceAudioRequestController(this);");
         AssertContains(rootText, "_captureSettingsAutomationController = new MainViewModelCaptureSettingsAutomationController(this);");
         AssertContains(rootText, "_recordingSettingsAutomationController = new MainViewModelRecordingSettingsAutomationController(this);");
+        AssertContains(rootText, "_captureModeOptionRebuildController = new MainViewModelCaptureModeOptionRebuildController(this);");
         AssertContains(rootText, "_deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);");
         AssertContains(rootText, "_runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);");
         AssertContains(rootText, "_runtimeLifecycleController.Start();");
@@ -114,6 +116,14 @@ static partial class Program
         AssertContains(recordingSettingsAutomationControllerText, "private sealed class MainViewModelRecordingSettingsAutomationController");
         AssertContains(recordingSettingsAutomationControllerText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
         AssertContains(recordingSettingsAutomationControllerText, "_viewModel._sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
+        AssertContains(captureModeOptionRebuildControllerText, "private sealed class MainViewModelCaptureModeOptionRebuildController");
+        AssertEqual(
+            true,
+            captureModeOptionRebuildControllerText.Split('\n').Length >= 100,
+            "capture mode option rebuild controller is a substantial ownership file");
+        AssertContains(captureModeOptionRebuildControllerText, "public void RebuildFrameRateOptions()");
+        AssertContains(captureModeOptionRebuildControllerText, "public void RebuildVideoFormatOptions()");
+        AssertContains(captureModeOptionRebuildControllerText, "public void UpdateSelectedFormat()");
         AssertContains(deviceFormatProbeControllerText, "private sealed class MainViewModelDeviceFormatProbeController");
         AssertContains(deviceFormatProbeControllerText, "public void OnDeviceFormatProbeCompleted");
         AssertContains(deviceFormatProbeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");

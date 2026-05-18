@@ -9,14 +9,19 @@ static partial class Program
     private static Task CaptureFormatSelectionPolicy_LivesInFocusedHelper()
     {
         var formatSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FormatSelection.cs").Replace("\r\n", "\n");
+        var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(formatSelectionText, "/// Format and frame-rate selection adapter:");
         AssertContains(formatSelectionText, "private void UpdateSelectedFormat()");
         AssertContains(formatSelectionText, "private void RebuildVideoFormatOptions()");
-        AssertContains(formatSelectionText, "CaptureFormatSelectionPolicy.Select(");
-        AssertContains(formatSelectionText, "CaptureFormatSelectionPolicy\n            .SelectModeTupleFormats(");
-        AssertContains(formatSelectionText, "AvailableVideoFormats.Clear();");
+        AssertContains(formatSelectionText, "=> _captureModeOptionRebuildController.UpdateSelectedFormat();");
+        AssertContains(formatSelectionText, "=> _captureModeOptionRebuildController.RebuildVideoFormatOptions();");
+        AssertContains(captureModeOptionsControllerText, "public void UpdateSelectedFormat()");
+        AssertContains(captureModeOptionsControllerText, "public void RebuildVideoFormatOptions()");
+        AssertContains(captureModeOptionsControllerText, "CaptureFormatSelectionPolicy.Select(");
+        AssertContains(captureModeOptionsControllerText, "CaptureFormatSelectionPolicy\n                .SelectModeTupleFormats(");
+        AssertContains(captureModeOptionsControllerText, "_viewModel.AvailableVideoFormats.Clear();");
         AssertDoesNotContain(formatSelectionText, "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
         AssertDoesNotContain(formatSelectionText, "private static bool IsHdrModeCandidate(");
         AssertDoesNotContain(formatSelectionText, "ShouldPreserveMjpegHighFrameRateMode(");

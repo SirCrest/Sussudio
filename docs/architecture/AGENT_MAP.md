@@ -2352,8 +2352,10 @@ Primary current owners:
   `MainViewModel.FlashbackPlayback.cs` also owns read-only Flashback segment
   projection for UI, CLI, and MCP callers.
   `MainViewModel.FrameRateOptions.cs` owns frame-rate selection reactions and
-  auto-selection entry points. `MainViewModel.FrameRateOptionRebuild.cs` owns
-  frame-rate option rebuilding and observable collection mutation.
+  auto-selection entry points. `MainViewModel.FrameRateOptionRebuild.cs` keeps
+  the frame-rate rebuild compatibility adapter, while
+  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
+  owns frame-rate option rebuilding and observable collection mutation.
   `MainViewModel.FrameRateAutoSelectionPolicy.cs`
   owns pure frame-rate option choice: pending SDR bucket preference,
   Source-rate nearest match with timing-family tie-break, generic auto fallback,
@@ -2372,8 +2374,11 @@ Primary current owners:
   `MainViewModel.FrameRateTiming.cs` owns the stateful wrappers that resolve
   timing variants and source/preferred timing from resolution capabilities,
   runtime snapshots, selected formats, source telemetry, and UI selection state.
-  `MainViewModel.FormatSelection.cs` owns selected-format assignment and
-  pixel-format option collection mutation. `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`
+  `MainViewModel.FormatSelection.cs` keeps selected-format and video-format
+  rebuild compatibility adapters, while
+  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
+  owns selected-format assignment and pixel-format option collection mutation.
+  `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`
   owns pure selected capture-format choice and mode-tuple video-format filtering.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`
   owns startup FFmpeg capability probes for recording formats and split-encode

@@ -3218,9 +3218,10 @@ Remaining `tools/Common` ownership:
    Automation-facing Flashback export command execution, linked cancellation,
    and dispatcher cleanup now live in
    `MainViewModel.FlashbackExportAutomation.cs`. Frame-rate selection reactions and
-   auto-selection entry points now live in `MainViewModel.FrameRateOptions.cs`,
+   auto-selection entry points now live in `MainViewModel.FrameRateOptions.cs`.
+   `MainViewModel.FrameRateOptionRebuild.cs` keeps the compatibility adapter,
    while frame-rate option rebuilding and observable collection mutation live in
-   `MainViewModel.FrameRateOptionRebuild.cs`. Pure
+   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`. Pure
    frame-rate option choice, including pending SDR bucket preference,
    Source-rate nearest match with timing-family tie-break, generic auto fallback,
    and previous/manual selection fallback, now lives in
@@ -3253,10 +3254,11 @@ Remaining `tools/Common` ownership:
    `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs`, while startup
    FFmpeg capability probes and observable recording-format option mutation live
    in `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`. `MainViewModel.FormatSelection.cs`
-   keeps selected-format assignment and pixel-format option collection mutation, while
+   keeps selected-format and video-format rebuild compatibility adapters, while
+   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
+   owns selected-format assignment and pixel-format option collection mutation.
    `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs` owns the pure
-   selected-format and mode-tuple video-format filtering policy. `MainViewModel.FrameRateOptionRebuild.cs`
-   keeps frame-rate option mutation, while
+   selected-format and mode-tuple video-format filtering policy.
    `MainViewModel.CaptureModeTransactions.cs` owns HDR toggle side effects:
    recording-time revert/status, mode option rebuilds, immediate reinitialize
    scheduling, and settings persistence.

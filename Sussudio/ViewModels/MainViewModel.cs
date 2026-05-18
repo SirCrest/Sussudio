@@ -37,6 +37,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelRecordingCapabilityController _recordingCapabilityController;
     private readonly MainViewModelCaptureSettingsAutomationController _captureSettingsAutomationController;
     private readonly MainViewModelRecordingSettingsAutomationController _recordingSettingsAutomationController;
+    private readonly MainViewModelCaptureModeOptionRebuildController _captureModeOptionRebuildController;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -142,6 +143,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _recordingCapabilityController = new MainViewModelRecordingCapabilityController(this);
         _captureSettingsAutomationController = new MainViewModelCaptureSettingsAutomationController(this);
         _recordingSettingsAutomationController = new MainViewModelRecordingSettingsAutomationController(this);
+        _captureModeOptionRebuildController = new MainViewModelCaptureModeOptionRebuildController(this);
         _deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);
         _sourceTelemetryController = new MainViewModelSourceTelemetryController(this);
         _runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);
@@ -186,7 +188,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device selection reactions: MainViewModel.DeviceSelection.cs
     // Device format probe reconciliation: MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs
     // Capture mode transactions: MainViewModel.CaptureModeTransactions.cs
-    // Frame-rate selection: MainViewModel.FrameRateOptions.cs; rebuild: MainViewModel.FrameRateOptionRebuild.cs
+    // Frame-rate selection: MainViewModel.FrameRateOptions.cs; rebuild adapter: MainViewModel.FrameRateOptionRebuild.cs; rebuild owner: MainViewModelCaptureModeOptionRebuildController.cs
     // Runtime bootstrap/timer: MainViewModelRuntimeLifecycleController.cs; capture-event ingress: MainViewModelRuntimeEventIngressController.cs
     // Automatic frame-rate selection policy: MainViewModel.FrameRateAutoSelectionPolicy.cs
     // Frame-rate/mode selection state: MainViewModel.ModeSelectionState.cs
