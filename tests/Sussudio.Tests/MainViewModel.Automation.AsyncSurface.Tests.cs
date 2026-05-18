@@ -41,7 +41,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs")
             .Replace("\r\n", "\n");
-        var automationFlashbackText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationFlashback.cs")
+        var flashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackSettings.cs")
             .Replace("\r\n", "\n");
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
@@ -59,10 +59,14 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationHdr.cs")),
             "MainViewModel automation HDR partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationFlashback.cs")),
+            "MainViewModel automation Flashback partial");
         var automationText = automationAudioText
             + "\n" + previewLifecycleControllerText
             + "\n" + captureModeTransactionsText
-            + "\n" + automationFlashbackText
+            + "\n" + flashbackSettingsText
             + "\n" + recordingLifecycleText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs")
                 .Replace("\r\n", "\n")

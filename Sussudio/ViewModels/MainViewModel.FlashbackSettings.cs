@@ -5,10 +5,26 @@ using System.Threading.Tasks;
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Live Flashback reactions to buffer duration and GPU-decode setting changes.
+/// Live Flashback enablement, restart, buffer-duration, and GPU-decode setting changes.
 /// </summary>
 public partial class MainViewModel
 {
+    public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+        => _sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken);
+
+    public async Task RestartFlashbackAsync(CancellationToken cancellationToken = default)
+    {
+        var settings = await InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken).ConfigureAwait(false);
+        await _sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken).ConfigureAwait(false);
+        await InvokeOnUiThreadAsync(
+            () =>
+            {
+                _flashbackBitrateSamples.Clear();
+                return true;
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
+
     partial void OnFlashbackBufferMinutesChanged(int value)
     {
         SaveSettings();

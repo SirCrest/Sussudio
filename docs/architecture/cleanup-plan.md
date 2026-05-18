@@ -3216,7 +3216,8 @@ Remaining `tools/Common` ownership:
    availability checks now live in `MainViewModel.CaptureModeTransactions.cs`
    beside HDR mode change side effects.
    Automation Flashback enable/restart routing through the capture session
-   coordinator now lives in `MainViewModel.AutomationFlashback.cs`.
+   coordinator now lives in `MainViewModel.FlashbackSettings.cs` alongside
+   buffer/GPU setting reactions.
    Automation device refresh, capture-device selection, audio-input selection,
    and custom audio-input enablement now live in
    `MainViewModel.AutomationDeviceSelection.cs`.

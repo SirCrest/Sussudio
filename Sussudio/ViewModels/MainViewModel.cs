@@ -154,7 +154,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Recording lifecycle facade: this file; transition owner: MainViewModelRecordingTransitionController.cs
     // Recording state: MainViewModel.RecordingState.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs and CaptureSettingsProjectionBuilder.cs
-    // Flashback automation: MainViewModel.AutomationFlashback.cs
+    // Flashback automation and buffer/GPU reactions: MainViewModel.FlashbackSettings.cs
     // Audio automation: MainViewModel.AutomationAudio.cs
     // HDR automation: MainViewModel.CaptureModeTransactions.cs
     // Automation snapshots and probes: MainViewModel.AutomationSnapshots.cs
@@ -188,6 +188,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Capture presentation labels: MainViewModel.CapturePresentation.cs
     // Source telemetry: MainViewModel.Telemetry.cs
     // Settings lifecycle/reactions and adapter: MainViewModel.SettingsPersistence.cs; projection: MainViewModelSettingsPersistenceProjection.cs
-    // Flashback settings reactions: encoder: MainViewModel.FlashbackEncoderSettings.cs; buffer/GPU: MainViewModel.FlashbackSettings.cs
+    // Flashback settings reactions: encoder: MainViewModel.FlashbackEncoderSettings.cs; enable/restart/buffer/GPU: MainViewModel.FlashbackSettings.cs
     // Recording capability refresh and option application: MainViewModel.RecordingCapabilityRefresh.cs
 }

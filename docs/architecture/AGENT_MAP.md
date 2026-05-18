@@ -1369,7 +1369,7 @@ Primary current owners:
   Flashback export backend-lease and export-operation lock assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`
   owns MainViewModel Flashback coordinator-routing assertions, including the
-  automation Flashback enable/restart entry-point owner.
+  Flashback settings owner for automation enable/restart entry points.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Scrub.Tests.cs`
   owns Flashback scrub, release/cancel/capture-lost, and fullscreen Flashback
   bridge assertions: shortcut gating, timeline visibility, and scrub-end
@@ -2370,8 +2370,9 @@ Primary current owners:
   `MainViewModel.CaptureModeTransactions.cs` owns automation HDR and true-HDR
   preview recording-time guard enforcement and availability checks alongside
   HDR mode change side effects.
-  `MainViewModel.AutomationFlashback.cs` owns automation Flashback
-  enable/restart routing through the capture session coordinator.
+  `MainViewModel.FlashbackSettings.cs` owns automation Flashback
+  enable/restart routing through the capture session coordinator alongside
+  buffer/GPU setting reactions.
   `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh,
   capture-device selection, audio-input selection, and custom audio-input
   enablement.
