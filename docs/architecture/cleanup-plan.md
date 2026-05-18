@@ -1758,7 +1758,7 @@ partials.
 Capture health snapshot sampling now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file
 captures current service references, invokes focused field builders, and
-hands final service-state/scalar values to the assembler; pure
+owns the final service-state/scalar handoff record passed to the assembler; pure
 diagnostics/automation DTO construction lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`. The
 assembler is intentionally allocation-neutral final DTO construction from

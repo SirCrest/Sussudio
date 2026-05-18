@@ -17,9 +17,10 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotText, "SessionState = _sessionState,");
         AssertContains(healthSnapshotText, "FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(currentSettings, unifiedVideoCapture),");
         AssertContains(healthSnapshotText, "LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),");
+        AssertContains(healthSnapshotText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
         AssertContains(healthSnapshotAssemblerText, "private static class CaptureHealthSnapshotAssembler");
         AssertContains(healthSnapshotAssemblerText, "public static CaptureHealthSnapshot Build(");
-        AssertContains(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
+        AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
         AssertDoesNotContain(healthSnapshotAssemblerText, "LibAvRecordingSink? Sink");
         AssertDoesNotContain(healthSnapshotAssemblerText, "var sink = fields.Sink;");
         AssertDoesNotContain(healthSnapshotAssemblerText, "UnifiedVideoCapture? UnifiedVideoCapture");

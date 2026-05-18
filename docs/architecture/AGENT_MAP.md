@@ -493,13 +493,14 @@ Important entry points:
   ownership checks, session context construction, frame-rate rational policy,
   codec/HDR guardrails, and recording topology validation.
 - `CaptureService.HealthSnapshots.cs` samples health snapshot field groups and
-  final service-state/scalar handoff values consumed by diagnostics and
-  automation health checks.
+  owns the final service-state/scalar handoff contract consumed by diagnostics
+  and automation health checks.
 - `CaptureService.HealthSnapshotAssembler.cs` owns final
   pure `CaptureHealthSnapshot` DTO construction from captured fields. Keep this
   allocation-neutral `init`-property map intact unless a deliberate snapshot
-  construction pattern exists; sampling and domain projection belong in the
-  focused health snapshot partials, not in post-construction mutators.
+  construction pattern exists; sampling, the handoff record, and domain
+  projection belong in the focused health snapshot partials, not in
+  post-construction mutators.
 - `CaptureService.HealthSnapshotCaptureCadence.cs` owns source-reader capture
   cadence field projection for health snapshots.
 - `CaptureService.HealthSnapshotFlashbackBuffer.cs` owns Flashback buffer,
