@@ -2469,12 +2469,12 @@ rereading MJPEG jitter-buffer snapshot keys. Flashback preview-scheduler validat
 now lives in `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`,
 including target-FPS fallback, visual-cadence tolerance checks, sparse
 deadline/drop tolerance selection, and the call into shared Flashback preview
-validation. Preview D3D frame-stats, slow-frame, and CPU-timing
-result projection values live in `DiagnosticSessionResultBuilder.PreviewD3DResult.cs`
-so D3D summary fields are kept out of the broader preview projection. Preview
-cadence and visual-cadence result projection values live together in
-`DiagnosticSessionResultBuilder.PreviewResult.cs` so small cadence DTO
-projections share one focused owner without adding miniature partials.
+validation. Preview cadence, visual cadence, and D3D frame-stats/slow-frame/
+CPU-timing result projection values live together in
+`DiagnosticSessionResultBuilder.PreviewResult.cs` so small preview DTO
+projections share one focused owner without adding miniature partials. The D3D
+fields still travel through a distinct `PreviewD3D` projection set member so
+renderer timing semantics stay separate from scheduler/jitter policy.
 Flashback playback result composition lives in the root result builder, while
 playback command queue, cadence/1% low, decode timing, audio-master/A/V drift,
 stage/seek, recording backend/growth/integrity, and export status/progress DTO
@@ -2927,7 +2927,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
 - `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
-- `DiagnosticSessionResultBuilder.PreviewD3DResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewResult.cs`
 - `DiagnosticSessionResultBuilder.Models.cs`
 - `DiagnosticSessionResultFormatter.cs`
