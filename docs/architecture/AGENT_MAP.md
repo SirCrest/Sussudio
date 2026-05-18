@@ -1799,9 +1799,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/ServiceNamespace.NativeXuProbe.Tests.cs` owns
   NativeXuAudioProbe linked-source, split-source, locator, and no-reflection
   source ownership assertions.
-- `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.Tests.cs` owns
-  DeviceService, GPU interop, decoder, capture telemetry, audio controls,
-  UI-enqueue, format-probe, and preview renderer source ownership assertions.
+- `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs`
+  owns DeviceService, NativeXu support, GPU interop, decoder, and capture
+  telemetry source ownership assertions.
+- `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.MainViewModelSource.Tests.cs`
+  owns MainViewModel, ViewModel controller, UI-enqueue, format-probe, and preview
+  renderer source ownership assertions.
 - `tests/Sussudio.Tests/ServiceNamespace.AutomationContracts.Tests.cs` owns
   AutomationCommandKind project/source ownership alignment across the app and
   automation tools.
