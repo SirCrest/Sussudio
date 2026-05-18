@@ -68,24 +68,47 @@ static partial class Program
     }
 
     private static bool IsCleanupPlanPathToken(string token)
-        => token.StartsWith("Sussudio/", StringComparison.Ordinal) ||
-           token.StartsWith("tests/", StringComparison.Ordinal) ||
-           token.StartsWith("tools/", StringComparison.Ordinal) ||
-           token.StartsWith("docs/", StringComparison.Ordinal);
+    {
+        if (string.IsNullOrWhiteSpace(token) || string.Equals(token, "/", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (token.StartsWith("Sussudio/", StringComparison.Ordinal) ||
+            token.StartsWith("tests/", StringComparison.Ordinal) ||
+            token.StartsWith("tools/", StringComparison.Ordinal) ||
+            token.StartsWith("docs/", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return token.StartsWith("MainWindow.", StringComparison.Ordinal) &&
+            token.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static bool ResolvesCleanupPlanToken(
         string token,
         IReadOnlyCollection<string> files,
         IReadOnlySet<string> directories)
     {
+        if (token.EndsWith("/", StringComparison.Ordinal))
+        {
+            return directories.Contains(token.TrimEnd('/'));
+        }
+
         if (token.Contains('*', StringComparison.Ordinal))
         {
             return AgentMapWildcardMatches(token, files);
         }
 
         var normalized = token.TrimEnd('/');
-        return files.Contains(normalized, StringComparer.OrdinalIgnoreCase) ||
-            directories.Contains(normalized);
+        if (token.Contains('/', StringComparison.Ordinal))
+        {
+            return files.Contains(normalized, StringComparer.OrdinalIgnoreCase) ||
+                directories.Contains(normalized);
+        }
+
+        return files.Any(file => string.Equals(Path.GetFileName(file), token, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool CleanupPlanContainsExactCodeSpan(string cleanupPlanText, string relativePath)
