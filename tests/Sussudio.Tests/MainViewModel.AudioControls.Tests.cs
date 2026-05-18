@@ -54,6 +54,7 @@ static partial class Program
         AssertNotNull(viewModelType.GetMethod("SavePreviewVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SavePreviewVolume");
 
         var monitoringCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs");
+        var audioPropertyChangesCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs");
         var audioInputSelectionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs");
         var transitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs");
         var previewChanged = ExtractMemberCode(monitoringCode, "OnPreviewVolumeChanged");
@@ -63,7 +64,7 @@ static partial class Program
         var primeTransition = ExtractMemberCode(transitionCode, "PrimeForAudioTransition");
         var restoreTransition = ExtractMemberCode(transitionCode, "RestoreAfterUnavailableAudio");
         var monitoringTransition = ExtractMemberCode(monitoringCode, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
-        var audioPreviewChanged = ExtractMemberCode(monitoringCode, "OnIsAudioPreviewEnabledChanged");
+        var audioPreviewChanged = ExtractMemberCode(audioPropertyChangesCode, "OnIsAudioPreviewEnabledChanged");
         var applyAudioInputSelection = ExtractMemberCode(audioInputSelectionCode, "ApplyAudioInputSelectionAsync");
 
         AssertContains(monitoringCode, "get => _previewAudioVolumeTransitionController.SuppressVolumeSave;");
@@ -72,6 +73,7 @@ static partial class Program
         AssertContains(monitoringCode, "set => _previewAudioVolumeTransitionController.VolumeSaveOverride = value;");
         AssertContains(previewChanged, "_previewAudioVolumeTransitionController.HandlePreviewVolumeChanged(value);");
         AssertContains(monitoringCode, "internal void SavePreviewVolume() => SaveSettings();");
+        AssertDoesNotContain(monitoringCode, "OnIsAudioPreviewEnabledChanged");
         AssertDoesNotContain(monitoringCode, "private const int PreviewAudioRampDownSteps");
         AssertContains(transitionCode, "internal sealed class PreviewAudioVolumeTransitionController");
         AssertContains(transitionCode, "private const int RampDownSteps = 18;");

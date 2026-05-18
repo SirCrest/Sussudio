@@ -176,6 +176,7 @@ static partial class Program
         AssertDoesNotContain(mainViewModelDispatchingText, "_dispatcherQueue.TryEnqueue");
         AssertDoesNotContain(mainViewModelText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelAudioPropertyChangesText, "OnIsAudioEnabledChanged");
+        AssertContains(mainViewModelAudioPropertyChangesText, "OnIsAudioPreviewEnabledChanged");
         AssertContains(mainViewModelAudioInputSelectionText, "OnIsCustomAudioInputEnabledChanged");
         AssertContains(mainViewModelAudioInputSelectionText, "OnSelectedAudioInputDeviceChanged");
         AssertContains(mainViewModelAudioInputSelectionText, "private async Task ApplyAudioInputSelectionAsync");
@@ -201,6 +202,9 @@ static partial class Program
         AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedDeviceAudioModeChanged");
         AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedMicrophoneDeviceChanged");
         AssertDoesNotContain(mainViewModelAudioPropertyChangesText, "OnSelectedAudioInputDeviceChanged");
+        AssertDoesNotContain(
+            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")),
+            "OnIsAudioPreviewEnabledChanged");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private void SetupTimer()");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.UpdateDiskSpace();");
         AssertContains(mainViewModelRecordingRuntimeText, "private void UpdateDiskSpace()");

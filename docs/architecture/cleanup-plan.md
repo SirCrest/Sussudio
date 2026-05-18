@@ -2266,8 +2266,10 @@ Preview-audio volume transition mechanics now live in
 `Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs`: it owns the
 save suppression/override state, ramp constants/easing, transition priming and
 restore behavior, and property-to-session volume forwarding. Monitoring
-enable/disable orchestration, audio input retargeting, and coordinator
-sequencing remain in `Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs`.
+enable/disable orchestration and coordinator sequencing remain in
+`Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs`; audio capture and
+audio-preview property-change handlers live in
+`Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs`.
 
 Preview reinit animation active state, first-visual transition clears,
 startup-reset preservation, completion presentation decisions, and
@@ -3129,8 +3131,9 @@ Remaining `tools/Common` ownership:
    behavior there instead of growing the root facade file. Audio ramp trace
    buffering/sampling now lives in `AudioRampTraceRecorder.cs`, with
    `MainViewModel.AudioRampTrace.cs` kept as the automation-facing adapter; keep
-   preview monitoring call sites and coordinator sequencing in
-   `MainViewModel.AudioMonitoring.cs`, while custom audio-input property
+   preview monitoring coordinator sequencing in
+   `MainViewModel.AudioMonitoring.cs`, audio capture/audio-preview property
+   handlers in `MainViewModel.AudioPropertyChanges.cs`, while custom audio-input property
    handlers, retargeting, and preview-monitoring ramp handoff live in
    `MainViewModel.AudioInputSelection.cs`.
    Microphone endpoint volume synchronization and persistence now live in

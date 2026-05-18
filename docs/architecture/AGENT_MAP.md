@@ -2245,7 +2245,9 @@ Primary current owners:
   owns preview-volume save suppression/override state plus the preview-audio
   ramp constants, easing, priming, restoring, and property-to-session volume
   forwarding. `MainViewModel.AudioMonitoring.cs` owns preview monitoring
-  call sites and coordinator sequencing. `MainViewModel.AudioInputSelection.cs`
+  coordinator sequencing. `MainViewModel.AudioPropertyChanges.cs` owns audio
+  capture and audio-preview property-change handlers.
+  `MainViewModel.AudioInputSelection.cs`
   owns custom audio-input property handlers, retargeting, and
   preview-monitoring ramp handoff.
   `MainViewModel.MicrophoneVolume.cs` owns microphone endpoint volume
