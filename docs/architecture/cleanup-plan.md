@@ -510,8 +510,9 @@ literal `ReadRepoFile` source-shape path resolution.
 `tests/Sussudio.Tests/ArchitectureDocs.CleanupPlanReferences.Tests.cs` owns
 cleanup-plan file/folder reference drift checks and architecture-doc test-family
 coverage.
-`tests/Sussudio.Tests/ArchitectureDocs.AgentMapHelpers.cs` owns the shared
-AGENT_MAP token, consumer, and file-family helper logic.
+`tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns shared
+Markdown code-span path-token resolution plus AGENT_MAP consumer and file-family
+helper logic.
 Shared tool assembly loading and stale-build detection now live in
 `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` so the legacy harness body
 no longer owns tool DLL resolution or freshness policy.

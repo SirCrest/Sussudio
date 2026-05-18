@@ -73,13 +73,21 @@ static partial class Program
             .All(file => agentMapText.Contains($"`{file}`", StringComparison.Ordinal));
 
     private static IEnumerable<string> EnumerateAgentMapPathTokens(string markdown)
+        => EnumerateMarkdownPathTokens(markdown, IsAgentMapPathToken);
+
+    private static IEnumerable<string> EnumerateCleanupPlanPathTokens(string markdown)
+        => EnumerateMarkdownPathTokens(markdown, IsCleanupPlanPathToken);
+
+    private static IEnumerable<string> EnumerateMarkdownPathTokens(
+        string markdown,
+        Func<string, bool> isPathToken)
     {
         foreach (Match match in MarkdownCodeSpanRegex.Matches(markdown))
         {
-            var token = match.Groups[1].Value.Trim();
-            if (IsAgentMapPathToken(token))
+            var token = NormalizeProjectInclude(match.Groups[1].Value.Trim());
+            if (isPathToken(token))
             {
-                yield return NormalizeProjectInclude(token);
+                yield return token;
             }
         }
     }
@@ -100,10 +108,50 @@ static partial class Program
             token.EndsWith(".slnx", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool IsCleanupPlanPathToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token) || string.Equals(token, "/", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (token.StartsWith("Sussudio/", StringComparison.Ordinal) ||
+            token.StartsWith("tests/", StringComparison.Ordinal) ||
+            token.StartsWith("tools/", StringComparison.Ordinal) ||
+            token.StartsWith("docs/", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return token.StartsWith("MainWindow.", StringComparison.Ordinal) &&
+            token.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static bool ResolvesAgentMapToken(
         string token,
         IReadOnlyCollection<string> files,
         IReadOnlySet<string> directories)
+        => ResolvesMarkdownPathToken(
+            token,
+            files,
+            directories,
+            allowDirectoryPathWithoutTrailingSlash: false);
+
+    private static bool ResolvesCleanupPlanToken(
+        string token,
+        IReadOnlyCollection<string> files,
+        IReadOnlySet<string> directories)
+        => ResolvesMarkdownPathToken(
+            token,
+            files,
+            directories,
+            allowDirectoryPathWithoutTrailingSlash: true);
+
+    private static bool ResolvesMarkdownPathToken(
+        string token,
+        IReadOnlyCollection<string> files,
+        IReadOnlySet<string> directories,
+        bool allowDirectoryPathWithoutTrailingSlash)
     {
         if (token.EndsWith("/", StringComparison.Ordinal))
         {
@@ -112,18 +160,20 @@ static partial class Program
 
         if (token.Contains('*', StringComparison.Ordinal))
         {
-            return AgentMapWildcardMatches(token, files);
+            return MarkdownWildcardMatches(token, files);
         }
 
+        var normalized = token.TrimEnd('/');
         if (token.Contains('/', StringComparison.Ordinal))
         {
-            return files.Contains(token, StringComparer.OrdinalIgnoreCase);
+            return files.Contains(normalized, StringComparer.OrdinalIgnoreCase) ||
+                (allowDirectoryPathWithoutTrailingSlash && directories.Contains(normalized));
         }
 
         return files.Any(file => string.Equals(Path.GetFileName(file), token, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static bool AgentMapWildcardMatches(string token, IEnumerable<string> files)
+    private static bool MarkdownWildcardMatches(string token, IEnumerable<string> files)
     {
         var wildcard = "^" + Regex.Escape(token).Replace("\\*", ".*") + "$";
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
@@ -179,12 +229,18 @@ static partial class Program
     }
 
     private static bool AgentMapContainsExactCodeSpan(string agentMapText, string relativePath)
+        => MarkdownContainsExactCodeSpan(agentMapText, relativePath);
+
+    private static bool CleanupPlanContainsExactCodeSpan(string cleanupPlanText, string relativePath)
+        => MarkdownContainsExactCodeSpan(cleanupPlanText, relativePath);
+
+    private static bool MarkdownContainsExactCodeSpan(string markdownText, string relativePath)
     {
         var normalizedPath = NormalizeProjectInclude(relativePath);
         var fileName = GetRepoFileName(normalizedPath);
 
-        return agentMapText.Contains($"`{normalizedPath}`", StringComparison.Ordinal) ||
-            agentMapText.Contains($"`{fileName}`", StringComparison.Ordinal);
+        return markdownText.Contains($"`{normalizedPath}`", StringComparison.Ordinal) ||
+            markdownText.Contains($"`{fileName}`", StringComparison.Ordinal);
     }
 
     private static bool AgentMapContainsRequiredUiPresentationCodeSpan(string agentMapText, string relativePath)

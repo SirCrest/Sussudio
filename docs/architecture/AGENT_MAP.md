@@ -1645,9 +1645,10 @@ Primary current owners:
   `ArchitectureDocs.SourceReferencePaths.Tests.cs` owns literal `ReadRepoFile`
   source-shape path drift checks.
   `ArchitectureDocs.CleanupPlanReferences.Tests.cs` owns cleanup-plan
-  file/folder reference drift checks, and `ArchitectureDocs.AgentMapHelpers.cs`
-  owns the shared AGENT_MAP token,
-  consumer, and ownership-file discovery helpers.
+  file/folder reference drift checks, and
+  `ArchitectureDocs.MarkdownReferenceHelpers.cs` owns shared Markdown code-span
+  path-token resolution plus AGENT_MAP consumer and ownership-file discovery
+  helpers.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter*.Tests.cs`
   owns the shared/ssctl snapshot formatter contract family: typed accessors,
   core section formatting, section-order, and Flashback opt-in smoke checks

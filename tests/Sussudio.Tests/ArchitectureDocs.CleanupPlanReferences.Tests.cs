@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -55,68 +54,4 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static IEnumerable<string> EnumerateCleanupPlanPathTokens(string markdown)
-    {
-        foreach (Match match in MarkdownCodeSpanRegex.Matches(markdown))
-        {
-            var token = NormalizeProjectInclude(match.Groups[1].Value.Trim());
-            if (IsCleanupPlanPathToken(token))
-            {
-                yield return token;
-            }
-        }
-    }
-
-    private static bool IsCleanupPlanPathToken(string token)
-    {
-        if (string.IsNullOrWhiteSpace(token) || string.Equals(token, "/", StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        if (token.StartsWith("Sussudio/", StringComparison.Ordinal) ||
-            token.StartsWith("tests/", StringComparison.Ordinal) ||
-            token.StartsWith("tools/", StringComparison.Ordinal) ||
-            token.StartsWith("docs/", StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        return token.StartsWith("MainWindow.", StringComparison.Ordinal) &&
-            token.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool ResolvesCleanupPlanToken(
-        string token,
-        IReadOnlyCollection<string> files,
-        IReadOnlySet<string> directories)
-    {
-        if (token.EndsWith("/", StringComparison.Ordinal))
-        {
-            return directories.Contains(token.TrimEnd('/'));
-        }
-
-        if (token.Contains('*', StringComparison.Ordinal))
-        {
-            return AgentMapWildcardMatches(token, files);
-        }
-
-        var normalized = token.TrimEnd('/');
-        if (token.Contains('/', StringComparison.Ordinal))
-        {
-            return files.Contains(normalized, StringComparer.OrdinalIgnoreCase) ||
-                directories.Contains(normalized);
-        }
-
-        return files.Any(file => string.Equals(Path.GetFileName(file), token, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static bool CleanupPlanContainsExactCodeSpan(string cleanupPlanText, string relativePath)
-    {
-        var normalizedPath = NormalizeProjectInclude(relativePath);
-        var fileName = GetRepoFileName(normalizedPath);
-
-        return cleanupPlanText.Contains($"`{normalizedPath}`", StringComparison.Ordinal) ||
-            cleanupPlanText.Contains($"`{fileName}`", StringComparison.Ordinal);
-    }
 }
