@@ -2411,10 +2411,10 @@ for setup/startup, sampling/completion delegation, and fault drain delegation.
 explicit phase context/state/result records.
 `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owns scenario sampling:
 live-state sampling setup, sample-loop invocation, and handoff to completion.
-`DiagnosticSessionScenarioPhaseCompletion.cs` owns post-sampling completion and
-fault drain: scenario background task awaits, recording-settings deferred
-await, rejected-export handling, PresentMon await, and interrupted
-background-task drain.
+`DiagnosticSessionScenarioPhaseCompletion.cs` owns post-sampling completion
+order and fault-drain delegation: registered background work before
+rejected-export handling, rejected-export handling before PresentMon
+completion, and interrupted drain handoff.
 `DiagnosticSessionRunExecution.Completion.cs` owns the final result-build
 request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
@@ -2604,7 +2604,8 @@ acquires and disposes the lock.
 
 Diagnostic-session background task tracking now lives in
 `tools/Common/DiagnosticSessionBackgroundTasks.cs`. The root owns scenario task
-registration, deterministic await order, and normal PresentMon completion.
+registration, deterministic await order, normal registered scenario/deferred
+recording-settings completion, and normal PresentMon completion.
 `DiagnosticSessionBackgroundTasks.FaultDrain.cs` owns interrupted-task warning
 collection and fault drain. `DiagnosticSessionBackgroundTasks.Models.cs` owns
 the small background-task handoff records.
@@ -2982,8 +2983,9 @@ Remaining `tools/Common` ownership:
    owns the explicit scenario context/state/result handoff, with
    `DiagnosticSessionScenarioPhaseRunner.Sampling.cs` owning sampling and
    `DiagnosticSessionScenarioPhaseCompletion.cs` owning post-sampling
-   background-task completion, rejected-export handling, PresentMon await, and
-   fault drain. Scenario catalog, initial scenario setup, optional scenario
+   completion ordering and fault-drain delegation while background task
+   completion lives in `DiagnosticSessionBackgroundTasks.cs`. Scenario catalog,
+   initial scenario setup, optional scenario
    startup, cleanup mutation ownership, post-cleanup recording checks,
    post-run snapshot fetches, command send/failure plumbing, and result
    construction are extracted; next, split remaining production runner

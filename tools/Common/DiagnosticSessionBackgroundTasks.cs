@@ -26,7 +26,21 @@ internal sealed partial class DiagnosticSessionBackgroundTasks
         _recordingSettingsDeferredTask = task;
     }
 
-    internal async Task AwaitScenarioTasksAsync()
+    internal async Task<FlashbackRecordingSettingsDeferredPresetState> CompleteRegisteredScenarioWorkAsync(
+        FlashbackRecordingSettingsDeferredPresetState recordingSettingsDeferredPresetState)
+    {
+        await AwaitScenarioTasksAsync().ConfigureAwait(false);
+        return await AwaitRecordingSettingsDeferredAsync(recordingSettingsDeferredPresetState).ConfigureAwait(false);
+    }
+
+    internal async Task<PresentMonProbeResult?> CompletePresentMonAsync(
+        PresentMonProbeResult? presentMon,
+        List<string> warnings)
+    {
+        return await AwaitPresentMonAsync(presentMon, warnings).ConfigureAwait(false);
+    }
+
+    private async Task AwaitScenarioTasksAsync()
     {
         foreach (var registration in _scenarioTasks.OrderBy(task => task.AwaitOrder))
         {
@@ -34,7 +48,7 @@ internal sealed partial class DiagnosticSessionBackgroundTasks
         }
     }
 
-    internal async Task<FlashbackRecordingSettingsDeferredPresetState> AwaitRecordingSettingsDeferredAsync(
+    private async Task<FlashbackRecordingSettingsDeferredPresetState> AwaitRecordingSettingsDeferredAsync(
         FlashbackRecordingSettingsDeferredPresetState current)
     {
         return _recordingSettingsDeferredTask is null
@@ -42,7 +56,7 @@ internal sealed partial class DiagnosticSessionBackgroundTasks
             : await _recordingSettingsDeferredTask.ConfigureAwait(false);
     }
 
-    internal async Task<PresentMonProbeResult?> AwaitPresentMonAsync(
+    private async Task<PresentMonProbeResult?> AwaitPresentMonAsync(
         PresentMonProbeResult? current,
         List<string> warnings)
     {

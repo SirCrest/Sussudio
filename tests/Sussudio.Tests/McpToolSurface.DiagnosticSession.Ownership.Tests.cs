@@ -136,8 +136,11 @@ static partial class Program
         AssertContains(startupText, "internal readonly record struct DiagnosticSessionScenarioStartupResult(bool StartedFlashbackPlayback)");
         AssertContains(tasksText, "internal sealed partial class DiagnosticSessionBackgroundTasks");
         AssertContains(tasksText, "internal void AddScenario(int awaitOrder, string stage, Task task)");
-        AssertContains(tasksText, "internal async Task AwaitScenarioTasksAsync()");
-        AssertContains(tasksText, "internal async Task<PresentMonProbeResult?> AwaitPresentMonAsync(");
+        AssertContains(tasksText, "internal async Task<FlashbackRecordingSettingsDeferredPresetState> CompleteRegisteredScenarioWorkAsync(");
+        AssertContains(tasksText, "private async Task AwaitScenarioTasksAsync()");
+        AssertContains(tasksText, "private async Task<FlashbackRecordingSettingsDeferredPresetState> AwaitRecordingSettingsDeferredAsync(");
+        AssertContains(tasksText, "internal async Task<PresentMonProbeResult?> CompletePresentMonAsync(");
+        AssertContains(tasksText, "private async Task<PresentMonProbeResult?> AwaitPresentMonAsync(");
         AssertContains(tasksText, "internal async Task<DiagnosticSessionBackgroundTaskDrainResult> ObserveAfterFaultAsync(");
         AssertContains(tasksText, "presentmon-task: task still running after diagnostic interruption");
         AssertContains(tasksText, "flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
@@ -187,7 +190,8 @@ static partial class Program
         AssertDoesNotContain(startupRegistrationText, "RunFlashbackExportConcurrentAsync(");
         AssertContains(runnerText, "DiagnosticSessionScenarioStartup.StartAsync(");
         AssertContains(runnerText, "startedFlashbackPlayback = scenarioStartup.StartedFlashbackPlayback;");
-        AssertContains(runnerText, "backgroundTasks.AwaitScenarioTasksAsync()");
+        AssertContains(runnerText, ".CompleteRegisteredScenarioWorkAsync(");
+        AssertContains(runnerText, "backgroundTasks.CompletePresentMonAsync(");
         AssertContains(runnerText, "backgroundTasks.ObserveAfterFaultAsync(");
         AssertDoesNotContain(runnerText, "Task? flashbackStressTask");
         AssertDoesNotContain(runnerText, "Task<PresentMonProbeResult>? presentMonTask");

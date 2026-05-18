@@ -15,6 +15,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var completionText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseCompletion.cs")
             .Replace("\r\n", "\n");
+        var backgroundTasksText = ReadDiagnosticSessionBackgroundTasksSource();
 
         AssertContains(executionText, "DiagnosticSessionScenarioPhaseRunner.RunAsync(scenarioPhaseContext)");
         AssertContains(phaseRunnerText, "internal static partial class DiagnosticSessionScenarioPhaseRunner");
@@ -35,10 +36,13 @@ static partial class Program
         AssertContains(samplingText, "DiagnosticSessionScenarioPhaseCompletion.CompleteAfterSamplingAsync(");
         AssertContains(completionText, "internal static class DiagnosticSessionScenarioPhaseCompletion");
         AssertContains(completionText, "internal static async Task CompleteAfterSamplingAsync(");
-        AssertContains(completionText, "backgroundTasks.AwaitScenarioTasksAsync()");
-        AssertContains(completionText, "AwaitRecordingSettingsDeferredAsync(scenarioPhase.FlashbackRecordingSettingsDeferredPresetState)");
+        AssertContains(completionText, ".CompleteRegisteredScenarioWorkAsync(scenarioPhase.FlashbackRecordingSettingsDeferredPresetState)");
         AssertContains(completionText, "DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(");
-        AssertContains(completionText, "backgroundTasks.AwaitPresentMonAsync(scenarioPhase.PresentMon, context.Warnings)");
+        AssertContains(completionText, "backgroundTasks.CompletePresentMonAsync(scenarioPhase.PresentMon, context.Warnings)");
+        AssertContains(backgroundTasksText, "internal async Task<FlashbackRecordingSettingsDeferredPresetState> CompleteRegisteredScenarioWorkAsync(");
+        AssertContains(backgroundTasksText, "private async Task AwaitScenarioTasksAsync()");
+        AssertContains(backgroundTasksText, "private async Task<FlashbackRecordingSettingsDeferredPresetState> AwaitRecordingSettingsDeferredAsync(");
+        AssertContains(backgroundTasksText, "internal async Task<PresentMonProbeResult?> CompletePresentMonAsync(");
         AssertContains(scenarioText, "context.RecordTerminalException(ex, context.GetLastStage())");
         AssertContains(scenarioText, "context.ScenarioCancellationSource.Cancel();");
         AssertContains(phaseRunnerText, "DiagnosticSessionScenarioPhaseCompletion.DrainAfterFaultAsync(context, backgroundTasks, scenarioPhase)");
@@ -78,8 +82,9 @@ static partial class Program
         AssertOccursBefore(phaseRunnerText, "context.ScenarioCancellationSource.Cancel();", "DiagnosticSessionScenarioPhaseCompletion.DrainAfterFaultAsync(context, backgroundTasks, scenarioPhase)");
         AssertOccursBefore(samplingText, "context.SetStage(\"sampling\")", "SampleLoopAsync(");
         AssertOccursBefore(samplingText, "SampleLoopAsync(", "DiagnosticSessionScenarioPhaseCompletion.CompleteAfterSamplingAsync(");
-        AssertOccursBefore(completionText, "backgroundTasks.AwaitScenarioTasksAsync()", "DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(");
-        AssertOccursBefore(completionText, "DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(", "backgroundTasks.AwaitPresentMonAsync(");
+        AssertOccursBefore(backgroundTasksText, "await AwaitScenarioTasksAsync()", "return await AwaitRecordingSettingsDeferredAsync(");
+        AssertOccursBefore(completionText, ".CompleteRegisteredScenarioWorkAsync(", "DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(");
+        AssertOccursBefore(completionText, "DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(", "backgroundTasks.CompletePresentMonAsync(");
 
         return Task.CompletedTask;
     }

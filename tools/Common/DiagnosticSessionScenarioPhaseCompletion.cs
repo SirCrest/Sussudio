@@ -7,9 +7,8 @@ internal static class DiagnosticSessionScenarioPhaseCompletion
         DiagnosticSessionBackgroundTasks backgroundTasks,
         DiagnosticSessionScenarioPhaseState scenarioPhase)
     {
-        await backgroundTasks.AwaitScenarioTasksAsync().ConfigureAwait(false);
         scenarioPhase.FlashbackRecordingSettingsDeferredPresetState = await backgroundTasks
-            .AwaitRecordingSettingsDeferredAsync(scenarioPhase.FlashbackRecordingSettingsDeferredPresetState)
+            .CompleteRegisteredScenarioWorkAsync(scenarioPhase.FlashbackRecordingSettingsDeferredPresetState)
             .ConfigureAwait(false);
 
         await DiagnosticSessionFlashbackRejectedExports.RunSelectedRejectedExportScenariosAsync(
@@ -21,7 +20,7 @@ internal static class DiagnosticSessionScenarioPhaseCompletion
                 context.RunCancellationToken)
             .ConfigureAwait(false);
 
-        scenarioPhase.PresentMon = await backgroundTasks.AwaitPresentMonAsync(scenarioPhase.PresentMon, context.Warnings).ConfigureAwait(false);
+        scenarioPhase.PresentMon = await backgroundTasks.CompletePresentMonAsync(scenarioPhase.PresentMon, context.Warnings).ConfigureAwait(false);
     }
 
     internal static async Task DrainAfterFaultAsync(

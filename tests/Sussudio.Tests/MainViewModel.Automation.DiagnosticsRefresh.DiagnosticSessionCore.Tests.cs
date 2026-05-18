@@ -22,7 +22,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "internal sealed partial class DiagnosticSessionRunContext : IDisposable");
         AssertContains(diagnosticSessionText, "RunState = new DiagnosticSessionRunState(");
         AssertContains(diagnosticSessionText, "_liveStateWriter = new DiagnosticSessionLiveStateWriter(");
-        AssertContains(diagnosticSessionText, "backgroundTasks.AwaitScenarioTasksAsync()");
+        AssertContains(diagnosticSessionText, ".CompleteRegisteredScenarioWorkAsync(");
         AssertContains(diagnosticSessionText, "backgroundTasks.ObserveAfterFaultAsync(");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<string> All => DiagnosticSessionScenarioCatalog.Names;");
         AssertContains(diagnosticScenariosText, "internal static class DiagnosticSessionScenarioCatalog");
