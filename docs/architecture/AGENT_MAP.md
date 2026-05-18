@@ -1274,8 +1274,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.PreviewVolume.Tests.cs` owns
   preview-volume persistence and automation options surface assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
-  owns recording-transition routing, failure propagation, and emergency-stop
-  routing through the shared lifecycle gate.
+  owns recording-transition routing, failure propagation, emergency-stop
+  routing through the shared lifecycle gate, and recording-setting automation
+  routing for Flashback encoder cycles.
 - `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs` owns
   the `IAutomationViewModel` async surface contract plus Flashback/probe
   dispatcher routing and UI-dispatch cancellation disposal assertions.

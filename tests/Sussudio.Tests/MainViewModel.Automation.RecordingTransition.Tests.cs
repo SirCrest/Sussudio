@@ -166,4 +166,57 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task MainViewModelAutomation_RecordingSettingsRouteThroughControllerAndFlashbackCycle()
+    {
+        var viewModelFiles = ReadMainViewModelCodeFiles();
+        var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
+        var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackSettings.cs"];
+        var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackEncoderSettings.cs"];
+        var automationRecordingSettingsText = viewModelFiles["MainViewModel.AutomationRecordingSettings.cs"];
+        var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs")
+            .Replace("\r\n", "\n");
+        var rawFlashbackEncoderSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackEncoderSettings.cs")
+            .Replace("\r\n", "\n");
+
+        AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedRecordingFormatChanged", "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),");
+        AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedRecordingFormatChanged", "_suppressFlashbackFormatCycle is false");
+        AssertContains(rawFlashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),\n                \"recording format\");");
+        AssertContains(viewModelFlashbackStateText, "private bool _suppressFlashbackFormatCycle;");
+        AssertMemberContains(automationRecordingSettingsText, "SetRecordingFormatAsync", "_recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken)");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetRecordingFormatAsync", "_suppressFlashbackFormatCycle = true;");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetRecordingFormatAsync", "RecordingSettingsSelectionPolicy.ParseRecordingFormat(matched)");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetRecordingFormatAsync", "await _viewModel._sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
+        AssertDoesNotContain(flashbackSettingsText, "public async Task SetRecordingFormatAsync");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetQualityAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetQualityAsync", "_viewModel.SelectedQuality = matched;");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetQualityAsync", "quality: settings.Quality");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetSplitEncodeModeAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetSplitEncodeModeAsync", "SplitEncodeMode: _viewModel.SelectedSplitEncodeMode");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetSplitEncodeModeAsync", "splitEncodeMode: settings.SplitEncodeMode");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetCustomBitrateAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetCustomBitrateAsync", "_viewModel.CustomBitrateMbps = RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps);");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetCustomBitrateAsync", "customBitrateMbps: settings.Bitrate");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetPresetAsync", "_suppressFlashbackEncoderSettingsCycle = true;");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetPresetAsync", "_viewModel.SelectedPreset = matched;");
+        AssertMemberContains(recordingSettingsAutomationControllerText, "SetPresetAsync", "nvencPreset: settings.Preset");
+        AssertMemberContains(flashbackEncoderSettingsText, "OnCustomBitrateMbpsChanged", "TrackFlashbackEncoderSettingsCycle(");
+        AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedQualityChanged", "TrackFlashbackEncoderSettingsCycle(");
+        AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedPresetChanged", "TrackFlashbackEncoderSettingsCycle(");
+        AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedSplitEncodeModeChanged", "TrackFlashbackEncoderSettingsCycle(");
+        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality)");
+        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "customBitrateMbps: CustomBitrateMbps");
+        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "nvencPreset: SelectedPreset");
+        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "splitEncodeMode: SelectedSplitEncodeMode");
+        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "TrackPendingFlashbackCycleTask(task, description);");
+        AssertMemberContains(flashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask", "_pendingFlashbackCycleTask = task;");
+        AssertMemberContains(flashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask", "if (ReferenceEquals(_pendingFlashbackCycleTask, t))");
+        AssertMemberContains(flashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask", "_pendingFlashbackCycleTask = null;");
+        AssertMemberContains(flashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask", "if (t.IsFaulted)");
+        AssertMemberContains(flashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask", "else if (t.IsCanceled)");
+        AssertContains(rawFlashbackEncoderSettingsText, "CycleFlashbackEncoder({description}) failed");
+        AssertContains(rawFlashbackEncoderSettingsText, "CycleFlashbackEncoder({description}) canceled");
+
+        return Task.CompletedTask;
+    }
 }
