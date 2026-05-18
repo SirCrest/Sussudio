@@ -7,6 +7,8 @@ static partial class Program
 {
     private static Task FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps()
     {
+        var trackerSource = ReadRepoFile("Sussudio/Services/Capture/FrameFingerprintCadenceTracker.cs").Replace("\r\n", "\n");
+        var trackerMetricsSource = ReadRepoFile("Sussudio/Services/Capture/FrameFingerprintCadenceTracker.Metrics.cs").Replace("\r\n", "\n");
         var tracker = CreateInstance("Sussudio.Services.Capture.FrameFingerprintCadenceTracker");
         var trackerType = tracker.GetType();
         var recordFrame = trackerType.GetMethod("RecordFrame", BindingFlags.Public | BindingFlags.Instance)
@@ -46,6 +48,21 @@ static partial class Program
         {
             throw new InvalidOperationException($"Unique FPS stayed stale during duplicate run: {uniqueFps:0.00} fps.");
         }
+
+        AssertContains(trackerSource, "internal sealed partial class FrameFingerprintCadenceTracker");
+        AssertContains(trackerSource, "public void RecordFrame(ulong hash, long timestampTick = 0)");
+        AssertContains(trackerSource, "public static ulong ComputeHash(ReadOnlySpan<byte> data)");
+        AssertContains(trackerSource, "private static ulong HashBytes(ulong initialHash, ReadOnlySpan<byte> data)");
+        AssertDoesNotContain(trackerSource, "public Metrics GetMetrics(");
+        AssertDoesNotContain(trackerSource, "private static string ResolvePattern(");
+        AssertDoesNotContain(trackerSource, "private static double[] BuildRecentUniqueIntervals(");
+
+        AssertContains(trackerMetricsSource, "internal sealed partial class FrameFingerprintCadenceTracker");
+        AssertContains(trackerMetricsSource, "public readonly record struct Metrics(");
+        AssertContains(trackerMetricsSource, "public static Metrics Empty { get; }");
+        AssertContains(trackerMetricsSource, "public Metrics GetMetrics(int maxRecentSamples = 180)");
+        AssertContains(trackerMetricsSource, "private static double[] BuildRecentUniqueIntervals(");
+        AssertContains(trackerMetricsSource, "private static string ResolvePattern(");
 
         return Task.CompletedTask;
     }
