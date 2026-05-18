@@ -1664,11 +1664,14 @@ jitter buffer setup/disposal, MJPEG stop retention, and MJPEG fatal-error
 routing live in
 `Sussudio/Services/Capture/UnifiedVideoCapture.MjpegPipelineLifecycle.cs`.
 
-Unified capture recording/Flashback sink fan-out now lives in
-`Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs`. Keep recording
-and Flashback enqueue helpers, non-blocking queue rejection accounting, legacy
-encoder fallback enqueue adapters, and Flashback recording sequence-gap
-accounting there; keep frame arrival callbacks in
+Unified capture recording sink fan-out now lives in
+`Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs`, and Flashback
+sink fan-out now lives in
+`Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.Flashback.cs`. Keep
+recording enqueue helpers, recording queue rejection accounting, and legacy
+encoder fallback enqueue adapters in the recording fan-out file; keep Flashback
+enqueue helpers, Flashback queue rejection accounting, and Flashback recording
+sequence-gap accounting in the Flashback fan-out file; keep frame arrival callbacks in
 `UnifiedVideoCapture.FrameIngress.cs`.
 
 Unified capture preview routing now lives in
@@ -1676,7 +1679,8 @@ Unified capture preview routing now lives in
 assignment, live-preview suppression/resume drains, MJPEG preview-frame decoded
 callbacks, raw preview submission, and visual-cadence reset/recording helpers
 there; keep recording and Flashback enqueue paths in
-`UnifiedVideoCapture.SinkFanout.cs`.
+`UnifiedVideoCapture.SinkFanout.cs` and
+`UnifiedVideoCapture.SinkFanout.Flashback.cs`.
 
 Decoded visual-cadence sampling now lives in
 `Sussudio/Services/Capture/VisualCadenceTracker.cs`. Keep luma sampling, crop
