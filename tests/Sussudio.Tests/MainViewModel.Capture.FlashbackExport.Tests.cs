@@ -21,6 +21,8 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.ResourceRelease.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs")
                 .Replace("\r\n", "\n");
         var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs")
             .Replace("\r\n", "\n")
@@ -101,7 +103,7 @@ static partial class Program
         var cleanupBridge = ExtractTextBetween(
             captureServiceText,
             "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync",
-            "    private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+            "\n}");
         AssertContains(cleanupBridge, "_flashbackBackend.CleanupArtifactsAfterExportAsync(");
         AssertContains(cleanupBridge, "WaitForFlashbackBackendCleanupExportLockAsync");
         AssertContains(cleanupBridge, "ReleaseFlashbackBackendCleanupExportLock");

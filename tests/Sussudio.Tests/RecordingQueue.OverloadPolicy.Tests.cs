@@ -293,7 +293,7 @@ static partial class Program
         var deferredFlashbackBackendCleanup = ExtractSourceBlock(
             captureServiceSource,
             "private void ScheduleDeferredFlashbackBackendCleanup",
-            "private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+            "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync");
         AssertContains(deferredFlashbackBackendCleanup, "FlashbackBackendArtifactCleanupRequest request,");
         AssertContains(deferredFlashbackBackendCleanup, "_flashbackBackend.ScheduleDeferredArtifactCleanup(");
         AssertContains(deferredFlashbackBackendCleanup, "WaitForFlashbackBackendCleanupExportLockAsync");

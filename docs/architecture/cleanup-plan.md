@@ -836,10 +836,10 @@ used by lifecycle/export/cleanup partials.
 
 Deferred capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs`. That file owns
-the Flashback artifact cleanup adapter handoff and export-lock delegation,
-deferred unified-video cleanup after LibAv drains, and the pending LibAv drain
-reentry guard. Flashback backend artifact cleanup request/retry/dispose/purge
-mechanics live in
+the Flashback artifact cleanup adapter handoff and export-lock delegation.
+Deferred unified-video cleanup after LibAv drains and the pending LibAv drain
+reentry guard live with the video pipeline lifecycle owner. Flashback backend
+artifact cleanup request/retry/dispose/purge mechanics live in
 `Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs`.
 
 Capture read-only automation probes now live in
@@ -966,11 +966,13 @@ Flashback export diagnostics now lives in
 Keep export attempt state, progress forwarding, rejection records,
 force-rotate fallback counters, and completion status projection there.
 
-Preview sink and MJPEG timing handoff now lives in
-`Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs`. That file owns
-preview-frame sink attachment, late Flashback playback preview wiring, shared
-D3D preview-device handoff, negotiated video getters, and cached MJPEG pipeline
-timing details.
+Shared video-pipeline lifecycle handoff now lives in
+`Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs`. That file
+owns preview-frame sink attachment, late Flashback playback preview wiring,
+shared D3D preview-device handoff, negotiated video getters, cached MJPEG
+pipeline timing details, fatal/pixel callback attach/detach, deferred
+unified-video cleanup after LibAv drains, and the pending LibAv drain reentry
+guard.
 
 Preview lifecycle now lives in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.PreviewStart.cs` owns video-preview
@@ -985,8 +987,9 @@ stop transitions, keep-pipeline-alive detach semantics, and stopped-state/
 telemetry commit; `Sussudio/Services/Capture/CaptureService.PreviewReuse.cs`
 owns retained video/Flashback backend reuse checks and capture-settings cloning;
 `Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs` owns preview
-pipeline disposal ordering, deferred video cleanup, Flashback backend disposal,
-WASAPI disposal, and microphone cleanup.
+pipeline disposal ordering, Flashback backend disposal, WASAPI disposal, and
+microphone cleanup while delegating shared unified-video cleanup mechanics to
+the video pipeline lifecycle owner.
 
 Recording integrity policy is now split under
 `Sussudio/Services/Capture/CaptureService.RecordingIntegrity*.cs`. The root
