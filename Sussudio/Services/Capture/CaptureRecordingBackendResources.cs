@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Flashback;
@@ -76,6 +77,43 @@ internal sealed class CaptureRecordingBackendResources
     {
         ClearActiveBackend();
         ClearContextAndSettings();
+    }
+
+    public void ClearPendingLibAvDrainIfCompletedSuccessfully()
+    {
+        if (PendingLibAvDrainTask?.IsCompletedSuccessfully == true)
+        {
+            PendingLibAvDrainTask = null;
+        }
+    }
+
+    public void ThrowIfPendingLibAvDrainBlocksReentry()
+    {
+        var pendingLibAvDrainTask = PendingLibAvDrainTask;
+        if (pendingLibAvDrainTask == null)
+        {
+            return;
+        }
+
+        if (pendingLibAvDrainTask.IsCompletedSuccessfully)
+        {
+            PendingLibAvDrainTask = null;
+            return;
+        }
+
+        if (pendingLibAvDrainTask.IsFaulted)
+        {
+            throw new InvalidOperationException(
+                "Previous recording backend failed to finalize cleanly. Check the logs and retry.",
+                pendingLibAvDrainTask.Exception?.GetBaseException());
+        }
+
+        if (pendingLibAvDrainTask.IsCanceled)
+        {
+            throw new InvalidOperationException("Previous recording backend cleanup was canceled. Check the logs and retry.");
+        }
+
+        throw new InvalidOperationException("Previous recording backend is still finalizing. Please wait a moment and try again.");
     }
 
     internal readonly record struct ActiveRecordingBackend(

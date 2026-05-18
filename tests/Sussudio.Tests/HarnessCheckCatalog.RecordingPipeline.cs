@@ -9,8 +9,8 @@ static partial class Program
             "Recording video queues fail explicitly instead of evicting frames",
             RecordingVideoQueues_FailExplicitlyInsteadOfEvictingFrames);
         await AddCheckAsync(results,
-            "Capture service recording lifecycle lives in focused partial",
-            CaptureService_RecordingLifecycleLivesInFocusedPartial);
+            "Capture service recording lifecycle and backend resources have focused owners",
+            CaptureService_RecordingLifecycleAndBackendResourcesHaveFocusedOwners);
         await AddCheckAsync(results,
             "Capture service recording rollback lives in focused partial",
             CaptureService_RecordingRollbackLivesInFocusedPartial);

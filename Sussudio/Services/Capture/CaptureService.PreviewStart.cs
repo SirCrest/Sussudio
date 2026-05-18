@@ -89,7 +89,7 @@ public partial class CaptureService
                 return;
             }
 
-            ThrowIfPendingLibAvDrainTaskBlocksReentry();
+            _recordingBackend.ThrowIfPendingLibAvDrainBlocksReentry();
 
             var hdrRequested = HdrOutputPolicy.IsEnabled(settings);
             var requireP010 = hdrRequested;

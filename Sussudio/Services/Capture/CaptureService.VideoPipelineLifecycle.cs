@@ -137,43 +137,6 @@ public partial class CaptureService
         });
     }
 
-    private void ClearPendingLibAvDrainTaskIfCompletedSuccessfully()
-    {
-        if (_pendingLibAvDrainTask?.IsCompletedSuccessfully == true)
-        {
-            _pendingLibAvDrainTask = null;
-        }
-    }
-
-    private void ThrowIfPendingLibAvDrainTaskBlocksReentry()
-    {
-        var pendingLibAvDrainTask = _pendingLibAvDrainTask;
-        if (pendingLibAvDrainTask == null)
-        {
-            return;
-        }
-
-        if (pendingLibAvDrainTask.IsCompletedSuccessfully)
-        {
-            _pendingLibAvDrainTask = null;
-            return;
-        }
-
-        if (pendingLibAvDrainTask.IsFaulted)
-        {
-            throw new InvalidOperationException(
-                "Previous recording backend failed to finalize cleanly. Check the logs and retry.",
-                pendingLibAvDrainTask.Exception?.GetBaseException());
-        }
-
-        if (pendingLibAvDrainTask.IsCanceled)
-        {
-            throw new InvalidOperationException("Previous recording backend cleanup was canceled. Check the logs and retry.");
-        }
-
-        throw new InvalidOperationException("Previous recording backend is still finalizing. Please wait a moment and try again.");
-    }
-
     private void TryApplySharedPreviewDevice(UnifiedVideoCapture? capture, IPreviewFrameSink? sink)
     {
         if (capture == null || sink is not D3D11PreviewRenderer renderer)

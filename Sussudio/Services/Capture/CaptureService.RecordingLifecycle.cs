@@ -32,7 +32,7 @@ public partial class CaptureService
 
             var rollback = new RecordingStartRollbackState();
             _previewAudioGraph.ResetCaptureFault();
-            ThrowIfPendingLibAvDrainTaskBlocksReentry();
+            _recordingBackend.ThrowIfPendingLibAvDrainBlocksReentry();
             try
             {
                 await DisposeUnusableFlashbackRecordingBackendAsync(transitionToken).ConfigureAwait(false);

@@ -121,7 +121,8 @@ static partial class Program
         AssertContains(videoPipelineLifecycleText, "private void DetachUnifiedVideoCapture(UnifiedVideoCapture? unifiedVideoCapture)");
         AssertContains(videoPipelineLifecycleText, "private void CacheMjpegTimingMetrics(UnifiedVideoCapture? unifiedVideoCapture)");
         AssertContains(videoPipelineLifecycleText, "private Task ScheduleDeferredUnifiedVideoCaptureCleanup(");
-        AssertContains(videoPipelineLifecycleText, "private void ThrowIfPendingLibAvDrainTaskBlocksReentry()");
+        AssertDoesNotContain(videoPipelineLifecycleText, "ThrowIfPendingLibAvDrainTaskBlocksReentry");
+        AssertContains(disposalText, "_recordingBackend.ClearPendingLibAvDrainIfCompletedSuccessfully();");
         AssertContains(videoPipelineLifecycleText, "private void TryApplySharedPreviewDevice(UnifiedVideoCapture? capture, IPreviewFrameSink? sink)");
         AssertDoesNotContain(deferredCleanupText, "ScheduleDeferredUnifiedVideoCaptureCleanup");
         AssertEqual(

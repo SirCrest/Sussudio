@@ -845,8 +845,9 @@ used by lifecycle/export/cleanup partials.
 Deferred capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs`. That file owns
 the Flashback artifact cleanup adapter handoff and export-lock delegation.
-Deferred unified-video cleanup after LibAv drains and the pending LibAv drain
-reentry guard live with the video pipeline lifecycle owner. Flashback backend
+Deferred unified-video cleanup after LibAv drains lives with the video pipeline
+lifecycle owner. Pending LibAv drain task state and reentry policy live in
+`Sussudio/Services/Capture/CaptureRecordingBackendResources.cs`. Flashback backend
 artifact cleanup request/retry/dispose/purge mechanics live in
 `Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs`.
 
@@ -979,8 +980,7 @@ Shared video-pipeline lifecycle handoff now lives in
 owns preview-frame sink attachment, late Flashback playback preview wiring,
 shared D3D preview-device handoff, negotiated video getters, cached MJPEG
 pipeline timing details, fatal/pixel callback attach/detach, deferred
-unified-video cleanup after LibAv drains, and the pending LibAv drain reentry
-guard.
+unified-video cleanup after LibAv drains.
 
 Preview lifecycle now lives in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.PreviewStart.cs` owns video-preview
@@ -3372,8 +3372,9 @@ Remaining `tools/Common` ownership:
    coordinator for AV1 probing, readiness waiting, and cleanup handoff.
    `CaptureRecordingBackendResources.cs` now owns active recording backend
    resources: LibAv/Flashback sink identity, active recording context/settings,
-   and pending LibAv drain task tracking. Keep later recording backend resource
-   mechanics there unless the behavior needs a larger, proven boundary.
+   pending LibAv drain task tracking, and pending-drain reentry policy. Keep
+   later recording backend resource mechanics there unless the behavior needs a
+   larger, proven boundary.
 
 ## Guardrails
 

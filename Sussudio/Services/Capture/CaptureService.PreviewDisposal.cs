@@ -10,7 +10,7 @@ public partial class CaptureService
         CancellationToken transitionToken,
         bool purgeFlashbackSegments)
     {
-        ClearPendingLibAvDrainTaskIfCompletedSuccessfully();
+        _recordingBackend.ClearPendingLibAvDrainIfCompletedSuccessfully();
 
         var unifiedVideoCapture = _unifiedVideoCapture;
         var videoCaptureCleanupDeferred = false;

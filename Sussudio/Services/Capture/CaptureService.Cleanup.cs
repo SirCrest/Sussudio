@@ -46,7 +46,7 @@ public partial class CaptureService
             }
         }
 
-        ClearPendingLibAvDrainTaskIfCompletedSuccessfully();
+        _recordingBackend.ClearPendingLibAvDrainIfCompletedSuccessfully();
 
         try
         {

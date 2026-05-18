@@ -54,7 +54,7 @@ static partial class Program
         var retainedPreviewFastPath = ExtractTextBetween(
             startVideoPreview,
             "(_isRecording || _flashbackEnabled)",
-            "ThrowIfPendingLibAvDrainTaskBlocksReentry()");
+            "_recordingBackend.ThrowIfPendingLibAvDrainBlocksReentry()");
         var ensureFlashbackAudio = ExtractTextBetween(
             captureServiceText,
             "private async Task EnsureFlashbackAudioInputsAsync",

@@ -18,7 +18,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task CaptureService_RecordingLifecycleLivesInFocusedPartial()
+    private static Task CaptureService_RecordingLifecycleAndBackendResourcesHaveFocusedOwners()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
@@ -44,6 +44,14 @@ static partial class Program
         AssertDoesNotContain(rootText, "public Task StartRecordingAsync(");
         AssertDoesNotContain(rootText, "public Task StopRecordingAsync(");
         AssertContains(rootText, "private readonly CaptureRecordingBackendResources _recordingBackend = new();");
+        AssertContains(rootText, "get => _recordingBackend.SettingsSnapshot;");
+        AssertContains(rootText, "set => _recordingBackend.SettingsSnapshot = value;");
+        AssertContains(rootText, "get => _recordingBackend.LibAvSink;");
+        AssertContains(rootText, "set => _recordingBackend.LibAvSink = value;");
+        AssertContains(rootText, "get => _recordingBackend.Sink;");
+        AssertContains(rootText, "set => _recordingBackend.Sink = value;");
+        AssertContains(rootText, "get => _recordingBackend.Context;");
+        AssertContains(rootText, "set => _recordingBackend.Context = value;");
         AssertDoesNotContain(rootText, "private CaptureSettings? _activeRecordingSettings;");
         AssertDoesNotContain(rootText, "private LibAvRecordingSink? _libavSink;");
         AssertDoesNotContain(rootText, "private IRecordingSink? _recordingSink;");
@@ -59,8 +67,14 @@ static partial class Program
         AssertContains(recordingBackendText, "public void InstallFlashback(");
         AssertContains(recordingBackendText, "public ActiveRecordingBackend DetachLibAvBackend()");
         AssertContains(recordingBackendText, "public RecordingContext? DetachFlashbackBackend()");
+        AssertContains(recordingBackendText, "public void ClearPendingLibAvDrainIfCompletedSuccessfully()");
+        AssertContains(recordingBackendText, "public void ThrowIfPendingLibAvDrainBlocksReentry()");
+        AssertContains(recordingBackendText, "Previous recording backend failed to finalize cleanly. Check the logs and retry.");
+        AssertContains(recordingBackendText, "Previous recording backend cleanup was canceled. Check the logs and retry.");
+        AssertContains(recordingBackendText, "Previous recording backend is still finalizing. Please wait a moment and try again.");
         AssertContains(lifecycleText, "public Task StartRecordingAsync(");
         AssertContains(lifecycleText, "RunTransitionAsync(CaptureSessionState.Recording");
+        AssertContains(lifecycleText, "_recordingBackend.ThrowIfPendingLibAvDrainBlocksReentry();");
         AssertContains(lifecycleText, "var rollback = new RecordingStartRollbackState();");
         AssertContains(lifecycleText, "await DisposeUnusableFlashbackRecordingBackendAsync(transitionToken)");
         AssertContains(lifecycleText, "await StartFlashbackRecordingAsync(settings, transitionToken, rollback)");

@@ -437,8 +437,8 @@ Important entry points:
   capture-fault telemetry.
 - `CaptureRecordingBackendResources.cs` owns active recording backend resources:
   LibAv/Flashback sink identity, recording context/settings snapshot, pending
-  LibAv drain task tracking, and explicit install/detach/clear operations used
-  by recording start, finalization, rollback, and cleanup paths.
+  LibAv drain task tracking/reentry policy, and explicit install/detach/clear
+  operations used by recording start, finalization, rollback, and cleanup paths.
 - `CaptureService.AudioPreviewLifecycle.cs` owns audio-preview start/stop
   lifecycle, late WASAPI capture startup, playback start, preview rollback, and
   optional capture teardown.
@@ -563,8 +563,7 @@ Important entry points:
 - `CaptureService.VideoPipelineLifecycle.cs` owns preview frame sink attachment,
   shared D3D preview-device handoff, negotiated video getters, cached MJPEG
   pipeline timing details, unified-video fatal/pixel callback attach/detach,
-  deferred unified-video cleanup after LibAv drains, and the pending LibAv drain
-  reentry guard.
+  and deferred unified-video cleanup after LibAv drains.
 - `CaptureService.Probes.cs` owns read-only automation probes and preview-frame
   capture waits.
 - `CaptureService.RecordingIntegrity.cs` owns active recording integrity backend
@@ -1508,8 +1507,8 @@ Primary current owners:
   snapshot, and automation formatter telemetry assertions.
   `CaptureService.RecordingOwnership.Tests.cs` owns
   CaptureService recording lifecycle, recording-stop finalization failure
-  propagation, rollback, and recording outcome-state file-ownership
-  assertions.
+  propagation, rollback, active recording backend resource aggregate ownership,
+  and recording outcome-state file-ownership assertions.
 - `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Tests.cs` owns LibAv recording
   sink output validation, try-enqueue, video-session setup, video-queue
   submission, queue-cleanup, drain-loop, encoding-loop, startup sequencing,
