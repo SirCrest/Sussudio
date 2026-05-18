@@ -979,8 +979,9 @@ Primary current owners:
   sampling. `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`
   owns the read-only preview runtime snapshot composition and blank/stall
   suspicion. `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs`
-  owns renderer frame-counter override, cadence projection, D3D diagnostic
-  fields, estimated pipeline latency, and GPU playback projection.
+  owns the renderer projection data contract. `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.Builder.cs`
+  owns renderer frame-counter override, cadence projection, D3D diagnostic field
+  mapping, estimated pipeline latency, and GPU playback projection.
   Window close routing/finalization ownership is detailed in the window close
   section below:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
