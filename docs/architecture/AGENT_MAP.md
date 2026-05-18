@@ -1289,10 +1289,13 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`
   owns MainWindow close lifecycle, recording-stop close protection, native
   bootstrap, and first-frame native reveal ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Tests.cs` owns
-  MainWindow controller-adapter ownership assertions for control bar, shell
-  elevation, preview-transition, preview startup overlay, preview fade-in, and
-  recording-button chrome controller.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.ShellPreview.Tests.cs`
+  owns MainWindow controller-adapter ownership assertions for control bar,
+  shell elevation, preview-transition, preview startup overlay, and preview
+  fade-in controllers.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Visual.Recording.Tests.cs`
+  owns MainWindow controller-adapter ownership assertions for recording-button
+  chrome, recording-state presentation, and recording-state presentation policy.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` owns
   MainWindow property-change routing ownership assertions across focused
   controller adapters.
