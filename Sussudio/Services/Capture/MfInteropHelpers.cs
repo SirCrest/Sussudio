@@ -61,6 +61,18 @@ internal static class MfInteropHelpers
         }
     }
 
+    public static bool MatchesSymbolicLink(string? target, string? candidate)
+    {
+        if (string.IsNullOrWhiteSpace(target) || string.IsNullOrWhiteSpace(candidate))
+        {
+            return false;
+        }
+
+        return string.Equals(target, candidate, StringComparison.OrdinalIgnoreCase) ||
+               candidate.Contains(target, StringComparison.OrdinalIgnoreCase) ||
+               target.Contains(candidate, StringComparison.OrdinalIgnoreCase);
+    }
+
     public static bool TryGetGuid(IMFAttributes attributes, ref Guid key, out Guid value)
     {
         var hr = attributes.GetGUID(ref key, out value);

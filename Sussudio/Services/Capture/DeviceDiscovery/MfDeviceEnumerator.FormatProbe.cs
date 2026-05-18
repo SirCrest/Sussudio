@@ -174,7 +174,7 @@ internal static partial class MfDeviceEnumerator
                     rawReleased = true;
 
                     var candidateLink = MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink);
-                    if (!DeviceSymbolicLinkMatcher.Matches(targetSymbolicLink, candidateLink))
+                    if (!MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, candidateLink))
                     {
                         continue;
                     }

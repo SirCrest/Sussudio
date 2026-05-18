@@ -5,7 +5,7 @@ using Xunit;
 namespace Sussudio.Tests;
 
 // Lightweight reflection-based slice for the small pure helpers under
-// Sussudio.Services.Runtime and Sussudio.Services.Capture. Same load-from-staged-dll
+// Sussudio.Services.Runtime. Same load-from-staged-dll
 // approach as XUnit.RecordingContractsTests.cs — the test project targets net8.0
 // so we resolve types through the Sussudio.dll built for net8.0-windows.
 public class RuntimeHelpersTests
@@ -14,7 +14,6 @@ public class RuntimeHelpersTests
     private const string TelemetryAgeHelperType = "Sussudio.Services.Runtime.TelemetryAgeHelper";
     private const string EnvironmentHelpersType = "Sussudio.Services.Runtime.EnvironmentHelpers";
     private const string RingBufferHelpersType = "Sussudio.Services.Runtime.RingBufferHelpers";
-    private const string DeviceSymbolicLinkMatcherType = "Sussudio.Services.Capture.DeviceSymbolicLinkMatcher";
 
     [Fact]
     public void AtomicMax_Int_UpdatesWhenCandidateIsGreater()
@@ -174,19 +173,6 @@ public class RuntimeHelpersTests
 
         var empty = (double[])method.Invoke(null, new object?[] { window, 4, 0, 0 })!;
         Assert.Empty(empty);
-    }
-
-    [Fact]
-    public void DeviceSymbolicLinkMatcher_MatchesIsCaseInsensitiveAndAcceptsSubstrings()
-    {
-        var method = ResolveStatic(DeviceSymbolicLinkMatcherType, "Matches", new[] { typeof(string), typeof(string) });
-
-        Assert.True((bool)method.Invoke(null, new object?[] { "DEVICE_A", "device_a" })!);
-        Assert.True((bool)method.Invoke(null, new object?[] { "core", "PREFIX-core-SUFFIX" })!);
-        Assert.True((bool)method.Invoke(null, new object?[] { "PREFIX-core-SUFFIX", "core" })!);
-        Assert.False((bool)method.Invoke(null, new object?[] { "abc", "xyz" })!);
-        Assert.False((bool)method.Invoke(null, new object?[] { "", "anything" })!);
-        Assert.False((bool)method.Invoke(null, new object?[] { "anything", null })!);
     }
 
     private static MethodInfo ResolveStatic(string typeName, string methodName, Type[] signature)

@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using System.Reflection;
 
 static partial class Program
 {
@@ -10,6 +11,7 @@ static partial class Program
         var sourceReaderNegotiationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs").Replace("\r\n", "\n");
         var sourceReaderDeviceEnumerationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.DeviceEnumeration.cs").Replace("\r\n", "\n");
         var sourceReaderInteropText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Interop.cs").Replace("\r\n", "\n");
+        var mfInteropHelpersText = ReadRepoFile("Sussudio/Services/Capture/MfInteropHelpers.cs").Replace("\r\n", "\n");
 
         AssertContains(deviceRootText, "var likelyByCapability = LooksLikeHighBandwidthCapture(captureDevice);");
         AssertContains(deviceRootText, "foreach (var candidate in selected.OrderByDescending(GetDevicePriority))");
@@ -26,7 +28,8 @@ static partial class Program
         AssertContains(sourceReaderNegotiationText, "private IMFMediaSource CreateMediaSource(");
         AssertContains(sourceReaderDeviceEnumerationText, "private IMFMediaSource CreateMediaSourceByEnumeration(");
         AssertContains(sourceReaderDeviceEnumerationText, "MfInterop.MFEnumDeviceSources(attrs, out activateArrayPtr, out var activateCount)");
-        AssertContains(sourceReaderDeviceEnumerationText, "DeviceSymbolicLinkMatcher.Matches(targetSymbolicLink, link)");
+        AssertContains(sourceReaderDeviceEnumerationText, "MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, link)");
+        AssertContains(mfInteropHelpersText, "public static bool MatchesSymbolicLink(string? target, string? candidate)");
         AssertContains(sourceReaderDeviceEnumerationText, "ReleaseRemainingActivateObjects(activateArrayPtr, activateCount, i + 1);");
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.ReleaseComObject(activated)");
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.FreeCoTaskMem(activateArrayPtr);");
@@ -45,6 +48,16 @@ static partial class Program
         AssertDoesNotContain(sourceReaderRootText, "private IMFMediaType SelectMediaType(");
         AssertDoesNotContain(sourceReaderRootText, "private static class MfInterop");
         AssertDoesNotContain(sourceReaderRootText, "DllImport(\"mfplat.dll\", ExactSpelling = true)");
+
+        var matches = RequireType("Sussudio.Services.Capture.MfInteropHelpers")
+            .GetMethod("MatchesSymbolicLink", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new System.InvalidOperationException("MfInteropHelpers.MatchesSymbolicLink was not found.");
+        AssertEqual(true, (bool)matches.Invoke(null, new object?[] { "DEVICE_A", "device_a" })!, "symbolic-link exact case-insensitive match");
+        AssertEqual(true, (bool)matches.Invoke(null, new object?[] { "core", "PREFIX-core-SUFFIX" })!, "symbolic-link candidate contains target");
+        AssertEqual(true, (bool)matches.Invoke(null, new object?[] { "PREFIX-core-SUFFIX", "core" })!, "symbolic-link target contains candidate");
+        AssertEqual(false, (bool)matches.Invoke(null, new object?[] { "abc", "xyz" })!, "symbolic-link mismatch");
+        AssertEqual(false, (bool)matches.Invoke(null, new object?[] { "", "anything" })!, "symbolic-link empty target");
+        AssertEqual(false, (bool)matches.Invoke(null, new object?[] { "anything", null })!, "symbolic-link null candidate");
 
         return Task.CompletedTask;
     }

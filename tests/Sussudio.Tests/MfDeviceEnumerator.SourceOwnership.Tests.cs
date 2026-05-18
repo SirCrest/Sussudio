@@ -29,6 +29,7 @@ static partial class Program
         AssertContains(formatProbeText, "public static Task<List<MediaFormat>> ProbeVideoFormatsAsync(string symbolicLink)");
         AssertContains(formatProbeText, "private static IMFMediaSource CreateMediaSource(string symbolicLink)");
         AssertContains(formatProbeText, "private static IMFMediaSource CreateMediaSourceByEnumeration(");
+        AssertContains(formatProbeText, "MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, candidateLink)");
         AssertContains(formatProbeText, "private static string SubtypeGuidToName(Guid subtype)");
 
         return Task.CompletedTask;

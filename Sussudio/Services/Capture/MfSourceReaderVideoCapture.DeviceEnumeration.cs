@@ -56,7 +56,7 @@ public sealed partial class MfSourceReaderVideoCapture
                         candidates.Add(link);
                     }
 
-                    if (!DeviceSymbolicLinkMatcher.Matches(targetSymbolicLink, link))
+                    if (!MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, link))
                     {
                         continue;
                     }
