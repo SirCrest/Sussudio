@@ -1,3 +1,4 @@
+using Microsoft.UI.Xaml;
 using System.Threading.Tasks;
 using Sussudio.Controllers;
 
@@ -9,6 +10,7 @@ namespace Sussudio;
 public sealed partial class MainWindow
 {
     private PreviewRendererHostController _previewRendererHostController = null!;
+    private PreviewResizeTelemetryController _previewResizeTelemetryController = null!;
 
     private void InitializePreviewRendererHostController()
     {
@@ -47,6 +49,22 @@ public sealed partial class MainWindow
             Log = message => Logger.Log(message)
         });
     }
+
+    private void InitializePreviewResizeTelemetryController()
+    {
+        _previewResizeTelemetryController = new PreviewResizeTelemetryController();
+    }
+
+    private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        _previewResizeTelemetryController.HandleSizeChanged(
+            ViewModel.IsPreviewing,
+            _previewRendererHostController.HasD3DRenderer,
+            PreviewSwapChainPanel.Visibility);
+    }
+
+    private void ResetPreviewResizeTelemetry()
+        => _previewResizeTelemetryController.Reset();
 
     private Task StartPreviewRendererAsync()
         => _previewRendererHostController.StartAsync();

@@ -636,8 +636,8 @@ recording-aware close finalization now lives in
 
 Top-level shell resize telemetry throttling for preview compositor transforms
 now lives in `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
-`Sussudio/MainWindow.WindowSizing.cs` is the `SizeChanged` adapter. Preview
-surface sizing and GPU panel visibility now live in
+`Sussudio/MainWindow.PreviewRenderer.cs` owns the `SizeChanged` adapter and
+renderer-host reset handoff. Preview surface sizing and GPU panel visibility now live in
 `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs`, while
 video/control-bar composition shadow visuals, bounds alignment, clear behavior,
 and fade routing live in
@@ -2333,9 +2333,10 @@ Preview startup loading overlay presentation now lives in
 timeout recovery stay in `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`.
 Top-level preview resize telemetry throttling now lives in
 `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs`.
-`MainWindow.WindowSizing.cs` remains the `SizeChanged` adapter; preview surface
-presentation lives with `PreviewSurfacePresentationController`, and preview
-shadow visuals live with `PreviewSurfaceShadowController`.
+`MainWindow.PreviewRenderer.cs` owns the `SizeChanged` adapter and renderer-host
+reset handoff; preview surface presentation lives with
+`PreviewSurfacePresentationController`, and preview shadow visuals live with
+`PreviewSurfaceShadowController`.
 
 Preview-specific ViewModel event lifecycle and preview property-change routing
 now live in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.

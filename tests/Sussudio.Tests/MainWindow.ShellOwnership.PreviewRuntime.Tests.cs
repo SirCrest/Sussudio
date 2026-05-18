@@ -5,22 +5,21 @@ static partial class Program
     private static Task PreviewResizeTelemetry_LivesInController()
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var windowSizingText = ReadRepoFile("Sussudio/MainWindow.WindowSizing.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs").Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowShutdownCleanupController.cs").Replace("\r\n", "\n");
         var previewRendererText = ReadRepoFile("Sussudio/MainWindow.PreviewRenderer.cs").Replace("\r\n", "\n");
 
-        AssertContains(windowSizingText, "private PreviewResizeTelemetryController _previewResizeTelemetryController = null!;");
-        AssertContains(windowSizingText, "private void InitializePreviewResizeTelemetryController()");
-        AssertContains(windowSizingText, "private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)");
-        AssertContains(windowSizingText, "_previewResizeTelemetryController.HandleSizeChanged(");
-        AssertContains(windowSizingText, "ViewModel.IsPreviewing,");
-        AssertContains(windowSizingText, "_previewRendererHostController.HasD3DRenderer,");
-        AssertContains(windowSizingText, "PreviewSwapChainPanel.Visibility);");
-        AssertContains(windowSizingText, "private void ResetPreviewResizeTelemetry()");
-        AssertContains(windowSizingText, "=> _previewResizeTelemetryController.Reset();");
+        AssertContains(previewRendererText, "private PreviewResizeTelemetryController _previewResizeTelemetryController = null!;");
+        AssertContains(previewRendererText, "private void InitializePreviewResizeTelemetryController()");
+        AssertContains(previewRendererText, "private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)");
+        AssertContains(previewRendererText, "_previewResizeTelemetryController.HandleSizeChanged(");
+        AssertContains(previewRendererText, "ViewModel.IsPreviewing,");
+        AssertContains(previewRendererText, "_previewRendererHostController.HasD3DRenderer,");
+        AssertContains(previewRendererText, "PreviewSwapChainPanel.Visibility);");
+        AssertContains(previewRendererText, "private void ResetPreviewResizeTelemetry()");
+        AssertContains(previewRendererText, "=> _previewResizeTelemetryController.Reset();");
         AssertContains(mainWindowText, "InitializePreviewResizeTelemetryController();");
         AssertContains(mainWindowText, "mainContent.SizeChanged += MainWindow_SizeChanged;");
         AssertContains(shutdownCleanupText, "private void DetachMainContentSizeChanged()");
@@ -39,8 +38,8 @@ static partial class Program
         AssertContains(controllerText, "public void Reset()");
         AssertContains(controllerText, "Interlocked.Exchange(ref _previewLastResizeLogTick, 0);");
         AssertDoesNotContain(mainWindowText, "private long _previewLastResizeLogTick;");
-        AssertDoesNotContain(windowSizingText, "Interlocked.Read(ref _previewLastResizeLogTick)");
-        AssertDoesNotContain(windowSizingText, "Logger.Log(\"Preview resize active.");
+        AssertDoesNotContain(previewRendererText, "Interlocked.Read(ref _previewLastResizeLogTick)");
+        AssertDoesNotContain(previewRendererText, "Logger.Log(\"Preview resize active.");
         AssertDoesNotContain(closeLifecycleText, "private void MainWindow_SizeChanged(");
         AssertDoesNotContain(closeLifecycleText, "_previewLastResizeLogTick");
 

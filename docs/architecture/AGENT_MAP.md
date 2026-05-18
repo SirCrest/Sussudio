@@ -1002,7 +1002,8 @@ Primary current owners:
   `Sussudio/MainWindow.ShutdownCleanup.cs`.
 - `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
-  transforms. `MainWindow.WindowSizing.cs` is the `SizeChanged` adapter.
+  transforms. `MainWindow.PreviewRenderer.cs` owns the `SizeChanged` adapter
+  and renderer-host reset handoff.
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererStartupPlanBuilder.cs` owns renderer
   startup dimension/fps/HDR/min-present-interval planning.
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview
@@ -2132,10 +2133,10 @@ Primary current owners:
   reinit-collapse opacity reset. `MainWindow.PreviewTransitions.cs` is the
   XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewResizeTelemetryController.cs` owns top-level
-  preview resize log throttling and reset state. `MainWindow.WindowSizing.cs`
-  is the XAML-facing adapter for `SizeChanged`; preview surface presentation
-  lives in `PreviewSurfacePresentationController`, and preview shadow visuals
-  live in `PreviewSurfaceShadowController`.
+  preview resize log throttling and reset state. `MainWindow.PreviewRenderer.cs`
+  owns the XAML-facing `SizeChanged` adapter and renderer-host reset handoff;
+  preview surface presentation lives in `PreviewSurfacePresentationController`,
+  and preview shadow visuals live in `PreviewSurfaceShadowController`.
 - `Sussudio/MainWindow.PropertyChangedRecording.cs` is the XAML-facing recording
   adapter. Recording-specific property-name routing, record-button, glow, pulse,
   and recording-time lockout projection live in
