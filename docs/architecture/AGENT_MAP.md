@@ -1562,9 +1562,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.PerformanceTimeline.Tests.cs`
   owns `PerformanceTimelineEntry` preview, Flashback, export, and process
   diagnostics reflection contracts.
-- `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.SourceReaders.cs`
-  owns source-loading setup for the preview-renderer diagnostics contract
-  assertion.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.ContractsAndMetrics.Tests.cs` owns
   configuration, native interop, frame type/ownership state, DXGI frame-stat
   state, slow-frame state, and metric-tracking method/state assertions.
