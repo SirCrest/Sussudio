@@ -3010,8 +3010,9 @@ Remaining `tools/Common` ownership:
    buffering/sampling now lives in `AudioRampTraceRecorder.cs`, with
    `MainViewModel.AudioRampTrace.cs` kept as the automation-facing adapter; keep
    preview monitoring call sites and coordinator sequencing in
-   `MainViewModel.AudioMonitoring.cs`, while audio input retargeting and
-   preview-monitoring ramp handoff live in `MainViewModel.AudioInputSelection.cs`.
+   `MainViewModel.AudioMonitoring.cs`, while custom audio-input property
+   handlers, retargeting, and preview-monitoring ramp handoff live in
+   `MainViewModel.AudioInputSelection.cs`.
    Microphone endpoint volume synchronization and persistence now live in
    `MainViewModel.MicrophoneVolume.cs`; device-native audio request lifetime
    now lives in `MainViewModel.DeviceAudioRequests.cs`; device-native
@@ -3029,8 +3030,7 @@ Remaining `tools/Common` ownership:
    timeline/export state. Keep the root `MainViewModel.cs` focused on the
    compatibility facade, dependency assignment, collaborator construction, and small
    bridge methods. Audio capture/preview property handlers now live in
-   `MainViewModel.AudioPropertyChanges.cs`, custom audio input handlers live in
-   `MainViewModel.AudioInputPropertyChanges.cs`, microphone monitor/device
+   `MainViewModel.AudioPropertyChanges.cs`, microphone monitor/device
    selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`,
    capture-mode property handlers live in `MainViewModel.CaptureModePropertyChanges.cs`. Shared
    view-model UI dispatcher enqueue/invoke policy now lives in

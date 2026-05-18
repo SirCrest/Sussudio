@@ -165,7 +165,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Recording settings automation: MainViewModel.AutomationRecordingSettings.cs
     // UI dispatch policy: MainViewModelUiDispatchController.cs; adapter/fan-out: MainViewModel.Dispatching.cs
     // Audio monitoring: MainViewModel.AudioMonitoring.cs
-    // Audio input selection: MainViewModel.AudioInputSelection.cs
+    // Audio input selection/property changes: MainViewModel.AudioInputSelection.cs
     // Audio ramp trace recorder: AudioRampTraceRecorder.cs; adapter: MainViewModel.AudioRampTrace.cs
     // Preview audio volume transitions: PreviewAudioVolumeTransitionController.cs
     // Microphone endpoint volume: MainViewModel.MicrophoneVolume.cs
