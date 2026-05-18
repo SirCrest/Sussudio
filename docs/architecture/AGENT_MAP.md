@@ -1611,6 +1611,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/UnifiedVideoCapture.Runtime.Tests.cs` owns
   UnifiedVideoCapture CPU-MJPEG format reporting and stop-failure retention
   behavior scenarios.
+- `tests/Sussudio.Tests/MjpegPipeline.Timing.Tests.cs` owns CPU MJPEG timing
+  metric math, stopwatch timeout helpers, and timing/decoder shape checks.
+- `tests/Sussudio.Tests/MjpegPipeline.Tests.cs` owns CPU MJPEG pipeline
+  source-shape, focused-partial ownership, startup-drop, known-loss, and
+  shared-reorder behavior checks.
 - `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.Behavior.Tests.cs` owns
   CaptureService runtime snapshot behavior scenarios for observed formats,
   source-telemetry alignment, HDR pipeline parity, and inactive thread probes.
