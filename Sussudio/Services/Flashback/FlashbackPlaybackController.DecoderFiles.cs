@@ -99,6 +99,36 @@ internal sealed partial class FlashbackPlaybackController
         }
     }
 
+    private void ReopenDecoderPlaybackFile(
+        FlashbackDecoder decoder,
+        string path,
+        ref bool fileOpen,
+        bool updateCurrentOpenPath,
+        bool closeOnlyWhenOpen)
+    {
+        if (!closeOnlyWhenOpen || decoder.IsOpen)
+        {
+            decoder.CloseFile();
+        }
+
+        fileOpen = false;
+        decoder.OpenFile(path);
+        fileOpen = true;
+        if (updateCurrentOpenPath)
+        {
+            _currentOpenFilePath = path;
+        }
+
+        _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
+    }
+
+    private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)
+    {
+        _decoderHwAccel = "N/A";
+        fileOpen = false;
+        _currentOpenFilePath = null;
+    }
+
     private void CleanupDecoder(ref FlashbackDecoder? decoder, ref bool fileOpen)
     {
         var cleanupStarted = Stopwatch.GetTimestamp();

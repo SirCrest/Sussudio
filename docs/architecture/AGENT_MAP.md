@@ -843,8 +843,8 @@ Entry points:
 - `FlashbackDecoder.Timestamps.cs` owns PTS-to-TimeSpan conversion, seek timestamp conversion, best-effort frame timestamp selection, and recoverable seek log suppression.
 - `FlashbackDecoder.Validation.cs` owns decoded frame-size calculation, video-dimension validation, D3D11/software decoded-frame validation, input stream-count bounds, and stream-index bounds.
 - `FlashbackPlaybackController*.cs` owns playback, scrub, and marker control.
-- `FlashbackPlaybackController.DecoderFiles.cs` owns decoder creation, active file identity, file open checks, best-effort close handling, and decoder cleanup.
-- `FlashbackPlaybackController.DecoderReopen.cs` owns active fMP4 reopen retry, adjacent-segment seek fallback, keyframe-reopen recovery, near-live reopen guards, shared decoder close/open identity transitions, fMP4 reopen audio-gate restoration, and segment-edge fMP4 reopen/reseek recovery.
+- `FlashbackPlaybackController.DecoderFiles.cs` owns decoder creation, active file identity, file open checks, shared decoder close/open identity transitions, best-effort close handling, and decoder cleanup.
+- `FlashbackPlaybackController.DecoderReopen.cs` owns active fMP4 reopen retry, adjacent-segment seek fallback, keyframe-reopen recovery, near-live reopen guards, fMP4 reopen audio-gate restoration, and segment-edge fMP4 reopen/reseek recovery.
 - `FlashbackPlaybackController.Lifecycle.cs` owns initialize/update component references, preview-detach cleanup, deferred reattach, and dispose.
 - `FlashbackPlaybackController.Commands.cs` owns public playback command entry points for scrub, seek, play/pause, go-live, and nudge.
 - `FlashbackPlaybackController.CommandQueue.cs` owns command queue writes and queue drop policy.

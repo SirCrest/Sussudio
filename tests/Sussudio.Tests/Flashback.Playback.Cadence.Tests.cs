@@ -199,6 +199,8 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var segmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs")
             .Replace("\r\n", "\n");
+        var decoderFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs")
+            .Replace("\r\n", "\n");
         var decoderReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs")
             .Replace("\r\n", "\n");
 
@@ -243,11 +245,13 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_SEEK_FAIL");
         AssertContains(sourceText, "if (decoder.SeekToKeyframe(seekTarget, cancellationToken))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"keyframe_seek_failed\", seekTarget);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_SEEK_FAIL");
-        AssertContains(sourceText, "private void ReopenDecoderPlaybackFile(");
+        AssertContains(decoderFilesText, "private void ReopenDecoderPlaybackFile(");
         AssertContains(sourceText, "updateCurrentOpenPath: true,\n                closeOnlyWhenOpen: true);");
         AssertContains(sourceText, "updateCurrentOpenPath: false,\n                closeOnlyWhenOpen: false);");
-        AssertContains(sourceText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
-        AssertContains(sourceText, "_decoderHwAccel = \"N/A\";\n        fileOpen = false;\n        _currentOpenFilePath = null;");
+        AssertContains(decoderFilesText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
+        AssertContains(decoderFilesText, "_decoderHwAccel = \"N/A\";\n        fileOpen = false;\n        _currentOpenFilePath = null;");
+        AssertDoesNotContain(decoderReopenText, "private void ReopenDecoderPlaybackFile(");
+        AssertDoesNotContain(decoderReopenText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
         AssertContains(sourceText, "private long SuppressAudioForFmp4Reopen(FlashbackDecoder decoder)");
         AssertContains(sourceText, "Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);\n        decoder.AudioChunkCallback = null;");
         AssertContains(sourceText, "private void RestoreAudioAfterFmp4Reopen(");
