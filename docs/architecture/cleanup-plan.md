@@ -692,9 +692,9 @@ binding each have a named test owner.
 
 Audio and microphone meter rendering now lives in the
 `Sussudio/Controllers/Audio/Meter/AudioMeterController*.cs` family: the root
-controller owns setup, `AudioMeterController.Context.cs` owns XAML/view-model
-dependencies, `AudioMeterController.MeterState.cs` owns smoothing, markers,
-resets, timer lifetime, and `TranslateMarker`, and
+controller owns setup and XAML/view-model dependencies,
+`AudioMeterController.MeterState.cs` owns smoothing, markers, resets, timer
+lifetime, and `TranslateMarker`, and
 `AudioMeterController.PresentationAnimations.cs` owns monitoring/disabled
 animations and rounded clips. Audio/microphone initial control projection and
 event hookup now live in
