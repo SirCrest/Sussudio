@@ -1287,8 +1287,11 @@ Primary current owners:
   MainWindow startup/launch ownership assertions for splash loading phrases,
   splash pacing policy, launch entrance animation, and first-load hosting.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs`
-  owns MainWindow preview resize telemetry, preview surface/shadow controller,
-  and preview runtime/snapshot ownership assertions.
+  owns MainWindow preview resize telemetry and preview renderer startup-plan
+  fallback policy assertions.
+- `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.RendererHost.Tests.cs`
+  owns MainWindow preview renderer host, preview surface/shadow controller, and
+  preview runtime/snapshot ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`
   owns MainWindow close lifecycle, recording-stop close protection, native
   bootstrap, and first-frame native reveal ownership assertions.
