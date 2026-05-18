@@ -117,9 +117,12 @@ audio-format records, WAVEFORMAT structs, PROPERTYKEY, PropVariant lifetime
 handling, and Core Audio device, collection, property-store, and notification
 COM interfaces.
 `WasapiComInterop.AudioClient.Contracts.cs` owns AudioClient, capture/render
-client, and endpoint-volume COM interfaces. `WasapiComInterop.cs` owns helper
-methods, format allocation/parsing, COM activation/release, endpoint volume,
-and AudioClient3 initialization.
+client, and endpoint-volume COM interfaces. `WasapiComInterop.cs` owns native
+constants/P/Invokes and shared COM release/failure helpers.
+`WasapiComInterop.Formats.cs` owns float-stereo format allocation, WASAPI format
+parsing, and sample-type classification. `WasapiComInterop.DeviceClients.cs`
+owns device enumerator activation, endpoint volume helpers, AudioClient
+activation, and AudioClient3 shared-stream initialization.
 `NativeXuAudioControlService.Profiles.cs` owns 4K X selector-3 byte indexes,
 HDMI/Analog reference payloads, gain-profile placeholders, hex parsing, and
 payload decode/confidence helpers. `NativeXuAudioControlService.Transport.cs`
