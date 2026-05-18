@@ -68,6 +68,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var encodingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotEncoding.cs")
             .Replace("\r\n", "\n");
+        var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
+            .Replace("\r\n", "\n");
         var previewScreenshotCaptureText = ReadRepoFile("Sussudio/Services/Preview/PreviewScreenshotCapture.cs")
             .Replace("\r\n", "\n");
         var previewPngEncoderText = ReadRepoFile("Sussudio/Services/Preview/PreviewPng16Encoder.cs")
@@ -76,12 +78,16 @@ static partial class Program
         AssertContains(captureText, "private void TryCaptureFrameBeforePresent(string rendererMode)");
         AssertContains(captureText, "PreviewScreenshotCapture.CaptureFrameBufferTo16BitPng(");
         AssertContains(captureText, "private void FailPendingFrameCapture(string message)");
+        AssertContains(captureText, "private void DisposeFrameCaptureStagingResources()");
+        AssertContains(captureText, "_captureStagingTexture?.Dispose();");
+        AssertContains(resourcesText, "DisposeFrameCaptureStagingResources();");
         AssertContains(encodingText, "private static PreviewFrameCaptureResult CaptureMappedFrameToBmp(");
         AssertContains(encodingText, "private static byte[] CopyMappedFrameToBuffer(");
         AssertContains(encodingText, "private static void WriteBitmapHeaders(");
         AssertContains(encodingText, "private static PreviewFrameCaptureResult CreateFrameCaptureError(");
         AssertDoesNotContain(captureText, "private static PreviewFrameCaptureResult CaptureMappedFrameToBmp(");
         AssertDoesNotContain(captureText, "private static void WriteBitmapHeaders(");
+        AssertDoesNotContain(resourcesText, "_captureStagingTexture?.Dispose();");
         AssertContains(previewScreenshotCaptureText, "PreviewPng16Encoder.WriteCompressedRgb16Png(");
         AssertContains(previewPngEncoderText, "internal static class PreviewPng16Encoder");
         AssertContains(previewPngEncoderText, "internal static void WriteCompressedRgb16Png(");

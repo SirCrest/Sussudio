@@ -184,4 +184,29 @@ internal sealed partial class D3D11PreviewRenderer
         Logger.Log("D3D11_RENDERER_WARN Device3 not available for P010 plane views — HDR shader path disabled, falling back to VideoProcessor");
         return null;
     }
+
+    private void DisposeProcessorInputResources()
+    {
+        _inputView?.Dispose();
+        _inputView = null;
+        _hdrYPlaneSRV?.Dispose();
+        _hdrYPlaneSRV = null;
+        _hdrUVPlaneSRV?.Dispose();
+        _hdrUVPlaneSRV = null;
+        _hdrStagingTexture?.Dispose();
+        _hdrStagingTexture = null;
+        _hdrInputTexture?.Dispose();
+        _hdrInputTexture = null;
+        _hdrInputConfiguredWidth = 0;
+        _hdrInputConfiguredHeight = 0;
+        _hdrPlaneViewsUnavailable = false;
+    }
+
+    private void DisposeInputTextureResources()
+    {
+        _stagingTexture?.Dispose();
+        _stagingTexture = null;
+        _inputTexture?.Dispose();
+        _inputTexture = null;
+    }
 }

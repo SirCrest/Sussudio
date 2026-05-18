@@ -62,6 +62,10 @@ static partial class Program
         AssertContains(resourcesText, "private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)");
         AssertContains(resourcesText, "private void DisposeProcessorResources()");
         AssertContains(resourcesText, "private void CleanupD3DResources()");
+        AssertContains(resourcesText, "DisposeProcessorInputResources();");
+        AssertContains(resourcesText, "DisposeNv12ShaderResourceViews();");
+        AssertContains(resourcesText, "DisposeInputTextureResources();");
+        AssertContains(resourcesText, "DisposeShaderPipelineResources();");
         AssertDoesNotContain(resourcesText, "private void InitializeD3D()");
         AssertDoesNotContain(resourcesText, "private bool TryInitializeWithSharedDevice(");
         AssertDoesNotContain(deviceInitializationText, "private bool TryInitializeWithSharedDevice(");
@@ -119,6 +123,8 @@ static partial class Program
         AssertContains(inputResourcesText, "private void EnsureInputResources(int width, int height, bool isHdr)");
         AssertContains(inputResourcesText, "private void EnsureHdrInputResources(int width, int height)");
         AssertContains(inputResourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView(Format format, uint planeSlice)");
+        AssertContains(inputResourcesText, "private void DisposeProcessorInputResources()");
+        AssertContains(inputResourcesText, "private void DisposeInputTextureResources()");
         AssertContains(inputResourcesText, "_inputTexture = _device.CreateTexture2D(inputDescription);");
         AssertContains(inputResourcesText, "_hdrYPlaneSRV = CreateHdrPlaneView(Format.R16_UNorm, planeSlice: 0);");
         AssertDoesNotContain(rootText, "private ID3D11Texture2D? _inputTexture;");
@@ -126,6 +132,9 @@ static partial class Program
         AssertDoesNotContain(resourcesText, "private void EnsureInputResources(int width, int height, bool isHdr)");
         AssertDoesNotContain(resourcesText, "private void EnsureHdrInputResources(int width, int height)");
         AssertDoesNotContain(resourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView");
+        AssertDoesNotContain(resourcesText, "_inputView?.Dispose();");
+        AssertDoesNotContain(resourcesText, "_hdrYPlaneSRV?.Dispose();");
+        AssertDoesNotContain(resourcesText, "_stagingTexture?.Dispose();");
 
         return Task.CompletedTask;
     }
@@ -254,12 +263,16 @@ static partial class Program
             .Replace("\r\n", "\n");
         var shaderRenderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
             .Replace("\r\n", "\n");
+        var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(shaderRenderingText, "private ID3D11VertexShader? _fullscreenVS;");
         AssertContains(shaderRenderingText, "private ID3D11PixelShader? _nv12PS;");
         AssertContains(shaderRenderingText, "private ID3D11PixelShader? _hdrPassthroughPS;");
         AssertContains(shaderRenderingText, "private readonly VideoProcessorStream[] _vpStreamArray = new VideoProcessorStream[1];");
         AssertContains(shaderRenderingText, "private bool TryEnsureNv12ShaderResources(PendingFrame frame)");
+        AssertContains(shaderRenderingText, "private void DisposeNv12ShaderResourceViews()");
+        AssertContains(shaderRenderingText, "private void DisposeShaderPipelineResources()");
         AssertContains(shaderRenderingText, "private static readonly ID3D11ClassInstance[] EmptyClassInstances");
         AssertContains(renderPassesText, "PreviewShaderSources.RendererModeNv12");
         AssertContains(renderPassesText, "RendererModeHdrPassthrough");
@@ -272,6 +285,8 @@ static partial class Program
         AssertDoesNotContain(renderPassesText, "private void RenderNv12WithShader(PendingFrame frame)");
         AssertDoesNotContain(shaderRenderingText, "private bool _loggedHdrShaderFallback;");
         AssertDoesNotContain(shaderRenderingText, "private int _lastNv12IsHdr = -1;");
+        AssertDoesNotContain(resourcesText, "_linearSampler?.Dispose();");
+        AssertDoesNotContain(resourcesText, "_nv12PS?.Dispose();");
 
         return Task.CompletedTask;
     }

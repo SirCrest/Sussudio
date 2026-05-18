@@ -158,31 +158,14 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void DisposeProcessorResources()
     {
-        _inputView?.Dispose();
-        _inputView = null;
+        DisposeProcessorInputResources();
+        DisposeNv12ShaderResourceViews();
         _outputView?.Dispose();
         _outputView = null;
         _swapChainRTV?.Dispose();
         _swapChainRTV = null;
         _swapChainBackBuffer?.Dispose();
         _swapChainBackBuffer = null;
-        _hdrYPlaneSRV?.Dispose();
-        _hdrYPlaneSRV = null;
-        _hdrUVPlaneSRV?.Dispose();
-        _hdrUVPlaneSRV = null;
-        _nv12YSRV?.Dispose();
-        _nv12YSRV = null;
-        _nv12UVSRV?.Dispose();
-        _nv12UVSRV = null;
-        _nv12LastYPtr = IntPtr.Zero;
-        _nv12LastUVPtr = IntPtr.Zero;
-        _hdrStagingTexture?.Dispose();
-        _hdrStagingTexture = null;
-        _hdrInputTexture?.Dispose();
-        _hdrInputTexture = null;
-        _hdrInputConfiguredWidth = 0;
-        _hdrInputConfiguredHeight = 0;
-        _hdrPlaneViewsUnavailable = false;
         _videoProcessor?.Dispose();
         _videoProcessor = null;
         _videoProcessorEnumerator?.Dispose();
@@ -192,16 +175,8 @@ internal sealed partial class D3D11PreviewRenderer
     private void CleanupD3DResources()
     {
         DisposeProcessorResources();
-
-        _captureStagingTexture?.Dispose();
-        _captureStagingTexture = null;
-        _captureStagingWidth = 0;
-        _captureStagingHeight = 0;
-
-        _stagingTexture?.Dispose();
-        _stagingTexture = null;
-        _inputTexture?.Dispose();
-        _inputTexture = null;
+        DisposeFrameCaptureStagingResources();
+        DisposeInputTextureResources();
 
         // Stop() unbinds the panel before waking the render thread, while the
         // swap chain is still alive. Cleanup can then release the DXGI objects
@@ -224,18 +199,7 @@ internal sealed partial class D3D11PreviewRenderer
         _videoContext = null;
         _videoDevice?.Dispose();
         _videoDevice = null;
-        _linearSampler?.Dispose();
-        _linearSampler = null;
-        _viewportCB?.Dispose();
-        _viewportCB = null;
-        _nv12PS?.Dispose();
-        _nv12PS = null;
-        _hdrTonemapPS?.Dispose();
-        _hdrTonemapPS = null;
-        _hdrPassthroughPS?.Dispose();
-        _hdrPassthroughPS = null;
-        _fullscreenVS?.Dispose();
-        _fullscreenVS = null;
+        DisposeShaderPipelineResources();
         _multithread?.Dispose();
         _multithread = null;
         _device3?.Dispose();

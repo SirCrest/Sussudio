@@ -88,4 +88,30 @@ internal sealed partial class D3D11PreviewRenderer
             return false;
         }
     }
+
+    private void DisposeNv12ShaderResourceViews()
+    {
+        _nv12YSRV?.Dispose();
+        _nv12YSRV = null;
+        _nv12UVSRV?.Dispose();
+        _nv12UVSRV = null;
+        _nv12LastYPtr = IntPtr.Zero;
+        _nv12LastUVPtr = IntPtr.Zero;
+    }
+
+    private void DisposeShaderPipelineResources()
+    {
+        _linearSampler?.Dispose();
+        _linearSampler = null;
+        _viewportCB?.Dispose();
+        _viewportCB = null;
+        _nv12PS?.Dispose();
+        _nv12PS = null;
+        _hdrTonemapPS?.Dispose();
+        _hdrTonemapPS = null;
+        _hdrPassthroughPS?.Dispose();
+        _hdrPassthroughPS = null;
+        _fullscreenVS?.Dispose();
+        _fullscreenVS = null;
+    }
 }

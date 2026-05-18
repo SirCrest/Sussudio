@@ -63,6 +63,12 @@ Preview renderer notes:
   owns composition swap-chain creation, startup dimensions, HDR swap-chain
   capability probing, SDR swap-chain fallback, initial color-space selection,
   and configured output size publication.
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` owns D3D
+  device/swap-chain/video-processor setup plus top-level cleanup orchestration.
+  Family-specific teardown stays next to creation: input/HDR texture cleanup in
+  `D3D11PreviewRenderer.InputResources.cs`, shader/SRV cleanup in
+  `D3D11PreviewRenderer.ShaderRendering.cs`, and preview-frame capture staging
+  cleanup in `D3D11PreviewRenderer.ScreenshotCapture.cs`.
 
 ## Automation
 

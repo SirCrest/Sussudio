@@ -267,4 +267,12 @@ internal sealed partial class D3D11PreviewRenderer
         request.TrySetResult(CreateFrameCaptureError(message));
         Logger.Log($"PREVIEW_FRAME_CAPTURE_ABORTED reason={message}");
     }
+
+    private void DisposeFrameCaptureStagingResources()
+    {
+        _captureStagingTexture?.Dispose();
+        _captureStagingTexture = null;
+        _captureStagingWidth = 0;
+        _captureStagingHeight = 0;
+    }
 }
