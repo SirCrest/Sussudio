@@ -47,6 +47,31 @@ public class CapturePoliciesTests
     }
 
     [Fact]
+    public void Sussudio_Services_Capture_HdrOutputPolicy_ForceOffEnvironmentSwitchDisablesOutput()
+    {
+        var asm = SussudioAssembly.Load();
+        var settings = CreateCaptureSettings(asm, hdrEnabled: true, hdrOutputMode: "Hdr10Pq");
+        var isEnabled = GetHdrOutputPolicyIsEnabled(asm);
+
+        using var forceOff = EnvVarScope.Push("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", "true");
+
+        Assert.False((bool)isEnabled.Invoke(null, new object?[] { settings })!);
+    }
+
+    [Fact]
+    public void Sussudio_Services_Capture_HdrOutputPolicy_IgnoresRemovedLegacyEnabledEnvironmentSwitch()
+    {
+        var asm = SussudioAssembly.Load();
+        var settings = CreateCaptureSettings(asm, hdrEnabled: true, hdrOutputMode: "Hdr10Pq");
+        var isEnabled = GetHdrOutputPolicyIsEnabled(asm);
+
+        using var forceOff = EnvVarScope.Push("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", null);
+        using var legacyEnabled = EnvVarScope.Push("SUSSUDIO_HDR_OUTPUT_ENABLED", "false");
+
+        Assert.True((bool)isEnabled.Invoke(null, new object?[] { settings })!);
+    }
+
+    [Fact]
     public async Task Sussudio_Services_Telemetry_DisabledSourceSignalTelemetryProvider_ReturnsUnavailableSnapshotWithDisabledReason()
     {
         var asm = SussudioAssembly.Load();
@@ -89,5 +114,23 @@ public class CapturePoliciesTests
         var thrown = Assert.Throws<TargetInvocationException>(() =>
             readAsync.Invoke(provider, new object?[] { null, cts.Token }));
         Assert.IsAssignableFrom<OperationCanceledException>(thrown.InnerException);
+    }
+
+    private static MethodInfo GetHdrOutputPolicyIsEnabled(Assembly asm)
+    {
+        var policy = asm.GetType("Sussudio.Services.Capture.HdrOutputPolicy", throwOnError: true)!;
+        return policy.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static)!;
+    }
+
+    private static object CreateCaptureSettings(Assembly asm, bool hdrEnabled, string hdrOutputMode)
+    {
+        var settingsType = asm.GetType("Sussudio.Models.CaptureSettings", throwOnError: true)!;
+        var modeType = asm.GetType("Sussudio.Models.HdrOutputMode", throwOnError: true)!;
+        var settings = Activator.CreateInstance(settingsType)!;
+
+        settingsType.GetProperty("HdrEnabled")!.SetValue(settings, hdrEnabled);
+        settingsType.GetProperty("HdrOutputMode")!.SetValue(settings, Enum.Parse(modeType, hdrOutputMode));
+
+        return settings;
     }
 }

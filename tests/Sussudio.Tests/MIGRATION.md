@@ -28,6 +28,8 @@ incrementally.
   frame-time range, and frame-time geometry stats presentation behavior checks.
 - `XUnit.StatsHardwareRowsTests.cs` owns the former legacy hardware decode/GPU
   row formatting behavior and hardware-row input sampling policy checks.
+- `XUnit.CapturePoliciesTests.cs` owns the former legacy HdrOutputPolicy
+  behavior and HDR output environment-switch checks.
 
 ## Targeting reality
 

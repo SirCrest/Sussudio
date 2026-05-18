@@ -1497,8 +1497,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/CaptureDiscovery.SourceOwnership.Tests.cs` owns
   DeviceService scoring, source-reader negotiation/interop ownership, and MF
   symbolic-link matching assertions.
-- `tests/Sussudio.Tests/CapturePolicies.HdrOutputPolicy.Tests.cs` owns the
-  offline harness HdrOutputPolicy and HDR output environment-switch checks.
+- `tests/Sussudio.Tests/XUnit.CapturePoliciesTests.cs` owns the ported
+  HdrOutputPolicy and HDR output environment-switch behavior checks.
 - `tests/Sussudio.Tests/RecordingQueue.Tests.cs` owns shared recording queue
   source readers and source-block extraction helpers.
 - `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the
@@ -1757,7 +1757,7 @@ Primary current owners:
   recording/model check registration and owns compact registration groups for
   LibAv sink, capture runtime, recording contracts/artifacts/stats, capture
   settings, recording context, device/media models, automation contracts,
-  source-signal telemetry, and HDR policy checks.
+  and source-signal telemetry checks.
   `HarnessCheckCatalog.RecordingModels.FlashbackBuffer.cs` owns the large
   Flashback buffer registration group.
 - Focused `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.*.cs` partials
