@@ -211,15 +211,18 @@ static partial class Program
         AssertContains(runtimeText, "var requestedSettings = _activeRecordingSettings ?? _currentSettings;");
         AssertContains(runtimeText, "FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(requestedSettings, unifiedVideoCapture),");
         AssertContains(runtimeText, "RuntimeAvSyncDriftMs = runtimeAvSyncDriftMs,");
+        AssertContains(runtimeText, "HdrWarmup = hdrWarmup,");
         AssertDoesNotContain(runtimeText, "return new CaptureRuntimeSnapshot");
 
         AssertContains(assemblerText, "private static class CaptureRuntimeSnapshotAssembler");
         AssertContains(assemblerText, "public static CaptureRuntimeSnapshot Build(CaptureRuntimeSnapshotAssemblyFields fields)");
+        AssertContains(assemblerText, "public RuntimeHdrWarmupSnapshotFields HdrWarmup { get; init; } = new();");
         AssertContains(assemblerText, "public ObservedFrameSnapshotFields ObservedTelemetry { get; init; }");
         AssertDoesNotContain(assemblerText, "bool? ObservedP010Likely8BitUpscaled) ObservedTelemetry");
         AssertContains(assemblerText, "return new CaptureRuntimeSnapshot");
         AssertContains(assemblerText, "TimestampUtc = fields.TimestampUtc,");
-        AssertContains(assemblerText, "HdrWarmupObservedP010Frames = (int)Math.Min(int.MaxValue, observedP010FrameCount),");
+        AssertContains(assemblerText, "HdrWarmupObservedP010Frames = hdrWarmup.ObservedP010Frames,");
+        AssertDoesNotContain(assemblerText, "ResolveHdrWarmupState(");
         AssertContains(assemblerText, "SourceTelemetryAvailability = sourceTelemetry.Availability,");
         AssertContains(assemblerText, "RecordingIntegrityStatus = recordingIntegrity.Status,");
         AssertContains(assemblerText, "FlashbackCodecDowngradeReason = fields.FlashbackCodecDowngradeReason,");
@@ -281,19 +284,26 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(runtimeText, "var hdrPipeline = CaptureRuntimeHdrPipelineSnapshotFields(");
+        AssertContains(runtimeText, "var hdrWarmup = CaptureRuntimeHdrWarmupSnapshotFields(");
         AssertContains(runtimeText, "HdrPipeline = hdrPipeline,");
+        AssertContains(runtimeText, "HdrWarmup = hdrWarmup,");
         AssertContains(assemblerText, "HdrRuntimeState = hdrPipeline.HdrRuntimeState,");
+        AssertContains(assemblerText, "HdrWarmupState = hdrWarmup.State,");
         AssertContains(assemblerText, "EncoderOutputPixelFormat = hdrPipeline.EncoderOutputPixelFormat,");
         AssertContains(assemblerText, "PipelineModeReason = hdrPipeline.PipelineModeReason,");
 
         AssertContains(hdrPipelineText, "private static RuntimeHdrPipelineSnapshotFields CaptureRuntimeHdrPipelineSnapshotFields(");
+        AssertContains(hdrPipelineText, "private static RuntimeHdrWarmupSnapshotFields CaptureRuntimeHdrWarmupSnapshotFields(");
         AssertContains(hdrPipelineText, "ResolveEncoderOutputPixelFormat(recordingContext, requestedSettings)");
         AssertContains(hdrPipelineText, "Requested pipeline '{requestedPipelineMode}'");
         AssertContains(hdrPipelineText, "HdrDowngradeCode = hdrAutoDowngraded ? \"encoder-input-not-p010\" : string.Empty");
         AssertContains(hdrPipelineText, "HdrRequestedButSourceNot10Bit = hdrRequested && sourceTelemetry.IsHdr == false");
+        AssertContains(hdrPipelineText, "ResolveHdrWarmupState(");
+        AssertContains(hdrPipelineText, "ObservedNonP010Frames = (int)Math.Min(int.MaxValue, Math.Max(0L, observedNonP010FrameCount))");
 
         AssertDoesNotContain(runtimeText, "Requested pipeline '{requestedPipelineMode}'");
         AssertDoesNotContain(runtimeText, "hdrAutoDowngraded ? \"encoder-input-not-p010\"");
+        AssertDoesNotContain(assemblerText, "HdrWarmupObservedP010Frames = (int)Math.Min(int.MaxValue, observedP010FrameCount),");
 
         return Task.CompletedTask;
     }

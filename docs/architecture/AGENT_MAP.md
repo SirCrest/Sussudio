@@ -647,7 +647,8 @@ Important entry points:
   projection for requested/negotiated reader subtypes, reader transport source,
   memory preference, frame-ledger summary, and preview renderer mode.
 - `CaptureService.RuntimeSnapshotHdrPipeline.cs` owns runtime HDR/encoder
-  pipeline parity, downgrade reason, and encoder format projection.
+  pipeline parity, downgrade reason, encoder format projection, and HDR warmup
+  state/count projection.
 - `CaptureService.RuntimeSnapshotSourceTelemetry.cs` owns runtime snapshot
   projection for source telemetry details, age, circuit state, and alignment.
 - `CaptureService.RuntimeSnapshotRecordingIntegrity.cs` owns runtime snapshot

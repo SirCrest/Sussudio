@@ -37,6 +37,10 @@ public partial class CaptureService
             _actualFrameRate,
             hdrRequested);
         var observedTelemetry = ResolveObservedFrameTelemetry();
+        var hdrWarmup = CaptureRuntimeHdrWarmupSnapshotFields(
+            hdrPipeline,
+            _isRecording,
+            observedTelemetry);
         var readerTransport = CaptureRuntimeReaderTransportSnapshotFields(
             requestedSettings,
             hdrRequested,
@@ -61,6 +65,7 @@ public partial class CaptureService
             IngestAudio = ingestAudio,
             ReaderTransport = readerTransport,
             HdrPipeline = hdrPipeline,
+            HdrWarmup = hdrWarmup,
             SourceTelemetry = sourceTelemetry,
             ObservedTelemetry = observedTelemetry,
             RecordingIntegrity = recordingIntegrity,

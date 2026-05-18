@@ -1846,7 +1846,7 @@ projection lives in
 requested/negotiated reader transport, memory preference, frame-ledger, and
 preview renderer-mode projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotReaderTransport.cs`,
-HDR pipeline parity/downgrade projection now lives in
+HDR pipeline parity/downgrade and warmup state/count projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs`,
 source telemetry detail/age/alignment projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs`,

@@ -15,6 +15,7 @@ public partial class CaptureService
             var ingestAudio = fields.IngestAudio;
             var readerTransport = fields.ReaderTransport;
             var hdrPipeline = fields.HdrPipeline;
+            var hdrWarmup = fields.HdrWarmup;
             var sourceTelemetry = fields.SourceTelemetry;
             var observedTelemetry = fields.ObservedTelemetry;
             var recordingIntegrity = fields.RecordingIntegrity;
@@ -24,13 +25,6 @@ public partial class CaptureService
             var observedP010BitDepthSampleCount = observedTelemetry.ObservedP010BitDepthSampleCount;
             var observedP010Low2BitNonZeroPercent = observedTelemetry.ObservedP010Low2BitNonZeroPercent;
             var observedP010Likely8BitUpscaled = observedTelemetry.ObservedP010Likely8BitUpscaled;
-            var observedNonP010FrameCount = observedNv12FrameCount + observedOtherFrameCount;
-            var hdrRequested = hdrPipeline.HdrRequested;
-            var hdrWarmupState = ResolveHdrWarmupState(
-                hdrRequested,
-                hdrPipeline.HdrOutputActive,
-                fields.IsRecording,
-                observedP010FrameCount);
 
             return new CaptureRuntimeSnapshot
             {
@@ -110,11 +104,11 @@ public partial class CaptureService
                 HdrActivationReason = hdrPipeline.HdrActivationReason,
                 HdrRuntimeState = hdrPipeline.HdrRuntimeState,
                 HdrReadinessReason = hdrPipeline.HdrReadinessReason,
-                HdrWarmupState = hdrWarmupState,
-                HdrWarmupRequiredP010Frames = hdrRequested ? 1 : 0,
-                HdrWarmupAllowedNonP010Frames = hdrRequested ? 2 : 0,
-                HdrWarmupObservedP010Frames = (int)Math.Min(int.MaxValue, observedP010FrameCount),
-                HdrWarmupObservedNonP010Frames = (int)Math.Min(int.MaxValue, Math.Max(0L, observedNonP010FrameCount)),
+                HdrWarmupState = hdrWarmup.State,
+                HdrWarmupRequiredP010Frames = hdrWarmup.RequiredP010Frames,
+                HdrWarmupAllowedNonP010Frames = hdrWarmup.AllowedNonP010Frames,
+                HdrWarmupObservedP010Frames = hdrWarmup.ObservedP010Frames,
+                HdrWarmupObservedNonP010Frames = hdrWarmup.ObservedNonP010Frames,
                 HdrAutoDowngraded = hdrPipeline.HdrAutoDowngraded,
                 HdrAutoDowngradeReason = hdrPipeline.HdrAutoDowngradeReason,
                 HdrDowngradeCode = hdrPipeline.HdrDowngradeCode,
@@ -250,6 +244,7 @@ public partial class CaptureService
         public RuntimeIngestAudioSnapshotFields IngestAudio { get; init; } = new();
         public RuntimeReaderTransportSnapshotFields ReaderTransport { get; init; } = new();
         public RuntimeHdrPipelineSnapshotFields HdrPipeline { get; init; } = new();
+        public RuntimeHdrWarmupSnapshotFields HdrWarmup { get; init; } = new();
         public RuntimeSourceTelemetrySnapshotFields SourceTelemetry { get; init; } = new();
         public ObservedFrameSnapshotFields ObservedTelemetry { get; init; }
         public RuntimeRecordingIntegritySnapshotFields RecordingIntegrity { get; init; } = new();

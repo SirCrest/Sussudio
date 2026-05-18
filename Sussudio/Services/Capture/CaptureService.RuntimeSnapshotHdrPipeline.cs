@@ -98,6 +98,30 @@ public partial class CaptureService
         };
     }
 
+    private static RuntimeHdrWarmupSnapshotFields CaptureRuntimeHdrWarmupSnapshotFields(
+        RuntimeHdrPipelineSnapshotFields hdrPipeline,
+        bool recordingActive,
+        ObservedFrameSnapshotFields observedTelemetry)
+    {
+        var observedP010FrameCount = observedTelemetry.ObservedP010FrameCount;
+        var observedNonP010FrameCount =
+            observedTelemetry.ObservedNv12FrameCount +
+            observedTelemetry.ObservedOtherFrameCount;
+
+        return new RuntimeHdrWarmupSnapshotFields
+        {
+            State = ResolveHdrWarmupState(
+                hdrPipeline.HdrRequested,
+                hdrPipeline.HdrOutputActive,
+                recordingActive,
+                observedP010FrameCount),
+            RequiredP010Frames = hdrPipeline.HdrRequested ? 1 : 0,
+            AllowedNonP010Frames = hdrPipeline.HdrRequested ? 2 : 0,
+            ObservedP010Frames = (int)Math.Min(int.MaxValue, observedP010FrameCount),
+            ObservedNonP010Frames = (int)Math.Min(int.MaxValue, Math.Max(0L, observedNonP010FrameCount))
+        };
+    }
+
     private sealed class RuntimeHdrPipelineSnapshotFields
     {
         public bool HdrRequested { get; init; }
@@ -121,5 +145,14 @@ public partial class CaptureService
         public bool PipelineModeMatched { get; init; } = true;
         public string PipelineModeStatus { get; init; } = "Ready";
         public string PipelineModeReason { get; init; } = string.Empty;
+    }
+
+    private sealed class RuntimeHdrWarmupSnapshotFields
+    {
+        public string State { get; init; } = "NotRequested";
+        public int RequiredP010Frames { get; init; }
+        public int AllowedNonP010Frames { get; init; }
+        public int ObservedP010Frames { get; init; }
+        public int ObservedNonP010Frames { get; init; }
     }
 }
