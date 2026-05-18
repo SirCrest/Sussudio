@@ -121,7 +121,7 @@ static partial class Program
         AssertContains(uiDispatchControllerText, "internal sealed class MainViewModelUiDispatchControllerContext");
         AssertContains(uiDispatchControllerText, "public required DispatcherQueue DispatcherQueue { get; init; }");
         AssertContains(uiDispatchControllerText, "public required Func<bool> IsDisposing { get; init; }");
-        AssertContains(recordingTransitionControllerText, "private sealed class MainViewModelRecordingTransitionController");
+        AssertContains(recordingTransitionControllerText, "private sealed partial class MainViewModelRecordingTransitionController");
         AssertContains(recordingTransitionControllerText, "public Task SetRecordingDesiredStateAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(recordingTransitionControllerText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(previewLifecycleControllerText, "private sealed class MainViewModelPreviewLifecycleController");

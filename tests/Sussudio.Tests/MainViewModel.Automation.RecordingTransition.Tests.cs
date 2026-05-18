@@ -7,8 +7,12 @@ static partial class Program
     {
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
+        var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
             .Replace("\r\n", "\n");
+        var recordingTransitionControllerOperationsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs")
+            .Replace("\r\n", "\n");
+        var recordingTransitionControllerText = recordingTransitionControllerRootText
+            + "\n" + recordingTransitionControllerOperationsText;
 
         AssertContains(recordingTransitionControllerText, "Logger.LogException(ex);");
         AssertContains(recordingTransitionControllerText, "_viewModel.IsRecording = _viewModel._sessionCoordinator.Snapshot.IsRecording;");
@@ -62,8 +66,12 @@ static partial class Program
     {
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
+        var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
             .Replace("\r\n", "\n");
+        var recordingTransitionControllerOperationsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs")
+            .Replace("\r\n", "\n");
+        var recordingTransitionControllerText = recordingTransitionControllerRootText
+            + "\n" + recordingTransitionControllerOperationsText;
         var automationText = recordingLifecycleText
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackSettings.cs")
                 .Replace("\r\n", "\n")
@@ -124,20 +132,22 @@ static partial class Program
         AssertContains(recordingLifecycleText, "internal Task SetRecordingDesiredStateAsync");
         AssertContains(recordingLifecycleText, "public Task ToggleRecordingAsync()\n        => _recordingTransitionController.ToggleRecordingAsync();");
         AssertContains(recordingLifecycleText, "=> _recordingTransitionController.SetRecordingDesiredStateAsync(enabled, cancellationToken);");
-        AssertContains(recordingTransitionControllerText, "private sealed class MainViewModelRecordingTransitionController");
+        AssertContains(recordingTransitionControllerRootText, "private sealed partial class MainViewModelRecordingTransitionController");
         AssertContains(recordingTransitionControllerText, "Recording transition already in progress.");
         AssertContains(recordingTransitionControllerText, "await inFlight;");
         AssertContains(recordingTransitionControllerText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(recordingTransitionControllerText, "var task = RecordingTransitionInnerAsync(enabled, cancellationToken);");
-        AssertContains(recordingTransitionControllerText, "await StartRecordingAsync(cancellationToken);");
-        AssertContains(recordingTransitionControllerText, "await StopRecordingAsync(cancellationToken);");
+        AssertContains(recordingTransitionControllerOperationsText, "await StartRecordingAsync(cancellationToken);");
+        AssertContains(recordingTransitionControllerOperationsText, "await StopRecordingAsync(cancellationToken);");
         AssertContains(recordingTransitionControllerText, "await BeginRecordingTransitionAsync(enabled, cancellationToken);");
         AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StopRecordingAsync(cancellationToken);");
-        AssertContains(recordingTransitionControllerText, "private async Task StartRecordingAsync(CancellationToken cancellationToken = default)");
-        AssertContains(recordingTransitionControllerText, "private async Task StopRecordingAsync(CancellationToken cancellationToken = default)");
-        AssertContains(recordingTransitionControllerText, "await _viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
-        AssertContains(recordingTransitionControllerText, "await _viewModel._sessionCoordinator.StopRecordingAsync(cancellationToken);");
+        AssertContains(recordingTransitionControllerOperationsText, "private async Task StartRecordingAsync(CancellationToken cancellationToken = default)");
+        AssertContains(recordingTransitionControllerOperationsText, "private async Task StopRecordingAsync(CancellationToken cancellationToken = default)");
+        AssertContains(recordingTransitionControllerOperationsText, "await _viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
+        AssertContains(recordingTransitionControllerOperationsText, "await _viewModel._sessionCoordinator.StopRecordingAsync(cancellationToken);");
+        AssertDoesNotContain(recordingTransitionControllerRootText, "await _viewModel._sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
+        AssertDoesNotContain(recordingTransitionControllerRootText, "await _viewModel._sessionCoordinator.StopRecordingAsync(cancellationToken);");
         AssertDoesNotContain(captureText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
         AssertContains(recordingStateText, "private readonly Stopwatch _recordingStopwatch = new();");

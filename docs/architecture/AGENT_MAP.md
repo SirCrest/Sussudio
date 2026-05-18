@@ -2379,8 +2379,10 @@ Primary current owners:
   coordinator bridge.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`
   owns recording toggle serialization, desired-state routing, graceful stop,
-  transition gating, concrete start/stop operation execution, and
-  failure/cancellation state repair.
+  transition gating, and in-flight transition wait/error propagation.
+  `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`
+  owns concrete start/stop operation execution plus failure/cancellation state
+  repair.
   `MainViewModel.RecordingState.cs` owns recording option selections, output
   path, counters, and observable transition flags.
   `MainViewModel.Disposal.cs` owns bounded teardown, watcher disposal, and

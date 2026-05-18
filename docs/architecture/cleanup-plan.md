@@ -3283,9 +3283,11 @@ Remaining `tools/Common` ownership:
    Recording facade entry points now stay in `MainViewModel.cs`,
    including the direct emergency-stop coordinator bridge, while recording
    toggle serialization, desired-state routing, graceful stop, transition
-   gating, concrete start/stop operation execution, and failure/cancellation
-   state repair now live in
-   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`.
+   gating, and in-flight transition wait/error propagation now live in
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`;
+   concrete start/stop operation execution plus failure/cancellation state
+   repair live in
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.
    Recording option selections, output
    path, counters, and transition flags now live in
    `MainViewModel.RecordingState.cs`. Bounded teardown and watcher disposal now live
@@ -3464,7 +3466,9 @@ Remaining `tools/Common` ownership:
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`.
    The automation recording desired-state bridge enters through
    `MainViewModel.cs` and is serialized by
-   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`.
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`,
+   with start/stop execution in
+   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.
    The emergency recording-stop bridge also enters through `MainViewModel.cs`
    but routes directly to `CaptureSessionCoordinator.StopRecordingForEmergencyAsync`
    so it keeps bypassing UI-thread dispatch and normal transition gates.
