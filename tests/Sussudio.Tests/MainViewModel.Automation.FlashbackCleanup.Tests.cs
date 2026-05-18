@@ -15,7 +15,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var playbackSegmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs")
             .Replace("\r\n", "\n");
-        var decoderReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs")
+        var decoderSegmentReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs")
             .Replace("\r\n", "\n");
 
         // Constants/definitions now live in the extracted helper classes
@@ -67,8 +67,8 @@ static partial class Program
         AssertContains(bufferText, "public TimeSpan? GetSegmentStartPts(string path)");
         AssertContains(playbackSegmentEdgesText, "var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);");
         AssertContains(playbackSegmentEdgesText, "if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)");
-        AssertContains(decoderReopenText, "var currentSegmentStart = _bufferManager.GetSegmentStartPts(currentOpenFilePath);");
-        AssertContains(decoderReopenText, "if (currentSegmentStart.HasValue && resumeTarget < currentSegmentStart.Value)");
+        AssertContains(decoderSegmentReopenText, "var currentSegmentStart = _bufferManager.GetSegmentStartPts(currentOpenFilePath);");
+        AssertContains(decoderSegmentReopenText, "if (currentSegmentStart.HasValue && resumeTarget < currentSegmentStart.Value)");
 
         return Task.CompletedTask;
     }

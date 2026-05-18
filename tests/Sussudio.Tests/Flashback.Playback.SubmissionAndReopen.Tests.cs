@@ -116,10 +116,12 @@ static partial class Program
             .Replace("\r\n", "\n");
         var decoderReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs")
             .Replace("\r\n", "\n");
+        var decoderSegmentReopenText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeek(");
-        AssertContains(decoderReopenText, "private bool TryReopenCurrentFmp4BeforeSegmentSwitch(");
-        AssertContains(decoderReopenText, "private bool HandleActiveFmp4ReopenAtSegmentEdge(");
+        AssertContains(decoderSegmentReopenText, "private bool TryReopenCurrentFmp4BeforeSegmentSwitch(");
+        AssertContains(decoderSegmentReopenText, "private bool HandleActiveFmp4ReopenAtSegmentEdge(");
         AssertContains(segmentEdgesText, "TryReopenCurrentFmp4BeforeSegmentSwitch(");
         AssertContains(segmentEdgesText, "return HandleActiveFmp4ReopenAtSegmentEdge(");
         AssertDoesNotContain(segmentEdgesText, "FLASHBACK_PLAYBACK_FMP4_REOPEN_BEFORE_SEGMENT_SWITCH_ERROR");
@@ -165,6 +167,8 @@ static partial class Program
         AssertContains(decoderFilesText, "_decoderHwAccel = \"N/A\";\n        fileOpen = false;\n        _currentOpenFilePath = null;");
         AssertDoesNotContain(decoderReopenText, "private void ReopenDecoderPlaybackFile(");
         AssertDoesNotContain(decoderReopenText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
+        AssertDoesNotContain(decoderSegmentReopenText, "private void ReopenDecoderPlaybackFile(");
+        AssertDoesNotContain(decoderSegmentReopenText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
         AssertContains(sourceText, "private long SuppressAudioForFmp4Reopen(FlashbackDecoder decoder)");
         AssertContains(sourceText, "Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);\n        decoder.AudioChunkCallback = null;");
         AssertContains(sourceText, "private void RestoreAudioAfterFmp4Reopen(");

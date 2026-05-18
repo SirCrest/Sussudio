@@ -2226,9 +2226,12 @@ Flashback playback decoder file handling now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs`.
 Keep decoder creation, active segment file identity, file open checks, decoder
 close/open identity transitions, and decoder cleanup there. Active fMP4 reopen
-retry, adjacent-segment seek fallback, keyframe-reopen recovery, and fMP4
-reopen audio-gate restoration now live in
+retry, adjacent-segment seek fallback, keyframe-reopen recovery, and near-live
+reopen guards now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs`.
+Segment-edge fMP4 reopen/reseek recovery and fMP4 reopen audio-gate restoration
+now live in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs`.
 Keep seek-display and playback pacing in the controller core/thread partials.
 
 Flashback playback seek/scrub frame display now lives in
@@ -2244,9 +2247,8 @@ decode-error snap-to-live, and near-live snap handling there. Segment switch
 decisions and write-head waits now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackSegmentEdges.cs`;
 active fMP4 reopen/reseek recovery during segment-edge handling, including the
-shared decoder reopen transaction and post-seek audio gate, lives with the other
-reopen paths in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs`.
+shared decoder reopen transaction and post-seek audio gate, lives in
+`Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderSegmentReopen.cs`.
 
 Flashback playback timing and cadence now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackTiming.cs`.

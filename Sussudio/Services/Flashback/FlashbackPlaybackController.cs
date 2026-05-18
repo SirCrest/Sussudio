@@ -227,7 +227,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     // (Command dispatch, decoder files, playback loop/timing, audio routing,
     // and audio prebuffer extracted to partials)
     // See: FlashbackPlaybackController.CommandQueue.cs, .CommandCoalescing.cs, .CommandTelemetry.cs, .DecoderFiles.cs,
-    // .DecoderReopen.cs,
+    // .DecoderReopen.cs, .DecoderSegmentReopen.cs,
     // .ThreadLoop.cs, .ThreadLifecycle.cs, .ThreadCleanup.cs, .PlaybackLoop.cs,
     // .PlaybackSegmentEdges.cs, .PlaybackTiming.cs,
     // .AudioMasterPacing.cs, .AudioRouting.cs, .AudioPrebuffer.cs, .MetricsCollection.cs
