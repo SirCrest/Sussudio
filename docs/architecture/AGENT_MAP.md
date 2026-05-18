@@ -1471,9 +1471,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs`
   owns selected capture-format and mode-tuple video-format filtering policy
   assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Tests.cs`
-  owns resolution-selection policy assertions, including HDR and SDR source
-  retarget behavior.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Ownership.Tests.cs`
+  owns resolution-selection source-shape assertions for option rebuild,
+  auto-selection state, and pure policy placement.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs`
+  owns resolution-selection policy behavior assertions, including HDR and SDR
+  source retarget behavior.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.ModeSelection.Tests.cs`
   owns mode-selection reset and resolved automatic frame-rate application
   assertions.

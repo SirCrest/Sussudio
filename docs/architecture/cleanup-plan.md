@@ -3426,6 +3426,11 @@ Remaining `tools/Common` ownership:
    selection, `CaptureResolutionSelectionPolicy.Sdr.cs` owns SDR auto/fallback
    selection, and `CaptureResolutionSelectionPolicy.Models.cs` owns the
    request/result records.
+   Resolution-selection harness coverage is split along the same boundary:
+   `MainViewModel.Capture.SelectionPolicy.Resolution.Ownership.Tests.cs`
+   owns source-shape placement assertions, while
+   `MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs` owns
+   HDR, SDR, and auto-capture policy behavior contracts.
    State-backed delegates for callers that still live across the partial family
    stay in `MainViewModel.ResolutionOptions.cs`, while dropdown rebuild,
    collection mutation, and property notifications route through
