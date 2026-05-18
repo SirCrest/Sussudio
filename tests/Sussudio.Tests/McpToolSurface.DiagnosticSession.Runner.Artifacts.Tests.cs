@@ -108,12 +108,6 @@ static partial class Program
             }
         }
 
-        static JsonElement ParseDiagnosticSessionJson(string json)
-        {
-            using var document = JsonDocument.Parse(json);
-            return document.RootElement.Clone();
-        }
-
         static void AssertJsonArrayContains(JsonElement array, string token)
         {
             AssertEqual(JsonValueKind.Array, array.ValueKind, "diagnostic warning array kind");

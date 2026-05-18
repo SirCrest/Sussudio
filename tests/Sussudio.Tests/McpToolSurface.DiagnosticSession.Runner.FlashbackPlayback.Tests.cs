@@ -179,12 +179,6 @@ static partial class Program
                 """);
         }
 
-        static JsonElement ParseDiagnosticSessionJson(string json)
-        {
-            using var document = JsonDocument.Parse(json);
-            return document.RootElement.Clone();
-        }
-
         static string? GetPayloadString(Dictionary<string, object?>? payload, string name)
             => payload != null && payload.TryGetValue(name, out var value) ? value?.ToString() : null;
 

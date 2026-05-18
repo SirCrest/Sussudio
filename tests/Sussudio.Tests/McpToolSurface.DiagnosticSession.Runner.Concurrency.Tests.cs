@@ -87,11 +87,5 @@ static partial class Program
                 Directory.Delete(outputDirectory, recursive: true);
             }
         }
-
-        static JsonElement ParseDiagnosticSessionJson(string json)
-        {
-            using var document = JsonDocument.Parse(json);
-            return document.RootElement.Clone();
-        }
     }
 }
