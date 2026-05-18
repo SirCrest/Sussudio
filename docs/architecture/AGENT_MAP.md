@@ -1670,10 +1670,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.ContractsAndMetrics.Tests.cs` owns
   configuration, native interop, frame type/ownership state, DXGI frame-stat
   state, slow-frame state, and metric-tracking method/state assertions.
-  `D3D11PreviewRenderer.SourceOwnership.RenderPipeline.Tests.cs` owns panel
-  binding state, shared-device, device initialization, input-resource state,
-  upload state, frame-latency state, viewport, shader-rendering state, and
-  shader-source assertions.
+  `D3D11PreviewRenderer.SourceOwnership.RenderSetup.Tests.cs` owns panel
+  binding, shared-device, device initialization, input-resource, and upload
+  state assertions.
+  `D3D11PreviewRenderer.SourceOwnership.RenderPasses.Tests.cs` owns
+  frame-latency, viewport, render-pass, shader-rendering, and shader-source
+  assertions.
   `D3D11PreviewRenderer.SourceOwnership.RenderThread.Tests.cs` owns
   render-thread loop/failure telemetry method/state and Present shared
   present-accounting source-ownership assertions.
