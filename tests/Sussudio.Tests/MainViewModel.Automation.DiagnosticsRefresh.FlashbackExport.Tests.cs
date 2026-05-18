@@ -9,6 +9,7 @@ static partial class Program
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
+        AssertContains(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
         AssertContains(exportOperationsText, "return await ExportFlashbackCoreAsync(");
         AssertDoesNotContain(exportOperationsText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
@@ -35,17 +36,17 @@ static partial class Program
         var exportLastNMethod = ExtractTextBetween(
             exportOperationsText,
             "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
-            "\n}");
-        AssertContains(exportRangeMethod, "FlashbackExporter? flashbackExporter;");
-        AssertContains(exportRangeMethod, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
-        AssertContains(exportRangeMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
-        AssertOccursBefore(exportRangeMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
-        AssertContains(exportRangeMethod, "snapshotExporter: flashbackExporter,");
-        AssertContains(exportLastNMethod, "FlashbackExporter? flashbackExporter;");
-        AssertContains(exportLastNMethod, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
-        AssertContains(exportLastNMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
-        AssertOccursBefore(exportLastNMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
-        AssertContains(exportLastNMethod, "snapshotExporter: flashbackExporter,");
+            "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync");
+        AssertContains(exportRangeMethod, "SnapshotFlashbackExportBackendAsync(");
+        AssertContains(exportRangeMethod, "operationName: \"range\",");
+        AssertContains(exportRangeMethod, "snapshotExporter: snapshot.Exporter,");
+        AssertContains(exportLastNMethod, "SnapshotFlashbackExportBackendAsync(");
+        AssertContains(exportLastNMethod, "operationName: \"last_n\",");
+        AssertContains(exportLastNMethod, "snapshotExporter: snapshot.Exporter,");
+        var backendSnapshotMethod = ExtractMemberCode(exportOperationsText, "SnapshotFlashbackExportBackendAsync");
+        AssertContains(backendSnapshotMethod, "new FlashbackExporter()");
+        AssertContains(backendSnapshotMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
+        AssertOccursBefore(backendSnapshotMethod, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
         AssertContains(flashbackBackendText, "outerPauseApplied = bufferManager != null;");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\", inPoint, outPoint);");
         AssertContains(captureServiceText, "var exportId = 0L;");
@@ -144,7 +145,7 @@ static partial class Program
         AssertContains(captureServiceText, "CAPTURE_SERVICE_SEMAPHORE_RELEASE_WARN");
         AssertContains(captureServiceText, "private static void ResumeFlashbackEvictionBestEffort(FlashbackBufferManager? bufferManager, string operation)");
         AssertContains(captureServiceText, "FLASHBACK_EVICTION_RESUME_WARN");
-        AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_sessionTransitionLock, \"flashback_export_snapshot_session\");");
+        AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_sessionTransitionLock, sessionReleaseOperation);");
         AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_preview_backend_dispose\");");
         AssertDoesNotContain(captureServiceText, "_flashbackBackendLeaseLock.Release();");
         AssertDoesNotContain(captureServiceText, "_flashbackExportOperationLock.Release();");

@@ -35,6 +35,8 @@ static partial class Program
 
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
+        AssertContains(exportOperationsText, "private readonly record struct FlashbackExportBackendSnapshot(");
+        AssertContains(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
         AssertContains(exportOperationsText, "return await ExportFlashbackCoreAsync(");
         AssertDoesNotContain(exportOperationsText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
@@ -46,27 +48,36 @@ static partial class Program
             captureServiceText,
             "internal async Task<FinalizeResult> ExportFlashbackRangeAsync",
             "    internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
-        AssertContains(rangeExport, "FlashbackExporter? flashbackExporter;");
-        AssertContains(rangeExport, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
-        AssertContains(rangeExport, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);\n            exportOperationLockHeld = true;");
-        AssertOccursBefore(rangeExport, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
-        AssertContains(rangeExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
-        AssertOccursBefore(rangeExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
-        AssertContains(rangeExport, "snapshotExporter: flashbackExporter,");
+        AssertContains(rangeExport, "SnapshotFlashbackExportBackendAsync(");
+        AssertContains(rangeExport, "operationName: \"range\",");
+        AssertContains(rangeExport, "sessionReleaseOperation: \"flashback_export_snapshot_session\",");
+        AssertContains(rangeExport, "var snapshot = snapshotResult.Snapshot;");
+        AssertContains(rangeExport, "snapshotSink: snapshot.Sink,");
+        AssertContains(rangeExport, "snapshotBufferManager: snapshot.BufferManager,");
+        AssertContains(rangeExport, "snapshotExporter: snapshot.Exporter,");
         AssertContains(rangeExport, "exportOperationLockAlreadyHeld: true,");
 
         var lastNExport = ExtractTextBetween(
             exportOperationsText,
             "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
-            "\n}\n");
-        AssertContains(lastNExport, "FlashbackExporter? flashbackExporter;");
-        AssertContains(lastNExport, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
-        AssertContains(lastNExport, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);\n            exportOperationLockHeld = true;");
-        AssertOccursBefore(lastNExport, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
-        AssertContains(lastNExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
-        AssertOccursBefore(lastNExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
-        AssertContains(lastNExport, "snapshotExporter: flashbackExporter,");
+            "    private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync");
+        AssertContains(lastNExport, "SnapshotFlashbackExportBackendAsync(");
+        AssertContains(lastNExport, "operationName: \"last_n\",");
+        AssertContains(lastNExport, "sessionReleaseOperation: \"flashback_export_last_n_snapshot_session\",");
+        AssertContains(lastNExport, "var snapshot = snapshotResult.Snapshot;");
+        AssertContains(lastNExport, "snapshotSink: snapshot.Sink,");
+        AssertContains(lastNExport, "snapshotBufferManager: snapshot.BufferManager,");
+        AssertContains(lastNExport, "snapshotExporter: snapshot.Exporter,");
         AssertContains(lastNExport, "exportOperationLockAlreadyHeld: true,");
+
+        var backendSnapshot = ExtractMemberCode(exportOperationsText, "SnapshotFlashbackExportBackendAsync");
+        AssertContains(backendSnapshot, "var bufferManager = _flashbackBufferManager;");
+        AssertContains(backendSnapshot, "var flashbackSink = _flashbackSink;");
+        AssertContains(backendSnapshot, "var flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
+        AssertContains(backendSnapshot, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);\n            exportOperationLockHeld = true;");
+        AssertOccursBefore(backendSnapshot, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
+        AssertContains(backendSnapshot, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
+        AssertContains(backendSnapshot, "new FlashbackExportBackendSnapshot(bufferManager, flashbackSink, flashbackExporter)");
 
         var exportCore = ExtractTextBetween(
             exportCoreText,

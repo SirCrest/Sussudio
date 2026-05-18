@@ -526,8 +526,8 @@ Important entry points:
 - `CaptureService.FlashbackExportFailureClassification.cs` owns the export
   failure-kind taxonomy shared by capture diagnostics and automation responses.
 - `CaptureService.FlashbackExportOperations.cs` owns Flashback export entry
-  points, backend snapshotting, and range resolution before the shared export
-  core runs.
+  points, the shared backend snapshot helper, and range resolution before the
+  shared export core runs.
 - `CaptureService.FlashbackExportCore.cs` owns the shared export pipeline:
   eviction pause, force-rotate, exporter request construction, diagnostics
   completion, and cleanup.
