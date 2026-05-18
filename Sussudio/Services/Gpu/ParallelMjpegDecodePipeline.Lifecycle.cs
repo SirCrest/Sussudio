@@ -9,6 +9,9 @@ namespace Sussudio.Services.Gpu;
 
 internal sealed partial class ParallelMjpegDecodePipeline
 {
+    private Thread? _emitThread;
+    private readonly AutoResetEvent _emitSignal = new(false);
+
     public void Dispose()
     {
         if (Volatile.Read(ref _disposed) != 0)
@@ -63,6 +66,16 @@ internal sealed partial class ParallelMjpegDecodePipeline
         }
 
         SignalEmitter("stop_requested");
+    }
+
+    private void StartEmitter()
+    {
+        _emitThread = new Thread(EmitLoop)
+        {
+            IsBackground = true,
+            Name = "MjpegEmitter"
+        };
+        _emitThread.Start();
     }
 
     private void SignalEmitter(string operation)

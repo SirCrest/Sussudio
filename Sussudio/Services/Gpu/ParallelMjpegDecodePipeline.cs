@@ -1,8 +1,4 @@
 using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using Sussudio.Services.Capture;
@@ -15,32 +11,9 @@ namespace Sussudio.Services.Gpu;
 // leases so preview and recording can share bytes safely.
 internal sealed partial class ParallelMjpegDecodePipeline : IDisposable
 {
-    private const long DefaultDecodedReorderByteBudget = 1024L * 1024 * 1024;
-    private const int MinDecodedReorderCapacity = 32;
-    private const int MaxDecodedReorderCapacity = 240;
-
     public delegate void EmitFrameCallback(PooledVideoFrame frame);
     public delegate void PreviewFrameCallback(PooledVideoFrameLease frame);
 
-    private readonly record struct DecodedFrame(
-        long SeqNo,
-        PooledVideoFrame Frame,
-        long DecodedTick);
-
-    private readonly SoftwareMjpegDecoder[] _decoders;
-    private readonly Thread[] _workers;
-
-    // Workers complete out of order, so decoded frames wait here until the
-    // emitter can advance _nextEmitSeq. Missing-sequence tracking is explicit
-    // so a dropped compressed packet does not permanently stall the pipeline.
-    private readonly SortedDictionary<long, DecodedFrame> _reorderFrames = new();
-    private readonly SortedSet<long> _knownMissingSequences = new();
-    private readonly object _reorderLock = new();
-    private readonly int _decodedReorderCapacity;
-    private int _reorderBufferDepth;
-    private long _nextEmitSeq;
-    private Thread? _emitThread;
-    private readonly AutoResetEvent _emitSignal = new(false);
     private readonly EmitFrameCallback _emitCallback;
     private readonly PreviewFrameCallback? _previewCallback;
     private readonly Action<Exception>? _fatalErrorCallback;
@@ -65,8 +38,6 @@ internal sealed partial class ParallelMjpegDecodePipeline : IDisposable
     private long _decodeFailures;
     private long _reorderCollisions;
     private long _emitFailures;
-    private long _reorderSkips = 0;
-    private long _missingSeqSinceTickMs = -1;
     private int _stopRequested;
     private int _threadsStopped;
     private int _fatalErrorSignaled;
@@ -116,27 +87,8 @@ internal sealed partial class ParallelMjpegDecodePipeline : IDisposable
 
         try
         {
-            for (var i = 0; i < _decoderCount; i++)
-            {
-                _decoders[i] = new SoftwareMjpegDecoder();
-                _decoders[i].Initialize(width, height);
-                _perDecoderDecodeTimeMs[i] = new double[300];
-
-                var workerIndex = i;
-                _workers[i] = new Thread(() => WorkerLoop(workerIndex))
-                {
-                    IsBackground = true,
-                    Name = $"MjpegWorker-{i}"
-                };
-                _workers[i].Start();
-            }
-
-            _emitThread = new Thread(EmitLoop)
-            {
-                IsBackground = true,
-                Name = "MjpegEmitter"
-            };
-            _emitThread.Start();
+            StartDecodeWorkers(width, height);
+            StartEmitter();
 
             Logger.Log(
                 $"PARALLEL_MJPEG_PIPELINE_INIT decoders={_decoderCount} width={width} height={height} " +
@@ -148,127 +100,6 @@ internal sealed partial class ParallelMjpegDecodePipeline : IDisposable
             Dispose();
             throw;
         }
-    }
-
-    private void WorkerLoop(int workerIndex)
-    {
-        var decoder = _decoders[workerIndex];
-        var reader = _workQueue.Reader;
-
-        try
-        {
-            while (true)
-            {
-                if (!reader.TryRead(out var item))
-                {
-                    if (!reader.WaitToReadAsync().AsTask().GetAwaiter().GetResult())
-                    {
-                        break;
-                    }
-
-                    continue;
-                }
-
-                DecrementCompressedQueueDepth("dequeue");
-                Interlocked.Add(ref _compressedQueueBytes, -item.JpegLength);
-                Interlocked.Increment(ref _compressedFramesDequeued);
-
-                var decodeStart = Stopwatch.GetTimestamp();
-                var decodeSucceeded = false;
-                PooledVideoFrame? pooledFrame = null;
-                var frameOwned = false; // track ownership so we always return on exception
-
-                try
-                {
-                    // Pre-rent the output frame so the decoder writes directly
-                    // into pooled NV12 storage shared by downstream leases.
-                    var nv12Size = decoder.Nv12Size;
-                    pooledFrame = PooledVideoFrame.Rent(
-                        item.SeqNo,
-                        item.ArrivalTick,
-                        decodedTick: 0,
-                        item.Width,
-                        item.Height,
-                        PooledVideoPixelFormat.Nv12,
-                        nv12Size);
-                    frameOwned = true;
-
-                    decodeSucceeded = decoder.DecodeToNv12(
-                        item.JpegBuffer.AsSpan(0, item.JpegLength),
-                        pooledFrame.Span);
-                    pooledFrame.DecodedTick = Stopwatch.GetTimestamp();
-                    RecordPerDecoderTiming(workerIndex, GetElapsedMilliseconds(decodeStart, Stopwatch.GetTimestamp()));
-
-                    if (!decodeSucceeded)
-                    {
-                        Interlocked.Increment(ref _decodeFailures);
-                        Interlocked.Increment(ref _totalFramesDropped);
-                        MarkKnownMissing(item.SeqNo, "decode_failed");
-                        continue;
-                    }
-
-                    if (!TryAddDecodedFrame(item.SeqNo, pooledFrame, pooledFrame.DecodedTick))
-                    {
-                        continue;
-                    }
-
-                    frameOwned = false; // ownership transferred to reorder ring
-                    SignalEmitter("decoded_frame");
-                    Interlocked.Increment(ref _totalFramesDecoded);
-                }
-                catch (SoftwareMjpegDecoderPermanentException ex)
-                {
-                    RecordPerDecoderTiming(workerIndex, GetElapsedMilliseconds(decodeStart, Stopwatch.GetTimestamp()));
-                    Interlocked.Increment(ref _decodeFailures);
-                    Interlocked.Increment(ref _totalFramesDropped);
-                    MarkKnownMissing(item.SeqNo, "decode_fatal");
-                    Logger.Log($"MJPEG_WORKER_FATAL worker={workerIndex} type={ex.GetType().Name} msg={ex.Message}");
-                    SignalFatalError(ex);
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    RecordPerDecoderTiming(workerIndex, GetElapsedMilliseconds(decodeStart, Stopwatch.GetTimestamp()));
-                    Interlocked.Increment(ref _decodeFailures);
-                    Interlocked.Increment(ref _totalFramesDropped);
-                    MarkKnownMissing(item.SeqNo, "decode_exception");
-                    Logger.Log($"MJPEG_WORKER_FAIL worker={workerIndex} type={ex.GetType().Name} msg={ex.Message}");
-                }
-                finally
-                {
-                    if (frameOwned)
-                    {
-                        pooledFrame?.Dispose();
-                    }
-
-                    ArrayPool<byte>.Shared.Return(item.JpegBuffer);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"MJPEG_WORKER_FAIL worker={workerIndex} type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private bool HasAliveWorkers()
-    {
-        foreach (var worker in _workers)
-        {
-            if (worker.IsAlive)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static int ResolveDecodedReorderCapacity(int width, int height)
-    {
-        var nv12Bytes = Math.Max(1L, (long)width * height * 3 / 2);
-        var budgetedFrames = DefaultDecodedReorderByteBudget / nv12Bytes;
-        return (int)Math.Clamp(budgetedFrames, MinDecodedReorderCapacity, MaxDecodedReorderCapacity);
     }
 
 }

@@ -9,6 +9,27 @@ namespace Sussudio.Services.Gpu;
 
 internal sealed partial class ParallelMjpegDecodePipeline
 {
+    private const long DefaultDecodedReorderByteBudget = 1024L * 1024 * 1024;
+    private const int MinDecodedReorderCapacity = 32;
+    private const int MaxDecodedReorderCapacity = 240;
+
+    private readonly record struct DecodedFrame(
+        long SeqNo,
+        PooledVideoFrame Frame,
+        long DecodedTick);
+
+    // Workers complete out of order, so decoded frames wait here until the
+    // emitter can advance _nextEmitSeq. Missing-sequence tracking is explicit
+    // so a dropped compressed packet does not permanently stall the pipeline.
+    private readonly SortedDictionary<long, DecodedFrame> _reorderFrames = new();
+    private readonly SortedSet<long> _knownMissingSequences = new();
+    private readonly object _reorderLock = new();
+    private readonly int _decodedReorderCapacity;
+    private int _reorderBufferDepth;
+    private long _nextEmitSeq;
+    private long _reorderSkips = 0;
+    private long _missingSeqSinceTickMs = -1;
+
     private void EmitLoop()
     {
         while (!_stopped || HasAliveWorkers() || Volatile.Read(ref _reorderBufferDepth) > 0)
@@ -342,5 +363,12 @@ internal sealed partial class ParallelMjpegDecodePipeline
                 frame.Frame.Dispose();
             }
         }
+    }
+
+    private static int ResolveDecodedReorderCapacity(int width, int height)
+    {
+        var nv12Bytes = Math.Max(1L, (long)width * height * 3 / 2);
+        var budgetedFrames = DefaultDecodedReorderByteBudget / nv12Bytes;
+        return (int)Math.Clamp(budgetedFrames, MinDecodedReorderCapacity, MaxDecodedReorderCapacity);
     }
 }

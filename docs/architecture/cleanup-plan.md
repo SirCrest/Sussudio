@@ -1759,7 +1759,13 @@ Parallel MJPEG compressed input admission now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs`. Keep
 startup invalid-MJPG drops, work-item construction, compressed byte-budget
 rejection, queue-depth accounting, queue-full rejection, and packet-hash
-recording there; keep worker decode-loop execution in the root pipeline.
+recording there.
+
+Parallel MJPEG worker execution now lives in
+`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs`. Keep decoder
+array ownership, worker thread creation/naming, worker decode-loop execution,
+and worker liveness checks there; keep the root pipeline focused on
+construction, callback storage, channel creation, and startup sequencing.
 
 Parallel MJPEG decode pipeline timing now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs`. Keep timing
@@ -1770,7 +1776,8 @@ decode ingress in the root pipeline.
 Parallel MJPEG decode pipeline decoded-frame ordering and emission now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs`. Keep strict
 missing-sequence waits, known-missing skips, preview decoded-frame notification,
-and ordered final drain there.
+ordered final drain, decoded reorder state, and decoded reorder capacity policy
+there.
 
 Parallel MJPEG decode pipeline lifecycle now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs`. Keep

@@ -161,6 +161,7 @@ static partial class Program
     private static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
     {
         var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs");
@@ -226,6 +227,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task ParallelMjpegDecodePipeline_WorkersLiveInFocusedPartial()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
+            .Replace("\r\n", "\n");
+        var workersText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(workersText, "private readonly SoftwareMjpegDecoder[] _decoders;");
+        AssertContains(workersText, "private readonly Thread[] _workers;");
+        AssertContains(workersText, "private void StartDecodeWorkers(int width, int height)");
+        AssertContains(workersText, "Name = $\"MjpegWorker-{i}\"");
+        AssertContains(workersText, "private void WorkerLoop(int workerIndex)");
+        AssertContains(workersText, "private bool HasAliveWorkers()");
+        AssertContains(rootText, "StartDecodeWorkers(width, height);");
+        AssertDoesNotContain(rootText, "private void WorkerLoop(int workerIndex)");
+        AssertDoesNotContain(rootText, "private bool HasAliveWorkers()");
+        AssertDoesNotContain(rootText, "private readonly SoftwareMjpegDecoder[] _decoders;");
+
+        return Task.CompletedTask;
+    }
+
     private static Task ParallelMjpegDecodePipeline_ReorderLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
@@ -233,6 +255,12 @@ static partial class Program
         var reorderText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
             .Replace("\r\n", "\n");
 
+        AssertContains(reorderText, "private const long DefaultDecodedReorderByteBudget = 1024L * 1024 * 1024;");
+        AssertContains(reorderText, "private readonly record struct DecodedFrame(");
+        AssertContains(reorderText, "private readonly SortedDictionary<long, DecodedFrame> _reorderFrames = new();");
+        AssertContains(reorderText, "private readonly SortedSet<long> _knownMissingSequences = new();");
+        AssertContains(reorderText, "private readonly object _reorderLock = new();");
+        AssertContains(reorderText, "private static int ResolveDecodedReorderCapacity(int width, int height)");
         AssertContains(reorderText, "private void EmitLoop()");
         AssertContains(reorderText, "private bool DrainReadyFrames()");
         AssertContains(reorderText, "private void DetectAndResetStall(bool emittedAny)");
@@ -244,6 +272,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "private void EmitLoop()");
         AssertDoesNotContain(rootText, "private bool DrainReadyFrames()");
         AssertDoesNotContain(rootText, "private bool TryAddDecodedFrame(long seqNo, PooledVideoFrame frame, long decodedTick)");
+        AssertDoesNotContain(rootText, "private readonly record struct DecodedFrame(");
 
         return Task.CompletedTask;
     }
@@ -258,6 +287,10 @@ static partial class Program
         AssertContains(lifecycleText, "public void Dispose()");
         AssertContains(lifecycleText, "public bool TryStop(TimeSpan timeout, out string? failureReason)");
         AssertContains(lifecycleText, "private void BeginStop()");
+        AssertContains(lifecycleText, "private Thread? _emitThread;");
+        AssertContains(lifecycleText, "private readonly AutoResetEvent _emitSignal = new(false);");
+        AssertContains(lifecycleText, "private void StartEmitter()");
+        AssertContains(lifecycleText, "Name = \"MjpegEmitter\"");
         AssertContains(lifecycleText, "private void SignalEmitter(string operation)");
         AssertContains(lifecycleText, "private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)");
         AssertContains(lifecycleText, "private void CleanupResources()");
@@ -269,6 +302,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)");
         AssertDoesNotContain(rootText, "private void CleanupResources()");
         AssertDoesNotContain(rootText, "private static TimeSpan GetRemainingTimeout(long deadlineTimestamp)");
+        AssertDoesNotContain(rootText, "Name = \"MjpegEmitter\"");
 
         return Task.CompletedTask;
     }

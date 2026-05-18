@@ -30,6 +30,9 @@ static partial class Program
             "MJPEG compressed queue admission lives in focused partial",
             ParallelMjpegDecodePipeline_CompressedQueueLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "MJPEG pipeline workers live in focused partial",
+            ParallelMjpegDecodePipeline_WorkersLiveInFocusedPartial);
+        await AddCheckAsync(results,
             "MJPEG pipeline reorder lives in focused partial",
             ParallelMjpegDecodePipeline_ReorderLivesInFocusedPartial);
         await AddCheckAsync(results,
