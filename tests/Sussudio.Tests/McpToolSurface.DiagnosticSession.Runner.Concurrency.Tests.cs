@@ -27,17 +27,15 @@ static partial class Program
                 bufferSize: 1,
                 FileOptions.DeleteOnClose);
 
-            var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
-            var optionsType = assembly.GetType("Sussudio.Tools.DiagnosticSessionOptions")
-                ?? throw new InvalidOperationException("DiagnosticSessionOptions type was not found.");
+            var assembly = LoadDiagnosticSessionRunnerAssembly();
             var runnerType = assembly.GetType("Sussudio.Tools.DiagnosticSessionRunner")
                 ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
-            var options = Activator.CreateInstance(optionsType)
-                ?? throw new InvalidOperationException("DiagnosticSessionOptions instance could not be created.");
-            optionsType.GetProperty("Scenario")!.SetValue(options, "observe");
-            optionsType.GetProperty("DurationSeconds")!.SetValue(options, 0);
-            optionsType.GetProperty("SampleIntervalMs")!.SetValue(options, 100);
-            optionsType.GetProperty("OutputDirectory")!.SetValue(options, outputDirectory);
+            var options = CreateDiagnosticSessionOptions(
+                assembly,
+                scenario: "observe",
+                durationSeconds: 0,
+                sampleIntervalMs: 100,
+                outputDirectory);
 
             Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommand = (_, _, _) =>
                 Task.FromResult(ParseDiagnosticSessionJson("""

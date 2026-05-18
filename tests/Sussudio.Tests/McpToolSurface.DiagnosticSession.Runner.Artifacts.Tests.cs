@@ -14,17 +14,13 @@ static partial class Program
 
         try
         {
-            var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
-            var optionsType = assembly.GetType("Sussudio.Tools.DiagnosticSessionOptions")
-                ?? throw new InvalidOperationException("DiagnosticSessionOptions type was not found.");
-            var runnerType = assembly.GetType("Sussudio.Tools.DiagnosticSessionRunner")
-                ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
-            var options = Activator.CreateInstance(optionsType)
-                ?? throw new InvalidOperationException("DiagnosticSessionOptions instance could not be created.");
-            optionsType.GetProperty("Scenario")!.SetValue(options, "observe");
-            optionsType.GetProperty("DurationSeconds")!.SetValue(options, 0);
-            optionsType.GetProperty("SampleIntervalMs")!.SetValue(options, 100);
-            optionsType.GetProperty("OutputDirectory")!.SetValue(options, outputDirectory);
+            var assembly = LoadDiagnosticSessionRunnerAssembly();
+            var options = CreateDiagnosticSessionOptions(
+                assembly,
+                scenario: "observe",
+                durationSeconds: 0,
+                sampleIntervalMs: 100,
+                outputDirectory);
 
             Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommand = (command, _, _) =>
             {
@@ -71,14 +67,7 @@ static partial class Program
                     """));
             };
 
-            var runAsync = runnerType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .FirstOrDefault(method => method.Name == "RunAsync" && method.GetParameters().Length == 3)
-                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync overload was not found.");
-            var task = runAsync.Invoke(null, new object?[] { options, sendCommand, CancellationToken.None }) as Task
-                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync did not return a Task.");
-            await task.ConfigureAwait(false);
-            var result = task.GetType().GetProperty("Result")!.GetValue(task)
-                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync returned null.");
+            var result = await RunDiagnosticSessionRunnerAsync(assembly, options, sendCommand).ConfigureAwait(false);
 
             AssertEqual(false, GetBoolProperty(result, "Success"), "diagnostic failure result success");
             AssertEqual("failed", GetPropertyValue(result, "TerminalState") as string, "diagnostic failure terminal state");
