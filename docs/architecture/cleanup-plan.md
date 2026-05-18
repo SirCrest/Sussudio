@@ -1123,8 +1123,10 @@ ffprobe process/spec/side-data probing in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs`, probe
 scalar parsing in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.ProbeParsing.cs`,
-stream/container/HDR and cadence validation policy in
+stream/container and cadence validation policy in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs`,
+HDR verification policy in
+`Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.Hdr.cs`,
 result/taxonomy shaping in
 `Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs`, and
 ffprobe frame timestamp cadence analysis in

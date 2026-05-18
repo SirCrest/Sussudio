@@ -141,6 +141,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs")
             .Replace("\r\n", "\n");
+        var hdrValidationText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.Hdr.cs")
+            .Replace("\r\n", "\n");
         var resultsText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs")
             .Replace("\r\n", "\n");
 
@@ -150,11 +152,13 @@ static partial class Program
         AssertContains(parsingText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
         AssertContains(parsingText, "private static double? TryParseRational(string? value)");
         AssertContains(validationText, "private static void ValidateContainer(");
-        AssertContains(validationText, "private static HdrValidationResult ValidateHdrMetadata(");
+        AssertContains(hdrValidationText, "private readonly record struct HdrValidationResult(");
+        AssertContains(hdrValidationText, "private static HdrValidationResult ValidateHdrMetadata(");
         AssertContains(resultsText, "private static HdrParityResult BuildHdrParityResult(");
         AssertContains(resultsText, "private static RecordingVerificationResult CreateEarlyFailure(");
         AssertDoesNotContain(rootText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
         AssertDoesNotContain(rootText, "private static void ValidateContainer(");
+        AssertDoesNotContain(validationText, "private static HdrValidationResult ValidateHdrMetadata(");
         AssertDoesNotContain(rootText, "private static HdrParityResult BuildHdrParityResult(");
         AssertDoesNotContain(rootText, "private static RecordingVerificationResult CreateEarlyFailure(");
 
