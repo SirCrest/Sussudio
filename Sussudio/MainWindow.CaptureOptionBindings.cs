@@ -2,7 +2,7 @@ using Sussudio.Controllers;
 
 namespace Sussudio;
 
-// XAML-facing adapter for capture option setup and event binding.
+// XAML-facing adapter for capture option setup, event binding, and property-change routing.
 public sealed partial class MainWindow
 {
     private CaptureOptionBindingController _captureOptionBindingController = null!;
@@ -71,4 +71,7 @@ public sealed partial class MainWindow
 
     private void HandleShowAllCaptureOptionsChanged()
         => _captureOptionBindingController.HandleShowAllCaptureOptionsChanged();
+
+    private bool TryHandleCaptureOptionPropertyChanged(string propertyName)
+        => _captureOptionBindingController.TryHandlePropertyChanged(propertyName);
 }

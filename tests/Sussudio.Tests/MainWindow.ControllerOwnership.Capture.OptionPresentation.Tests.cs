@@ -11,7 +11,8 @@ static partial class Program
         var policyText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationPolicy.cs").Replace("\r\n", "\n");
         var tooltipFormatterText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionTooltipFormatter.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
-        var captureOptionPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedCaptureOptions.cs").Replace("\r\n", "\n");
+        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
+        var captureOptionPropertyChangedMethod = ExtractMemberCode(captureOptionBindingsText, "TryHandleCaptureOptionPropertyChanged");
         var outputPathDisplayText = ReadRepoFile("Sussudio/MainWindow.OutputPath.cs").Replace("\r\n", "\n");
 
         AssertContains(captureOptionText, "private CaptureOptionPresentationController _captureOptionPresentationController = null!;");
@@ -74,12 +75,13 @@ static partial class Program
         AssertContains(propertyChangedText, "TryHandleOutputPropertyChanged(propertyName)");
         AssertContains(propertyChangedText, "TryHandleCaptureOptionPropertyChanged(propertyName)");
         AssertContains(outputPathDisplayText, "UpdateOutputPathDisplay();");
-        AssertContains(captureOptionPropertyChangedText, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");
-        AssertDoesNotContain(captureOptionPropertyChangedText, "ApplyAudioClipVisibility();");
-        AssertDoesNotContain(captureOptionPropertyChangedText, "ApplyHdrToggleEnabledState();");
-        AssertDoesNotContain(captureOptionPropertyChangedText, "RefreshHdrHintText();");
-        AssertDoesNotContain(captureOptionPropertyChangedText, "UpdateFpsTelemetryTooltip();");
-        AssertDoesNotContain(captureOptionPropertyChangedText, "ApplyBitrateVisibility();");
+        AssertContains(captureOptionBindingsText, "private bool TryHandleCaptureOptionPropertyChanged(string propertyName)");
+        AssertContains(captureOptionPropertyChangedMethod, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");
+        AssertDoesNotContain(captureOptionPropertyChangedMethod, "ApplyAudioClipVisibility();");
+        AssertDoesNotContain(captureOptionPropertyChangedMethod, "ApplyHdrToggleEnabledState();");
+        AssertDoesNotContain(captureOptionPropertyChangedMethod, "RefreshHdrHintText();");
+        AssertDoesNotContain(captureOptionPropertyChangedMethod, "UpdateFpsTelemetryTooltip();");
+        AssertDoesNotContain(captureOptionPropertyChangedMethod, "ApplyBitrateVisibility();");
         AssertDoesNotContain(bindingsText, "private void UpdateDecoderCountVisibility()");
         AssertDoesNotContain(bindingsText, "private void DecoderCountComboBox_SelectionChanged(");
         AssertDoesNotContain(bindingsText, "private void RefreshHdrHintText()");

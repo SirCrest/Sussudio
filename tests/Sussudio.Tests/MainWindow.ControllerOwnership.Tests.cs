@@ -11,7 +11,7 @@ static partial class Program
         var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs").Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
         var outputText = ReadRepoFile("Sussudio/MainWindow.OutputPath.cs").Replace("\r\n", "\n");
-        var captureOptionText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedCaptureOptions.cs").Replace("\r\n", "\n");
+        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
         var captureOptionBindingControllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
         var audioText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var shellText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedShell.cs").Replace("\r\n", "\n");
@@ -93,8 +93,8 @@ static partial class Program
         AssertContains(recordingText, "case nameof(MainViewModel.IsRecording):");
         AssertContains(outputText, "private bool TryHandleOutputPropertyChanged(string propertyName)");
         AssertContains(outputText, "case nameof(MainViewModel.OutputPath):");
-        AssertContains(captureOptionText, "private bool TryHandleCaptureOptionPropertyChanged(string propertyName)");
-        AssertContains(captureOptionText, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");
+        AssertContains(captureOptionBindingsText, "private bool TryHandleCaptureOptionPropertyChanged(string propertyName)");
+        AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");
         AssertContains(captureOptionBindingControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
         AssertContains(captureOptionBindingControllerText, "case nameof(MainViewModel.IsHdrEnabled):");
         AssertContains(audioText, "private bool TryHandleAudioPropertyChanged(string propertyName)");

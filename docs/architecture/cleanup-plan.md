@@ -2278,7 +2278,7 @@ recording property-name router.
 Output-path, capture-option, shell-visibility, and live source-signal
 property-name routing now live in focused adapters:
 `Sussudio/MainWindow.OutputPath.cs`,
-`Sussudio/MainWindow.PropertyChangedCaptureOptions.cs`,
+`Sussudio/MainWindow.CaptureOptionBindings.cs`,
 `Sussudio/MainWindow.PropertyChangedShell.cs`, and
 `Sussudio/MainWindow.LiveSignalInfo.cs`. Keep the root dispatcher
 limited to route order, and add new property-name cases to the nearest focused
@@ -2360,6 +2360,10 @@ delegates presentation affordances, telemetry tooltips, and source overlay
 refreshes back through the existing MainWindow adapters. This deliberately
 folds the former tiny partial files back into one auditable adapter while
 preserving the same MainWindow-facing method surface.
+`Sussudio/MainWindow.CaptureOptionBindings.cs` now owns the XAML-facing
+binding setup methods and the small property-change forwarding method, so
+there is no separate pass-through partial just for capture-option property
+changes.
 `MainWindow.CaptureOptionBindings.cs` keeps the old capture and recording option
 method names used by `SetupBindings()`.
 
