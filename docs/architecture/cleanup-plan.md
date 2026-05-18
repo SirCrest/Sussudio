@@ -3313,7 +3313,7 @@ Remaining `tools/Common` ownership:
    and custom audio-input enablement now live in
    `MainViewModel.AutomationDeviceSelection.cs`.
    Recording format, encoder, and output-path automation entry points now stay
-   in the `MainViewModel.AutomationRecordingSettings.cs` compatibility facade,
+   in the `MainViewModel.AutomationSettings.cs` compatibility facade,
    while UI-thread mutations, HDR compatibility enforcement, Flashback cycle
    suppression, coordinator side effects, custom bitrate clamping, encoder
    preset, and output-path directory creation live in
@@ -3323,7 +3323,7 @@ Remaining `tools/Common` ownership:
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`.
    Capture resolution, frame-rate, video-format, and MJPEG decoder worker-count
    automation entry points now stay in the
-   `MainViewModel.AutomationCaptureSettings.cs` compatibility facade, while
+   `MainViewModel.AutomationSettings.cs` compatibility facade, while
    UI-thread mutations, validation, MJPEG decoder clamping, and active
    capture-mode reinitialization routing live in
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs`.

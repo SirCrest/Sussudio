@@ -2420,17 +2420,15 @@ Primary current owners:
   `MainViewModel.AutomationDeviceSelection.cs` owns automation device refresh,
   capture-device selection, audio-input selection, and custom audio-input
   enablement.
-  `MainViewModel.AutomationCaptureSettings.cs` keeps the stable public
-  automation facade for capture resolution, frame-rate, video-format, and
-  MJPEG decoder worker-count settings.
+  `MainViewModel.AutomationSettings.cs` keeps the stable public automation
+  facade for capture resolution, frame-rate, video-format, MJPEG decoder
+  worker-count, recording format, encoder, and output-path settings.
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs`
   owns the UI-thread setting mutations, validation, MJPEG decoder clamping,
   and active capture-mode reinitialization routing.
   `MainViewModel.CaptureModeTransactions.cs` owns capture-mode/HDR
   property-change side effects outside the capture-settings automation
   controller.
-  `MainViewModel.AutomationRecordingSettings.cs` keeps the stable automation
-  facade for recording format, encoder, and output-path settings.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`
   owns the UI-thread setting mutations, HDR compatibility enforcement,
   Flashback cycle suppression, coordinator side effects, bitrate clamp policy,

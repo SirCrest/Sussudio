@@ -6,20 +6,20 @@ static partial class Program
     private static Task AutomationCaptureModeChanges_AwaitReinitialization()
     {
         var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs").Replace("\r\n", "\n");
-        var captureSettingsAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCaptureSettings.cs").Replace("\r\n", "\n");
+        var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationSettings.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
 
         AssertDoesNotContain(viewModelStateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
-        AssertContains(captureSettingsAutomationText, "public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)");
-        AssertContains(captureSettingsAutomationText, "=> _captureSettingsAutomationController.SetResolutionAsync(resolution, cancellationToken);");
-        AssertContains(captureSettingsAutomationText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
-        AssertContains(captureSettingsAutomationText, "=> _captureSettingsAutomationController.SetFrameRateAsync(frameRate, cancellationToken);");
-        AssertContains(captureSettingsAutomationText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
-        AssertContains(captureSettingsAutomationText, "=> _captureSettingsAutomationController.SetVideoFormatAsync(videoFormat, cancellationToken);");
-        AssertContains(captureSettingsAutomationText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
-        AssertContains(captureSettingsAutomationText, "=> _captureSettingsAutomationController.SetMjpegDecoderCountAsync(decoderCount, cancellationToken);");
-        AssertDoesNotContain(captureSettingsAutomationText, "private async Task SetAutomationCaptureModeAsync(");
+        AssertContains(automationSettingsText, "public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)");
+        AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetResolutionAsync(resolution, cancellationToken);");
+        AssertContains(automationSettingsText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
+        AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetFrameRateAsync(frameRate, cancellationToken);");
+        AssertContains(automationSettingsText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
+        AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetVideoFormatAsync(videoFormat, cancellationToken);");
+        AssertContains(automationSettingsText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
+        AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetMjpegDecoderCountAsync(decoderCount, cancellationToken);");
+        AssertDoesNotContain(automationSettingsText, "private async Task SetAutomationCaptureModeAsync(");
         AssertContains(captureSettingsAutomationControllerText, "private sealed class MainViewModelCaptureSettingsAutomationController");
         AssertEqual(
             true,
@@ -55,7 +55,8 @@ static partial class Program
             "MainViewModel.AutomationVideoFormat.cs",
             "MainViewModel.AutomationMjpegDecoderCount.cs",
             "MainViewModel.CaptureOptionVisibility.cs",
-            "MainViewModel.HdrModeChanges.cs"
+            "MainViewModel.HdrModeChanges.cs",
+            "MainViewModel.AutomationCaptureSettings.cs"
         })
         {
             AssertEqual(
