@@ -21,6 +21,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackTimelineControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs")
             .Replace("\r\n", "\n");
+        var flashbackTimelineAnimationControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs")
+            .Replace("\r\n", "\n");
         var flashbackSettingsControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackSettingsBindingController.cs")
             .Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
@@ -64,7 +66,10 @@ static partial class Program
         AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.ResetAnimationForFullScreen();");
         AssertContains(flashbackTimelineText, "=> _flashbackScrubInteractionController.ClearForLockout();");
         AssertContains(flashbackTimelineControllerText, "internal sealed class FlashbackTimelineController");
-        AssertContains(flashbackTimelineControllerText, "private Storyboard? _timelineStoryboard;");
+        AssertContains(flashbackTimelineControllerText, "private readonly FlashbackTimelineAnimationController _animationController;");
+        AssertContains(flashbackTimelineAnimationControllerText, "private Storyboard? _timelineStoryboard;");
+        AssertContains(flashbackTimelineAnimationControllerText, "_snapPlayheadOnNextOpen();");
+        AssertContains(flashbackTimelineAnimationControllerText, "private void CompleteAnimation(Storyboard storyboard)");
         AssertContains(flashbackTimelineControllerText, "private bool _suppressToggle;");
         AssertContains(flashbackTimelineControllerText, "if (!_context.ViewModel.IsFlashbackEnabled)\n        {\n            ApplyLockout();\n            return;\n        }");
         AssertContains(flashbackTimelineControllerText, "_context.ViewModel.IsFlashbackTimelineVisible = true;");
@@ -74,7 +79,8 @@ static partial class Program
         AssertContains(flashbackTimelineControllerText, "SyncToggle(isVisible: false);");
         AssertContains(flashbackTimelineControllerText, "_context.ClearScrubInteraction();");
         AssertContains(flashbackTimelineControllerText, "CollapseImmediately();");
-        AssertContains(flashbackTimelineControllerText, "_timelineStoryboard?.Stop();");
+        AssertContains(flashbackTimelineControllerText, "=> _animationController.CollapseImmediately();");
+        AssertContains(flashbackTimelineControllerText, "=> _animationController.ResetForFullScreen();");
         AssertContains(flashbackCommandAdapterText, "private FlashbackCommandController _flashbackCommandController = null!;");
         AssertContains(flashbackCommandAdapterText, "private void InitializeFlashbackCommandController()");
         AssertContains(flashbackCommandAdapterText, "FlashbackEnabledToggle = FlashbackEnabledToggle,");

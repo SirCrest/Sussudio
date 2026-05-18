@@ -2,7 +2,6 @@ using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Media.Animation;
 using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
@@ -25,13 +24,16 @@ internal sealed class FlashbackTimelineControllerContext
 internal sealed class FlashbackTimelineController
 {
     private readonly FlashbackTimelineControllerContext _context;
-    private Storyboard? _timelineStoryboard;
-    private bool _isAnimating;
+    private readonly FlashbackTimelineAnimationController _animationController;
     private bool _suppressToggle;
 
     public FlashbackTimelineController(FlashbackTimelineControllerContext context)
     {
         _context = context;
+        _animationController = new FlashbackTimelineAnimationController(
+            context.FlashbackTimelinePanel,
+            context.SnapPlayheadOnNextOpen,
+            ShouldKeepTimelineVisibleAfterAnimation);
     }
 
     public void OnToggleChecked()
@@ -74,9 +76,9 @@ internal sealed class FlashbackTimelineController
 
         if (show)
         {
-            if (!_isAnimating && _context.FlashbackTimelinePanel.Visibility != Visibility.Visible)
+            if (!_animationController.IsAnimating && _context.FlashbackTimelinePanel.Visibility != Visibility.Visible)
             {
-                AnimateTimeline(show: true);
+                _animationController.Animate(show: true);
             }
 
             _context.StartStatusPolling();
@@ -84,9 +86,9 @@ internal sealed class FlashbackTimelineController
         }
 
         _context.StopStatusPolling();
-        if (!_isAnimating && _context.FlashbackTimelinePanel.Visibility != Visibility.Collapsed)
+        if (!_animationController.IsAnimating && _context.FlashbackTimelinePanel.Visibility != Visibility.Collapsed)
         {
-            AnimateTimeline(show: false);
+            _animationController.Animate(show: false);
         }
     }
 
@@ -142,101 +144,12 @@ internal sealed class FlashbackTimelineController
     }
 
     public void CollapseImmediately()
-    {
-        _timelineStoryboard?.Stop();
-        _timelineStoryboard = null;
-        _isAnimating = false;
-        _context.FlashbackTimelinePanel.Visibility = Visibility.Collapsed;
-        _context.FlashbackTimelinePanel.Height = double.NaN;
-        _context.FlashbackTimelinePanel.Opacity = 1;
-    }
+        => _animationController.CollapseImmediately();
 
     public void ResetAnimationForFullScreen()
-    {
-        _timelineStoryboard?.Stop();
-        _timelineStoryboard = null;
-        _isAnimating = false;
-    }
+        => _animationController.ResetForFullScreen();
 
-    private void AnimateTimeline(bool show)
-    {
-        _timelineStoryboard?.Stop();
-        _timelineStoryboard = null;
-        _isAnimating = true;
-        if (show)
-        {
-            _context.SnapPlayheadOnNextOpen();
-        }
-
-        var durationMs = show ? 400 : 300;
-        var easing = new CubicEase { EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn };
-        var duration = TimeSpan.FromMilliseconds(durationMs);
-
-        double targetHeight;
-        if (show)
-        {
-            _context.FlashbackTimelinePanel.Opacity = 0;
-            _context.FlashbackTimelinePanel.Height = double.NaN;
-            _context.FlashbackTimelinePanel.Visibility = Visibility.Visible;
-            _context.FlashbackTimelinePanel.UpdateLayout();
-            targetHeight = _context.FlashbackTimelinePanel.ActualHeight;
-            _context.FlashbackTimelinePanel.Height = 0;
-        }
-        else
-        {
-            targetHeight = _context.FlashbackTimelinePanel.ActualHeight;
-            _context.FlashbackTimelinePanel.Height = targetHeight;
-        }
-
-        var heightAnim = new DoubleAnimation
-        {
-            To = show ? targetHeight : 0,
-            Duration = duration,
-            EasingFunction = easing,
-            EnableDependentAnimation = true
-        };
-        Storyboard.SetTarget(heightAnim, _context.FlashbackTimelinePanel);
-        Storyboard.SetTargetProperty(heightAnim, "Height");
-
-        var fade = new DoubleAnimation
-        {
-            From = show ? 0 : 1,
-            To = show ? 1 : 0,
-            Duration = duration,
-            EasingFunction = easing
-        };
-        Storyboard.SetTarget(fade, _context.FlashbackTimelinePanel);
-        Storyboard.SetTargetProperty(fade, "Opacity");
-
-        var storyboard = new Storyboard();
-        storyboard.Children.Add(heightAnim);
-        storyboard.Children.Add(fade);
-        storyboard.Completed += (_, _) =>
-        {
-            if (!ReferenceEquals(_timelineStoryboard, storyboard))
-            {
-                return;
-            }
-
-            var shouldRemainVisible = show &&
-                                      _context.ViewModel.IsFlashbackEnabled &&
-                                      _context.ViewModel.IsFlashbackTimelineVisible;
-            if (shouldRemainVisible)
-            {
-                _context.FlashbackTimelinePanel.Height = double.NaN;
-                _context.FlashbackTimelinePanel.Opacity = 1;
-            }
-            else
-            {
-                _context.FlashbackTimelinePanel.Visibility = Visibility.Collapsed;
-                _context.FlashbackTimelinePanel.Height = double.NaN;
-                _context.FlashbackTimelinePanel.Opacity = 1;
-            }
-
-            _timelineStoryboard = null;
-            _isAnimating = false;
-        };
-        _timelineStoryboard = storyboard;
-        storyboard.Begin();
-    }
+    private bool ShouldKeepTimelineVisibleAfterAnimation()
+        => _context.ViewModel.IsFlashbackEnabled &&
+           _context.ViewModel.IsFlashbackTimelineVisible;
 }

@@ -4,7 +4,7 @@ using Sussudio.Controllers;
 namespace Sussudio;
 
 // XAML-facing Flashback timeline adapter. FlashbackTimelineController owns
-// timeline visibility, lockout, and show/hide animation state.
+// timeline visibility and lockout; its animation controller owns storyboard state.
 public sealed partial class MainWindow
 {
     private FlashbackTimelineController _flashbackTimelineController = null!;

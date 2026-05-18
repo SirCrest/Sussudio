@@ -2035,9 +2035,11 @@ MJPEG/NVML input acquisition and `Sussudio/Controllers/Stats/StatsHardwareRowsCo
 owns hardware row availability, text-row presentation building, and minimum
 pool sizing before delegating row chrome.
 
-Flashback timeline visibility, lockout, toggle synchronization, and show/hide
-animation state now live in
-`Sussudio/Controllers/Flashback/FlashbackTimelineController.cs`.
+Flashback timeline visibility, lockout, toggle synchronization, and track
+layout sizing now live in
+`Sussudio/Controllers/Flashback/FlashbackTimelineController.cs`. Show/hide
+storyboard state, immediate collapse, and fullscreen animation reset live in
+`Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs`.
 `MainWindow.FlashbackTimeline.cs` is the XAML-facing adapter; command semantics
 live in `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
 
