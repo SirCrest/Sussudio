@@ -1694,10 +1694,13 @@ handling, packed-stride CPU copies, and dual-frame CPU payload extraction there.
 
 Media Foundation interop declarations now live in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Interop.cs` and
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs`. Keep MF
-P/Invoke declarations, constants/HRESULTs/GUIDs in the interop file. Keep
-Media Foundation COM interfaces, including the flattened `IMFSample` vtable
-layout, in the contracts file. Preserve interface method order and placeholder
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs`, with
+sample/buffer contracts in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.SampleBufferContracts.cs`.
+Keep MF P/Invoke declarations, constants/HRESULTs/GUIDs in the interop file.
+Keep general Media Foundation COM interfaces in the contracts file. Keep the
+flattened `IMFSample` vtable layout and MF buffer interfaces in the
+sample/buffer contracts file. Preserve interface method order and placeholder
 slots exactly; keep behavioral source-reader logic in the root and negotiation
 partials.
 
