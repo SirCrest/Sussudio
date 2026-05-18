@@ -433,7 +433,8 @@ ownership checks cover the full partial family from both the legacy harness and
 xUnit formatter contracts.
 
 Diagnostic-session MCP surface coverage is split into
-`McpToolSurface.DiagnosticSession.Tool.Tests.cs` for MCP tool
+`McpToolSurface.DiagnosticSession.Tool.Artifacts.Tests.cs` and
+`McpToolSurface.DiagnosticSession.Tool.Failures.Tests.cs` for MCP tool
 artifact contracts, `McpToolSurface.DiagnosticSession.Ownership.*.Tests.cs` for
 planning, execution, teardown, and reporting helper ownership assertions,
 `McpToolSurface.DiagnosticSession.Flashback.*.Tests.cs` for Flashback

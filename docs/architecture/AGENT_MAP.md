@@ -1941,8 +1941,10 @@ Primary current owners:
   `CommandRouting.Verification` owner files. Captured command-ID assertions use
   the shared `AssertAutomationCommandId` helper so the golden command table is
   the only test-owned numeric ID list.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Tests.cs` owns
-  MCP `run_diagnostic_session` success/failure artifact contract tests.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Artifacts.Tests.cs`
+  owns MCP `run_diagnostic_session` success artifact contract tests.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Failures.Tests.cs`
+  owns MCP `run_diagnostic_session` failure artifact contract tests.
 - Diagnostic-session helper ownership checks live in focused lifecycle files:
   planning/setup checks in
   `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Planning.Tests.cs`,
