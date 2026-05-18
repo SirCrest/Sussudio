@@ -34,6 +34,9 @@ static partial class Program
         AssertContains(automationSnapshotsText, "public Task<VideoSourceProbeResult> ProbeVideoSourceAsync(CancellationToken cancellationToken = default)");
         AssertContains(automationSnapshotsText, "public Task<PreviewColorProbeResult> ProbePreviewColorAsync(CancellationToken cancellationToken = default)");
         AssertContains(automationSnapshotsText, "public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default)");
+        AssertContains(automationSnapshotsText, "=> FromSynchronousSnapshot(ProbeVideoSource, cancellationToken);");
+        AssertContains(automationSnapshotsText, "=> FromSynchronousSnapshot(ProbePreviewColor, cancellationToken);");
+        AssertContains(automationSnapshotsText, "public Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default)\n        => FromSynchronousSnapshot(_captureService.GetRuntimeSnapshot, cancellationToken);");
         AssertContains(agentMapText, "`MainViewModel.ViewModelRuntimeSnapshot.cs` owns automation-facing view-model runtime snapshot UI-thread capture.");
         AssertContains(agentMapText, "`ViewModelRuntimeSnapshotBuilder.cs` owns pure view-model runtime snapshot DTO construction.");
         AssertContains(agentMapText, "also owns automation-facing source/preview probes and preview frame capture.");

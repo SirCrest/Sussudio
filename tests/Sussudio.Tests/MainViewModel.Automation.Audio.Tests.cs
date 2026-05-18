@@ -10,6 +10,27 @@ static partial class Program
             .Replace("\r\n", "\n");
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationUi.cs")
             .Replace("\r\n", "\n");
+        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.State.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.Dispatching.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.MicrophonePropertyChanges.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs")
+                .Replace("\r\n", "\n")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs")
+                .Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadCaptureServiceAudioSource()
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Probes.cs")
+                .Replace("\r\n", "\n");
 
         AssertContains(automationAudioText, "public Task SetAudioEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetAudioPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
@@ -24,7 +45,14 @@ static partial class Program
         AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);");
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = clampedGain);");
+        AssertContains(automationAudioText, "_suppressMicrophoneMonitorUpdate = true;");
+        AssertContains(automationAudioText, "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(");
+        AssertContains(automationAudioText, "cancellationToken).ConfigureAwait(false);");
+        AssertContains(automationAudioText, "IsMicrophoneEnabled = enabled;\n                }\n                finally\n                {\n                    _suppressMicrophoneMonitorUpdate = false;\n                }\n\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
         AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
+        AssertContains(viewModelText, "if (_suppressMicrophoneMonitorUpdate)");
+        AssertContains(captureServiceText, "var previousEnabled = _micMonitorEnabled;");
+        AssertContains(captureServiceText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);\n\n                _micMonitorEnabled = enabled;");
 
         var microphoneUpdateIndex = automationAudioText.IndexOf(
             "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(",

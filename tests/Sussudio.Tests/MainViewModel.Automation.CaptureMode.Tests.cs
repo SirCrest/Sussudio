@@ -70,6 +70,8 @@ static partial class Program
     private static Task AutomationDeviceSelection_RoutesThroughApplyReinit()
     {
         var deviceSelectionAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs").Replace("\r\n", "\n");
+        var deviceManagementText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceManagement.cs")
+            .Replace("\r\n", "\n");
         var selectDevice = ExtractTextBetween(
             deviceSelectionAutomationText,
             "public Task SelectDeviceAsync",
@@ -80,11 +82,14 @@ static partial class Program
             "public Task SetCustomAudioInputEnabledAsync");
 
         AssertContains(deviceSelectionAutomationText, "public Task RefreshDevicesForAutomationAsync");
+        AssertContains(deviceSelectionAutomationText, "=> InvokeOnUiThreadAsync(() => RefreshDevicesAsync(cancellationToken), cancellationToken);");
         AssertContains(deviceSelectionAutomationText, "public Task SelectDeviceAsync");
         AssertContains(deviceSelectionAutomationText, "private CaptureDevice? ResolveDevice");
         AssertContains(deviceSelectionAutomationText, "public Task SelectAudioInputDeviceAsync");
         AssertContains(deviceSelectionAutomationText, "public Task SetCustomAudioInputEnabledAsync");
         AssertContains(deviceSelectionAutomationText, "private AudioInputDevice? ResolveAudioDevice");
+        AssertContains(deviceManagementText, "public async Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
+        AssertContains(deviceManagementText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n                {\n                    throw;\n                }");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationAudioInputSelection.cs")),

@@ -9,13 +9,25 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n")
+            + "\n" + ReadCaptureServiceAudioSource()
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Probes.cs")
+                .Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => _previewLifecycleController.SetPreviewEnabledAsync(enabled, cancellationToken);");
+        AssertContains(mainViewModelText, "private Task InitializeDeviceAsync(CancellationToken cancellationToken = default)");
+        AssertContains(mainViewModelText, "=> _previewLifecycleController.InitializeDeviceAsync(cancellationToken);");
+        AssertContains(mainViewModelText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
+        AssertContains(mainViewModelText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
         AssertContains(previewLifecycleControllerText, "public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(previewLifecycleControllerText, "CancelPendingPreviewRestart();");
         AssertContains(previewLifecycleControllerText, "if (enabled == _viewModel.IsPreviewing)");
         AssertContains(previewLifecycleControllerText, "await StartPreviewAsync(userInitiated: true, cancellationToken);");
         AssertContains(previewLifecycleControllerText, "await StopPreviewAsync(userInitiated: true, teardownPipeline: false, cancellationToken);");
+        AssertContains(captureServiceText, "private const int PreviewFrameCaptureRendererWaitTimeoutMs = 2000;");
+        AssertContains(captureServiceText, "while (_isVideoPreviewActive && !cancellationToken.IsCancellationRequested)");
+        AssertContains(captureServiceText, "await Task.Delay(PreviewFrameCaptureRendererPollMs, cancellationToken).ConfigureAwait(false);");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationPreview.cs")),

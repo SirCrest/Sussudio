@@ -1265,8 +1265,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Settings.Tests.cs` owns
   Flashback settings binding and command controller ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs` owns
-  automation preview enable/disable routing through the preview lifecycle
-  controller.
+  automation preview enable/disable and start/stop routing through the preview
+  lifecycle controller.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Hdr.Tests.cs` owns
   automation HDR/true-HDR preview enablement guard assertions in the
   capture-mode transaction owner plus HDR mode change side-effect ownership
@@ -1276,16 +1276,16 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
   owns recording-transition routing through the shared lifecycle gate.
 - `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs` owns
-  async automation view-model surface, Flashback/probe routing, cancellation,
-  timeout, audio, preview, and device-routing assertions that have not yet
-  moved to narrower owners.
+  the `IAutomationViewModel` async surface contract plus Flashback/probe
+  dispatcher routing assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Audio.Tests.cs` owns
-  automation audio/microphone command entry-point and runtime-guard assertions.
+  automation audio/microphone command entry-point, microphone monitor
+  suppression, and runtime-guard assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` owns
   automation UI-setting persistence and frame-time/stat visibility contracts.
 - `tests/Sussudio.Tests/MainViewModel.Automation.CaptureMode.Tests.cs` owns
-  automation capture-mode reinitialization and device-selection routing
-  contracts.
+  automation capture-mode reinitialization, device refresh, and
+  device/audio-input selection routing contracts.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns the serialized diagnostics refresh ownership check and coordinates the
   focused diagnostics refresh assertion helpers.
@@ -1351,8 +1351,9 @@ Primary current owners:
   `.Recording.Tests.cs`, `.System.Tests.cs`, `.Preview.Tests.cs`, and
   `.Flashback.Tests.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RuntimeSafety.Tests.cs` owns
-  automation timeout, recording failure propagation, safe close, screenshot,
-  preview-stop surface, process supervisor, and emergency-stop assertions.
+  automation cancellation/timeout, recording failure propagation, safe close,
+  screenshot, preview-stop surface, process supervisor, and emergency-stop
+  assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.FlashbackCleanup.Tests.cs`
   owns Flashback startup-cache and session-recovery cleanup ownership
   assertions that used to live in the automation test catch-all.
