@@ -38,6 +38,7 @@ static partial class Program
         var frameLayoutText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs");
         var lifecycleText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs");
         var initializationText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs");
+        var initializedSessionText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.InitializedSession.cs");
         var readLoopText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.ReadLoop.cs");
         var frameDeliveryText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs");
         var rawFrameDeliveryText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.RawFrameDelivery.cs");
@@ -50,6 +51,7 @@ static partial class Program
             frameLayoutText,
             lifecycleText,
             initializationText,
+            initializedSessionText,
             readLoopText,
             frameDeliveryText,
             rawFrameDeliveryText,
@@ -63,6 +65,7 @@ static partial class Program
                     frameLayoutText,
                     lifecycleText,
                     initializationText,
+                    initializedSessionText,
                     readLoopText,
                     frameDeliveryText,
                     rawFrameDeliveryText,
@@ -167,6 +170,7 @@ static partial class Program
         string FrameLayoutText,
         string LifecycleText,
         string InitializationText,
+        string InitializedSessionText,
         string ReadLoopText,
         string FrameDeliveryText,
         string RawFrameDeliveryText,

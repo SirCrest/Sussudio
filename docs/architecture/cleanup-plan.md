@@ -1582,11 +1582,14 @@ device-enumeration open fallback and candidate reporting in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.DeviceEnumeration.cs`;
 keep high-level source-reader state fields in the root source-reader file.
 
-Media Foundation source-reader initialization now lives in
+Media Foundation source-reader initialization orchestration now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs`. Keep
 public initialization validation, startup-reference acquisition/release, reader
-attribute construction, negotiated/actual media-type application, runtime field
-reset, and initialization success/failure logging there.
+attribute construction, source media-type selection, and initialization
+success/failure logging there. Actual-output reconciliation, strict
+negotiated-output validation, runtime field reset, and COM/startup ownership
+handoff after successful initialization live in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.InitializedSession.cs`.
 
 Media Foundation source-reader read-loop ownership now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.ReadLoop.cs`. Keep the

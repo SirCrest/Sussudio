@@ -9,6 +9,7 @@ static partial class Program
         var sourceReaderFrameLayoutText = sourceReaderSources.FrameLayoutText;
         var sourceReaderLifecycleText = sourceReaderSources.LifecycleText;
         var sourceReaderInitializationText = sourceReaderSources.InitializationText;
+        var sourceReaderInitializedSessionText = sourceReaderSources.InitializedSessionText;
         var sourceReaderReadLoopText = sourceReaderSources.ReadLoopText;
         var sourceReaderFrameDeliveryText = sourceReaderSources.FrameDeliveryText;
         var sourceReaderRawFrameDeliveryText = sourceReaderSources.RawFrameDeliveryText;
@@ -40,6 +41,18 @@ static partial class Program
         AssertContains(sourceReaderInitializationText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
         AssertContains(sourceReaderInitializationText, "MF_SOURCE_READER_INIT ");
         AssertContains(sourceReaderInitializationText, "SelectConvertedMediaType(");
+        AssertContains(sourceReaderInitializationText, "ApplyCurrentMediaTypeAndReconcileActualOutput(");
+        AssertContains(sourceReaderInitializationText, "CommitInitializedRuntimeState(");
+        AssertContains(sourceReaderInitializedSessionText, "private readonly record struct SourceReaderNegotiatedMode(");
+        AssertContains(sourceReaderInitializedSessionText, "private SourceReaderNegotiatedMode ApplyCurrentMediaTypeAndReconcileActualOutput(");
+        AssertContains(sourceReaderInitializedSessionText, "sourceReader.GetCurrentMediaType(");
+        AssertContains(sourceReaderInitializedSessionText, "private void ValidateNegotiatedOutputMode(");
+        AssertContains(sourceReaderInitializedSessionText, "private void CommitInitializedRuntimeState(");
+        AssertContains(sourceReaderInitializedSessionText, "MF_NATIVE_FORMAT_OVERRIDE");
+        AssertContains(sourceReaderInitializedSessionText, "Volatile.Write(ref _nativeInputFormat");
+        AssertContains(sourceReaderInitializedSessionText, "Interlocked.Exchange(ref _framesDelivered");
+        AssertDoesNotContain(sourceReaderInitializationText, "sourceReader.GetCurrentMediaType(");
+        AssertDoesNotContain(sourceReaderInitializationText, "MF_NATIVE_FORMAT_OVERRIDE");
         AssertDoesNotContain(sourceReaderRootText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
         AssertContains(sourceReaderReadLoopText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
         AssertContains(sourceReaderReadLoopText, "reader.ReadSample(");
