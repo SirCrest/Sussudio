@@ -2475,15 +2475,12 @@ so D3D summary fields are kept out of the broader preview projection. Preview
 cadence and visual-cadence result projection values live together in
 `DiagnosticSessionResultBuilder.PreviewResult.cs` so small cadence DTO
 projections share one focused owner without adding miniature partials.
-Flashback playback result composition lives in the root result builder, while command
-queue, cadence/1% low, decode timing, audio-master/A/V drift, and stage/seek
-DTO projection values live in focused `FlashbackPlayback*Result.cs` partials
-so result construction can consume one named playback projection while
-preserving the existing `summary.json` field shape. Flashback recording backend, growth, and
-integrity DTO projection values live in
-`DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`, and Flashback
-export status, force-rotate fallback, last-result, and progress DTO projection
-values live in `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`.
+Flashback playback result composition lives in the root result builder, while
+playback command queue, cadence/1% low, decode timing, audio-master/A/V drift,
+stage/seek, recording backend/growth/integrity, and export status/progress DTO
+projection values live in `DiagnosticSessionResultBuilder.FlashbackResult.cs`
+so result construction can consume named Flashback projections while
+preserving the existing `summary.json` field shape.
 Export force-rotate fallback counters now travel with
 `FlashbackExportSessionMetrics` instead of loose analysis record fields.
 Capture selection, negotiated format, source geometry, detected cadence, HDR,
@@ -2926,9 +2923,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
-- `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
-- `DiagnosticSessionResultBuilder.FlashbackRecordingResult.cs`
-- `DiagnosticSessionResultBuilder.FlashbackExportResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`
 - `DiagnosticSessionResultBuilder.PreviewSchedulerValidation.cs`
