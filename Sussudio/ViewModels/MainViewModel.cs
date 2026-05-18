@@ -190,12 +190,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Device selection reactions: MainViewModel.DeviceSelection.cs
     // Device format probe reconciliation: MainViewModelDeviceFormatProbeController.cs; pure retarget policy: DeviceFormatProbeRetargetPolicy.cs
     // Capture mode transactions: MainViewModel.CaptureModeTransactions.cs
-    // Frame-rate selection: MainViewModel.FrameRateOptions.cs; rebuild adapter: MainViewModel.FrameRateOptionRebuild.cs; rebuild owner: MainViewModelCaptureModeOptionRebuildController.cs
+    // Frame-rate selection: MainViewModel.FrameRateOptions.cs; capture option rebuild adapters: MainViewModel.CaptureModeTransactions.cs; rebuild owner: MainViewModelCaptureModeOptionRebuildController.cs
     // Runtime bootstrap/timer: MainViewModelRuntimeLifecycleController.cs; capture-event ingress: MainViewModelRuntimeEventIngressController.cs
     // Automatic frame-rate selection policy: MainViewModel.FrameRateAutoSelectionPolicy.cs
     // Frame-rate/mode selection state: MainViewModel.ModeSelectionState.cs
     // Frame-rate timing state wrappers: MainViewModel.FrameRateTiming.cs; pure timing policy: FrameRateTimingPolicy.cs
-    // Resolution option rebuild adapter: MainViewModel.ResolutionOptionRebuild.cs; rebuild owner: MainViewModelResolutionOptionRebuildController.cs; effective resolution state-backed policy delegates: MainViewModel.ResolutionOptions.cs
+    // Resolution option rebuild adapter: MainViewModel.CaptureModeTransactions.cs; rebuild owner: MainViewModelResolutionOptionRebuildController.cs; effective resolution state-backed policy delegates: MainViewModel.ResolutionOptions.cs
     // Disposal / teardown: MainViewModel.Disposal.cs
     // Recording runtime status and output drive presentation: MainViewModel.RecordingRuntime.cs
     // Capture presentation labels: MainViewModel.CapturePresentation.cs

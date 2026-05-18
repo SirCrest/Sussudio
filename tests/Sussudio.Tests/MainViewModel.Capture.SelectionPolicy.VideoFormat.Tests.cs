@@ -8,23 +8,23 @@ static partial class Program
 {
     private static Task CaptureFormatSelectionPolicy_LivesInFocusedHelper()
     {
-        var formatSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FormatSelection.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs").Replace("\r\n", "\n");
 
-        AssertContains(formatSelectionText, "/// Format and frame-rate selection adapter:");
-        AssertContains(formatSelectionText, "private void UpdateSelectedFormat()");
-        AssertContains(formatSelectionText, "private void RebuildVideoFormatOptions()");
-        AssertContains(formatSelectionText, "=> _captureModeOptionRebuildController.UpdateSelectedFormat();");
-        AssertContains(formatSelectionText, "=> _captureModeOptionRebuildController.RebuildVideoFormatOptions();");
+        AssertContains(captureModeTransactionsText, "/// Capture-mode transactions that coordinate option rebuilds");
+        AssertContains(captureModeTransactionsText, "private void UpdateSelectedFormat()");
+        AssertContains(captureModeTransactionsText, "private void RebuildVideoFormatOptions()");
+        AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.UpdateSelectedFormat();");
+        AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildVideoFormatOptions();");
         AssertContains(captureModeOptionsControllerText, "public void UpdateSelectedFormat()");
         AssertContains(captureModeOptionsControllerText, "public void RebuildVideoFormatOptions()");
         AssertContains(captureModeOptionsControllerText, "CaptureFormatSelectionPolicy.Select(");
         AssertContains(captureModeOptionsControllerText, "CaptureFormatSelectionPolicy\n                .SelectModeTupleFormats(");
         AssertContains(captureModeOptionsControllerText, "_viewModel.AvailableVideoFormats.Clear();");
-        AssertDoesNotContain(formatSelectionText, "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
-        AssertDoesNotContain(formatSelectionText, "private static bool IsHdrModeCandidate(");
-        AssertDoesNotContain(formatSelectionText, "ShouldPreserveMjpegHighFrameRateMode(");
+        AssertDoesNotContain(captureModeTransactionsText, "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
+        AssertDoesNotContain(captureModeTransactionsText, "private static bool IsHdrModeCandidate(");
+        AssertDoesNotContain(captureModeTransactionsText, "ShouldPreserveMjpegHighFrameRateMode(");
         AssertContains(policyText, "internal static class CaptureFormatSelectionPolicy");
         AssertContains(policyText, "internal static MediaFormat? Select(CaptureFormatSelectionRequest request)");
         AssertContains(policyText, "internal static IReadOnlyList<MediaFormat> SelectModeTupleFormats(CaptureFormatSelectionRequest request)");

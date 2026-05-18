@@ -5,15 +5,15 @@ static partial class Program
     private static Task ModeSelectionState_LivesInFocusedPartial()
     {
         var resolutionOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptions.cs").Replace("\r\n", "\n");
-        var resolutionOptionRebuildText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ResolutionOptionRebuild.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var frameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs").Replace("\r\n", "\n");
         var resolutionOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelResolutionOptionRebuildController.cs").Replace("\r\n", "\n");
         var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs").Replace("\r\n", "\n");
 
-        AssertContains(resolutionOptionRebuildText, "private void RebuildResolutionOptions()");
-        AssertContains(resolutionOptionRebuildText, "=> _resolutionOptionRebuildController.RebuildResolutionOptions();");
+        AssertContains(captureModeTransactionsText, "private void RebuildResolutionOptions()");
+        AssertContains(captureModeTransactionsText, "=> _resolutionOptionRebuildController.RebuildResolutionOptions();");
         AssertContains(resolutionOptionRebuildControllerText, "public void RebuildResolutionOptions()");
         AssertDoesNotContain(captureModeOptionsControllerText, "public void RebuildResolutionOptions()");
         AssertContains(resolutionOptionsText, "private bool TryResolveResolutionKey(");

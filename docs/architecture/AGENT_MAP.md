@@ -2374,8 +2374,9 @@ Primary current owners:
   `MainViewModel.FlashbackPlayback.cs` also owns read-only Flashback segment
   projection for UI, CLI, and MCP callers.
   `MainViewModel.FrameRateOptions.cs` owns frame-rate selection reactions and
-  auto-selection entry points. `MainViewModel.FrameRateOptionRebuild.cs` keeps
-  the frame-rate rebuild compatibility adapter, while
+  auto-selection entry points. `MainViewModel.CaptureModeTransactions.cs` keeps
+  the resolution, frame-rate, selected-format, and video-format rebuild
+  compatibility adapters alongside capture-mode transaction state, while
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs`
   owns the frame-rate option rebuild transaction, source-rate filtering handoff,
   auto/source option selection, observable frame-rate collection mutation, and
@@ -2398,7 +2399,7 @@ Primary current owners:
   `MainViewModel.FrameRateTiming.cs` owns the stateful wrappers that resolve
   timing variants and source/preferred timing from resolution capabilities,
   runtime snapshots, selected formats, source telemetry, and UI selection state.
-  `MainViewModel.FormatSelection.cs` keeps selected-format and video-format
+  `MainViewModel.CaptureModeTransactions.cs` keeps selected-format and video-format
   rebuild compatibility adapters, while
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
   owns selected-format assignment, video-format option collection mutation, and
@@ -2434,7 +2435,7 @@ Primary current owners:
   `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`
   owns the pure late-probe decision policy for HDR retarget, SDR NV12 retarget,
   MJPG HFR preservation, session mismatch, and active-capture restore.
-  `MainViewModel.ResolutionOptionRebuild.cs` keeps the compatibility adapter for
+  `MainViewModel.CaptureModeTransactions.cs` keeps the compatibility adapter for
   resolution option rebuild callers.
   `Sussudio/Controllers/ViewModel/MainViewModelResolutionOptionRebuildController.cs`
   owns resolution option rebuilds: automatic resolution dropdown option

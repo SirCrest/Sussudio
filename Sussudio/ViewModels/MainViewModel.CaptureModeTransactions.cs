@@ -14,6 +14,18 @@ public partial class MainViewModel
     private bool _suppressFormatChangeReinitialize;
     private bool _isRevertingHdrToggle;
 
+    private void RebuildResolutionOptions()
+        => _resolutionOptionRebuildController.RebuildResolutionOptions();
+
+    private void RebuildFrameRateOptions()
+        => _captureModeOptionRebuildController.RebuildFrameRateOptions();
+
+    private void UpdateSelectedFormat()
+        => _captureModeOptionRebuildController.UpdateSelectedFormat();
+
+    private void RebuildVideoFormatOptions()
+        => _captureModeOptionRebuildController.RebuildVideoFormatOptions();
+
     public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
         return InvokeOnUiThreadAsync(() =>

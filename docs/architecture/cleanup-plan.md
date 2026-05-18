@@ -3260,8 +3260,9 @@ Remaining `tools/Common` ownership:
    and dispatcher cleanup now live in
    `MainViewModel.FlashbackExportAutomation.cs`. Frame-rate selection reactions and
    auto-selection entry points now live in `MainViewModel.FrameRateOptions.cs`.
-   `MainViewModel.FrameRateOptionRebuild.cs` keeps the compatibility adapter,
-   while frame-rate option rebuilding and observable collection mutation live in
+   `MainViewModel.CaptureModeTransactions.cs` keeps the resolution, frame-rate,
+   selected-format, and video-format rebuild compatibility adapters, while
+   frame-rate option rebuilding and observable collection mutation live in
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.FrameRate.cs`. Pure
    frame-rate option choice, including pending SDR bucket preference,
    Source-rate nearest match with timing-family tie-break, generic auto fallback,
@@ -3294,7 +3295,7 @@ Remaining `tools/Common` ownership:
    format/quality parsing, and custom bitrate clamp policy now live in
    `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs`, while startup
    FFmpeg capability probes and observable recording-format option mutation live
-   in `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`. `MainViewModel.FormatSelection.cs`
+   in `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`. `MainViewModel.CaptureModeTransactions.cs`
    keeps selected-format and video-format rebuild compatibility adapters, while
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
    owns selected-format assignment, pixel-format option collection mutation, and
@@ -3319,7 +3320,7 @@ Remaining `tools/Common` ownership:
     frame-rate, resolution, mode-selection, late-probe, recording-format, and
     runtime-flag assertions stay near their matching policy owners.
     Resolution option rebuild callers stay stable through the
-    `MainViewModel.ResolutionOptionRebuild.cs` adapter. Resolution option
+    `MainViewModel.CaptureModeTransactions.cs` adapter. Resolution option
     rebuild ownership now lives in
     `Sussudio/Controllers/ViewModel/MainViewModelResolutionOptionRebuildController.cs`:
     automatic resolution dropdown option construction, automatic
