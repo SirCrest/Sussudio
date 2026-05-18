@@ -11,6 +11,7 @@ static partial class Program
         var sourceReaderInitializationText = sourceReaderSources.InitializationText;
         var sourceReaderReadLoopText = sourceReaderSources.ReadLoopText;
         var sourceReaderFrameDeliveryText = sourceReaderSources.FrameDeliveryText;
+        var sourceReaderRawFrameDeliveryText = sourceReaderSources.RawFrameDeliveryText;
         var sourceReaderText = sourceReaderSources.SourceFamilyText;
         AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
         AssertContains(sourceReaderText, "lock (_cadenceLock)");
@@ -45,16 +46,19 @@ static partial class Program
         AssertContains(sourceReaderReadLoopText, "DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);");
         AssertDoesNotContain(sourceReaderRootText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
         AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverFrame(");
-        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
         AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverDualFrameFromBuffer(");
-        AssertContains(sourceReaderFrameDeliveryText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
-        AssertContains(sourceReaderFrameDeliveryText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
-        AssertContains(sourceReaderFrameDeliveryText, "ArrayPool<byte>.Shared.Rent");
         AssertContains(sourceReaderFrameDeliveryText, "Marshal.Release(gpuTexture)");
+        AssertContains(sourceReaderRawFrameDeliveryText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertContains(sourceReaderRawFrameDeliveryText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertContains(sourceReaderRawFrameDeliveryText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
+        AssertContains(sourceReaderRawFrameDeliveryText, "ArrayPool<byte>.Shared.Rent");
         AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverFrame(");
         AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
         AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverDualFrameFromBuffer(");
         AssertDoesNotContain(sourceReaderRootText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
         AssertDoesNotContain(sourceReaderRootText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
+        AssertDoesNotContain(sourceReaderFrameDeliveryText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertDoesNotContain(sourceReaderFrameDeliveryText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertDoesNotContain(sourceReaderFrameDeliveryText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
     }
 }

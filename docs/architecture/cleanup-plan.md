@@ -1594,9 +1594,13 @@ D3D output failure break behavior there.
 
 Media Foundation source-reader frame delivery now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs`. Keep
-sample-to-buffer conversion, compressed MJPG byte extraction, raw CPU frame
-delivery, dual GPU/CPU delivery, 2D buffer handling, readback fallback, packed
-stride copies, and GPU texture release there.
+sample-to-buffer conversion, compressed MJPG routing, dual GPU/CPU delivery
+orchestration, readback fallback selection, and GPU texture release there.
+
+Media Foundation source-reader raw frame buffer delivery now lives in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.RawFrameDelivery.cs`.
+Keep compressed MJPG byte extraction, raw CPU frame delivery, 2D buffer
+handling, packed-stride CPU copies, and dual-frame CPU payload extraction there.
 
 Media Foundation interop declarations now live in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Interop.cs`. Keep MF
@@ -1620,15 +1624,17 @@ Media Foundation source-reader DXGI buffer extraction now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.DxgiBuffers.cs`. Keep
 IMFDXGIBuffer texture/subresource extraction, D3D texture IID lookup, and DXGI
 fallback diagnostics there; keep frame delivery in
-`MfSourceReaderVideoCapture.FrameDelivery.cs` and reader start/stop/dispose in
-the lifecycle partial.
+`MfSourceReaderVideoCapture.FrameDelivery.cs` plus
+`MfSourceReaderVideoCapture.RawFrameDelivery.cs` and reader start/stop/dispose
+in the lifecycle partial.
 
 Media Foundation packed-frame layout helpers now live in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs`. Keep
 frame-size/row-byte calculation, packed-stride inference, stride-aware YUV
 copying, and source subtype labels there; keep frame delivery in
-`MfSourceReaderVideoCapture.FrameDelivery.cs` and reader start/stop/dispose in
-the lifecycle partial.
+`MfSourceReaderVideoCapture.FrameDelivery.cs` plus
+`MfSourceReaderVideoCapture.RawFrameDelivery.cs` and reader start/stop/dispose
+in the lifecycle partial.
 
 Media Foundation source-reader lifecycle now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs`. Keep

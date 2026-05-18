@@ -40,6 +40,7 @@ static partial class Program
         var initializationText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs");
         var readLoopText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.ReadLoop.cs");
         var frameDeliveryText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs");
+        var rawFrameDeliveryText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.RawFrameDelivery.cs");
         var cadenceText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs");
 
         return new MfSourceReaderVideoCaptureSourceFamily(
@@ -51,6 +52,7 @@ static partial class Program
             initializationText,
             readLoopText,
             frameDeliveryText,
+            rawFrameDeliveryText,
             string.Join(
                 "\n",
                 new[]
@@ -63,6 +65,7 @@ static partial class Program
                     initializationText,
                     readLoopText,
                     frameDeliveryText,
+                    rawFrameDeliveryText,
                     cadenceText,
                 }));
     }
@@ -166,6 +169,7 @@ static partial class Program
         string InitializationText,
         string ReadLoopText,
         string FrameDeliveryText,
+        string RawFrameDeliveryText,
         string SourceFamilyText);
 
     private readonly record struct DiagnosticSessionSourceFamily(
