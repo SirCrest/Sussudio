@@ -60,8 +60,8 @@ static partial class Program
             "WASAPI audio capture diagnostics live in focused partial",
             WasapiAudioCapture_DiagnosticsLivesInFocusedPartial);
         await AddCheckAsync(results,
-            "WASAPI COM interop contracts live in focused file",
-            WasapiComInterop_ContractsLiveInFocusedFile);
+            "WASAPI COM interop contracts live in focused files",
+            WasapiComInterop_ContractsLiveInFocusedFiles);
         await AddCheckAsync(results,
             "WASAPI audio capture stop uses bounded thread join",
             WasapiAudioCapture_StopUsesBoundedThreadJoin);

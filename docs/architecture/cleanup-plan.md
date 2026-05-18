@@ -112,10 +112,14 @@ chunk returns.
 `WasapiAudioPlayback.RenderThread.cs` owns the WASAPI render-thread loop,
 pause/resume execution, resume prebuffer wait, endpoint buffer writes, render
 buffer filling, and render-side PTS advancement.
-`WasapiComInterop.Contracts.cs` owns WASAPI/Core Audio enums, structs, records,
-and COM interface declarations. `WasapiComInterop.cs` owns helper methods,
-format allocation/parsing, COM activation/release, endpoint volume, and
-AudioClient3 initialization.
+`WasapiComInterop.CoreAudio.Contracts.cs` owns WASAPI/Core Audio enums,
+audio-format records, WAVEFORMAT structs, PROPERTYKEY, PropVariant lifetime
+handling, and Core Audio device, collection, property-store, and notification
+COM interfaces.
+`WasapiComInterop.AudioClient.Contracts.cs` owns AudioClient, capture/render
+client, and endpoint-volume COM interfaces. `WasapiComInterop.cs` owns helper
+methods, format allocation/parsing, COM activation/release, endpoint volume,
+and AudioClient3 initialization.
 `NativeXuAudioControlService.Profiles.cs` owns 4K X selector-3 byte indexes,
 HDMI/Analog reference payloads, gain-profile placeholders, hex parsing, and
 payload decode/confidence helpers. `NativeXuAudioControlService.Transport.cs`

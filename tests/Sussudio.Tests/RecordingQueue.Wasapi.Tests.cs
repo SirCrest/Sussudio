@@ -185,32 +185,46 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task WasapiComInterop_ContractsLiveInFocusedFile()
+    private static Task WasapiComInterop_ContractsLiveInFocusedFiles()
     {
         var rootSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.cs")
             .Replace("\r\n", "\n");
-        var contractsSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.Contracts.cs")
+        var coreAudioContractsSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.CoreAudio.Contracts.cs")
+            .Replace("\r\n", "\n");
+        var audioClientContractsSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.AudioClient.Contracts.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootSource, "internal static class WasapiComInterop");
         AssertContains(rootSource, "internal static WasapiAudioFormat ReadAudioFormat(IntPtr formatPtr)");
         AssertContains(rootSource, "private static WasapiSampleType ResolveSampleType(");
-        AssertContains(contractsSource, "internal enum EDataFlow");
-        AssertContains(contractsSource, "internal enum WasapiSampleType");
-        AssertContains(contractsSource, "internal readonly record struct WasapiAudioFormat(");
-        AssertContains(contractsSource, "internal struct WAVEFORMATEX");
-        AssertContains(contractsSource, "internal struct WAVEFORMATEXTENSIBLE");
-        AssertContains(contractsSource, "internal struct PropVariant : IDisposable");
-        AssertContains(contractsSource, "internal interface IMMDeviceEnumerator");
-        AssertContains(contractsSource, "internal interface IAudioClient");
-        AssertContains(contractsSource, "internal interface IAudioClient3 : IAudioClient");
-        AssertContains(contractsSource, "internal interface IAudioCaptureClient");
-        AssertContains(contractsSource, "internal interface IAudioRenderClient");
-        AssertContains(contractsSource, "internal interface IMMNotificationClient");
+        AssertContains(coreAudioContractsSource, "internal enum EDataFlow");
+        AssertContains(coreAudioContractsSource, "internal enum WasapiSampleType");
+        AssertContains(coreAudioContractsSource, "internal readonly record struct WasapiAudioFormat(");
+        AssertContains(coreAudioContractsSource, "internal struct WAVEFORMATEX");
+        AssertContains(coreAudioContractsSource, "internal struct WAVEFORMATEXTENSIBLE");
+        AssertContains(coreAudioContractsSource, "internal struct PropVariant : IDisposable");
+        AssertContains(coreAudioContractsSource, "internal interface IMMDeviceEnumerator");
+        AssertContains(coreAudioContractsSource, "internal interface IMMDevice");
+        AssertContains(coreAudioContractsSource, "internal interface IMMDeviceCollection");
+        AssertContains(coreAudioContractsSource, "internal interface IPropertyStore");
+        AssertContains(coreAudioContractsSource, "internal interface IMMNotificationClient");
+        AssertContains(audioClientContractsSource, "internal interface IAudioClient");
+        AssertContains(audioClientContractsSource, "internal interface IAudioClient3 : IAudioClient");
+        AssertContains(audioClientContractsSource, "internal interface IAudioCaptureClient");
+        AssertContains(audioClientContractsSource, "internal interface IAudioRenderClient");
+        AssertContains(audioClientContractsSource, "internal interface IAudioEndpointVolume");
         AssertDoesNotContain(rootSource, "internal readonly record struct WasapiAudioFormat(");
         AssertDoesNotContain(rootSource, "internal struct WAVEFORMATEX");
         AssertDoesNotContain(rootSource, "internal interface IAudioClient");
         AssertDoesNotContain(rootSource, "internal interface IMMDeviceEnumerator");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.Contracts.cs")),
+            "old combined WASAPI COM contract file removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.CommonContracts.cs")),
+            "shared WASAPI contracts stay with Core Audio contracts instead of a tiny file");
 
         return Task.CompletedTask;
     }
