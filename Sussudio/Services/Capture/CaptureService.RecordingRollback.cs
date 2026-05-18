@@ -143,7 +143,7 @@ public partial class CaptureService
                 var libAvDrainTask = libAvSink.EncodingCompletionTask;
                 if (!libAvDrainTask.IsCompleted)
                 {
-                    _pendingLibAvDrainTask = ScheduleDeferredUnifiedVideoCaptureCleanup(
+                    _pendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
                         libAvDrainTask,
                         unifiedVideoCapture,
                         reason: "recording_start_rollback");

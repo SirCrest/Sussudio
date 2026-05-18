@@ -862,7 +862,7 @@ Deferred capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs`. That file owns
 the Flashback artifact cleanup adapter handoff and export-lock delegation.
 Deferred unified-video cleanup after LibAv drains lives with the video pipeline
-lifecycle owner. Pending LibAv drain task state and reentry policy live in
+resource owner. Pending LibAv drain task state and reentry policy live in
 `Sussudio/Services/Capture/CaptureRecordingBackendResources.cs`. Flashback backend
 artifact cleanup request/retry/dispose/purge mechanics live in
 `Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs`.
@@ -994,10 +994,10 @@ force-rotate fallback counters, and completion status projection there.
 Shared video-pipeline lifecycle handoff now lives in
 `Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs`. That file
 owns preview-frame sink attachment, late Flashback playback preview wiring,
-shared D3D preview-device handoff, fatal/pixel callback attach/detach, and
-deferred unified-video cleanup after LibAv drains. Active video capture storage,
-preview-frame sink storage, negotiated video getters, and cached MJPEG pipeline
-timing snapshots now live in
+shared D3D preview-device handoff, and fatal/pixel callback attach/detach.
+Active video capture storage, preview-frame sink storage, negotiated video
+getters, cached MJPEG pipeline timing snapshots, and deferred unified-video
+cleanup after LibAv drains now live in
 `Sussudio/Services/Capture/CaptureVideoPipelineResources.cs`.
 
 Preview lifecycle now lives in focused CaptureService partials:
@@ -1015,7 +1015,7 @@ owns retained video/Flashback backend reuse checks and capture-settings cloning;
 `Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs` owns preview
 pipeline disposal ordering, Flashback backend disposal, WASAPI disposal, and
 microphone cleanup while delegating shared unified-video cleanup mechanics to
-the video pipeline lifecycle owner.
+the video pipeline resource owner.
 
 Recording integrity policy is now split under
 `Sussudio/Services/Capture/CaptureService.RecordingIntegrity*.cs`. The root

@@ -149,7 +149,7 @@ public partial class CaptureService
                     DetachUnifiedVideoCapture(unifiedVideoCapture);
                     if (_pendingLibAvDrainTask is { IsCompleted: false } pendingLibAvDrainTask)
                     {
-                        _pendingLibAvDrainTask = ScheduleDeferredUnifiedVideoCaptureCleanup(
+                        _pendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
                             pendingLibAvDrainTask,
                             unifiedVideoCapture,
                             reason: "recording_stop_deferred_drain");

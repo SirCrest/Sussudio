@@ -161,7 +161,7 @@ static partial class Program
         AssertContains(rollbackText, "private async Task DisposeTransientRecordingBackendAsync(");
         AssertContains(rollbackText, "Transient recording sink stop failed during rollback");
         AssertContains(rollbackText, "Transient unified video dispose failed during rollback");
-        AssertContains(rollbackText, "ScheduleDeferredUnifiedVideoCaptureCleanup(");
+        AssertContains(rollbackText, "_videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(");
         AssertContains(rollbackText, "reason: \"recording_start_rollback\"");
         AssertOccursBefore(rollbackText, "CAPTURE_RECORDING_START_FAIL", "RecordLastRecordingFailure(ex);");
         AssertOccursBefore(rollbackText, "RecordLastRecordingFailure(ex);", "await _artifactManager.RollbackAsync(rollback.RecordingContext)");

@@ -571,10 +571,11 @@ Important entry points:
   Flashback backend disposal, WASAPI disposal, and microphone cleanup.
 - `CaptureVideoPipelineResources.cs` owns active unified-video capture storage,
   preview-frame sink storage, negotiated video getters, and cached MJPEG
-  pipeline timing snapshots.
+  pipeline timing snapshots, plus deferred unified-video cleanup after LibAv
+  drains.
 - `CaptureService.VideoPipelineLifecycle.cs` owns preview frame sink attachment,
   shared D3D preview-device handoff, unified-video fatal/pixel callback
-  attach/detach, and deferred unified-video cleanup after LibAv drains.
+  attach/detach.
 - `CaptureService.Probes.cs` owns read-only automation probes and preview-frame
   capture waits.
 - `CaptureService.RecordingIntegrity.cs` owns active recording integrity backend
