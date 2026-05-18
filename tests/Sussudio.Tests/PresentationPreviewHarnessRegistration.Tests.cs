@@ -67,7 +67,8 @@ static partial class Program
         "tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs",
         "tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs",
         "tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs",
-        "tests/Sussudio.Tests/XUnit.StatsPresentationTests.cs"
+        "tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs",
+        "tests/Sussudio.Tests/XUnit.StatsPresentation.FrameTime.Tests.cs"
     };
 
     private static readonly HashSet<string> PresentationPreviewUiOwnershipCatalogExclusions = new(StringComparer.Ordinal)

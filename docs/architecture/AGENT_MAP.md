@@ -1255,10 +1255,12 @@ Primary current owners:
 - `Sussudio/ViewModels/CaptureModeOptionsBuilder.cs` owns pure resolution and
   video-format option construction, HDR mode enablement, and source aspect-ratio
   filtering. Shell files bind and display those options.
-- `tests/Sussudio.Tests/XUnit.StatsPresentationTests.cs` owns xUnit stats
-  presentation behavior checks: display-repeat visual cadence, detached-window
-  formatting, dock encoder formatting, compact preview summary, frame-time
-  range, and frame-time graph geometry.
+- `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` owns
+  detached-window, dock encoder, display-repeat visual-cadence, and compact
+  preview summary behavior checks.
+- `tests/Sussudio.Tests/XUnit.StatsPresentation.FrameTime.Tests.cs` owns
+  frame-time range and frame-time graph geometry behavior checks, plus shared
+  StatsPresentation xUnit reflection/file helpers.
   `tests/Sussudio.Tests/StatsPresentation.Ownership.Tests.cs` owns
   builder/controller/DTO source-shape assertions,
   `tests/Sussudio.Tests/StatsPresentation.SourceTelemetry.Tests.cs` owns HDMI
