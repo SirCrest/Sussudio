@@ -1634,20 +1634,16 @@ Primary current owners:
   serialization contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
   reliability-gates script contract test.
-- `tests/Sussudio.Tests/ArchitectureDocs.AgentMapReferences.Tests.cs` owns
-  AGENT_MAP file/folder reference drift checks;
+- `tests/Sussudio.Tests/ArchitectureDocs.AgentMapOwnershipPaths.Tests.cs` owns
+  consolidated AGENT_MAP reference drift, test-owner code-span, README
+  automation consumer, UI/presentation ownership, CaptureService ownership,
+  Flashback preview startup wording, shared tool automation exact-path,
+  duplicate tools/Common owner, and empty test marker-shell checks.
   `ArchitectureDocs.SourceReferencePaths.Tests.cs` owns literal `ReadRepoFile`
-  source-shape path drift checks;
-  `ArchitectureDocs.AgentMapOwnershipPaths.Tests.cs` owns test-owner code-span
-  coverage; `ArchitectureDocs.AgentMapAutomation.Tests.cs` owns README
-  automation consumer checklist coverage; `ArchitectureDocs.AgentMapPresentation.Tests.cs`
-  owns UI presentation ownership code-span coverage;
+  source-shape path drift checks.
   `ArchitectureDocs.CleanupPlanReferences.Tests.cs` owns cleanup-plan
-  file/folder reference drift checks; `ArchitectureDocs.AgentMapCaptureRuntime.Tests.cs`
-  owns CaptureService ownership-file coverage;
-  `ArchitectureDocs.AgentMapToolAutomation.Tests.cs` owns exact-path coverage
-  for shared tool automation partial families; and
-  `ArchitectureDocs.AgentMapHelpers.cs` owns the shared AGENT_MAP token,
+  file/folder reference drift checks, and `ArchitectureDocs.AgentMapHelpers.cs`
+  owns the shared AGENT_MAP token,
   consumer, and ownership-file discovery helpers.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter*.Tests.cs`
   owns the shared/ssctl snapshot formatter contract family: typed accessors,

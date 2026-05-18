@@ -496,20 +496,14 @@ guards also live in `CommandHandlers.SourceOwnership.Tests.cs`; they require
 `AutomationCommandKind` enum overloads at routing call sites while leaving
 labels and wire IDs catalog-backed, with the dynamic diagnostic-session runner
 channel intentionally remaining string-based.
-`tests/Sussudio.Tests/ArchitectureDocs.AgentMapReferences.Tests.cs` owns
-AGENT_MAP reference resolution.
+`tests/Sussudio.Tests/ArchitectureDocs.AgentMapOwnershipPaths.Tests.cs` owns
+consolidated AGENT_MAP reference resolution, test-owner code-span coverage,
+automation consumer checklist coverage, UI/presentation ownership coverage,
+CaptureService ownership coverage, Flashback preview startup AGENT_MAP wording,
+shared tool automation path coverage, duplicate tools/Common owner checks, and
+empty test marker-shell checks.
 `tests/Sussudio.Tests/ArchitectureDocs.SourceReferencePaths.Tests.cs` owns
 literal `ReadRepoFile` source-shape path resolution.
-`tests/Sussudio.Tests/ArchitectureDocs.AgentMapOwnershipPaths.Tests.cs` owns
-test-owner code-span coverage.
-`tests/Sussudio.Tests/ArchitectureDocs.AgentMapAutomation.Tests.cs` owns
-automation consumer checklist coverage.
-`tests/Sussudio.Tests/ArchitectureDocs.AgentMapPresentation.Tests.cs` owns
-UI/presentation ownership coverage.
-`tests/Sussudio.Tests/ArchitectureDocs.AgentMapCaptureRuntime.Tests.cs` owns
-CaptureService ownership coverage.
-`tests/Sussudio.Tests/ArchitectureDocs.AgentMapToolAutomation.Tests.cs` owns
-shared tool automation path coverage.
 `tests/Sussudio.Tests/ArchitectureDocs.CleanupPlanReferences.Tests.cs` owns
 cleanup-plan file/folder reference drift checks and architecture-doc test-family
 coverage.
