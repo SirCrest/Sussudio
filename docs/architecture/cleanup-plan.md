@@ -3328,8 +3328,9 @@ Remaining `tools/Common` ownership:
    caching, and source-aware auto-retargeting in
    `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`.
    Settings initialization, simple persistence reactions, and the impure
-   settings load/save adapter stay in `MainViewModel.SettingsPersistence.cs`,
-   while
+   settings load/save adapter stay in `MainViewModel.SettingsPersistence.cs`.
+   `MainViewModel.SettingsLoadApplication.cs` owns applying validated load plans
+   to ViewModel state and deferred device/audio/microphone selections, while
    `MainViewModelSettingsPersistenceProjection.cs` owns persisted-settings
    validation, clamping, deferred-selection handoff, and save DTO projection;
    active Flashback reactions to recording format

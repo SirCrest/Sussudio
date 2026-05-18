@@ -28,6 +28,7 @@ static partial class Program
     private static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
         var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
+        var settingsLoadApplicationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsLoadApplication.cs").Replace("\r\n", "\n");
         var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModelSettingsPersistenceProjection.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureModeTransactions.cs").Replace("\r\n", "\n");
         var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
@@ -43,7 +44,11 @@ static partial class Program
         AssertContains(settingsPersistenceText, "_isLoadingSettings = false;");
         AssertContains(settingsPersistenceText, "MainViewModelSettingsPersistenceProjection.BuildLoadPlan(");
         AssertContains(settingsPersistenceText, "MainViewModelSettingsPersistenceProjection.BuildSaveSettings(");
-        AssertContains(settingsPersistenceText, "private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
+        AssertDoesNotContain(settingsPersistenceText, "private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
+        AssertContains(settingsLoadApplicationText, "private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
+        AssertContains(settingsLoadApplicationText, "_pendingSavedDeviceId = loadPlan.PendingDeviceId;");
+        AssertContains(settingsLoadApplicationText, "_pendingSavedAudioDeviceId = loadPlan.PendingAudioDeviceId;");
+        AssertContains(settingsLoadApplicationText, "_pendingSavedMicrophoneDeviceId = loadPlan.PendingMicrophoneDeviceId;");
         AssertContains(settingsProjectionText, "internal static class MainViewModelSettingsPersistenceProjection");
         AssertContains(settingsProjectionText, "internal static MainViewModelSettingsLoadPlan BuildLoadPlan(");
         AssertContains(settingsProjectionText, "internal static UserSettings BuildSaveSettings(");
