@@ -12,6 +12,9 @@ static partial class Program
             "Recording backend finalize and cleanup preserves Flashback boundaries",
             RecordingBackendFinalizeAndCleanup_PreservesFlashbackBoundaries);
         await AddCheckAsync(results,
+            "Recording backend Flashback buffer cycle preserves committed policies",
+            RecordingBackendFlashbackBufferCycle_PreservesPolicies);
+        await AddCheckAsync(results,
             "Capture service recording lifecycle and backend resources have focused owners",
             CaptureService_RecordingLifecycleAndBackendResourcesHaveFocusedOwners);
         await AddCheckAsync(results,

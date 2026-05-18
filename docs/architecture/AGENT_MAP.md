@@ -1580,6 +1580,9 @@ Primary current owners:
   recording backend finalization, Flashback cleanup, microphone restart, and
   post-finalize telemetry assertions. `RecordingQueue.OverloadPolicy.SourceReaders.cs`
   owns source-loading setup for the overload policy assertions.
+- `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.BufferCycle.Tests.cs`
+  owns Flashback buffer-cycle committed-token, detach/attach, playback
+  controller handoff, and recording-backend ownership policy assertions.
   `RecordingQueue.OverloadPolicy.LibAvSpec.cs` owns the LibAv overload and
   queue-depth assertion subgroup.
   `RecordingQueue.OverloadPolicy.FlashbackSpec.cs` owns the Flashback overload,
