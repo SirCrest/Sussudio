@@ -709,9 +709,8 @@ MainWindow shell ownership tests mirror these runtime owners through focused
 runtime, and window lifecycle contracts.
 MainWindow Flashback ownership tests mirror the Flashback controller owners
 through focused `MainWindow.FlashbackOwnership.*.Tests.cs` files: polling,
-timeline layout, playhead/CTI motion, marker presentation, playback
-presentation/coordinator behavior, export progress, and settings/command
-binding each have a named test owner.
+timeline presentation, playhead/CTI motion, playback presentation/coordinator
+behavior, and settings/command binding each have a named test owner.
 
 Audio and microphone meter rendering now lives in the
 `Sussudio/Controllers/Audio/Meter/AudioMeterController*.cs` family: the root

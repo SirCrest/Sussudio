@@ -1290,16 +1290,13 @@ Primary current owners:
   and whole-window screenshot ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Polling.Tests.cs` owns
   Flashback status/playback polling controller ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Timeline.Tests.cs` owns
-  Flashback timeline track layout controller ownership assertions.
+- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.TimelinePresentation.Tests.cs`
+  owns Flashback timeline track layout, marker presentation, and export progress
+  presentation controller ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Playhead.Tests.cs` owns
   Flashback playhead/CTI motion controller ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Markers.Tests.cs` owns
-  Flashback marker presentation controller ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.PlaybackPresentation.Tests.cs`
   owns Flashback playback presentation/coordinator ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.ExportProgress.Tests.cs`
-  owns Flashback export progress presentation ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Settings.Tests.cs` owns
   Flashback settings binding and command controller ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.Preview.Tests.cs` owns
