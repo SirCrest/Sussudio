@@ -1882,9 +1882,12 @@ Primary current owners:
   owns diagnostic-session model ownership assertions, with builder summary-write
   failure, formatter, artifact, JSON/shared-text, and infrastructure assertions
   split into the adjacent `ResultOwnership.*.Tests.cs` files. Builder result
-  assertions live together in `ResultOwnership.Builder.Tests.cs`, covering core,
-  preview scheduler, overview/capture, Flashback, preview, analysis, diagnostic
-  health, and artifact handoff ownership.
+  assertions are split by ownership band: `ResultOwnership.Builder.Tests.cs`
+  covers core, preview scheduler, and overview/capture checks;
+  `ResultOwnership.Builder.Flashback.Tests.cs` covers Flashback playback,
+  recording, and export result projections; and
+  `ResultOwnership.Builder.PreviewAndCompletion.Tests.cs` covers preview,
+  analysis-warning, diagnostic-health, and artifact-handoff ownership.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.HealthPolicy.Tests.cs`
   owns diagnostic-session Flashback warmup health-policy ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`
