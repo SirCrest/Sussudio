@@ -4,7 +4,9 @@ static partial class Program
 {
     private static Task RecordingStop_PropagatesUnifiedVideoStopFailure()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
+        var captureServiceText = (
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs"))
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "Unified video recording stop failed");
@@ -41,7 +43,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs")
             .Replace("\r\n", "\n");
-        var libAvFinalizeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
+        var libAvFinalizeText = (
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs"))
             .Replace("\r\n", "\n");
         var flashbackFinalizeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs")
             .Replace("\r\n", "\n");
@@ -150,6 +154,7 @@ static partial class Program
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs")
             }).Replace("\r\n", "\n");
@@ -195,6 +200,7 @@ static partial class Program
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs")
             }).Replace("\r\n", "\n");

@@ -967,13 +967,15 @@ reconciliation, failed-finalize recovery preservation, deferred settings apply,
 buffer cycling, buffer-cycle failure classification, outcome publication,
 backend cleanup launch, and Flashback-specific microphone monitor restart.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs`
-owns standard LibAv recording finalization: unified-video recording stop and
-optional teardown, WASAPI recording detach/disposal, LibAv sink normal/emergency
-stop and drain tracking, encoder/runtime and recording-integrity summaries,
-and the visible final outcome publication before delayed cancellation throws.
-Its phase helpers stay in the same file so the inactive-preview teardown,
-audio-fault folding, integrity publication, and delayed-cancellation ordering are
-auditable without creating another small partial.
+owns standard LibAv recording finalization sequencing: audio-fault folding,
+encoder/runtime and recording-integrity summaries, final state completion,
+preview-restore ordering, and the visible final outcome publication before
+delayed cancellation throws.
+`Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs`
+owns standard LibAv recording resource finalization: unified-video recording
+stop, WASAPI recording detach/disposal, LibAv sink normal/emergency stop and
+drain tracking, inactive-preview teardown, and LibAv finalization step result
+records.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs`
 owns standard LibAv live-preview restoration after recording: pending Flashback
 enable-after-recording detection, guarded Flashback preview backend restore,

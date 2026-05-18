@@ -101,7 +101,10 @@ static partial class Program
         var videoPipelineResourcesText = ReadRepoFile("Sussudio/Services/Capture/CaptureVideoPipelineResources.cs").Replace("\r\n", "\n");
         var deferredCleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.DeferredCleanup.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
-        var libAvFinalizeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs").Replace("\r\n", "\n");
+        var libAvFinalizeText = (
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs"))
+            .Replace("\r\n", "\n");
         var recordingRollbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingRollback.cs").Replace("\r\n", "\n");
 
         AssertEqual(
