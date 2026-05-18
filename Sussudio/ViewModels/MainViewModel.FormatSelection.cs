@@ -2,13 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
 
 namespace Sussudio.ViewModels;
 
 /// <summary>
-/// Format and frame-rate selection: pixel-format option building and selected
-/// capture-format policy for the capture mode pipeline.
+/// Format and frame-rate selection adapter: selected-format assignment and
+/// pixel-format option collection mutation for the capture mode pipeline.
 /// </summary>
 public partial class MainViewModel
 {
@@ -20,64 +19,8 @@ public partial class MainViewModel
             return;
         }
 
-        var candidates = AvailableFormats
-            .Where(f => f.Width == width && f.Height == height)
-            .ToList();
-        if (IsHdrEnabled)
-        {
-            candidates = candidates.Where(IsHdrModeCandidate).ToList();
-        }
-        else
-        {
-            // When HDR is off, exclude 10-bit formats (P010/P016) so the source reader
-            // requests an 8-bit subtype (NV12) rather than triggering a P010→NV12 fallback.
-            var sdrCandidates = candidates.Where(f => !IsHdrModeCandidate(f)).ToList();
-            if (sdrCandidates.Count > 0)
-                candidates = sdrCandidates;
-        }
-
-        if (candidates.Count == 0)
-        {
-            SelectedFormat = null;
-            return;
-        }
-
-        var selectedRateOption = AvailableFrameRates
-            .FirstOrDefault(option => FrameRateTimingPolicy.IsFrameRateMatch(option.Value, SelectedFrameRate))
-            ?? AvailableFrameRates.FirstOrDefault(option => FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
-        var friendlyBucket = selectedRateOption != null
-            ? (int)Math.Round(selectedRateOption.FriendlyValue, MidpointRounding.AwayFromZero)
-            : FrameRateTimingPolicy.GetFriendlyFrameRateBucket(SelectedFrameRate);
-
-        var timingFamily = ResolvePreferredTimingFamily(resolutionKey, SelectedFrameRate);
-        if (selectedRateOption != null &&
-            FrameRateTimingPolicy.TryInferFrameRateTimingFamily(selectedRateOption.Rational, selectedRateOption.Value, out var optionFamily))
-        {
-            timingFamily = optionFamily;
-        }
-
-        var rateCandidates = candidates
-            .Where(format => FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact) == friendlyBucket)
-            .ToList();
-        if (rateCandidates.Count == 0)
-        {
-            SelectedFormat = null;
-            return;
-        }
-
-        if (!string.Equals(SelectedVideoFormat, "Auto", StringComparison.OrdinalIgnoreCase))
-        {
-            rateCandidates = rateCandidates
-                .Where(format => string.Equals(format.PixelFormat, SelectedVideoFormat, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-            if (rateCandidates.Count == 0)
-            {
-                SelectedFormat = null;
-                return;
-            }
-        }
-
-        SelectedFormat = FrameRateTimingPolicy.SelectPreferredFrameRateFormat(rateCandidates, friendlyBucket, timingFamily);
+        SelectedFormat = CaptureFormatSelectionPolicy.Select(
+            BuildCaptureFormatSelectionRequest(resolutionKey, width, height));
     }
 
     private void RebuildVideoFormatOptions()
@@ -111,40 +54,27 @@ public partial class MainViewModel
 
     private List<MediaFormat> GetFormatsForSelectedModeTuple()
     {
-        if (!TryGetEffectiveResolutionSelection(out _, out var width, out var height))
+        if (!TryGetEffectiveResolutionSelection(out var resolutionKey, out var width, out var height))
         {
             return new List<MediaFormat>();
         }
 
-        // The UI groups 119.88/120.00-style variants under a friendly bucket. We still
-        // select the exact rational later, but format availability should follow the same
-        // bucket the user sees in the frame-rate picker.
-        var selectedRateOption = AvailableFrameRates
-            .FirstOrDefault(option => FrameRateTimingPolicy.IsFrameRateMatch(option.Value, SelectedFrameRate))
-            ?? AvailableFrameRates.FirstOrDefault(option => FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
-        var friendlyBucket = selectedRateOption != null
-            ? (int)Math.Round(selectedRateOption.FriendlyValue, MidpointRounding.AwayFromZero)
-            : FrameRateTimingPolicy.GetFriendlyFrameRateBucket(SelectedFrameRate);
-
-        return AvailableFormats
-            .Where(format =>
-                format.Width == width &&
-                format.Height == height &&
-                FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact) == friendlyBucket &&
-                (IsHdrEnabled ? IsHdrModeCandidate(format) : !IsHdrModeCandidate(format)))
+        return CaptureFormatSelectionPolicy
+            .SelectModeTupleFormats(BuildCaptureFormatSelectionRequest(resolutionKey, width, height))
             .ToList();
     }
 
-    private static bool IsHdrModeCandidate(MediaFormat format)
-        => CaptureModeOptionsBuilder.IsHdrModeCandidate(format);
-
-    private static bool ShouldPreserveMjpegHighFrameRateMode(MediaFormat? format)
-        => format != null &&
-           CaptureSettings.IsMjpegHighFrameRateMode(
-               format.PixelFormat,
-               format.Width,
-               format.Height,
-               format.FrameRateExact,
-               hdrEnabled: false);
-
+    private CaptureFormatSelectionRequest BuildCaptureFormatSelectionRequest(
+        string resolutionKey,
+        uint width,
+        uint height)
+        => new(
+            AvailableFormats,
+            AvailableFrameRates,
+            width,
+            height,
+            SelectedFrameRate,
+            SelectedVideoFormat,
+            IsHdrEnabled,
+            ResolvePreferredTimingFamily(resolutionKey, SelectedFrameRate));
 }

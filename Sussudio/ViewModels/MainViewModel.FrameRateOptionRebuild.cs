@@ -29,8 +29,8 @@ public partial class MainViewModel
                 .Select(group =>
                 {
                     var allFormats = group.ToList();
-                    var hdrFormats = allFormats.Where(IsHdrModeCandidate).ToList();
-                    var sdrFormats = allFormats.Where(f => !IsHdrModeCandidate(f)).ToList();
+                    var hdrFormats = allFormats.Where(CaptureModeOptionsBuilder.IsHdrModeCandidate).ToList();
+                    var sdrFormats = allFormats.Where(f => !CaptureModeOptionsBuilder.IsHdrModeCandidate(f)).ToList();
                     // In HDR mode, only enable rates with HDR-capable formats.
                     // In SDR mode, enable if 8-bit formats exist. Also enable if only
                     // 10-bit formats exist for this rate (e.g., 4K HFR paths that only

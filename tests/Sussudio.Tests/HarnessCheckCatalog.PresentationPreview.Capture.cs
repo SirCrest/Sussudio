@@ -69,6 +69,12 @@ static partial class Program
             "Frame-rate timing policy preserves pure timing behavior",
             FrameRateTimingPolicy_PreservesPureTimingBehavior);
         await AddCheckAsync(results,
+            "Capture format selection policy lives in focused helper",
+            CaptureFormatSelectionPolicy_LivesInFocusedHelper);
+        await AddCheckAsync(results,
+            "Capture format selection policy preserves behavior",
+            CaptureFormatSelectionPolicy_PreservesSelectionBehavior);
+        await AddCheckAsync(results,
             "Recording settings selection policy lives in focused helper",
             RecordingSettingsSelectionPolicy_LivesInFocusedHelper);
         await AddCheckAsync(results,

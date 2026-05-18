@@ -1389,6 +1389,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.Tests.cs`
   owns frame-rate source filtering, automatic frame-rate choice,
   `ShowAllCaptureOptions` behavior, and timing-policy ownership assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.VideoFormat.Tests.cs`
+  owns selected capture-format and mode-tuple video-format filtering policy
+  assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Tests.cs`
   owns resolution-selection policy assertions, including HDR and SDR source
   retarget behavior.
@@ -2363,8 +2366,9 @@ Primary current owners:
   `MainViewModel.FrameRateTiming.cs` owns the stateful wrappers that resolve
   timing variants and source/preferred timing from resolution capabilities,
   runtime snapshots, selected formats, source telemetry, and UI selection state.
-  `MainViewModel.FormatSelection.cs` owns pixel-format option building and
-  selected capture-format selection policy.
+  `MainViewModel.FormatSelection.cs` owns selected-format assignment and
+  pixel-format option collection mutation. `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`
+  owns pure selected capture-format choice and mode-tuple video-format filtering.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`
   owns startup FFmpeg capability probes for recording formats and split-encode
   modes, UI enqueue failure logging, and recording-format policy application to

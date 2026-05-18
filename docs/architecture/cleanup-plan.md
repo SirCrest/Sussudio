@@ -3245,7 +3245,10 @@ Remaining `tools/Common` ownership:
    `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs`, while startup
    FFmpeg capability probes and observable recording-format option mutation live
    in `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`. `MainViewModel.FormatSelection.cs`
-   keeps pixel-format option mutation and selected capture-format policy, while
+   keeps selected-format assignment and pixel-format option collection mutation, while
+   `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs` owns the pure
+   selected-format and mode-tuple video-format filtering policy. `MainViewModel.FrameRateOptionRebuild.cs`
+   keeps frame-rate option mutation, while
    `MainViewModel.CaptureModeTransactions.cs` owns HDR toggle side effects:
    recording-time revert/status, mode option rebuilds, immediate reinitialize
    scheduling, and settings persistence.

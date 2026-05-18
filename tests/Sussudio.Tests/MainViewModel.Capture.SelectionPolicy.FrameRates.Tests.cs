@@ -229,7 +229,10 @@ static partial class Program
         AssertContains(captureModeTransactionsText, "partial void OnIsHdrEnabledChanged(bool value)");
         AssertDoesNotContain(formatSelectionText, "private FrameRateTimingFamily ResolvePreferredTimingFamily(");
         AssertDoesNotContain(formatSelectionText, "private static bool TryInferFrameRateTimingFamily(");
-        AssertContains(formatSelectionText, "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
+        AssertDoesNotContain(formatSelectionText, "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
+        AssertContains(
+            ReadRepoFile("Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs").Replace("\r\n", "\n"),
+            "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
         AssertContains(timingText, "private FrameRateTimingFamily ResolvePreferredTimingFamily(");
         AssertContains(timingText, "private (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(");
         AssertContains(timingText, "private IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
