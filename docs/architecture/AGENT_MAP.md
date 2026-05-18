@@ -1008,10 +1008,10 @@ Primary current owners:
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview
   renderer context, public runtime state, counters, and simple renderer surface
   methods. `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Lifecycle.cs`
-  owns start/stop/shutdown flow, renderer startup planning, and cleanup.
+  owns start/stop/shutdown flow, renderer startup planning, CPU fallback
+  attachment, and cleanup.
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.D3D.cs` owns D3D renderer
-  startup and event/failure handling. `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Cpu.cs`
-  owns CPU preview fallback attachment.
+  startup and event/failure handling.
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Reinit.cs` owns D3D
   reinit disposal, unsafe-window telemetry, stop tick accounting, and fresh
   SwapChainPanel replacement. `MainWindow.PreviewRenderer.cs` is the XAML-facing

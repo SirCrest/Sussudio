@@ -59,7 +59,6 @@ static partial class Program
         var previewRendererHostControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs").Replace("\r\n", "\n");
         var previewRendererHostLifecycleText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Lifecycle.cs").Replace("\r\n", "\n");
         var previewRendererHostD3dText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.D3D.cs").Replace("\r\n", "\n");
-        var previewRendererHostCpuText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Cpu.cs").Replace("\r\n", "\n");
         var previewRendererHostReinitText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.Reinit.cs").Replace("\r\n", "\n");
         var previewSurfaceText = ReadRepoFile("Sussudio/MainWindow.PreviewSurface.cs").Replace("\r\n", "\n");
         var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs").Replace("\r\n", "\n");
@@ -131,7 +130,6 @@ static partial class Program
         AssertContains(previewRendererHostControllerText, "internal sealed partial class PreviewRendererHostController");
         AssertContains(previewRendererHostLifecycleText, "internal sealed partial class PreviewRendererHostController");
         AssertContains(previewRendererHostD3dText, "internal sealed partial class PreviewRendererHostController");
-        AssertContains(previewRendererHostCpuText, "internal sealed partial class PreviewRendererHostController");
         AssertContains(previewRendererHostReinitText, "internal sealed partial class PreviewRendererHostController");
         AssertContains(previewRendererHostControllerText, "private SoftwareBitmapSource? _previewSource;");
         AssertContains(previewRendererHostControllerText, "private D3D11PreviewRenderer? _d3dRenderer;");
@@ -166,9 +164,9 @@ static partial class Program
         AssertContains(previewRendererHostD3dText, "private D3D11PreviewRenderer CreateFreshD3DPreviewRenderer(bool replaceSwapChainSurface)");
         AssertContains(previewRendererHostD3dText, "private void OnD3DRendererFirstFrameRendered()");
         AssertContains(previewRendererHostD3dText, "private void OnD3DRendererRenderThreadFailed(string reason)");
-        AssertContains(previewRendererHostCpuText, "private void StartCpuRenderer()");
-        AssertContains(previewRendererHostCpuText, "_context.ViewModel.SetPreviewFrameSink(null);");
-        AssertContains(previewRendererHostCpuText, "_previewSource = new SoftwareBitmapSource();");
+        AssertContains(previewRendererHostLifecycleText, "private void StartCpuRenderer()");
+        AssertContains(previewRendererHostLifecycleText, "_context.ViewModel.SetPreviewFrameSink(null);");
+        AssertContains(previewRendererHostLifecycleText, "_previewSource = new SoftwareBitmapSource();");
         AssertContains(previewRendererHostReinitText, "private void RecordPreviewRendererReinitUnsafeWindow(D3D11PreviewRenderer? previousRenderer, bool reinitAnimating)");
         AssertContains(previewRendererHostReinitText, "private void MarkPreviewRendererStopped()");
         AssertContains(previewRendererHostReinitText, "public void DisposeD3DPreviewRendererForReinit()");
@@ -178,11 +176,9 @@ static partial class Program
         AssertContains(previewRendererHostReinitText, "PREVIEW_REINIT_SWAPCHAIN_PANEL_REPLACED");
         AssertContains(agentMapText, "PreviewRendererHostController.Lifecycle.cs");
         AssertContains(agentMapText, "PreviewRendererHostController.D3D.cs");
-        AssertContains(agentMapText, "PreviewRendererHostController.Cpu.cs");
         AssertContains(agentMapText, "PreviewRendererHostController.Reinit.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.Lifecycle.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.D3D.cs");
-        AssertContains(cleanupPlanText, "PreviewRendererHostController.Cpu.cs");
         AssertContains(cleanupPlanText, "PreviewRendererHostController.Reinit.cs");
         AssertContains(previewRendererText, "=> _previewRendererHostController.RendererReinitUnsafeWindows;");
         AssertContains(previewRendererText, "=> _previewRendererHostController.DisposeD3DPreviewRendererForReinit();");
