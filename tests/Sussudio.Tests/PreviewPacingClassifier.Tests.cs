@@ -118,6 +118,76 @@ public sealed class PreviewPacingClassifierTests
         Assert.Contains("recentScheduleLate=1/5", GetStringProperty(result, "Evidence"));
     }
 
+    [Fact(DisplayName = "Preview pacing classifier flags visual duplicate or low motion")]
+    public void PreviewPacingClassifier_ClassifiesVisualDuplicateOrLowMotion()
+    {
+        var input = CreateBaselinePreviewPacingInput();
+        SetPropertyOrBackingField(input, "VisualCadenceSampleCount", 240);
+        SetPropertyOrBackingField(input, "VisualCadenceChangeObservedFps", 80d);
+        SetPropertyOrBackingField(input, "VisualCadenceRepeatFramePercent", 12d);
+        SetPropertyOrBackingField(input, "VisualCadenceLongestRepeatRun", 5);
+        SetPropertyOrBackingField(input, "VisualCadenceMotionConfidence", "High");
+        SetPropertyOrBackingField(input, "MjpegPacketHashInputObservedFps", 120d);
+        SetPropertyOrBackingField(input, "MjpegPacketHashUniqueObservedFps", 120d);
+
+        var result = ClassifyPreviewPacing(input);
+
+        Assert.Equal("VisualDuplicateOrLowMotion", GetStringProperty(result, "LikelySlowStage"));
+        Assert.Equal("Medium", GetStringProperty(result, "Confidence"));
+        Assert.Contains("visualChange=80", GetStringProperty(result, "Evidence"));
+        Assert.Contains("confidence=High", GetStringProperty(result, "Evidence"));
+    }
+
+    [Fact(DisplayName = "Preview pacing classifier flags MJPEG decode pressure")]
+    public void PreviewPacingClassifier_ClassifiesMjpegDecodePressure()
+    {
+        var input = CreateBaselinePreviewPacingInput();
+        SetPropertyOrBackingField(input, "MjpegPipelineSampleCount", 240);
+        SetPropertyOrBackingField(input, "MjpegDecodeP95Ms", 6d);
+        SetPropertyOrBackingField(input, "MjpegPipelineP95Ms", 8d);
+        SetPropertyOrBackingField(input, "MjpegPipelineMaxMs", 10d);
+
+        var result = ClassifyPreviewPacing(input);
+
+        Assert.Equal("MjpegDecode", GetStringProperty(result, "LikelySlowStage"));
+        Assert.Equal("Medium", GetStringProperty(result, "Confidence"));
+        Assert.Contains("mjpegDecodeP95=6", GetStringProperty(result, "Evidence"));
+        Assert.Contains("pipelineP95=8", GetStringProperty(result, "Evidence"));
+    }
+
+    [Fact(DisplayName = "Preview pacing classifier flags renderer submit drops")]
+    public void PreviewPacingClassifier_ClassifiesRendererSubmitDrops()
+    {
+        var input = CreateBaselinePreviewPacingInput();
+        SetPropertyOrBackingField(input, "RecentRendererDropped", 3L);
+        SetPropertyOrBackingField(input, "RecentRendererSubmitted", 100L);
+        SetPropertyOrBackingField(input, "PreviewD3DLastDropReason", "queue-full");
+
+        var result = ClassifyPreviewPacing(input);
+
+        Assert.Equal("RenderSubmit", GetStringProperty(result, "LikelySlowStage"));
+        Assert.Equal("High", GetStringProperty(result, "Confidence"));
+        Assert.Contains("rendererDropped=3/100", GetStringProperty(result, "Evidence"));
+        Assert.Contains("lastDrop=queue-full", GetStringProperty(result, "Evidence"));
+    }
+
+    [Fact(DisplayName = "Preview pacing classifier falls back to render submit for high total D3D CPU time")]
+    public void PreviewPacingClassifier_ClassifiesD3DTotalFrameCpuFallback()
+    {
+        var input = CreateBaselinePreviewPacingInput();
+        SetPropertyOrBackingField(input, "PreviewD3DInputUploadCpuP99Ms", 0.4d);
+        SetPropertyOrBackingField(input, "PreviewD3DRenderSubmitCpuP99Ms", 0.6d);
+        SetPropertyOrBackingField(input, "PreviewD3DPresentCallP99Ms", 0.5d);
+        SetPropertyOrBackingField(input, "PreviewD3DFrameLatencyWaitP95Ms", 0.4d);
+        SetPropertyOrBackingField(input, "PreviewD3DTotalFrameCpuP99Ms", 10d);
+
+        var result = ClassifyPreviewPacing(input);
+
+        Assert.Equal("RenderSubmit", GetStringProperty(result, "LikelySlowStage"));
+        Assert.Equal("Medium", GetStringProperty(result, "Confidence"));
+        Assert.Contains("total=10", GetStringProperty(result, "Evidence"));
+    }
+
     private static object CreateBaselinePreviewPacingInput()
     {
         var input = CreateInstance(InputTypeName);
