@@ -45,6 +45,9 @@ static partial class Program
             "WASAPI audio capture conversion lives in focused partial",
             WasapiAudioCapture_ConversionLivesInFocusedPartial);
         await AddCheckAsync(results,
+            "WASAPI audio capture initialization lives in focused partial",
+            WasapiAudioCapture_InitializationLivesInFocusedPartial);
+        await AddCheckAsync(results,
             "WASAPI audio capture diagnostics live in focused partial",
             WasapiAudioCapture_DiagnosticsLivesInFocusedPartial);
         await AddCheckAsync(results,

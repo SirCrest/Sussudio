@@ -79,9 +79,12 @@ automation snapshot audio/ingest DTO fields.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureIngest.cs` owns capture
 audio/video reader, source-reader, and ingest counter projection consumed by the
 automation snapshot DTO.
-`WasapiAudioCapture.Conversion.cs` owns WASAPI sample decode, f32le 48 kHz
-stereo conversion, resampling, and pooled converted packet buffers. Keep
-capture-thread lifecycle in `WasapiAudioCapture.cs`.
+`WasapiAudioCapture.Initialization.cs` owns WASAPI endpoint binding, mix-format
+negotiation, AudioClient startup, capture event/client acquisition, and
+initialization-time metric resets. `WasapiAudioCapture.Conversion.cs` owns
+WASAPI sample decode, f32le 48 kHz stereo conversion, resampling, and pooled
+converted packet buffers. Keep state, start/stop/dispose, and capture-thread
+lifecycle in `WasapiAudioCapture.cs`.
 `WasapiAudioCapture.Fanout.cs` owns recording/Flashback/playback attachment
 points, converted-packet dispatch from the capture thread, and hot writer
 task-completion enforcement.
