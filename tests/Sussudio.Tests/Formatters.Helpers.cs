@@ -1,5 +1,33 @@
 static partial class Program
 {
+    private static string ReadAutomationSnapshotFormatterSource()
+    {
+        var files = new[]
+        {
+            "tools/Common/AutomationSnapshotFormatter.cs",
+            "tools/Common/AutomationSnapshotFormatter.CoreSections.cs",
+            "tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs",
+            "tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs",
+            "tools/Common/AutomationSnapshotFormatter.Diagnostics.cs",
+            "tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs",
+            "tools/Common/AutomationSnapshotFormatter.Values.cs",
+            "tools/Common/AutomationSnapshotFormatter.DisplayValues.cs",
+            "tools/Common/AutomationSnapshotFormatter.Flashback.cs",
+            "tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs",
+            "tools/Common/AutomationSnapshotFormatter.Preview.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs",
+            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs",
+            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs"
+        };
+        var parts = new string[files.Length];
+        for (var i = 0; i < files.Length; i++)
+        {
+            parts[i] = ReadRepoFile(files[i]).Replace("\r\n", "\n");
+        }
+
+        return string.Join("\n", parts);
+    }
+
     private static string ReadSsctlSnapshotFormatterSource()
     {
         var files = new[]
