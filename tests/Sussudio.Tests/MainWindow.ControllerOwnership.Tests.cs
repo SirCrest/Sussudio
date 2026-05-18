@@ -17,6 +17,8 @@ static partial class Program
         var captureOptionBindingControllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
         var audioText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var shellText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
+        var statsOverlayCompositionControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
+        var settingsShelfControllerText = ReadRepoFile("Sussudio/Controllers/Shell/SettingsShelfController.cs").Replace("\r\n", "\n");
         var liveSignalText = ReadRepoFile("Sussudio/MainWindow.LiveSignalInfo.cs").Replace("\r\n", "\n");
         var liveSignalControllerText = ReadRepoFile("Sussudio/Controllers/Shell/LiveSignalInfoController.cs").Replace("\r\n", "\n");
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
@@ -110,8 +112,12 @@ static partial class Program
         AssertContains(audioText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
         AssertDoesNotContain(audioText, "case nameof(MainViewModel.IsAudioPreviewActive):");
         AssertContains(shellText, "private bool TryHandleShellPropertyChanged(string propertyName)");
-        AssertContains(shellText, "case nameof(MainViewModel.IsStatsVisible):");
-        AssertContains(shellText, "=> ApplyStatsVisibility(ViewModel.IsStatsVisible);");
+        AssertContains(shellText, "_statsOverlayCompositionController.TryHandlePropertyChanged(propertyName, ViewModel.IsStatsVisible)");
+        AssertContains(shellText, "_settingsShelfController.TryHandlePropertyChanged(propertyName, ViewModel.IsSettingsVisible)");
+        AssertDoesNotContain(shellText, "case nameof(MainViewModel.IsStatsVisible):");
+        AssertDoesNotContain(shellText, "case nameof(MainViewModel.IsSettingsVisible):");
+        AssertContains(statsOverlayCompositionControllerText, "case nameof(MainViewModel.IsStatsVisible):");
+        AssertContains(settingsShelfControllerText, "case nameof(MainViewModel.IsSettingsVisible):");
         AssertDoesNotContain(shellText, "StatsToggle.IsChecked = ViewModel.IsStatsVisible;");
         AssertDoesNotContain(shellText, "_statsOverlayController.SyncStatsVisibility(ViewModel.IsStatsVisible);");
         AssertContains(liveSignalText, "private bool TryHandleLiveSignalPropertyChanged(string propertyName)");

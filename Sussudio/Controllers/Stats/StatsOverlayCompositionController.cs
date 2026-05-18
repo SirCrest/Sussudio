@@ -112,6 +112,19 @@ internal sealed class StatsOverlayCompositionController
     public void ApplyStatsVisibility(bool visible, bool immediate = false)
         => _statsOverlayController.SyncStatsVisibility(visible, immediate);
 
+    public bool TryHandlePropertyChanged(string propertyName, bool isStatsVisible)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.IsStatsVisible):
+                ApplyStatsVisibility(isStatsVisible);
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
     public void SetFrameTimeOverlayVisible(bool visible)
         => _statsOverlayController.SetFrameTimeOverlayVisible(visible);
 

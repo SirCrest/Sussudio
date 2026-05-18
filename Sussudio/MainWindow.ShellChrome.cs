@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Sussudio.Controllers;
 using Microsoft.UI.Xaml;
-using Sussudio.ViewModels;
 
 namespace Sussudio;
 
@@ -56,21 +55,16 @@ public sealed partial class MainWindow
 
     private bool TryHandleShellPropertyChanged(string propertyName)
     {
-        switch (propertyName)
+        if (_statsOverlayCompositionController.TryHandlePropertyChanged(propertyName, ViewModel.IsStatsVisible))
         {
-            case nameof(MainViewModel.IsStatsVisible):
-                HandleStatsVisibleChanged();
-                return true;
-
-            case nameof(MainViewModel.IsSettingsVisible):
-                ApplySettingsVisibility(ViewModel.IsSettingsVisible);
-                return true;
-
-            default:
-                return false;
+            return true;
         }
-    }
 
-    private void HandleStatsVisibleChanged()
-        => ApplyStatsVisibility(ViewModel.IsStatsVisible);
+        if (_settingsShelfController.TryHandlePropertyChanged(propertyName, ViewModel.IsSettingsVisible))
+        {
+            return true;
+        }
+
+        return false;
+    }
 }

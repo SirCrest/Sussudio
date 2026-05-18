@@ -22,6 +22,9 @@ static partial class Program
         AssertContains(controllerText, "public bool IsAnimating => _isAnimating;");
         AssertContains(controllerText, "public void Toggle()");
         AssertContains(controllerText, "public void ApplyVisibility(bool visible)");
+        AssertContains(controllerText, "public bool TryHandlePropertyChanged(string propertyName, bool isSettingsVisible)");
+        AssertContains(controllerText, "case nameof(MainViewModel.IsSettingsVisible):");
+        AssertContains(controllerText, "ApplyVisibility(isSettingsVisible);");
         AssertContains(controllerText, "_context.SettingsOverlayPanel.UpdateLayout();");
         AssertContains(controllerText, "EnableDependentAnimation = true");
         AssertContains(controllerText, "_context.SettingsOverlayPanel.Visibility = Visibility.Collapsed;");

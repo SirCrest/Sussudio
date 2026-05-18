@@ -1,6 +1,7 @@
 using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Animation;
+using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
 
@@ -59,6 +60,19 @@ internal sealed class SettingsShelfController
         else
         {
             Hide();
+        }
+    }
+
+    public bool TryHandlePropertyChanged(string propertyName, bool isSettingsVisible)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.IsSettingsVisible):
+                ApplyVisibility(isSettingsVisible);
+                return true;
+
+            default:
+                return false;
         }
     }
 

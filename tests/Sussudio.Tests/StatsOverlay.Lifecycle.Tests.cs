@@ -46,6 +46,9 @@ static partial class Program
         AssertOccursBefore(shutdownCleanupText, "DetachStatsOverlayToggleBindings();", "StopStatsDockPolling();");
         AssertContains(shutdownCleanupControllerText, "_context.StopStatsOverlay();");
         AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.ApplyStatsVisibility(visible, immediate);");
+        AssertContains(statsOverlayCompositionText, "public bool TryHandlePropertyChanged(string propertyName, bool isStatsVisible)");
+        AssertContains(statsOverlayCompositionText, "case nameof(MainViewModel.IsStatsVisible):");
+        AssertContains(statsOverlayCompositionText, "ApplyStatsVisibility(isStatsVisible);");
         AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.SetFrameTimeOverlayVisible(visible);");
         AssertContains(frameTimeOverlayText, "private readonly FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController;");
         AssertContains(frameTimeOverlayText, "private static FrameTimeOverlayPresentationController CreateFrameTimeOverlayPresentationController(");
