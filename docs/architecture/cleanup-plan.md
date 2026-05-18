@@ -510,11 +510,10 @@ automation consumer checklist coverage, UI/presentation ownership coverage,
 CaptureService ownership coverage, Flashback preview startup AGENT_MAP wording,
 shared tool automation path coverage, duplicate tools/Common owner checks, and
 empty test marker-shell checks.
-`tests/Sussudio.Tests/ArchitectureDocs.SourceReferencePaths.Tests.cs` owns
-literal `ReadRepoFile` source-shape path resolution.
-`tests/Sussudio.Tests/ArchitectureDocs.CleanupPlanReferences.Tests.cs` owns
-cleanup-plan file/folder reference drift checks and architecture-doc test-family
-coverage plus the xUnit migration inventory guard.
+`tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
+literal `ReadRepoFile` source-shape path resolution, cleanup-plan file/folder
+reference drift checks, architecture-doc test-family coverage, and the xUnit
+migration inventory guard.
 `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns shared
 Markdown code-span path-token resolution plus AGENT_MAP consumer and file-family
 helper logic, including xUnit inventory discovery.

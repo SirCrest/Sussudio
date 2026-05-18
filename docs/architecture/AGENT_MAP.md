@@ -1680,11 +1680,9 @@ Primary current owners:
   automation consumer, UI/presentation ownership, CaptureService ownership,
   Flashback preview startup wording, shared tool automation exact-path,
   duplicate tools/Common owner, and empty test marker-shell checks.
-  `tests/Sussudio.Tests/ArchitectureDocs.SourceReferencePaths.Tests.cs` owns
-  literal `ReadRepoFile` source-shape path drift checks.
-  `tests/Sussudio.Tests/ArchitectureDocs.CleanupPlanReferences.Tests.cs` owns
-  cleanup-plan file/folder reference drift checks and the xUnit migration
-  inventory guard.
+  `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
+  literal `ReadRepoFile` source-shape path drift, cleanup-plan file/folder
+  reference drift, and xUnit migration inventory checks.
   `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns
   shared Markdown code-span path-token resolution plus AGENT_MAP consumer,
   ownership-file discovery, and xUnit inventory helpers.
