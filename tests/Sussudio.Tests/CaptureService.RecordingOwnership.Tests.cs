@@ -9,11 +9,18 @@ static partial class Program
 
         AssertContains(captureServiceText, "Unified video recording stop failed");
         AssertContains(captureServiceText, "FinalizeResult.Failure(fallbackOutputPath, $\"Unified video recording stop failed: {ex.Message}\");");
+        AssertContains(captureServiceText, "StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
+        AssertContains(captureServiceText, "StopAndDisposeLibAvSinkForFinalizeAsync(");
+        AssertContains(captureServiceText, "DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
+        AssertContains(captureServiceText, "FoldLibAvAudioFaultIntoFinalizeResult(result, cancellationException);");
+        AssertContains(captureServiceText, "PublishLibAvRecordingIntegrity(");
         // Fix #12: sink dispatch became a ternary so the emergency flag can route to libAvSink.StopAsync(emergency, ct).
         AssertContains(captureServiceText, "var sinkResult = libAvSink != null");
         AssertContains(captureServiceText, "? await libAvSink.StopAsync(emergency, cancellationToken).ConfigureAwait(false)");
         AssertContains(captureServiceText, ": await sink.StopAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(captureServiceText, "if (result.Succeeded)\n                {\n                    result = sinkResult;");
+        AssertContains(captureServiceText, "if (result.Succeeded)\n            {\n                result = sinkResult;");
+        AssertContains(captureServiceText, "_videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(");
+        AssertContains(captureServiceText, "_previewAudioGraph.DetachCapture(");
 
         return Task.CompletedTask;
     }
@@ -124,6 +131,10 @@ static partial class Program
         AssertContains(stopLifecycleText, "internal Task StopRecordingAsync(bool emergency");
         AssertContains(stopLifecycleText, "await StopAndDisposeRecordingBackendAsync(\"Stopped\", emergency, transitionToken)");
         AssertContains(libAvFinalizeText, "var detachedBackend = _recordingBackend.DetachLibAvBackend();");
+        AssertContains(libAvFinalizeText, "private async Task<LibAvVideoBoundaryStopResult> StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
+        AssertContains(libAvFinalizeText, "private async Task<LibAvFinalizeStepResult> DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
+        AssertContains(libAvFinalizeText, "private readonly record struct LibAvFinalizeStepResult(");
+        AssertContains(libAvFinalizeText, "private readonly record struct LibAvVideoBoundaryStopResult(");
         AssertContains(flashbackFinalizeText, "var fbRecordingContext = _recordingBackend.DetachFlashbackBackend();");
         AssertContains(flashbackRecordingText, "_recordingBackend.IsFlashbackBackend(_flashbackSink)");
 

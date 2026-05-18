@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
@@ -21,6 +22,68 @@ public partial class CaptureService
         var result = FinalizeResult.Success(fallbackOutputPath, fallbackStatusMessage);
         OperationCanceledException? cancellationException = null;
 
+        var videoBoundary = await StopUnifiedVideoRecordingForLibAvFinalizeAsync(
+            result,
+            fallbackOutputPath,
+            cancellationToken).ConfigureAwait(false);
+        result = videoBoundary.Result;
+        cancellationException = videoBoundary.CancellationException;
+
+        await DetachLibAvRecordingAudioBeforeSinkStopAsync().ConfigureAwait(false);
+
+        var sinkStop = await StopAndDisposeLibAvSinkForFinalizeAsync(
+            sink,
+            libAvSink,
+            result,
+            fallbackOutputPath,
+            emergency,
+            cancellationException,
+            cancellationToken).ConfigureAwait(false);
+        result = sinkStop.Result;
+        cancellationException = sinkStop.CancellationException;
+
+        var libAvFinalAudioCounters = libAvSink != null
+            ? GetRecordingAudioCountersSinceBaseline(
+                CaptureRecordingAudioCounters(_wasapiAudioCapture, libAvSink, _activeRecordingSettings))
+            : RecordingAudioIntegrityCounterSnapshot.Disabled;
+
+        var idlePreviewDisposal = await DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(
+            result,
+            fallbackOutputPath,
+            cancellationException).ConfigureAwait(false);
+        result = idlePreviewDisposal.Result;
+        cancellationException = idlePreviewDisposal.CancellationException;
+
+        result = FoldLibAvAudioFaultIntoFinalizeResult(result, cancellationException);
+
+        PublishLibAvRecordingIntegrity(
+            libAvSink,
+            result,
+            videoBoundary,
+            libAvFinalAudioCounters);
+
+        await CompleteLibAvRecordingFinalizeStateAsync().ConfigureAwait(false);
+
+        cancellationException = await RestoreLibAvPreviewFeaturesAfterRecordingAsync(
+            cancellationException,
+            cancellationToken).ConfigureAwait(false);
+
+        PublishRecordingFinalizedOutcome(result, updateOutputPath: true);
+
+        if (cancellationException != null)
+        {
+            throw cancellationException;
+        }
+
+        return result;
+    }
+
+    private async Task<LibAvVideoBoundaryStopResult> StopUnifiedVideoRecordingForLibAvFinalizeAsync(
+        FinalizeResult result,
+        string fallbackOutputPath,
+        CancellationToken cancellationToken)
+    {
+        OperationCanceledException? cancellationException = null;
         var unifiedVideoCapture = _unifiedVideoCapture;
         var recordingFramesDeliveredToBoundary = 0L;
         var recordingFramesAcceptedByBoundary = 0L;
@@ -65,6 +128,15 @@ public partial class CaptureService
                 $"pipeline_drops={recordingFramesDeliveredToBoundary - recordingFramesAcceptedByBoundary}");
         }
 
+        return new LibAvVideoBoundaryStopResult(
+            result,
+            cancellationException,
+            recordingFramesDeliveredToBoundary,
+            recordingFramesAcceptedByBoundary);
+    }
+
+    private async Task DetachLibAvRecordingAudioBeforeSinkStopAsync()
+    {
         if (_wasapiAudioCapture != null)
         {
             try
@@ -78,167 +150,201 @@ public partial class CaptureService
         }
 
         await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+    }
 
-        if (sink != null)
+    private async Task<LibAvFinalizeStepResult> StopAndDisposeLibAvSinkForFinalizeAsync(
+        IRecordingSink? sink,
+        LibAvRecordingSink? libAvSink,
+        FinalizeResult result,
+        string fallbackOutputPath,
+        bool emergency,
+        OperationCanceledException? cancellationException,
+        CancellationToken cancellationToken)
+    {
+        if (sink == null)
+        {
+            return new LibAvFinalizeStepResult(result, cancellationException);
+        }
+
+        try
+        {
+            // Use the typed LibAvRecordingSink reference (when available) so the
+            // emergency flag can select EmergencyStopTimeoutMs (5s) vs the public
+            // StopAsync's 30s budget. The plain IRecordingSink overload is the
+            // fallback for non-LibAv sinks (unused in practice but kept for safety).
+            var sinkResult = libAvSink != null
+                ? await libAvSink.StopAsync(emergency, cancellationToken).ConfigureAwait(false)
+                : await sink.StopAsync(cancellationToken).ConfigureAwait(false);
+            if (result.Succeeded)
+            {
+                result = sinkResult;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            cancellationException = new OperationCanceledException(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Recording sink stop failed: {ex.Message}");
+            if (result.Succeeded)
+            {
+                result = FinalizeResult.Failure(fallbackOutputPath, $"Recording stop failed: {ex.Message}");
+            }
+        }
+        finally
         {
             try
             {
-                // Use the typed LibAvRecordingSink reference (when available) so the
-                // emergency flag can select EmergencyStopTimeoutMs (5s) vs the public
-                // StopAsync's 30s budget. The plain IRecordingSink overload is the
-                // fallback for non-LibAv sinks (unused in practice but kept for safety).
-                var sinkResult = libAvSink != null
-                    ? await libAvSink.StopAsync(emergency, cancellationToken).ConfigureAwait(false)
-                    : await sink.StopAsync(cancellationToken).ConfigureAwait(false);
-                if (result.Succeeded)
+                await sink.DisposeAsync().ConfigureAwait(false);
+                if (libAvSink != null)
                 {
-                    result = sinkResult;
+                    var libAvDrainTask = libAvSink.EncodingCompletionTask;
+                    if (!libAvDrainTask.IsCompleted)
+                    {
+                        _pendingLibAvDrainTask = libAvDrainTask;
+                    }
                 }
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                cancellationException = new OperationCanceledException(cancellationToken);
             }
             catch (Exception ex)
             {
-                Logger.Log($"Recording sink stop failed: {ex.Message}");
-                if (result.Succeeded)
+                Logger.Log($"Recording sink dispose failed: {ex.Message}");
+                if (cancellationException == null && result.Succeeded)
                 {
-                    result = FinalizeResult.Failure(fallbackOutputPath, $"Recording stop failed: {ex.Message}");
+                    result = FinalizeResult.Failure(fallbackOutputPath, $"Recording dispose failed: {ex.Message}");
                 }
             }
-            finally
-            {
-                try
-                {
-                    await sink.DisposeAsync().ConfigureAwait(false);
-                    if (libAvSink != null)
-                    {
-                        var libAvDrainTask = libAvSink.EncodingCompletionTask;
-                        if (!libAvDrainTask.IsCompleted)
-                        {
-                            _pendingLibAvDrainTask = libAvDrainTask;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"Recording sink dispose failed: {ex.Message}");
-                    if (cancellationException == null && result.Succeeded)
-                    {
-                        result = FinalizeResult.Failure(fallbackOutputPath, $"Recording dispose failed: {ex.Message}");
-                    }
-                }
-            }
-
         }
 
-        var libAvFinalAudioCounters = libAvSink != null
-            ? GetRecordingAudioCountersSinceBaseline(
-                CaptureRecordingAudioCounters(_wasapiAudioCapture, libAvSink, _activeRecordingSettings))
-            : RecordingAudioIntegrityCounterSnapshot.Disabled;
+        return new LibAvFinalizeStepResult(result, cancellationException);
+    }
 
-        if (!_isVideoPreviewActive)
+    private async Task<LibAvFinalizeStepResult> DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(
+        FinalizeResult result,
+        string fallbackOutputPath,
+        OperationCanceledException? cancellationException)
+    {
+        if (_isVideoPreviewActive)
         {
-            unifiedVideoCapture = _videoPipeline.TakeCapture();
-            if (unifiedVideoCapture != null)
+            return new LibAvFinalizeStepResult(result, cancellationException);
+        }
+
+        var unifiedVideoCapture = _videoPipeline.TakeCapture();
+        if (unifiedVideoCapture != null)
+        {
+            try
             {
-                try
+                CacheMjpegTimingMetrics(unifiedVideoCapture);
+                DetachUnifiedVideoCapture(unifiedVideoCapture);
+                if (_pendingLibAvDrainTask is { IsCompleted: false } pendingLibAvDrainTask)
                 {
-                    CacheMjpegTimingMetrics(unifiedVideoCapture);
-                    DetachUnifiedVideoCapture(unifiedVideoCapture);
-                    if (_pendingLibAvDrainTask is { IsCompleted: false } pendingLibAvDrainTask)
-                    {
-                        _pendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
-                            pendingLibAvDrainTask,
-                            unifiedVideoCapture,
-                            reason: "recording_stop_deferred_drain");
-                    }
-                    else
-                    {
-                        await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
-                        await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
-                    }
+                    _pendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
+                        pendingLibAvDrainTask,
+                        unifiedVideoCapture,
+                        reason: "recording_stop_deferred_drain");
                 }
-                catch (Exception ex)
+                else
                 {
-                    Logger.Log($"Unified video capture dispose failed: {ex.Message}");
-                    if (cancellationException == null && result.Succeeded)
-                    {
-                        result = FinalizeResult.Failure(fallbackOutputPath, $"Unified video capture dispose failed: {ex.Message}");
-                    }
+                    await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
+                    await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
                 }
             }
-
-            var capture = _wasapiAudioCapture;
-            _wasapiAudioCapture = null;
-            _previewAudioGraph.DetachCapture(
-                capture,
-                OnWasapiAudioLevelUpdated,
-                OnWasapiCaptureFailed,
-                _flashbackPlaybackController);
-            if (capture != null)
+            catch (Exception ex)
             {
-                try
+                Logger.Log($"Unified video capture dispose failed: {ex.Message}");
+                if (cancellationException == null && result.Succeeded)
                 {
-                    await capture.DisposeAsync().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"Recording WASAPI capture dispose failed: {ex.Message}");
-                    if (cancellationException == null && result.Succeeded)
-                    {
-                        result = FinalizeResult.Failure(fallbackOutputPath, $"Recording WASAPI capture dispose failed: {ex.Message}");
-                    }
+                    result = FinalizeResult.Failure(fallbackOutputPath, $"Unified video capture dispose failed: {ex.Message}");
                 }
             }
         }
 
+        var capture = _wasapiAudioCapture;
+        _wasapiAudioCapture = null;
+        _previewAudioGraph.DetachCapture(
+            capture,
+            OnWasapiAudioLevelUpdated,
+            OnWasapiCaptureFailed,
+            _flashbackPlaybackController);
+        if (capture != null)
+        {
+            try
+            {
+                await capture.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Recording WASAPI capture dispose failed: {ex.Message}");
+                if (cancellationException == null && result.Succeeded)
+                {
+                    result = FinalizeResult.Failure(fallbackOutputPath, $"Recording WASAPI capture dispose failed: {ex.Message}");
+                }
+            }
+        }
+
+        return new LibAvFinalizeStepResult(result, cancellationException);
+    }
+
+    private FinalizeResult FoldLibAvAudioFaultIntoFinalizeResult(
+        FinalizeResult result,
+        OperationCanceledException? cancellationException)
+    {
         var wasapiAudioCaptureFault = _previewAudioGraph.ConsumeCaptureFault();
-        if (wasapiAudioCaptureFault.Faulted && cancellationException == null && result.Succeeded)
+        if (!wasapiAudioCaptureFault.Faulted || cancellationException != null || !result.Succeeded)
         {
-            var statusMessage = string.IsNullOrWhiteSpace(wasapiAudioCaptureFault.Message)
-                ? "Recording failed (WASAPI audio capture faulted)."
-                : $"Recording failed (WASAPI audio capture faulted: {wasapiAudioCaptureFault.Message})";
-            Logger.Log($"RECORDING_AUDIO_FAULT status='{statusMessage}'");
-            result = FinalizeResult.Failure(result.OutputPath, statusMessage);
+            return result;
         }
 
-        if (libAvSink != null)
+        var statusMessage = string.IsNullOrWhiteSpace(wasapiAudioCaptureFault.Message)
+            ? "Recording failed (WASAPI audio capture faulted)."
+            : $"Recording failed (WASAPI audio capture faulted: {wasapiAudioCaptureFault.Message})";
+        Logger.Log($"RECORDING_AUDIO_FAULT status='{statusMessage}'");
+        return FinalizeResult.Failure(result.OutputPath, statusMessage);
+    }
+
+    private void PublishLibAvRecordingIntegrity(
+        LibAvRecordingSink? libAvSink,
+        FinalizeResult result,
+        LibAvVideoBoundaryStopResult videoBoundary,
+        RecordingAudioIntegrityCounterSnapshot libAvFinalAudioCounters)
+    {
+        if (libAvSink == null)
         {
-            CaptureEncoderRuntimeTelemetry(libAvSink);
-            _lastRecordingIntegrity = BuildRecordingIntegritySummary(
-                backend: "LibAv",
-                recordingActive: false,
-                finalizeSucceeded: result.Succeeded,
-                finalizeStatus: result.StatusMessage,
-                completedUtc: DateTimeOffset.UtcNow,
-                sourceFrames: recordingFramesDeliveredToBoundary,
-                acceptedFrames: recordingFramesAcceptedByBoundary,
-                counters: GetRecordingIntegrityCountersSinceBaseline(CaptureRecordingIntegrityCounters(libAvSink)),
-                audioCounters: libAvFinalAudioCounters);
-            _recordingIntegrityCounterBaseline = null;
-            _recordingIntegrityAudioBaseline = null;
-            LogRecordingIntegritySummary(_lastRecordingIntegrity);
+            return;
         }
 
+        CaptureEncoderRuntimeTelemetry(libAvSink);
+        _lastRecordingIntegrity = BuildRecordingIntegritySummary(
+            backend: "LibAv",
+            recordingActive: false,
+            finalizeSucceeded: result.Succeeded,
+            finalizeStatus: result.StatusMessage,
+            completedUtc: DateTimeOffset.UtcNow,
+            sourceFrames: videoBoundary.RecordingFramesDeliveredToBoundary,
+            acceptedFrames: videoBoundary.RecordingFramesAcceptedByBoundary,
+            counters: GetRecordingIntegrityCountersSinceBaseline(CaptureRecordingIntegrityCounters(libAvSink)),
+            audioCounters: libAvFinalAudioCounters);
+        _recordingIntegrityCounterBaseline = null;
+        _recordingIntegrityAudioBaseline = null;
+        LogRecordingIntegritySummary(_lastRecordingIntegrity);
+    }
+
+    private async Task CompleteLibAvRecordingFinalizeStateAsync()
+    {
         _recordingStopwatch.Stop();
         _isRecording = false;
         if (!_isVideoPreviewActive) await StopTelemetryPollAsync().ConfigureAwait(false);
         _recordingBackend.ClearContextAndSettings();
         _mfConvertersDisabled = false;
-
-        cancellationException = await RestoreLibAvPreviewFeaturesAfterRecordingAsync(
-            cancellationException,
-            cancellationToken).ConfigureAwait(false);
-
-        PublishRecordingFinalizedOutcome(result, updateOutputPath: true);
-
-        if (cancellationException != null)
-        {
-            throw cancellationException;
-        }
-
-        return result;
     }
+
+    private readonly record struct LibAvFinalizeStepResult(
+        FinalizeResult Result,
+        OperationCanceledException? CancellationException);
+
+    private readonly record struct LibAvVideoBoundaryStopResult(
+        FinalizeResult Result,
+        OperationCanceledException? CancellationException,
+        long RecordingFramesDeliveredToBoundary,
+        long RecordingFramesAcceptedByBoundary);
 }

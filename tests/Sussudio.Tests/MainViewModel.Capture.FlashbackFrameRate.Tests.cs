@@ -120,9 +120,11 @@ static partial class Program
         AssertContains(immediateEnableBranch, "throw;");
 
         AssertContains(stopAndDisposeRecordingBackend, "RestoreLibAvPreviewFeaturesAfterRecordingAsync(");
+        AssertContains(stopAndDisposeRecordingBackend, "CompleteLibAvRecordingFinalizeStateAsync()");
+        AssertContains(stopAndDisposeRecordingBackend, "_mfConvertersDisabled = false;");
         AssertOccursBefore(
             stopAndDisposeRecordingBackend,
-            "_mfConvertersDisabled = false;",
+            "CompleteLibAvRecordingFinalizeStateAsync()",
             "RestoreLibAvPreviewFeaturesAfterRecordingAsync(");
         AssertOccursBefore(
             stopAndDisposeRecordingBackend,

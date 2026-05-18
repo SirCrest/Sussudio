@@ -607,7 +607,10 @@ Important entry points:
   recording finalization: unified-video recording stop and optional teardown,
   WASAPI recording detach/disposal, LibAv sink normal/emergency stop and drain
   tracking, encoder/runtime and recording-integrity summaries, and the visible
-  final outcome publication before delayed cancellation throws.
+  final outcome publication before delayed cancellation throws. Its phase
+  helpers stay in the same file so inactive-preview teardown, audio-fault
+  folding, integrity publication, and delayed-cancellation ordering remain
+  auditable without creating another small partial.
 - `CaptureService.RecordingFinalizeLibAvPreviewRestore.cs` owns standard LibAv
   live-preview restoration after recording: pending Flashback enable-after-
   recording detection, guarded Flashback preview backend restore, failed-restore
