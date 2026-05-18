@@ -53,6 +53,14 @@ Preview renderer notes:
 - `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderPasses.cs` owns NV12 and
   HDR shader draw execution, including native-call guard consumption,
   shader-resource binding, draw calls, and shader-mode present messages.
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs`
+  owns `InitializeD3D` orchestration, shared-vs-owned device setup, video
+  interface acquisition, media present duration setup, initial panel binding,
+  shader compilation, and renderer-owned device fallback.
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.SwapChainInitialization.cs`
+  owns composition swap-chain creation, startup dimensions, HDR swap-chain
+  capability probing, SDR swap-chain fallback, initial color-space selection,
+  and configured output size publication.
 
 ## Automation
 

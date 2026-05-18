@@ -1588,9 +1588,12 @@ reference duplication/release policy, reset request scheduling, and
 
 D3D preview renderer device initialization now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs`. Keep
-`InitializeD3D` orchestration, renderer-owned device fallback, swap-chain
-creation, HDR swap-chain capability probing, media present duration setup, and
-initial panel binding there.
+`InitializeD3D` orchestration, shared-vs-owned device setup, video interface
+acquisition, media present duration setup, initial panel binding, and renderer-
+owned device fallback there. Composition swap-chain creation, startup dimensions,
+HDR swap-chain capability probing, SDR swap-chain fallback, and initial color-
+space selection now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.SwapChainInitialization.cs`.
 
 D3D preview renderer resource management now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep
