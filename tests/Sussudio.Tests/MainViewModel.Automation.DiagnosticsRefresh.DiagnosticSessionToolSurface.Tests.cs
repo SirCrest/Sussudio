@@ -8,13 +8,13 @@ static partial class Program
         var ssctlCommandHandlersText = diagnosticSessionToolSources.SsctlCommandHandlersText;
         var mcpDiagnosticSessionText = diagnosticSessionToolSources.McpDiagnosticSessionText;
         AssertContains(ssctlProgramText, "SsctlHelpWriter.Write(Console.Out);");
-        AssertDoesNotContain(ssctlProgramText, "DiagnosticSessionScenarios.HelpList");
+        AssertDoesNotContain(ssctlProgramText, "DiagnosticSessionScenarioCatalog.HelpList");
         AssertContains(ssctlHelpText, "DiagnosticSessionOptions.CliUsage");
         AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.CliUsage");
         AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.DefaultScenario");
         AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.DefaultDurationSeconds");
         AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.DefaultSampleIntervalMs");
-        AssertContains(mcpDiagnosticSessionText, "DiagnosticSessionScenarios.Description");
+        AssertContains(mcpDiagnosticSessionText, "DiagnosticSessionScenarioCatalog.Description");
         AssertContains(mcpDiagnosticSessionText, "DiagnosticSessionOptions.DefaultScenario");
         AssertContains(mcpDiagnosticSessionText, "DiagnosticSessionOptions.DefaultDurationSeconds");
         AssertContains(mcpDiagnosticSessionText, "DiagnosticSessionOptions.DefaultSampleIntervalMs");

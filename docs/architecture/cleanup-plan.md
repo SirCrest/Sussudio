@@ -51,10 +51,11 @@ Changed ownership:
 - `AutomationPipeProtocol.cs`
 - `AutomationPipeSecurityPolicy.cs`
 
-Diagnostic session scenario names still live in
-`tools/Common/DiagnosticSessionScenarios.cs`, while scenario-level metadata now
-lives in `tools/Common/DiagnosticSessionScenarioCatalog.cs`; the runner still
-owns execution flow and summary writing.
+Diagnostic session scenario names, CLI help text, MCP-compatible description
+text, normalization, setup requirements, export verification metadata, ordering,
+and scenario-level plan lookup now live together in
+`tools/Common/DiagnosticSessionScenarioCatalog.cs`; the runner still owns
+execution flow and summary writing.
 
 Automation diagnostics now have named partial owners instead of one large hub
 body. `AutomationDiagnosticsHub.cs` is the compact field/constructor owner.
@@ -2530,8 +2531,10 @@ Diagnostic session DTOs live in model files without tiny property-only shards:
 `tools/Common/DiagnosticSessionResult.FlashbackPlayback.cs`,
 `tools/Common/DiagnosticSessionSample.cs`. `DiagnosticSessionOptions.cs` also owns
 shared tool invocation defaults and the ssctl diagnostic-session usage string,
-while `DiagnosticSessionScenarios.cs` owns scenario name constants, the
-MCP-compatible scenario description, and the CLI help-list constant.
+while `DiagnosticSessionScenarioCatalog.cs` owns scenario name constants,
+normalization, the MCP-compatible scenario description, the CLI help-list
+constant, scenario setup requirement queries, scenario ordering, export
+verification artifact lookup, and per-scenario plan assignment.
 `DiagnosticSessionRunner.cs` owns the
 public compatibility entry points; `DiagnosticSessionRunExecution.cs` owns the
 visible run phase sequence around context creation, initial snapshot, scenario
@@ -2798,10 +2801,11 @@ timeline artifact input and final health snapshot refresh while the runner
 keeps the high-level post-cleanup phase order.
 
 Diagnostic-session scenario metadata now lives in
-`tools/Common/DiagnosticSessionScenarioCatalog.cs`. It owns scenario ordering,
-setup requirements, export verification filenames, and the plan assigned to
-each normalized scenario. `tools/Common/DiagnosticSessionScenarioPlan.cs` owns
-the plan DTO plus grouped warning/validation policy switches, including the
+`tools/Common/DiagnosticSessionScenarioCatalog.cs`. It owns scenario names,
+HelpList/Description text, normalization, ordering, setup requirements, export
+verification filenames/queries, and the plan assigned to each normalized
+scenario. `tools/Common/DiagnosticSessionScenarioPlan.cs` owns the plan DTO plus
+grouped warning/validation policy switches, including the
 preview-cycle grouped predicate, so the runner does not grow direct scenario
 string comparisons.
 

@@ -14,7 +14,7 @@ internal readonly record struct DiagnosticSessionRunBootstrap(
 {
     internal static DiagnosticSessionRunBootstrap Create(DiagnosticSessionOptions options)
     {
-        var scenario = DiagnosticSessionScenarios.Normalize(options.Scenario);
+        var scenario = DiagnosticSessionScenarioCatalog.Normalize(options.Scenario);
         var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);
         var durationSeconds = Math.Clamp(options.DurationSeconds, 0, 24 * 60 * 60);
         var sampleIntervalMs = Math.Clamp(options.SampleIntervalMs, 100, 60_000);

@@ -10,7 +10,7 @@ internal static partial class DiagnosticSessionScenarioPhaseRunner
         try
         {
             context.SetStage("scenario-setup");
-            if (!context.InitialSnapshotKnown && context.Scenario != DiagnosticSessionScenarios.Observe)
+            if (!context.InitialSnapshotKnown && context.Scenario != DiagnosticSessionScenarioCatalog.Observe)
             {
                 context.CommandChannel.RecordFailure($"initial-snapshot: skipped state-mutating scenario '{context.Scenario}' because the initial app state is unknown");
             }

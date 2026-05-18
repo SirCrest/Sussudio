@@ -105,7 +105,7 @@ static partial class Program
 
         AssertContains(bootstrapText, "internal readonly record struct DiagnosticSessionRunBootstrap(");
         AssertContains(bootstrapText, "internal static DiagnosticSessionRunBootstrap Create(DiagnosticSessionOptions options)");
-        AssertContains(bootstrapText, "var scenario = DiagnosticSessionScenarios.Normalize(options.Scenario);");
+        AssertContains(bootstrapText, "var scenario = DiagnosticSessionScenarioCatalog.Normalize(options.Scenario);");
         AssertContains(bootstrapText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
         AssertContains(bootstrapText, "Math.Clamp(options.DurationSeconds, 0, 24 * 60 * 60)");
         AssertContains(bootstrapText, "Math.Clamp(options.SampleIntervalMs, 100, 60_000)");
@@ -117,7 +117,7 @@ static partial class Program
         AssertContains(contextText, "RunBootstrap = DiagnosticSessionRunBootstrap.Create(options);");
         AssertContains(contextText, "ScenarioPlan = RunBootstrap.ScenarioPlan;");
         AssertContains(runnerText, "using var sessionLock = DiagnosticSessionOutputLock.Acquire(runContext.OutputDirectory);");
-        AssertDoesNotContain(runnerText, "DiagnosticSessionScenarios.Normalize(options.Scenario)");
+        AssertDoesNotContain(runnerText, "DiagnosticSessionScenarioCatalog.Normalize(options.Scenario)");
         AssertDoesNotContain(runnerText, "Math.Clamp(options.DurationSeconds");
         AssertDoesNotContain(runnerText, "Math.Clamp(options.SampleIntervalMs");
         AssertDoesNotContain(runnerText, "DateTimeOffset.UtcNow.ToString(\"yyyyMMdd_HHmmss\"");

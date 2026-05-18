@@ -16,7 +16,7 @@ internal static class DiagnosticSessionRecordingVerification
         Action<string> setStage,
         Action<Exception, string> recordTerminalException)
     {
-        var hasFlashbackExportVerificationPath = DiagnosticSessionScenarios.TryGetFlashbackExportVerificationPath(
+        var hasFlashbackExportVerificationPath = DiagnosticSessionScenarioCatalog.TryGetFlashbackExportVerificationPath(
             scenario,
             outputDirectory,
             out var flashbackExportVerificationPath);

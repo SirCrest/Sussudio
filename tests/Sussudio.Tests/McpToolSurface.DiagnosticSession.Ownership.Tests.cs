@@ -48,7 +48,7 @@ static partial class Program
 
         AssertContains(catalogText, "internal static class DiagnosticSessionScenarioCatalog");
         AssertContains(catalogText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");
-        AssertContains(catalogText, "DiagnosticSessionScenarios.FlashbackPlayback");
+        AssertContains(catalogText, "FlashbackPlayback,");
         AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runFlashbackPlayback: true)");
         AssertContains(catalogText, "RequiresPreview: true");
         AssertContains(catalogText, "RequiresRecording: true");
@@ -83,10 +83,10 @@ static partial class Program
         AssertContains(setupText, "internal static async Task<DiagnosticSessionScenarioSetupResult> RunAsync(");
         AssertContains(setupText, "internal readonly record struct DiagnosticSessionScenarioSetupResult(");
         AssertContains(setupText, "using Sussudio.Models;");
-        AssertContains(setupText, "DiagnosticSessionScenarios.NeedsFlashback(scenario)");
+        AssertContains(setupText, "DiagnosticSessionScenarioCatalog.NeedsFlashback(scenario)");
         AssertContains(setupText, "scenarioPlan.RunFlashbackExportRejected");
-        AssertContains(setupText, "DiagnosticSessionScenarios.NeedsPreview(scenario)");
-        AssertContains(setupText, "DiagnosticSessionScenarios.NeedsRecording(scenario)");
+        AssertContains(setupText, "DiagnosticSessionScenarioCatalog.NeedsPreview(scenario)");
+        AssertContains(setupText, "DiagnosticSessionScenarioCatalog.NeedsRecording(scenario)");
         AssertContains(setupText, "DiagnosticSessionCommandChannel commandChannel,");
         AssertContains(setupText, "WaitForFlashbackStressBufferReadyAsync(SendByNameAsync, cancellationToken)");
         AssertContains(setupText, "AutomationCommandKind.SetFlashbackEnabled,");
@@ -307,7 +307,7 @@ static partial class Program
         AssertContains(recordingChecksText, "ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings)");
         AssertContains(recordingVerificationText, "internal static class DiagnosticSessionRecordingVerification");
         AssertContains(recordingVerificationText, "internal static async Task<JsonElement?> RunAsync(");
-        AssertContains(recordingVerificationText, "DiagnosticSessionScenarios.TryGetFlashbackExportVerificationPath(");
+        AssertContains(recordingVerificationText, "DiagnosticSessionScenarioCatalog.TryGetFlashbackExportVerificationPath(");
         AssertContains(recordingVerificationText, "setStage(\"recording-verification\")");
         AssertContains(recordingVerificationText, "var verificationCommand = \"VerifyLastRecording\";");
         AssertContains(recordingVerificationText, "verificationCommand = \"VerifyFile\";");
@@ -320,7 +320,7 @@ static partial class Program
         AssertContains(runnerText, "DiagnosticSessionRecordingChecks.RunAsync(");
         AssertDoesNotContain(runnerText, "SetStage(\"settings-deferred-restore\")");
         AssertDoesNotContain(recordingChecksText, "var verificationCommand = \"VerifyLastRecording\"");
-        AssertDoesNotContain(runnerText, "DiagnosticSessionScenarios.TryGetFlashbackExportVerificationPath(");
+        AssertDoesNotContain(runnerText, "DiagnosticSessionScenarioCatalog.TryGetFlashbackExportVerificationPath(");
         AssertDoesNotContain(recordingChecksText, "[\"verificationProfile\"] = \"flashback-export\"");
         AssertDoesNotContain(runnerText, "ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings)");
 

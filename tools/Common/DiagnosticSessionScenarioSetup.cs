@@ -25,7 +25,7 @@ internal static class DiagnosticSessionScenarioSetup
         var startedPreview = false;
         var startedRecording = false;
 
-        if (DiagnosticSessionScenarios.NeedsFlashback(scenario) && !GetBool(initialSnapshot, "FlashbackActive"))
+        if (DiagnosticSessionScenarioCatalog.NeedsFlashback(scenario) && !GetBool(initialSnapshot, "FlashbackActive"))
         {
             await commandChannel.SendAsync(
                     AutomationCommandKind.SetFlashbackEnabled,
@@ -47,7 +47,7 @@ internal static class DiagnosticSessionScenarioSetup
             actions.Add("flashback disabled for rejected export");
         }
 
-        if (DiagnosticSessionScenarios.NeedsPreview(scenario) && !GetBool(initialSnapshot, "IsPreviewing"))
+        if (DiagnosticSessionScenarioCatalog.NeedsPreview(scenario) && !GetBool(initialSnapshot, "IsPreviewing"))
         {
             await commandChannel.SendAsync(
                     AutomationCommandKind.SetPreviewEnabled,
@@ -59,7 +59,7 @@ internal static class DiagnosticSessionScenarioSetup
             await tryWaitAsync("VideoFramesFlowing", 15_000).ConfigureAwait(false);
         }
 
-        if (DiagnosticSessionScenarios.NeedsRecording(scenario) && !GetBool(initialSnapshot, "IsRecording"))
+        if (DiagnosticSessionScenarioCatalog.NeedsRecording(scenario) && !GetBool(initialSnapshot, "IsRecording"))
         {
             if (scenarioPlan.RequiresFlashbackRecordingReadiness &&
                 !await WaitForFlashbackStressBufferReadyAsync(SendByNameAsync, cancellationToken).ConfigureAwait(false))

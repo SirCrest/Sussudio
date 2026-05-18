@@ -120,8 +120,7 @@ static partial class Program
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioPlan.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionOptionalTextFormatter.cs"),
             ReadDiagnosticSessionModelsSource(),
-            ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarios.cs")
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs"));
+            ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs"));
     }
 
     private static DiagnosticSessionToolSurfaceSourceFamily ReadDiagnosticSessionToolSurfaceSourceFamily()

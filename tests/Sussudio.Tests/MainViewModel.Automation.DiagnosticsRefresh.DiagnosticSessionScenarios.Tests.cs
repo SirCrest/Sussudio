@@ -204,9 +204,9 @@ static partial class Program
         AssertContains(diagnosticScenariosText, "internal const string HelpList =");
         AssertContains(diagnosticScenariosText, "internal const string Description =");
         AssertContains(diagnosticModelsText, "internal const string CliUsage =");
-        AssertContains(diagnosticModelsText, "DiagnosticSessionScenarios.HelpList");
-        AssertContains(diagnosticScenariosText, "DiagnosticSessionScenarioCatalog.TryGetEntry(normalized, out _)");
-        AssertContains(diagnosticScenariosText, "DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry) && entry.RequiresPreview");
+        AssertContains(diagnosticModelsText, "DiagnosticSessionScenarioCatalog.HelpList");
+        AssertContains(diagnosticScenariosText, "TryGetEntry(normalized, out _)");
+        AssertContains(diagnosticScenariosText, "TryGetEntry(scenario, out var entry) && entry.RequiresPreview");
         AssertContains(diagnosticScenariosText, "entry.FlashbackExportVerificationFileName");
     }
 }

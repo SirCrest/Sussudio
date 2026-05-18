@@ -4,7 +4,7 @@ namespace Sussudio.Tools;
 
 internal static partial class DiagnosticSessionRunExecution
 {
-    // Scenario names and broad requirements live in DiagnosticSessionScenarios.
+    // Scenario names and broad requirements live in DiagnosticSessionScenarioCatalog.
     // RunAsync reads like a phase plan: scenario execution, cleanup,
     // verification, post-run snapshots, then summary.
 

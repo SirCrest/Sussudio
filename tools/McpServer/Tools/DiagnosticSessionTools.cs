@@ -12,7 +12,7 @@ public static class DiagnosticSessionTools
     [McpServerTool, Description("Run a timed capture diagnostic session, write snapshot/frame-ledger/timeline artifacts, and optionally verify recording or capture PresentMon.")]
     public static async Task<CallToolResult> run_diagnostic_session(
         PipeClient pipeClient,
-        [Description(DiagnosticSessionScenarios.Description)] string scenario = DiagnosticSessionOptions.DefaultScenario,
+        [Description(DiagnosticSessionScenarioCatalog.Description)] string scenario = DiagnosticSessionOptions.DefaultScenario,
         [Description("Session duration in seconds. Use 0 for a single snapshot sample.")] int seconds = DiagnosticSessionOptions.DefaultDurationSeconds,
         [Description("Snapshot sample interval in milliseconds.")] int sampleIntervalMs = DiagnosticSessionOptions.DefaultSampleIntervalMs,
         [Description("Optional artifact output directory. Defaults to temp/diagnostic-sessions/<timestamp>.")] string? outputDirectory = null,
