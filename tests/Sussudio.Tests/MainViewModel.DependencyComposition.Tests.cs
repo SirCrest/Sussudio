@@ -21,6 +21,7 @@ static partial class Program
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs").Replace("\r\n", "\n");
         var previewReinitializeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs").Replace("\r\n", "\n");
+        var deviceAudioRequestControllerGainText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.Gain.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs").Replace("\r\n", "\n");
         var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs").Replace("\r\n", "\n");
         var captureModeOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
@@ -101,9 +102,12 @@ static partial class Program
         AssertContains(previewReinitializeControllerText, "public async Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewReinitializeControllerText, "public void CancelPendingPreviewRestart()");
         AssertContains(previewReinitializeControllerText, "public void ResetPendingPreviewRestartCancellation()");
-        AssertContains(deviceAudioRequestControllerText, "private sealed class MainViewModelDeviceAudioRequestController");
+        AssertContains(deviceAudioRequestControllerText, "private sealed partial class MainViewModelDeviceAudioRequestController");
         AssertContains(deviceAudioRequestControllerText, "public void HandleSelectedDeviceAudioModeChanged(string value)");
-        AssertContains(deviceAudioRequestControllerText, "public void HandleAnalogAudioGainPercentChanged(double value)");
+        AssertDoesNotContain(deviceAudioRequestControllerText, "public void HandleAnalogAudioGainPercentChanged(double value)");
+        AssertContains(deviceAudioRequestControllerGainText, "private sealed partial class MainViewModelDeviceAudioRequestController");
+        AssertContains(deviceAudioRequestControllerGainText, "public void HandleAnalogAudioGainPercentChanged(double value)");
+        AssertContains(deviceAudioRequestControllerGainText, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
         AssertContains(deviceAudioRequestControllerText, "public void CancelPendingAudioControlWork()");
         AssertContains(captureSettingsAutomationControllerText, "private sealed class MainViewModelCaptureSettingsAutomationController");
         AssertEqual(
