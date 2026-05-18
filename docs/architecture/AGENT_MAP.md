@@ -1394,10 +1394,11 @@ Primary current owners:
   owns startup discovery/probe ordering, preview reveal priming, and preview
   stop audio-ramp ordering assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
-  Flashback export backend-lease and export-operation lock assertions.
+  Flashback export backend-lease, export-operation lock, ViewModel export
+  routing, and export CTS lifecycle assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`
-  owns MainViewModel Flashback coordinator-routing assertions, Flashback export
-  view-model lifecycle assertions, and the Flashback settings owner for
+  owns MainViewModel Flashback coordinator-routing assertions, negative
+  `_captureService` access guards, and the Flashback settings owner for
   automation enable/restart entry points.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Scrub.Tests.cs`
   owns Flashback scrub, release/cancel/capture-lost, and fullscreen Flashback

@@ -12,6 +12,9 @@ static partial class Program
             "Flashback exports release backend lease before native export",
             CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport);
         await AddCheckAsync(results,
+            "MainViewModel Flashback export routes through coordinator and owns CTS lifecycle",
+            MainViewModelFlashbackExport_RoutesThroughCoordinatorAndOwnsCtsLifecycle);
+        await AddCheckAsync(results,
             "Retained flashback preview pipeline recycles on settings changes",
             CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange);
         await AddCheckAsync(results,
