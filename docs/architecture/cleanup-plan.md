@@ -887,9 +887,8 @@ cancellation-token choice, and full rebuild fallback orchestration.
 
 Recording start lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`. That file owns
-the public recording start transition surface, startup-path routing, and
-delegation to the recording-start rollback owner.
-`CaptureService.RecordingStartState.cs` owns the private rollback-state holder,
+the public recording start transition surface, startup-path routing, the private
+rollback-state holder, and delegation to the recording-start rollback owner.
 `CaptureService.RecordingStartFlashback.cs` owns Flashback recording fast-path
 reuse and backend startup, and
 `CaptureService.RecordingStartLibAv.cs` owns standard LibAv recording startup.

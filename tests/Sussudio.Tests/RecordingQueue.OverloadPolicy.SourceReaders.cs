@@ -26,7 +26,6 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupSessionCacheBudget.cs");
         var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartState.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.AudioInputs.cs")

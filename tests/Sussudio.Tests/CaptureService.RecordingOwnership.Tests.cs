@@ -8,8 +8,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
-        var startStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartState.cs")
-            .Replace("\r\n", "\n");
         var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs")
             .Replace("\r\n", "\n");
         var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
@@ -33,9 +31,9 @@ static partial class Program
         AssertDoesNotContain(lifecycleText, "FLASHBACK_RECORDING_START_ROLLBACK_WARN");
         AssertDoesNotContain(lifecycleText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertDoesNotContain(lifecycleText, "HDR_NEGOTIATION");
-        AssertContains(startStateText, "private sealed class RecordingStartRollbackState");
-        AssertContains(startStateText, "public RecordingContext? RecordingContext { get; set; }");
-        AssertContains(startStateText, "public FlashbackEncoderSink? FlashbackRecordingStartedSink { get; set; }");
+        AssertContains(lifecycleText, "private sealed class RecordingStartRollbackState");
+        AssertContains(lifecycleText, "public RecordingContext? RecordingContext { get; set; }");
+        AssertContains(lifecycleText, "public FlashbackEncoderSink? FlashbackRecordingStartedSink { get; set; }");
         AssertContains(flashbackStartText, "private async Task DisposeUnusableFlashbackRecordingBackendAsync(");
         AssertContains(flashbackStartText, "private async Task StartFlashbackRecordingAsync(");
         AssertContains(flashbackStartText, "FLASHBACK_UNIFIED_RECORDING_START");
