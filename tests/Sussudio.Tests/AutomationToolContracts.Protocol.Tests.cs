@@ -6,6 +6,63 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
+    private static Task AutomationProtocol_SetRecordingUsesRecordingSizedTimeout()
+    {
+        var protocolText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs")
+            .Replace("\r\n", "\n");
+        var clientText = ReadRepoFile("tools/AutomationClient/Program.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(protocolText, "public const int DefaultResponseTimeoutMs = 15000;");
+        AssertContains(protocolText, "public const int ExtendedResponseTimeoutMs = 60000;");
+        AssertContains(protocolText, "public const int RecordingResponseTimeoutMs = 150000;");
+        AssertContains(protocolText, "public const int FlashbackMutationResponseTimeoutMs = 305000;");
+        AssertContains(protocolText, "commandName = ResolveCanonicalCommandName(commandName);");
+        AssertContains(protocolText, "AutomationCommandCatalog.TryGet(commandName, out var metadata)");
+        AssertContains(protocolText, "? metadata.ResponseTimeoutMs");
+        var catalogText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(catalogText, "AutomationCommandKind.SetRecordingEnabled");
+        AssertContains(catalogText, "AutomationPipeProtocol.RecordingResponseTimeoutMs");
+        AssertContains(catalogText, "AutomationCommandKind.FlashbackExport");
+        AssertContains(catalogText, "AutomationPipeProtocol.FlashbackMutationResponseTimeoutMs");
+        AssertDoesNotContain(protocolText, "AlignResponseTimeoutWithServerRequest");
+        AssertContains(clientText, "AutomationPipeProtocol.TryGetCommandName(commandValue, out var canonicalCommandName)");
+        AssertContains(clientText, "AutomationPipeProtocol.GetDefaultResponseTimeout(timeoutCommandName)");
+        AssertContains(clientText, "public int? ResponseTimeoutMs { get; set; }");
+        var pipeClientText = ReadAutomationPipeClientSource();
+        AssertDoesNotContain(pipeClientText, "AlignResponseTimeoutWithServerRequest");
+
+        var protocolType = RequireType("Sussudio.Tools.AutomationPipeProtocol");
+        var getDefaultResponseTimeout = protocolType.GetMethod(
+            "GetDefaultResponseTimeout",
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            types: new[] { typeof(string) },
+            modifiers: null)
+            ?? throw new InvalidOperationException("AutomationPipeProtocol.GetDefaultResponseTimeout(string) not found.");
+
+        foreach (var acceptedName in new[] { "SetRecordingEnabled", "setrecordingenabled", "set-recording-enabled", "17" })
+        {
+            var timeoutMs = (int)getDefaultResponseTimeout.Invoke(null, new object[] { acceptedName })!;
+            AssertEqual(150000, timeoutMs, $"SetRecordingEnabled timeout for '{acceptedName}'");
+        }
+
+        var defaultTimeoutMs = (int)getDefaultResponseTimeout.Invoke(null, new object[] { "GetSnapshot" })!;
+        AssertEqual(15000, defaultTimeoutMs, "GetSnapshot timeout remains bounded");
+
+        var flashbackExportTimeoutMs = (int)getDefaultResponseTimeout.Invoke(null, new object[] { "FlashbackExport" })!;
+        AssertEqual(305000, flashbackExportTimeoutMs, "FlashbackExport uses flashback mutation timeout");
+
+        foreach (var acceptedName in new[] { "SetFlashbackEnabled", "set-flashback-enabled", "RestartFlashback" })
+        {
+            var timeoutMs = (int)getDefaultResponseTimeout.Invoke(null, new object[] { acceptedName })!;
+            AssertEqual(305000, timeoutMs, $"Flashback mutation timeout for '{acceptedName}' outlives server cancellation");
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static Task AutomationPipeProtocol_ResolvesCommandsTimeoutsAuthAndEnvelopes()
     {
         var protocolType = RequireType("Sussudio.Tools.AutomationPipeProtocol");

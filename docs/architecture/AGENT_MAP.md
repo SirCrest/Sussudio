@@ -1352,8 +1352,7 @@ Primary current owners:
   `.Recording.Tests.cs`, `.System.Tests.cs`, `.Preview.Tests.cs`, and
   `.Flashback.Tests.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RuntimeSafety.Tests.cs` owns
-  automation cancellation/timeout, preview-stop surface, and process
-  supervisor assertions.
+  automation dispatch cancellation/timeout and process supervisor assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.FlashbackCleanup.Tests.cs`
   owns Flashback startup-cache and session-recovery cleanup ownership
   assertions that used to live in the automation test catch-all.
@@ -1513,8 +1512,8 @@ Primary current owners:
   runtime projection ownership for ingest/audio, reader transport, HDR pipeline,
   source telemetry, and recording integrity.
 - `tests/Sussudio.Tests/CaptureService.PreviewLifecycle.Tests.cs` owns
-  video-only preview fallback, missing audio endpoint, and preview backend log
-  contracts.
+  video-only preview fallback, missing audio endpoint, preview-stop API surface,
+  and preview backend log contracts.
 - `tests/Sussudio.Tests/CaptureService.InitializationOwnership.Tests.cs` owns
   the CaptureService initialization focused-partial ownership contract.
 - `tests/Sussudio.Tests/CaptureService.Failures.Tests.cs` owns CaptureService
@@ -1629,8 +1628,8 @@ Primary current owners:
   legacy harness coverage for window action enum membership and keeps the
   `ExpectedAutomationCommands()` adapter used by protocol/MCP helpers.
 - `tests/Sussudio.Tests/AutomationToolContracts.Protocol.Tests.cs` owns
-  legacy harness coverage for pipe-connect failure, tool delegation, script
-  freshness, and response-state contract tests.
+  legacy harness coverage for protocol response timeouts, pipe-connect failure,
+  tool delegation, script freshness, and response-state contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Catalog.Tests.cs` owns
   automation command catalog, manifest, path policy, and manifest
   serialization contract tests.

@@ -435,10 +435,10 @@ regrowing the root helper shell.
 Automation view-model regression coverage is split into preview-volume persistence, recording
 transition routing, async `IAutomationViewModel` surface plus Flashback/probe
 dispatcher routing, diagnostics refresh, diagnostics projection ownership,
-runtime-safety cancellation/timeout behavior, audio command guards, preview
-lifecycle routing, UI settings, capture-mode/device routing, and Flashback
-cleanup ownership partials. Keep new automation tests in the closest owner file
-instead of regrowing the root catch-all.
+runtime-safety dispatch cancellation/timeouts plus process supervision, audio
+command guards, preview lifecycle routing, UI settings, capture-mode/device
+routing, and Flashback cleanup ownership partials. Keep new automation tests in
+the closest owner file instead of regrowing the root catch-all.
 
 `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
 capture-facing MainViewModel source-inspection helpers. Capture regression
