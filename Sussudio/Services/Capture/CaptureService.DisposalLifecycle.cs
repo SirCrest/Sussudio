@@ -14,7 +14,7 @@ public partial class CaptureService
         await _sessionTransitionLock.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         try
         {
-            _sessionState = CaptureSessionState.CleaningUp;
+            EnterCleanupState();
             await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);
         }
         finally
@@ -36,7 +36,7 @@ public partial class CaptureService
         }
 
         DisposeCoordinationLocksBestEffort();
-        _sessionState = CaptureSessionState.Disposed;
+        EnterDisposedState();
     }
 
     public async ValueTask DisposeAsync()
@@ -52,7 +52,7 @@ public partial class CaptureService
         }
 
         DisposeCoordinationLocksBestEffort();
-        _sessionState = CaptureSessionState.Disposed;
+        EnterDisposedState();
     }
 
 }

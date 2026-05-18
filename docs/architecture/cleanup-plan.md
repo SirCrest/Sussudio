@@ -732,7 +732,10 @@ route through their existing feature adapters/controllers.
 Capture session transition legality now lives in
 `Sussudio/Models/Capture/CaptureSessionTransitionPolicy.cs`. `CaptureService`
 uses it before entering a transition and delegates steady-state resolution to
-the same pure policy; resource ownership has not moved in this slice.
+the same pure policy. Named session-state mutation helpers now live in
+`Sussudio/Services/Capture/CaptureService.Coordination.cs`, so cleanup,
+disposal, and fatal cleanup keep their flow ownership without writing
+`_sessionState` directly; resource ownership has not moved in this slice.
 Capture session coordinator command enums, queue receipt records, session
 snapshots, and Flashback playback/buffer status projections now live in
 `Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs`.
@@ -820,9 +823,10 @@ capture disposal, mic teardown, telemetry stop, and final session-state reset.
 
 Capture transition coordination now lives in
 `Sussudio/Services/Capture/CaptureService.Coordination.cs`. That file owns
-`RunTransitionAsync`, normal `_sessionState` transition writes, steady-state
-resolution, and initialization/disposal guards. Best-effort resource release
-helpers are delegated to
+`RunTransitionAsync`, named `_sessionState` mutation helpers, steady-state
+resolution, and initialization/disposal guards. Cleanup, disposal, and fatal
+cleanup paths call those helpers while preserving their special teardown order.
+Best-effort resource release helpers are delegated to
 `Sussudio/Services/Capture/CaptureService.ResourceRelease.cs`.
 
 Disposal-triggered cleanup and final disposed-state writes now live in

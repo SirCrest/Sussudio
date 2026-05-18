@@ -19,21 +19,19 @@ public partial class CaptureService
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            CaptureSessionTransitionPolicy.ThrowIfDisallowed(_sessionState, transitionState);
-            Interlocked.Increment(ref _sessionGeneration);
-            _sessionState = transitionState;
+            EnterTransitionState(transitionState);
             await action(cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
-            _sessionState = ResolveSteadyState();
+            ResolveSessionSteadyState();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _sessionState = ResolveSteadyState();
+            ResolveSessionSteadyState();
             throw;
         }
         catch (Exception ex)
         {
-            _sessionState = CaptureSessionState.Faulted;
+            EnterFaultedState();
             ErrorOccurred?.Invoke(this, ex);
             throw;
         }
@@ -42,6 +40,16 @@ public partial class CaptureService
             ReleaseSemaphoreBestEffort(_sessionTransitionLock, "session_transition");
         }
     }
+
+    private void EnterTransitionState(CaptureSessionState transitionState)
+    {
+        CaptureSessionTransitionPolicy.ThrowIfDisallowed(_sessionState, transitionState);
+        Interlocked.Increment(ref _sessionGeneration);
+        _sessionState = transitionState;
+    }
+
+    private void ResolveSessionSteadyState()
+        => _sessionState = ResolveSteadyState();
 
     private CaptureSessionState ResolveSteadyState()
     {
@@ -52,6 +60,18 @@ public partial class CaptureService
             _isAudioPreviewActive,
             _isInitialized);
     }
+
+    private void EnterCleanupState()
+        => _sessionState = CaptureSessionState.CleaningUp;
+
+    private void EnterFaultedState()
+        => _sessionState = CaptureSessionState.Faulted;
+
+    private void EnterDisposedState()
+        => _sessionState = CaptureSessionState.Disposed;
+
+    private void ResetSessionStateAfterCleanup()
+        => _sessionState = _isDisposed != 0 ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;
 
     private void EnsureInitialized()
     {

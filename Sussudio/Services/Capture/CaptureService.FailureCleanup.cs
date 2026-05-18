@@ -32,7 +32,7 @@ public partial class CaptureService
                         return;
                     }
 
-                    _sessionState = CaptureSessionState.CleaningUp;
+                    EnterCleanupState();
 
                     // Stop the preview renderer before disposing the shared D3D11
                     // device. Same race as the reinit crash: the renderer may be
@@ -42,7 +42,7 @@ public partial class CaptureService
                     catch (Exception preEx) { Logger.Log($"PreCleanupRequested handler warning: {preEx.Message}"); }
 
                     await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);
-                    _sessionState = CaptureSessionState.Faulted;
+                    EnterFaultedState();
                     StatusChanged?.Invoke(this, $"Video capture error: {ex.Message}");
                     ErrorOccurred?.Invoke(this, ex);
                 }

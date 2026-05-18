@@ -27,10 +27,7 @@ static partial class Program
         var expectedWriterCounts = new Dictionary<string, int>(StringComparer.Ordinal)
         {
             ["CaptureService.cs"] = 1,
-            ["CaptureService.Coordination.cs"] = 4,
-            ["CaptureService.Cleanup.cs"] = 1,
-            ["CaptureService.DisposalLifecycle.cs"] = 3,
-            ["CaptureService.FailureCleanup.cs"] = 2
+            ["CaptureService.Coordination.cs"] = 6
         };
 
         var actualWriterFiles = writerCounts
@@ -46,7 +43,7 @@ static partial class Program
             string.Join("|", expectedWriterFiles),
             string.Join("|", actualWriterFiles),
             "CaptureService _sessionState writer files");
-        AssertEqual(11, writerCounts.Values.Sum(), "CaptureService _sessionState total writer count");
+        AssertEqual(7, writerCounts.Values.Sum(), "CaptureService _sessionState total writer count");
 
         foreach (var expected in expectedWriterCounts)
         {
@@ -70,9 +67,18 @@ static partial class Program
         var flashbackBackendFailureCleanupText = ReadRepoFile(flashbackBackendFailureCleanupPath).Replace("\r\n", "\n");
 
         AssertContains(rootText, "private CaptureSessionState _sessionState = CaptureSessionState.Uninitialized;");
+        AssertContains(coordinationText, "private void EnterTransitionState(CaptureSessionState transitionState)");
         AssertContains(coordinationText, "_sessionState = transitionState;");
+        AssertContains(coordinationText, "private void ResolveSessionSteadyState()");
         AssertContains(coordinationText, "_sessionState = ResolveSteadyState();");
+        AssertContains(coordinationText, "private void EnterCleanupState()");
+        AssertContains(coordinationText, "_sessionState = CaptureSessionState.CleaningUp;");
+        AssertContains(coordinationText, "private void EnterFaultedState()");
         AssertContains(coordinationText, "_sessionState = CaptureSessionState.Faulted;");
+        AssertContains(coordinationText, "private void EnterDisposedState()");
+        AssertContains(coordinationText, "_sessionState = CaptureSessionState.Disposed;");
+        AssertContains(coordinationText, "private void ResetSessionStateAfterCleanup()");
+        AssertContains(coordinationText, "_sessionState = _isDisposed != 0 ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;");
         AssertDoesNotContain(coordinationText, "CleanupForDisposalAsync");
         AssertDoesNotContain(coordinationText, "public void Dispose()");
         AssertDoesNotContain(coordinationText, "public async ValueTask DisposeAsync()");
@@ -83,7 +89,7 @@ static partial class Program
             "CaptureSessionTransitionPolicy.ThrowIfDisallowed(_sessionState, transitionState);",
             "_sessionState = transitionState;");
         AssertContains(disposalLifecycleText, "private async Task CleanupForDisposalAsync()");
-        AssertContains(disposalLifecycleText, "_sessionState = CaptureSessionState.CleaningUp;");
+        AssertContains(disposalLifecycleText, "EnterCleanupState();");
         AssertContains(disposalLifecycleText, "await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);");
         AssertContains(disposalLifecycleText, "public void Dispose()");
         AssertContains(disposalLifecycleText, "public async ValueTask DisposeAsync()");
@@ -98,14 +104,17 @@ static partial class Program
         AssertContains(resourceReleaseText, "CAPTURE_SERVICE_SEMAPHORE_RELEASE_WARN");
         AssertContains(resourceReleaseText, "CAPTURE_SERVICE_SEMAPHORE_DISPOSE_WARN");
         AssertContains(resourceReleaseText, "FLASHBACK_EVICTION_RESUME_WARN");
-        AssertContains(disposalLifecycleText, "_sessionState = CaptureSessionState.Disposed;");
+        AssertContains(disposalLifecycleText, "EnterDisposedState();");
+        AssertDoesNotContain(disposalLifecycleText, "_sessionState =");
         AssertContains(
             cleanupText,
-            "_sessionState = _isDisposed != 0 ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;");
+            "ResetSessionStateAfterCleanup();");
+        AssertDoesNotContain(cleanupText, "_sessionState =");
 
         var fatalCleanupText = ExtractMemberCode(failureCleanupText, "BeginFatalCaptureCleanup");
-        AssertContains(fatalCleanupText, "_sessionState = CaptureSessionState.CleaningUp;");
-        AssertContains(fatalCleanupText, "_sessionState = CaptureSessionState.Faulted;");
+        AssertContains(fatalCleanupText, "EnterCleanupState();");
+        AssertContains(fatalCleanupText, "EnterFaultedState();");
+        AssertDoesNotContain(failureCleanupText, "_sessionState =");
         AssertDoesNotContain(failureCleanupText, "BeginFlashbackBackendCleanup(");
         AssertDoesNotContain(failureCleanupText, "IsGpuDeviceLost(");
         AssertContains(flashbackBackendFailureCleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");

@@ -401,7 +401,9 @@ Important entry points:
   read-only Flashback status/projections, export forwarding, and active
   playback-controller readiness checks.
 - `CaptureSessionTransitionPolicy.cs` owns pure transition legality and
-  steady-state resolution for `CaptureService`.
+  steady-state resolution for `CaptureService`; `CaptureService.Coordination.cs`
+  owns the named session-state mutation helpers used by normal transitions,
+  cleanup, disposal, and fatal cleanup.
 - `DeviceService.cs` owns capture/audio device enumeration orchestration and
   discovery summary state.
 - `DeviceService.FormatCache.cs` owns persisted format-cache DTOs and
@@ -1537,8 +1539,9 @@ Primary current owners:
   backend failure cleanup source placement, and faulted-session state
   assertions.
 - `tests/Sussudio.Tests/CaptureService.SessionStateOwnership.Tests.cs` owns
-  CaptureService `_sessionState` writer-file and writer-count ownership plus
-  the no-session-state-write guard for Flashback backend failure cleanup.
+  CaptureService `_sessionState` writer-file and writer-count ownership, asserts
+  that lifecycle partials route state changes through coordination helpers, and
+  keeps the no-session-state-write guard for Flashback backend failure cleanup.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.Tests.cs` owns
   CaptureService health/diagnostics snapshot behavior scenarios for structured
   source telemetry and health field ownership for capture cadence, source
