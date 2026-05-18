@@ -794,22 +794,21 @@ negotiated-format seeding, the initial observed-pixel telemetry reset call,
 fallback source telemetry, source telemetry refresh, NTSC frame-rate correction,
 and initialized status event.
 
-Capture preview volume/mute and WASAPI audio-level/failure event projection now
-live in `Sussudio/Services/Capture/CaptureService.Audio.cs`. Audio-preview
-start/stop lifecycle lives in
+WASAPI audio-level/failure event projection now lives in
+`Sussudio/Services/Capture/CaptureService.Audio.cs`. Audio-preview start/stop
+lifecycle lives in
 `Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs`, and live
 audio input switching lives in
 `Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs`. Preview-time
 microphone monitoring lives in
-`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`, and WASAPI
-playback attach/detach ordering lives in
-`Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs`. The root service
-now keeps those live audio objects in a nested `PreviewAudioGraphResources`
-resource-state holder rather than scattering raw WASAPI/microphone/playback
-fields through the root. These files preserve the root service transition lock
-while keeping preview lifecycle, input switching, mic cleanup, post-recording
-mic monitor restart, and playback routing from collapsing back into a general
-audio partial.
+`Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs`.
+`Sussudio/Services/Capture/PreviewAudioGraphResources.cs` owns the live
+program WASAPI capture, microphone capture, playback startup/shutdown,
+audio-monitor attach/detach order, preview volume/mute application, playback
+cleanup helpers, and capture-fault telemetry. These files preserve the root
+service transition lock while keeping preview lifecycle, input switching, mic
+cleanup, post-recording mic monitor restart, and playback routing from
+collapsing back into a general audio partial.
 
 Explicit capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.Cleanup.cs`. That file owns the

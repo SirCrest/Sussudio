@@ -53,7 +53,7 @@ static partial class Program
         AssertContains(libAvAudioInputsText, "rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();");
         AssertContains(libAvAudioInputsText, "_wasapiAudioCapture.AttachRecordingSink(recordingSink);");
         AssertContains(libAvAudioInputsText, "rollback.SinkAttachedForAudioOnly = true;");
-        AssertContains(libAvAudioInputsText, "await StartWasapiPlaybackAsync(transitionToken)");
+        AssertContains(libAvAudioInputsText, "await _previewAudioGraph.StartPlaybackAsync(");
         AssertContains(libAvAudioInputsText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);");
         AssertContains(libAvAudioInputsText, "micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));");
         AssertContains(libAvAudioInputsText, "MICROPHONE_CAPTURE_START");

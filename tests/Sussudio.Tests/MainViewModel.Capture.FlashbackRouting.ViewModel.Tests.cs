@@ -138,10 +138,11 @@ static partial class Program
         AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackOutPoint = null;");
         AssertMemberContains(flashbackPlaybackText, "UpdateFlashbackBitrate", "_sessionCoordinator.FlashbackTotalBytesWritten");
         AssertContains(captureServiceText, "public long FlashbackTotalBytesWritten => _flashbackBufferManager?.TotalBytesWritten ?? 0;");
-        AssertContains(captureServiceText, "ReferenceEquals(sender, _wasapiAudioCapture)");
-        AssertContains(captureServiceText, "ReferenceEquals(sender, _microphoneCapture)");
+        AssertContains(captureServiceText, "ClassifyCaptureFailureSource(object? sender)");
+        AssertContains(captureServiceText, "ReferenceEquals(sender, ProgramCapture)");
+        AssertContains(captureServiceText, "ReferenceEquals(sender, MicrophoneCapture)");
         AssertContains(captureServiceText, "WASAPI_CAPTURE_FAILED source={source}");
-        AssertContains(captureServiceText, "Volatile.Write(ref _previewAudioGraph.CaptureFaultMessage, $\"{source}: {ex.Message}\");");
+        AssertContains(captureServiceText, "_previewAudioGraph.RecordCaptureFault(source, ex);");
         AssertContains(coordinatorText, "if (Volatile.Read(ref _isDisposed))");
         AssertContains(coordinatorText, "Volatile.Write(ref _isDisposed, true);");
         AssertContains(coordinatorText, "Exception failure = Volatile.Read(ref _isDisposed)");

@@ -35,7 +35,9 @@ public partial class CaptureService
             rollback.SinkAttachedForAudioOnly = true;
             if (_isAudioPreviewActive)
             {
-                await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
+                await _previewAudioGraph.StartPlaybackAsync(
+                    transitionToken,
+                    _flashbackPlaybackController).ConfigureAwait(false);
             }
         }
 

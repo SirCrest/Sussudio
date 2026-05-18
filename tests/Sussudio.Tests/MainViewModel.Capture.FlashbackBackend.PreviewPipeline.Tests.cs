@@ -127,15 +127,15 @@ static partial class Program
         AssertOccursBefore(
             startAudioPreview,
             "AttachFlashbackAudioIfSupported(_wasapiAudioCapture,",
-            "await StartWasapiPlaybackAsync(transitionToken)");
+            "await _previewAudioGraph.StartPlaybackAsync(");
         AssertContains(startAudioPreview, "var createdCaptureForAudioPreview = false;");
         AssertContains(startAudioPreview, "createdCaptureForAudioPreview = true;");
         AssertContains(startAudioPreview, "_isAudioPreviewActive = false;");
-        AssertContains(startAudioPreview, "DetachWasapiAudioCapture(capture);");
+        AssertContains(startAudioPreview, "_previewAudioGraph.DetachCapture(");
         AssertOccursBefore(
             startAudioPreview,
             "_isAudioPreviewActive = true;",
-            "await StartWasapiPlaybackAsync(transitionToken)");
+            "await _previewAudioGraph.StartPlaybackAsync(");
         var startAudioPreviewRaw = ExtractTextBetween(
             captureServiceRawText,
             "public Task StartAudioPreviewAsync",
@@ -147,18 +147,18 @@ static partial class Program
             "        }, cancellationToken);\n}");
         AssertContains(updateAudioInput, "var committedSwitchToken = CancellationToken.None;");
         AssertContains(updateAudioInput, "await newCapture.InitializeAsync(resolvedId, committedSwitchToken)");
-        AssertContains(updateAudioInput, "await StartWasapiPlaybackAsync(committedSwitchToken)");
+        AssertContains(updateAudioInput, "await _previewAudioGraph.StartPlaybackAsync(");
         AssertOccursBefore(
             updateAudioInput,
             "await newCapture.InitializeAsync(resolvedId, committedSwitchToken)",
-            "DetachWasapiAudioCapture(oldCapture);");
+            "_previewAudioGraph.DetachCapture(");
         AssertContains(updateAudioInput, "_audioDeviceId = previousDeviceId;");
         AssertContains(updateAudioInput, "_audioDeviceName = previousDeviceName;");
         AssertContains(updateAudioInput, "activeSink != null && !ReferenceEquals(activeSink, _flashbackSink)");
         AssertOccursBefore(
             updateAudioInput,
             "newCapture.AttachRecordingSink(activeSink);",
-            "await StartWasapiPlaybackAsync(committedSwitchToken)");
+            "await _previewAudioGraph.StartPlaybackAsync(");
         var updateMicrophoneMonitor = ExtractTextBetween(
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs").Replace("\r\n", "\n"),
             "public Task UpdateMicrophoneMonitorAsync",

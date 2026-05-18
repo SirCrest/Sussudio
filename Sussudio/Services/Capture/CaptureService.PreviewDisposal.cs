@@ -61,7 +61,11 @@ public partial class CaptureService
 
         var capture = _wasapiAudioCapture;
         _wasapiAudioCapture = null;
-        DetachWasapiAudioCapture(capture);
+        _previewAudioGraph.DetachCapture(
+            capture,
+            OnWasapiAudioLevelUpdated,
+            OnWasapiCaptureFailed,
+            _flashbackPlaybackController);
         if (capture != null)
         {
             await capture.DisposeAsync().ConfigureAwait(false);

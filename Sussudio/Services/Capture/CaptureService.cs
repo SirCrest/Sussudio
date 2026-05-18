@@ -212,14 +212,4 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         return new NativeXuAtCommandProvider();
     }
 
-    private sealed class PreviewAudioGraphResources
-    {
-        public WasapiAudioCapture? ProgramCapture;
-        public WasapiAudioCapture? MicrophoneCapture;
-        public WasapiAudioPlayback? Playback;
-        public float PreviewVolume = 1.0f;
-        public bool IsMonitoringMuted;
-        public bool CaptureFaulted;
-        public string? CaptureFaultMessage;
-    }
 }

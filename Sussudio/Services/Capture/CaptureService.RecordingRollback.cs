@@ -73,7 +73,11 @@ public partial class CaptureService
 
         if (rollback.OwnedWasapiAudioCapture != null && ReferenceEquals(_wasapiAudioCapture, rollback.OwnedWasapiAudioCapture))
         {
-            DetachWasapiAudioCapture(rollback.OwnedWasapiAudioCapture);
+            _previewAudioGraph.DetachCapture(
+                rollback.OwnedWasapiAudioCapture,
+                OnWasapiAudioLevelUpdated,
+                OnWasapiCaptureFailed,
+                _flashbackPlaybackController);
             _wasapiAudioCapture = null;
         }
 

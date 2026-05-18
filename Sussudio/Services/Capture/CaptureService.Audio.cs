@@ -11,19 +11,12 @@ public partial class CaptureService
 {
     public void SetPreviewVolume(float volume)
     {
-        _previewVolume = Math.Clamp(volume, 0f, 1f);
-        if (!_isMonitoringMuted)
-        {
-            var playback = _wasapiAudioPlayback;
-            playback?.SetVolume(_previewVolume);
-        }
+        _previewAudioGraph.SetPreviewVolume(volume);
     }
 
     public void SetMonitoringMuted(bool muted)
     {
-        _isMonitoringMuted = muted;
-        var playback = _wasapiAudioPlayback;
-        playback?.SetVolume(muted ? 0f : _previewVolume);
+        _previewAudioGraph.SetMonitoringMuted(muted);
     }
 
     private void OnWasapiAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
@@ -33,16 +26,11 @@ public partial class CaptureService
 
     private void OnWasapiCaptureFailed(object? sender, Exception ex)
     {
-        var source = ReferenceEquals(sender, _wasapiAudioCapture)
-            ? "program"
-            : ReferenceEquals(sender, _microphoneCapture)
-                ? "microphone"
-                : "unknown";
+        var source = _previewAudioGraph.ClassifyCaptureFailureSource(sender);
 
         if (_isRecording)
         {
-            Volatile.Write(ref _previewAudioGraph.CaptureFaulted, true);
-            Volatile.Write(ref _previewAudioGraph.CaptureFaultMessage, $"{source}: {ex.Message}");
+            _previewAudioGraph.RecordCaptureFault(source, ex);
         }
 
         Logger.Log($"WASAPI_CAPTURE_FAILED source={source} type={ex.GetType().Name} hr=0x{ex.HResult:X8} message={ex.Message} recording={_isRecording}");

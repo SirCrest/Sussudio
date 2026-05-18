@@ -33,8 +33,7 @@ public partial class CaptureService
                     _wasapiAudioCapture = wasapiCapture;
                     createdCaptureForAudioPreview = true;
                     ResetAvSyncDriftBaseline();
-                    Volatile.Write(ref _previewAudioGraph.CaptureFaulted, false);
-                    Volatile.Write(ref _previewAudioGraph.CaptureFaultMessage, null);
+                    _previewAudioGraph.ResetCaptureFault();
                 }
                 else
                 {
@@ -53,7 +52,9 @@ public partial class CaptureService
             try
             {
                 AttachFlashbackAudioIfSupported(_wasapiAudioCapture, "audio_preview_start");
-                await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
+                await _previewAudioGraph.StartPlaybackAsync(
+                    transitionToken,
+                    _flashbackPlaybackController).ConfigureAwait(false);
             }
             catch
             {
@@ -62,7 +63,11 @@ public partial class CaptureService
                 {
                     var capture = _wasapiAudioCapture;
                     _wasapiAudioCapture = null;
-                    DetachWasapiAudioCapture(capture);
+                    _previewAudioGraph.DetachCapture(
+                        capture,
+                        OnWasapiAudioLevelUpdated,
+                        OnWasapiCaptureFailed,
+                        _flashbackPlaybackController);
                     if (capture != null)
                     {
                         try
@@ -93,13 +98,17 @@ public partial class CaptureService
         {
             transitionToken.ThrowIfCancellationRequested();
             _isAudioPreviewActive = false;
-            StopWasapiPlayback();
+            _previewAudioGraph.StopPlayback(_flashbackPlaybackController);
 
             if (teardownCapture && !_isRecording)
             {
                 var capture = _wasapiAudioCapture;
                 _wasapiAudioCapture = null;
-                DetachWasapiAudioCapture(capture);
+                _previewAudioGraph.DetachCapture(
+                    capture,
+                    OnWasapiAudioLevelUpdated,
+                    OnWasapiCaptureFailed,
+                    _flashbackPlaybackController);
                 if (capture != null)
                 {
                     Logger.Log("Tearing down WASAPI audio capture (audio disabled)");

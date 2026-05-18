@@ -98,7 +98,11 @@ public partial class CaptureService
 
         var wasapiCapture = _wasapiAudioCapture;
         _wasapiAudioCapture = null;
-        DetachWasapiAudioCapture(wasapiCapture);
+        _previewAudioGraph.DetachCapture(
+            wasapiCapture,
+            OnWasapiAudioLevelUpdated,
+            OnWasapiCaptureFailed,
+            _flashbackPlaybackController);
         if (wasapiCapture != null)
         {
             try

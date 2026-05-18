@@ -32,7 +32,9 @@ public partial class CaptureService
 
             if (_isAudioPreviewActive && _wasapiAudioCapture != null)
             {
-                await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
+                await _previewAudioGraph.StartPlaybackAsync(
+                    transitionToken,
+                    _flashbackPlaybackController).ConfigureAwait(false);
             }
 
             Logger.Log(
@@ -115,7 +117,11 @@ public partial class CaptureService
         _wasapiAudioCapture = null;
         if (capture != null)
         {
-            DetachWasapiAudioCapture(capture);
+            _previewAudioGraph.DetachCapture(
+                capture,
+                OnWasapiAudioLevelUpdated,
+                OnWasapiCaptureFailed,
+                _flashbackPlaybackController);
             try
             {
                 await capture.DisposeAsync().ConfigureAwait(false);

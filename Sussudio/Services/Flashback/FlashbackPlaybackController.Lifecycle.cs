@@ -48,7 +48,7 @@ internal sealed partial class FlashbackPlaybackController
 
     /// <summary>
     /// Updates audio references after WASAPI components become available.
-    /// Called from CaptureService after StartWasapiPlaybackAsync completes,
+    /// Called from CaptureService after preview audio playback starts,
     /// since WASAPI init happens after flashback controller init.
     /// </summary>
     public void UpdateAudioComponents(WasapiAudioPlayback? audioPlayback, WasapiAudioCapture? audioCapture)

@@ -31,8 +31,7 @@ public partial class CaptureService
             _micMonitorDeviceName = settings.MicrophoneDeviceName;
 
             var rollback = new RecordingStartRollbackState();
-            Volatile.Write(ref _previewAudioGraph.CaptureFaulted, false);
-            Volatile.Write(ref _previewAudioGraph.CaptureFaultMessage, null);
+            _previewAudioGraph.ResetCaptureFault();
             ThrowIfPendingLibAvDrainTaskBlocksReentry();
             try
             {

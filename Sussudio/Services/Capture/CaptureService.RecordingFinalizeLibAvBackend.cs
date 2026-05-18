@@ -175,7 +175,11 @@ public partial class CaptureService
 
             var capture = _wasapiAudioCapture;
             _wasapiAudioCapture = null;
-            DetachWasapiAudioCapture(capture);
+            _previewAudioGraph.DetachCapture(
+                capture,
+                OnWasapiAudioLevelUpdated,
+                OnWasapiCaptureFailed,
+                _flashbackPlaybackController);
             if (capture != null)
             {
                 try
@@ -193,15 +197,12 @@ public partial class CaptureService
             }
         }
 
-        var wasapiAudioCaptureFaulted = Volatile.Read(ref _previewAudioGraph.CaptureFaulted);
-        var wasapiAudioCaptureFaultMessage = Volatile.Read(ref _previewAudioGraph.CaptureFaultMessage);
-        Volatile.Write(ref _previewAudioGraph.CaptureFaulted, false);
-        Volatile.Write(ref _previewAudioGraph.CaptureFaultMessage, null);
-        if (wasapiAudioCaptureFaulted && cancellationException == null && result.Succeeded)
+        var wasapiAudioCaptureFault = _previewAudioGraph.ConsumeCaptureFault();
+        if (wasapiAudioCaptureFault.Faulted && cancellationException == null && result.Succeeded)
         {
-            var statusMessage = string.IsNullOrWhiteSpace(wasapiAudioCaptureFaultMessage)
+            var statusMessage = string.IsNullOrWhiteSpace(wasapiAudioCaptureFault.Message)
                 ? "Recording failed (WASAPI audio capture faulted)."
-                : $"Recording failed (WASAPI audio capture faulted: {wasapiAudioCaptureFaultMessage})";
+                : $"Recording failed (WASAPI audio capture faulted: {wasapiAudioCaptureFault.Message})";
             Logger.Log($"RECORDING_AUDIO_FAULT status='{statusMessage}'");
             result = FinalizeResult.Failure(result.OutputPath, statusMessage);
         }

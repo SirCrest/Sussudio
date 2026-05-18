@@ -29,7 +29,7 @@ static partial class Program
         "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
         "Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs",
         "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs",
-        "Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs"
+        "Sussudio/Services/Capture/PreviewAudioGraphResources.cs"
     };
 
     private static readonly string[] CaptureServicePreviewLifecycleFiles =
@@ -155,16 +155,19 @@ static partial class Program
         var audioPreviewText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs");
         var audioInputSwitchingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs");
         var microphoneText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs");
-        var playbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs");
+        var resourceText = ReadRepoFile("Sussudio/Services/Capture/PreviewAudioGraphResources.cs");
 
         AssertContains(rootText, "private readonly PreviewAudioGraphResources _previewAudioGraph = new();");
-        AssertContains(rootText, "private sealed class PreviewAudioGraphResources");
-        AssertContains(rootText, "public WasapiAudioCapture? ProgramCapture;");
-        AssertContains(rootText, "public WasapiAudioCapture? MicrophoneCapture;");
-        AssertContains(rootText, "public WasapiAudioPlayback? Playback;");
-        AssertContains(rootText, "public float PreviewVolume = 1.0f;");
-        AssertContains(rootText, "public bool CaptureFaulted;");
-        AssertContains(rootText, "public string? CaptureFaultMessage;");
+        AssertDoesNotContain(rootText, "private sealed class PreviewAudioGraphResources");
+        AssertContains(resourceText, "internal sealed class PreviewAudioGraphResources");
+        AssertContains(resourceText, "public WasapiAudioCapture? ProgramCapture;");
+        AssertContains(resourceText, "public WasapiAudioCapture? MicrophoneCapture;");
+        AssertContains(resourceText, "public WasapiAudioPlayback? Playback;");
+        AssertContains(resourceText, "public float PreviewVolume = 1.0f;");
+        AssertContains(resourceText, "private bool _captureFaulted;");
+        AssertContains(resourceText, "private string? _captureFaultMessage;");
+        AssertContains(resourceText, "public void RecordCaptureFault(");
+        AssertContains(resourceText, "public PreviewAudioCaptureFaultSnapshot ConsumeCaptureFault()");
         AssertContains(rootText, "get => _previewAudioGraph.ProgramCapture;");
         AssertContains(rootText, "get => _previewAudioGraph.MicrophoneCapture;");
         AssertContains(rootText, "get => _previewAudioGraph.Playback;");
@@ -200,11 +203,15 @@ static partial class Program
         AssertContains(microphoneText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
         AssertContains(microphoneText, "private readonly record struct MicrophoneMonitorRestartOptions(");
 
-        AssertContains(playbackText, "private async Task StartWasapiPlaybackAsync(");
-        AssertContains(playbackText, "private void StopWasapiPlayback()");
-        AssertContains(playbackText, "private void DetachWasapiAudioCapture(");
-        AssertContains(playbackText, "private static void SafeClearWasapiCapturePlayback(");
-        AssertContains(playbackText, "private static void DisposeWasapiPlaybackBestEffort(");
+        AssertContains(resourceText, "public async Task StartPlaybackAsync(");
+        AssertContains(resourceText, "public void StopPlayback(");
+        AssertContains(resourceText, "public void DetachCapture(");
+        AssertContains(resourceText, "private static void SafeClearCapturePlayback(");
+        AssertContains(resourceText, "private static void DisposePlaybackBestEffort(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.WasapiPlayback.cs")),
+            "old WASAPI playback partial removed after PreviewAudioGraphResources promotion");
 
         return Task.CompletedTask;
     }
