@@ -3267,10 +3267,12 @@ Remaining `tools/Common` ownership:
    recording-time revert/status, mode option rebuilds, immediate reinitialize
    scheduling, and settings persistence.
     Late-arriving device format probe reconciliation, collection mutation,
-    selected-device capability refresh, enqueue/failure logging, UI-side
-    late-probe retarget application, session mismatch checks, and active-capture
-    restore live in
-    `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`, while
+    selected-device capability refresh, enqueue/failure logging, and retarget
+    handoff live in
+    `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs`;
+    UI-side late-probe retarget application, session mismatch checks, and
+    active-capture restore live in
+    `Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs`, while
     pure late-probe retarget decisions live in
     `Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs`.
     The presentation-preview ownership tests for this capture selection policy

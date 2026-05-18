@@ -5,19 +5,25 @@ static partial class Program
     private static Task DeviceFormatProbeRetargetPolicy_LivesInFocusedHelper()
     {
         var probeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeController.cs").Replace("\r\n", "\n");
+        var retargetApplierText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs").Replace("\r\n", "\n");
         var retargetPolicyText = ReadRepoFile("Sussudio/ViewModels/DeviceFormatProbeRetargetPolicy.cs").Replace("\r\n", "\n");
 
         AssertContains(probeControllerText, "private sealed class MainViewModelDeviceFormatProbeController");
         AssertContains(probeControllerText, "public void OnDeviceFormatProbeCompleted");
-        AssertContains(probeControllerText, "TryApplyDeviceFormatProbeRetarget(");
+        AssertContains(probeControllerText, "_retargetApplier.TryApplyDeviceFormatProbeRetarget(");
         AssertContains(probeControllerText, "_viewModel.RebuildSelectedDeviceCapabilities(_viewModel.SelectedDevice, resetTelemetryState: false);");
         AssertContains(probeControllerText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
         AssertDoesNotContain(probeControllerText, "var nv12Candidates = target.SupportedFormats");
         AssertDoesNotContain(probeControllerText, "ShouldPreserveMjpegHighFrameRateMode(_viewModel.SelectedFormat)");
-        AssertContains(probeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");
-        AssertContains(probeControllerText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
-        AssertContains(probeControllerText, "RebuildFrameRateOptions();");
-        AssertContains(probeControllerText, "EnqueueUiOperation(");
+        AssertDoesNotContain(probeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");
+        AssertDoesNotContain(probeControllerText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
+        AssertDoesNotContain(probeControllerText, "RebuildFrameRateOptions();");
+        AssertDoesNotContain(probeControllerText, "EnqueueUiOperation(");
+        AssertContains(retargetApplierText, "private sealed class MainViewModelDeviceFormatProbeRetargetApplier");
+        AssertContains(retargetApplierText, "public bool TryApplyDeviceFormatProbeRetarget(");
+        AssertContains(retargetApplierText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
+        AssertContains(retargetApplierText, "RebuildFrameRateOptions();");
+        AssertContains(retargetApplierText, "EnqueueUiOperation(");
         AssertContains(retargetPolicyText, "internal static class DeviceFormatProbeRetargetPolicy");
         AssertContains(retargetPolicyText, "internal static DeviceFormatProbeRetargetDecision Decide(DeviceFormatProbeRetargetRequest request)");
         AssertContains(retargetPolicyText, "internal sealed record DeviceFormatProbeRetargetRequest(");
