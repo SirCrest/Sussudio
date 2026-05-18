@@ -1777,19 +1777,16 @@ partials.
 
 Capture health snapshot sampling now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file
-captures current service references, invokes focused field builders, and
-owns the final service-state/scalar handoff record passed to the assembler; pure
+captures current service references, owns the small capture-cadence and MJPEG
+input projections, invokes the remaining focused field builders, and owns the
+final service-state/scalar handoff record passed to the assembler; pure
 diagnostics/automation DTO construction lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`. The
 assembler is intentionally allocation-neutral final DTO construction from
 captured fields; do not split it into post-construction mutators or shallow
-fragment records just to reduce line count. MJPEG
-timing, jitter, packet-hash, visual-cadence, and per-decoder projection lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs`;
+fragment records just to reduce line count.
 source telemetry, backend, suppression, and circuit-state projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotSourceTelemetry.cs`;
-capture cadence projection lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotCaptureCadence.cs`;
 Flashback buffer, startup-cache, backend-staleness reason policy, and encoder
 summary projection lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs`;

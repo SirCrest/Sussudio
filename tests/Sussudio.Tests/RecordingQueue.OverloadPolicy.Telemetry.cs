@@ -24,7 +24,6 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "GetLastFailureTelemetry");
         AssertContains(captureSnapshotsSource, "IsFlashbackRecordingBackendOwnedByRecording()");
         AssertContains(captureHealthSnapshotRootSource, "var mjpegHealth = CaptureMjpegHealthSnapshotFields(unifiedVideoCapture);");
-        AssertDoesNotContain(captureHealthSnapshotRootSource, "GetMjpegPipelineTimingSnapshot()");
         AssertContains(captureSnapshotsSource, "var timingSnapshot = unifiedVideoCapture?.GetMjpegPipelineTimingSnapshot();");
         AssertContains(captureSnapshotsSource, "private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(");
         AssertDoesNotContain(captureSnapshotsSource, "unifiedVideoCapture?.GetMjpegPipelineTimingMetrics()");

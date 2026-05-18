@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using Sussudio.Models;
+using Sussudio.Services.Gpu;
 
 namespace Sussudio.Services.Capture;
 
@@ -80,6 +81,65 @@ public partial class CaptureService
         });
     }
 
+    private static CaptureCadenceHealthSnapshotFields BuildCaptureCadenceHealthSnapshotFields(
+        UnifiedVideoCapture? unifiedVideoCapture)
+    {
+        var sourceCadence = unifiedVideoCapture?.GetSourceCadenceMetrics()
+            ?? default(MfSourceReaderVideoCapture.SourceCadenceMetrics);
+
+        return new CaptureCadenceHealthSnapshotFields(
+            sourceCadence.SampleCount,
+            sourceCadence.ObservedFps,
+            sourceCadence.ExpectedIntervalMs,
+            sourceCadence.AverageIntervalMs,
+            sourceCadence.P95IntervalMs,
+            sourceCadence.P99IntervalMs,
+            sourceCadence.MaxIntervalMs,
+            sourceCadence.OnePercentLowFps,
+            sourceCadence.FivePercentLowFps,
+            sourceCadence.SampleDurationMs,
+            sourceCadence.RecentIntervalsMs,
+            sourceCadence.JitterStdDevMs,
+            sourceCadence.SevereGapCount,
+            sourceCadence.EstimatedDroppedFrames,
+            sourceCadence.EstimatedDropPercent);
+    }
+
+    private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(
+        UnifiedVideoCapture? unifiedVideoCapture)
+    {
+        var timingSnapshot = unifiedVideoCapture?.GetMjpegPipelineTimingSnapshot();
+        var fullTiming = timingSnapshot?.Details ?? _lastFullMjpegPipelineTimingMetrics;
+
+        return new MjpegHealthSnapshotFields(
+            timingSnapshot?.Summary ?? _lastMjpegPipelineTimingMetrics,
+            fullTiming,
+            unifiedVideoCapture?.GetMjpegPreviewJitterMetrics()
+                ?? default(MjpegPreviewJitterBuffer.Metrics),
+            unifiedVideoCapture?.GetPreviewVisualCadenceMetrics()
+                ?? VisualCadenceTracker.Empty,
+            unifiedVideoCapture?.GetPreviewVisualCenterCadenceMetrics()
+                ?? VisualCadenceTracker.Empty,
+            unifiedVideoCapture?.GetMjpegPacketHashMetrics()
+                ?? FrameFingerprintCadenceTracker.Empty,
+            BuildMjpegDecoderHealthSnapshots(fullTiming));
+    }
+
+    private static MjpegDecoderHealthSnapshot[] BuildMjpegDecoderHealthSnapshots(
+        ParallelMjpegDecodePipeline.PipelineTimingMetrics? fullTiming)
+    {
+        return fullTiming?.PerDecoder is { Length: > 0 } perDecoder
+            ? Array.ConvertAll(
+                perDecoder,
+                worker => new MjpegDecoderHealthSnapshot(
+                    worker.WorkerIndex,
+                    worker.SampleCount,
+                    worker.AvgMs,
+                    worker.P95Ms,
+                    worker.MaxMs))
+            : Array.Empty<MjpegDecoderHealthSnapshot>();
+    }
+
     private readonly record struct CaptureHealthSnapshotAssemblyFields
     {
         public CaptureSessionState SessionState { get; init; }
@@ -150,4 +210,30 @@ public partial class CaptureService
 
         public FlashbackPlaybackHealthSnapshotFields FlashbackPlayback { get; init; }
     }
+
+    private readonly record struct CaptureCadenceHealthSnapshotFields(
+        int SampleCount,
+        double ObservedFps,
+        double ExpectedIntervalMs,
+        double AverageIntervalMs,
+        double P95IntervalMs,
+        double P99IntervalMs,
+        double MaxIntervalMs,
+        double OnePercentLowFps,
+        double FivePercentLowFps,
+        double SampleDurationMs,
+        double[] RecentIntervalsMs,
+        double JitterStdDevMs,
+        long SevereGapCount,
+        long EstimatedDroppedFrames,
+        double EstimatedDropPercent);
+
+    private readonly record struct MjpegHealthSnapshotFields(
+        UnifiedVideoCapture.MjpegPipelineTimingMetrics Timing,
+        ParallelMjpegDecodePipeline.PipelineTimingMetrics? FullTiming,
+        MjpegPreviewJitterBuffer.Metrics PreviewJitter,
+        VisualCadenceTracker.Metrics VisualCadence,
+        VisualCadenceTracker.Metrics VisualCenterCadence,
+        FrameFingerprintCadenceTracker.Metrics PacketHash,
+        MjpegDecoderHealthSnapshot[] PerDecoder);
 }

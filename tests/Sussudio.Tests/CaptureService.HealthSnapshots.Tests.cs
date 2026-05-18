@@ -254,36 +254,29 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     }
 
     [Fact]
-    public void CaptureService_HealthSnapshotCaptureCadenceFields_LiveInFocusedPartial()
+    public void CaptureService_HealthSnapshotCaptureCadenceFields_LiveWithSampler()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var captureCadenceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotCaptureCadence.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var captureCadence = BuildCaptureCadenceHealthSnapshotFields(unifiedVideoCapture);");
         AssertContains(healthSnapshotAssemblerText, "CaptureCadenceSampleCount = captureCadence.SampleCount,");
         AssertContains(healthSnapshotAssemblerText, "CaptureCadenceEstimatedDropPercent = captureCadence.EstimatedDropPercent,");
-        AssertDoesNotContain(healthSnapshotText, "GetSourceCadenceMetrics()");
-        AssertDoesNotContain(healthSnapshotText, "MfSourceReaderVideoCapture.SourceCadenceMetrics");
-
-        AssertContains(captureCadenceText, "private static CaptureCadenceHealthSnapshotFields BuildCaptureCadenceHealthSnapshotFields(");
-        AssertContains(captureCadenceText, "unifiedVideoCapture?.GetSourceCadenceMetrics()");
-        AssertContains(captureCadenceText, "default(MfSourceReaderVideoCapture.SourceCadenceMetrics)");
-        AssertContains(captureCadenceText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
+        AssertContains(healthSnapshotText, "private static CaptureCadenceHealthSnapshotFields BuildCaptureCadenceHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "unifiedVideoCapture?.GetSourceCadenceMetrics()");
+        AssertContains(healthSnapshotText, "default(MfSourceReaderVideoCapture.SourceCadenceMetrics)");
+        AssertContains(healthSnapshotText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
 
     }
 
     [Fact]
-    public void CaptureService_HealthSnapshotMjpegFields_LiveInFocusedPartial()
+    public void CaptureService_HealthSnapshotMjpegFields_LiveWithSampler()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
-        var mjpegText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotMjpeg.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var mjpegHealth = CaptureMjpegHealthSnapshotFields(unifiedVideoCapture);");
@@ -291,18 +284,13 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotAssemblerText, "MjpegPreviewJitterEnabled = mjpegHealth.PreviewJitter.Enabled,");
         AssertContains(healthSnapshotAssemblerText, "VisualCadenceSampleCount = mjpegHealth.VisualCadence.SampleCount,");
         AssertContains(healthSnapshotAssemblerText, "MjpegPerDecoder = mjpegHealth.PerDecoder,");
-        AssertDoesNotContain(healthSnapshotText, "GetMjpegPipelineTimingSnapshot()");
-        AssertDoesNotContain(healthSnapshotText, "GetMjpegPreviewJitterMetrics()");
-        AssertDoesNotContain(healthSnapshotText, "FrameFingerprintCadenceTracker.Empty");
-        AssertDoesNotContain(healthSnapshotText, "new MjpegDecoderHealthSnapshot(");
-
-        AssertContains(mjpegText, "private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(");
-        AssertContains(mjpegText, "GetMjpegPipelineTimingSnapshot()");
-        AssertContains(mjpegText, "GetMjpegPreviewJitterMetrics()");
-        AssertContains(mjpegText, "GetPreviewVisualCadenceMetrics()");
-        AssertContains(mjpegText, "FrameFingerprintCadenceTracker.Empty");
-        AssertContains(mjpegText, "new MjpegDecoderHealthSnapshot(");
-        AssertContains(mjpegText, "private readonly record struct MjpegHealthSnapshotFields");
+        AssertContains(healthSnapshotText, "private MjpegHealthSnapshotFields CaptureMjpegHealthSnapshotFields(");
+        AssertContains(healthSnapshotText, "GetMjpegPipelineTimingSnapshot()");
+        AssertContains(healthSnapshotText, "GetMjpegPreviewJitterMetrics()");
+        AssertContains(healthSnapshotText, "GetPreviewVisualCadenceMetrics()");
+        AssertContains(healthSnapshotText, "FrameFingerprintCadenceTracker.Empty");
+        AssertContains(healthSnapshotText, "new MjpegDecoderHealthSnapshot(");
+        AssertContains(healthSnapshotText, "private readonly record struct MjpegHealthSnapshotFields");
 
     }
 
