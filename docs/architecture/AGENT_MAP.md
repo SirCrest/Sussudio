@@ -1206,8 +1206,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindowUiContract.StatsSnapshot.Tests.cs` owns stats
   snapshot builder contract checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs` owns
-  MainWindow shell chrome ownership assertions for the settings shelf and window
-  title.
+  MainWindow shell chrome ownership assertions for the settings shelf, window
+  title, live signal info, and status-strip presentation.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.Tests.cs` owns
   MainWindow startup/launch ownership assertions for splash loading phrases,
   splash pacing policy, launch entrance animation, and first-load hosting.
@@ -1226,8 +1226,8 @@ Primary current owners:
   controller adapters.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs`
   owns MainWindow controller-adapter ownership assertions for recording action,
-  live signal info, status-strip presentation, preview audio fade, microphone
-  controls.
+  preview audio fade, microphone controls, and audio/preview button
+  presentation.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs` owns
   MainWindow responsive shell layout controller-adapter and breakpoint/placement
   policy assertions.
