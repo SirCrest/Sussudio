@@ -33,7 +33,7 @@ public partial class MainViewModel
             {
                 _pendingSdrAutoSelectionForDeviceChange = device != null && !IsHdrEnabled;
                 _pendingSdrAutoFriendlyFrameRateBucket = null;
-                ApplySourceTelemetrySnapshot(
+                _sourceTelemetryController.ApplySourceTelemetrySnapshot(
                     SourceSignalTelemetrySnapshot.CreateUnavailable("awaiting-source-telemetry"),
                     allowAutoRetarget: false);
             }

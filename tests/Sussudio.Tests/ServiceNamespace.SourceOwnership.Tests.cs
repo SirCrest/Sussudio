@@ -146,6 +146,7 @@ static partial class Program
         var mainViewModelDispatchingText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs"));
         var mainViewModelUiDispatchControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelUiDispatchController.cs"));
         var mainViewModelDeviceFormatProbeControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceFormatProbeController.cs"));
+        var mainViewModelSourceTelemetryControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelSourceTelemetryController.cs"));
         var mainViewModelRuntimeLifecycleControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeLifecycleController.cs"));
         var mainViewModelRuntimeEventIngressControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.cs"));
         var mainViewModelRecordingRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingRuntime.cs"));
@@ -224,7 +225,7 @@ static partial class Program
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._captureService.FrameCaptured += OnFrameCaptured;");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._captureService.AudioLevelUpdated += _viewModel.OnAudioLevelUpdated;");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._captureService.MicrophoneAudioLevelUpdated += _viewModel.OnMicrophoneAudioLevelUpdated;");
-        AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._captureService.SourceTelemetryUpdated += _viewModel.OnSourceTelemetryUpdated;");
+        AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._captureService.SourceTelemetryUpdated += _viewModel._sourceTelemetryController.OnSourceTelemetryUpdated;");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._audioDeviceWatcher.DevicesChanged += _viewModel.OnAudioDevicesChanged;");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "public void Detach()");
@@ -235,10 +236,10 @@ static partial class Program
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._captureService.FrameCaptured -= OnFrameCaptured;");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._captureService.AudioLevelUpdated -= _viewModel.OnAudioLevelUpdated;");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._captureService.MicrophoneAudioLevelUpdated -= _viewModel.OnMicrophoneAudioLevelUpdated;");
-        AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._captureService.SourceTelemetryUpdated -= _viewModel.OnSourceTelemetryUpdated;");
+        AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._captureService.SourceTelemetryUpdated -= _viewModel._sourceTelemetryController.OnSourceTelemetryUpdated;");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_viewModel._audioDeviceWatcher.DevicesChanged -= _viewModel.OnAudioDevicesChanged;");
-        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.ApplySourceTelemetrySnapshot(_viewModel._latestSourceTelemetry, allowAutoRetarget: false);");
+        AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(_viewModel._latestSourceTelemetry, allowAutoRetarget: false);");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.UpdateHdrRuntimeStatusFromCapture();");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_viewModel.UpdateLiveCaptureInfo();");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "SetupTimer();");
@@ -268,7 +269,7 @@ static partial class Program
         AssertContains(deviceSelectionText, "RequestDeviceAudioControlsRefresh(value);");
         AssertDoesNotContain(deviceSelectionText, "_deviceAudioRefreshCts");
         AssertContains(deviceSelectionText, "private void RebuildSelectedDeviceCapabilities(CaptureDevice? device, bool resetTelemetryState)");
-        AssertContains(deviceSelectionText, "ApplySourceTelemetrySnapshot(");
+        AssertContains(deviceSelectionText, "_sourceTelemetryController.ApplySourceTelemetrySnapshot(");
         AssertContains(deviceSelectionText, "RebuildResolutionOptions();");
         AssertDoesNotContain(deviceManagementText, "partial void OnSelectedDeviceChanged");
         AssertDoesNotContain(deviceManagementText, "private void RebuildSelectedDeviceCapabilities");
@@ -308,9 +309,15 @@ static partial class Program
         AssertContains(mainViewModelDeviceFormatProbeControllerText, "public void OnDeviceFormatProbeCompleted");
         AssertContains(mainViewModelDeviceFormatProbeControllerText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
         AssertDoesNotContain(deviceManagementText, "private void OnDeviceFormatProbeCompleted");
-        AssertContains(
-            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Telemetry.cs")),
-            "SOURCE_TELEMETRY_UI_ENQUEUE_FAILED");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryController");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "SOURCE_TELEMETRY_UI_ENQUEUE_FAILED");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "private int? _lastTelemetryAgeBucket;");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "_viewModel.RebuildResolutionOptions();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Telemetry.cs")),
+            "old MainViewModel telemetry partial removed after controller extraction");
         var recordingCapabilityControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRecordingCapabilityController.cs"));
         AssertContains(recordingCapabilityControllerText, "RECORDING_FORMATS_UI_ENQUEUE_FAILED");
         AssertContains(recordingCapabilityControllerText, "SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED");

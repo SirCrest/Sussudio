@@ -70,7 +70,6 @@ public partial class MainViewModel
     private bool _pendingSdrAutoSelectionForDeviceChange;
     private int? _pendingSdrAutoFriendlyFrameRateBucket;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
-    private int? _lastTelemetryAgeBucket;
     private long _deviceScanGeneration;
 
     // Flag to prevent reinitialization during initial device setup.

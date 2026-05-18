@@ -27,7 +27,7 @@ public partial class MainViewModel
         public void InitializePresentation()
         {
             _viewModel._latestSourceTelemetry = _viewModel._captureService.GetLatestSourceTelemetrySnapshot();
-            _viewModel.ApplySourceTelemetrySnapshot(_viewModel._latestSourceTelemetry, allowAutoRetarget: false);
+            _viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(_viewModel._latestSourceTelemetry, allowAutoRetarget: false);
             _viewModel.UpdateHdrRuntimeStatusFromCapture();
             _viewModel.UpdateLiveCaptureInfo();
 
@@ -71,7 +71,7 @@ public partial class MainViewModel
                 }
 
                 _viewModel.UpdateDiskSpace();
-                _viewModel.RefreshSourceTelemetrySummaryAge();
+                _viewModel._sourceTelemetryController.RefreshSourceTelemetrySummaryAge();
                 _viewModel.UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
             };
             _timer.Start();

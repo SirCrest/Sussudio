@@ -3249,7 +3249,9 @@ Remaining `tools/Common` ownership:
    formatting now live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`;
    HDR runtime state/readiness projection and target-summary property
    application live in `MainViewModel.CapturePresentation.cs`; keep snapshot
-   application and source-aware auto-retargeting in `MainViewModel.Telemetry.cs`.
+   application, source telemetry ingress, telemetry age refresh, enum-string
+   caching, and source-aware auto-retargeting in
+   `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`.
    Settings initialization, simple persistence reactions, and the impure
    settings load/save adapter stay in `MainViewModel.SettingsPersistence.cs`,
    while

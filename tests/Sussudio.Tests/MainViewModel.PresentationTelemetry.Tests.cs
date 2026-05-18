@@ -77,11 +77,11 @@ static partial class Program
 
     private static Task SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
     {
-        var telemetryText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Telemetry.cs").Replace("\r\n", "\n");
+        var telemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs").Replace("\r\n", "\n");
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CapturePresentation.cs").Replace("\r\n", "\n");
         var builderText = ReadRepoFile("Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs").Replace("\r\n", "\n");
 
-        AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(_latestSourceTelemetry, DateTimeOffset.UtcNow);");
+        AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(_viewModel._latestSourceTelemetry, DateTimeOffset.UtcNow);");
         AssertContains(telemetryText, "SourceTelemetryPresentationBuilder.BuildSourceSummary(snapshot, DateTimeOffset.UtcNow);");
         AssertContains(telemetryText, "UpdateTargetSummary();");
         AssertDoesNotContain(telemetryText, "private void UpdateHdrRuntimeStatusFromCapture(");

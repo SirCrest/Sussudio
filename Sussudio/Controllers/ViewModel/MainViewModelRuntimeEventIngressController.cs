@@ -30,7 +30,7 @@ public partial class MainViewModel
             _viewModel._captureService.FrameCaptured += OnFrameCaptured;
             _viewModel._captureService.AudioLevelUpdated += _viewModel.OnAudioLevelUpdated;
             _viewModel._captureService.MicrophoneAudioLevelUpdated += _viewModel.OnMicrophoneAudioLevelUpdated;
-            _viewModel._captureService.SourceTelemetryUpdated += _viewModel.OnSourceTelemetryUpdated;
+            _viewModel._captureService.SourceTelemetryUpdated += _viewModel._sourceTelemetryController.OnSourceTelemetryUpdated;
 
             // SystemEvents.PowerModeChanged is the managed desktop wake signal used
             // to recover capture after sleep or hibernate resume.
@@ -51,7 +51,7 @@ public partial class MainViewModel
             _viewModel._captureService.FrameCaptured -= OnFrameCaptured;
             _viewModel._captureService.AudioLevelUpdated -= _viewModel.OnAudioLevelUpdated;
             _viewModel._captureService.MicrophoneAudioLevelUpdated -= _viewModel.OnMicrophoneAudioLevelUpdated;
-            _viewModel._captureService.SourceTelemetryUpdated -= _viewModel.OnSourceTelemetryUpdated;
+            _viewModel._captureService.SourceTelemetryUpdated -= _viewModel._sourceTelemetryController.OnSourceTelemetryUpdated;
 
             _viewModel._audioDeviceWatcher.DevicesChanged -= _viewModel.OnAudioDevicesChanged;
         }

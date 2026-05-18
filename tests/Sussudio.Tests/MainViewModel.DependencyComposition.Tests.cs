@@ -117,6 +117,12 @@ static partial class Program
         AssertContains(deviceFormatProbeControllerText, "private sealed class MainViewModelDeviceFormatProbeController");
         AssertContains(deviceFormatProbeControllerText, "public void OnDeviceFormatProbeCompleted");
         AssertContains(deviceFormatProbeControllerText, "private bool TryApplyDeviceFormatProbeRetarget(");
+        var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(sourceTelemetryControllerText, "private sealed class MainViewModelSourceTelemetryController");
+        AssertContains(sourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
+        AssertContains(sourceTelemetryControllerText, "public void ApplySourceTelemetrySnapshot(SourceSignalTelemetrySnapshot snapshot, bool allowAutoRetarget)");
+        AssertContains(sourceTelemetryControllerText, "public void RefreshSourceTelemetrySummaryAge()");
 
         AssertContains(runtimeLifecycleControllerText, "private sealed class MainViewModelRuntimeLifecycleController");
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeEventIngressController _eventIngressController;");
@@ -126,7 +132,7 @@ static partial class Program
         AssertContains(runtimeLifecycleControllerText, "_eventIngressController.Detach();");
         AssertContains(runtimeLifecycleControllerText, "public void InitializePresentation()");
         AssertContains(runtimeLifecycleControllerText, "_viewModel._latestSourceTelemetry = _viewModel._captureService.GetLatestSourceTelemetrySnapshot();");
-        AssertContains(runtimeLifecycleControllerText, "_viewModel.ApplySourceTelemetrySnapshot(_viewModel._latestSourceTelemetry, allowAutoRetarget: false);");
+        AssertContains(runtimeLifecycleControllerText, "_viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(_viewModel._latestSourceTelemetry, allowAutoRetarget: false);");
         AssertContains(runtimeLifecycleControllerText, "_viewModel.UpdateHdrRuntimeStatusFromCapture();");
         AssertContains(runtimeLifecycleControllerText, "_viewModel.UpdateLiveCaptureInfo();");
         AssertContains(runtimeLifecycleControllerText, "SetupTimer();");
@@ -144,7 +150,7 @@ static partial class Program
         AssertContains(runtimeEventIngressControllerText, "_viewModel._captureService.FrameCaptured += OnFrameCaptured;");
         AssertContains(runtimeEventIngressControllerText, "_viewModel._captureService.AudioLevelUpdated += _viewModel.OnAudioLevelUpdated;");
         AssertContains(runtimeEventIngressControllerText, "_viewModel._captureService.MicrophoneAudioLevelUpdated += _viewModel.OnMicrophoneAudioLevelUpdated;");
-        AssertContains(runtimeEventIngressControllerText, "_viewModel._captureService.SourceTelemetryUpdated += _viewModel.OnSourceTelemetryUpdated;");
+        AssertContains(runtimeEventIngressControllerText, "_viewModel._captureService.SourceTelemetryUpdated += _viewModel._sourceTelemetryController.OnSourceTelemetryUpdated;");
         AssertContains(runtimeEventIngressControllerText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
         AssertContains(runtimeEventIngressControllerText, "_viewModel._audioDeviceWatcher.DevicesChanged += _viewModel.OnAudioDevicesChanged;");
         AssertContains(runtimeEventIngressControllerText, "public void Detach()");

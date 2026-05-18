@@ -89,7 +89,7 @@ public partial class MainViewModel
                     await _viewModel._sessionCoordinator.StartAudioPreviewAsync(cancellationToken);
                 }
 
-                _viewModel.ApplySourceTelemetrySnapshot(_viewModel._captureService.GetLatestSourceTelemetrySnapshot(), allowAutoRetarget: true);
+                _viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(_viewModel._captureService.GetLatestSourceTelemetrySnapshot(), allowAutoRetarget: true);
                 Logger.Log($"PREVIEW_START_READY audio={_viewModel.IsAudioPreviewEnabled && _viewModel.IsAudioEnabled}");
             }
             else

@@ -29,6 +29,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly AudioDeviceWatcher _audioDeviceWatcher;
     private readonly MainViewModelUiDispatchController _uiDispatchController;
     private readonly MainViewModelDeviceFormatProbeController _deviceFormatProbeController;
+    private readonly MainViewModelSourceTelemetryController _sourceTelemetryController;
     private readonly MainViewModelRuntimeLifecycleController _runtimeLifecycleController;
     private readonly MainViewModelRecordingTransitionController _recordingTransitionController;
     private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
@@ -142,6 +143,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureSettingsAutomationController = new MainViewModelCaptureSettingsAutomationController(this);
         _recordingSettingsAutomationController = new MainViewModelRecordingSettingsAutomationController(this);
         _deviceFormatProbeController = new MainViewModelDeviceFormatProbeController(this);
+        _sourceTelemetryController = new MainViewModelSourceTelemetryController(this);
         _runtimeLifecycleController = new MainViewModelRuntimeLifecycleController(this);
 
         _runtimeLifecycleController.Start();
@@ -194,7 +196,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     // Disposal / teardown: MainViewModel.Disposal.cs
     // Recording runtime status and output drive presentation: MainViewModel.RecordingRuntime.cs
     // Capture presentation labels: MainViewModel.CapturePresentation.cs
-    // Source telemetry: MainViewModel.Telemetry.cs
+    // Source telemetry ingress/projection: MainViewModelSourceTelemetryController.cs
     // Settings lifecycle/reactions and adapter: MainViewModel.SettingsPersistence.cs; projection: MainViewModelSettingsPersistenceProjection.cs
     // Flashback settings reactions: encoder: MainViewModel.FlashbackEncoderSettings.cs; enable/restart/buffer/GPU: MainViewModel.FlashbackSettings.cs
     // Recording capability refresh and option application: MainViewModelRecordingCapabilityController.cs

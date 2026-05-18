@@ -2382,8 +2382,9 @@ Primary current owners:
   State-backed capability queries for callers that live across the ViewModel
   partial family stay in `MainViewModel.ResolutionOptions.cs`; observable
   resolution dropdown mutation stays in `MainViewModel.ResolutionOptionRebuild.cs`.
-  `MainViewModel.Telemetry.cs` owns source telemetry projection and
-  source-aware auto-retargeting hints.
+  `Sussudio/Controllers/ViewModel/MainViewModelSourceTelemetryController.cs`
+  owns source telemetry ingress, projection, enum-string caching, summary-age
+  refresh, and source-aware auto-retargeting hints.
   `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`
   owns source telemetry summary, telemetry age, and target-summary display text formatting.
   `MainViewModel.SettingsPersistence.cs` owns settings initialization, simple
