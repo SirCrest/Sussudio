@@ -10,7 +10,6 @@ static partial class Program
         await AddRecordingModelRecordingContractChecksAsync(results);
         await AddRecordingModelCaptureSettingsChecksAsync(results);
         await AddRecordingModelFlashbackBufferChecksAsync(results);
-        await AddRecordingModelRecordingContextChecksAsync(results);
         await AddRecordingModelDeviceModelChecksAsync(results);
         await AddRecordingModelAutomationContractChecksAsync(results);
         await AddRecordingModelSourceSignalTelemetryChecksAsync(results);
@@ -51,12 +50,6 @@ static partial class Program
 
     private static async Task AddRecordingModelRecordingContractChecksAsync(List<CheckResult> results)
     {
-        await AddCheckAsync(results,
-            "FinalizeResult.Success produces empty preserved list",
-            FinalizeResult_Success_ProducesEmptyPreservedList);
-        await AddCheckAsync(results,
-            "FinalizeResult.Failure deduplicates and filters preserved artifacts",
-            FinalizeResult_Failure_DeduplicatesAndFiltersArtifacts);
         await AddCheckAsync(results,
             "FinalizeContext returns success when post-mux audio disabled",
             ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled);
@@ -115,16 +108,6 @@ static partial class Program
         await AddCheckAsync(results,
             "MJPEG HFR mode requires SDR and MJPG pixel format",
             CaptureSettings_MjpegHfrMode_RequiresSdrAndMjpgPixelFormat);
-    }
-
-    private static async Task AddRecordingModelRecordingContextChecksAsync(List<CheckResult> results)
-    {
-        await AddCheckAsync(results,
-            "GpuPipelineHandles.None returns zeroed struct",
-            GpuPipelineHandles_None_ReturnsZeroedStruct);
-        await AddCheckAsync(results,
-            "RecordingContextRequest defaults match RecordingContext defaults",
-            RecordingContextRequest_DefaultsMatchRecordingContextDefaults);
     }
 
     private static async Task AddRecordingModelDeviceModelChecksAsync(List<CheckResult> results)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Xunit;
 
@@ -48,6 +49,38 @@ public class RecordingContractsTests
 
         var artifacts = (System.Collections.IEnumerable)resultType.GetProperty("PreservedArtifacts")!.GetValue(success)!;
         Assert.Empty(artifacts.Cast<object>());
+    }
+
+    [Fact]
+    public void RecordingContextRequest_Defaults_MatchRecordingContextDefaults()
+    {
+        var asm = SussudioAssembly.Load();
+        var requestType = asm.GetType("Sussudio.Services.Contracts.RecordingContextRequest", throwOnError: true)!;
+
+        var request = Activator.CreateInstance(requestType)!;
+
+        Assert.Equal("30", (string)requestType.GetProperty("FrameRateArg")!.GetValue(request)!);
+        Assert.Equal("nv12", (string)requestType.GetProperty("VideoInputPixelFormat")!.GetValue(request)!);
+        Assert.False((bool)requestType.GetProperty("IsFullRangeInput")!.GetValue(request)!);
+        Assert.False((bool)requestType.GetProperty("UsePostMuxAudio")!.GetValue(request)!);
+    }
+
+    [Fact]
+    public void FinalizeResult_Failure_DeduplicatesAndFiltersArtifacts()
+    {
+        var asm = SussudioAssembly.Load();
+        var resultType = asm.GetType("Sussudio.Services.Contracts.FinalizeResult", throwOnError: true)!;
+
+        var artifacts = new List<string> { "/path/a.mp4", "/path/A.mp4", null!, string.Empty, " ", "/path/b.m4a" };
+        var failure = resultType.GetMethod("Failure", BindingFlags.Public | BindingFlags.Static)!
+            .Invoke(null, new object?[] { "/output.mp4", "mux failed", artifacts })!;
+
+        Assert.False((bool)resultType.GetProperty("Succeeded")!.GetValue(failure)!);
+        Assert.Equal("/output.mp4", (string)resultType.GetProperty("OutputPath")!.GetValue(failure)!);
+        Assert.Equal("mux failed", (string)resultType.GetProperty("StatusMessage")!.GetValue(failure)!);
+
+        var preserved = (System.Collections.IEnumerable)resultType.GetProperty("PreservedArtifacts")!.GetValue(failure)!;
+        Assert.Equal(new[] { "/path/a.mp4", "/path/b.m4a" }, preserved.Cast<object>().Select(value => (string)value).ToArray());
     }
 }
 

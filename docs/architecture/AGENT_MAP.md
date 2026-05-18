@@ -1616,7 +1616,7 @@ Primary current owners:
   registration, ProcessSpec, and ProcessRunResult contract checks.
 - `tests/Sussudio.Tests/ProjectBuildContracts.Tests.cs` owns project-file build
   and publish policy contract checks.
-- `tests/Sussudio.Tests/RecordingContracts.Models.Tests.cs` owns recording
+- `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording
   service contract DTO checks such as GpuPipelineHandles,
   RecordingContextRequest, and FinalizeResult.
 - `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs` owns temp artifact
