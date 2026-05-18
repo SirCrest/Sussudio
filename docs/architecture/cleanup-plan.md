@@ -3357,11 +3357,12 @@ Remaining `tools/Common` ownership:
 
 5. Extract capture resource owners behind the transition policy.
 
-   The policy is now the legality/steady-state owner. The next deeper capture
-   slices should keep it authoritative while introducing smaller owners for
-   audio graph, recording controller, Flashback backend resources, and video
-   pipeline lifetime. `FlashbackBackendResources.cs` now owns the preview
-   backend resource set and producer attach/detach wiring.
+   The policy is now the legality/steady-state owner. Recent capture slices
+   kept it authoritative while introducing smaller owners for the audio graph,
+   Flashback backend resources, and active recording backend resources; video
+   pipeline lifetime remains the next larger resource-owner candidate.
+   `FlashbackBackendResources.cs` now owns the preview backend resource set and
+   producer attach/detach wiring.
    `FlashbackBackendResources.Startup.cs` owns startup construction,
    install/playback initialization, and startup rollback cleanup.
    `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
