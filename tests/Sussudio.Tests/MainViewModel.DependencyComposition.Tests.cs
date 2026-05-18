@@ -121,6 +121,7 @@ static partial class Program
             true,
             captureModeOptionRebuildControllerText.Split('\n').Length >= 100,
             "capture mode option rebuild controller is a substantial ownership file");
+        AssertContains(captureModeOptionRebuildControllerText, "public void RebuildResolutionOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void RebuildFrameRateOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void RebuildVideoFormatOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void UpdateSelectedFormat()");

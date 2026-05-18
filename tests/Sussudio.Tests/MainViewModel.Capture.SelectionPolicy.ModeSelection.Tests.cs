@@ -11,6 +11,8 @@ static partial class Program
         var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs").Replace("\r\n", "\n");
 
         AssertContains(resolutionOptionRebuildText, "private void RebuildResolutionOptions()");
+        AssertContains(resolutionOptionRebuildText, "=> _captureModeOptionRebuildController.RebuildResolutionOptions();");
+        AssertContains(captureModeOptionsControllerText, "public void RebuildResolutionOptions()");
         AssertContains(resolutionOptionsText, "private bool TryResolveResolutionKey(");
         AssertContains(resolutionOptionsText, "private static bool IsAutoResolutionValue(");
         AssertDoesNotContain(resolutionOptionsText, "private void ResetFrameRateSelectionState()");
