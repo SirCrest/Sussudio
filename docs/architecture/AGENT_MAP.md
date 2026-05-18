@@ -2044,7 +2044,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Playback.Markers.Tests.cs` owns Flashback
   playback in/out marker API, normalization, disposal, and marker clamp tests.
 - `tests/Sussudio.Tests/Flashback.Playback.Thread.Tests.cs` owns Flashback
-  playback thread recovery and live-preview transition tests.
+  playback thread recovery tests.
+- `tests/Sussudio.Tests/Flashback.Playback.Transitions.AudioPreviewGuards.Tests.cs`
+  owns Flashback playback live-preview transition and audio guard tests.
 - Flashback playback command queue capacity/drop-oldest,
   scrub-coalescing source ownership, and seek-slot barrier behavior coverage live in focused
   `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Capacity.Tests.cs`,
