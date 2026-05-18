@@ -1771,7 +1771,9 @@ Primary current owners:
   contract tests. Both use `RuntimeContractSource.ReadAutomationPipeClientSource()`
   for the shared AutomationPipeClient source family.
 - `tests/Sussudio.Tests/AutomationToolContracts.Catalog.Tests.cs` owns
-  automation command catalog, manifest, path policy, and manifest
+  automation command catalog and command policy metadata contract tests.
+- `tests/Sussudio.Tests/AutomationToolContracts.Manifest.Tests.cs` owns
+  automation manifest projection, path policy validation, and manifest
   serialization contract tests.
 - `tests/Sussudio.Tests/AutomationToolContracts.Reliability.Tests.cs` owns the
   reliability-gates script contract test.
