@@ -1465,8 +1465,8 @@ Primary current owners:
   snapshot property-list, nullability, and helper assertion methods.
 - `tests/Sussudio.Tests/SnapshotModels.ReflectionJson.cs` owns shared
   reflection JSON round-trip and registered-property coverage helpers.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.SourceTelemetry.Tests.cs`
-  owns source-signal projection drift guards.
+- `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` owns the ported
+  source-signal projection drift guards.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.CpuMjpeg.Tests.cs` owns
   automation snapshot CPU MJPEG metric shape checks.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.Options.Tests.cs` owns
@@ -1489,8 +1489,9 @@ Primary current owners:
   reflection JSON assertions; and `SnapshotModels.CaptureHealth.PropertySpec.cs`
   owns the CaptureHealthSnapshot and SourceTelemetryDetailEntry property-list
   contracts.
-- `tests/Sussudio.Tests/SnapshotModels.SourceSignalTelemetry.Tests.cs` owns
-  SourceSignalTelemetrySnapshot and SourceTelemetryDetailEntry contract checks.
+- `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` owns the ported
+  SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source
+  telemetry automation projection contract checks.
 - `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs` owns Native XU
   telemetry provider ownership, rolling command-group split, shared snapshot
   assembly ownership, and supported 4K X product-revision checks.
@@ -1757,7 +1758,7 @@ Primary current owners:
   recording/model check registration and owns compact registration groups for
   LibAv sink, capture runtime, recording contracts/artifacts/stats, capture
   settings, recording context, device/media models, automation contracts,
-  and source-signal telemetry checks.
+  and remaining recording-model checks.
   `HarnessCheckCatalog.RecordingModels.FlashbackBuffer.cs` owns the large
   Flashback buffer registration group.
 - Focused `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.*.cs` partials

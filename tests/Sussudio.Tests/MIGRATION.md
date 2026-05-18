@@ -30,6 +30,9 @@ incrementally.
   row formatting behavior and hardware-row input sampling policy checks.
 - `XUnit.CapturePoliciesTests.cs` owns the former legacy HdrOutputPolicy
   behavior and HDR output environment-switch checks.
+- `XUnit.SnapshotModelsTests.cs` owns the former legacy
+  SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source
+  telemetry automation projection contract checks.
 
 ## Targeting reality
 

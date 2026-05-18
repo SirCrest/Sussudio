@@ -452,8 +452,10 @@ frame-rate/enable-disable owner files.
 
 `tests/Sussudio.Tests/SnapshotModels.Tests.cs` is now the shared snapshot-model
 reflection/spec helper shell. Snapshot model contract coverage is split into
-CaptureDiagnosticsSnapshot, CaptureHealthSnapshot, and
-SourceSignalTelemetrySnapshot owner files.
+CaptureDiagnosticsSnapshot and CaptureHealthSnapshot legacy owner files, plus
+`XUnit.SnapshotModelsTests.cs` for the ported SourceSignalTelemetrySnapshot,
+SourceTelemetryDetailEntry, and source telemetry automation projection
+contracts.
 
 `tests/Sussudio.Tests/RecordingQueue.Tests.cs` is now the shared recording
 queue source-reader helper shell. Recording queue coverage is split into queue

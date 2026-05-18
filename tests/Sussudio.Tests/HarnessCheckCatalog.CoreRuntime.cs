@@ -42,9 +42,6 @@ static partial class Program
             "Health snapshot propagates structured source telemetry details",
             CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails);
         await AddCheckAsync(results,
-            "Automation snapshots expose high-confidence source telemetry fields",
-            AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields);
-        await AddCheckAsync(results,
             "HDR idle snapshot reports ready pipeline parity",
             GetRuntimeSnapshot_PipelineParity_Ready_WhenHdrRequestedAndIdle);
         await AddCheckAsync(results,

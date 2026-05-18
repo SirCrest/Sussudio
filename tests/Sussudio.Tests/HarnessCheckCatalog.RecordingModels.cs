@@ -12,7 +12,6 @@ static partial class Program
         await AddRecordingModelFlashbackBufferChecksAsync(results);
         await AddRecordingModelDeviceModelChecksAsync(results);
         await AddRecordingModelAutomationContractChecksAsync(results);
-        await AddRecordingModelSourceSignalTelemetryChecksAsync(results);
     }
 
     private static async Task AddRecordingModelLibAvSinkChecksAsync(List<CheckResult> results)
@@ -133,19 +132,6 @@ static partial class Program
         await AddCheckAsync(results,
             "AutomationWindowAction has expected values",
             AutomationWindowAction_HasExpectedValues);
-    }
-
-    private static async Task AddRecordingModelSourceSignalTelemetryChecksAsync(List<CheckResult> results)
-    {
-        await AddCheckAsync(results,
-            "SourceSignalTelemetrySnapshot defaults have expected values",
-            SourceSignalTelemetrySnapshot_DefaultsHaveExpectedValues);
-        await AddCheckAsync(results,
-            "SourceSignalTelemetrySnapshot properties round-trip",
-            SourceSignalTelemetrySnapshot_PropertiesRoundTrip);
-        await AddCheckAsync(results,
-            "SourceSignalTelemetrySnapshot preserves full telemetry contract",
-            SourceSignalTelemetrySnapshot_PreservesFullTelemetryContract);
     }
 
 }
