@@ -14,7 +14,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var observedText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.SnapshotObservedFrames.cs")
             .Replace("\r\n", "\n");
-        var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs")
+        var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs")
             .Replace("\r\n", "\n");
         var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackExport.cs")
             .Replace("\r\n", "\n");

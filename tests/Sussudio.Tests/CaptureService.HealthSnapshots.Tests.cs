@@ -66,13 +66,13 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     }
 
     [Fact]
-    public void CaptureService_HealthSnapshotFlashbackBufferFields_LiveInFocusedPartial()
+    public void CaptureService_HealthSnapshotFlashbackBufferFields_LiveWithFlashbackBackendProjection()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
-        var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBuffer.cs")
+        var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackBuffer = CaptureFlashbackBufferHealthSnapshotFields(");
@@ -143,13 +143,13 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     }
 
     [Fact]
-    public void CaptureService_HealthSnapshotFlashbackQueueFields_LiveInFocusedPartial()
+    public void CaptureService_HealthSnapshotFlashbackQueueFields_LiveWithFlashbackBackendProjection()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
             .Replace("\r\n", "\n");
-        var flashbackQueueText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackQueues.cs")
+        var flashbackBufferText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var flashbackQueues = CaptureFlashbackQueueHealthSnapshotFields(");
@@ -161,11 +161,11 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertDoesNotContain(healthSnapshotText, "FlashbackForceRotateActive = fbSink?.IsForceRotateActive");
         AssertDoesNotContain(healthSnapshotText, "FlashbackGpuQueueLastRejectReason = fbSink?.LastGpuQueueRejectReason");
 
-        AssertContains(flashbackQueueText, "private static FlashbackQueueHealthSnapshotFields CaptureFlashbackQueueHealthSnapshotFields(");
-        AssertContains(flashbackQueueText, "fbSink?.VideoQueueOldestFrameAgeMs ?? 0");
-        AssertContains(flashbackQueueText, "fbSink?.IsForceRotateActive ?? false");
-        AssertContains(flashbackQueueText, "fbSink?.LastGpuQueueRejectReason ?? string.Empty");
-        AssertContains(flashbackQueueText, "private readonly record struct FlashbackQueueHealthSnapshotFields");
+        AssertContains(flashbackBufferText, "private static FlashbackQueueHealthSnapshotFields CaptureFlashbackQueueHealthSnapshotFields(");
+        AssertContains(flashbackBufferText, "fbSink?.VideoQueueOldestFrameAgeMs ?? 0");
+        AssertContains(flashbackBufferText, "fbSink?.IsForceRotateActive ?? false");
+        AssertContains(flashbackBufferText, "fbSink?.LastGpuQueueRejectReason ?? string.Empty");
+        AssertContains(flashbackBufferText, "private readonly record struct FlashbackQueueHealthSnapshotFields");
 
     }
 
