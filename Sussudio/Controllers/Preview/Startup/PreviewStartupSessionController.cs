@@ -12,8 +12,37 @@ internal enum PreviewStartupState
     Failed
 }
 
+internal sealed class PreviewStartupSessionControllerContext
+{
+    public required Func<bool> IsPreviewing { get; init; }
+    public required Func<bool> IsPreviewStopRequestedByUser { get; init; }
+    public required Func<string?> GetSelectedDeviceName { get; init; }
+    public required Action ResetSignalState { get; init; }
+    public required Action ResetFailureStopSchedule { get; init; }
+    public required Action MarkFirstVisualSignalConfirmed { get; init; }
+    public required Action StopWatchdog { get; init; }
+    public required Action StopOverlay { get; init; }
+    public required Action StopFadeInTimer { get; init; }
+    public required Action ScheduleFadeIn { get; init; }
+    public required Action<string, string> CompleteFirstVisualTransition { get; init; }
+    public required Action<bool, string> ClearReinitTransitionForStartupReset { get; init; }
+    public required Action<string> Log { get; init; }
+    public required Func<string> CreateAttemptId { get; init; }
+    public required Func<DateTimeOffset> GetUtcNow { get; init; }
+}
+
 internal sealed class PreviewStartupSessionController
 {
+    private const string ConfirmFirstVisualCallerName = "ConfirmPreviewFirstVisual";
+    private const string ResetTrackingCallerName = "ResetPreviewStartupTracking";
+
+    private readonly PreviewStartupSessionControllerContext _context;
+
+    public PreviewStartupSessionController(PreviewStartupSessionControllerContext context)
+    {
+        _context = context;
+    }
+
     public PreviewStartupState State { get; private set; } = PreviewStartupState.Idle;
     public string? AttemptId { get; private set; }
     public DateTimeOffset? RequestedUtc { get; private set; }
@@ -29,6 +58,7 @@ internal sealed class PreviewStartupSessionController
     public bool IsWaitingForFirstVisual => State == PreviewStartupState.WaitingForFirstVisual;
     public bool IsTerminal => IsTerminalState(State);
     public bool ShouldBeginAttempt => string.IsNullOrWhiteSpace(AttemptId) || IsFailed || IsIdle;
+    public string AttemptLabel => AttemptId ?? "none";
 
     public static bool IsFailedState(PreviewStartupState state)
         => state == PreviewStartupState.Failed;
@@ -36,7 +66,7 @@ internal sealed class PreviewStartupSessionController
     public static bool IsTerminalState(PreviewStartupState state)
         => state is PreviewStartupState.Idle or PreviewStartupState.Rendering or PreviewStartupState.Failed;
 
-    public bool BeginAttempt(string attemptId, DateTimeOffset requestedUtc)
+    private bool BeginAttemptCore(string attemptId, DateTimeOffset requestedUtc)
     {
         RecoveryAttemptCount = 0;
         AttemptId = attemptId;
@@ -47,10 +77,28 @@ internal sealed class PreviewStartupSessionController
         MissingSignals = null;
         FirstVisualConfirmed = false;
 
-        return SetState(PreviewStartupState.StartingSession);
+        return SetStateCore(PreviewStartupState.StartingSession);
     }
 
-    public bool SetState(PreviewStartupState state, string? reason = null)
+    public void BeginStartupAttempt()
+    {
+        var stateChanged = BeginAttemptCore(
+            _context.CreateAttemptId(),
+            _context.GetUtcNow());
+        _context.ResetSignalState();
+        _context.ResetFailureStopSchedule();
+
+        if (stateChanged)
+        {
+            LogStateChange(PreviewStartupState.StartingSession);
+        }
+
+        _context.Log(
+            $"PREVIEW_START_REQUESTED attempt={AttemptId} " +
+            $"device={_context.GetSelectedDeviceName() ?? "none"}");
+    }
+
+    private bool SetStateCore(PreviewStartupState state, string? reason = null)
     {
         if (!string.IsNullOrWhiteSpace(reason))
         {
@@ -64,6 +112,14 @@ internal sealed class PreviewStartupSessionController
 
         State = state;
         return true;
+    }
+
+    public void SetStartupState(PreviewStartupState state, string? reason = null)
+    {
+        if (SetStateCore(state, reason))
+        {
+            LogStateChange(state, reason);
+        }
     }
 
     public void MarkRendererAttached(DateTimeOffset attachedUtc)
@@ -81,10 +137,41 @@ internal sealed class PreviewStartupSessionController
         return true;
     }
 
+    public void ConfirmFirstVisual(string source)
+    {
+        if (FirstVisualConfirmed || !_context.IsPreviewing())
+        {
+            return;
+        }
+
+        if (_context.IsPreviewStopRequestedByUser())
+        {
+            _context.Log(
+                $"PREVIEW_FIRST_VISUAL_IGNORED attempt={AttemptLabel} " +
+                $"source={source} reason=stop-requested");
+            return;
+        }
+
+        MarkFirstVisualConfirmed(_context.GetUtcNow());
+        _context.MarkFirstVisualSignalConfirmed();
+        SetStartupState(PreviewStartupState.Rendering);
+        _context.StopWatchdog();
+        _context.StopOverlay();
+        _context.ScheduleFadeIn();
+        _context.CompleteFirstVisualTransition(
+            AttemptLabel,
+            ConfirmFirstVisualCallerName);
+        MissingSignals = string.Empty;
+        var elapsedMs = GetElapsedMilliseconds(_context.GetUtcNow());
+        _context.Log(
+            $"PREVIEW_FIRST_VISUAL_CONFIRMED attempt={AttemptLabel} " +
+            $"source={source} elapsedMs={elapsedMs:0} recovery={RecoveryAttemptCount}");
+    }
+
     public void SetMissingSignals(string? missingSignals)
         => MissingSignals = missingSignals;
 
-    public bool Reset(bool keepRecoveryCount = false)
+    private bool ResetCore(bool keepRecoveryCount = false)
     {
         var shouldLogIdle = !IsTerminal;
 
@@ -103,15 +190,39 @@ internal sealed class PreviewStartupSessionController
 
         if (shouldLogIdle)
         {
-            return SetState(PreviewStartupState.Idle);
+            return SetStateCore(PreviewStartupState.Idle);
         }
 
         State = PreviewStartupState.Idle;
         return false;
     }
 
+    public void ResetStartupTracking(bool keepRecoveryCount = false, bool preserveReinitAnimation = false)
+    {
+        _context.StopWatchdog();
+        _context.StopOverlay();
+        _context.StopFadeInTimer();
+        _context.ClearReinitTransitionForStartupReset(
+            preserveReinitAnimation,
+            ResetTrackingCallerName);
+        _context.ResetSignalState();
+        _context.ResetFailureStopSchedule();
+
+        if (ResetCore(keepRecoveryCount))
+        {
+            LogStateChange(PreviewStartupState.Idle);
+        }
+    }
+
     public double GetElapsedMilliseconds(DateTimeOffset utcNow)
         => RequestedUtc.HasValue
             ? (utcNow - RequestedUtc.Value).TotalMilliseconds
             : 0;
+
+    private void LogStateChange(PreviewStartupState state, string? reason = null)
+    {
+        _context.Log(
+            $"PREVIEW_START_STATE state={state} attempt={AttemptLabel} " +
+            $"recovery={RecoveryAttemptCount} reason={reason ?? "-"}");
+    }
 }

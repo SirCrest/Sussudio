@@ -2252,10 +2252,11 @@ startup-reset preservation, completion presentation decisions, and
 renderer-stop-before-teardown and reinit completion side effects.
 
 Preview startup attempt/state bookkeeping, timestamps, cached failure/
-missing-signal details, and first-visual confirmation state now live in
+missing-signal details, state/log transitions, first-visual confirmation
+sequencing, and reset orchestration now live in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` instead of a
 MainWindow field bundle. `Sussudio/MainWindow.PreviewStartup.cs` is the
-XAML/MainWindow-facing adapter that preserves logging and UI side effects.
+XAML/MainWindow-facing adapter that supplies UI/runtime callbacks.
 Watchdog/telemetry timers, timeout configuration, timeout recovery, and failure-stop scheduling live in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`;
 `Sussudio/MainWindow.PreviewStartupWatchdog.cs` wires the MainWindow/XAML-facing

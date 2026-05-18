@@ -1401,8 +1401,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Watchdog.Tests.cs`
   owns preview startup watchdog timeout and failure-stop contract assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs`
-  owns preview startup session-state, reinitialize-transition, and pending
-  Flashback-cycle wait assertions.
+  owns preview startup session orchestration, session-state,
+  reinitialize-transition, and pending Flashback-cycle wait assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Signals.Tests.cs`
   owns readiness-signal controller and startup/failure formatter assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs`
@@ -2067,9 +2067,10 @@ Primary current owners:
   renderer-stop-before-teardown and reinit completion side effects.
 - `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` owns preview
   startup attempt/state bookkeeping, timestamps, cached failure/missing-signal
-  details, and first-visual confirmation state. `Sussudio/MainWindow.PreviewStartup.cs`
-  is the XAML/MainWindow-facing adapter that preserves logging and UI side
-  effects. `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs` owns
+  details, state/log transitions, first-visual confirmation sequencing, and
+  reset orchestration. `Sussudio/MainWindow.PreviewStartup.cs` is the
+  XAML/MainWindow-facing adapter that supplies UI/runtime callbacks.
+  `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs` owns
   watchdog/telemetry timers, timeout configuration, timeout recovery, and
   failure-stop scheduling. `Sussudio/MainWindow.PreviewStartupWatchdog.cs` wires
   the MainWindow/XAML-facing adapter and timeout diagnostic payload.
