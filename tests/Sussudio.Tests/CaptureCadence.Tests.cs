@@ -53,6 +53,7 @@ static partial class Program
     private static Task VisualCadenceTracker_UsesExactCropPixelsWithOnePassDiff()
     {
         var trackerSource = ReadRepoFile("Sussudio/Services/Capture/VisualCadenceTracker.cs").Replace("\r\n", "\n");
+        var trackerMetricsSource = ReadRepoFile("Sussudio/Services/Capture/VisualCadenceTracker.Metrics.cs").Replace("\r\n", "\n");
         var captureSource = ReadUnifiedVideoCaptureSource();
 
         AssertContains(trackerSource, "DefaultSampleColumns = 640");
@@ -72,6 +73,12 @@ static partial class Program
         AssertContains(trackerSource, "_lastSample = _currentSample;");
         AssertContains(trackerSource, "AddValueSample(_deltaWindow, ref _deltaCount, ref _deltaIndex, delta)");
         AssertContains(trackerSource, "if (delta > 0)");
+        AssertContains(trackerMetricsSource, "public readonly record struct Metrics(");
+        AssertContains(trackerMetricsSource, "public Metrics GetMetrics(int maxRecentIntervals = 180)");
+        AssertContains(trackerMetricsSource, "var deltaStats = ComputeStats(deltas);");
+        AssertContains(trackerMetricsSource, "ResolveMotionConfidence(_sampleCount, deltaStats.Average, repeatPercent, changeIntervals.Length)");
+        AssertDoesNotContain(trackerSource, "public Metrics GetMetrics(");
+        AssertDoesNotContain(trackerSource, "private static string ResolveMotionConfidence(");
         AssertDoesNotContain(trackerSource, "ChangeThreshold");
         AssertDoesNotContain(trackerSource, "ComputeAverageDelta");
         AssertDoesNotContain(trackerSource, "Array.Copy(_currentSample, _lastSample");

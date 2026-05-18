@@ -1645,6 +1645,13 @@ callbacks, raw preview submission, and visual-cadence reset/recording helpers
 there; keep recording and Flashback enqueue paths in
 `UnifiedVideoCapture.SinkFanout.cs`.
 
+Decoded visual-cadence sampling now lives in
+`Sussudio/Services/Capture/VisualCadenceTracker.cs`. Keep luma sampling, crop
+selection, sample-buffer promotion, and repeat/change ingestion there; keep
+metrics DTO construction, ring-buffer snapshot copying, delta/output/change
+statistics, and motion-confidence labels in
+`Sussudio/Services/Capture/VisualCadenceTracker.Metrics.cs`.
+
 MJPEG preview jitter-buffer metrics now live in
 `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs`. Keep metrics
 records, snapshot construction, timing samples, selected/dropped-frame
