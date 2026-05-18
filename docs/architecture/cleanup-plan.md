@@ -1380,8 +1380,13 @@ Flashback exporter multi-segment packet-copy/remux behavior now lives in
 validation dispatch, temp-output preparation, final output replacement, and
 segment-export lock release there. Segment packet writing now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs`; keep
-output-template initialization, packet read-loop orchestration, segment offset
-updates, progress reporting, and requested-segment skip validation there.
+output-template initialization, segment input sequencing, segment offset
+updates, completion progress, and requested-segment skip validation there. The
+active segment packet pump lives in
+`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs`; keep
+native frame reads, per-read packet unref, stream filtering, timestamp-base
+discovery, buffered packet transition, rebased packet writes, writer throttling,
+and EOF partial-base rescue/freeing there.
 Per-segment packet write state and decisions live in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriteState.cs`; keep
 timestamp-base discovery, buffered-packet rescue/flush, timestamp rebasing,

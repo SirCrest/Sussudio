@@ -115,6 +115,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
+        var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs")
+            .Replace("\r\n", "\n");
         var segmentPacketWriteStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriteState.cs")
             .Replace("\r\n", "\n");
         var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
@@ -132,16 +134,26 @@ static partial class Program
         AssertContains(segmentsText, "WriteSegmentPacketsToActiveOutput(");
         AssertDoesNotContain(segmentsText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
         AssertContains(segmentPacketWritingText, "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
-        AssertContains(segmentPacketWritingText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
+        AssertContains(segmentPacketWritingText, "WriteSegmentPacketReadLoop(");
+        AssertDoesNotContain(segmentPacketWritingText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
+        AssertContains(segmentPacketReadLoopText, "private void WriteSegmentPacketReadLoop(");
+        AssertContains(segmentPacketReadLoopText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
 
         var segmentLoopBlock = ExtractTextBetween(
-            segmentPacketWritingText,
-            "var segmentPacketState = CreateSegmentPacketWriteState(",
-            "// Update cross-segment offset:");
+            segmentPacketReadLoopText,
+            "segmentPacketState = CreateSegmentPacketWriteState(",
+            "    }\n}");
         // The buffered flush owner is shared by the mid-loop transition and EOF rescue path.
         AssertContains(segmentPacketWriteStateText, "private int FlushSegmentBufferedPackets(");
-        AssertContains(segmentLoopBlock, "totalPackets += FlushSegmentBufferedPackets(\n                                    ref segmentPacketState,");
-        AssertContains(segmentLoopBlock, "totalPackets += FlushSegmentBufferedPackets(\n                        ref segmentPacketState,");
+        AssertContains(segmentLoopBlock, "totalPackets += FlushSegmentBufferedPackets(");
+        AssertOccursBefore(
+            segmentLoopBlock,
+            "if (segmentPacketState.AllBasesDiscovered)",
+            "if (!segmentPacketState.AllBasesDiscovered && segmentPacketState.BufferedPackets.Count > 0)");
+        AssertOccursBefore(
+            segmentLoopBlock,
+            "if (!segmentPacketState.AllBasesDiscovered && segmentPacketState.BufferedPackets.Count > 0)",
+            "FreeBufferedPackets(segmentPacketState.BufferedPackets, segmentPacketState.BufferedStreamIndices);");
         var segmentFlushBlock = ExtractTextBetween(
             segmentPacketWriteStateText,
             "private int FlushSegmentBufferedPackets(",

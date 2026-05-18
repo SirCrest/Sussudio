@@ -18,6 +18,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
+        var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs")
+            .Replace("\r\n", "\n");
         var segmentPacketWriteStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriteState.cs")
             .Replace("\r\n", "\n");
         var segmentRangeProjectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentRangeProjection.cs")
@@ -90,6 +92,14 @@ static partial class Program
         AssertContains(segmentPacketWritingText, "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
         AssertContains(segmentPacketWritingText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
         AssertContains(segmentPacketWritingText, "var segmentExportWindow = ProjectSegmentExportWindow(segment, inPoint, outPoint, outPtsLimitUs);");
+        AssertContains(segmentPacketWritingText, "WriteSegmentPacketReadLoop(");
+        AssertDoesNotContain(segmentPacketWritingText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
+        AssertContains(segmentPacketReadLoopText, "private void WriteSegmentPacketReadLoop(");
+        AssertContains(segmentPacketReadLoopText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
+        AssertContains(segmentPacketReadLoopText, "ffmpeg.av_packet_unref(packet);");
+        AssertContains(segmentPacketReadLoopText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
+        AssertContains(segmentPacketReadLoopText, "FLASHBACK_EXPORT_SEGMENT_PARTIAL_BASE_FLUSH");
+        AssertContains(segmentPacketReadLoopText, "FreeBufferedPackets(segmentPacketState.BufferedPackets, segmentPacketState.BufferedStreamIndices);");
         AssertContains(segmentPacketWriteStateText, "private struct SegmentPacketWriteState");
         AssertContains(segmentPacketWriteStateText, "private int FlushSegmentBufferedPackets(");
         AssertContains(segmentPacketWriteStateText, "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(");

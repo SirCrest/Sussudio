@@ -5,6 +5,8 @@ static partial class Program
     private static Task FlashbackExporter_ProgressCallbacksAreBestEffort()
     {
         var sourceText = ReadFlashbackExporterSource();
+        var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketReadLoop.cs")
+            .Replace("\r\n", "\n");
 
         AssertDoesNotContain(sourceText, "progress?.Report(new ExportProgress");
         AssertContains(sourceText, "using System.Diagnostics;");
@@ -14,9 +16,9 @@ static partial class Program
         AssertContains(sourceText, "if (ShouldReportProgressHeartbeat(ref lastProgressHeartbeatTick))");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(0, 1, 0), \"single_heartbeat\");");
         var segmentExportLoopBlock = ExtractTextBetween(
-            sourceText,
+            segmentPacketReadLoopText,
             "var segmentVideoFrameDurUs = 33333L;",
-            "// Update cross-segment offset:");
+            "// EOF: if Phase 1 never completed");
         AssertContains(segmentExportLoopBlock, "ReportProgress(");
         AssertContains(segmentExportLoopBlock, "\"segment_heartbeat\");");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(1, 1, 100.0), \"single_complete\")");
