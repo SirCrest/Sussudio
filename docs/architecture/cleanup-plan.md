@@ -1111,11 +1111,15 @@ validation, stopped-output validation handoff, stop logging, and
 `LibAvRecordingSink.Options.cs`, and stopped-output validation in
 `LibAvRecordingSink.OutputValidation.cs`.
 
-LibAv recording sink encode-drain ownership now lives in
+LibAv recording sink encode-loop ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs`. Keep the
-background encoding loop, bounded video/GPU/CUDA/audio/microphone drain
-batches, cancellation cleanup, frame-encoded event dispatch, and fatal encoder
-failure handling there.
+background loop ordering, second audio/microphone drain pass, cancellation
+cleanup, and fatal encoder failure handling there. Queue-to-encoder packet
+drain ownership now lives in
+`Sussudio/Services/Recording/LibAvRecordingSink.PacketDrain.cs`. Keep bounded
+video/GPU/CUDA drain batches, unbounded LibAv audio/microphone drains,
+frame-encoded event dispatch, GPU texture release, CUDA frame free, and pooled
+buffer returns there.
 
 Recording verifier ownership is split across focused partials. Keep strict
 verification orchestration in `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`,

@@ -71,6 +71,8 @@ static partial class Program
     private static Task LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
     {
         var libAvSource = ReadLibAvRecordingSinkSource();
+        var encodingLoopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(libAvSource, "private const int VideoDrainBatchLimit = 24;");
         AssertContains(libAvSource, "private const int AudioDrainBatchLimit = 128;");
@@ -84,9 +86,9 @@ static partial class Program
         AssertContains(libAvSource, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
 
         var loopBlock = ExtractSourceBlock(
-            libAvSource,
+            encodingLoopText,
             "private void EncodingLoop(CancellationToken cancellationToken)",
-            "    private bool DrainVideoPackets");
+            "            _encoder.FlushAndClose();");
         AssertOccursBefore(loopBlock, "DrainAudioPackets(audioQueue.Reader)", "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
         AssertOccursBefore(loopBlock, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)", "// Audio again catches samples");
 
@@ -100,19 +102,33 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task LibAvRecordingSink_EncodingLoopLivesInFocusedPartial()
+    private static Task LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveInFocusedPartials()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");
         var encodingLoopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs")
             .Replace("\r\n", "\n");
+        var packetDrainText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.PacketDrain.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(encodingLoopText, "private void EncodingLoop(CancellationToken cancellationToken)");
-        AssertContains(encodingLoopText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(encodingLoopText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(encodingLoopText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(encodingLoopText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)");
-        AssertContains(encodingLoopText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader)");
+        AssertContains(encodingLoopText, "DrainAudioPackets(audioQueue.Reader)");
+        AssertContains(encodingLoopText, "DrainCudaPackets(cudaQueue.Reader, CudaDrainBatchLimit)");
+        AssertContains(encodingLoopText, "DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
+        AssertContains(encodingLoopText, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
+        AssertContains(packetDrainText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(packetDrainText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(packetDrainText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(packetDrainText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)");
+        AssertContains(packetDrainText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader)");
+        AssertContains(packetDrainText, "Marshal.Release(packet.Texture);");
+        AssertContains(packetDrainText, "ffmpeg.av_frame_free(&frame);");
+        AssertContains(packetDrainText, "ReturnVideoPacket(packet);");
+        AssertContains(packetDrainText, "ReturnBuffer(packet.Buffer);");
+        AssertDoesNotContain(encodingLoopText, "private bool DrainVideoPackets(");
+        AssertDoesNotContain(encodingLoopText, "private bool DrainGpuPackets(");
+        AssertDoesNotContain(encodingLoopText, "private unsafe bool DrainCudaPackets(");
+        AssertDoesNotContain(encodingLoopText, "private bool DrainAudioPackets(");
         AssertDoesNotContain(rootText, "private void EncodingLoop(CancellationToken cancellationToken)");
         AssertDoesNotContain(rootText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertDoesNotContain(rootText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");

@@ -23,8 +23,8 @@ static partial class Program
             "LibAv recording drain loop interleaves audio with bounded video batches",
             LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches);
         await AddCheckAsync(results,
-            "LibAv recording encoding loop lives in focused partial",
-            LibAvRecordingSink_EncodingLoopLivesInFocusedPartial);
+            "LibAv recording encoding loop and packet drains live in focused partials",
+            LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveInFocusedPartials);
         await AddCheckAsync(results,
             "LibAv recording audio queues live in focused partial",
             LibAvRecordingSink_AudioQueuesLiveInFocusedPartial);
