@@ -1785,9 +1785,9 @@ Primary current owners:
   recording selection policy, capture settings defaults, output path/file
   naming, bitrate policy, split-encode support, MJPEG HFR policy, and encoder
   availability/preferred encoder policy.
-- `tests/Sussudio.Tests/CaptureConfigurationModels.Flashback.Tests.cs` owns
-  Flashback buffer, session, playback, export progress, segment, and request
-  DTO contract tests.
+- `tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs` owns xUnit coverage for
+  Flashback buffer, session, playback-state, export progress, segment, and
+  request DTO contract tests.
 - `tests/Sussudio.Tests/CaptureConfigurationModels.RecordingPipeline.Tests.cs`
   owns recording pipeline queue capacity and drop-policy tests.
 - Focused capture session coordinator coverage lives in

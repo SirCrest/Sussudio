@@ -535,8 +535,9 @@ now live in `tests/Sussudio.Tests/MjpegTimingMetrics.Helpers.cs`.
 shared reflection helpers for remaining legacy capture model checks.
 `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns capture
 mode options, capture settings/MJPEG HFR policy, recording selection policy,
-and encoder support coverage. Flashback DTO contracts and recording pipeline
-option contracts remain legacy owners until their own migration slices.
+and encoder support coverage. `tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs`
+owns Flashback DTO contracts. Recording pipeline option contracts remain a
+focused legacy owner until their own migration slice.
 
 `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` now keeps only shared
 pooled-frame and jitter-buffer helpers. Pooled-frame coverage is split into
@@ -3093,8 +3094,8 @@ Remaining `tools/Common` ownership:
    frame-flow owners. Automation tool contract tests are split into
    protocol, catalog/manifest, reliability-gates, and snapshot formatter
    owners. Capture configuration model tests have consolidated xUnit coverage
-   for options/settings/encoder support while Flashback DTO and recording
-   pipeline contracts remain focused legacy owners. Pooled-frame
+   for options/settings/encoder support and Flashback DTO contracts while
+   recording pipeline contracts remain a focused legacy owner. Pooled-frame
    tests are split into lease lifecycle, MJPEG jitter policy, MJPEG jitter
    queue behavior, and queued lease release owners. MainWindow shell ownership
    tests are split into chrome, startup, preview runtime, and window lifecycle

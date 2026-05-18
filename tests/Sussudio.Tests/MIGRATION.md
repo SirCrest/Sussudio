@@ -38,6 +38,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.CaptureConfigurationModelsTests.cs` owns the former legacy capture
   mode options, capture settings, recording selection policy, and encoder
   support contract checks.
+- `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer,
+  session, playback-state, export progress, export segment, and export request
+  model contract checks.
 
 ## Targeting reality
 
