@@ -4,7 +4,7 @@ static partial class Program
 {
     private static Task AutomationSnapshotFormatter_SourceOwnership_IsSplit()
     {
-        var sharedFormatterSource = ReadAutomationSnapshotFormatterSource();
+        var sharedFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadAutomationSnapshotFormatterSource();
         var sharedFormatterRootSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
         var sharedFormatterCoreSectionsSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.CoreSections.cs");
         var sharedFormatterCaptureSettingsSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs");

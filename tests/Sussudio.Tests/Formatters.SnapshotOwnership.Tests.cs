@@ -5,7 +5,7 @@ static partial class Program
     private static Task SsctlFormatters_SnapshotSourceOwnership_IsSplit()
     {
         var ssctlFormatterCommonSource = ReadRepoFile("tools/ssctl/Formatters.Common.cs");
-        var ssctlFormatterSource = ReadSsctlSnapshotFormatterSource();
+        var ssctlFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
         var ssctlSnapshotRootSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
         var ssctlSnapshotCoreSectionsSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.CoreSections.cs");
         var ssctlSnapshotAvSyncSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.AvSync.cs");

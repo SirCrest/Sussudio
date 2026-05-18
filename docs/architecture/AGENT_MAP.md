@@ -1660,6 +1660,9 @@ Primary current owners:
   owns ssctl formatter source ownership assertions, while
   `tests/Sussudio.Tests/Formatters.Timeline.Tests.cs` owns timeline table and
   summary output checks.
+- `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns
+  `RuntimeContractSource`, including shared tool source-family readers used by
+  legacy harness and xUnit contract tests.
 - `tests/Sussudio.Tests/CommandHandlers.Helpers.cs` owns source-family
   reader, routing-capture helpers, and `AssertSsctlCommandRequest`, which routes
   captured ssctl `request.command` checks through the shared golden command table

@@ -57,8 +57,8 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "FlashbackTempDriveFreeBytes = flashbackBuffer.TempDriveFreeBytes");
         AssertContains(captureSnapshotsSource, "bufMgr?.TempDriveAvailableFreeBytes ?? 0");
 
-        var sharedFormatterSource = ReadAutomationSnapshotFormatterSource();
-        var ssctlFormatterSource = ReadSsctlSnapshotFormatterSource();
+        var sharedFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadAutomationSnapshotFormatterSource();
+        var ssctlFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
         var mcpAppStateSource = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
         AssertContains(sharedFormatterSource, "FlashbackEncodingFailed");
         AssertContains(sharedFormatterSource, "FlashbackStartupCacheBytes");

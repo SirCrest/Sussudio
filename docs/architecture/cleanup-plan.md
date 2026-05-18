@@ -401,9 +401,10 @@ text, and thread-health live in the remaining focused formatter partials. The
 CPU timing, frame-flow, frame-latency wait, and DXGI frame stats together while
 preserving output order. Slow-frame diagnostics stay in
 `AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs` because `ssctl` reuses
-that formatter directly. Tests that
-reason about formatter source use `ReadAutomationSnapshotFormatterSource()` so
-ownership checks cover the full partial family.
+that formatter directly. Tests that reason about formatter source use the
+shared `RuntimeContractSource` snapshot formatter source-family readers so
+ownership checks cover the full partial family from both the legacy harness and
+xUnit formatter contracts.
 
 Diagnostic-session MCP surface coverage is split into
 `McpToolSurface.DiagnosticSession.Tool.Tests.cs` for MCP tool
@@ -486,7 +487,8 @@ output, Preview D3D output, and source ownership live in focused
 `AutomationToolContracts.SnapshotFormatter.*.Tests.cs` owners registered with
 the offline harness. ssctl formatter output smoke checks stay in
 `Formatters.Tests.cs`, while `Formatters.SnapshotOwnership.Tests.cs` owns ssctl
-formatter source ownership assertions.
+formatter source ownership assertions through the shared `RuntimeContractSource`
+formatter source-family readers.
 ssctl command-handler routing coverage now lives in one grouped
 `CommandHandlers.Routing.Tests.cs` owner for device, capture controls,
 recordings, Flashback, window, manifest, observability, automation-flow, UI

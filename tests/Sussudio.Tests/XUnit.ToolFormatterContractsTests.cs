@@ -101,8 +101,8 @@ public sealed class ToolFormatterContractsTests
     [Fact]
     public void SsctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter()
     {
-        var mcpFields = ExtractSnapshotFields(ReadAutomationSnapshotFormatterSource());
-        var ssctlFields = ExtractSnapshotFields(ReadSsctlSnapshotFormatterSource());
+        var mcpFields = ExtractSnapshotFields(RuntimeContractSource.ReadAutomationSnapshotFormatterSource());
+        var ssctlFields = ExtractSnapshotFields(RuntimeContractSource.ReadSsctlSnapshotFormatterSource());
 
         Assert.NotEmpty(mcpFields);
         Assert.NotEmpty(ssctlFields);
@@ -131,54 +131,6 @@ public sealed class ToolFormatterContractsTests
     private static MethodInfo RequireStaticMethod(Type type, string name)
         => type.GetMethod(name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
            ?? throw new InvalidOperationException($"{type.FullName}.{name} was not found.");
-
-    private static string ReadAutomationSnapshotFormatterSource()
-        => ReadSourceFamily(new[]
-        {
-            "tools/Common/AutomationSnapshotFormatter.cs",
-            "tools/Common/AutomationSnapshotFormatter.CoreSections.cs",
-            "tools/Common/AutomationSnapshotFormatter.CaptureSettings.cs",
-            "tools/Common/AutomationSnapshotFormatter.VideoPipeline.cs",
-            "tools/Common/AutomationSnapshotFormatter.Diagnostics.cs",
-            "tools/Common/AutomationSnapshotFormatter.CaptureCadence.cs",
-            "tools/Common/AutomationSnapshotFormatter.Values.cs",
-            "tools/Common/AutomationSnapshotFormatter.DisplayValues.cs",
-            "tools/Common/AutomationSnapshotFormatter.Flashback.cs",
-            "tools/Common/AutomationSnapshotFormatter.MjpegTiming.cs",
-            "tools/Common/AutomationSnapshotFormatter.Preview.cs",
-            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.cs",
-            "tools/Common/AutomationSnapshotFormatter.PreviewD3D.SlowFrames.cs",
-            "tools/Common/AutomationSnapshotFormatter.ThreadHealth.cs"
-        });
-
-    private static string ReadSsctlSnapshotFormatterSource()
-        => ReadSourceFamily(new[]
-        {
-            "tools/ssctl/Formatters.Snapshot.cs",
-            "tools/ssctl/Formatters.Snapshot.CoreSections.cs",
-            "tools/ssctl/Formatters.Snapshot.AvSync.cs",
-            "tools/ssctl/Formatters.Snapshot.CaptureCadence.cs",
-            "tools/ssctl/Formatters.Snapshot.CaptureSettings.cs",
-            "tools/ssctl/Formatters.Snapshot.DiagnosticLanes.cs",
-            "tools/ssctl/Formatters.Snapshot.Flashback.cs",
-            "tools/ssctl/Formatters.Snapshot.Mjpeg.cs",
-            "tools/ssctl/Formatters.Snapshot.Preview.cs",
-            "tools/ssctl/Formatters.Snapshot.PreviewD3D.cs",
-            "tools/ssctl/Formatters.Snapshot.ThreadHealth.cs",
-            "tools/ssctl/Formatters.Snapshot.VideoPipeline.cs",
-            "tools/ssctl/Formatters.Snapshot.Source.cs"
-        });
-
-    private static string ReadSourceFamily(string[] files)
-    {
-        var parts = new string[files.Length];
-        for (var i = 0; i < files.Length; i++)
-        {
-            parts[i] = RuntimeContractSource.ReadRepoFile(files[i]).Replace("\r\n", "\n", StringComparison.Ordinal);
-        }
-
-        return string.Join("\n", parts);
-    }
 
     private static HashSet<string> ExtractSnapshotFields(string sourceText)
     {
