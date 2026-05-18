@@ -613,8 +613,10 @@ First-load startup, initial ViewModel/device refresh, automation startup timing,
 and the launch entrance trigger now live in `Sussudio/MainWindow.Startup.cs`.
 Automation host composition, once-only
 startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
-in `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs`, with
-`Sussudio/MainWindow.AutomationHost.cs` kept as the shell adapter. Window close
+in `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs`.
+`Sussudio/MainWindow.Startup.cs` starts that controller directly after initial
+device refresh, and `Sussudio/MainWindow.ShutdownCleanup.cs` passes its async
+dispose delegate into the shutdown controller. Window close
 completion lives in `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`;
 recording-aware close finalization now lives in
 `Sussudio/Controllers/Window/WindowCloseRecordingFinalizationController.cs`.

@@ -938,8 +938,9 @@ Primary current owners:
   automation host lifecycle: automation token/pipe-name resolution, diagnostics
   hub construction, command dispatcher construction, named-pipe server
   construction, once-only startup, ready/disabled logging, and pipe-before-hub
-  shutdown disposal. `Sussudio/MainWindow.AutomationHost.cs` is the shell-facing
-  start/dispose adapter.
+  shutdown disposal. `Sussudio/MainWindow.Startup.cs` starts the controller after
+  initial device refresh; `Sussudio/MainWindow.ShutdownCleanup.cs` passes the
+  controller dispose delegate into the shutdown cleanup controller.
 - `Sussudio/MainWindow.Startup.cs` owns first-load startup, initial
   ViewModel/device refresh, automation startup timing, and the launch entrance
   trigger. Window close routing/finalization ownership is detailed in the

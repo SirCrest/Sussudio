@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -212,7 +213,6 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs").Replace("\r\n", "\n");
-        var automationHostAdapterText = ReadRepoFile("Sussudio/MainWindow.AutomationHost.cs").Replace("\r\n", "\n");
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.CloseLifecycle.cs").Replace("\r\n", "\n");
 
@@ -222,11 +222,13 @@ static partial class Program
         AssertContains(startupText, "PrimePreviewAudioFadeIn();");
         AssertContains(startupText, "await ViewModel.RefreshDevicesAsync();");
         AssertContains(startupText, "RevealPreviewUnavailablePlaceholder();");
-        AssertContains(startupText, "StartAutomationServices();");
+        AssertContains(startupText, "_automationHostLifecycleController.Start();");
         AssertContains(startupText, "PlaySplashAndEntrance();");
-        AssertContains(automationHostAdapterText, "private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;");
-        AssertContains(automationHostAdapterText, "private void StartAutomationServices()");
-        AssertContains(automationHostAdapterText, "=> _automationHostLifecycleController.Start();");
+        AssertContains(mainWindowText, "private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.AutomationHost.cs")),
+            "MainWindow automation host adapter partial");
         AssertContains(automationHostControllerText, "private int _started;");
         AssertContains(automationHostControllerText, "Interlocked.Exchange(ref _started, 1)");
         AssertContains(automationHostControllerText, "if (_pipeServer.Start())\n        {\n            _diagnosticsHub.Start();");
@@ -258,7 +260,7 @@ static partial class Program
         AssertOccursBefore(mainWindowText, "private void InitializeFlashbackControllers()", "private void InitializeShellPresentationControllers()");
         AssertOccursBefore(mainWindowText, "private void InitializeShellPresentationControllers()", "private void InitializePreviewControllers()");
         AssertOccursBefore(mainWindowText, "private void InitializePreviewControllers()", "private void InitializeRecordingControllers()");
-        AssertOccursBefore(startupText, "await ViewModel.InitializeAsync();", "StartAutomationServices();");
+        AssertOccursBefore(startupText, "await ViewModel.InitializeAsync();", "_automationHostLifecycleController.Start();");
         AssertOccursBefore(startupText, "ScheduleNativeShellRevealAfterFirstFrame();", "_ = RunUiEventHandlerAsync(async () =>");
         AssertOccursBefore(startupText, "ScheduleNativeShellRevealAfterFirstFrame();", "await ViewModel.InitializeAsync();");
         AssertOccursBefore(startupText, "ScheduleNativeShellRevealAfterFirstFrame();", "PlaySplashAndEntrance();");

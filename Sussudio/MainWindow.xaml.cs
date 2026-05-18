@@ -12,6 +12,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 {
     public MainViewModel ViewModel { get; }
     private readonly DispatcherQueue _dispatcherQueue;
+    private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;
     private NvmlMonitor? _nvmlMonitor;
     private FullScreenController _fullScreenController = null!;
 

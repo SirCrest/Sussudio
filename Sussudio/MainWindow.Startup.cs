@@ -30,7 +30,7 @@ public sealed partial class MainWindow
             }
             finally
             {
-                StartAutomationServices();
+                _automationHostLifecycleController.Start();
             }
         }, nameof(MainWindow_Loaded));
 

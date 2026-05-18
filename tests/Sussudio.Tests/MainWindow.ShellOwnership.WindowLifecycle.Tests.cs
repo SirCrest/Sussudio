@@ -10,7 +10,6 @@ static partial class Program
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.ShutdownCleanup.cs").Replace("\r\n", "\n");
         var nativeWindowText = ReadRepoFile("Sussudio/MainWindow.NativeWindow.cs").Replace("\r\n", "\n");
         var nativeWindowControllerText = ReadRepoFile("Sussudio/Controllers/Window/NativeWindowBootstrapController.cs").Replace("\r\n", "\n");
-        var automationHostAdapterText = ReadRepoFile("Sussudio/MainWindow.AutomationHost.cs").Replace("\r\n", "\n");
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs").Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var appClosingControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAppClosingController.cs").Replace("\r\n", "\n");
@@ -117,9 +116,11 @@ static partial class Program
         AssertContains(shutdownCleanupText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");
         AssertContains(shutdownCleanupText, "=> await _windowShutdownCleanupController.RunAsync();");
         AssertContains(shutdownCleanupText, "StopRecordingAfterClosedBestEffortAsync = () => _windowCloseRecordingFinalizationController.StopAfterClosedBestEffortAsync(");
-        AssertContains(shutdownCleanupText, "DisposeAutomationHostAsync = DisposeAutomationHostAsync,");
-        AssertContains(automationHostAdapterText, "private ValueTask DisposeAutomationHostAsync()");
-        AssertContains(automationHostAdapterText, "=> _automationHostLifecycleController.DisposeAsync();");
+        AssertContains(shutdownCleanupText, "DisposeAutomationHostAsync = () => _automationHostLifecycleController.DisposeAsync(),");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.AutomationHost.cs")),
+            "MainWindow automation host adapter partial");
         AssertContains(automationHostControllerText, "public async ValueTask DisposeAsync()");
         AssertContains(automationHostControllerText, "await _pipeServer.DisposeAsync();");
         AssertContains(automationHostControllerText, "await _diagnosticsHub.DisposeAsync();");

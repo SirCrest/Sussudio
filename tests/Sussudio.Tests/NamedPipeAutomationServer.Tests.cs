@@ -141,8 +141,6 @@ static partial class Program
     {
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var automationHostAdapterText = ReadRepoFile("Sussudio/MainWindow.AutomationHost.cs")
-            .Replace("\r\n", "\n");
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadRepoFile("Sussudio/MainWindow.Startup.cs")
@@ -150,8 +148,11 @@ static partial class Program
 
         AssertContains(mainWindowText, "_automationHostLifecycleController = new WindowAutomationHostLifecycleController(");
         AssertContains(mainWindowText, "GetPreviewRuntimeSnapshotAsync,\n            this);");
-        AssertContains(automationHostAdapterText, "=> _automationHostLifecycleController.Start();");
-        AssertContains(automationHostAdapterText, "=> _automationHostLifecycleController.DisposeAsync();");
+        AssertContains(mainWindowText, "private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.AutomationHost.cs")),
+            "MainWindow automation host adapter partial");
         AssertContains(automationHostControllerText, "var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);");
         AssertContains(automationHostControllerText, "var automationPipeName = Environment.GetEnvironmentVariable(\"SUSSUDIO_AUTOMATION_PIPE\");");
         AssertContains(automationHostControllerText, "automationPipeName = NamedPipeAutomationServer.DefaultPipeName;");
@@ -162,7 +163,7 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar)");
         AssertDoesNotContain(mainWindowText, "new NamedPipeAutomationServer(");
         AssertDoesNotContain(startupText, "new NamedPipeAutomationServer(");
-        AssertContains(startupText, "StartAutomationServices();");
+        AssertContains(startupText, "_automationHostLifecycleController.Start();");
         AssertContains(automationHostControllerText, "if (_pipeServer.Start())\n        {\n            _diagnosticsHub.Start();");
         AssertContains(automationHostControllerText, "Automation control ready on pipe '{_pipeName}' (token required={_tokenRequired}).");
         AssertContains(automationHostControllerText, "Automation control disabled on pipe '{_pipeName}' (token required={_tokenRequired}).");

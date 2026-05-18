@@ -30,7 +30,7 @@ public sealed partial class MainWindow
             StopRecordingAfterClosedBestEffortAsync = () => _windowCloseRecordingFinalizationController.StopAfterClosedBestEffortAsync(
                 ViewModel,
                 Content as FrameworkElement),
-            DisposeAutomationHostAsync = DisposeAutomationHostAsync,
+            DisposeAutomationHostAsync = () => _automationHostLifecycleController.DisposeAsync(),
             DisposeNvmlMonitor = () => _nvmlMonitor?.Dispose(),
             DisposeViewModelAsync = ViewModel.DisposeAsync
         });
