@@ -65,34 +65,6 @@ static partial class Program
 
     // ── RingBufferHelpers.Copy (used by ParallelMjpegDecodePipeline and friends) ──
 
-    private static Task ParallelMjpegDecodePipeline_CopyRing_ExtractsCorrectWindow()
-    {
-        var helperType = RequireType("Sussudio.Services.Runtime.RingBufferHelpers");
-        var method = helperType.GetMethod(
-            "Copy",
-            BindingFlags.Static | BindingFlags.Public,
-            binder: null,
-            types: new[] { typeof(double[]), typeof(int), typeof(int), typeof(int?) },
-            modifiers: null)
-            ?? throw new InvalidOperationException("RingBufferHelpers.Copy(double[], int, int, int?) not found.");
-
-        // Ring buffer: [3, 4, 5, 1, 2] with index pointing at position 2 (value 5)
-        // Count = 5, meaning the ring is full
-        var window = new double[] { 3.0, 4.0, 5.0, 1.0, 2.0 };
-        var count = 5;
-        var index = 3; // next-write index, so last-written is at 2
-
-        var result = (double[])method.Invoke(null, new object?[] { window, count, index, (int?)null })!;
-        AssertEqual(5, result.Length, "CopyRing output length");
-
-        // Should extract in insertion order: oldest first
-        // With index=3 and count=5, oldest is at (3-5+5)%5 = 3, then 4, 0, 1, 2
-        // So values: [1.0, 2.0, 3.0, 4.0, 5.0]
-        AssertEqual(true, result.Length == count, "CopyRing returns count elements");
-
-        return Task.CompletedTask;
-    }
-
     // ── ParallelMjpegDecodePipeline: GetElapsedMilliseconds ──
 
     private static Task ParallelMjpegDecodePipeline_GetElapsedMilliseconds_ComputesCorrectly()

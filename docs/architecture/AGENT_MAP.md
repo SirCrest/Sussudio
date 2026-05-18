@@ -1718,6 +1718,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCheckCatalog.CoreRuntime.cs` owns runtime,
   telemetry, recording verifier, LibAv encoder, and basic app contract check
   registration.
+- `tests/Sussudio.Tests/XUnit.RuntimeHelpersTests.cs` owns pure runtime helper
+  contracts for AtomicMax, TelemetryAgeHelper, EnvironmentHelpers, and
+  RingBufferHelpers.
 - Focused `tests/Sussudio.Tests/HarnessCheckCatalog.AutomationDiagnostics.*.cs`
   partials own automation-diagnostics app shell,
   MainWindow surface, dispatcher, pipe/auth, ViewModel/Flashback UI,

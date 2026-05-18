@@ -84,9 +84,6 @@ static partial class Program
             "CaptureService encoder output pixel format distinguishes HDR",
             CaptureService_ResolveEncoderOutputPixelFormat_DistinguishesHdr);
         await AddCheckAsync(results,
-            "CaptureService telemetry age computes bounded seconds",
-            CaptureService_ResolveTelemetryAgeSeconds_ComputesCorrectly);
-        await AddCheckAsync(results,
             "CaptureService HDR warmup state resolves expected states",
             CaptureService_ResolveHdrWarmupState_ReturnsCorrectStates);
         await AddCheckAsync(results,

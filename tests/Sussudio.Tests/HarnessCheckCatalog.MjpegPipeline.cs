@@ -18,9 +18,6 @@ static partial class Program
             "MJPEG pipeline timing metrics calculate P95 samples",
             ParallelMjpegDecodePipeline_ComputeTimingMetrics_P95Calculation);
         await AddCheckAsync(results,
-            "MJPEG pipeline copy ring extracts insertion-order window",
-            ParallelMjpegDecodePipeline_CopyRing_ExtractsCorrectWindow);
-        await AddCheckAsync(results,
             "MJPEG pipeline elapsed milliseconds uses stopwatch ticks",
             ParallelMjpegDecodePipeline_GetElapsedMilliseconds_ComputesCorrectly);
         await AddCheckAsync(results,
