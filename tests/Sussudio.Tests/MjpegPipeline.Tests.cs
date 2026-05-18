@@ -164,6 +164,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Workers.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ReorderEmission.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs");
         AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
         AssertContains(source, "HasJpegStartOfImage");
@@ -254,6 +255,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var reorderText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
             .Replace("\r\n", "\n");
+        var reorderEmissionText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ReorderEmission.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(reorderText, "private const long DefaultDecodedReorderByteBudget = 1024L * 1024 * 1024;");
         AssertContains(reorderText, "private readonly record struct DecodedFrame(");
@@ -261,14 +264,18 @@ static partial class Program
         AssertContains(reorderText, "private readonly SortedSet<long> _knownMissingSequences = new();");
         AssertContains(reorderText, "private readonly object _reorderLock = new();");
         AssertContains(reorderText, "private static int ResolveDecodedReorderCapacity(int width, int height)");
-        AssertContains(reorderText, "private void EmitLoop()");
-        AssertContains(reorderText, "private bool DrainReadyFrames()");
         AssertContains(reorderText, "private void DetectAndResetStall(bool emittedAny)");
         AssertContains(reorderText, "private void MarkKnownMissing(long seqNo, string reason)");
         AssertContains(reorderText, "private bool ConsumeKnownMissingFrames()");
-        AssertContains(reorderText, "private void NotifyPreviewFrameDecoded(PooledVideoFrame frame)");
         AssertContains(reorderText, "private bool TryAddDecodedFrame(long seqNo, PooledVideoFrame frame, long decodedTick)");
-        AssertContains(reorderText, "private void DrainRemainingFramesInOrder()");
+        AssertContains(reorderEmissionText, "private void EmitLoop()");
+        AssertContains(reorderEmissionText, "private bool DrainReadyFrames()");
+        AssertContains(reorderEmissionText, "private void NotifyPreviewFrameDecoded(PooledVideoFrame frame)");
+        AssertContains(reorderEmissionText, "private void DrainRemainingFramesInOrder()");
+        AssertContains(reorderEmissionText, "RecordTimingSample(_reorderLatencyMs");
+        AssertContains(reorderEmissionText, "_emitCallback(frame.Frame);");
+        AssertDoesNotContain(reorderText, "private void NotifyPreviewFrameDecoded(PooledVideoFrame frame)");
+        AssertDoesNotContain(reorderText, "private void DrainRemainingFramesInOrder()");
         AssertDoesNotContain(rootText, "private void EmitLoop()");
         AssertDoesNotContain(rootText, "private bool DrainReadyFrames()");
         AssertDoesNotContain(rootText, "private bool TryAddDecodedFrame(long seqNo, PooledVideoFrame frame, long decodedTick)");

@@ -1824,11 +1824,13 @@ record structs, timing snapshot construction, per-decoder sample windows,
 packet-hash metric access, and stopwatch conversion helpers there; keep worker
 decode ingress in the root pipeline.
 
-Parallel MJPEG decode pipeline decoded-frame ordering and emission now lives in
+Parallel MJPEG decode pipeline decoded-frame ordering now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs`. Keep strict
-missing-sequence waits, known-missing skips, preview decoded-frame notification,
-ordered final drain, decoded reorder state, and decoded reorder capacity policy
-there.
+missing-sequence waits, known-missing skips, decoded reorder state, and decoded
+reorder capacity policy there. Emit-loop ordered draining, preview
+decoded-frame notification, and reorder/pipeline latency samples recorded during
+emission now live in
+`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.ReorderEmission.cs`.
 
 Parallel MJPEG decode pipeline lifecycle now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs`. Keep
