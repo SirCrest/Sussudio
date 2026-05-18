@@ -31,6 +31,27 @@ internal sealed class RecordingStatePresentationController
         _context = context;
     }
 
+    public bool TryHandlePropertyChanged(string propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.IsRecording):
+                HandleRecordingChanged();
+                return true;
+
+            case nameof(MainViewModel.IsRecordingTransitioning):
+                HandleRecordingTransitioningChanged();
+                return true;
+
+            case nameof(MainViewModel.IsFfmpegMissing):
+                HandleFfmpegMissingChanged();
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
     public void HandleRecordingChanged()
     {
         var viewModel = _context.ViewModel;

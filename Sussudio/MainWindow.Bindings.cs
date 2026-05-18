@@ -22,7 +22,7 @@ public sealed partial class MainWindow
         ApplyInitialCaptureOptionSelections();
         ApplyInitialAudioMeterPresentation();
         ApplyAudioClipVisibility();
-        HandleFfmpegMissingChanged();
+        ApplyInitialRecordingStatePresentation();
         RefreshHdrHintText();
         UpdateFpsTelemetryTooltip();
         EnsureDeviceSelection();

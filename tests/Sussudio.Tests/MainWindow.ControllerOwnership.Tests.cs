@@ -10,6 +10,7 @@ static partial class Program
         var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs").Replace("\r\n", "\n");
         var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs").Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedRecording.cs").Replace("\r\n", "\n");
+        var recordingStatePresentationControllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingStatePresentationController.cs").Replace("\r\n", "\n");
         var outputText = ReadRepoFile("Sussudio/MainWindow.OutputPath.cs").Replace("\r\n", "\n");
         var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.CaptureOptionBindings.cs").Replace("\r\n", "\n");
         var captureOptionBindingControllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
@@ -90,7 +91,10 @@ static partial class Program
         AssertContains(rendererStop, "PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; continuing reinit with orphan render thread expected to exit shortly.");
         AssertDoesNotContain(rendererStop, "renderer.StopRenderThread();");
         AssertContains(recordingText, "private bool TryHandleRecordingPropertyChanged(string propertyName)");
-        AssertContains(recordingText, "case nameof(MainViewModel.IsRecording):");
+        AssertContains(recordingText, "=> _recordingStatePresentationController.TryHandlePropertyChanged(propertyName);");
+        AssertDoesNotContain(recordingText, "case nameof(MainViewModel.IsRecording):");
+        AssertContains(recordingStatePresentationControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
+        AssertContains(recordingStatePresentationControllerText, "case nameof(MainViewModel.IsRecording):");
         AssertContains(outputText, "private bool TryHandleOutputPropertyChanged(string propertyName)");
         AssertContains(outputText, "case nameof(MainViewModel.OutputPath):");
         AssertContains(captureOptionBindingsText, "private bool TryHandleCaptureOptionPropertyChanged(string propertyName)");

@@ -2313,11 +2313,10 @@ capture/audio control enablement, analog gain enablement, transition button
 enablement, FFmpeg button enablement, and settled record-button content
 visibility. Recording-state UI projection now lives in
 `Sussudio/Controllers/Recording/RecordingStatePresentationController.cs`: ViewModel-derived
-lockout/HDR/title/audio-meter policy application and delegation to
+property-name routing, lockout/HDR/title/audio-meter policy application, and delegation to
 `Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs` for record-button
 chrome.
-`MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter and
-recording property-name router.
+`MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter.
 
 Output-path, capture-option, shell-visibility, and live source-signal
 property-name routing now live in focused adapters:

@@ -1,35 +1,16 @@
 using Sussudio.Controllers;
-using Sussudio.ViewModels;
 
 namespace Sussudio;
 
 // XAML-facing recording-state presentation adapter. RecordingStatePresentationController
-// owns ViewModel-derived recording lockouts and delegates record-button chrome.
+// owns the property routing, ViewModel-derived recording lockouts, and record-button chrome delegation.
 public sealed partial class MainWindow
 {
     private RecordingButtonChromeController _recordingButtonChromeController = null!;
     private RecordingStatePresentationController _recordingStatePresentationController = null!;
 
     private bool TryHandleRecordingPropertyChanged(string propertyName)
-    {
-        switch (propertyName)
-        {
-            case nameof(MainViewModel.IsRecording):
-                HandleRecordingChanged();
-                return true;
-
-            case nameof(MainViewModel.IsRecordingTransitioning):
-                HandleRecordingTransitioningChanged();
-                return true;
-
-            case nameof(MainViewModel.IsFfmpegMissing):
-                HandleFfmpegMissingChanged();
-                return true;
-
-            default:
-                return false;
-        }
-    }
+        => _recordingStatePresentationController.TryHandlePropertyChanged(propertyName);
 
     private void InitializeRecordingButtonChromeController()
     {
@@ -66,12 +47,6 @@ public sealed partial class MainWindow
         });
     }
 
-    private void HandleRecordingChanged()
-        => _recordingStatePresentationController.HandleRecordingChanged();
-
-    private void HandleRecordingTransitioningChanged()
-        => _recordingStatePresentationController.HandleRecordingTransitioningChanged();
-
-    private void HandleFfmpegMissingChanged()
+    private void ApplyInitialRecordingStatePresentation()
         => _recordingStatePresentationController.HandleFfmpegMissingChanged();
 }
