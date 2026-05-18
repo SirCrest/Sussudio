@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
 
@@ -93,6 +94,21 @@ internal sealed class LiveSignalInfoController
         else if (HasCompleteLiveSignal() && _hideDebounceTimer is not null)
         {
             StopHideDebounce();
+        }
+    }
+
+    public bool TryHandlePropertyChanged(string propertyName, string liveResolution, string liveFrameRate, string livePixelFormat)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.LiveResolution):
+            case nameof(MainViewModel.LiveFrameRate):
+            case nameof(MainViewModel.LivePixelFormat):
+                Update(liveResolution, liveFrameRate, livePixelFormat);
+                return true;
+
+            default:
+                return false;
         }
     }
 

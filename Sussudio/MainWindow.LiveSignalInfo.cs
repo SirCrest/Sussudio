@@ -1,5 +1,4 @@
 using Sussudio.Controllers;
-using Sussudio.ViewModels;
 
 namespace Sussudio;
 
@@ -33,17 +32,9 @@ public sealed partial class MainWindow
         => _liveSignalInfoController.StopTimers();
 
     private bool TryHandleLiveSignalPropertyChanged(string propertyName)
-    {
-        switch (propertyName)
-        {
-            case nameof(MainViewModel.LiveResolution):
-            case nameof(MainViewModel.LiveFrameRate):
-            case nameof(MainViewModel.LivePixelFormat):
-                UpdateLiveSignalInfoVisibility();
-                return true;
-
-            default:
-                return false;
-        }
-    }
+        => _liveSignalInfoController.TryHandlePropertyChanged(
+            propertyName,
+            ViewModel.LiveResolution,
+            ViewModel.LiveFrameRate,
+            ViewModel.LivePixelFormat);
 }

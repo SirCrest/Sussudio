@@ -18,6 +18,7 @@ static partial class Program
         var audioText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedAudio.cs").Replace("\r\n", "\n");
         var shellText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.cs").Replace("\r\n", "\n");
         var liveSignalText = ReadRepoFile("Sussudio/MainWindow.LiveSignalInfo.cs").Replace("\r\n", "\n");
+        var liveSignalControllerText = ReadRepoFile("Sussudio/Controllers/Shell/LiveSignalInfoController.cs").Replace("\r\n", "\n");
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedFlashback.cs").Replace("\r\n", "\n");
         var flashbackControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs").Replace("\r\n", "\n");
 
@@ -114,7 +115,10 @@ static partial class Program
         AssertDoesNotContain(shellText, "StatsToggle.IsChecked = ViewModel.IsStatsVisible;");
         AssertDoesNotContain(shellText, "_statsOverlayController.SyncStatsVisibility(ViewModel.IsStatsVisible);");
         AssertContains(liveSignalText, "private bool TryHandleLiveSignalPropertyChanged(string propertyName)");
-        AssertContains(liveSignalText, "case nameof(MainViewModel.LiveResolution):");
+        AssertContains(liveSignalText, "=> _liveSignalInfoController.TryHandlePropertyChanged(");
+        AssertDoesNotContain(liveSignalText, "case nameof(MainViewModel.LiveResolution):");
+        AssertContains(liveSignalControllerText, "public bool TryHandlePropertyChanged(string propertyName, string liveResolution, string liveFrameRate, string livePixelFormat)");
+        AssertContains(liveSignalControllerText, "case nameof(MainViewModel.LiveResolution):");
         AssertContains(flashbackText, "private bool TryHandleFlashbackPropertyChanged(string propertyName)");
         AssertContains(flashbackText, "=> _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName);");
         AssertContains(flashbackControllerText, "internal sealed class FlashbackPropertyChangedController");

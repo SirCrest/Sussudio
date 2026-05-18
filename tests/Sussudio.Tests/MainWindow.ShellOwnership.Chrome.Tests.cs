@@ -89,7 +89,8 @@ static partial class Program
         AssertContains(liveSignalAdapterText, "private void StopLiveSignalInfoTimers()");
         AssertContains(liveSignalAdapterText, "=> _liveSignalInfoController.StopTimers();");
         AssertContains(liveSignalAdapterText, "private bool TryHandleLiveSignalPropertyChanged(string propertyName)");
-        AssertContains(liveSignalAdapterText, "case nameof(MainViewModel.LiveResolution):");
+        AssertContains(liveSignalAdapterText, "=> _liveSignalInfoController.TryHandlePropertyChanged(");
+        AssertDoesNotContain(liveSignalAdapterText, "case nameof(MainViewModel.LiveResolution):");
         AssertContains(mainWindowText, "InitializeLiveSignalInfoController();");
         AssertContains(bindingsText, "UpdateLiveSignalInfoVisibility();");
         AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");
@@ -97,6 +98,11 @@ static partial class Program
         AssertContains(controllerText, "private DispatcherQueueTimer? _showDebounceTimer;");
         AssertContains(controllerText, "private DispatcherQueueTimer? _hideDebounceTimer;");
         AssertContains(controllerText, "public void Update(string liveResolution, string liveFrameRate, string livePixelFormat)");
+        AssertContains(controllerText, "public bool TryHandlePropertyChanged(string propertyName, string liveResolution, string liveFrameRate, string livePixelFormat)");
+        AssertContains(controllerText, "case nameof(MainViewModel.LiveResolution):");
+        AssertContains(controllerText, "case nameof(MainViewModel.LiveFrameRate):");
+        AssertContains(controllerText, "case nameof(MainViewModel.LivePixelFormat):");
+        AssertContains(controllerText, "Update(liveResolution, liveFrameRate, livePixelFormat);");
         AssertContains(controllerText, "_context.LiveResolutionTextBlock.Text = liveResolution;");
         AssertContains(controllerText, "_context.LiveFrameRateTextBlock.Text = liveFrameRate;");
         AssertContains(controllerText, "_context.LivePixelFormatTextBlock.Text = livePixelFormat;");

@@ -2319,14 +2319,12 @@ property-name routing, lockout/HDR/title/audio-meter policy application, and del
 chrome.
 `MainWindow.PropertyChangedRecording.cs` is the XAML-facing adapter.
 
-Output-path, capture-option, shell-visibility, and live source-signal
-property-name routing now live in focused adapters:
-`Sussudio/MainWindow.OutputPath.cs`,
-`Sussudio/MainWindow.CaptureOptionBindings.cs`,
-`Sussudio/MainWindow.ShellChrome.cs`, and
-`Sussudio/MainWindow.LiveSignalInfo.cs`. Keep the root dispatcher
-limited to route order, and add new property-name cases to the nearest focused
-partial.
+Capture-option and shell-visibility property-name routing still live in focused
+adapters: `Sussudio/MainWindow.CaptureOptionBindings.cs` and
+`Sussudio/MainWindow.ShellChrome.cs`. Output-path routing lives in
+`OutputPathController`, and live source-signal routing lives in
+`LiveSignalInfoController`. Keep the root dispatcher limited to route order, and
+add new property-name cases to the nearest focused owner.
 
 Flashback-specific ViewModel property adapter dispatch now lives in
 `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs`:

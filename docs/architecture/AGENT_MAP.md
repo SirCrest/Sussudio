@@ -2125,8 +2125,9 @@ Primary current owners:
   `CaptureOptionBindingController`.
 - `Sussudio/MainWindow.ShellChrome.cs` owns shell visibility property-change
   routing for stats/settings toggles alongside shell chrome controller adapters.
-- `Sussudio/MainWindow.LiveSignalInfo.cs` owns the live source-signal
-  property-change router for the live signal pill.
+- `Sussudio/MainWindow.LiveSignalInfo.cs` is the XAML-facing live signal
+  adapter. `LiveSignalInfoController` owns live source-signal property-change
+  routing and pill presentation.
 - `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs` owns
   Flashback-specific property-change routing for timeline lockout, markers,
   playhead updates, export progress, and settings-control synchronization.
