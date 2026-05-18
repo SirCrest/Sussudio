@@ -1673,6 +1673,12 @@ sink, tick waits, timer-resolution P/Invoke, and MMCSS registration. Keep the
 root file focused on construction, suppression/reprime lifecycle, and
 dispose-time queue teardown.
 
+Parallel MJPEG compressed input admission now lives in
+`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.CompressedQueue.cs`. Keep
+startup invalid-MJPG drops, work-item construction, compressed byte-budget
+rejection, queue-depth accounting, queue-full rejection, and packet-hash
+recording there; keep worker decode-loop execution in the root pipeline.
+
 Parallel MJPEG decode pipeline timing now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Metrics.cs`. Keep timing
 record structs, timing snapshot construction, per-decoder sample windows,
