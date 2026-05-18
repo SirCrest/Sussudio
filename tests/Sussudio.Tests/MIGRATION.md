@@ -38,9 +38,14 @@ add xUnit alongside, and port incrementally.
   telemetry automation projection contract checks.
 - `XUnit.SmallContractsTests.cs` owns the former legacy audio input, audio
   level event, capture device, and automation window action small contracts.
-- `XUnit.CaptureConfigurationModelsTests.cs` owns the former legacy capture
-  mode options, capture settings, recording selection policy, encoder support,
-  and recording pipeline option contract checks.
+- `XUnit.CaptureConfigurationModelsTests.cs` owns shared reflection helpers for
+  capture configuration xUnit contract checks.
+- `XUnit.CaptureModeOptionsTests.cs` owns capture mode option display metadata
+  and option-builder behavior checks.
+- `XUnit.CaptureSettingsContractsTests.cs` owns capture settings defaults,
+  output path/file naming, bitrate policy, and MJPEG HFR policy checks.
+- `XUnit.RecordingConfigurationPolicyTests.cs` owns recording selection policy,
+  encoder support, and recording pipeline option contract checks.
 - `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer,
   session, playback-state, export progress, export segment, and export request
   model contract checks.
