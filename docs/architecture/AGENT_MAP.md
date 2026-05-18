@@ -2107,8 +2107,8 @@ Primary current owners:
   for capture option setup, event binding, and capture-option/source-signal
   property-change routing; the property-name router lives in
   `CaptureOptionBindingController`.
-- `Sussudio/MainWindow.PropertyChangedShell.cs` owns shell visibility
-  property-change routing for stats and settings chrome.
+- `Sussudio/MainWindow.ShellChrome.cs` owns shell visibility property-change
+  routing for stats/settings toggles alongside shell chrome controller adapters.
 - `Sussudio/MainWindow.LiveSignalInfo.cs` owns the live source-signal
   property-change router for the live signal pill.
 - `Sussudio/Controllers/Flashback/FlashbackPropertyChangedController.cs` owns

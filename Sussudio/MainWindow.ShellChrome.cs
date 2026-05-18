@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Sussudio.Controllers;
 using Microsoft.UI.Xaml;
+using Sussudio.ViewModels;
 
 namespace Sussudio;
 
@@ -52,4 +53,24 @@ public sealed partial class MainWindow
 
     private void ApplyShellElevation()
         => _shellElevationController.Apply();
+
+    private bool TryHandleShellPropertyChanged(string propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.IsStatsVisible):
+                HandleStatsVisibleChanged();
+                return true;
+
+            case nameof(MainViewModel.IsSettingsVisible):
+                ApplySettingsVisibility(ViewModel.IsSettingsVisible);
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    private void HandleStatsVisibleChanged()
+        => ApplyStatsVisibility(ViewModel.IsStatsVisible);
 }

@@ -2312,7 +2312,7 @@ Output-path, capture-option, shell-visibility, and live source-signal
 property-name routing now live in focused adapters:
 `Sussudio/MainWindow.OutputPath.cs`,
 `Sussudio/MainWindow.CaptureOptionBindings.cs`,
-`Sussudio/MainWindow.PropertyChangedShell.cs`, and
+`Sussudio/MainWindow.ShellChrome.cs`, and
 `Sussudio/MainWindow.LiveSignalInfo.cs`. Keep the root dispatcher
 limited to route order, and add new property-name cases to the nearest focused
 partial.
