@@ -20,6 +20,15 @@ code grouped and document the owner in place.
 
 ## Completed Slices
 
+App shell startup and exception policy now live in named partial owners without
+changing runtime behavior. `Sussudio/App.xaml.cs` stays the constructor/resource
+root for XAML initialization, global exception handler hookup, system logging,
+and FFmpeg runtime initialization. `Sussudio/App.ExceptionPolicy.cs` owns
+recoverable exception classification, WinUI/AppDomain unhandled exception
+handlers, and emergency recording finalization. `Sussudio/App.LaunchLifecycle.cs`
+owns the single-instance mutex guard, startup identity logging, and MainWindow
+activation.
+
 Automation contracts have been extracted into `Sussudio.Automation.Contracts/`.
 This removes the old linked-source arrangement where app and tools compiled
 protocol/catalog files from `tools/Common`.

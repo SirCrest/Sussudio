@@ -30,7 +30,7 @@ static partial class Program
 
     private static Task EmergencyRecordingStop_DoesNotDispatchBackToBlockedUiThread()
     {
-        var appText = ReadRepoFile("Sussudio/App.xaml.cs")
+        var appText = ReadRepoFile("Sussudio/App.ExceptionPolicy.cs")
             .Replace("\r\n", "\n");
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
