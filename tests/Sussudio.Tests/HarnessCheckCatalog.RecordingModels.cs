@@ -10,8 +10,7 @@ static partial class Program
         await AddRecordingModelRecordingContractChecksAsync(results);
         await AddRecordingModelCaptureSettingsChecksAsync(results);
         await AddRecordingModelFlashbackBufferChecksAsync(results);
-        await AddRecordingModelDeviceModelChecksAsync(results);
-        await AddRecordingModelAutomationContractChecksAsync(results);
+        await AddRecordingModelSnapshotChecksAsync(results);
     }
 
     private static async Task AddRecordingModelLibAvSinkChecksAsync(List<CheckResult> results)
@@ -108,30 +107,14 @@ static partial class Program
             CaptureSettings_MjpegHfrMode_RequiresSdrAndMjpgPixelFormat);
     }
 
-    private static async Task AddRecordingModelDeviceModelChecksAsync(List<CheckResult> results)
+    private static async Task AddRecordingModelSnapshotChecksAsync(List<CheckResult> results)
     {
-        await AddCheckAsync(results,
-            "AudioInputDevice display name falls back to unknown",
-            AudioInputDevice_DisplayName_UsesNameOrUnknownFallback);
-        await AddCheckAsync(results,
-            "AudioLevelEventArgs exposes peak RMS and clipped state",
-            AudioLevelEventArgs_ExposesPeakRmsAndClippedState);
-        await AddCheckAsync(results,
-            "CaptureDevice preserves display and metadata defaults",
-            CaptureDevice_DisplayNameAndDefaults_PreserveDeviceMetadata);
         await AddCheckAsync(results,
             "CaptureDiagnosticsSnapshot preserves diagnostics telemetry contract",
             CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry);
         await AddCheckAsync(results,
             "CaptureHealthSnapshot extends diagnostics with health telemetry",
             CaptureHealthSnapshot_ExtendsDiagnosticsWithFlashbackSourceAndAvSync);
-    }
-
-    private static async Task AddRecordingModelAutomationContractChecksAsync(List<CheckResult> results)
-    {
-        await AddCheckAsync(results,
-            "AutomationWindowAction has expected values",
-            AutomationWindowAction_HasExpectedValues);
     }
 
 }

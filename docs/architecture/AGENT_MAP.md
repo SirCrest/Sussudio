@@ -1449,16 +1449,11 @@ Primary current owners:
   assertions.
 - `tests/Sussudio.Tests/MainViewModel.AudioRuntime.Tests.cs` owns audio
   monitoring visual state and audio-ramp trace telemetry ownership assertions.
-- `tests/Sussudio.Tests/DeviceModels.AudioInput.Tests.cs` owns audio input
-  model display-name contract checks.
-- `tests/Sussudio.Tests/DeviceModels.AudioLevel.Tests.cs` owns audio level
-  event model contract checks.
-- `tests/Sussudio.Tests/DeviceModels.CaptureDevice.Tests.cs` owns capture
-  device metadata and default collection contract checks.
+- `tests/Sussudio.Tests/XUnit.SmallContractsTests.cs` owns ported audio input,
+  audio level event, capture device metadata/default collection, and automation
+  window action enum contract checks.
 - `tests/Sussudio.Tests/XUnit.MediaFormatTests.cs` owns MediaFormat
   equality and hash-code contract checks.
-- `tests/Sussudio.Tests/DeviceModels.PropertyAssertions.cs` owns shared device
-  model property reflection assertions.
 - `tests/Sussudio.Tests/SnapshotModels.Tests.cs` owns shared snapshot-model
   spec DTOs and registration state.
 - `tests/Sussudio.Tests/SnapshotModels.PropertyAssertions.cs` owns shared
@@ -1757,8 +1752,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCheckCatalog.RecordingModels.cs` coordinates
   recording/model check registration and owns compact registration groups for
   LibAv sink, capture runtime, recording contracts/artifacts/stats, capture
-  settings, recording context, device/media models, automation contracts,
-  and remaining recording-model checks.
+  settings, recording context, capture diagnostics, and capture health checks.
   `HarnessCheckCatalog.RecordingModels.FlashbackBuffer.cs` owns the large
   Flashback buffer registration group.
 - Focused `tests/Sussudio.Tests/HarnessCheckCatalog.Flashback.*.cs` partials

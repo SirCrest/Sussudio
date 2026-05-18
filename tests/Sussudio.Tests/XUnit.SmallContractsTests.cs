@@ -1,3 +1,8 @@
+using System;
+using System.Collections;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace Sussudio.Tests;
@@ -9,6 +14,136 @@ namespace Sussudio.Tests;
 // Lives here so each file is reachable through the xUnit discovery path too.
 public class SmallContractsTests
 {
+    [Fact]
+    public void Sussudio_Models_AudioInputDevice_DisplayNameUsesNameOrUnknownFallback()
+    {
+        var asm = SussudioAssembly.Load();
+        var deviceType = asm.GetType("Sussudio.Models.AudioInputDevice", throwOnError: true)!;
+        var idProperty = RequireProperty(deviceType, "Id", typeof(string), canWrite: true);
+        var nameProperty = RequireProperty(deviceType, "Name", typeof(string), canWrite: true);
+        var displayNameProperty = RequireProperty(deviceType, "DisplayName", typeof(string), canWrite: false);
+        var device = Activator.CreateInstance(deviceType)!;
+
+        Assert.Equal(string.Empty, idProperty.GetValue(device));
+        Assert.Equal(string.Empty, nameProperty.GetValue(device));
+        Assert.Equal("Unknown Audio Device", displayNameProperty.GetValue(device));
+        Assert.Equal("Unknown Audio Device", device.ToString());
+
+        nameProperty.SetValue(device, "   ");
+        Assert.Equal("Unknown Audio Device", displayNameProperty.GetValue(device));
+        Assert.Equal("Unknown Audio Device", device.ToString());
+
+        idProperty.SetValue(device, "audio-1");
+        nameProperty.SetValue(device, "Wave Link Microphone");
+        Assert.Equal("audio-1", idProperty.GetValue(device));
+        Assert.Equal("Wave Link Microphone", displayNameProperty.GetValue(device));
+        Assert.Equal("Wave Link Microphone", device.ToString());
+    }
+
+    [Fact]
+    public void Sussudio_Models_AudioLevelEventArgs_ExposesPeakRmsAndClippedState()
+    {
+        var asm = SussudioAssembly.Load();
+        var argsType = asm.GetType("Sussudio.Models.AudioLevelEventArgs", throwOnError: true)!;
+
+        Assert.True(typeof(EventArgs).IsAssignableFrom(argsType));
+        var peakProperty = RequireProperty(argsType, "Peak", typeof(double), canWrite: false);
+        var rmsProperty = RequireProperty(argsType, "Rms", typeof(double), canWrite: false);
+        var clippedProperty = RequireProperty(argsType, "Clipped", typeof(bool), canWrite: false);
+        var constructor = argsType.GetConstructor(new[] { typeof(double), typeof(double), typeof(bool) })!;
+
+        var clippedArgs = constructor.Invoke(new object[] { 0.75d, 0.25d, true });
+        Assert.Equal(0.75d, peakProperty.GetValue(clippedArgs));
+        Assert.Equal(0.25d, rmsProperty.GetValue(clippedArgs));
+        Assert.True((bool)clippedProperty.GetValue(clippedArgs)!);
+
+        var unclippedArgs = constructor.Invoke(new object[] { 0.1d, 0.05d, false });
+        Assert.Equal(0.1d, peakProperty.GetValue(unclippedArgs));
+        Assert.Equal(0.05d, rmsProperty.GetValue(unclippedArgs));
+        Assert.False((bool)clippedProperty.GetValue(unclippedArgs)!);
+    }
+
+    [Fact]
+    public void Sussudio_Models_CaptureDevice_DisplayNameAndDefaultsPreserveDeviceMetadata()
+    {
+        var asm = SussudioAssembly.Load();
+        var deviceType = asm.GetType("Sussudio.Models.CaptureDevice", throwOnError: true)!;
+        var mediaFormatType = asm.GetType("Sussudio.Models.MediaFormat", throwOnError: true)!;
+        var supportedFormatsType = typeof(ObservableCollection<>).MakeGenericType(mediaFormatType);
+        var idProperty = RequireProperty(deviceType, "Id", typeof(string), canWrite: true);
+        var nameProperty = RequireProperty(deviceType, "Name", typeof(string), canWrite: true);
+        var nativeXuProperty = RequireProperty(deviceType, "NativeXuInterfacePath", typeof(string), canWrite: true);
+        var audioDeviceIdProperty = RequireProperty(deviceType, "AudioDeviceId", typeof(string), canWrite: true);
+        var audioDeviceNameProperty = RequireProperty(deviceType, "AudioDeviceName", typeof(string), canWrite: true);
+        var isHdrCapableProperty = RequireProperty(deviceType, "IsHdrCapable", typeof(bool), canWrite: true);
+        var supportedFormatsProperty = RequireProperty(deviceType, "SupportedFormats", supportedFormatsType, canWrite: true);
+        var displayNameProperty = RequireProperty(deviceType, "DisplayName", typeof(string), canWrite: false);
+        var device = Activator.CreateInstance(deviceType)!;
+
+        Assert.Equal(string.Empty, idProperty.GetValue(device));
+        Assert.Equal(string.Empty, nameProperty.GetValue(device));
+        Assert.Null(nativeXuProperty.GetValue(device));
+        Assert.Null(audioDeviceIdProperty.GetValue(device));
+        Assert.Null(audioDeviceNameProperty.GetValue(device));
+        Assert.False((bool)isHdrCapableProperty.GetValue(device)!);
+        Assert.Equal("Unknown Device", displayNameProperty.GetValue(device));
+        Assert.Equal("Unknown Device", device.ToString());
+
+        nameProperty.SetValue(device, "   ");
+        Assert.Equal("Unknown Device", displayNameProperty.GetValue(device));
+        Assert.Equal("Unknown Device", device.ToString());
+
+        var supportedFormats = supportedFormatsProperty.GetValue(device)!;
+        Assert.Equal(supportedFormatsType, supportedFormats.GetType());
+        Assert.Empty(((IEnumerable)supportedFormats).Cast<object>());
+
+        var secondDevice = Activator.CreateInstance(deviceType)!;
+        var secondSupportedFormats = supportedFormatsProperty.GetValue(secondDevice)!;
+        Assert.NotSame(supportedFormats, secondSupportedFormats);
+
+        var format = Activator.CreateInstance(mediaFormatType)!;
+        supportedFormatsType.GetMethod("Add", new[] { mediaFormatType })!.Invoke(supportedFormats, new[] { format });
+        Assert.Single(((IEnumerable)supportedFormats).Cast<object>());
+        Assert.Empty(((IEnumerable)secondSupportedFormats).Cast<object>());
+
+        var replacementFormats = Activator.CreateInstance(supportedFormatsType)!;
+        var replacementFormat = Activator.CreateInstance(mediaFormatType)!;
+        supportedFormatsType.GetMethod("Add", new[] { mediaFormatType })!.Invoke(replacementFormats, new[] { replacementFormat });
+        supportedFormatsProperty.SetValue(device, replacementFormats);
+        Assert.Same(replacementFormats, supportedFormatsProperty.GetValue(device));
+        Assert.Single(((IEnumerable)replacementFormats).Cast<object>());
+
+        idProperty.SetValue(device, "device-1");
+        nameProperty.SetValue(device, "Game Capture 4K X");
+        nativeXuProperty.SetValue(device, @"\\?\hid#vid_0fd9");
+        audioDeviceIdProperty.SetValue(device, "audio-1");
+        audioDeviceNameProperty.SetValue(device, "4K X Audio");
+        isHdrCapableProperty.SetValue(device, true);
+
+        Assert.Equal("device-1", idProperty.GetValue(device));
+        Assert.Equal("Game Capture 4K X", displayNameProperty.GetValue(device));
+        Assert.Equal("Game Capture 4K X", device.ToString());
+        Assert.Equal(@"\\?\hid#vid_0fd9", nativeXuProperty.GetValue(device));
+        Assert.Equal("audio-1", audioDeviceIdProperty.GetValue(device));
+        Assert.Equal("4K X Audio", audioDeviceNameProperty.GetValue(device));
+        Assert.True((bool)isHdrCapableProperty.GetValue(device)!);
+    }
+
+    [Fact]
+    public void Sussudio_Models_AutomationWindowAction_HasExpectedValues()
+    {
+        var asm = SussudioAssembly.Load();
+        var enumType = asm.GetType("Sussudio.Models.AutomationWindowAction", throwOnError: true)!;
+        var expectedNames = new[]
+        {
+            "Minimize", "Maximize", "Restore", "Close",
+            "SnapLeft", "SnapRight", "SnapTopLeft", "SnapTopRight",
+            "SnapBottomLeft", "SnapBottomRight", "Center", "Move", "Resize"
+        };
+
+        Assert.Equal(expectedNames, Enum.GetNames(enumType));
+    }
+
     [Fact]
     public void Sussudio_LoggingJsonContext_ExposesSourceGeneratedTypeInfoForKnownPayloads()
     {
@@ -80,5 +215,14 @@ public class SmallContractsTests
             explicitSecurityFailed,
             authTokenRequired);
         Assert.Equal(expected, actual);
+    }
+
+    private static PropertyInfo RequireProperty(Type type, string name, Type expectedType, bool canWrite)
+    {
+        var property = type.GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
+        Assert.NotNull(property);
+        Assert.Equal(expectedType, property!.PropertyType);
+        Assert.Equal(canWrite, property.CanWrite);
+        return property;
     }
 }

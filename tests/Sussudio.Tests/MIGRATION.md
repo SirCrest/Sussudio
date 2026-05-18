@@ -33,6 +33,8 @@ incrementally.
 - `XUnit.SnapshotModelsTests.cs` owns the former legacy
   SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source
   telemetry automation projection contract checks.
+- `XUnit.SmallContractsTests.cs` owns the former legacy audio input, audio
+  level event, capture device, and automation window action small contracts.
 
 ## Targeting reality
 

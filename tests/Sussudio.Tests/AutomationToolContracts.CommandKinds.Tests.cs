@@ -26,29 +26,4 @@ static partial class Program
     private static (string Name, int Value)[] ExpectedAutomationCommands()
         => AutomationCommandGoldenTable.ExpectedCommands();
 
-    private static Task AutomationWindowAction_HasExpectedValues()
-    {
-        var enumType = RequireType("Sussudio.Models.AutomationWindowAction");
-        var names = Enum.GetNames(enumType);
-
-        // Verify expected members exist.
-        var expectedNames = new[]
-        {
-            "Minimize", "Maximize", "Restore", "Close",
-            "SnapLeft", "SnapRight", "SnapTopLeft", "SnapTopRight",
-            "SnapBottomLeft", "SnapBottomRight", "Center", "Move", "Resize"
-        };
-        AssertEqual(expectedNames.Length, names.Length, "AutomationWindowAction count");
-
-        foreach (var expected in expectedNames)
-        {
-            if (!Enum.IsDefined(enumType, Enum.Parse(enumType, expected)))
-            {
-                throw new InvalidOperationException(
-                    $"AutomationWindowAction missing expected value '{expected}'.");
-            }
-        }
-
-        return Task.CompletedTask;
-    }
 }
