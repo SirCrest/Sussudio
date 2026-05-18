@@ -2131,9 +2131,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Playback.Cadence.Tests.cs` owns Flashback
   playback frame-duration, decoded-PTS cadence telemetry, and metrics reset
   tests.
-- `tests/Sussudio.Tests/Flashback.Playback.SubmissionAndReopen.Tests.cs` owns
-  Flashback playback decoded-frame submit-failure and fMP4 reopen/seek recovery
+- `tests/Sussudio.Tests/Flashback.Playback.Submission.Tests.cs` owns Flashback
+  playback decoded-frame submit-failure and preview frame submission ownership
   tests.
+- `tests/Sussudio.Tests/Flashback.Playback.Reopen.Tests.cs` owns Flashback
+  playback fMP4 reopen, seek-display, and seek recovery tests.
 - `tests/Sussudio.Tests/Flashback.Decoder.Tests.cs` owns Flashback decoder
   audio, timestamp, stream-bound, validation, lifetime, and callback tests.
 - `tests/Sussudio.Tests/Flashback.Support.Tests.cs` owns cross-cutting Flashback
