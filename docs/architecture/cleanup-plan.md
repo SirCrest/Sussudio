@@ -3281,7 +3281,7 @@ Remaining `tools/Common` ownership:
     Resolution option rebuild callers stay stable through the
     `MainViewModel.ResolutionOptionRebuild.cs` adapter. Resolution option
     rebuild ownership now lives in
-    `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`:
+    `Sussudio/Controllers/ViewModel/MainViewModelResolutionOptionRebuildController.cs`:
     automatic resolution dropdown option construction, automatic
     resolution-selection adaptation, auto-resolution state refresh, and
     resolution dropdown mutation. Effective Source resolution state and
@@ -3305,7 +3305,7 @@ Remaining `tools/Common` ownership:
    State-backed delegates for callers that still live across the partial family
    stay in `MainViewModel.ResolutionOptions.cs`, while dropdown rebuild,
    collection mutation, and property notifications route through
-   `MainViewModelCaptureModeOptionRebuildController.cs`.
+   `MainViewModelResolutionOptionRebuildController.cs`.
    Source telemetry summary, telemetry age, and target-summary display text
    formatting now live in `Sussudio/ViewModels/SourceTelemetryPresentationBuilder.cs`;
    HDR runtime state/readiness projection and target-summary property

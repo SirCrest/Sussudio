@@ -6,5 +6,5 @@ namespace Sussudio.ViewModels;
 public partial class MainViewModel
 {
     private void RebuildResolutionOptions()
-        => _captureModeOptionRebuildController.RebuildResolutionOptions();
+        => _resolutionOptionRebuildController.RebuildResolutionOptions();
 }
