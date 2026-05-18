@@ -2503,8 +2503,10 @@ projections share one focused owner without adding miniature partials. The D3D
 fields still travel through a distinct `PreviewD3D` projection set member so
 renderer timing semantics stay separate from scheduler/jitter policy.
 Flashback playback result composition, command queue, cadence/1% low, decode
-timing, audio-master/A/V drift, and stage/seek DTO projection values live in
-`DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`. Flashback
+timing, audio-master/A/V drift, and stage/seek DTO projection mapping live in
+`DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`, with the
+projection record shapes grouped in
+`DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs`. Flashback
 recording backend/growth/integrity and export status/progress DTO projection
 values stay grouped in `DiagnosticSessionResultBuilder.FlashbackResult.cs` so
 result construction can consume named Flashback projections while preserving
@@ -2952,6 +2954,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResultBuilder.DiagnosticHealth.cs`
 - `DiagnosticSessionResultBuilder.FlashbackWarnings.cs`
 - `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
+- `DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs`
 - `DiagnosticSessionResultBuilder.FlashbackResult.cs`
 - `DiagnosticSessionResultBuilder.CaptureResult.cs`
 - `DiagnosticSessionResultBuilder.PreviewScheduler.cs`

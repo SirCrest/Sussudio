@@ -2725,10 +2725,13 @@ Primary owners:
   deadline/drop tolerance selection, and the call into shared Flashback
   preview validation.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` owns
-  Flashback playback result DTO projections as one cohesive owner: command
-  queue, cadence, 1% low, slow-frame, dropped-frame, decode timing,
+  Flashback playback result DTO projection mapping as one cohesive owner:
+  command queue, cadence, 1% low, slow-frame, dropped-frame, decode timing,
   audio-master/A/V drift, submit, segment, write-head, near-live, and seek-cap
   values consumed by the final result initializer.
+- `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackProjectionModels.cs`
+  owns the Flashback playback projection record shapes used by the playback
+  result mapping and final result initializer.
 - `tools/Common/DiagnosticSessionResultBuilder.FlashbackResult.cs` owns
   Flashback recording backend/growth/integrity and export status/progress
   result DTO projections consumed by the final result initializer.
