@@ -1558,8 +1558,11 @@ Primary current owners:
   source readers and source-block extraction helpers.
 - `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the
   recording/Flashback queue overload, fatal-failure, lifecycle, and recording
-  backend policy assertion. `RecordingQueue.OverloadPolicy.SourceReaders.cs`
-  owns source-loading setup for the overload policy assertion.
+  backend start-policy assertion.
+- `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Finalize.Tests.cs` owns
+  recording backend finalization, Flashback cleanup, microphone restart, and
+  post-finalize telemetry assertions. `RecordingQueue.OverloadPolicy.SourceReaders.cs`
+  owns source-loading setup for the overload policy assertions.
   `RecordingQueue.OverloadPolicy.LibAvSpec.cs` owns the LibAv overload and
   queue-depth assertion subgroup.
   `RecordingQueue.OverloadPolicy.FlashbackSpec.cs` owns the Flashback overload,
