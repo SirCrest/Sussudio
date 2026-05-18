@@ -8,13 +8,13 @@ namespace Sussudio;
 // XAML-facing adapter for recording output-path display and button commands.
 public sealed partial class MainWindow
 {
-    private OutputPathActionController _outputPathActionController = null!;
-    private OutputPathDisplayController _outputPathDisplayController = null!;
+    private OutputPathController _outputPathController = null!;
 
-    private void InitializeOutputPathActionController()
+    private void InitializeOutputPathController()
     {
-        _outputPathActionController = new OutputPathActionController(new OutputPathActionControllerContext
+        _outputPathController = new OutputPathController(new OutputPathControllerContext
         {
+            OutputPathTextBox = OutputPathTextBox,
             GetWindowHandle = () => _hwnd,
             GetOutputPath = () => ViewModel.OutputPath,
             SetOutputPath = path => ViewModel.OutputPath = path,
@@ -23,26 +23,17 @@ public sealed partial class MainWindow
         });
     }
 
-    private void InitializeOutputPathDisplayController()
-    {
-        _outputPathDisplayController = new OutputPathDisplayController(new OutputPathDisplayControllerContext
-        {
-            OutputPathTextBox = OutputPathTextBox,
-            GetOutputPath = () => ViewModel.OutputPath,
-        });
-    }
-
     private void AttachOutputPathDisplay()
-        => _outputPathDisplayController.Attach();
+        => _outputPathController.AttachDisplay();
 
     private void UpdateOutputPathDisplay()
-        => _outputPathDisplayController.Update();
+        => _outputPathController.UpdateDisplay();
 
     private Task BrowseOutputPathFromButtonAsync()
-        => _outputPathActionController.BrowseAsync();
+        => _outputPathController.BrowseAsync();
 
     private Task OpenRecordingsFolderFromButtonAsync()
-        => _outputPathActionController.OpenRecordingsFolderIfAvailableAsync();
+        => _outputPathController.OpenRecordingsFolderIfAvailableAsync();
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {

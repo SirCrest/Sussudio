@@ -2100,9 +2100,8 @@ Primary current owners:
   record-button, glow, pulse, and recording-time lockout projection through
   `RecordingStatePresentationController` and `RecordingStatePresentationPolicy`.
 - `Sussudio/MainWindow.OutputPath.cs` owns the output-path property-change
-  router and XAML-facing button/display adapter, delegating display updates to
-  `OutputPathDisplayController` and browse/open commands to
-  `OutputPathActionController`.
+  router and XAML-facing button/display adapter, delegating output-path textbox
+  updates and browse/open commands to `OutputPathController`.
 - `Sussudio/MainWindow.CaptureOptionBindings.cs` is the XAML-facing adapter
   for capture option setup, event binding, and capture-option/source-signal
   property-change routing; the property-name router lives in
@@ -2186,14 +2185,12 @@ Primary current owners:
   `MainWindow.CaptureOptionBindings.cs` is the XAML-facing capture and
   recording option adapter, including the small property-change forwarding
   method that delegates to this controller.
-- `Sussudio/Controllers/Recording/Output/OutputPathDisplayController.cs` owns recording output-
-  path textbox, tooltip, and resize-event updates.
+- `Sussudio/Controllers/Recording/Output/OutputPathController.cs` owns recording output-
+  path textbox, tooltip, resize-event updates, and browse/open-recordings button
+  workflows.
   `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs` owns pure output-
   path truncation text policy. `MainWindow.OutputPath.cs` is the XAML-facing
   adapter used by binding setup and property changes.
-- `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs` owns recording output-
-  path browse/open-recordings button workflows. `MainWindow.OutputPath.cs` is
-  the XAML-facing adapter.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.cs` owns compatibility-facade
   construction, dependency assignment, collaborator construction, and small bridge

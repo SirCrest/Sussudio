@@ -169,7 +169,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void InitializeOutputControllers()
     {
-        InitializeOutputPathDisplayController();
-        InitializeOutputPathActionController();
+        InitializeOutputPathController();
     }
 }

@@ -2407,15 +2407,13 @@ bindings, and option tooltip formatting each have a focused
 `MainWindow.ControllerOwnership.Capture.*.Tests.cs` file registered with the
 presentation-preview harness coverage check.
 
-Recording output-path textbox, tooltip, and resize-event updates now live in
-`Sussudio/Controllers/Recording/Output/OutputPathDisplayController.cs`; pure truncation text
-policy now lives in `Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs`.
-`MainWindow.OutputPath.cs` is the XAML-facing adapter used by binding
-setup and property changes.
-
-Recording output-path browse/open-recordings button workflows now live in
-`Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`.
-`MainWindow.OutputPath.cs` is the XAML-facing adapter.
+Recording output-path textbox, tooltip, resize-event updates, browse, and
+open-recordings button workflows now live in
+`Sussudio/Controllers/Recording/Output/OutputPathController.cs`; pure truncation
+text policy stays in
+`Sussudio/Controllers/Recording/Output/OutputPathDisplayTextFormatter.cs`.
+`MainWindow.OutputPath.cs` is the XAML-facing adapter used by binding setup,
+property changes, and button events.
 
 Diagnostic session DTOs live in model files without tiny property-only shards:
 `tools/Common/DiagnosticSessionOptions.cs`,
@@ -3152,8 +3150,8 @@ Remaining `tools/Common` ownership:
    reinitialize facade. `Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`
    owns debounced reinitialization, restart-cancellation state,
    Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
-   and gate release. Output folder browse/open-recordings button workflows now live in
-   `Sussudio/Controllers/Recording/Output/OutputPathActionController.cs`.
+   and gate release. Output folder display plus browse/open-recordings button workflows now live in
+   `Sussudio/Controllers/Recording/Output/OutputPathController.cs`.
    Recording facade entry points now stay in `MainViewModel.cs`,
    while recording toggle serialization, desired-state routing, graceful stop,
    emergency stop, transition gating, concrete start/stop operation execution,

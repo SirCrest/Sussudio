@@ -1,12 +1,14 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.UI.Xaml.Controls;
 using Windows.Storage.Pickers;
 
 namespace Sussudio.Controllers;
 
-internal sealed class OutputPathActionControllerContext
+internal sealed class OutputPathControllerContext
 {
+    public required TextBox OutputPathTextBox { get; init; }
     public required Func<IntPtr> GetWindowHandle { get; init; }
     public required Func<string?> GetOutputPath { get; init; }
     public required Action<string> SetOutputPath { get; init; }
@@ -14,13 +16,31 @@ internal sealed class OutputPathActionControllerContext
     public required Func<Task> OpenRecordingsFolderAsync { get; init; }
 }
 
-internal sealed class OutputPathActionController
+internal sealed class OutputPathController
 {
-    private readonly OutputPathActionControllerContext _context;
+    private readonly OutputPathControllerContext _context;
 
-    public OutputPathActionController(OutputPathActionControllerContext context)
+    public OutputPathController(OutputPathControllerContext context)
     {
         _context = context;
+    }
+
+    public void AttachDisplay()
+        => _context.OutputPathTextBox.SizeChanged += (_, _) => UpdateDisplay();
+
+    public void UpdateDisplay()
+    {
+        var path = _context.GetOutputPath();
+        if (string.IsNullOrEmpty(path))
+        {
+            _context.OutputPathTextBox.Text = string.Empty;
+            return;
+        }
+
+        ToolTipService.SetToolTip(_context.OutputPathTextBox, path);
+
+        var availableWidth = _context.OutputPathTextBox.ActualWidth;
+        _context.OutputPathTextBox.Text = OutputPathDisplayTextFormatter.Format(path, availableWidth);
     }
 
     public async Task BrowseAsync()
