@@ -8,6 +8,7 @@ static partial class Program
         var deviceScoringText = ReadRepoFile("Sussudio/Services/Capture/DeviceService.Scoring.cs").Replace("\r\n", "\n");
         var sourceReaderRootText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs").Replace("\r\n", "\n");
         var sourceReaderNegotiationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs").Replace("\r\n", "\n");
+        var sourceReaderDeviceEnumerationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.DeviceEnumeration.cs").Replace("\r\n", "\n");
         var sourceReaderInteropText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Interop.cs").Replace("\r\n", "\n");
 
         AssertContains(deviceRootText, "var likelyByCapability = LooksLikeHighBandwidthCapture(captureDevice);");
@@ -23,7 +24,12 @@ static partial class Program
 
         AssertContains(sourceReaderNegotiationText, "private bool TrySetSourceReaderD3DManager(");
         AssertContains(sourceReaderNegotiationText, "private IMFMediaSource CreateMediaSource(");
-        AssertContains(sourceReaderNegotiationText, "private IMFMediaSource CreateMediaSourceByEnumeration(");
+        AssertContains(sourceReaderDeviceEnumerationText, "private IMFMediaSource CreateMediaSourceByEnumeration(");
+        AssertContains(sourceReaderDeviceEnumerationText, "MfInterop.MFEnumDeviceSources(attrs, out activateArrayPtr, out var activateCount)");
+        AssertContains(sourceReaderDeviceEnumerationText, "DeviceSymbolicLinkMatcher.Matches(targetSymbolicLink, link)");
+        AssertContains(sourceReaderDeviceEnumerationText, "ReleaseRemainingActivateObjects(activateArrayPtr, activateCount, i + 1);");
+        AssertContains(sourceReaderDeviceEnumerationText, "Marshal.ReleaseComObject(activated)");
+        AssertContains(sourceReaderDeviceEnumerationText, "Marshal.FreeCoTaskMem(activateArrayPtr);");
         AssertContains(sourceReaderNegotiationText, "private IMFMediaType SelectMediaType(");
         AssertContains(sourceReaderNegotiationText, "private IMFMediaType SelectConvertedMediaType(");
         AssertContains(sourceReaderNegotiationText, "private static bool TryGetFrameSize(");
@@ -35,6 +41,7 @@ static partial class Program
         AssertContains(sourceReaderInteropText, "internal interface IMFMediaBuffer");
         AssertContains(sourceReaderInteropText, "internal interface IMFDXGIBuffer");
         AssertDoesNotContain(sourceReaderRootText, "private IMFMediaSource CreateMediaSource(");
+        AssertDoesNotContain(sourceReaderNegotiationText, "MFEnumDeviceSources(attrs, out activateArrayPtr, out var activateCount)");
         AssertDoesNotContain(sourceReaderRootText, "private IMFMediaType SelectMediaType(");
         AssertDoesNotContain(sourceReaderRootText, "private static class MfInterop");
         AssertDoesNotContain(sourceReaderRootText, "DllImport(\"mfplat.dll\", ExactSpelling = true)");

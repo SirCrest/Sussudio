@@ -1548,10 +1548,12 @@ drains, and pending-count accounting there; keep render-loop consumption in
 
 Media Foundation source-reader negotiation now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs`. Keep
-DXGI manager attachment, device-source open/enumeration fallback, native
-media-type selection, converted-type construction, frame-size/frame-rate
+DXGI manager attachment, direct device-source open, native media-type selection,
+converted-type construction, frame-size/frame-rate
 attribute reads, and optional media-attribute copy helpers there; keep
-high-level source-reader state fields in the root source-reader file.
+device-enumeration open fallback and candidate reporting in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.DeviceEnumeration.cs`;
+keep high-level source-reader state fields in the root source-reader file.
 
 Media Foundation source-reader initialization now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs`. Keep
