@@ -6,6 +6,7 @@ static partial class Program
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
+        var statsOverlayCompositionGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs").Replace("\r\n", "\n");
         var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsSnapshotProvider.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var statsSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshotBuilder.cs").Replace("\r\n", "\n");
@@ -27,7 +28,7 @@ static partial class Program
         AssertContains(statsOverlayText, "IsPreviewing = () => ViewModel.IsPreviewing,");
         AssertContains(statsOverlayText, "IsRecording = () => ViewModel.IsRecording");
         AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.GetStatsSnapshot();");
-        AssertContains(statsOverlayCompositionText, "private static StatsSnapshotProvider CreateSnapshotProvider(");
+        AssertContains(statsOverlayCompositionGraphText, "private static StatsSnapshotProvider CreateSnapshotProvider(");
         AssertContains(statsOverlayCompositionText, "=> _statsSnapshotProvider.GetSnapshot();");
         AssertContains(statsSnapshotProviderText, "internal sealed class StatsSnapshotProvider");
         AssertDoesNotContain(statsSnapshotProviderText, "internal sealed partial class StatsSnapshotProvider");

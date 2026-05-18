@@ -4,12 +4,13 @@ static partial class Program
     {
         var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
+        var statsOverlayCompositionGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs").Replace("\r\n", "\n");
         var statsDockCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockPresentationController.cs").Replace("\r\n", "\n");
         var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
 
         AssertContains(statsOverlayCompositionText, "private readonly StatsDockControllerGraph _statsDockControllerGraph;");
-        AssertContains(statsOverlayCompositionText, "private StatsDockControllerGraph CreateDockControllerGraph(");
+        AssertContains(statsOverlayCompositionGraphText, "private StatsDockControllerGraph CreateDockControllerGraph(");
         AssertContains(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController(new StatsDockPresentationControllerContext");
         AssertContains(statsDockCompositionText, "_refreshController = new StatsDockRefreshController(new StatsDockRefreshControllerContext");
         AssertContains(statsDockCompositionText, "internal sealed class StatsDockControllerGraph");
