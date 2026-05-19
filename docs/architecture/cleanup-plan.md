@@ -3303,6 +3303,15 @@ Remaining `tools/Common` ownership:
 
 ## Next Slices
 
+Small-file hygiene applies to every slice below: prefer a named owner when the
+runtime responsibility is real, but do not create or keep sub-100-line files
+just to make a partial family look tidy. A small file should pay for itself by
+owning a stable contract, hot-path lifetime, XAML adapter surface, shared tool
+surface, or test boundary that would be harder to audit if merged. If a tiny
+file only holds private DTOs, constants, or pass-through helpers for one nearby
+owner, fold it back into that owner and update the source-shape tests and
+`docs/architecture/AGENT_MAP.md` in the same slice.
+
 1. Keep diagnostic-session runner internals aligned by owner.
 
    `tools/Common/DiagnosticSessionRunner.cs` is now the small public wrapper,

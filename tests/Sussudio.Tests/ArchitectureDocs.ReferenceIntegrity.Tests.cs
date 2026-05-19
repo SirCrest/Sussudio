@@ -91,6 +91,18 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task ArchitectureCleanupPlan_DefinesSmallFileHygiene()
+    {
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
+
+        AssertContains(cleanupPlanText, "Small-file hygiene applies to every slice below");
+        AssertContains(cleanupPlanText, "do not create or keep sub-100-line files");
+        AssertContains(cleanupPlanText, "owning a stable contract, hot-path lifetime, XAML adapter surface, shared tool");
+        AssertContains(cleanupPlanText, "fold it back into that owner and update the source-shape tests");
+
+        return Task.CompletedTask;
+    }
+
     private static Task TestMigrationPlan_FileReferencesResolveAndNamesValidationCommands()
     {
         var repoRoot = GetRepoRoot();

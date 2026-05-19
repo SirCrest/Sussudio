@@ -35,6 +35,9 @@ static partial class Program
             "Architecture cleanup plan covers architecture-doc test family",
             ArchitectureCleanupPlan_CoversArchitectureDocsTestFamily);
         await AddCheckAsync(results,
+            "Architecture cleanup plan defines small-file hygiene",
+            ArchitectureCleanupPlan_DefinesSmallFileHygiene);
+        await AddCheckAsync(results,
             "Test migration plan references resolve and names validation commands",
             TestMigrationPlan_FileReferencesResolveAndNamesValidationCommands);
         await AddCheckAsync(results,
