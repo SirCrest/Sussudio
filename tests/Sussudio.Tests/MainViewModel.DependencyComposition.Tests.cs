@@ -21,6 +21,7 @@ static partial class Program
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerOperationsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs").Replace("\r\n", "\n");
+        var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs").Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs").Replace("\r\n", "\n");
         var previewReinitializeControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs").Replace("\r\n", "\n");
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceRefreshController.cs").Replace("\r\n", "\n");
@@ -109,7 +110,7 @@ static partial class Program
         AssertContains(controllerGraphText, "ApplyLatestSourceTelemetryForPreviewStart = () =>");
         AssertContains(controllerGraphText, "new MainViewModelRecordingTransitionController(viewModel, previewLifecycleController)");
         AssertContains(controllerGraphText, "new MainViewModelDeviceAudioRequestController(viewModel)");
-        AssertContains(controllerGraphText, "new MainViewModelRecordingCapabilityController(viewModel)");
+        AssertContains(controllerGraphText, "var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);");
         AssertContains(controllerGraphText, "new MainViewModelCaptureSettingsAutomationController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelRecordingSettingsAutomationController(viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelCaptureModeOptionRebuildController(viewModel)");
@@ -253,6 +254,15 @@ static partial class Program
         AssertContains(recordingSettingsAutomationControllerText, "private sealed class MainViewModelRecordingSettingsAutomationController");
         AssertContains(recordingSettingsAutomationControllerText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
         AssertContains(recordingSettingsAutomationControllerText, "_viewModel._sessionCoordinator.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
+        AssertContains(recordingCapabilityControllerText, "private sealed class MainViewModelRecordingCapabilityController");
+        AssertContains(recordingCapabilityControllerText, "private sealed class MainViewModelRecordingCapabilityControllerContext");
+        AssertContains(recordingCapabilityControllerText, "private readonly MainViewModelRecordingCapabilityControllerContext _context;");
+        AssertDoesNotContain(recordingCapabilityControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(recordingCapabilityControllerText, "_viewModel.");
+        AssertContains(controllerGraphText, "private static MainViewModelRecordingCapabilityController CreateRecordingCapabilityController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelRecordingCapabilityControllerContext");
+        AssertContains(controllerGraphText, "ReplaceAvailableRecordingFormats = formats =>");
+        AssertContains(controllerGraphText, "NotifySelectedRecordingFormatChanged = () => viewModel.OnPropertyChanged(nameof(SelectedRecordingFormat)),");
         AssertContains(captureModeOptionRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertContains(captureModeOptionFrameRateRebuildControllerText, "private sealed partial class MainViewModelCaptureModeOptionRebuildController");
         AssertEqual(

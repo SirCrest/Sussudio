@@ -14,10 +14,14 @@ static partial class Program
         AssertContains(recordingCapabilityControllerText, "private void RebuildRecordingFormatOptions()");
         AssertContains(recordingCapabilityControllerText, "=> _recordingCapabilityController.RebuildRecordingFormatOptions();");
         AssertContains(recordingCapabilityControllerText, "public void RebuildRecordingFormatOptions()");
+        AssertContains(recordingCapabilityControllerText, "private sealed class MainViewModelRecordingCapabilityControllerContext");
+        AssertContains(recordingCapabilityControllerText, "private readonly MainViewModelRecordingCapabilityControllerContext _context;");
+        AssertDoesNotContain(recordingCapabilityControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(recordingCapabilityControllerText, "_viewModel.");
         AssertContains(recordingCapabilityControllerText, "RecordingSettingsSelectionPolicy.Select(");
-        AssertContains(recordingCapabilityControllerText, "RecordingSettingsSelectionPolicy.IsHdrCompatible(_viewModel.SelectedRecordingFormat)");
-        AssertContains(recordingCapabilityControllerText, "_viewModel.OnPropertyChanged(nameof(SelectedRecordingFormat));");
-        AssertContains(recordingCapabilityControllerText, "Logger.Log($\"Selected recording format: {_viewModel.SelectedRecordingFormat}\");");
+        AssertContains(recordingCapabilityControllerText, "RecordingSettingsSelectionPolicy.IsHdrCompatible(_context.GetSelectedRecordingFormat())");
+        AssertContains(recordingCapabilityControllerText, "_context.NotifySelectedRecordingFormatChanged();");
+        AssertContains(recordingCapabilityControllerText, "Logger.Log($\"Selected recording format: {_context.GetSelectedRecordingFormat()}\");");
         AssertContains(captureModeTransactionsText, "RebuildRecordingFormatOptions();");
         AssertDoesNotContain(captureModeTransactionsText, "RecordingSettingsSelectionPolicy.Select(");
         AssertContains(automationSettingsText, "=> _recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken);");

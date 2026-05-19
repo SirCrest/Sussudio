@@ -282,6 +282,10 @@ static partial class Program
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Telemetry.cs")),
             "old MainViewModel telemetry partial removed after controller extraction");
         var recordingCapabilityControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRecordingCapabilityController.cs"));
+        AssertContains(recordingCapabilityControllerText, "private sealed class MainViewModelRecordingCapabilityControllerContext");
+        AssertContains(recordingCapabilityControllerText, "private readonly MainViewModelRecordingCapabilityControllerContext _context;");
+        AssertDoesNotContain(recordingCapabilityControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(recordingCapabilityControllerText, "_viewModel.");
         AssertContains(recordingCapabilityControllerText, "RECORDING_FORMATS_UI_ENQUEUE_FAILED");
         AssertContains(recordingCapabilityControllerText, "SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED");
         AssertDoesNotContain(

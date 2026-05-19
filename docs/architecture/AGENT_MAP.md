@@ -2715,8 +2715,8 @@ Primary current owners:
   owns pure selected capture-format choice and mode-tuple video-format filtering.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`
   owns startup FFmpeg capability probes for recording formats and split-encode
-  modes, UI enqueue failure logging, and recording-format policy application to
-  observable state.
+  modes through graph-built context ports, UI enqueue failure logging, and
+  recording-format policy application to observable state.
   `MainViewModel.CaptureModeTransactions.cs`
   owns HDR toggle side effects: recording-time revert/status, mode option
   rebuilds, immediate reinitialize scheduling, and settings persistence.
@@ -2823,7 +2823,7 @@ Primary current owners:
   encoder preset, and output-path directory creation.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`
   owns startup FFmpeg capability probes for recording formats and split-encode
-  modes plus observable recording-format option rebuilds.
+  modes through graph-built context ports plus observable recording-format option rebuilds.
 
 Refactor direction:
 

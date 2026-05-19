@@ -93,7 +93,7 @@ static partial class Program
         AssertContains(splitEncodeRefresh, "modes.Remove(\"2-way\");");
         AssertContains(splitEncodeRefresh, "if (!support.Supports3Way)");
         AssertContains(splitEncodeRefresh, "modes.Remove(\"3-way\");");
-        AssertContains(splitEncodeRefresh, "SelectedSplitEncodeMode = \"Auto\";");
+        AssertContains(splitEncodeRefresh, "_context.SetSelectedSplitEncodeMode(\"Auto\");");
 
         AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
 

@@ -3603,7 +3603,7 @@ owner, fold it back into that owner and update the source-shape tests and
    recording codec filtering, selected-codec fallback policy, string-to-model
    format/quality parsing, and custom bitrate clamp policy now live in
    `Sussudio/ViewModels/RecordingSettingsSelectionPolicy.cs`, while startup
-   FFmpeg capability probes and observable recording-format option mutation live
+   FFmpeg capability probes and observable recording-format option mutation through graph-built context ports live
    in `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`. `MainViewModel.CaptureModeTransactions.cs`
    keeps selected-format and video-format rebuild compatibility adapters, while
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
@@ -3738,7 +3738,7 @@ owner, fold it back into that owner and update the source-shape tests and
    capture-mode reinitialization routing live in
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs`.
    Startup FFmpeg capability probes for recording formats and split-encode modes
-   plus observable recording-format option rebuilds now live in
+   plus observable recording-format option rebuilds through graph-built context ports now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingCapabilityController.cs`.
    The old `MainViewModel.Automation.cs` catch-all has been retired.
 

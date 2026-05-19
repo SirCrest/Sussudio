@@ -20,12 +20,12 @@ public partial class MainViewModel
     /// </summary>
     private sealed class MainViewModelRecordingCapabilityController
     {
-        private readonly MainViewModel _viewModel;
+        private readonly MainViewModelRecordingCapabilityControllerContext _context;
         private List<string> _detectedRecordingFormats = new();
 
-        public MainViewModelRecordingCapabilityController(MainViewModel viewModel)
+        public MainViewModelRecordingCapabilityController(MainViewModelRecordingCapabilityControllerContext context)
         {
-            _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public void Start()
@@ -38,33 +38,29 @@ public partial class MainViewModel
         {
             var selection = RecordingSettingsSelectionPolicy.Select(
                 _detectedRecordingFormats,
-                _viewModel.AvailableRecordingFormats,
-                _viewModel.SelectedRecordingFormat,
-                _viewModel.IsHdrEnabled,
-                DefaultRecordingFormat,
-                HevcRecordingFormat,
-                Av1RecordingFormat);
+                _context.GetAvailableRecordingFormats(),
+                _context.GetSelectedRecordingFormat(),
+                _context.IsHdrEnabled(),
+                _context.DefaultRecordingFormat,
+                _context.HevcRecordingFormat,
+                _context.Av1RecordingFormat);
 
-            _viewModel.AvailableRecordingFormats.Clear();
-            foreach (var format in selection.AvailableFormats)
-            {
-                _viewModel.AvailableRecordingFormats.Add(format);
-            }
+            _context.ReplaceAvailableRecordingFormats(selection.AvailableFormats);
 
-            var previousSelection = _viewModel.SelectedRecordingFormat;
-            _viewModel.SelectedRecordingFormat = selection.SelectedFormat;
+            var previousSelection = _context.GetSelectedRecordingFormat();
+            _context.SetSelectedRecordingFormat(selection.SelectedFormat);
             if (string.Equals(previousSelection, selection.SelectedFormat, StringComparison.Ordinal))
             {
-                _viewModel.OnPropertyChanged(nameof(SelectedRecordingFormat));
+                _context.NotifySelectedRecordingFormatChanged();
             }
 
-            if (_viewModel.IsHdrEnabled &&
-                !RecordingSettingsSelectionPolicy.IsHdrCompatible(_viewModel.SelectedRecordingFormat))
+            if (_context.IsHdrEnabled() &&
+                !RecordingSettingsSelectionPolicy.IsHdrCompatible(_context.GetSelectedRecordingFormat()))
             {
-                _viewModel.StatusText = "HDR recording requires HEVC or AV1 (10-bit).";
+                _context.SetStatusText("HDR recording requires HEVC or AV1 (10-bit).");
             }
 
-            Logger.Log($"Selected recording format: {_viewModel.SelectedRecordingFormat}");
+            Logger.Log($"Selected recording format: {_context.GetSelectedRecordingFormat()}");
         }
 
         private static void TrackStartupRefreshTask(Task task, string description)
@@ -99,8 +95,8 @@ public partial class MainViewModel
                 _detectedRecordingFormats = formats
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
-                _viewModel.IsFfmpegMissing = _detectedRecordingFormats.Count == 0;
-                if (_viewModel.IsFfmpegMissing)
+                _context.SetIsFfmpegMissing(_detectedRecordingFormats.Count == 0);
+                if (_context.IsFfmpegMissing())
                 {
                     Logger.Log("FFMPEG_MISSING: encoder probe returned zero codecs. Recording unavailable.");
                 }
@@ -109,13 +105,13 @@ public partial class MainViewModel
                 Logger.Log($"Recording formats refreshed: {string.Join(", ", _detectedRecordingFormats)}");
             }
 
-            if (_viewModel._dispatcherQueue.HasThreadAccess)
+            if (_context.HasUiThreadAccess())
             {
                 ApplyFormats();
             }
             else
             {
-                if (!_viewModel._dispatcherQueue.TryEnqueue(ApplyFormats))
+                if (!_context.TryEnqueueOnUiThread(ApplyFormats))
                 {
                     Logger.Log($"RECORDING_FORMATS_UI_ENQUEUE_FAILED formats={formats.Count}");
                 }
@@ -138,31 +134,50 @@ public partial class MainViewModel
 
             void ApplyModes()
             {
-                _viewModel.AvailableSplitEncodeModes.Clear();
-                foreach (var mode in modes)
+                _context.ReplaceAvailableSplitEncodeModes(modes);
+
+                if (!_context.AvailableSplitEncodeModesContains(_context.GetSelectedSplitEncodeMode()))
                 {
-                    _viewModel.AvailableSplitEncodeModes.Add(mode);
+                    _context.SetSelectedSplitEncodeMode("Auto");
                 }
 
-                if (!_viewModel.AvailableSplitEncodeModes.Contains(_viewModel.SelectedSplitEncodeMode))
-                {
-                    _viewModel.SelectedSplitEncodeMode = "Auto";
-                }
-
-                Logger.Log($"Split encode modes refreshed: {string.Join(", ", _viewModel.AvailableSplitEncodeModes)}");
+                Logger.Log($"Split encode modes refreshed: {string.Join(", ", _context.GetAvailableSplitEncodeModes())}");
             }
 
-            if (_viewModel._dispatcherQueue.HasThreadAccess)
+            if (_context.HasUiThreadAccess())
             {
                 ApplyModes();
             }
             else
             {
-                if (!_viewModel._dispatcherQueue.TryEnqueue(ApplyModes))
+                if (!_context.TryEnqueueOnUiThread(ApplyModes))
                 {
                     Logger.Log($"SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED modes={modes.Count}");
                 }
             }
         }
+    }
+
+    private sealed class MainViewModelRecordingCapabilityControllerContext
+    {
+        public required string DefaultRecordingFormat { get; init; }
+        public required string HevcRecordingFormat { get; init; }
+        public required string Av1RecordingFormat { get; init; }
+        public required Func<IReadOnlyCollection<string>> GetAvailableRecordingFormats { get; init; }
+        public required Action<IReadOnlyList<string>> ReplaceAvailableRecordingFormats { get; init; }
+        public required Func<string> GetSelectedRecordingFormat { get; init; }
+        public required Action<string> SetSelectedRecordingFormat { get; init; }
+        public required Action NotifySelectedRecordingFormatChanged { get; init; }
+        public required Func<bool> IsHdrEnabled { get; init; }
+        public required Action<string> SetStatusText { get; init; }
+        public required Func<bool> IsFfmpegMissing { get; init; }
+        public required Action<bool> SetIsFfmpegMissing { get; init; }
+        public required Func<bool> HasUiThreadAccess { get; init; }
+        public required Func<Action, bool> TryEnqueueOnUiThread { get; init; }
+        public required Func<IReadOnlyCollection<string>> GetAvailableSplitEncodeModes { get; init; }
+        public required Action<IReadOnlyList<string>> ReplaceAvailableSplitEncodeModes { get; init; }
+        public required Func<string> GetSelectedSplitEncodeMode { get; init; }
+        public required Action<string> SetSelectedSplitEncodeMode { get; init; }
+        public required Func<string, bool> AvailableSplitEncodeModesContains { get; init; }
     }
 }
