@@ -2830,6 +2830,8 @@ Primary owners:
   `Program.I2cCommands.HighSelectorProbe.cs` owns high-selector probing;
   `Program.I2cCommands.TopologyProbe.cs` owns topology/property-set probing;
   `Program.I2cCommands.Verify.cs` owns I2C SET/readback/restore verification;
+  `Program.I2cLegacyProbe.cs` owns the legacy `i2c-probe` selector scan and
+  raw/AT-wrapped I2C frame experiment;
   `Program.I2cSwitch.cs` owns the captured audio-switch replay workflow;
   `Program.ExperimentPayloads.cs` owns experiment payload construction;
   `Program.I2cTransport.cs` owns I2C-over-AT transport helpers; and
