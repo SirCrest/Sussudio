@@ -1234,12 +1234,12 @@ Primary current owners:
   polling lifetime.
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns the
   stats overlay runtime facade and construction-order entry point.
+  `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Contexts.cs`
+  owns the grouped stats composition context contracts for shell controls,
+  snapshot sources, dock targets, hardware sources, and frame-time targets.
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs` owns
-  the grouped context DTOs and graph factory wiring: snapshot provider,
-  frame-time presentation, dock graph, overlay controller, and section chrome
-  controller. Its composition context is grouped into shell controls, snapshot
-  sources, dock targets, hardware sources, and frame-time targets so the XAML
-  adapter stays auditable without tiny context files.
+  graph factory wiring from those contexts: snapshot provider, frame-time
+  presentation, dock graph, overlay controller, and section chrome controller.
   `Sussudio/MainWindow.StatsOverlay.cs` owns the stats overlay XAML adapter,
   binding setup, and visibility commands delegated to the composition
   controller.
@@ -1266,7 +1266,9 @@ Primary current owners:
   renderer cadence/recent-sample acquisition and null fallback policy.
   `Sussudio/MainWindow.StatsOverlay.cs` is the XAML-facing adapter for stats
   visibility, polling, and section chrome commands; stats provider/controller
-  composition lives in
+  context contracts live in
+  `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Contexts.cs`
+  and provider/controller composition lives in
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs`.
 - `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` owns xUnit contract
   checks for stats overlay lifecycle wiring and stats section chrome.

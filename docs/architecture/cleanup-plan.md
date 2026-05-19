@@ -2116,11 +2116,12 @@ Stats dock, stats toggle, and frame-time overlay lifecycle now live in
 `Sussudio/Controllers/Stats/StatsOverlayController.cs`. Stats overlay controller
 composition stays split by role: `StatsOverlayCompositionController.cs` owns the
 runtime facade and construction-order entry point, while
-`StatsOverlayCompositionController.Graph.cs` owns the grouped context DTOs plus
-snapshot provider, frame-time presentation, dock graph, overlay controller, and
-section chrome factory wiring. Its context is grouped into shell controls,
-snapshot sources, dock targets, hardware sources, and frame-time targets instead
-of a flat dependency bag;
+`StatsOverlayCompositionController.Contexts.cs` owns the grouped composition
+context DTOs for shell controls, snapshot sources, dock targets, hardware
+sources, and frame-time targets. `StatsOverlayCompositionController.Graph.cs`
+owns snapshot provider, frame-time presentation, dock graph, overlay controller,
+and section chrome factory wiring from those contexts instead of a flat
+dependency bag;
 stats dock presentation/diagnostic/hardware/refresh controller graph wiring
 now lives in `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs`;
 the overlay partial is the XAML-facing adapter for stats overlay binding setup,
@@ -2164,8 +2165,10 @@ frame-time canvas sizing, sample projection, and expected-line geometry live in
 `Sussudio/Controllers/Stats/FrameTimeOverlayGeometry.cs`;
 `Sussudio/MainWindow.StatsOverlay.cs` is the XAML-facing compact overlay
 adapter beside the stats overlay visibility route, while
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.Contexts.cs`
+owns the grouped stats composition context contracts and
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.Graph.cs` owns
-presentation-controller graph composition and
+presentation-controller graph composition from those contexts.
 `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` keeps the stats dock
 projection refresh adapter.
 Decode and GPU hardware stats row refresh/application over presentation inputs
