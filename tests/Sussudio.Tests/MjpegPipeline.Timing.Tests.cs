@@ -126,7 +126,20 @@ static partial class Program
 
     private static Task SoftwareMjpegDecoder_Properties_ExposeCorrectDimensions()
     {
+        var rootText = ReadRepoFile("Sussudio/Services/Gpu/SoftwareMjpegDecoder.cs")
+            .Replace("\r\n", "\n");
+        var decodeText = ReadRepoFile("Sussudio/Services/Gpu/SoftwareMjpegDecoder.Decode.cs")
+            .Replace("\r\n", "\n");
         var decoderType = RequireType("Sussudio.Services.Gpu.SoftwareMjpegDecoder");
+
+        AssertContains(rootText, "internal sealed unsafe partial class SoftwareMjpegDecoder : IDisposable");
+        AssertContains(rootText, "public void Initialize(int width, int height)");
+        AssertContains(rootText, "public void Dispose()");
+        AssertContains(decodeText, "internal sealed unsafe partial class SoftwareMjpegDecoder");
+        AssertContains(decodeText, "public bool DecodeToNv12(ReadOnlySpan<byte> jpegData, Span<byte> nv12Destination)");
+        AssertContains(decodeText, "SW_MJPEG_DECODE_DIAG");
+        AssertContains(decodeText, "Buffer.MemoryCopy(");
+        AssertDoesNotContain(rootText, "public bool DecodeToNv12(");
 
         var widthProp = decoderType.GetProperty("Width", BindingFlags.Public | BindingFlags.Instance);
         var heightProp = decoderType.GetProperty("Height", BindingFlags.Public | BindingFlags.Instance);

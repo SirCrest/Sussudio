@@ -39,7 +39,7 @@ static partial class Program
             "MJPEG pipeline timing metrics expose expected properties",
             ParallelMjpegDecodePipeline_PipelineTimingMetrics_HasExpectedProperties);
         await AddCheckAsync(results,
-            "Software MJPEG decoder exposes dimensions and NV12 size",
+            "Software MJPEG decoder exposes dimensions and decode ownership",
             SoftwareMjpegDecoder_Properties_ExposeCorrectDimensions);
         await AddCheckAsync(results,
             "Pooled video frame leases return buffer after final release",
