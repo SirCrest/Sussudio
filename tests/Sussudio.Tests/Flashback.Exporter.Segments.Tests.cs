@@ -112,6 +112,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var singleFilePacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketWriting.cs")
             .Replace("\r\n", "\n");
+        var singleFilePacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs")
+            .Replace("\r\n", "\n");
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
@@ -133,7 +135,8 @@ static partial class Program
         AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
         AssertContains(packetBuffersText, "FLASHBACK_EXPORT_PACKET_CLONE_FAIL operation={operation}");
         AssertContains(singleFileText, "WriteSingleFilePacketsToActiveOutput(");
-        AssertContains(singleFilePacketWritingText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
+        AssertContains(singleFilePacketWritingText, "WriteSingleFilePacketReadLoop(");
+        AssertContains(singleFilePacketReadLoopText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
         AssertContains(segmentsText, "WriteSegmentPacketsToActiveOutput(");
         AssertDoesNotContain(segmentsText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
         AssertContains(segmentPacketWritingText, "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");

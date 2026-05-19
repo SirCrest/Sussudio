@@ -14,6 +14,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var singleFilePacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketWriting.cs")
             .Replace("\r\n", "\n");
+        var singleFilePacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs")
+            .Replace("\r\n", "\n");
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
             .Replace("\r\n", "\n");
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
@@ -76,11 +78,17 @@ static partial class Program
         AssertContains(singleFileText, "ReleaseExportLockBestEffort(\"single_export\");");
         AssertContains(singleFilePacketWritingText, "private SingleFilePacketWriteResult WriteSingleFilePacketsToActiveOutput(");
         AssertContains(singleFilePacketWritingText, "private readonly record struct SingleFilePacketWriteResult(FinalizeResult? Failure, long TotalPackets);");
-        AssertContains(singleFilePacketWritingText, "var packet = ffmpeg.av_packet_alloc();");
-        AssertContains(singleFilePacketWritingText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
-        AssertContains(singleFilePacketWritingText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
-        AssertContains(singleFilePacketWritingText, "LogTimestampBaseDrift(timestampBasesUs, hasTimestampBase);");
+        AssertContains(singleFilePacketWritingText, "WriteSingleFilePacketReadLoop(");
+        AssertContains(singleFilePacketWritingText, "LogTimestampBaseDrift(packetState.TimestampBasesUs, packetState.HasTimestampBase);");
         AssertContains(singleFilePacketWritingText, "Flashback export failed: no video packets were written.");
+        AssertDoesNotContain(singleFilePacketWritingText, "var packet = ffmpeg.av_packet_alloc();");
+        AssertDoesNotContain(singleFilePacketWritingText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
+        AssertContains(singleFilePacketReadLoopText, "private void WriteSingleFilePacketReadLoop(");
+        AssertContains(singleFilePacketReadLoopText, "var packet = ffmpeg.av_packet_alloc();");
+        AssertContains(singleFilePacketReadLoopText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
+        AssertContains(singleFilePacketReadLoopText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
+        AssertContains(singleFilePacketReadLoopText, "private struct SingleFilePacketWriteState");
+        AssertContains(singleFilePacketReadLoopText, "FreeBufferedPackets(packetState.BufferedPackets, packetState.BufferedStreamIndices);");
         AssertDoesNotContain(singleFileText, "var timestampBasesUs = new long[streamCount];");
         AssertDoesNotContain(singleFileText, "var packet = ffmpeg.av_packet_alloc();");
         AssertDoesNotContain(singleFileText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");

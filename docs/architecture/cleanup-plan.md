@@ -1525,10 +1525,14 @@ snapshots there so native export cores stay behind focused entry points.
 Flashback exporter single-file export shell now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.SingleFile.cs`. Keep the
 single `.ts` export validation, seek/setup, final output replacement, success
-result shaping, and single-export lock release there. Single-file packet
-allocation/read/remux, buffered timestamp-base flush, drift logging, and
-no-packet validation now live in
+result shaping, and single-export lock release there. Single-file packet result
+validation now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketWriting.cs`.
+The single-file active input packet pump lives in
+`Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs`;
+keep native frame reads, per-read packet unref, stream filtering, timestamp-base
+discovery, buffered packet transition, inline remux writes, writer throttling,
+and EOF partial-base rescue/freeing there.
 
 Flashback exporter multi-segment packet-copy/remux behavior now lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Segments.cs`. Keep segment

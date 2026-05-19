@@ -11,7 +11,7 @@ static partial class Program
         AssertDoesNotContain(sourceText, "TotalSeconds * ffmpeg.AV_TIME_BASE");
         AssertDoesNotContain(sourceText, "TotalMilliseconds * 1000)");
         AssertContains(sourceText, "var seekTimestamp = ToAvTimeBaseTimestamp(inPoint);");
-        AssertContains(sourceText, "var outPtsLimit = ToAvTimeBaseTimestampOrMax(outPoint);");
+        AssertContains(sourceText, "ToAvTimeBaseTimestampOrMax(outPoint),");
         AssertContains(sourceText, "var outPtsLimitUs = ToAvTimeBaseTimestampOrMax(outPoint);");
         AssertContains(sourceText, "var segmentInOffsetUs = ToMicrosecondsSaturated(SaturatingSubtract(inPoint, segment.StartPts!.Value));");
         AssertContains(sourceText, "var segmentOutDelta = SaturatingSubtract(");
