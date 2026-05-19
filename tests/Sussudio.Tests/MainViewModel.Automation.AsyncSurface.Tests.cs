@@ -10,6 +10,21 @@ static partial class Program
     private static Task MainViewModelAutomation_UsesAsyncFlashbackAndProbeSurface()
     {
         var automationInterfaceType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var readinessPortType = RequireType("Sussudio.Services.Automation.IAutomationReadinessPort");
+        var deviceSelectionPortType = RequireType("Sussudio.Services.Automation.IAutomationDeviceSelectionPort");
+        var snapshotQueryPortType = RequireType("Sussudio.Services.Automation.IAutomationSnapshotQueryPort");
+        AssertEqual(
+            true,
+            readinessPortType.IsAssignableFrom(automationInterfaceType),
+            "IAutomationViewModel inherits readiness port");
+        AssertEqual(
+            true,
+            deviceSelectionPortType.IsAssignableFrom(automationInterfaceType),
+            "IAutomationViewModel inherits device-selection port");
+        AssertEqual(
+            true,
+            snapshotQueryPortType.IsAssignableFrom(automationInterfaceType),
+            "IAutomationViewModel inherits snapshot-query port");
         AssertEqual(
             false,
             automationInterfaceType.GetProperty("IsMicrophoneEnabled") != null,
@@ -110,6 +125,13 @@ static partial class Program
         AssertContains(dispatcherText, "await _viewModel.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "await _viewModel.ProbePreviewColorAsync(cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "await _viewModel.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false)");
+        AssertContains(dispatcherText, "private readonly IAutomationReadinessPort _readinessPort;");
+        AssertContains(dispatcherText, "private readonly IAutomationDeviceSelectionPort _deviceSelectionPort;");
+        AssertContains(dispatcherText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
+        AssertContains(dispatcherText, "_readinessPort.IsInitialized || _readinessPort.Devices.Count > 0");
+        AssertContains(dispatcherText, "await _deviceSelectionPort.RefreshDevicesForAutomationAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _deviceSelectionPort.SelectDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _snapshotQueryPort.GetAutomationOptionsSnapshotAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "vm.SetHdrEnabledAsync(v, ct)");
         AssertContains(dispatcherText, "vm.SetTrueHdrPreviewEnabledAsync(v, ct)");
         AssertDoesNotContain(dispatcherText, "_viewModel.IsMicrophoneEnabled =");
@@ -152,7 +174,10 @@ static partial class Program
 
     private static void AssertTaskReturningMethod(Type type, string methodName, Type? resultType)
     {
-        var method = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
+        var method = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public)
+            ?? type.GetInterfaces()
+                .Select(interfaceType => interfaceType.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public))
+                .FirstOrDefault(candidate => candidate != null);
         AssertNotNull(method, $"{type.FullName}.{methodName}");
         AssertEqual(
             true,

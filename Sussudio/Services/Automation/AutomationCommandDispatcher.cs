@@ -15,6 +15,9 @@ namespace Sussudio.Services.Automation;
 public sealed partial class AutomationCommandDispatcher : IAutomationCommandDispatcher
 {
     private readonly IAutomationViewModel _viewModel;
+    private readonly IAutomationReadinessPort _readinessPort;
+    private readonly IAutomationDeviceSelectionPort _deviceSelectionPort;
+    private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;
     private readonly IAutomationDiagnosticsHub _diagnosticsHub;
     private readonly IAutomationWindowControl _windowControl;
     private readonly string? _authToken;
@@ -31,6 +34,9 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
         string? authToken = null)
     {
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+        _readinessPort = viewModel;
+        _deviceSelectionPort = viewModel;
+        _snapshotQueryPort = viewModel;
         _diagnosticsHub = diagnosticsHub ?? throw new ArgumentNullException(nameof(diagnosticsHub));
         _windowControl = windowControl ?? throw new ArgumentNullException(nameof(windowControl));
         _authToken = string.IsNullOrWhiteSpace(authToken) ? null : authToken;
@@ -159,6 +165,6 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
 
     private bool IsAutomationReady()
     {
-        return _viewModel.IsInitialized || _viewModel.Devices.Count > 0;
+        return _readinessPort.IsInitialized || _readinessPort.Devices.Count > 0;
     }
 }

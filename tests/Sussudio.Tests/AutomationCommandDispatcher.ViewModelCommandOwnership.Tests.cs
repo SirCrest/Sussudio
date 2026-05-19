@@ -119,16 +119,16 @@ static partial class Program
         AssertDoesNotContain(customCommandsText, "_viewModel.GetAutomationOptionsSnapshotAsync");
 
         AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteRefreshDevicesCommandAsync(");
-        AssertContains(deviceCommandsText, "_viewModel.RefreshDevicesForAutomationAsync(cancellationToken)");
+        AssertContains(deviceCommandsText, "_deviceSelectionPort.RefreshDevicesForAutomationAsync(cancellationToken)");
         AssertContains(deviceCommandsText, "Device list refresh requested.");
         AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteSelectDeviceCommandAsync(");
         AssertContains(deviceCommandsText, "var deviceId = GetString(payload, \"deviceId\");");
         AssertContains(deviceCommandsText, "var deviceName = GetString(payload, \"deviceName\");");
-        AssertContains(deviceCommandsText, "_viewModel.SelectDeviceAsync(deviceId, deviceName, cancellationToken)");
+        AssertContains(deviceCommandsText, "_deviceSelectionPort.SelectDeviceAsync(deviceId, deviceName, cancellationToken)");
         AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteSelectAudioInputDeviceCommandAsync(");
-        AssertContains(deviceCommandsText, "_viewModel.SelectAudioInputDeviceAsync(deviceId, deviceName, cancellationToken)");
+        AssertContains(deviceCommandsText, "_deviceSelectionPort.SelectAudioInputDeviceAsync(deviceId, deviceName, cancellationToken)");
         AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteGetCaptureOptionsCommandAsync(");
-        AssertContains(deviceCommandsText, "_viewModel.GetAutomationOptionsSnapshotAsync(cancellationToken)");
+        AssertContains(deviceCommandsText, "_snapshotQueryPort.GetAutomationOptionsSnapshotAsync(cancellationToken)");
         AssertContains(deviceCommandsText, "Capture options retrieved.");
 
         return Task.CompletedTask;

@@ -11,7 +11,7 @@ public sealed partial class AutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        await _viewModel.RefreshDevicesForAutomationAsync(cancellationToken).ConfigureAwait(false);
+        await _deviceSelectionPort.RefreshDevicesForAutomationAsync(cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, "Device list refresh requested.");
     }
 
@@ -22,7 +22,7 @@ public sealed partial class AutomationCommandDispatcher
     {
         var deviceId = GetString(payload, "deviceId");
         var deviceName = GetString(payload, "deviceName");
-        await _viewModel.SelectDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
+        await _deviceSelectionPort.SelectDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, "Capture device selection requested.");
     }
 
@@ -33,7 +33,7 @@ public sealed partial class AutomationCommandDispatcher
     {
         var deviceId = GetString(payload, "deviceId");
         var deviceName = GetString(payload, "deviceName");
-        await _viewModel.SelectAudioInputDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
+        await _deviceSelectionPort.SelectAudioInputDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, "Audio input device selection requested.");
     }
 
@@ -41,7 +41,7 @@ public sealed partial class AutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var options = await _viewModel.GetAutomationOptionsSnapshotAsync(cancellationToken).ConfigureAwait(false);
+        var options = await _snapshotQueryPort.GetAutomationOptionsSnapshotAsync(cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, "Capture options retrieved.", data: options);
     }
 }
