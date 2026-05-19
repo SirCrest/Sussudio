@@ -124,15 +124,26 @@ static partial class Program
         AssertContains(sourceText, "TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, \"play\", cts.Token)");
         AssertContains(sourceText, "TryDecodeNextVideoFrameWithMetrics(decoder, out var nudgeFrame, cts.Token)");
         AssertContains(sourceText, "CancellationToken cancellationToken)\n    {\n        try\n        {\n            cancellationToken.ThrowIfCancellationRequested();");
-        AssertContains(sourceText, "while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)\n                {\n                    cancellationToken.ThrowIfCancellationRequested();");
-        AssertContains(sourceText, "if (commandChannel.Reader.TryPeek(out _))\n                    {\n                        ReleaseHeldFrameBestEffort(videoFrame, \"av_sync_skip_command_pending\");");
+        var playbackFramesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
+            .Replace("\r\n", "\n");
+        var playbackLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackLoop.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(playbackFramesText, "private bool TryReadNextPlaybackFrame(");
+        AssertContains(playbackFramesText, "private void ClearPrebufferedFrames(");
+        AssertContains(playbackFramesText, "private bool TryResolveAudioDriftFrameSkip(");
+        AssertContains(playbackLoopText, "TryResolveAudioDriftFrameSkip(");
+        AssertDoesNotContain(playbackLoopText, "private bool TryReadNextPlaybackFrame(");
+        AssertDoesNotContain(playbackLoopText, "private void ClearPrebufferedFrames(");
+        AssertDoesNotContain(playbackLoopText, "private bool TryResolveAudioDriftFrameSkip(");
+        AssertContains(sourceText, "while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)\n        {\n            cancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(sourceText, "if (commandChannel.Reader.TryPeek(out _))\n            {\n                ReleaseHeldFrameBestEffort(videoFrame, \"av_sync_skip_command_pending\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_FRAME_SKIP_COMMAND_PENDING count={skipped}");
         AssertContains(sourceText, "const double FrameSkipThresholdMs = 500.0;");
         // Frame-skip catch-up loop must re-sync the audio clock each iteration so a
         // long catch-up burst does not extrapolate from a stale wall-time anchor.
         AssertContains(sourceText, "private bool TryComputeAudioMasterDriftMs(long videoPtsTicks, out double driftMs)");
-        AssertContains(sourceText, "if (TryComputeAudioMasterDriftMs(videoFrame.Pts.Ticks, out var driftMs) &&\n                driftMs < -FrameSkipThresholdMs)");
-        AssertContains(sourceText, "if (!TryComputeAudioMasterDriftMs(videoFrame.Pts.Ticks, out driftMs))\n                    {\n                        break;\n                    }");
+        AssertContains(sourceText, "if (!TryComputeAudioMasterDriftMs(videoFrame.Pts.Ticks, out var driftMs) ||\n            driftMs >= -FrameSkipThresholdMs)");
+        AssertContains(sourceText, "if (!TryComputeAudioMasterDriftMs(videoFrame.Pts.Ticks, out driftMs))\n            {\n                break;\n            }");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_FRAME_SKIP_EOS count={skipped}");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_FRAME_SKIP_BUDGET count={skipped}");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_FMP4_REOPEN_BEFORE_SEGMENT_SWITCH");
