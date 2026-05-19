@@ -3566,6 +3566,10 @@ owner, fold it back into that owner and update the source-shape tests and
    watcher disposal, coordinator cleanup/dispose, and capture-service
    async-dispose fallback through graph-built context ports now live in
    `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs`.
+   The disposal graph-port contract for one-shot disposal entry, teardown
+   cancellations, runtime stop, coordinator cleanup/dispose, and capture-service
+   async/sync disposal fallback lives in
+   `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.Context.cs`.
    `MainViewModel.Disposal.cs` remains the public dispose adapter and active
    Flashback export cancellation owner. Automation-facing capture runtime, health,
    recording snapshot projection, source/preview probes, and preview

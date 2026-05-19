@@ -60,6 +60,7 @@ static partial class Program
         var mainViewModelRuntimeEventIngressContextText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.Context.cs"));
         var mainViewModelRuntimeEventIngressSubscriptionsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.Subscriptions.cs"));
         var mainViewModelDisposalControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDisposalController.cs"));
+        var mainViewModelDisposalControllerContextText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDisposalController.Context.cs"));
         var mainViewModelRecordingStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingState.cs"));
         var mainViewModelRecordingRuntimeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingRuntime.cs"));
         var bitrateSampleWindowText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "BitrateSampleWindow.cs"));
@@ -194,6 +195,7 @@ static partial class Program
         AssertContains(mainViewModelDisposalText, "private void CancelActiveFlashbackExportForDispose()");
         AssertContains(mainViewModelDisposalText, "_disposalController.Dispose();");
         AssertContains(mainViewModelDisposalControllerText, "private sealed class MainViewModelDisposalController");
+        AssertContains(mainViewModelDisposalControllerContextText, "private sealed class MainViewModelDisposalControllerContext");
         AssertContains(mainViewModelDisposalControllerText, "private readonly MainViewModelDisposalControllerContext _context;");
         AssertDoesNotContain(mainViewModelDisposalControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(mainViewModelDisposalControllerText, "_viewModel.");

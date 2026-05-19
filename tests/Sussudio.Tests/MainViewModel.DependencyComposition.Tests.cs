@@ -29,6 +29,7 @@ static partial class Program
         var runtimeEventIngressContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Context.cs").Replace("\r\n", "\n");
         var runtimeEventIngressSubscriptionsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.Subscriptions.cs").Replace("\r\n", "\n");
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs").Replace("\r\n", "\n");
+        var disposalControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDisposalController.Context.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerContextText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Context.cs").Replace("\r\n", "\n");
         var recordingTransitionControllerOperationsText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs").Replace("\r\n", "\n");
@@ -458,7 +459,7 @@ static partial class Program
         AssertContains(disposalText, "=> _disposalController.Dispose();");
         AssertContains(disposalText, "=> await _disposalController.DisposeAsync().ConfigureAwait(false);");
         AssertContains(disposalControllerText, "private sealed class MainViewModelDisposalController");
-        AssertContains(disposalControllerText, "private sealed class MainViewModelDisposalControllerContext");
+        AssertContains(disposalControllerContextText, "private sealed class MainViewModelDisposalControllerContext");
         AssertContains(disposalControllerText, "private readonly MainViewModelDisposalControllerContext _context;");
         AssertDoesNotContain(disposalControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(disposalControllerText, "_viewModel.");
