@@ -2638,9 +2638,10 @@ Primary current owners:
   owns debounced reinitialization, restart-cancellation state,
   Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
   and reinit gate release.
-  `MainViewModel.cs` owns the stable recording facade:
-  toggle, desired-state, graceful-stop, and the direct emergency-stop
-  coordinator bridge.
+  `MainViewModel.RecordingState.cs` owns the stable recording facade:
+  toggle, desired-state, graceful-stop, the direct emergency-stop coordinator
+  bridge, recording option selections, output path, counters, and observable
+  transition flags.
   `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`
   owns recording toggle serialization, desired-state routing, graceful stop,
   transition gating, and in-flight transition wait/error propagation.
@@ -2648,8 +2649,6 @@ Primary current owners:
   owns concrete start/stop operation execution plus failure/cancellation state
   repair, including direct use of the preview lifecycle owner for recording
   startup initialization.
-  `MainViewModel.RecordingState.cs` owns recording option selections, output
-  path, counters, and observable transition flags.
   `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs` owns
   bounded teardown, dispose timeout policy, watcher disposal, coordinator
   cleanup/dispose, capture-service async-dispose fallback, and disposal-step

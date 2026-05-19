@@ -42,26 +42,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
         => _deviceRefreshController.RefreshDevicesAsync(cancellationToken);
 
-    public Task ToggleRecordingAsync()
-        => _recordingTransitionController.ToggleRecordingAsync();
-
-    public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
-        => SetRecordingDesiredStateAsync(enabled, cancellationToken);
-
-    internal Task SetRecordingDesiredStateAsync(bool enabled, CancellationToken cancellationToken = default)
-        => _recordingTransitionController.SetRecordingDesiredStateAsync(enabled, cancellationToken);
-
-    /// <summary>
-    /// Graceful-stop entry point for callers that must NOT short-circuit on the
-    /// toggle CAS gate (e.g. the window-close handler). If a toggle is in flight,
-    /// await it; afterwards, if still recording, initiate a fresh stop.
-    /// </summary>
-    public Task StopRecordingAndWaitAsync(CancellationToken cancellationToken = default)
-        => _recordingTransitionController.StopRecordingAndWaitAsync(cancellationToken);
-
-    internal Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
-        => _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);
-
     public MainViewModel()
         : this(MainViewModelDependencies.CreateDefault())
     {
@@ -96,15 +76,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _runtimeLifecycleController.Start();
         _runtimeLifecycleController.InitializePresentation();
     }
-    // -- Device refresh and recording lifecycle facade methods stay in this root compatibility facade -----
-    // -- Recording observable state is in MainViewModel.RecordingState.cs -----
+    // -- Device refresh facade methods stay in this root compatibility facade -----
+    // -- Recording observable state and lifecycle facade methods are in MainViewModel.RecordingState.cs -----
     // -- Capture settings projection adapter is in MainViewModel.CaptureSettings.cs -----
     // -- Automation methods are split across MainViewModel.Automation*.cs ---------
 
     // -- Partial class references ----
     // Preview lifecycle facade/state/events: MainViewModel.PreviewState.cs; preview lifecycle owner: MainViewModelPreviewLifecycleController.cs; preview reinitialize transaction: MainViewModelPreviewReinitializeController.cs
-    // Recording lifecycle facade: this file; transition owner: MainViewModelRecordingTransitionController.cs
-    // Recording state: MainViewModel.RecordingState.cs
+    // Recording lifecycle facade/state: MainViewModel.RecordingState.cs; transition owner: MainViewModelRecordingTransitionController.cs
     // Capture settings projection: MainViewModel.CaptureSettings.cs and CaptureSettingsProjectionBuilder.cs
     // Flashback automation and buffer/GPU reactions: MainViewModel.FlashbackSettings.cs
     // Audio automation: MainViewModel.AutomationAudio.cs

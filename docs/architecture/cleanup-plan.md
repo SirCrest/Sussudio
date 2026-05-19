@@ -3513,18 +3513,18 @@ owner, fold it back into that owner and update the source-shape tests and
    Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
    and gate release. Output folder display plus browse/open-recordings button workflows now live in
    `Sussudio/Controllers/Recording/Output/OutputPathController.cs`.
-   Recording facade entry points now stay in `MainViewModel.cs`,
-   including the direct emergency-stop coordinator bridge, while recording
-   toggle serialization, desired-state routing, graceful stop, transition
-   gating, and in-flight transition wait/error propagation now live in
+   Recording facade entry points, including the direct emergency-stop
+   coordinator bridge, now live in `MainViewModel.RecordingState.cs`, while
+   recording toggle serialization,
+   desired-state routing, graceful stop, transition gating, and in-flight
+   transition wait/error propagation now live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`;
    concrete start/stop operation execution plus failure/cancellation state
    repair, including direct use of the preview lifecycle owner for recording
    startup initialization, live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.
-   Recording option selections, output
-   path, counters, and transition flags now live in
-   `MainViewModel.RecordingState.cs`. Bounded teardown, dispose timeout policy,
+   Recording option selections, output path, counters, and transition flags also
+   live in `MainViewModel.RecordingState.cs`. Bounded teardown, dispose timeout policy,
    watcher disposal, coordinator cleanup/dispose, and capture-service
    async-dispose fallback now live in
    `Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs`.
@@ -3720,12 +3720,13 @@ owner, fold it back into that owner and update the source-shape tests and
    preset, and output-path directory creation live in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`.
    The automation recording desired-state bridge enters through
-   `MainViewModel.cs` and is serialized by
+   `MainViewModel.RecordingState.cs` and is serialized by
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`,
    with start/stop execution in
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.Operations.cs`.
-   The emergency recording-stop bridge also enters through `MainViewModel.cs`
-   but routes directly to `CaptureSessionCoordinator.StopRecordingForEmergencyAsync`
+   The emergency recording-stop bridge also enters through
+   `MainViewModel.RecordingState.cs` but routes directly to
+   `CaptureSessionCoordinator.StopRecordingForEmergencyAsync`
    so it keeps bypassing UI-thread dispatch and normal transition gates.
    Capture resolution, frame-rate, video-format, and MJPEG decoder worker-count
    automation entry points now stay in the

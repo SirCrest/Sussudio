@@ -19,7 +19,8 @@ static partial class Program
         AssertDoesNotContain(mainViewModelText, "FolderPicker");
         AssertDoesNotContain(mainViewModelText, "FileTypeFilter");
         AssertContains(agentMapText, "`Sussudio/Controllers/Recording/Output/OutputPathController.cs` owns recording output-");
-        AssertContains(agentMapText, "`MainViewModel.RecordingState.cs` owns recording option selections, output");
+        AssertContains(agentMapText, "`MainViewModel.RecordingState.cs` owns the stable recording facade:");
+        AssertContains(agentMapText, "bridge, recording option selections, output path, counters, and observable");
         AssertContains(cleanupPlanText, "Recording output-path textbox, tooltip, resize-event updates, browse, and");
         AssertDoesNotContain(agentMapText, "`MainViewModel.OutputPathSelection.cs` owns output folder picker and path assignment.");
         AssertDoesNotContain(cleanupPlanText, "`MainViewModel.OutputPathSelection.cs`");
