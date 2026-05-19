@@ -252,6 +252,24 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task PreviewRuntimeD3DPipelineLatencyPolicy_PreservesNullRendererDefaults()
+    {
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DPipelineLatencyPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeD3DPipelineLatencyPolicy.Evaluate not found.");
+
+        var pipelineLatency = evaluate.Invoke(null, new object[] { null! })
+                              ?? throw new InvalidOperationException("PreviewRuntimeD3DPipelineLatencyPolicy returned null.");
+        AssertEqual(0, GetIntProperty(pipelineLatency, "SampleCount"), "null D3D pipeline latency sample count");
+        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "AverageMs"), "null D3D pipeline latency average");
+        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "P95Ms"), "null D3D pipeline latency p95");
+        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "P99Ms"), "null D3D pipeline latency p99");
+        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "MaxMs"), "null D3D pipeline latency max");
+        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "EstimatedPipelineLatencyMs"), "null estimated pipeline latency");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewRuntimeD3DFrameStatisticsPolicy_PreservesNullRendererDefaults()
     {
         var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameStatisticsPolicy");

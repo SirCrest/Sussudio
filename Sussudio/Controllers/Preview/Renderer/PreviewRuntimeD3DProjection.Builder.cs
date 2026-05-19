@@ -15,7 +15,7 @@ internal sealed partial class PreviewRuntimeD3DProjection
         var frameOwnership = PreviewRuntimeD3DFrameOwnershipPolicy.Evaluate(d3d);
         var frameStatistics = PreviewRuntimeD3DFrameStatisticsPolicy.Evaluate(d3d);
         var frameLatencyWait = PreviewRuntimeD3DFrameLatencyWaitPolicy.Evaluate(d3d);
-        var d3dPipelineLatency = d3d?.GetPipelineLatencyMetrics();
+        var pipelineLatency = PreviewRuntimeD3DPipelineLatencyPolicy.Evaluate(d3d);
 
         return new PreviewRuntimeD3DProjection
         {
@@ -70,11 +70,11 @@ internal sealed partial class PreviewRuntimeD3DProjection
             D3DTotalFrameCpuP95Ms = renderCpuTiming.TotalFrameP95Ms,
             D3DTotalFrameCpuP99Ms = renderCpuTiming.TotalFrameP99Ms,
             D3DTotalFrameCpuMaxMs = renderCpuTiming.TotalFrameMaxMs,
-            D3DPipelineLatencySampleCount = d3dPipelineLatency?.SampleCount ?? 0,
-            D3DPipelineLatencyAvgMs = d3dPipelineLatency?.AverageMs ?? 0,
-            D3DPipelineLatencyP95Ms = d3dPipelineLatency?.P95Ms ?? 0,
-            D3DPipelineLatencyP99Ms = d3dPipelineLatency?.P99Ms ?? 0,
-            D3DPipelineLatencyMaxMs = d3dPipelineLatency?.MaxMs ?? 0,
+            D3DPipelineLatencySampleCount = pipelineLatency.SampleCount,
+            D3DPipelineLatencyAvgMs = pipelineLatency.AverageMs,
+            D3DPipelineLatencyP95Ms = pipelineLatency.P95Ms,
+            D3DPipelineLatencyP99Ms = pipelineLatency.P99Ms,
+            D3DPipelineLatencyMaxMs = pipelineLatency.MaxMs,
             D3DFrameLatencyWaitEnabled = frameLatencyWait.Enabled,
             D3DFrameLatencyWaitHandleActive = frameLatencyWait.HandleActive,
             D3DFrameLatencyWaitCallCount = frameLatencyWait.CallCount,
@@ -119,7 +119,7 @@ internal sealed partial class PreviewRuntimeD3DProjection
             D3DLastDroppedUtcUnixMs = frameOwnership.LastDroppedUtcUnixMs,
             D3DLastDropReason = frameOwnership.LastDropReason,
             D3DRecentSlowFrames = d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>(),
-            EstimatedPipelineLatencyMs = d3dPipelineLatency?.AverageMs ?? 0,
+            EstimatedPipelineLatencyMs = pipelineLatency.EstimatedPipelineLatencyMs,
             GpuPlaybackState = d3d == null ? "None" : (d3d.IsRendering ? "Rendering" : "Idle"),
             GpuNaturalVideoWidth = d3d?.NaturalWidth ?? 0,
             GpuNaturalVideoHeight = d3d?.NaturalHeight ?? 0,
