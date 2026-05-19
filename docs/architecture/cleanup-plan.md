@@ -3460,7 +3460,10 @@ owner, fold it back into that owner and update the source-shape tests and
    bridge methods. `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs`
    owns controller graph construction order and UI-dispatch context wiring, while
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs`
-   owns capture settings automation and capture option rebuild graph ports.
+   owns capture settings automation and capture option rebuild graph ports, and
+   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs`
+   owns recording transition, recording capability, and recording settings
+   automation graph ports.
    `MainViewModelDependencies.cs` continues to own service construction. Audio capture/preview property handlers now live in
    `MainViewModel.AudioPropertyChanges.cs`, microphone monitor/device
    selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`,
