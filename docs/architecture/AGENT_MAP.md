@@ -1172,10 +1172,13 @@ Primary current owners:
   owns preview startup elapsed timing plus blank/stall suspicion policy.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameCounterPolicy.cs`
   owns the D3D-vs-CPU frame-counter fallback rules used by preview diagnostics.
+  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DFrameStatisticsPolicy.cs`
+  owns DXGI frame-statistics projection defaults, including the null-renderer
+  present-count sentinels used by preview diagnostics.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs`
   owns the renderer projection data contract. `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.Builder.cs`
-  owns renderer frame-counter override, cadence projection, D3D diagnostic field
-  mapping, estimated pipeline latency, and GPU playback projection.
+  owns renderer cadence projection, D3D diagnostic field mapping, estimated
+  pipeline latency, and GPU playback projection.
   Window close routing/finalization ownership is detailed in the window close
   section below:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,

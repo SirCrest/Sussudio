@@ -61,6 +61,9 @@ static partial class Program
             "Preview runtime D3D frame-counter policy preserves CPU fallback counters",
             PreviewRuntimeD3DFrameCounterPolicy_PreservesCpuFallbackCounters);
         await AddCheckAsync(results,
+            "Preview runtime D3D frame-statistics policy preserves null renderer defaults",
+            PreviewRuntimeD3DFrameStatisticsPolicy_PreservesNullRendererDefaults);
+        await AddCheckAsync(results,
             "Window title formatting lives in controller and MainWindow is the adapter",
             MainWindowTitlePresentation_LivesInController);
         await AddCheckAsync(results,
