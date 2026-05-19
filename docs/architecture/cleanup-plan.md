@@ -3471,10 +3471,12 @@ owner, fold it back into that owner and update the source-shape tests and
    owns device refresh graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.SourceTelemetry.cs`
    owns source telemetry graph ports, and
+   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RecordingCapability.cs`
+   owns recording capability graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RecordingSettingsAutomation.cs`
    owns recording settings automation graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.Recording.cs`
-   owns recording transition and recording capability graph ports, and
+   owns recording transition graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeDisposal.cs`
    owns disposal graph ports, and
    `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.RuntimeEventIngress.cs`
