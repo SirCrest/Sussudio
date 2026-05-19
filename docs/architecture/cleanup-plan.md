@@ -3458,7 +3458,9 @@ owner, fold it back into that owner and update the source-shape tests and
    state. Keep the root `MainViewModel.cs` focused on the
    compatibility facade, dependency assignment, startup timing, and small
    bridge methods. `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs`
-   owns controller graph construction and UI-dispatch context wiring, while
+   owns controller graph construction order and UI-dispatch context wiring, while
+   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.CaptureModes.cs`
+   owns capture settings automation and capture option rebuild graph ports.
    `MainViewModelDependencies.cs` continues to own service construction. Audio capture/preview property handlers now live in
    `MainViewModel.AudioPropertyChanges.cs`, microphone monitor/device
    selection handlers live in `MainViewModel.MicrophonePropertyChanges.cs`,
