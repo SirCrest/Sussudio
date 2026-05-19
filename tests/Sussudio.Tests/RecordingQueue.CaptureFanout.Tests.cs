@@ -97,10 +97,17 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs")
             .Replace("\r\n", "\n");
+        var initializationSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Initialization.cs")
+            .Replace("\r\n", "\n");
         var mjpegLifecycleSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.MjpegPipelineLifecycle.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(lifecycleSource, "public async Task InitializeAsync(");
+        AssertContains(initializationSource, "public async Task InitializeAsync(");
+        AssertContains(initializationSource, "var d3dManager = new SharedD3DDeviceManager();");
+        AssertContains(initializationSource, "CreateExternalMjpegPipelineIfNeeded(");
+        AssertContains(initializationSource, "InstallMjpegPreviewJitterBuffer(capture.Fps > 0 ? capture.Fps : fps);");
+        AssertContains(initializationSource, "capture.FatalErrorOccurred += OnCaptureFatalError;");
+        AssertDoesNotContain(lifecycleSource, "public async Task InitializeAsync(");
         AssertContains(lifecycleSource, "public void Start()");
         AssertContains(lifecycleSource, "public async Task StopAsync()");
         AssertContains(lifecycleSource, "public async ValueTask DisposeAsync()");

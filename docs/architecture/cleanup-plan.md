@@ -1788,11 +1788,12 @@ records, pixel-format observer dispatch, and fatal-error signaling there; keep
 public control/configuration methods in `UnifiedVideoCapture.cs`.
 
 Unified capture source-session lifecycle now lives in
-`Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs`. Keep source-reader
-initialization, read-loop start/stop, preview-reinit disposal, and capture
-fatal-error callbacks there. CPU MJPEG decode pipeline construction, preview
-jitter buffer setup/disposal, MJPEG stop retention, and MJPEG fatal-error
-routing live in
+`Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs`. Keep read-loop
+start/stop, preview-reinit disposal, and capture fatal-error callbacks there.
+Source-reader/D3D/MJPEG initialization and committed runtime state reset now
+live in `Sussudio/Services/Capture/UnifiedVideoCapture.Initialization.cs`.
+CPU MJPEG decode pipeline construction, preview jitter buffer setup/disposal,
+MJPEG stop retention, and MJPEG fatal-error routing live in
 `Sussudio/Services/Capture/UnifiedVideoCapture.MjpegPipelineLifecycle.cs`.
 
 Unified capture recording sink fan-out now lives in
