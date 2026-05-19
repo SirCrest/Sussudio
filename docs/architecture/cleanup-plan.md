@@ -958,8 +958,9 @@ buffer cycling, and teardown. `Sussudio/Services/Flashback/FlashbackBackendResou
 owns preview backend startup construction/install/playback initialization and
 startup rollback cleanup. `Sussudio/Services/Flashback/FlashbackBackendResources.BufferCycle.cs`
 owns sink-only buffer-cycle mechanics, while `Sussudio/Services/Flashback/FlashbackBackendResources.ArtifactCleanup.cs`
-owns preview-backend teardown mechanics, sink stop/dispose, backend clear, and
-backend artifact cleanup request/retry/dispose/purge mechanics. `CaptureService`
+owns backend artifact cleanup request/retry/dispose/purge mechanics and
+`Sussudio/Services/Flashback/FlashbackBackendResources.PreviewDisposal.cs`
+owns preview-backend teardown mechanics, sink stop/dispose, and backend clear. `CaptureService`
 supplies the service-level export-lock adapter, purge-policy resolution,
 cancellation-token choice, and full rebuild fallback orchestration.
 
@@ -3559,9 +3560,10 @@ Remaining `tools/Common` ownership:
    `FlashbackBackendResources.Startup.cs` owns startup construction,
    install/playback initialization, and startup rollback cleanup.
    `FlashbackBackendResources.BufferCycle.cs` owns sink-only buffer-cycle
-   mechanics, and `FlashbackBackendResources.ArtifactCleanup.cs` owns backend
-   teardown plus artifact cleanup mechanics. Keep later Flashback backend
-   mechanics there before inventing another small owner;
+   mechanics, `FlashbackBackendResources.PreviewDisposal.cs` owns backend
+   teardown, and `FlashbackBackendResources.ArtifactCleanup.cs` owns artifact
+   cleanup mechanics. Keep later Flashback backend mechanics in the matching
+   focused owner before inventing another small owner;
    `CaptureService.FlashbackPreviewBackend.cs` should stay the transition
    coordinator for AV1 probing, readiness waiting, and cleanup handoff.
    `CaptureRecordingBackendResources.cs` now owns active recording backend
