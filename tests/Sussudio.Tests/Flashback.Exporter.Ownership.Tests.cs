@@ -22,6 +22,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentPacketWriteStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriteState.cs")
             .Replace("\r\n", "\n");
+        var segmentPacketRebasingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketRebasing.cs")
+            .Replace("\r\n", "\n");
         var segmentRangeProjectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentRangeProjection.cs")
             .Replace("\r\n", "\n");
         var segmentSkipTrackingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentSkipTracking.cs")
@@ -102,7 +104,11 @@ static partial class Program
         AssertContains(segmentPacketReadLoopText, "FreeBufferedPackets(segmentPacketState.BufferedPackets, segmentPacketState.BufferedStreamIndices);");
         AssertContains(segmentPacketWriteStateText, "private struct SegmentPacketWriteState");
         AssertContains(segmentPacketWriteStateText, "private int FlushSegmentBufferedPackets(");
-        AssertContains(segmentPacketWriteStateText, "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(");
+        AssertDoesNotContain(segmentPacketWriteStateText, "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(");
+        AssertContains(segmentPacketRebasingText, "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(");
+        AssertContains(segmentPacketRebasingText, "ResolveSegmentBoundaryTimestampRepairUs(");
+        AssertContains(segmentPacketRebasingText, "packet->dts = lastDtsPerOutputStream[outputStreamIndex] + 1;");
+        AssertContains(segmentPacketRebasingText, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\");");
         AssertContains(segmentPacketWriteStateText, "private enum SegmentPacketWriteOutcome");
         AssertContains(segmentPacketWriteStateText, "public List<IntPtr> BufferedPackets { get; }");
         AssertContains(segmentPacketWriteStateText, "public long VideoTimestampRepairUs { get; set; }");

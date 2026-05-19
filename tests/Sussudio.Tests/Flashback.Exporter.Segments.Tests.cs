@@ -118,6 +118,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentPacketWriteStateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriteState.cs")
             .Replace("\r\n", "\n");
+        var segmentPacketRebasingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketRebasing.cs")
+            .Replace("\r\n", "\n");
         var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs")
             .Replace("\r\n", "\n");
 
@@ -156,11 +158,11 @@ static partial class Program
         var segmentFlushBlock = ExtractTextBetween(
             segmentPacketWriteStateText,
             "private int FlushSegmentBufferedPackets(",
-            "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(");
-        var segmentWriteBlock = ExtractTextBetween(
-            segmentPacketWriteStateText,
-            "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(",
             "private enum SegmentPacketWriteOutcome");
+        var segmentWriteBlock = ExtractTextBetween(
+            segmentPacketRebasingText,
+            "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(",
+            "    }\n}");
         // The flush owner's finally block must release buffered packets.
         AssertContains(segmentFlushBlock, "finally\n        {\n            FreeBufferedPackets(state.BufferedPackets, state.BufferedStreamIndices);\n        }");
         AssertContains(segmentFlushBlock, "WriteRebasedSegmentPacket(");
