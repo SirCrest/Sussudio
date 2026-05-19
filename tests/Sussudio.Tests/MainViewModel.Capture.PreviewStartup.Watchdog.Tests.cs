@@ -13,12 +13,16 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
             .Replace("\r\n", "\n");
-        var previewStartupWatchdogText = ReadRepoFile("Sussudio/MainWindow.PreviewStartupWatchdog.cs")
+        var previewStartupWatchdogText = ReadRepoFile("Sussudio/MainWindow.PreviewStartup.cs")
             .Replace("\r\n", "\n");
         var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewStartupWatchdog.cs")),
+            "preview startup watchdog adapter is consolidated into the startup adapter");
         AssertContains(previewStartupWatchdogText, "private PreviewStartupWatchdogController _previewStartupWatchdogController = null!;");
         AssertContains(previewStartupWatchdogText, "private void InitializePreviewStartupWatchdogController()");
         AssertContains(previewStartupWatchdogText, "private void StartPreviewStartupWatchdog()");
@@ -80,7 +84,10 @@ static partial class Program
         AssertDoesNotContain(previewStartupWatchdogText, "private int _previewStartupFailureStopScheduled;");
         AssertDoesNotContain(previewStartupWatchdogText, "private Task HandlePreviewStartupTimeoutAsync()");
         AssertDoesNotContain(previewStartupText, "_previewStartupFailureStopScheduled");
-        AssertDoesNotContain(previewStartupText, "private void StartPreviewStartupWatchdog()");
+        AssertEqual(
+            true,
+            previewStartupText.Split('\n').Length >= 100,
+            "preview startup adapter is a substantial consolidated adapter file");
         AssertDoesNotContain(previewStartupText, "private Task HandlePreviewStartupTimeoutAsync()");
         AssertDoesNotContain(previewStartupText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
         AssertDoesNotContain(previewStartupText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");

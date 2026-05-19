@@ -15,7 +15,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStartupSessionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs")
             .Replace("\r\n", "\n");
-        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs")
+        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");
         var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs")
             .Replace("\r\n", "\n");
@@ -26,6 +26,10 @@ static partial class Program
 
         AssertContains(mainWindowText, "InitializePreviewStartupSessionController();");
         AssertContains(mainWindowText, "InitializePreviewReinitTransitionController();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewReinit.cs")),
+            "preview reinit adapter is consolidated into the transition adapter");
         AssertContains(previewStartupText, "private PreviewStartupSessionController _previewStartupSessionController = null!;");
         AssertContains(previewStartupText, "private void InitializePreviewStartupSessionController()");
         AssertContains(previewStartupText, "private PreviewStartupState CurrentPreviewStartupState");

@@ -23,7 +23,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs")
             .Replace("\r\n", "\n");
-        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs")
+        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewLifecycleEventController();");
@@ -231,7 +231,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewActionsText = ReadRepoFile("Sussudio/MainWindow.PreviewActions.cs")
             .Replace("\r\n", "\n");
-        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewReinit.cs")
+        var previewReinitText = ReadRepoFile("Sussudio/MainWindow.PreviewTransitions.cs")
             .Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChangedPreview.cs")
             .Replace("\r\n", "\n");

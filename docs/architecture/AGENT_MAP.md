@@ -2357,21 +2357,22 @@ Primary current owners:
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the
   `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
-  `MainWindow.PreviewReinit.cs` remains the XAML/MainWindow adapter for
+  `MainWindow.PreviewTransitions.cs` is the XAML/MainWindow adapter for
   renderer-stop-before-teardown and reinit completion side effects.
 - `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` owns preview
   startup attempt/state bookkeeping, timestamps, cached failure/missing-signal
   details, state/log transitions, first-visual confirmation sequencing, and
   reset orchestration. `Sussudio/MainWindow.PreviewStartup.cs` is the
-  XAML/MainWindow-facing adapter that supplies UI/runtime callbacks.
+  XAML/MainWindow-facing adapter that supplies UI/runtime callbacks for startup
+  session state, watchdog/timeout payloads, and readiness-signal handoff.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs` owns
   watchdog/telemetry timers, timeout configuration, timeout recovery, and
-  failure-stop scheduling. `Sussudio/MainWindow.PreviewStartupWatchdog.cs` wires
+  failure-stop scheduling. `Sussudio/MainWindow.PreviewStartup.cs` wires
   the MainWindow/XAML-facing adapter and timeout diagnostic payload.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs` owns readiness-
   signal coordination: readiness-signal state handoff, missing-signal updates,
   playback-progress diagnostics, startup signal log strings, GPU position
-  counter state, and first-visual confirmation decisions. `MainWindow.PreviewStartupSignals.cs`
+  counter state, and first-visual confirmation decisions. `MainWindow.PreviewStartup.cs`
   is the XAML/MainWindow-facing adapter that supplies live preview state,
   renderer visibility details, logging, and confirmation callbacks.
   `Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs` owns
@@ -2388,7 +2389,7 @@ Primary current owners:
   `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and reinit transition logs.
-  `MainWindow.PreviewReinit.cs` keeps the renderer-stop-before-teardown handoff
+  `MainWindow.PreviewTransitions.cs` keeps the renderer-stop-before-teardown handoff
   and XAML presentation side effects.
   Keep preview startup fields out of the composition root.
 - `Sussudio/Controllers/Preview/PreviewFadeInController.cs` owns delayed preview

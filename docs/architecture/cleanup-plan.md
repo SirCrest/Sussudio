@@ -2522,7 +2522,7 @@ Preview reinit animation active state, first-visual transition clears,
 startup-reset preservation, completion presentation decisions, and
 `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs now live in
 `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`.
-`MainWindow.PreviewReinit.cs` remains the XAML/MainWindow adapter for
+`MainWindow.PreviewTransitions.cs` is the XAML/MainWindow adapter for
 renderer-stop-before-teardown and reinit completion side effects.
 
 Preview startup attempt/state bookkeeping, timestamps, cached failure/
@@ -2530,15 +2530,16 @@ missing-signal details, state/log transitions, first-visual confirmation
 sequencing, and reset orchestration now live in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` instead of a
 MainWindow field bundle. `Sussudio/MainWindow.PreviewStartup.cs` is the
-XAML/MainWindow-facing adapter that supplies UI/runtime callbacks.
+XAML/MainWindow-facing adapter that supplies UI/runtime callbacks for startup
+session state, watchdog/timeout payloads, and readiness-signal handoff.
 Watchdog/telemetry timers, timeout configuration, timeout recovery, and failure-stop scheduling live in
 `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`;
-`Sussudio/MainWindow.PreviewStartupWatchdog.cs` wires the MainWindow/XAML-facing
+`Sussudio/MainWindow.PreviewStartup.cs` wires the MainWindow/XAML-facing
 adapter and timeout diagnostic payload. Readiness-signal coordination now lives
 in `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs`: missing-signal
 updates, playback-progress diagnostics, startup signal log strings, GPU
 position counter state, and first-visual confirmation decisions. The
-`Sussudio/MainWindow.PreviewStartupSignals.cs` partial is the XAML/MainWindow
+`Sussudio/MainWindow.PreviewStartup.cs` partial is the XAML/MainWindow
 adapter that supplies live preview state, renderer visibility details, logging,
 and confirmation callbacks. Readiness-signal required/received state,
 missing-signal calculation, playback-advance threshold checks, and readiness
@@ -2573,7 +2574,7 @@ controller. The broad `MainWindow.PropertyChanged.cs` dispatcher now owns only
 the `PropertyChanged` event envelope, property-name normalization, and visible
 route order. Preview reinit transition state and log ownership now live in
 `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`, while
-`Sussudio/MainWindow.PreviewReinit.cs` keeps the renderer-stop-before-teardown
+`Sussudio/MainWindow.PreviewTransitions.cs` keeps the renderer-stop-before-teardown
 handoff and XAML completion side effects.
 
 Bottom status-strip projection now lives in
